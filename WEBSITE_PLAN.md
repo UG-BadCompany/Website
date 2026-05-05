@@ -69,46 +69,6 @@ The public website should convert visitors into leads and provide confidence bef
 - Testimonials placeholder
 - Final contact CTA
 
-
-### Original foundational website plan included
-
-The first version of the plan is still part of this project. The full portal and back-end system should be built **in addition to** the professional business website, not instead of it. The public-facing site should still include the original marketing, trust, service, gallery, contact, SEO, and lead-generation plan.
-
-#### Foundational public website scope
-
-- Professional homepage built around the T&A Contracting logo and Arizona-native brand.
-- Clear services page for repairs, maintenance, painting, fixture work, installations, improvements, rental support, and commercial/property maintenance support.
-- About page focused on local trust, professionalism, and being more capable than a basic handyman.
-- Gallery or recent-work page with before/after support, captions, and categories for real project photos.
-- Contact / request-estimate page with a simple lead form and direct phone/email contact options.
-- Mobile-first responsive layout for homeowners and property managers using phones in the field.
-- Strong calls to action across every major page: request estimate, view services, call now, and log in.
-
-#### Original homepage plan
-
-The homepage should include:
-
-1. Hero section with logo, headline, subheadline, and buttons for “Request an Estimate” and “View Services.”
-2. Trust bar highlighting “Arizona Native,” “Locally Owned,” “Residential & Commercial,” and “Maintenance / Anything / Everything.”
-3. Services preview grid linking to detailed services.
-4. “Why Choose T&A Contracting” section explaining that the company is more professional and capable than a basic handyman.
-5. Portal preview explaining that clients can request jobs, review quotes, accept work, pay online, and track status.
-6. Gallery preview for completed or placeholder project photos.
-7. Final call to action: “Need something fixed, installed, repaired, or improved? Let’s get it handled.”
-
-#### Original trust and lead-generation plan
-
-The site should also include:
-
-- Click-to-call phone links.
-- Header “Request Estimate” button.
-- Sticky mobile call/request button if practical.
-- Estimate request form.
-- Testimonials or Google review section when reviews are available.
-- Before/after project photos when available.
-- Footer with business name, service area, quick links, and contact details.
-- Licensing, bonding, insurance, warranty, emergency, or same-day claims only if confirmed by the owner.
-
 ### Suggested homepage headline
 
 > More Than a Handyman. Arizona Contracting & Maintenance Done Right.
