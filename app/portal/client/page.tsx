@@ -15,6 +15,12 @@ export default async function ClientPortalPage() {
   const invoices = user ? database.invoices.filter((invoice) => invoice.clientEmail === user.email) : database.invoices.slice(0, 5);
   const messages = database.messages.filter((message) => !message.internalOnly).slice(0, 5);
 
+
+export const metadata: Metadata = { title: "Client Portal", description: "Client dashboard preview for T&A Contracting." };
+
+const rows = ["Open job requests", "Quotes waiting for review", "Scheduled jobs", "Unpaid invoices", "Recent messages"];
+
+export default function ClientPortalPage() {
   return (
     <section className="section-wrap page-top">
       <p className="eyebrow">Client dashboard</p>
@@ -47,6 +53,8 @@ export default async function ClientPortalPage() {
       <div className="portal-section">
         <h2>Invoices and payments</h2>
         {invoices.map((invoice) => <article className="wide-card" key={invoice.id}><div><h3>{invoice.invoiceNumber}</h3><p>Due {shortDate(invoice.dueAt)}</p></div><div><strong>{currency(invoice.amountDue - invoice.amountPaid)}</strong><form action="/api/payments/checkout" method="post"><input type="hidden" name="invoiceId" value={invoice.id} /><button className="button" type="submit">Pay Online</button></form></div></article>)}
+        <aside className="panel"><h2>Quick action</h2><button className="button" type="button">Request New Job</button><p>Backend connection will create request records, emails, uploads, and dashboard updates.</p></aside>
+        <div className="panel"><h2>Overview</h2>{rows.map((row, index) => <div className="status-row" key={row}><span>{row}</span><strong>{index + 1}</strong></div>)}</div>
       </div>
     </section>
   );

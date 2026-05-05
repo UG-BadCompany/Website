@@ -21,6 +21,14 @@ export default function ContactPage() {
         <p>{serviceAreaCities.join(", ")}, and surrounding Arizona communities.</p>
         <h3>Contact status</h3>
         <p>{companyProfile.publicContactNote}</p>
+        <p className="lead">Use the estimate request page to send project details, property notes, preferred timeframe, and contact preferences.</p>
+        <div className="button-row"><Link className="button" href="/request-estimate">Request Estimate</Link><a className="button button-secondary" href="tel:+10000000000">Call Now</a></div>
+      </div>
+      <aside className="contact-card">
+        <h2>Business contact placeholders</h2>
+        <p>Phone number: pending owner confirmation</p>
+        <p>Email: pending owner confirmation</p>
+        <p>Service areas: Arizona cities pending confirmation</p>
       </aside>
     </section>
   );
