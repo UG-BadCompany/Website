@@ -154,3 +154,16 @@ textarea { resize: vertical; }
   .button, .button-row { width: 100%; }
   .site-header { position: static; }
 }
+
+.service-area-line { color: var(--rust-dark); font-weight: 900; }
+.auth-grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(2, 1fr); margin-top: 1.5rem; }
+.compact-form { margin-top: 1.2rem; }
+.portal-section { margin-top: 2rem; }
+.portal-section > h2 { margin-bottom: 1rem; }
+details.panel { margin-top: 1.5rem; }
+summary { cursor: pointer; font-weight: 900; }
+pre { background: #1f1712; border-radius: 18px; color: var(--sand); overflow: auto; padding: 1rem; white-space: pre-wrap; }
+
+@media (max-width: 900px) {
+  .auth-grid { grid-template-columns: 1fr; }
+}

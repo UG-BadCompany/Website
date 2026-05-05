@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { galleryProjects, portalCards, serviceCategories } from "./components/data";
+import { companyProfile } from "./lib/config";
 
 export default function Home() {
   return (
@@ -11,6 +12,7 @@ export default function Home() {
           <p className="hero-text">
             T&A Contracting helps Arizona homeowners, landlords, property managers, and businesses handle repairs, maintenance, installations, improvements, and punch-list work with professional communication from quote to completion.
           </p>
+          <p className="service-area-line">Serving {companyProfile.serviceAreaLabel}.</p>
           <div className="button-row">
             <Link className="button" href="/request-estimate">Request an Estimate</Link>
             <Link className="button button-secondary" href="/services">View Services</Link>

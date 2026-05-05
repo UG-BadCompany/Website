@@ -1,0 +1,58 @@
+import { writeFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { NextResponse } from "next/server";
+import { getSession, makeId } from "../../lib/auth";
+import { addAudit, addFile, nowIso, updateDatabase, upsertJobRequest } from "../../lib/database";
+import { queueEmail } from "../../lib/email";
+import type { JobRequest, UploadedFile } from "../../lib/types";
+
+async function saveFiles(form: FormData) {
+  const uploadDir = join(process.cwd(), ".data", "uploads");
+  mkdirSync(uploadDir, { recursive: true });
+  const saved: UploadedFile[] = [];
+  for (const entry of form.getAll("files")) {
+    if (!(entry instanceof File) || entry.size === 0) continue;
+    const id = makeId("file");
+    const storedName = `${id}-${entry.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+    const buffer = Buffer.from(await entry.arrayBuffer());
+    writeFileSync(join(uploadDir, storedName), buffer);
+    saved.push({ id, originalName: entry.name, storedName, contentType: entry.type || "application/octet-stream", size: entry.size, url: `/uploads/${storedName}`, createdAt: nowIso() });
+  }
+  return saved;
+}
+
+export async function POST(request: Request) {
+  const form = await request.formData();
+  const session = await getSession();
+  const files = await saveFiles(form);
+  const timestamp = nowIso();
+  const jobRequest: JobRequest = {
+    id: makeId("jobreq"),
+    clientId: session?.role === "client" ? session.id : undefined,
+    name: form.get("name")?.toString().trim() || "New Lead",
+    email: form.get("email")?.toString().trim().toLowerCase() || undefined,
+    phone: form.get("phone")?.toString().trim() || undefined,
+    propertyAddress: form.get("address")?.toString().trim() || "Address pending",
+    serviceCategory: form.get("category")?.toString() || "Home Repairs",
+    desiredTimeframe: form.get("timeframe")?.toString() || "Flexible",
+    priority: (form.get("priority")?.toString() as JobRequest["priority"]) || "Standard",
+    description: form.get("description")?.toString().trim() || "Description pending",
+    preferredContactMethod: (form.get("preferredContactMethod")?.toString() as JobRequest["preferredContactMethod"]) || "Portal",
+    accessNotes: form.get("accessNotes")?.toString().trim() || undefined,
+    specialInstructions: form.get("specialInstructions")?.toString().trim() || undefined,
+    files,
+    status: "New request",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  updateDatabase((database) => {
+    upsertJobRequest(database, jobRequest);
+    files.forEach((file) => addFile(database, file));
+    queueEmail(database, { to: jobRequest.email, event: "new_job_request_confirmation", subject: "We received your T&A Contracting request", body: `Request ${jobRequest.id} was created for ${jobRequest.propertyAddress}.` });
+    queueEmail(database, { event: "admin_new_job_request", subject: "New T&A Contracting job request", body: `${jobRequest.name} requested ${jobRequest.serviceCategory} at ${jobRequest.propertyAddress}.` });
+    addAudit(database, { actor: session?.id ?? jobRequest.email ?? "public-lead", action: "create", entityType: "JobRequest", entityId: jobRequest.id, details: "New job request submitted" });
+  });
+
+  return NextResponse.redirect(new URL(`/portal/client?request=${jobRequest.id}`, request.url), { status: 303 });
+}

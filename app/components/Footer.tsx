@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { companyProfile, serviceAreaCities } from "../lib/config";
 
 export function Footer() {
   return (
     <footer className="site-footer">
       <section>
+        <h2>{companyProfile.name}</h2>
         <h2>T&A Contracting</h2>
         <p>Arizona-native maintenance, repairs, and improvements done right for homeowners, landlords, property managers, and small businesses.</p>
       </section>
@@ -16,6 +18,12 @@ export function Footer() {
         </div>
         <div>
           <h3>Service Area</h3>
+          <p>{serviceAreaCities.join(", ")} and surrounding Arizona communities.</p>
+        </div>
+        <div>
+          <h3>Contact</h3>
+          <p>{companyProfile.publicContactNote}</p>
+          <Link href="/request-estimate">Use the online estimate form</Link>
           <p>Arizona service areas to be finalized by owner before production launch.</p>
         </div>
         <div>
