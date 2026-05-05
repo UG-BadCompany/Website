@@ -69,6 +69,46 @@ The public website should convert visitors into leads and provide confidence bef
 - Testimonials placeholder
 - Final contact CTA
 
+
+### Original foundational website plan included
+
+The first version of the plan is still part of this project. The full portal and back-end system should be built **in addition to** the professional business website, not instead of it. The public-facing site should still include the original marketing, trust, service, gallery, contact, SEO, and lead-generation plan.
+
+#### Foundational public website scope
+
+- Professional homepage built around the T&A Contracting logo and Arizona-native brand.
+- Clear services page for repairs, maintenance, painting, fixture work, installations, improvements, rental support, and commercial/property maintenance support.
+- About page focused on local trust, professionalism, and being more capable than a basic handyman.
+- Gallery or recent-work page with before/after support, captions, and categories for real project photos.
+- Contact / request-estimate page with a simple lead form and direct phone/email contact options.
+- Mobile-first responsive layout for homeowners and property managers using phones in the field.
+- Strong calls to action across every major page: request estimate, view services, call now, and log in.
+
+#### Original homepage plan
+
+The homepage should include:
+
+1. Hero section with logo, headline, subheadline, and buttons for “Request an Estimate” and “View Services.”
+2. Trust bar highlighting “Arizona Native,” “Locally Owned,” “Residential & Commercial,” and “Maintenance / Anything / Everything.”
+3. Services preview grid linking to detailed services.
+4. “Why Choose T&A Contracting” section explaining that the company is more professional and capable than a basic handyman.
+5. Portal preview explaining that clients can request jobs, review quotes, accept work, pay online, and track status.
+6. Gallery preview for completed or placeholder project photos.
+7. Final call to action: “Need something fixed, installed, repaired, or improved? Let’s get it handled.”
+
+#### Original trust and lead-generation plan
+
+The site should also include:
+
+- Click-to-call phone links.
+- Header “Request Estimate” button.
+- Sticky mobile call/request button if practical.
+- Estimate request form.
+- Testimonials or Google review section when reviews are available.
+- Before/after project photos when available.
+- Footer with business name, service area, quick links, and contact details.
+- Licensing, bonding, insurance, warranty, emergency, or same-day claims only if confirmed by the owner.
+
 ### Suggested homepage headline
 
 > More Than a Handyman. Arizona Contracting & Maintenance Done Right.
@@ -772,3 +812,180 @@ The best first production version should include the public website plus the mos
 - Mobile-responsive design
 
 This creates a complete lead-to-payment workflow and gives T&A Contracting a professional system that supports real business operations from day one.
+
+---
+
+## 17. Professional Design, Engineering & Hosting Recommendation
+
+This project should be treated like a premium business web application, not a basic brochure site. The best approach is to combine a high-converting public website with a secure full-stack portal using modern, professional tools that can be deployed automatically from GitHub.
+
+### Design standard
+
+The site should be designed to look like a top-tier contracting brand:
+
+- Strong first impression within the first 3 seconds.
+- Premium hero section with the T&A logo, Arizona-native identity, and clear quote/request CTA.
+- Clean spacing, bold typography, high contrast, and contractor-grade visual structure.
+- Real project photography prioritized over generic stock images.
+- Mobile-first layout because many clients will request work from their phones.
+- Clear service cards, trust badges, quote workflow explanations, before/after gallery blocks, and repeated conversion CTAs.
+- Portal UI that feels simple enough for homeowners but powerful enough for admins and workers.
+
+### Professional website benchmark approach
+
+The design process should study and benchmark high-performing modern websites across these categories rather than copying any single site:
+
+- Premium local contractor websites.
+- Home services and property maintenance websites.
+- SaaS dashboards and customer portals.
+- Payment and invoice workflows.
+- Field-service management products.
+- High-converting landing pages.
+- Mobile-first service request forms.
+- Before/after gallery layouts.
+- Trust-heavy local business websites.
+- Modern booking and quote approval experiences.
+
+The goal is not to literally copy thousands of websites. The goal is to use proven best practices from the best examples: fast loading, strong branding, immediate clarity, trust-building, simple navigation, and a frictionless request-to-payment flow.
+
+### Recommended coding languages and framework
+
+For the best combination of professional design, SEO, speed, security, maintainability, and portal features, the recommended stack is:
+
+- **TypeScript** for safer front-end and back-end development.
+- **Next.js** for the public website, client portal, admin portal, worker portal, server-rendered pages, routing, and API/server actions.
+- **React** for reusable UI components and interactive dashboards.
+- **Tailwind CSS** for fast, consistent, responsive styling based on the T&A brand system.
+- **PostgreSQL** for reliable relational data such as users, clients, jobs, quotes, invoices, and payments.
+- **Prisma** or a similar TypeScript ORM for type-safe database access and migrations.
+- **Supabase** as a strong option for managed PostgreSQL, authentication, storage, and server-side functions if the project needs a managed back-end foundation.
+- **Stripe** for secure deposits, final invoice payments, receipts, and future maintenance subscriptions.
+- **Resend** or a similar transactional email service for quote emails, invoice emails, receipts, password resets, and PDF attachments.
+- **Playwright** for end-to-end testing of quote acceptance, login, job request, and payment workflows.
+
+### Recommended hosting strategy
+
+The website should live in GitHub as the source of truth. The hosting platform should connect directly to the GitHub repository and automatically build/deploy the website when changes are pushed or merged.
+
+#### Best primary recommendation: Vercel
+
+Vercel is the recommended first choice if the site is built with Next.js because it provides a very smooth GitHub-to-deployment workflow, preview deployments for pull requests, production deployments from the main branch, and strong support for server-rendered Next.js applications.
+
+Recommended Vercel flow:
+
+1. Store the project in GitHub.
+2. Connect the repository to Vercel.
+3. Use `main` as the production branch.
+4. Every pull request gets a preview deployment.
+5. Every merge to `main` deploys production automatically.
+6. Connect the custom domain to Vercel.
+7. Store secrets such as Stripe, database, and email keys as Vercel environment variables.
+
+#### Strong alternatives
+
+- **Netlify**: good Git-based deployment and continuous deployment; strong for marketing sites and Jamstack workflows.
+- **Cloudflare Pages / Workers**: strong global edge network, GitHub integration, preview deployments, and good performance potential.
+- **Render / Railway / Fly.io**: useful if the app needs a more traditional long-running server or containerized deployment.
+- **Self-hosted VPS with Coolify**: useful later if cost predictability and full infrastructure control become more important than managed platform convenience.
+
+### Recommended production architecture
+
+A strong first production architecture would be:
+
+- GitHub repository for source code.
+- Vercel for Next.js hosting and GitHub preview/production deployments.
+- Supabase PostgreSQL for database, auth, and file storage, or managed PostgreSQL plus a separate auth provider if preferred.
+- Stripe Checkout for deposits and invoice payments.
+- Stripe webhooks for payment status updates.
+- Resend for transactional emails and PDF quote/invoice delivery.
+- Object storage for uploaded client/job photos and generated PDFs.
+- Environment variables for all API keys and secrets.
+- GitHub pull requests for all changes before production deployment.
+
+### Why this stack is best for T&A Contracting
+
+This stack supports both sides of the business:
+
+- The public site can rank in search engines and convert visitors into leads.
+- The client portal can handle job requests, quote review, quote acceptance, payments, and history.
+- The admin portal can manage jobs, clients, workers, quotes, invoices, documents, scheduling, and communication.
+- The worker portal can run well on mobile devices in the field.
+- GitHub-based deployment keeps updates organized, versioned, reviewed, and easy to roll back.
+
+---
+
+## 18. Research Notes For Hosting & Integrations
+
+The hosting and integration strategy should be based on current official documentation and platform capabilities:
+
+- Vercel supports Git-based deployments from GitHub and can create preview deployments for pull requests and production deployments from the production branch.
+- Netlify supports continuous deployment by connecting a Git repository and deploying when changes are pushed.
+- Cloudflare Pages supports connecting a GitHub repository and automatically deploying changes pushed to branches, with preview deployment support.
+- Next.js is a strong fit because it can start with static or server-rendered marketing pages and expand into a full web application with server features.
+- Supabase provides PostgreSQL, authentication, storage, and globally distributed TypeScript Edge Functions, which can help support auth, files, webhooks, and back-end operations.
+- Stripe Checkout provides a hosted or embedded checkout flow for accepting one-time and subscription payments.
+- Resend supports sending transactional emails with PDF attachments, which fits quote and invoice delivery.
+
+Source links to keep for implementation reference:
+
+- Vercel Git deployments: <https://vercel.com/docs/deployments/git>
+- Next.js deployment docs: <https://nextjs.org/docs/app/getting-started/deploying>
+- Netlify Git deploys: <https://docs.netlify.com/site-deploys/create-deploys/>
+- Cloudflare Pages GitHub integration: <https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/>
+- Supabase Edge Functions: <https://supabase.com/docs/guides/functions>
+- Stripe Checkout: <https://docs.stripe.com/payments/checkout>
+- Resend attachments: <https://resend.com/docs/dashboard/emails/attachments>
+
+---
+
+## 19. Premium Design Execution Checklist
+
+To make this the most professional contractor website possible, the final build should include:
+
+### Public website excellence
+
+- Custom hero design using the logo colors and Arizona desert identity.
+- High-quality service cards with clear service categories.
+- Strong “more than a handyman” positioning.
+- Real trust elements above the fold.
+- Clear quote/request button in the header.
+- Sticky mobile call/request CTA.
+- Before/after gallery design.
+- SEO-ready page structure.
+- Fast Core Web Vitals performance.
+- Accessible colors, forms, buttons, and navigation.
+
+### Client portal excellence
+
+- Simple dashboard showing requests, quotes, jobs, invoices, and payments.
+- New job request form that supports photos and clear project details.
+- Quote review page that is easy to understand on mobile.
+- Accept, decline, and request-change buttons.
+- Secure online payment flow.
+- Quote and invoice PDF downloads.
+- Message thread per job.
+
+### Admin and worker excellence
+
+- Admin dashboard that shows what needs attention first.
+- Quote builder that is fast and reusable.
+- Job status pipeline from request to paid/closed.
+- Worker mobile view for assigned jobs, notes, checklists, and photos.
+- Audit history for quote approvals, payment events, and major status changes.
+
+### Launch quality bar
+
+Before launch, the site should pass:
+
+- Mobile responsive review.
+- Accessibility review.
+- SEO metadata review.
+- Contact form test.
+- Client signup/login test.
+- Job request workflow test.
+- Quote PDF generation test.
+- Quote email test.
+- Quote acceptance test.
+- Stripe test payment.
+- Admin/worker permissions test.
+- Production deployment from GitHub test.
