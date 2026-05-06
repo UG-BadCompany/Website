@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  getFromEmail,
   hashToken,
+  shouldSendEmail,
   normalizeClientAccountPayload,
   validateClientAccount,
   validateEmail,
@@ -44,6 +46,38 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(normalized.botField, '');
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
+});
+
+
+test('email delivery stays disabled for missing or placeholder Resend settings', () => {
+  const original = {
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    MAGIC_LINK_FROM_EMAIL: process.env.MAGIC_LINK_FROM_EMAIL,
+    QUOTE_FROM_EMAIL: process.env.QUOTE_FROM_EMAIL,
+  };
+
+  delete process.env.RESEND_API_KEY;
+  process.env.MAGIC_LINK_FROM_EMAIL = 'portal@your-domain.example';
+  process.env.QUOTE_FROM_EMAIL = 'quotes@your-domain.example';
+
+  assert.equal(shouldSendEmail(), false);
+  assert.equal(getFromEmail(), 'portal@ta-contracting.example');
+
+  process.env.RESEND_API_KEY = 're_replace_me';
+  assert.equal(shouldSendEmail(), false);
+
+  process.env.RESEND_API_KEY = 're_real_key';
+  process.env.MAGIC_LINK_FROM_EMAIL = 'portal@example.com';
+  assert.equal(shouldSendEmail(), true);
+  assert.equal(getFromEmail(), 'portal@example.com');
+
+  for (const [key, value] of Object.entries(original)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
 });
 
 test('magic-link endpoint stores a hashed token and returns a development link when email is not configured', async () => {

@@ -98,9 +98,28 @@ export const getSiteUrl = (request) => {
 
 export const createMagicLinkUrl = (request, token) => `${getSiteUrl(request)}/api/auth/verify?token=${encodeURIComponent(token)}`;
 
-export const shouldSendEmail = () => Boolean(clean(process.env.RESEND_API_KEY));
+export const isConfiguredSecret = (value, placeholderFragments = []) => {
+  const cleaned = clean(value);
 
-export const getFromEmail = () => clean(process.env.MAGIC_LINK_FROM_EMAIL) || clean(process.env.QUOTE_FROM_EMAIL) || 'portal@ta-contracting.example';
+  return Boolean(cleaned && !placeholderFragments.some((fragment) => cleaned.includes(fragment)));
+};
+
+export const shouldSendEmail = () => isConfiguredSecret(process.env.RESEND_API_KEY, ['replace_me', 'your-resend-api-key']);
+
+export const getFromEmail = () => {
+  const configuredFromEmail = clean(process.env.MAGIC_LINK_FROM_EMAIL);
+  const quoteFromEmail = clean(process.env.QUOTE_FROM_EMAIL);
+
+  if (configuredFromEmail && !configuredFromEmail.includes('your-domain.example')) {
+    return configuredFromEmail;
+  }
+
+  if (quoteFromEmail && !quoteFromEmail.includes('your-domain.example')) {
+    return quoteFromEmail;
+  }
+
+  return 'portal@ta-contracting.example';
+};
 
 export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, purpose }) => {
   if (!shouldSendEmail()) {

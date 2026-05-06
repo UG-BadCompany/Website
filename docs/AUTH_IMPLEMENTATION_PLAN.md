@@ -97,3 +97,4 @@ The current implementation uses first-party passwordless login tables instead of
 - Raw magic-link tokens and raw session tokens are never stored in the database.
 - Email delivery uses Resend when `RESEND_API_KEY` and a from-address are configured. Without Resend, the endpoint returns a development-only magic link so the flow can be tested before production email is ready.
 - `/api/me` is the dashboard session check and should become the source of role-scoped dashboard rendering.
+- If the login page reports that email delivery is off, follow `docs/MAGIC_LINK_EMAIL_SETUP.md` and add `RESEND_API_KEY`, `MAGIC_LINK_FROM_EMAIL`, and `SITE_URL` in Netlify.

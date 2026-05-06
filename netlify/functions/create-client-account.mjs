@@ -56,7 +56,7 @@ export const createClientAccountHandler = ({
       emailSent: emailResult.sent,
       message: emailResult.sent
         ? 'Check your email to finish creating your client account.'
-        : 'Account magic link created. Email sending is not configured yet, so use the development link returned by this endpoint.',
+        : 'Account magic link created, but email delivery is off. Add RESEND_API_KEY and MAGIC_LINK_FROM_EMAIL in Netlify to send emails. For now, use the development link below.',
       ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
     });
   } catch (error) {

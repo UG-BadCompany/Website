@@ -56,7 +56,7 @@ export const createMagicLinkHandler = ({
       emailSent: emailResult.sent,
       message: emailResult.sent
         ? 'Check your email for a secure sign-in link.'
-        : 'Magic link created. Email sending is not configured yet, so use the development link returned by this endpoint.',
+        : 'Magic link created, but email delivery is off. Add RESEND_API_KEY and MAGIC_LINK_FROM_EMAIL in Netlify to send emails. For now, use the development link below.',
       ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
     });
   } catch (error) {
