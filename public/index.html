@@ -270,6 +270,119 @@
     .band .section-heading p { color: rgba(255,255,255,0.7); }
     .band .workflow-card { color: var(--ink); background: rgba(255,255,255,0.94); }
 
+
+    .estimate-shell {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 24px;
+      align-items: start;
+      padding: clamp(28px, 5vw, 54px);
+      border: 1px solid rgba(17, 17, 17, 0.1);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(216, 135, 52, 0.18), transparent 22rem),
+        rgba(255, 255, 255, 0.86);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .estimate-copy p {
+      color: var(--muted);
+      font-weight: 620;
+      line-height: 1.65;
+      margin: 18px 0 0;
+    }
+
+    .estimate-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 26px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .estimate-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .estimate-list li::before {
+      content: "✓";
+      display: grid;
+      place-items: center;
+      flex: 0 0 24px;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--rust), var(--copper));
+      font-size: 0.82rem;
+      font-weight: 950;
+    }
+
+    .estimate-form {
+      display: grid;
+      gap: 16px;
+      padding: clamp(20px, 4vw, 30px);
+      border: 1px solid rgba(17, 17, 17, 0.1);
+      border-radius: 28px;
+      background: #ffffff;
+      box-shadow: var(--card-shadow);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .field { display: grid; gap: 8px; }
+    .field-full { grid-column: 1 / -1; }
+
+    label {
+      color: var(--charcoal);
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(17, 17, 17, 0.14);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: var(--ink);
+      background: #fffaf4;
+      font: inherit;
+      outline: none;
+      transition: border 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    textarea { min-height: 132px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(173, 63, 24, 0.55);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(173, 63, 24, 0.1);
+    }
+
+    .form-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      font-weight: 620;
+    }
+
+    .portal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
     .footer {
       width: min(1180px, calc(100% - 36px));
       margin: 76px auto 30px;
@@ -283,7 +396,7 @@
       .nav-links a:not(.btn) { display: none; }
       .hero { grid-template-columns: 1fr; }
       .hero-media { min-height: auto; }
-      .trust-row, .grid { grid-template-columns: 1fr; }
+      .trust-row, .grid, .estimate-shell, .form-grid { grid-template-columns: 1fr; }
       .section-heading { display: block; }
       .section-heading p { margin-top: 14px; }
     }
@@ -308,8 +421,9 @@
         </a>
         <nav class="nav-links" aria-label="Primary links">
           <a href="#services">Services</a>
+          <a href="/login/">Login</a>
           <a href="#portal">Client Portal</a>
-          <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request Estimate</a>
+          <a class="btn btn-primary" href="#estimate">Request Estimate</a>
         </nav>
       </div>
     </header>
@@ -321,7 +435,7 @@
           <h1>Contracting help without the runaround.</h1>
           <p class="hero-copy">T&A Contracting is building a professional repair, maintenance, improvement, quote, scheduling, and payment experience for Arizona homeowners, landlords, property managers, and businesses.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request an Estimate</a>
+            <a class="btn btn-primary" href="#estimate">Request an Estimate</a>
             <a class="btn btn-secondary" href="#services">Explore Services</a>
           </div>
           <div class="trust-row" aria-label="Company highlights">
@@ -353,12 +467,87 @@
       <section class="section band" id="portal">
         <div class="section-heading">
           <h2>A modern job portal from request to payment.</h2>
-          <p>The next phase can support a complete front-end and back-end system for clients, admins, and workers.</p>
+          <p>The first portal pages are now started so clients, admins, and workers have a clear foundation for the future backend.</p>
         </div>
         <div class="grid">
-          <article class="workflow-card"><strong>Client Portal</strong><p>Clients can request new jobs, upload photos, review PDF quotes, accept work, pay invoices, and track job history.</p></article>
-          <article class="workflow-card"><strong>Admin Portal</strong><p>Admins can manage clients, workers, quotes, PDFs, schedules, invoices, payments, files, and communication.</p></article>
-          <article class="workflow-card"><strong>Worker Portal</strong><p>Workers can see assigned jobs, notes, checklists, access details, photos, material notes, and status updates.</p></article>
+          <article class="workflow-card"><strong>Client Portal</strong><p>Clients can request jobs, review quotes, accept work, pay invoices, and track job history.</p></article>
+          <article class="workflow-card"><strong>Admin Portal</strong><p>Admins can manage requests, clients, workers, quotes, invoices, schedules, and files.</p></article>
+          <article class="workflow-card"><strong>Worker Portal</strong><p>Workers can view assigned jobs, access notes, update tasks, and upload completion photos.</p></article>
+        </div>
+        <div class="portal-actions">
+          <a class="btn btn-primary" href="/login/">Open Portal Login</a>
+          <a class="btn btn-secondary" href="/portal/client/">Preview Client Dashboard</a>
+        </div>
+      </section>
+
+      <section class="section" id="estimate">
+        <div class="estimate-shell">
+          <div class="estimate-copy">
+            <div class="eyebrow">Request Work</div>
+            <h2>Tell us what needs to get handled.</h2>
+            <p>Use this form to send T&A Contracting the basics for a repair, maintenance item, installation, punch list, or property project. The form is wired for Netlify Forms so submissions can be captured from the static site.</p>
+            <ul class="estimate-list">
+              <li>Share contact info and the best way to reach you.</li>
+              <li>Describe the job, property, and preferred timeframe.</li>
+              <li>Upload photos when available so quoting is easier.</li>
+            </ul>
+          </div>
+
+          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data">
+            <input type="hidden" name="form-name" value="estimate-request">
+            <p hidden><label>Don’t fill this out: <input name="bot-field"></label></p>
+            <div class="form-grid">
+              <div class="field">
+                <label for="name">Name *</label>
+                <input id="name" name="name" type="text" autocomplete="name" required>
+              </div>
+              <div class="field">
+                <label for="phone">Phone *</label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" required>
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email">
+              </div>
+              <div class="field">
+                <label for="city">City / Area</label>
+                <input id="city" name="city" type="text" autocomplete="address-level2">
+              </div>
+              <div class="field">
+                <label for="service">Type of Work *</label>
+                <select id="service" name="service" required>
+                  <option value="">Select one</option>
+                  <option>Home repair</option>
+                  <option>Property maintenance</option>
+                  <option>Painting / finish work</option>
+                  <option>Fixture work</option>
+                  <option>Installation</option>
+                  <option>Commercial support</option>
+                  <option>Other / not sure</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="timeframe">Preferred Timeframe</label>
+                <select id="timeframe" name="timeframe">
+                  <option>Flexible</option>
+                  <option>As soon as possible</option>
+                  <option>This week</option>
+                  <option>Next 2–3 weeks</option>
+                  <option>Planning ahead</option>
+                </select>
+              </div>
+              <div class="field field-full">
+                <label for="description">Project Details *</label>
+                <textarea id="description" name="description" placeholder="Tell us what needs to be repaired, installed, replaced, maintained, or improved." required></textarea>
+              </div>
+              <div class="field field-full">
+                <label for="photos">Photo / File</label>
+                <input id="photos" name="photos" type="file" accept="image/*,.pdf">
+              </div>
+            </div>
+            <p class="form-note">Submitting this form does not confirm scheduling. T&A Contracting will review the request and follow up with next steps.</p>
+            <button class="btn btn-primary" type="submit">Submit Estimate Request</button>
+          </form>
         </div>
       </section>
     </main>

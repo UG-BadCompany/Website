@@ -25,7 +25,7 @@ if (!existsSync(path.join(root, 'index.html'))) {
 
 createServer(async (request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host}`);
-  const safePath = url.pathname === '/' ? '/index.html' : url.pathname;
+  const safePath = url.pathname.endsWith('/') ? `${url.pathname}index.html` : url.pathname;
   const filePath = path.normalize(path.join(root, safePath));
 
   if (!filePath.startsWith(root)) {
