@@ -79,9 +79,21 @@ Account creation should go live in the same milestone as magic-link login. A cli
 The `/login/` page should stop sending users to a dashboard preview before the auth provider is connected. The intended order is:
 
 1. Configure the auth provider environment variables.
-2. Connect `POST /api/auth/magic-link` to the provider's passwordless email flow.
-3. Connect `POST /api/auth/client-account` to create or stage the client profile, then send the same verification/magic link.
-4. Add `GET /api/me` to verify the session and load `app_users`, `roles`, and permissions.
-5. Gate `/dashboard/` behind the verified session and render only role-scoped dashboard data.
+2. `POST /api/auth/magic-link` creates a hashed, expiring magic-link token in Netlify Database and sends it by email when `RESEND_API_KEY` is configured.
+3. `POST /api/auth/client-account` stages the client name/phone with the same hashed token flow, then links or creates `app_users` after verification.
+4. `GET /api/auth/verify` consumes the token, creates an HttpOnly session cookie, and redirects to `/dashboard/`.
+5. `GET /api/me` verifies the session and loads `app_users`, `roles`, and permissions.
+6. Gate `/dashboard/` behind the verified session and render only role-scoped dashboard data.
 
 Until those steps are complete, login forms may validate input and report readiness, but they must not claim that a user has signed in or that the dashboard is secure.
+
+
+## Implemented first-party magic-link flow
+
+The current implementation uses first-party passwordless login tables instead of a separate hosted-auth adapter:
+
+- `auth_magic_links` stores only SHA-256 token hashes, purpose, optional staged client profile fields, expiration, and consumption time.
+- `auth_sessions` stores only SHA-256 session hashes and expiration metadata.
+- Raw magic-link tokens and raw session tokens are never stored in the database.
+- Email delivery uses Resend when `RESEND_API_KEY` and a from-address are configured. Without Resend, the endpoint returns a development-only magic link so the flow can be tested before production email is ready.
+- `/api/me` is the dashboard session check and should become the source of role-scoped dashboard rendering.

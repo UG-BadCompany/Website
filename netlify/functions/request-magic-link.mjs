@@ -1,13 +1,22 @@
 import {
-  authProviderStatus,
+  createMagicLinkUrl,
+  createToken,
+  hashToken,
   json,
+  loadDatabase,
+  MAGIC_LINK_TTL_MINUTES,
+  minutesFromNow,
   normalizeAuthEmailPayload,
-  notConfiguredResponse,
   parseJsonBody,
+  sendMagicLinkEmail,
   validateEmail,
 } from './auth-utils.mjs';
 
-export const createMagicLinkHandler = ({ getAuthProviderStatus = authProviderStatus } = {}) => async (request) => {
+export const createMagicLinkHandler = ({
+  getDatabase = loadDatabase,
+  makeToken = createToken,
+  sendEmail = sendMagicLinkEmail,
+} = {}) => async (request) => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
@@ -30,18 +39,34 @@ export const createMagicLinkHandler = ({ getAuthProviderStatus = authProviderSta
     return json(422, { ok: false, message: validationError });
   }
 
-  const authProvider = getAuthProviderStatus();
+  try {
+    const db = await getDatabase();
+    const token = makeToken();
+    const magicLinkUrl = createMagicLinkUrl(request, token);
 
-  if (!authProvider.configured) {
-    return notConfiguredResponse();
+    await db.sql`
+      insert into auth_magic_links (email, token_hash, purpose, expires_at)
+      values (${payload.email}, ${hashToken(token)}, 'sign_in', ${minutesFromNow(MAGIC_LINK_TTL_MINUTES)}::timestamptz)
+    `;
+
+    const emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'sign_in' });
+
+    return json(200, {
+      ok: true,
+      emailSent: emailResult.sent,
+      message: emailResult.sent
+        ? 'Check your email for a secure sign-in link.'
+        : 'Magic link created. Email sending is not configured yet, so use the development link returned by this endpoint.',
+      ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
+    });
+  } catch (error) {
+    console.error('Failed to create magic link', error);
+
+    return json(500, {
+      ok: false,
+      message: 'We could not create a secure sign-in link right now. Please try again shortly.',
+    });
   }
-
-  return json(501, {
-    ok: false,
-    code: 'AUTH_PROVIDER_ADAPTER_PENDING',
-    provider: authProvider.provider,
-    message: 'Auth provider settings are present, but the provider-specific magic-link adapter still needs to be implemented.',
-  });
 };
 
 export default createMagicLinkHandler();

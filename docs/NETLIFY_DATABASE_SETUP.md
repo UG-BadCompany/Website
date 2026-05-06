@@ -79,3 +79,18 @@ npm install
 ```
 
 The endpoint uses `@netlify/database`, which automatically selects the correct Netlify Database branch for production deploys and deploy previews.
+
+## Magic-link auth tables
+
+The second migration is:
+
+```text
+netlify/database/migrations/0002_magic_link_auth.sql
+```
+
+It adds first-party passwordless login storage:
+
+- `auth_magic_links` for expiring, single-use magic-link token hashes.
+- `auth_sessions` for HttpOnly session cookie hashes.
+
+Only SHA-256 hashes are stored for magic-link tokens and session tokens. Raw tokens exist only in the emailed link or browser cookie.

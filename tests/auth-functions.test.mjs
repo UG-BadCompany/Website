@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  authProviderStatus,
+  hashToken,
   normalizeClientAccountPayload,
   validateClientAccount,
   validateEmail,
 } from '../netlify/functions/auth-utils.mjs';
 import { createClientAccountHandler } from '../netlify/functions/create-client-account.mjs';
+import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createMagicLinkHandler } from '../netlify/functions/request-magic-link.mjs';
+import { createVerifyMagicLinkHandler } from '../netlify/functions/verify-magic-link.mjs';
 
-const request = (body, method = 'POST') => new Request('https://example.test/api/auth', {
+const request = (body, method = 'POST', url = 'https://example.test/api/auth') => new Request(url, {
   method,
   body: body === undefined ? undefined : JSON.stringify(body),
   headers: body === undefined ? undefined : { 'content-type': 'application/json' },
@@ -18,6 +20,14 @@ const request = (body, method = 'POST') => new Request('https://example.test/api
 const readJson = async (response) => ({
   status: response.status,
   body: await response.json(),
+});
+
+const createMockDb = (responses = []) => ({
+  queries: [],
+  sql(strings, ...values) {
+    this.queries.push({ text: strings.join('?'), values });
+    return responses.shift() || [];
+  },
 });
 
 test('auth helper normalizes account fields and validates email/phone input', () => {
@@ -36,79 +46,110 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
 });
 
-test('auth provider status requires all provider environment settings', () => {
-  const original = {
-    AUTH_PROVIDER: process.env.AUTH_PROVIDER,
-    AUTH_ISSUER_URL: process.env.AUTH_ISSUER_URL,
-    AUTH_CLIENT_ID: process.env.AUTH_CLIENT_ID,
-    AUTH_CLIENT_SECRET: process.env.AUTH_CLIENT_SECRET,
-  };
-
-  delete process.env.AUTH_PROVIDER;
-  delete process.env.AUTH_ISSUER_URL;
-  delete process.env.AUTH_CLIENT_ID;
-  delete process.env.AUTH_CLIENT_SECRET;
-
-  assert.deepEqual(authProviderStatus(), { provider: '', configured: false });
-
-  process.env.AUTH_PROVIDER = 'Clerk';
-  process.env.AUTH_ISSUER_URL = 'https://issuer.example';
-  process.env.AUTH_CLIENT_ID = 'client-id';
-  process.env.AUTH_CLIENT_SECRET = 'client-secret';
-
-  assert.deepEqual(authProviderStatus(), { provider: 'clerk', configured: true });
-
-  for (const [key, value] of Object.entries(original)) {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-});
-
-test('magic-link endpoint validates email before reporting auth readiness', async () => {
-  const handler = createMagicLinkHandler({ getAuthProviderStatus: () => ({ provider: '', configured: false }) });
+test('magic-link endpoint stores a hashed token and returns a development link when email is not configured', async () => {
+  const db = createMockDb();
+  const handler = createMagicLinkHandler({
+    getDatabase: async () => db,
+    makeToken: () => 'magic-token',
+    sendEmail: async () => ({ sent: false }),
+  });
 
   assert.deepEqual(await readJson(await handler(request({ email: 'bad' }))), {
     status: 422,
     body: { ok: false, message: 'Enter a valid email address.' },
   });
 
-  assert.deepEqual(await readJson(await handler(request({ email: 'client@example.com' }))), {
-    status: 501,
-    body: {
-      ok: false,
-      code: 'AUTH_PROVIDER_NOT_CONFIGURED',
-      message: 'Secure magic-link login is not connected yet. Configure the auth provider environment variables before turning on account creation or dashboard access.',
-    },
-  });
+  const response = await readJson(await handler(request({ email: 'Client@Example.com' }, 'POST', 'https://site.test/login/')));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.ok, true);
+  assert.equal(response.body.emailSent, false);
+  assert.equal(response.body.devMagicLink, 'https://site.test/api/auth/verify?token=magic-token');
+  assert.equal(db.queries.length, 1);
+  assert.match(db.queries[0].text, /insert into auth_magic_links/);
+  assert.equal(db.queries[0].values[0], 'client@example.com');
+  assert.equal(db.queries[0].values[1], hashToken('magic-token'));
 });
 
-test('client-account endpoint validates required fields and reports adapter readiness', async () => {
-  const notConfiguredHandler = createClientAccountHandler({ getAuthProviderStatus: () => ({ provider: '', configured: false }) });
+test('client-account endpoint stages profile fields with a hashed magic-link token', async () => {
+  const db = createMockDb();
+  const handler = createClientAccountHandler({
+    getDatabase: async () => db,
+    makeToken: () => 'account-token',
+    sendEmail: async () => ({ sent: true }),
+  });
 
-  assert.deepEqual(await readJson(await notConfiguredHandler(request({ name: '', email: '', phone: '' }))), {
+  assert.deepEqual(await readJson(await handler(request({ name: '', email: '', phone: '' }))), {
     status: 422,
     body: { ok: false, message: 'Name is required.' },
   });
 
-  assert.equal(
-    (await readJson(await notConfiguredHandler(request({ name: 'Client', email: 'client@example.com', phone: '555-0100' })))).status,
-    501,
-  );
+  const response = await readJson(await handler(request({ name: 'Client', email: 'client@example.com', phone: '555-0100' })));
 
-  const configuredHandler = createClientAccountHandler({ getAuthProviderStatus: () => ({ provider: 'clerk', configured: true }) });
-  const response = await readJson(await configuredHandler(request({ name: 'Client', email: 'client@example.com', phone: '555-0100' })));
-
-  assert.equal(response.status, 501);
-  assert.equal(response.body.code, 'AUTH_PROVIDER_ADAPTER_PENDING');
-  assert.equal(response.body.provider, 'clerk');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.ok, true);
+  assert.equal(response.body.emailSent, true);
+  assert.equal(response.body.devMagicLink, undefined);
+  assert.equal(db.queries.length, 1);
+  assert.match(db.queries[0].text, /insert into auth_magic_links/);
+  assert.deepEqual(db.queries[0].values.slice(0, 4), [
+    'client@example.com',
+    hashToken('account-token'),
+    'Client',
+    '555-0100',
+  ]);
 });
 
-test('auth endpoints accept honeypot submissions without exposing readiness', async () => {
-  const magicLinkHandler = createMagicLinkHandler({ getAuthProviderStatus: () => ({ provider: 'clerk', configured: true }) });
-  const clientAccountHandler = createClientAccountHandler({ getAuthProviderStatus: () => ({ provider: 'clerk', configured: true }) });
+test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
+    [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+    [],
+    [],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries.length, 5);
+  assert.match(db.queries[0].text, /from auth_magic_links/);
+  assert.equal(db.queries[0].values[0], hashToken('magic-token'));
+  assert.match(db.queries[4].text, /insert into auth_sessions/);
+  assert.equal(db.queries[4].values[1], hashToken('session-token'));
+});
+
+test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }, { key: 'admin', name: 'Admin' }],
+  ]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['client', 'admin']);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+test('auth endpoints accept honeypot submissions without writing tokens', async () => {
+  let openedDatabase = false;
+  const getDatabase = async () => {
+    openedDatabase = true;
+    return createMockDb();
+  };
+  const magicLinkHandler = createMagicLinkHandler({ getDatabase });
+  const clientAccountHandler = createClientAccountHandler({ getDatabase });
 
   assert.deepEqual(await readJson(await magicLinkHandler(request({ 'bot-field': 'spam' }))), {
     status: 200,
@@ -119,4 +160,6 @@ test('auth endpoints accept honeypot submissions without exposing readiness', as
     status: 200,
     body: { ok: true, message: 'If this account can be created, a secure link will be sent.' },
   });
+
+  assert.equal(openedDatabase, false);
 });

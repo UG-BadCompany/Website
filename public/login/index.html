@@ -82,6 +82,14 @@
           });
           const result = await response.json().catch(() => ({}));
           setStatus(result.message || 'Secure login is not ready yet.', response.ok && result.ok ? 'success' : 'error');
+          if (result.devMagicLink) {
+            const link = document.createElement('a');
+            link.href = result.devMagicLink;
+            link.textContent = 'Open development magic link';
+            link.style.display = 'block';
+            link.style.marginTop = '8px';
+            status.appendChild(link);
+          }
         } catch {
           setStatus('Secure login endpoint is not available in this preview. Deploy to Netlify Functions after configuring auth.', 'error');
         } finally {
