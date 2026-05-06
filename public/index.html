@@ -368,13 +368,13 @@
 
       <section class="section" id="plan">
         <div class="section-heading">
-          <h2>Deployment fixed for Netlify out hosting.</h2>
-          <p>The build now creates the required <strong>out</strong> directory, matching the publish path Netlify is still using.</p>
+          <h2>Deployment fixed for Netlify static hosting.</h2>
+          <p>The repository now includes a build script that creates the required <strong>out</strong> publish directory so Netlify has files to deploy.</p>
         </div>
         <div class="grid">
           <article class="service-card"><strong>GitHub Source</strong><p>All files stay versioned in GitHub and Netlify can pull the latest commit automatically.</p></article>
-          <article class="service-card"><strong>Build Command</strong><p><code>npm run build</code> copies the committed site into <code>out</code> before deployment.</p></article>
-          <article class="service-card"><strong>Publish Directory</strong><p>Netlify publishes <code>out</code>, and the build now guarantees that directory exists.</p></article>
+          <article class="service-card"><strong>Build Command</strong><p><code>npm run build</code> generates a clean static site in <code>out/</code>.</p></article>
+          <article class="service-card"><strong>Publish Directory</strong><p>Netlify is configured to publish <code>out</code>, matching the generated build output.</p></article>
         </div>
       </section>
     </main>

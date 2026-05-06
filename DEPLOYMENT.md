@@ -1,14 +1,8 @@
 # Netlify Deployment Fix
 
-The latest Netlify logs show the build completes, but the deploy fails because Netlify is still configured to publish `out`:
+The Netlify error was caused by the deploy step looking for a publish directory named `out` when that directory did not exist after the build.
 
-```text
-Custom publish path detected. Proceeding with the specified path: 'out'
-Deploy did not succeed: Deploy directory 'out' does not exist
-publish: /opt/build/repo/out
-```
-
-Because the Netlify dashboard is still forcing `out`, this repo now matches that setting instead of fighting it.
+This repository now fixes that by making the build command create the same directory Netlify publishes.
 
 ## Current Netlify settings
 
@@ -18,37 +12,31 @@ Use these settings in Netlify:
 - **Publish directory:** `out`
 - **Node version:** `20`
 
-These settings are committed in `netlify.toml`.
+These settings are committed in `netlify.toml`, so Netlify should read them automatically from the repository.
 
 ## Why this fixes the error
 
-The build now creates the same folder Netlify is trying to publish:
+Netlify was failing with:
 
-1. `npm run build` validates `public/index.html`.
-2. The build removes any stale `out/` folder.
-3. The build copies `public/` into `out/`.
-4. Netlify publishes `out/` successfully.
+```text
+Deploy did not succeed: Deploy directory 'out' does not exist
+```
 
-A `postbuild` safety script also verifies `out/index.html` exists. If `out/` is missing but `public/index.html` exists, it recreates `out/` from `public/`.
+The build script now copies the static website from `public/` into `out/` every time `npm run build` runs. That means Netlify has a real deploy directory to publish.
 
 ## Local verification
 
-Run:
+Run this before pushing changes:
 
 ```bash
-rm -rf out
 npm run build
-ls -la out
 ```
 
-Expected result:
+A successful build prints:
 
 ```text
-Static site built successfully. Netlify will publish ./out
-Netlify publish directory verified: ./out
+Static site built successfully into ./out
 ```
-
-`out/index.html` should exist.
 
 To preview locally:
 
@@ -58,24 +46,11 @@ npm start
 
 Then open <http://localhost:3000>.
 
-## Important branch/config warning
+## Important note for future Next.js conversion
 
-If a future Netlify log still shows Next.js routes like `/portal/admin`, `/_not-found`, or headers for `/_next/static/*`, then Netlify is deploying a different branch or a different version of the repository than this static fix.
+This current fix deploys the site as a static website. If the project is later converted into the full Next.js client/admin/worker portal, update Netlify to one of these approaches:
 
-Check these in Netlify:
+1. **Full Next.js on Netlify:** use the Next.js plugin/runtime, remove `NETLIFY_NEXT_PLUGIN_SKIP`, and use the Netlify-recommended Next.js publish setting.
+2. **Static Next.js export:** configure Next.js static export so `next build` creates `out/`, then keep the publish directory as `out`.
 
-1. Go to **Site configuration → Build & deploy → Continuous deployment**.
-2. Confirm Netlify is deploying the Git branch that contains this commit.
-3. Confirm the repository is `UG-BadCompany/Website` if that is the intended repo.
-4. Keep **Publish directory** as `out` for this fix.
-5. Keep **Build command** as `npm run build`.
-6. Trigger **Clear cache and deploy site**.
-
-## Future Next.js version
-
-If the site is later converted back into a full Next.js application, choose one deployment mode:
-
-1. **Static export:** configure Next.js with `output: 'export'` so `next build` creates `out/`.
-2. **Netlify Next.js runtime:** remove `NETLIFY_NEXT_PLUGIN_SKIP`, remove static `out` publishing, and let the Netlify Next.js runtime handle deployment.
-
-Do not mix both modes. The current production fix is static `out` publishing because that is what the Netlify logs show the site is using.
+Do not mix the two approaches. The error usually happens when Netlify is configured for a static `out` deploy, but the build does not generate `out`.

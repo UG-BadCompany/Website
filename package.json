@@ -1,14 +1,22 @@
 {
   "name": "ta-contracting-website",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Deployable T&A Contracting website shell for Netlify.",
   "scripts": {
-    "build": "node scripts/build-static-site.mjs",
-    "postbuild": "node scripts/ensure-netlify-out.mjs",
-    "start": "node scripts/serve-static-site.mjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
-  "engines": {
-    "node": ">=18"
+  "dependencies": {
+    "next": "15.3.6",
+    "next": "15.3.4",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "@types/react": "19.0.12",
+    "@types/react-dom": "19.0.4",
+    "typescript": "5.8.3"
   }
 }
