@@ -8,9 +8,10 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "16.0.7",
-    "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "next": "15.3.6",
+    "next": "15.3.4",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
   },
   "devDependencies": {
     "@types/node": "22.15.30",
