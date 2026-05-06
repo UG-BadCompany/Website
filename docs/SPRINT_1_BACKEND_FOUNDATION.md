@@ -55,3 +55,10 @@ Minimum tables for the backend phase:
 ## Next implementation step
 
 Convert this static shell into a real app with authentication, database-backed profiles, and role-aware dashboard rendering.
+
+## Added in Sprint 1B
+
+- `.env.example` for Supabase, Stripe, Resend, and site URL placeholders.
+- `supabase/schema.sql` with the first profiles, roles, properties, job requests, files, and Row Level Security policies.
+- `docs/PERMISSIONS_MATRIX.md` for client, worker, and admin access rules.
+- `docs/AUTH_IMPLEMENTATION_PLAN.md` for the single-login implementation path.
