@@ -3,6 +3,8 @@ import { jobStatuses, portalCards } from "../../components/data";
 import { currency } from "../../lib/format";
 import { readDatabase } from "../../lib/database";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Admin Portal", description: "Admin dashboard for T&A Contracting." };
 
 export default async function AdminPortalPage() {

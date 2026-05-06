@@ -4,6 +4,8 @@ import { currency, shortDate } from "../../../lib/format";
 import { quotePdfText } from "../../../lib/pdf";
 import { readDatabase } from "../../../lib/database";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Quote Review", description: "Review, accept, decline, or request changes for a T&A Contracting quote." };
 
 export default async function QuoteReviewPage(context: { params: Promise<{ quoteId: string }> }) {

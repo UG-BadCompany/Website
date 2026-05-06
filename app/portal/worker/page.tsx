@@ -3,6 +3,8 @@ import { getSession } from "../../lib/auth";
 import { readDatabase } from "../../lib/database";
 import { jobStatuses } from "../../components/data";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Worker Portal", description: "Worker dashboard for assigned T&A Contracting jobs." };
 
 const tasks = ["Review scope and access notes", "Upload before photos", "Complete checklist", "Add material and time notes", "Upload completion photos", "Flag issues for admin review"];

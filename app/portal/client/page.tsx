@@ -4,6 +4,8 @@ import { getSession } from "../../lib/auth";
 import { currency, shortDate } from "../../lib/format";
 import { findCurrentUser, readDatabase } from "../../lib/database";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Client Portal", description: "Client dashboard for T&A Contracting." };
 
 export default async function ClientPortalPage() {

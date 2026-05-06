@@ -19,6 +19,8 @@
 - [x] Added Resend transactional email sending with notification persistence and PDF attachment support.
 - [x] Added production setup documentation for Supabase, Resend, Stripe, deployed site URL, and local environment configuration.
 - [x] Added `.gitignore` protections for local dependencies, builds, environment files, and runtime data.
+- [x] Rewrote the request-estimate page JSX to resolve the Vercel parser failure reported at `app/request-estimate/page.tsx`.
+- [x] Marked data-backed portal pages as dynamic so Vercel does not attempt to statically pre-render Supabase-backed dashboards.
 - [x] Created this job completed check file.
 
 ## Not Yet Complete / Next Work
