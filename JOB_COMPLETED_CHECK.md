@@ -21,6 +21,7 @@
 - [x] Added `.gitignore` protections for local dependencies, builds, environment files, and runtime data.
 - [x] Rewrote the request-estimate page JSX to resolve the Vercel parser failure reported at `app/request-estimate/page.tsx`.
 - [x] Marked data-backed portal pages as dynamic so Vercel does not attempt to statically pre-render Supabase-backed dashboards.
+- [x] Added fresh PR notes so the old conflicted GitHub PR can be closed and replaced with a clean PR from the latest branch state.
 - [x] Created this job completed check file.
 
 ## Not Yet Complete / Next Work
