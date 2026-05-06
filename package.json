@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node scripts/build-static-site.mjs",
     "postbuild": "node scripts/ensure-netlify-out.mjs",
-    "start": "node scripts/serve-static-site.mjs"
+    "start": "node scripts/serve-static-site.mjs",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20.12.2"

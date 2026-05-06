@@ -1,5 +1,3 @@
-import { getDatabase } from '@netlify/database';
-
 const REQUIRED_FIELDS = ['name', 'phone', 'service', 'description'];
 const MAX_FIELD_LENGTHS = {
   name: 140,
@@ -20,7 +18,7 @@ const json = (status, body) => Response.json(body, {
 
 const clean = (value) => (typeof value === 'string' ? value.trim() : '');
 
-const normalizePayload = (payload) => {
+export const normalizePayload = (payload) => {
   const normalized = {};
 
   for (const [field, maxLength] of Object.entries(MAX_FIELD_LENGTHS)) {
@@ -32,7 +30,7 @@ const normalizePayload = (payload) => {
   return normalized;
 };
 
-const validatePayload = (payload) => {
+export const validatePayload = (payload) => {
   const missingFields = REQUIRED_FIELDS.filter((field) => !payload[field]);
 
   if (missingFields.length > 0) {
@@ -46,7 +44,13 @@ const validatePayload = (payload) => {
   return null;
 };
 
-export default async (request) => {
+const loadDatabase = async () => {
+  const { getDatabase } = await import('@netlify/database');
+
+  return getDatabase();
+};
+
+export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
@@ -70,7 +74,7 @@ export default async (request) => {
   }
 
   try {
-    const db = getDatabase();
+    const db = await getDatabase();
     const [jobRequest] = await db.sql`
       insert into job_requests (
         requester_name,
@@ -117,6 +121,8 @@ export default async (request) => {
     });
   }
 };
+
+export default createJobRequestHandler();
 
 export const config = {
   path: '/api/job-requests',
