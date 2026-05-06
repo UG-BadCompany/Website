@@ -1,13 +1,11 @@
 [build]
   command = "npm run build"
-  publish = "public"
+  publish = "out"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
 [[headers]]
-  for = "/*"
+  for = "/_next/static/*"
   [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=31536000, immutable"
