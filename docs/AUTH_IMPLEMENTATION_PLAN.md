@@ -71,3 +71,17 @@ The database stores app-level user records in `app_users` and links those record
 - Use server-side Netlify Functions for privileged database operations.
 - Application code must enforce permissions before returning data.
 - Log important admin actions to `audit_events`.
+
+## Timing decision: magic links, account creation, and dashboard access
+
+Account creation should go live in the same milestone as magic-link login. A client account is not considered created until the email is verified by the same secure magic-link flow used for returning users.
+
+The `/login/` page should stop sending users to a dashboard preview before the auth provider is connected. The intended order is:
+
+1. Configure the auth provider environment variables.
+2. Connect `POST /api/auth/magic-link` to the provider's passwordless email flow.
+3. Connect `POST /api/auth/client-account` to create or stage the client profile, then send the same verification/magic link.
+4. Add `GET /api/me` to verify the session and load `app_users`, `roles`, and permissions.
+5. Gate `/dashboard/` behind the verified session and render only role-scoped dashboard data.
+
+Until those steps are complete, login forms may validate input and report readiness, but they must not claim that a user has signed in or that the dashboard is secure.
