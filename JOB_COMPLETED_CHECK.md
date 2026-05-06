@@ -9,12 +9,13 @@
 - [x] Added shared header, footer, service data, gallery placeholders, portal preview data, SEO metadata, and responsive global styling.
 - [x] Kept contact details as pending because the business phone number and email are not confirmed yet.
 - [x] Included the current service area: Phoenix, Goodyear, Surprise, Scottsdale, Chandler, and surrounding Arizona communities.
-- [x] Updated Next.js from vulnerable 15.3.4 to 15.5.10 and React/React DOM to 19.2.1 after Vercel blocked deployment for the React Server Components security advisory.
+- [x] Updated Next.js from vulnerable 15.3.4 to patched 15.3.6 after Vercel blocked the build for CVE-2025-66478.
 - [x] Created this completed work tracking file.
 
 ## Not Yet Complete / Next Work
 
 - [ ] Re-run the Vercel build after the patched Next.js version is deployed.
+- [ ] Run a successful Vercel build from this simpler clean starting point.
 - [ ] Add real phone number and business email when confirmed.
 - [ ] Add real project photos, testimonials, Google review links, and any verified trust claims.
 - [ ] Phase 2: add authentication and persistent portal accounts.
