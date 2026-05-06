@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T&A Contracting | Arizona Maintenance, Repairs & Improvements</title>
+  <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quotes, client requests, and online job management.">
+  <style>
+    :root {
+      --ink: #161616;
+      --charcoal: #222222;
+      --rust: #b54118;
+      --orange: #df8d27;
+      --sand: #e7c7a6;
+      --cream: #fff8ef;
+      --white: #ffffff;
+      --muted: #6f655d;
+      --line: rgba(22, 22, 22, 0.12);
+      --shadow: 0 24px 70px rgba(22, 22, 22, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(135deg, var(--cream), #ffffff 45%, #f5e1cb);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .site-shell {
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 22px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--rust), var(--orange));
+      border: 4px solid var(--ink);
+      box-shadow: 7px 7px 0 var(--sand);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--charcoal);
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      font-weight: 900;
+      box-shadow: 5px 5px 0 rgba(22, 22, 22, 0.18);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 7px 7px 0 rgba(22, 22, 22, 0.2); }
+    .btn-primary { color: var(--white); background: var(--rust); }
+    .btn-secondary { color: var(--ink); background: var(--white); }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 48px;
+      align-items: center;
+      width: min(1180px, calc(100% - 36px));
+      margin: 38px auto 0;
+      padding: 56px;
+      border: 2px solid var(--ink);
+      border-radius: 34px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: var(--rust);
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 42px;
+      height: 4px;
+      background: var(--rust);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 7vw, 6.7rem);
+      line-height: 0.92;
+      letter-spacing: -0.075em;
+    }
+
+    .hero-copy {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(1.08rem, 2vw, 1.28rem);
+      line-height: 1.65;
+      font-weight: 650;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+    }
+
+    .hero-card {
+      position: relative;
+      padding: 28px;
+      border: 2px solid var(--ink);
+      border-radius: 28px;
+      background: linear-gradient(155deg, #1f1f1f, #101010);
+      color: var(--white);
+      overflow: hidden;
+    }
+
+    .sun {
+      position: absolute;
+      right: -70px;
+      top: -80px;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--orange), var(--rust));
+      opacity: 0.88;
+    }
+
+    .house-line {
+      position: relative;
+      margin: 60px 0 30px;
+      height: 130px;
+      border-bottom: 18px solid var(--white);
+    }
+
+    .house-line::before {
+      content: "";
+      position: absolute;
+      inset: 24px 22px auto 22px;
+      height: 120px;
+      transform: skewY(-18deg);
+      border-top: 16px solid var(--white);
+      border-right: 16px solid var(--white);
+    }
+
+    .mini-logo {
+      position: relative;
+      font-size: clamp(4rem, 10vw, 8rem);
+      line-height: 0.8;
+      font-weight: 1000;
+      letter-spacing: -0.12em;
+    }
+
+    .mini-logo span { color: var(--rust); }
+
+    .promise {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .promise div {
+      padding: 14px 10px;
+      border: 1px solid rgba(255,255,255,0.26);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .section {
+      width: min(1180px, calc(100% - 36px));
+      margin: 72px auto;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      max-width: 800px;
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 4.2rem);
+      line-height: 0.96;
+      letter-spacing: -0.06em;
+    }
+
+    .section-heading p {
+      max-width: 420px;
+      color: var(--muted);
+      font-weight: 650;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .service-card, .workflow-card {
+      padding: 24px;
+      border: 2px solid var(--ink);
+      border-radius: 24px;
+      background: var(--white);
+      box-shadow: 8px 8px 0 rgba(181, 65, 24, 0.12);
+    }
+
+    .service-card strong, .workflow-card strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+      font-weight: 950;
+    }
+
+    .service-card p, .workflow-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 650;
+    }
+
+    .band {
+      padding: 42px;
+      border-radius: 30px;
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .band .grid { margin-top: 24px; }
+    .band .workflow-card { color: var(--ink); }
+
+    .footer {
+      width: min(1180px, calc(100% - 36px));
+      margin: 70px auto 28px;
+      padding: 26px 0 0;
+      border-top: 2px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 860px) {
+      .nav { align-items: flex-start; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 28px; }
+      .section-heading { display: block; }
+      .grid { grid-template-columns: 1fr; }
+      .promise { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="nav" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="T&A Contracting home">
+        <span class="brand-mark">T&A</span>
+        <span>T&A Contracting</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary links">
+        <a href="#services">Services</a>
+        <a href="#portal">Portal</a>
+        <a href="#plan">Build Plan</a>
+        <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request Estimate</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Arizona Native • Maintenance • Anything • Everything</div>
+          <h1>More than a handyman.</h1>
+          <p class="hero-copy">T&A Contracting is being built as a professional Arizona maintenance, repair, improvement, quote, scheduling, and payment platform for homeowners, landlords, property managers, and businesses.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request an Estimate</a>
+            <a class="btn btn-secondary" href="#portal">View Client Portal Plan</a>
+          </div>
+        </div>
+        <aside class="hero-card" aria-label="T&A Contracting brand card">
+          <div class="sun"></div>
+          <div class="house-line"></div>
+          <div class="mini-logo">T<span>&amp;</span>A</div>
+          <div class="promise">
+            <div>Repairs</div>
+            <div>Maintenance</div>
+            <div>Improvements</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" id="services">
+        <div class="section-heading">
+          <h2>Professional service categories ready for launch.</h2>
+          <p>Clear, conversion-focused service cards help customers understand what T&A Contracting handles before they submit a job request.</p>
+        </div>
+        <div class="grid">
+          <article class="service-card"><strong>Home Repairs</strong><p>Drywall, doors, trim, punch lists, fixtures, cabinets, and minor carpentry.</p></article>
+          <article class="service-card"><strong>Property Maintenance</strong><p>Rental turns, preventive maintenance, move-in/move-out repairs, and landlord support.</p></article>
+          <article class="service-card"><strong>Painting & Finish Work</strong><p>Interior painting, touch-ups, patching, caulking, prep, and clean finish details.</p></article>
+          <article class="service-card"><strong>Fixture Work</strong><p>Faucets, toilets, lighting, fans, outlets, switches, smoke detectors, and related installs.</p></article>
+          <article class="service-card"><strong>Installations</strong><p>Shelving, TV mounting, hardware, appliance support, and general improvements.</p></article>
+          <article class="service-card"><strong>Commercial Support</strong><p>Small business and property manager maintenance with organized quote-to-payment tracking.</p></article>
+        </div>
+      </section>
+
+      <section class="section band" id="portal">
+        <div class="section-heading">
+          <h2>Full portal workflow: request, quote, approve, pay, track.</h2>
+          <p>Built to become a complete front-end and back-end system for clients, admins, and workers.</p>
+        </div>
+        <div class="grid">
+          <article class="workflow-card"><strong>Client Portal</strong><p>Clients can request new jobs, upload photos, review PDF quotes, accept work, pay invoices, and track job history.</p></article>
+          <article class="workflow-card"><strong>Admin Portal</strong><p>Admins can manage clients, workers, quotes, PDFs, schedules, invoices, payments, files, and communication.</p></article>
+          <article class="workflow-card"><strong>Worker Portal</strong><p>Workers can see assigned jobs, notes, checklists, access details, photos, material notes, and status updates.</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="plan">
+        <div class="section-heading">
+          <h2>Deployment fixed for Netlify public hosting.</h2>
+          <p>Netlify is now configured to publish the committed <strong>public</strong> directory directly, avoiding missing generated output folders.</p>
+        </div>
+        <div class="grid">
+          <article class="service-card"><strong>GitHub Source</strong><p>All files stay versioned in GitHub and Netlify can pull the latest commit automatically.</p></article>
+          <article class="service-card"><strong>Build Command</strong><p><code>npm run build</code> validates the committed static site before deployment.</p></article>
+          <article class="service-card"><strong>Publish Directory</strong><p>Netlify is configured to publish <code>public</code>, which is committed and always available.</p></article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><strong>T&A Contracting</strong> — Arizona-native contracting, maintenance, repairs, and improvements. Replace placeholder contact details before production launch.</p>
+    </footer>
+  </div>
+</body>
+</html>
