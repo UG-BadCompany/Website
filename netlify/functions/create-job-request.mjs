@@ -1,0 +1,123 @@
+import { getDatabase } from '@netlify/database';
+
+const REQUIRED_FIELDS = ['name', 'phone', 'service', 'description'];
+const MAX_FIELD_LENGTHS = {
+  name: 140,
+  phone: 60,
+  email: 254,
+  city: 140,
+  service: 120,
+  timeframe: 80,
+  description: 4000,
+};
+
+const json = (status, body) => Response.json(body, {
+  status,
+  headers: {
+    'cache-control': 'no-store',
+  },
+});
+
+const clean = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizePayload = (payload) => {
+  const normalized = {};
+
+  for (const [field, maxLength] of Object.entries(MAX_FIELD_LENGTHS)) {
+    normalized[field] = clean(payload[field]).slice(0, maxLength);
+  }
+
+  normalized.botField = clean(payload['bot-field']);
+
+  return normalized;
+};
+
+const validatePayload = (payload) => {
+  const missingFields = REQUIRED_FIELDS.filter((field) => !payload[field]);
+
+  if (missingFields.length > 0) {
+    return `Missing required field${missingFields.length > 1 ? 's' : ''}: ${missingFields.join(', ')}`;
+  }
+
+  if (payload.email && !/^\S+@\S+\.\S+$/.test(payload.email)) {
+    return 'Enter a valid email address.';
+  }
+
+  return null;
+};
+
+export default async (request) => {
+  if (request.method !== 'POST') {
+    return json(405, { ok: false, message: 'Method not allowed.' });
+  }
+
+  let payload;
+
+  try {
+    payload = normalizePayload(await request.json());
+  } catch {
+    return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  }
+
+  if (payload.botField) {
+    return json(200, { ok: true, message: 'Request received.' });
+  }
+
+  const validationError = validatePayload(payload);
+
+  if (validationError) {
+    return json(422, { ok: false, message: validationError });
+  }
+
+  try {
+    const db = getDatabase();
+    const [jobRequest] = await db.sql`
+      insert into job_requests (
+        requester_name,
+        requester_email,
+        requester_phone,
+        city,
+        service_type,
+        preferred_timeframe,
+        description
+      ) values (
+        ${payload.name},
+        ${payload.email || null},
+        ${payload.phone},
+        ${payload.city || null},
+        ${payload.service},
+        ${payload.timeframe || null},
+        ${payload.description}
+      )
+      returning id, created_at
+    `;
+
+    await db.sql`
+      insert into audit_events (event_type, entity_type, entity_id, metadata)
+      values (
+        ${'job_request.created'},
+        ${'job_request'},
+        ${jobRequest.id},
+        ${JSON.stringify({ source: 'public_estimate_form', city: payload.city || null, service: payload.service })}::jsonb
+      )
+    `;
+
+    return json(201, {
+      ok: true,
+      id: jobRequest.id,
+      createdAt: jobRequest.created_at,
+      message: 'Estimate request saved.',
+    });
+  } catch (error) {
+    console.error('Failed to create job request', error);
+
+    return json(500, {
+      ok: false,
+      message: 'We could not save the request right now. Please try again or use the standard form fallback.',
+    });
+  }
+};
+
+export const config = {
+  path: '/api/job-requests',
+};

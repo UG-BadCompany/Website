@@ -61,3 +61,21 @@ thomas.debacker.ii@gmail.com
 ```
 
 This creates an `app_users` row and assigns the `admin` role. It does **not** create a password. The future auth provider should verify this same email and then update/link the app user with the provider subject.
+
+## Public job request endpoint
+
+The public estimate form progressively enhances to `POST /api/job-requests` when JavaScript and the Netlify Function are available.
+
+- The function accepts JSON with `name`, `phone`, `email`, `city`, `service`, `timeframe`, `description`, and the Netlify honeypot field `bot-field`.
+- `name`, `phone`, `service`, and `description` are required.
+- Successful database writes insert a `job_requests` row and a matching `audit_events` row with `event_type = 'job_request.created'`.
+- Requests with file uploads intentionally continue through the static Netlify Forms path so uploaded files are still captured.
+- If the function or database is unavailable, the browser falls back to the existing Netlify Form submission and redirects to `/thank-you/`.
+
+Install project dependencies before deploying so the function can import Netlify Database helpers:
+
+```sh
+npm install
+```
+
+The endpoint uses `@netlify/database`, which automatically selects the correct Netlify Database branch for production deploys and deploy previews.

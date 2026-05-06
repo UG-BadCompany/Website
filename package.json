@@ -9,6 +9,9 @@
     "start": "node scripts/serve-static-site.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12.2"
+  },
+  "dependencies": {
+    "@netlify/database": "latest"
   }
 }

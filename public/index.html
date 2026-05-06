@@ -376,6 +376,18 @@
       font-weight: 620;
     }
 
+    .form-status {
+      min-height: 24px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .form-status[data-state="success"] { color: #1f6f43; }
+    .form-status[data-state="error"] { color: var(--rust-dark); }
+
     .portal-actions {
       display: flex;
       flex-wrap: wrap;
@@ -485,7 +497,7 @@
           <div class="estimate-copy">
             <div class="eyebrow">Request Work</div>
             <h2>Tell us what needs to get handled.</h2>
-            <p>Use this form to send T&A Contracting the basics for a repair, maintenance item, installation, punch list, or property project. The form is wired for Netlify Forms so submissions can be captured from the static site.</p>
+            <p>Use this form to send T&A Contracting the basics for a repair, maintenance item, installation, punch list, or property project. The form saves requests to the job database when available, with Netlify Forms still in place as a fallback capture path.</p>
             <ul class="estimate-list">
               <li>Share contact info and the best way to reach you.</li>
               <li>Describe the job, property, and preferred timeframe.</li>
@@ -493,7 +505,7 @@
             </ul>
           </div>
 
-          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data">
+          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
             <input type="hidden" name="form-name" value="estimate-request">
             <p hidden><label>Don’t fill this out: <input name="bot-field"></label></p>
             <div class="form-grid">
@@ -547,6 +559,7 @@
             </div>
             <p class="form-note">Submitting this form does not confirm scheduling. T&A Contracting will review the request and follow up with next steps.</p>
             <button class="btn btn-primary" type="submit">Submit Estimate Request</button>
+            <p class="form-status" data-job-request-status role="status" aria-live="polite"></p>
           </form>
         </div>
       </section>
@@ -556,5 +569,70 @@
       <p><strong>T&A Contracting</strong> — Arizona-native contracting, maintenance, repairs, and improvements. Replace placeholder contact details before production launch.</p>
     </footer>
   </div>
+  <script>
+    (() => {
+      const form = document.querySelector('[data-job-request-form]');
+
+      if (!form || !window.fetch) {
+        return;
+      }
+
+      const status = form.querySelector('[data-job-request-status]');
+      const submitButton = form.querySelector('button[type="submit"]');
+      const setStatus = (message, state = '') => {
+        if (!status) {
+          return;
+        }
+
+        status.textContent = message;
+        status.dataset.state = state;
+      };
+
+      const submitWithNetlifyForms = () => {
+        setStatus('Saving with the standard form fallback…');
+        HTMLFormElement.prototype.submit.call(form);
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const photo = formData.get('photos');
+        const hasUpload = window.File && photo instanceof File && photo.size > 0;
+
+        if (hasUpload) {
+          submitWithNetlifyForms();
+          return;
+        }
+
+        const payload = Object.fromEntries(formData.entries());
+
+        submitButton.disabled = true;
+        setStatus('Saving your request…');
+
+        try {
+          const response = await fetch('/api/job-requests', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'The database request did not complete.');
+          }
+
+          setStatus('Request received. Redirecting…', 'success');
+          window.location.assign('/thank-you/');
+        } catch (error) {
+          console.warn('Database request failed; using Netlify Forms fallback.', error);
+          submitWithNetlifyForms();
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>
