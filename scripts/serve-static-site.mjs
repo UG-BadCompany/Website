@@ -3,7 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-const root = path.join(process.cwd(), 'out');
+const preferredRoot = path.join(process.cwd(), 'out');
+const fallbackRoot = path.join(process.cwd(), 'public');
+const root = existsSync(path.join(preferredRoot, 'index.html')) ? preferredRoot : fallbackRoot;
 const port = Number(process.env.PORT || 3000);
 const types = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -17,7 +19,7 @@ const types = new Map([
 ]);
 
 if (!existsSync(path.join(root, 'index.html'))) {
-  console.error('Missing out/index.html. Run npm run build first.');
+  console.error('Missing site entrypoint. Run npm run build or confirm public/index.html exists.');
   process.exit(1);
 }
 
@@ -42,5 +44,5 @@ createServer(async (request, response) => {
     response.end(body);
   }
 }).listen(port, () => {
-  console.log(`T&A Contracting site available at http://localhost:${port}`);
+  console.log(`T&A Contracting site available at http://localhost:${port} from ${path.relative(process.cwd(), root)}`);
 });

@@ -3,9 +3,12 @@
   publish = "out"
 
 [build.environment]
+  NODE_VERSION = "20"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
 [[headers]]
-  for = "/_next/static/*"
+  for = "/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
