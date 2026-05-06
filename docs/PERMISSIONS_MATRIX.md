@@ -36,6 +36,6 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 
 - Store roles in `roles`.
 - Connect users to roles through `user_roles`.
-- Use Supabase Row Level Security for table-level enforcement.
+- Use Netlify Functions to enforce permissions before reading or writing database records.
 - Use application-side guards to hide UI controls the user cannot access.
-- Never rely on hidden UI alone for security; database policies must enforce access.
+- Never rely on hidden UI alone for security; server-side functions must enforce access.

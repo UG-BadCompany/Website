@@ -858,7 +858,7 @@ For the best combination of professional design, SEO, speed, security, maintaina
 - **Tailwind CSS** for fast, consistent, responsive styling based on the T&A brand system.
 - **PostgreSQL** for reliable relational data such as users, clients, jobs, quotes, invoices, and payments.
 - **Prisma** or a similar TypeScript ORM for type-safe database access and migrations.
-- **Supabase** as a strong option for managed PostgreSQL, authentication, storage, and server-side functions if the project needs a managed back-end foundation.
+- **Netlify Database** for managed PostgreSQL because the site is hosted on Netlify, with Netlify Functions handling server-side database operations.
 - **Stripe** for secure deposits, final invoice payments, receipts, and future maintenance subscriptions.
 - **Resend** or a similar transactional email service for quote emails, invoice emails, receipts, password resets, and PDF attachments.
 - **Playwright** for end-to-end testing of quote acceptance, login, job request, and payment workflows.
@@ -894,7 +894,7 @@ A strong first production architecture would be:
 
 - GitHub repository for source code.
 - Vercel for Next.js hosting and GitHub preview/production deployments.
-- Supabase PostgreSQL for database, auth, and file storage, or managed PostgreSQL plus a separate auth provider if preferred.
+- Netlify Database/Postgres for database storage, Netlify Functions for server-side operations, and a dedicated auth provider for login.
 - Stripe Checkout for deposits and invoice payments.
 - Stripe webhooks for payment status updates.
 - Resend for transactional emails and PDF quote/invoice delivery.
@@ -922,7 +922,7 @@ The hosting and integration strategy should be based on current official documen
 - Netlify supports continuous deployment by connecting a Git repository and deploying when changes are pushed.
 - Cloudflare Pages supports connecting a GitHub repository and automatically deploying changes pushed to branches, with preview deployment support.
 - Next.js is a strong fit because it can start with static or server-rendered marketing pages and expand into a full web application with server features.
-- Supabase provides PostgreSQL, authentication, storage, and globally distributed TypeScript Edge Functions, which can help support auth, files, webhooks, and back-end operations.
+- Netlify Database provides managed Postgres with deploy-preview database branching and migrations; Netlify Functions can support server-side database operations, webhooks, and backend workflows.
 - Stripe Checkout provides a hosted or embedded checkout flow for accepting one-time and subscription payments.
 - Resend supports sending transactional emails with PDF attachments, which fits quote and invoice delivery.
 
@@ -932,7 +932,7 @@ Source links to keep for implementation reference:
 - Next.js deployment docs: <https://nextjs.org/docs/app/getting-started/deploying>
 - Netlify Git deploys: <https://docs.netlify.com/site-deploys/create-deploys/>
 - Cloudflare Pages GitHub integration: <https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/>
-- Supabase Edge Functions: <https://supabase.com/docs/guides/functions>
+- Netlify Database: <https://docs.netlify.com/build/data-and-storage/netlify-database/>
 - Stripe Checkout: <https://docs.stripe.com/payments/checkout>
 - Resend attachments: <https://resend.com/docs/dashboard/emails/attachments>
 
