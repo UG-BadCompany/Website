@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">T&amp;A Contracting Logo</title>
+  <desc id="desc">Arizona native T&amp;A Contracting logo with desert sunrise, house roofline, tools, and maintenance tagline.</desc>
+  <defs>
+    <linearGradient id="sun" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f3ad3d"/>
+      <stop offset="1" stop-color="#c75a19"/>
+    </linearGradient>
+    <linearGradient id="rust" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#c94e1d"/>
+      <stop offset="1" stop-color="#8f2d12"/>
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1200" fill="#fff"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M232 430 188 452 178 365c-5-27-27-72-5-90 17-13 43-10 62-16 30-9 61 33 86 40 16-6 19-32 36-44l-1-116h431v162l89-59 312 226-68 2-252-182-232 157-130 28-421 2 51-72 96 27Z" fill="#fff"/>
+    <path d="M224 424 184 443 172 365c-5-26-23-71-4-88 18-16 47-10 67-17 31-9 62 34 87 40 18-7 20-34 38-46V135h430v160" fill="none" stroke="url(#rust)" stroke-width="18" stroke-linejoin="round"/>
+    <path d="M268 158h492v250H268z" fill="#efd6bd" opacity="0.58"/>
+    <circle cx="533" cy="348" r="111" fill="url(#sun)"/>
+    <g stroke="#fff" stroke-width="25" opacity="0.9">
+      <path d="M535 186v75"/><path d="M458 199l38 70"/><path d="M381 241l67 61"/><path d="M304 292l93 47"/><path d="M612 199l-30 75"/><path d="M690 236l-63 68"/><path d="M742 295l-78 49"/>
+    </g>
+    <path d="M268 405c53-44 91-71 116-82 23-10 52 19 73 11 36-13 52-50 84-31 24 14 44 32 65 18 23-15 48-5 76 34 16 21 45 18 78 49H268z" fill="#75451f"/>
+    <path d="M268 405c44-38 76-61 98-71 20-9 44 15 64 12 24-4 38-29 61-35 16 21 32 36 48 45 24-14 46-11 67 9 19 18 47 24 86 40H268z" fill="#5c351c" opacity="0.75"/>
+    <path d="M252 431h349L520 745H392l24-223H146l48-91h58Z" fill="#151515"/>
+    <path d="M560 522h132c38 0 55 17 49 51l-8 48h-61l4-28c2-13-4-20-19-20h-73c-16 0-25 8-27 23l-7 39 78 66 30-42h75l-69 93 74 65h-94l-25-24c-26 18-58 27-96 27h-55c-55 0-80-25-72-76l11-67c5-32 28-53 68-63l-2-2c-16-14-22-32-18-53l4-24c5-35 39-53 101-53Zm-7 219c18 0 34-5 49-15l-89-80c-18 4-28 14-31 31l-8 44c-4 20 6 30 29 30h50Z" fill="url(#rust)"/>
+    <path d="M620 759 875 308l319 226h-70L881 363 688 506 542 538Z" fill="#151515"/>
+    <path d="M733 705h194l28 78h98L876 426 672 783h92l-31-78Zm39-66 65-117 64 117H772Z" fill="#151515"/>
+    <rect x="814" y="390" width="34" height="34" fill="#151515"/><rect x="866" y="390" width="34" height="34" fill="#151515"/><rect x="814" y="443" width="34" height="34" fill="#151515"/><rect x="866" y="443" width="34" height="34" fill="#151515"/>
+    <path d="M1050 354h58l13 14v29l-18-14h-53z" fill="#151515"/>
+    <path d="M262 822h692" stroke="#151515" stroke-width="6"/>
+    <text x="600" y="829" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="76" letter-spacing="27" fill="#151515">CONTRACTING</text>
+    <g fill="#151515">
+      <path d="M256 890 205 941l-18-18 51-51c-6-19-2-41 13-56 13-13 31-18 48-15l-31 31 22 22 31-31c3 17-2 35-15 48-14 14-33 19-50 19Z"/>
+      <path d="M414 882c30-18 59-35 89-53l13 22-96 57-6-26Zm23 48 93-55 13 22-96 57-10-24Zm9-89 18-32 91 53-18 32-91-53Zm13 135 94-56 12 22-94 56-12-22Z"/>
+      <path d="M623 878h90v78h-90z"/><path d="M601 901h22v31h-22zM713 897h50v36h-50zM641 850h52v28h-52z"/>
+      <path d="M830 966 869 885h-47l68-100-19 75h49z"/>
+      <path d="M1004 872h48v31h25c16 0 29 13 29 29v35h-28v-35h-87v35h-29v-66h42v-29Zm-19-41h88v25h-88zM1031 1008c0 18-14 32-32 32s-32-14-32-32c0-17 32-57 32-57s32 40 32 57Z"/>
+    </g>
+    <g fill="#a73716">
+      <rect x="336" y="851" width="4" height="109"/><rect x="523" y="851" width="4" height="109"/><rect x="718" y="851" width="4" height="109"/><rect x="886" y="851" width="4" height="109"/>
+    </g>
+    <text x="600" y="1005" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="36" letter-spacing="14" fill="#151515">MAINTENANCE.  •  ANYTHING.  •  EVERYTHING.</text>
+    <path d="M280 1048h640" stroke="#151515" stroke-width="3" opacity="0.55"/>
+    <text x="600" y="1096" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="38" letter-spacing="23" fill="#a73716">ARIZONA NATIVE.</text>
+  </g>
+</svg>
