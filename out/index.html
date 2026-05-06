@@ -4,71 +4,85 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>T&A Contracting | Arizona Maintenance, Repairs & Improvements</title>
-  <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quotes, client requests, and online job management.">
+  <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quote approvals, client requests, and online payments.">
   <style>
     :root {
-      --ink: #161616;
-      --charcoal: #222222;
-      --rust: #b54118;
-      --orange: #df8d27;
-      --sand: #e7c7a6;
-      --cream: #fff8ef;
+      --ink: #111111;
+      --charcoal: #25211f;
+      --rust: #ad3f18;
+      --rust-dark: #7d2b13;
+      --copper: #d88734;
+      --sand: #f3dfc8;
+      --cream: #fff8ee;
       --white: #ffffff;
-      --muted: #6f655d;
-      --line: rgba(22, 22, 22, 0.12);
-      --shadow: 0 24px 70px rgba(22, 22, 22, 0.16);
+      --muted: #706760;
+      --line: rgba(17, 17, 17, 0.1);
+      --soft-shadow: 0 22px 70px rgba(45, 27, 13, 0.12);
+      --card-shadow: 0 18px 45px rgba(45, 27, 13, 0.09);
     }
 
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
-      background: linear-gradient(135deg, var(--cream), #ffffff 45%, #f5e1cb);
+      background:
+        radial-gradient(circle at 84% 6%, rgba(216, 135, 52, 0.22), transparent 28rem),
+        radial-gradient(circle at 6% 12%, rgba(173, 63, 24, 0.12), transparent 24rem),
+        linear-gradient(180deg, #fffaf4 0%, #ffffff 42%, #fff7ec 100%);
     }
 
     a { color: inherit; text-decoration: none; }
 
-    .site-shell {
-      min-height: 100vh;
-      overflow: hidden;
-    }
+    .site-shell { min-height: 100vh; overflow: hidden; }
 
     .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(255, 250, 244, 0.84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 24px;
       width: min(1180px, calc(100% - 36px));
       margin: 0 auto;
-      padding: 22px 0;
+      padding: 14px 0;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 13px;
+      min-width: 0;
       font-weight: 900;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
     }
 
     .brand-logo {
       display: block;
-      width: 74px;
-      height: 74px;
+      width: 82px;
+      height: 56px;
       object-fit: contain;
-      filter: drop-shadow(4px 6px 0 rgba(181, 65, 24, 0.16));
     }
+
+    .brand span { white-space: nowrap; }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 22px;
       color: var(--charcoal);
       font-weight: 800;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
     }
 
     .btn {
@@ -77,55 +91,63 @@
       justify-content: center;
       min-height: 48px;
       padding: 0 20px;
-      border: 2px solid var(--ink);
+      border: 1px solid rgba(17, 17, 17, 0.12);
       border-radius: 999px;
       font-weight: 900;
-      box-shadow: 5px 5px 0 rgba(22, 22, 22, 0.18);
-      transition: transform 180ms ease, box-shadow 180ms ease;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
     }
 
-    .btn:hover { transform: translateY(-2px); box-shadow: 7px 7px 0 rgba(22, 22, 22, 0.2); }
-    .btn-primary { color: var(--white); background: var(--rust); }
-    .btn-secondary { color: var(--ink); background: var(--white); }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 16px 30px rgba(173, 63, 24, 0.16); }
+    .btn-primary { color: var(--white); background: linear-gradient(135deg, var(--rust), var(--rust-dark)); border-color: transparent; }
+    .btn-secondary { color: var(--ink); background: rgba(255,255,255,0.82); }
 
     .hero {
       position: relative;
       display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 48px;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: clamp(28px, 5vw, 74px);
       align-items: center;
       width: min(1180px, calc(100% - 36px));
-      margin: 38px auto 0;
-      padding: 56px;
-      border: 2px solid var(--ink);
-      border-radius: 34px;
-      background: rgba(255, 255, 255, 0.82);
-      box-shadow: var(--shadow);
+      margin: 54px auto 0;
+      padding: clamp(28px, 5vw, 64px);
+      border: 1px solid rgba(17, 17, 17, 0.1);
+      border-radius: 36px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
     }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(173, 63, 24, 0.08), transparent 42%);
+      pointer-events: none;
+    }
+
+    .hero-content, .hero-media { position: relative; }
 
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 18px;
+      padding: 8px 12px;
+      border: 1px solid rgba(173, 63, 24, 0.18);
+      border-radius: 999px;
       color: var(--rust);
-      font-weight: 950;
-      letter-spacing: 0.12em;
+      background: rgba(255, 248, 238, 0.88);
+      font-weight: 900;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      font-size: 0.82rem;
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 42px;
-      height: 4px;
-      background: var(--rust);
+      font-size: 0.78rem;
     }
 
     h1 {
+      max-width: 790px;
       margin: 0;
-      font-size: clamp(3rem, 7vw, 6.7rem);
-      line-height: 0.92;
+      font-size: clamp(3.2rem, 7vw, 6.75rem);
+      line-height: 0.94;
       letter-spacing: -0.075em;
     }
 
@@ -133,50 +155,53 @@
       max-width: 650px;
       margin: 24px 0 0;
       color: var(--muted);
-      font-size: clamp(1.08rem, 2vw, 1.28rem);
-      line-height: 1.65;
-      font-weight: 650;
+      font-size: clamp(1.08rem, 2vw, 1.26rem);
+      line-height: 1.7;
+      font-weight: 620;
     }
 
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      margin-top: 32px;
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
+
+    .trust-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 34px;
     }
 
-    .hero-logo-card {
-      position: relative;
+    .trust-pill {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .trust-pill strong { display: block; color: var(--ink); font-size: 1.1rem; margin-bottom: 3px; }
+
+    .hero-media {
       display: grid;
       place-items: center;
-      padding: clamp(18px, 4vw, 34px);
-      border: 2px solid var(--ink);
-      border-radius: 32px;
-      background: radial-gradient(circle at 50% 20%, #ffffff 0%, #fff8ef 58%, #ead0b5 100%);
-      box-shadow: 14px 14px 0 rgba(181, 65, 24, 0.16);
-      overflow: hidden;
-    }
-
-    .hero-logo-card::before {
-      content: "";
-      position: absolute;
-      inset: 18px;
-      border: 2px solid rgba(181, 65, 24, 0.22);
-      border-radius: 24px;
-      pointer-events: none;
+      min-height: 470px;
+      border-radius: 30px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.76), rgba(255,248,238,0.9)),
+        radial-gradient(circle at 50% 12%, rgba(216, 135, 52, 0.24), transparent 18rem);
+      border: 1px solid rgba(17, 17, 17, 0.08);
     }
 
     .hero-logo {
-      position: relative;
-      width: min(100%, 520px);
-      height: auto;
       display: block;
-      filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.16));
+      width: min(100%, 610px);
+      height: auto;
+      padding: clamp(14px, 3vw, 28px);
+      filter: drop-shadow(0 24px 34px rgba(35, 20, 11, 0.16));
     }
 
     .section {
       width: min(1180px, calc(100% - 36px));
-      margin: 72px auto;
+      margin: 88px auto;
     }
 
     .section-heading {
@@ -184,114 +209,136 @@
       align-items: end;
       justify-content: space-between;
       gap: 24px;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     h2 {
-      max-width: 800px;
+      max-width: 770px;
       margin: 0;
-      font-size: clamp(2rem, 4vw, 4.2rem);
-      line-height: 0.96;
+      font-size: clamp(2.25rem, 4.3vw, 4.6rem);
+      line-height: 0.98;
       letter-spacing: -0.06em;
     }
 
     .section-heading p {
-      max-width: 420px;
-      color: var(--muted);
-      font-weight: 650;
-      line-height: 1.6;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-    }
-
-    .service-card, .workflow-card {
-      padding: 24px;
-      border: 2px solid var(--ink);
-      border-radius: 24px;
-      background: var(--white);
-      box-shadow: 8px 8px 0 rgba(181, 65, 24, 0.12);
-    }
-
-    .service-card strong, .workflow-card strong {
-      display: block;
-      margin-bottom: 10px;
-      font-size: 1.2rem;
-      font-weight: 950;
-    }
-
-    .service-card p, .workflow-card p {
+      max-width: 430px;
       margin: 0;
       color: var(--muted);
-      line-height: 1.55;
-      font-weight: 650;
+      font-weight: 620;
+      line-height: 1.65;
     }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+    .service-card, .workflow-card {
+      position: relative;
+      min-height: 180px;
+      padding: 26px;
+      border: 1px solid rgba(17, 17, 17, 0.09);
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+
+    .service-card::before, .workflow-card::before {
+      content: "";
+      position: absolute;
+      left: 26px;
+      top: 0;
+      width: 54px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--rust), var(--copper));
+    }
+
+    .service-card strong, .workflow-card strong { display: block; margin-bottom: 11px; font-size: 1.18rem; font-weight: 950; }
+    .service-card p, .workflow-card p { margin: 0; color: var(--muted); line-height: 1.58; font-weight: 620; }
 
     .band {
-      padding: 42px;
-      border-radius: 30px;
-      background: var(--ink);
+      padding: clamp(28px, 5vw, 54px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 92% 0%, rgba(216, 135, 52, 0.3), transparent 18rem),
+        linear-gradient(135deg, #171717, #2a1d17);
       color: var(--white);
+      box-shadow: var(--soft-shadow);
     }
 
-    .band .grid { margin-top: 24px; }
-    .band .workflow-card { color: var(--ink); }
+    .band .grid { margin-top: 28px; }
+    .band .section-heading p { color: rgba(255,255,255,0.7); }
+    .band .workflow-card { color: var(--ink); background: rgba(255,255,255,0.94); }
 
     .footer {
       width: min(1180px, calc(100% - 36px));
-      margin: 70px auto 28px;
-      padding: 26px 0 0;
-      border-top: 2px solid var(--line);
+      margin: 76px auto 30px;
+      padding: 28px 0 0;
+      border-top: 1px solid var(--line);
       color: var(--muted);
-      font-weight: 700;
+      font-weight: 650;
     }
 
-    @media (max-width: 860px) {
-      .nav { align-items: flex-start; }
-      .nav-links { display: none; }
-      .hero { grid-template-columns: 1fr; padding: 28px; }
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-media { min-height: auto; }
+      .trust-row, .grid { grid-template-columns: 1fr; }
       .section-heading { display: block; }
-      .grid { grid-template-columns: 1fr; }
+      .section-heading p { margin-top: 14px; }
+    }
+
+    @media (max-width: 560px) {
+      .brand span { display: none; }
+      .brand-logo { width: 76px; height: 52px; }
+      .nav-inner { width: min(100% - 24px, 1180px); }
+      .hero, .section { width: min(100% - 24px, 1180px); }
+      .hero { margin-top: 24px; border-radius: 26px; }
+      .footer { width: min(100% - 24px, 1180px); }
     }
   </style>
 </head>
 <body>
   <div class="site-shell">
     <header class="nav" aria-label="Main navigation">
-      <a class="brand" href="/" aria-label="T&A Contracting home">
-        <img class="brand-logo" src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo">
-        <span>T&A Contracting</span>
-      </a>
-      <nav class="nav-links" aria-label="Primary links">
-        <a href="#services">Services</a>
-        <a href="#portal">Portal</a>
-        <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request Estimate</a>
-      </nav>
+      <div class="nav-inner">
+        <a class="brand" href="/" aria-label="T&A Contracting home">
+          <img class="brand-logo" src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo">
+          <span>T&A Contracting</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary links">
+          <a href="#services">Services</a>
+          <a href="#portal">Client Portal</a>
+          <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request Estimate</a>
+        </nav>
+      </div>
     </header>
 
     <main>
       <section class="hero">
-        <div>
+        <div class="hero-content">
           <div class="eyebrow">Arizona Native • Maintenance • Anything • Everything</div>
-          <h1>More than a handyman.</h1>
-          <p class="hero-copy">T&A Contracting is being built as a professional Arizona maintenance, repair, improvement, quote, scheduling, and payment platform for homeowners, landlords, property managers, and businesses.</p>
+          <h1>Contracting help without the runaround.</h1>
+          <p class="hero-copy">T&A Contracting is building a professional repair, maintenance, improvement, quote, scheduling, and payment experience for Arizona homeowners, landlords, property managers, and businesses.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="mailto:quotes@tacontracting.example">Request an Estimate</a>
-            <a class="btn btn-secondary" href="#portal">View Client Portal Plan</a>
+            <a class="btn btn-secondary" href="#services">Explore Services</a>
+          </div>
+          <div class="trust-row" aria-label="Company highlights">
+            <div class="trust-pill"><strong>Arizona Native</strong>Local, practical, desert-tough service.</div>
+            <div class="trust-pill"><strong>More Organized</strong>Quotes, approvals, jobs, and payments online.</div>
+            <div class="trust-pill"><strong>One Call</strong>Repairs, installs, maintenance, and punch lists.</div>
           </div>
         </div>
-        <aside class="hero-logo-card" aria-label="T&A Contracting logo showcase">
+        <div class="hero-media" aria-label="T&A Contracting logo showcase">
           <img class="hero-logo" src="/assets/ta-contracting-logo.svg" alt="T&A Contracting Arizona Native logo">
-        </aside>
+        </div>
       </section>
 
       <section class="section" id="services">
         <div class="section-heading">
-          <h2>Professional service categories ready for launch.</h2>
-          <p>Clear, conversion-focused service cards help customers understand what T&A Contracting handles before they submit a job request.</p>
+          <h2>Professional maintenance and repair services.</h2>
+          <p>Clear service categories make it easy for customers to understand what T&A Contracting handles before they request a quote.</p>
         </div>
         <div class="grid">
           <article class="service-card"><strong>Home Repairs</strong><p>Drywall, doors, trim, punch lists, fixtures, cabinets, and minor carpentry.</p></article>
@@ -305,8 +352,8 @@
 
       <section class="section band" id="portal">
         <div class="section-heading">
-          <h2>Full portal workflow: request, quote, approve, pay, track.</h2>
-          <p>Built to become a complete front-end and back-end system for clients, admins, and workers.</p>
+          <h2>A modern job portal from request to payment.</h2>
+          <p>The next phase can support a complete front-end and back-end system for clients, admins, and workers.</p>
         </div>
         <div class="grid">
           <article class="workflow-card"><strong>Client Portal</strong><p>Clients can request new jobs, upload photos, review PDF quotes, accept work, pay invoices, and track job history.</p></article>
@@ -314,7 +361,6 @@
           <article class="workflow-card"><strong>Worker Portal</strong><p>Workers can see assigned jobs, notes, checklists, access details, photos, material notes, and status updates.</p></article>
         </div>
       </section>
-
     </main>
 
     <footer class="footer">
