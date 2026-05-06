@@ -24,12 +24,13 @@ Expected flow:
 
 Minimum tables for the backend phase:
 
-- `profiles`
+- `app_users`
 - `roles`
 - `user_roles`
 - `properties`
 - `job_requests`
 - `files`
+- `audit_events`
 
 ## Permission groups
 
@@ -52,13 +53,18 @@ Minimum tables for the backend phase:
 
 - Manage all clients, workers, requests, jobs, quotes, schedules, invoices, payments, files, and settings.
 
-## Next implementation step
-
-Convert this static shell into a real app with authentication, database-backed profiles, and role-aware dashboard rendering.
-
 ## Added in Sprint 1B
 
-- `.env.example` for Supabase, Stripe, Resend, and site URL placeholders.
-- `supabase/schema.sql` with the first profiles, roles, properties, job requests, files, and Row Level Security policies.
+- `.env.example` for Netlify Database, auth provider, Stripe, Resend, and site URL placeholders.
+- `netlify/database/migrations/0001_initial_portal_schema.sql` with the first app users, roles, properties, job requests, files, audit events, and indexes.
+- `docs/NETLIFY_DATABASE_SETUP.md` for Netlify Database setup notes.
 - `docs/PERMISSIONS_MATRIX.md` for client, worker, and admin access rules.
 - `docs/AUTH_IMPLEMENTATION_PLAN.md` for the single-login implementation path.
+
+## Next implementation step
+
+Use Netlify Functions to connect the static portal shell to Netlify Database, beginning with job request creation and role-aware dashboard reads.
+
+## Account access decision
+
+Client onboarding should support magic-link login and client account creation from the same `/login/` page. The first admin email is `thomas.debacker.ii@gmail.com`, seeded as an admin in the Netlify Database migration.
