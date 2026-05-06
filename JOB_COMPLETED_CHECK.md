@@ -15,6 +15,7 @@
 ## Not Yet Complete / Next Work
 
 - [ ] Re-run the Vercel build after the patched Next.js version is deployed.
+- [ ] Run a successful Vercel build from this simpler clean starting point.
 - [ ] Add real phone number and business email when confirmed.
 - [ ] Add real project photos, testimonials, Google review links, and any verified trust claims.
 - [ ] Phase 2: add authentication and persistent portal accounts.
