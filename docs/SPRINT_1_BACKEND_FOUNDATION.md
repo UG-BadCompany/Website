@@ -128,3 +128,9 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Expanded `GET/POST/PATCH /api/admin/users` so admins can list users, see assignable roles, and assign custom roles.
 - `/api/me` now returns permission keys and dashboard capability flags derived from role permissions, not only hard-coded role names.
 - The dashboard includes an Admin roles & users panel for creating roles, toggling permissions, and assigning users to roles.
+
+## Added in Sprint 1L
+
+- The Admin roles & users panel no longer renders every user by default; admins search by name, email, phone, company, or role before opening a user.
+- User role editing now happens in a focused popup workspace after selecting a search result.
+- Role creation and editing now open from a New role/Edit role button into a focused popup workspace instead of keeping the role form always visible.
