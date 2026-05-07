@@ -81,3 +81,10 @@ Client onboarding should start from Request Work, which creates or updates the c
 - `POST /api/job-requests` creates or updates the client profile, assigns the `client` role, creates a property row, then stores the job request.
 - `POST /api/admin/users` lets admins create users and assign roles; `PATCH /api/admin/users` lets admins replace a user's assigned roles.
 - The quote data model now includes quote rows with magic-link token fields so future quote emails can send clients back to their website profile.
+
+## Added in Sprint 1E
+
+- `GET /api/client/job-requests` lets signed-in clients load only the job requests tied to their own `app_users.id`.
+- The unified dashboard now includes a client request panel that is populated from the client-scoped API after `/api/me` confirms client access.
+- Client request counts update the dashboard summary without exposing worker or admin-only data.
+
