@@ -109,11 +109,19 @@
 
     <section class="card admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
       <strong>Admin roles & users</strong>
-      <p>Create custom roles, enable role permissions, then search for a user to open a focused role-assignment popup. Admin keeps every permission by default.</p>
+      <p>Search users, update profile details, and manage roles from one selector. Choose an existing role to edit it, or create a new role from the same role manager.</p>
       <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
-      <div class="client-request-form-actions">
-        <button class="btn btn-primary" type="button" data-admin-new-role>New role</button>
-      </div>
+      <form class="client-request-form" data-admin-role-picker-form>
+        <strong>Manage roles</strong>
+        <div class="client-request-form-grid">
+          <label class="full">Find or edit a role
+            <select data-admin-role-select>
+              <option value="">Select a role to edit</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit selected role</button><button class="btn btn-primary" type="button" data-admin-new-role>Create new role</button></div>
+      </form>
       <form class="client-request-form" data-admin-user-search-form>
         <strong>Find a user</strong>
         <label>Search by name, email, phone, company, or role
@@ -121,7 +129,6 @@
         </label>
         <div class="admin-request-list" data-admin-user-search-results></div>
       </form>
-      <div class="admin-request-list" data-admin-role-list></div>
 
       <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" aria-labelledby="admin-role-modal-title" hidden>
         <section class="admin-request-modal-panel">
@@ -849,6 +856,19 @@
         openAdminRoleModal();
       };
 
+      const renderUserProperties = (properties = []) => {
+        const list = document.querySelector('[data-admin-user-property-list]');
+        if (!list) return;
+        list.innerHTML = `<strong>Addresses / properties</strong>${properties.length ? properties.map((property) => `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(property.label || 'property')}</span>
+            <strong>${escapeHtml(property.street || 'No street address')}</strong>
+            <div class="admin-request-meta"><span>${escapeHtml([property.city, property.state].filter(Boolean).join(', ') || 'No city')}</span><span>${escapeHtml(property.postalCode || 'No ZIP')}</span></div>
+            ${property.accessNotes ? `<p>${escapeHtml(property.accessNotes)}</p>` : ''}
+          </article>
+        `).join('') : '<p class="session-status">No saved addresses yet. Client-submitted properties will appear here.</p>'}`;
+      };
+
       const selectAdminUser = (userId) => {
         const user = currentAdminUsers.get(userId);
         if (!user) return;
@@ -896,7 +916,7 @@
       };
 
       const renderAdminAccess = ({ roles = [], users = [], permissions = [] }) => {
-        const roleList = document.querySelector('[data-admin-role-list]');
+        const roleSelect = document.querySelector('[data-admin-role-select]');
         currentPermissions = permissions;
         currentAdminRoles.clear();
         currentAdminUsers.clear();
@@ -906,16 +926,10 @@
         renderUserRoleInputs(['client']);
         renderUserSearchResults(document.querySelector('[data-admin-user-search]')?.value || '');
 
-        if (roleList) {
-          roleList.innerHTML = roles.map((role) => `
-            <article class="admin-request">
-              <span class="admin-request-badge">${role.isSystem ? 'system' : 'custom'}</span>
-              <strong>${escapeHtml(role.name)} — ${escapeHtml(role.key)}</strong>
-              <p>${escapeHtml(role.description || 'No description yet.')}</p>
-              <div class="admin-request-meta"><span>${(role.permissions || []).length} permission${(role.permissions || []).length === 1 ? '' : 's'}</span></div>
-              <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-edit-role="${escapeHtml(role.key)}">Edit role</button></div>
-            </article>
-          `).join('');
+        if (roleSelect) {
+          const selectedValue = roleSelect.value;
+          roleSelect.innerHTML = '<option value="">Select a role to edit</option>' + roles.map((role) => `<option value="${escapeHtml(role.key)}">${escapeHtml(role.name)} (${escapeHtml(role.key)}) — ${(role.permissions || []).length} permission${(role.permissions || []).length === 1 ? '' : 's'}${role.isSystem ? ' • system' : ''}</option>`).join('');
+          roleSelect.value = roles.some((role) => role.key === selectedValue) ? selectedValue : '';
         }
       };
 
@@ -930,7 +944,12 @@
         panel.addEventListener('click', (event) => {
           const roleButton = event.target.closest('[data-admin-edit-role]');
           const userButton = event.target.closest('[data-admin-edit-user]');
+          const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
           if (roleButton) selectAdminRole(roleButton.dataset.adminEditRole);
+          if (selectedRoleButton) {
+            const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
+            if (selectedRole) selectAdminRole(selectedRole);
+          }
           if (userButton) selectAdminUser(userButton.dataset.adminEditUser);
           if (event.target.closest('[data-admin-new-role]')) {
             resetRoleForm();
