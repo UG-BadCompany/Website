@@ -65,7 +65,10 @@ test('admin job request endpoint returns recent requests and status counts for a
       preferred_timeframe: 'This week',
       description: 'Patch drywall.',
       admin_notes: 'Call before quoting.',
+      estimated_start_date: '2026-05-12',
+      completion_date: null,
       created_at: '2026-05-07T00:00:00.000Z',
+      updated_at: '2026-05-08T00:00:00.000Z',
     }],
     [{ status: 'new', count: 1 }],
   ]);
@@ -89,7 +92,10 @@ test('admin job request endpoint returns recent requests and status counts for a
     preferredTimeframe: 'This week',
     description: 'Patch drywall.',
     adminNotes: 'Call before quoting.',
+    estimatedStartDate: '2026-05-12',
+    completionDate: null,
     createdAt: '2026-05-07T00:00:00.000Z',
+    updatedAt: '2026-05-08T00:00:00.000Z',
   }]);
   assert.match(db.queries[3].text, /from job_requests/);
   assert.match(db.queries[4].text, /group by status/);
@@ -112,7 +118,10 @@ test('admin job request endpoint lets admins update request status and notes', a
       preferred_timeframe: 'Flexible',
       description: 'Ceiling fan install',
       admin_notes: 'Assign installer after quote acceptance.',
+      estimated_start_date: '2026-05-13',
+      completion_date: null,
       created_at: '2026-05-07T00:00:00.000Z',
+      updated_at: '2026-05-08T00:00:00.000Z',
     }],
     [],
   ]);
@@ -120,13 +129,45 @@ test('admin job request endpoint lets admins update request status and notes', a
   const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests', {
     method: 'PATCH',
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ jobRequestId: 'job-1', status: 'scheduled', adminNotes: 'Assign installer after quote acceptance.' }),
+    body: JSON.stringify({ jobRequestId: 'job-1', status: 'scheduled', adminNotes: 'Assign installer after quote acceptance.', estimatedStartDate: '2026-05-13', completionDate: '' }),
   })));
 
   assert.equal(response.status, 200);
   assert.equal(response.body.request.status, 'scheduled');
   assert.equal(response.body.request.adminNotes, 'Assign installer after quote acceptance.');
+  assert.equal(response.body.request.estimatedStartDate, '2026-05-13');
+  assert.equal(response.body.request.completionDate, null);
   assert.match(db.queries[3].text, /update job_requests/);
-  assert.deepEqual(db.queries[3].values, ['scheduled', 'Assign installer after quote acceptance.', 'job-1']);
+  assert.deepEqual(db.queries[3].values, ['scheduled', 'Assign installer after quote acceptance.', '2026-05-13', null, 'job-1']);
+  assert.match(db.queries[4].text, /insert into audit_events/);
+});
+
+
+test('admin job request endpoint permanently deletes requests after confirmation', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'job-1',
+      status: 'cancelled',
+      requester_name: 'Andrew Witter',
+      requester_email: 'witterandrew13@gmail.com',
+      service_type: 'Fixture work',
+    }],
+    [],
+  ]);
+  const handler = createAdminJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests', {
+    method: 'DELETE',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ jobRequestId: 'job-1', confirmation: 'DELETE' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.deleted, true);
+  assert.equal(response.body.requestId, 'job-1');
+  assert.match(db.queries[3].text, /delete from job_requests/);
+  assert.deepEqual(db.queries[3].values, ['job-1']);
   assert.match(db.queries[4].text, /insert into audit_events/);
 });

@@ -68,6 +68,12 @@
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </label>
+                <label>Estimated start date
+                  <input name="estimatedStartDate" type="date" data-admin-estimated-start-date>
+                </label>
+                <label>Completion date
+                  <input name="completionDate" type="date" data-admin-completion-date>
+                </label>
                 <label>Future worker assignment
                   <select disabled>
                     <option>Worker scheduling comes next</option>
@@ -77,7 +83,7 @@
                   <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
                 </label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><span data-admin-status-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Mark completed today</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-quote-form>
               <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
@@ -263,6 +269,11 @@
         });
       };
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
+      const formatDate = (value) => {
+        if (!value) return '';
+        const date = new Date(`${value}T00:00:00`);
+        return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+      };
       const setDashboardView = (view) => {
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
           const views = (section.dataset.views || '').split(' ');
@@ -298,6 +309,10 @@
         const contactMeta = admin
           ? `<span>${escapeHtml(request.requesterPhone || 'No phone')}</span><span>${escapeHtml(request.requesterEmail || 'No email')}</span>`
           : `<span>${escapeHtml(request.streetAddress || 'No street address')}</span>`;
+        const scheduleMeta = [
+          request.estimatedStartDate ? `Est. start: ${formatDate(request.estimatedStartDate)}` : '',
+          request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
+        ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
 
         return `
           <article class="${className}">
@@ -307,6 +322,7 @@
               <span>${escapeHtml(request.city || 'No city')}</span>
               ${contactMeta}
               <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
+              ${scheduleMeta}
             </div>
             <p>${escapeHtml(request.description)}</p>
             ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : ''}
@@ -541,6 +557,8 @@
         const quoteRequestId = document.querySelector('[data-admin-quote-request-id]');
         const statusSelect = document.querySelector('[data-admin-status-select]');
         const adminNotes = document.querySelector('[data-admin-notes]');
+        const estimatedStartDate = document.querySelector('[data-admin-estimated-start-date]');
+        const completionDate = document.querySelector('[data-admin-completion-date]');
         const quoteTitle = document.querySelector('[data-admin-quote-title]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
@@ -556,6 +574,8 @@
         if (statusRequestId) statusRequestId.value = request.id;
         if (quoteRequestId) quoteRequestId.value = request.id;
         if (statusSelect) statusSelect.value = request.status;
+        if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
+        if (completionDate) completionDate.value = request.completionDate || '';
         if (adminNotes) adminNotes.value = request.adminNotes || '';
         if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
         if (closeButton) closeButton.focus();
@@ -604,6 +624,36 @@
 
         if (statusForm && !statusForm.dataset.bound) {
           statusForm.dataset.bound = 'true';
+          statusForm.querySelector('[data-admin-mark-complete]')?.addEventListener('click', () => {
+            const statusSelect = statusForm.querySelector('[data-admin-status-select]');
+            const completionDate = statusForm.querySelector('[data-admin-completion-date]');
+            if (statusSelect) statusSelect.value = 'completed';
+            if (completionDate && !completionDate.value) completionDate.value = new Date().toISOString().slice(0, 10);
+          });
+          statusForm.querySelector('[data-admin-delete-request]')?.addEventListener('click', async () => {
+            const formStatus = document.querySelector('[data-admin-status-form-status]');
+            const jobRequestId = statusForm.querySelector('[data-admin-status-request-id]')?.value || '';
+            if (!jobRequestId) return;
+            const confirmation = window.prompt('This permanently deletes the request and any attached files. Type DELETE to continue.');
+            if (confirmation !== 'DELETE') {
+              if (formStatus) formStatus.textContent = 'Permanent delete cancelled.';
+              return;
+            }
+            if (formStatus) formStatus.textContent = 'Permanently deleting request…';
+            try {
+              const response = await fetch('/api/admin/job-requests', {
+                method: 'DELETE',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ jobRequestId, confirmation }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
+              closeAdminRequest();
+              await loadAdminRequests();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
           statusForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formStatus = document.querySelector('[data-admin-status-form-status]');

@@ -34,6 +34,18 @@ const mapProperty = (property) => ({
   updatedAt: property.updated_at,
 });
 
+const mapDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return String(value).slice(0, 10);
+};
+
 const mapJobRequest = (request) => ({
   id: request.id,
   status: request.status,
@@ -42,7 +54,10 @@ const mapJobRequest = (request) => ({
   serviceType: request.service_type,
   preferredTimeframe: request.preferred_timeframe,
   description: request.description,
+  estimatedStartDate: mapDate(request.estimated_start_date),
+  completionDate: mapDate(request.completion_date),
   createdAt: request.created_at,
+  updatedAt: request.updated_at,
   property: request.property_id ? {
     id: request.property_id,
     label: request.property_label,
@@ -165,7 +180,10 @@ const listClientData = async (db, userId) => {
       job_requests.service_type,
       job_requests.preferred_timeframe,
       job_requests.description,
+      job_requests.estimated_start_date,
+      job_requests.completion_date,
       job_requests.created_at,
+      job_requests.updated_at,
       properties.id as property_id,
       properties.label as property_label,
       properties.street as property_street,

@@ -19,11 +19,46 @@ const ADMIN_STATUSES = new Set([
   'cancelled',
 ]);
 
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const normalizeOptionalDate = (value) => clean(value, 20);
+
+const validateOptionalDate = (value, label) => {
+  if (!value) {
+    return null;
+  }
+
+  if (!DATE_PATTERN.test(value)) {
+    return `${label} must use YYYY-MM-DD format.`;
+  }
+
+  return null;
+};
+
 const normalizeStatusPayload = (body = {}) => ({
   jobRequestId: clean(body.jobRequestId, 80),
   status: clean(body.status, 40),
   adminNotes: clean(body.adminNotes, 4000),
+  estimatedStartDate: normalizeOptionalDate(body.estimatedStartDate),
+  completionDate: normalizeOptionalDate(body.completionDate),
 });
+
+const normalizeDeletePayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId, 80),
+  confirmation: clean(body.confirmation, 80),
+});
+
+const mapDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return String(value).slice(0, 10);
+};
 
 const mapJobRequest = (request) => ({
   id: request.id,
@@ -36,11 +71,14 @@ const mapJobRequest = (request) => ({
   preferredTimeframe: request.preferred_timeframe,
   description: request.description,
   adminNotes: request.admin_notes,
+  estimatedStartDate: mapDate(request.estimated_start_date),
+  completionDate: mapDate(request.completion_date),
   createdAt: request.created_at,
+  updatedAt: request.updated_at,
 });
 
 export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'PATCH', 'DELETE'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -103,13 +141,22 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
         return json(422, { ok: false, message: 'Choose a valid request status.' });
       }
 
+      const estimatedStartError = validateOptionalDate(payload.estimatedStartDate, 'Estimated start date');
+      const completionDateError = validateOptionalDate(payload.completionDate, 'Completion date');
+
+      if (estimatedStartError || completionDateError) {
+        return json(422, { ok: false, message: estimatedStartError || completionDateError });
+      }
+
       const [updatedRequest] = await db.sql`
         update job_requests
         set status = ${payload.status},
             admin_notes = ${payload.adminNotes || null},
+            estimated_start_date = ${payload.estimatedStartDate || null},
+            completion_date = ${payload.status === 'completed' ? (payload.completionDate || new Date().toISOString().slice(0, 10)) : (payload.completionDate || null)},
             updated_at = now()
         where id = ${payload.jobRequestId}
-        returning id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, created_at
+        returning id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
       `;
 
       if (!updatedRequest) {
@@ -123,7 +170,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
           ${'job_request.status_updated'},
           ${'job_request'},
           ${updatedRequest.id},
-          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status })}::jsonb
+          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status, estimatedStartDate: payload.estimatedStartDate || null, completionDate: updatedRequest.completion_date || null })}::jsonb
         )
       `;
 
@@ -135,8 +182,55 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       });
     }
 
+    if (request.method === 'DELETE') {
+      const body = await parseJsonBody(request);
+
+      if (!body) {
+        return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+      }
+
+      const payload = normalizeDeletePayload(body);
+
+      if (!payload.jobRequestId) {
+        return json(422, { ok: false, message: 'Job request is required.' });
+      }
+
+      if (payload.confirmation !== 'DELETE') {
+        return json(422, { ok: false, message: 'Type DELETE to permanently delete this request.' });
+      }
+
+      const [deletedRequest] = await db.sql`
+        delete from job_requests
+        where id = ${payload.jobRequestId}
+        returning id, status, requester_name, requester_email, service_type
+      `;
+
+      if (!deletedRequest) {
+        return json(404, { ok: false, authenticated: true, authorized: true, message: 'Job request not found.' });
+      }
+
+      await db.sql`
+        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+        values (
+          ${session.user_id},
+          ${'job_request.permanently_deleted'},
+          ${'job_request'},
+          ${deletedRequest.id},
+          ${JSON.stringify({ source: 'admin_dashboard', status: deletedRequest.status, requesterEmail: deletedRequest.requester_email, serviceType: deletedRequest.service_type })}::jsonb
+        )
+      `;
+
+      return json(200, {
+        ok: true,
+        authenticated: true,
+        authorized: true,
+        deleted: true,
+        requestId: deletedRequest.id,
+      });
+    }
+
     const jobRequests = await db.sql`
-      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, created_at
+      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
       from job_requests
       order by created_at desc
       limit 50
