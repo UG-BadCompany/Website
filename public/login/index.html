@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Client Portal | T&A Contracting</title>
-  <meta name="description" content="Secure magic-link portal access for T&A Contracting clients, admins, and workers.">
+  <meta name="description" content="Secure magic-link portal access for T&A Contracting clients.">
   <style>
   :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); }
   *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1120px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:68px 0 32px}.hero-card{display:grid;grid-template-columns:.9fr 1.1fr;gap:28px;align-items:start;padding:clamp(26px,5vw,56px);border:1px solid var(--line);border-radius:34px;background:rgba(255,255,255,.82);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.8rem);line-height:.95;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.75rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.login-grid{display:grid;grid-template-columns:1fr;gap:16px}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.form{display:grid;gap:14px;margin-top:18px}.field{display:grid;gap:8px}label{font-weight:900}input{width:100%;min-height:48px;border:1px solid rgba(17,17,17,.14);border-radius:16px;padding:12px 14px;background:#fffaf4;font:inherit}.status{min-height:24px;margin:0;color:var(--muted);font-weight:800}.status[data-state="error"]{color:var(--rust-dark)}.status[data-state="success"]{color:#287a4b}.notice{margin-top:18px;padding:14px 16px;border:1px solid rgba(173,63,24,.2);border-radius:18px;background:#fff1e4;color:var(--rust-dark);font-weight:800;line-height:1.55}.list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:900px){.hero-card,.login-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
@@ -18,18 +18,18 @@
     <div>
       <span class="eyebrow">Client Portal Access</span>
       <h1>Open your Client Portal with a secure magic link.</h1>
-      <p>Enter your email and we will send a secure portal link when email delivery is configured. If delivery needs attention, this page will show a temporary development link so portal testing can continue.</p>
-      <p class="notice">If you do not receive an email, check spam first. Then verify RESEND_API_KEY, MAGIC_LINK_FROM_EMAIL, and the Resend sender domain in Netlify.</p>
+      <p>Enter the email you used when requesting work from T&A Contracting. We will send a one-time secure link to open your client dashboard.</p>
+      <p class="notice">If you do not receive an email within a few minutes, check spam or contact T&A Contracting so we can confirm the email on your account.</p>
       <ul class="list">
-        <li>New client accounts start from the Request Work form and then use magic-link portal access.</li>
-        <li>Admin account seeded for thomas.debacker.ii@gmail.com.</li>
-        <li>No dashboard access should be treated as secure until the auth provider and /api/me session check are connected.</li>
+        <li>View job requests, estimated start dates, completion updates, and quotes connected to your account.</li>
+        <li>Submit another request for a saved property or add a new property from your dashboard.</li>
+        <li>No password is required; each sign-in uses a fresh secure email link.</li>
       </ul>
     </div>
     <div class="login-grid">
       <article class="card">
         <h2>Send magic link</h2>
-        <p>Enter your email to request a secure Client Portal link. The backend creates a magic-link token first, then sends email when Resend is configured correctly.</p>
+        <p>Enter your email to request a secure Client Portal link. For your privacy, links expire automatically and can only be used once.</p>
         <form class="form" data-auth-form data-endpoint="/api/auth/magic-link" aria-label="Magic link portal access request">
           <input type="hidden" name="bot-field" value="">
           <div class="field"><label for="magic-email">Email</label><input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
@@ -40,9 +40,9 @@
     </div>
   </div>
 </section>
-<section class="card"><h2>How account access works</h2><ul class="list"><li>1. A client submits Request Work and the backend creates or updates their client account.</li><li>2. The client uses magic-link portal access from this page to access their profile.</li><li>3. Admins can create users and set roles from admin tools.</li><li>4. Quote links will send clients back to the website through the same magic-link profile flow.</li></ul></section>
+<section class="card"><h2>How account access works</h2><ul class="list"><li>1. Request an estimate or contact T&A Contracting so we can connect your email to your client account.</li><li>2. Use this page to request a secure one-time sign-in link.</li><li>3. Open the link from your email to view requests, saved properties, quotes, and schedule updates.</li><li>4. Need help? Contact T&A Contracting and we can update your account details.</li></ul></section>
 </main>
-<footer class="wrap footer"><strong>T&A Contracting</strong> — Portal foundation preview. Full authentication, magic links, database, quote approvals, and payments come in the backend phase.</footer>
+<footer class="wrap footer"><strong>T&A Contracting</strong> — Secure client portal access for requests, properties, quotes, and project updates.</footer>
 <script>
   (() => {
     const forms = document.querySelectorAll('[data-auth-form]');
@@ -60,7 +60,7 @@
 
         const payload = Object.fromEntries(new FormData(form).entries());
         button.disabled = true;
-        setStatus('Checking secure portal access setup…');
+        setStatus('Sending secure sign-in link…');
 
         try {
           const response = await fetch(form.dataset.endpoint, {
@@ -69,8 +69,8 @@
             body: JSON.stringify(payload),
           });
           const result = await response.json().catch(() => ({}));
-          setStatus(result.message || 'Secure portal access needs email configuration.', response.ok && result.ok ? 'success' : 'error');
-          if (result.devMagicLink) {
+          setStatus(result.message || 'If that email is on file, a secure sign-in link will be sent shortly.', response.ok && result.ok ? 'success' : 'error');
+          if (result.devMagicLink && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
             const link = document.createElement('a');
             link.href = result.devMagicLink;
             link.textContent = 'Open development magic link';
@@ -79,7 +79,7 @@
             status.appendChild(link);
           }
         } catch {
-          setStatus('Secure portal access endpoint is not available in this preview. Deploy to Netlify Functions after configuring auth.', 'error');
+          setStatus('We could not request a sign-in link right now. Please try again or contact T&A Contracting.', 'error');
         } finally {
           button.disabled = false;
         }

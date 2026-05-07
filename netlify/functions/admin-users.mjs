@@ -18,7 +18,11 @@ const normalizeUserPayload = (payload = {}) => ({
   email: clean(payload.email).toLowerCase(),
   fullName: clean(payload.fullName || payload.name, 140),
   phone: clean(payload.phone, 60),
+  secondaryPhone: clean(payload.secondaryPhone, 60),
   companyName: clean(payload.companyName, 160),
+  mailingAddress: clean(payload.mailingAddress, 500),
+  internalNotes: clean(payload.internalNotes, 2000),
+  confirmation: clean(payload.confirmation, 80),
   roles: normalizeRoles(payload.roles?.length ? payload.roles : ['client']),
 });
 
@@ -90,7 +94,7 @@ const assignRoles = async (db, userId, roles) => {
 };
 
 export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -104,11 +108,21 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
 
     if (request.method === 'GET') {
       const users = await db.sql`
-        select app_users.id, app_users.email, app_users.full_name, app_users.phone, app_users.company_name, app_users.is_active, app_users.created_at,
-               coalesce(array_agg(roles.key order by roles.key) filter (where roles.key is not null), '{}') as roles
+        select app_users.id, app_users.email, app_users.full_name, app_users.phone, app_users.secondary_phone, app_users.company_name, app_users.mailing_address, app_users.internal_notes, app_users.is_active, app_users.created_at,
+               coalesce(array_agg(distinct roles.key order by roles.key) filter (where roles.key is not null), '{}') as roles,
+               coalesce(jsonb_agg(distinct jsonb_build_object(
+                 'id', properties.id,
+                 'label', properties.label,
+                 'street', properties.street,
+                 'city', properties.city,
+                 'state', properties.state,
+                 'postalCode', properties.postal_code,
+                 'accessNotes', properties.access_notes
+               )) filter (where properties.id is not null), '[]'::jsonb) as properties
         from app_users
         left join user_roles on user_roles.user_id = app_users.id
         left join roles on roles.id = user_roles.role_id
+        left join properties on properties.client_id = app_users.id
         group by app_users.id
         order by app_users.created_at desc
         limit 100
@@ -131,9 +145,13 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
           email: user.email,
           fullName: user.full_name,
           phone: user.phone,
+          secondaryPhone: user.secondary_phone,
           companyName: user.company_name,
+          mailingAddress: user.mailing_address,
+          internalNotes: user.internal_notes,
           isActive: user.is_active,
           roles: user.roles || [],
+          properties: user.properties || [],
           createdAt: user.created_at,
         })),
         roles: availableRoles.map((role) => ({
@@ -157,6 +175,62 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
 
     const payload = normalizeUserPayload(body);
 
+    if (request.method === 'DELETE') {
+      if (!payload.userId) {
+        return json(422, { ok: false, message: 'userId is required to delete a user.' });
+      }
+
+      if (payload.confirmation !== 'DELETE') {
+        return json(422, { ok: false, message: 'Type DELETE to delete this user.' });
+      }
+
+      const [deletedUser] = await db.sql`
+        update app_users
+        set is_active = false,
+            updated_at = now()
+        where id = ${payload.userId}
+        returning id, email, full_name, phone, secondary_phone, company_name, mailing_address, internal_notes, is_active
+      `;
+
+      if (!deletedUser) {
+        return json(404, { ok: false, message: 'User not found.' });
+      }
+
+      await db.sql`
+        update auth_sessions
+        set revoked_at = now()
+        where user_id = ${deletedUser.id}
+          and revoked_at is null
+      `;
+
+      await db.sql`
+        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+        values (
+          ${adminSession.session.user_id},
+          ${'user.deactivated_by_admin'},
+          'app_user',
+          ${deletedUser.id},
+          ${JSON.stringify({ email: deletedUser.email })}::jsonb
+        )
+      `;
+
+      return json(200, {
+        ok: true,
+        deleted: true,
+        user: {
+          id: deletedUser.id,
+          email: deletedUser.email,
+          fullName: deletedUser.full_name,
+          phone: deletedUser.phone,
+          secondaryPhone: deletedUser.secondary_phone,
+          companyName: deletedUser.company_name,
+          mailingAddress: deletedUser.mailing_address,
+          internalNotes: deletedUser.internal_notes,
+          isActive: deletedUser.is_active,
+        },
+      });
+    }
+
     if (request.method === 'POST') {
       const emailError = validateEmail(payload.email);
 
@@ -175,21 +249,30 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
 
     const [user] = request.method === 'POST'
       ? await db.sql`
-          insert into app_users (auth_provider, auth_subject, email, full_name, phone, company_name)
-          values ('magic_link', ${payload.email}, ${payload.email}, ${payload.fullName || null}, ${payload.phone || null}, ${payload.companyName || null})
+          insert into app_users (auth_provider, auth_subject, email, full_name, phone, secondary_phone, company_name, mailing_address, internal_notes)
+          values ('magic_link', ${payload.email}, ${payload.email}, ${payload.fullName || null}, ${payload.phone || null}, ${payload.secondaryPhone || null}, ${payload.companyName || null}, ${payload.mailingAddress || null}, ${payload.internalNotes || null})
           on conflict (email) do update set
-            full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
-            phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
-            company_name = coalesce(nullif(app_users.company_name, ''), excluded.company_name),
+            full_name = coalesce(nullif(excluded.full_name, ''), app_users.full_name),
+            phone = coalesce(nullif(excluded.phone, ''), app_users.phone),
+            secondary_phone = coalesce(nullif(excluded.secondary_phone, ''), app_users.secondary_phone),
+            company_name = coalesce(nullif(excluded.company_name, ''), app_users.company_name),
+            mailing_address = coalesce(nullif(excluded.mailing_address, ''), app_users.mailing_address),
+            internal_notes = coalesce(nullif(excluded.internal_notes, ''), app_users.internal_notes),
             is_active = true,
             updated_at = now()
-          returning id, email, full_name, phone, company_name
+          returning id, email, full_name, phone, secondary_phone, company_name, mailing_address, internal_notes, is_active
         `
       : await db.sql`
-          select id, email, full_name, phone, company_name
-          from app_users
+          update app_users
+          set full_name = ${payload.fullName || null},
+              phone = ${payload.phone || null},
+              secondary_phone = ${payload.secondaryPhone || null},
+              company_name = ${payload.companyName || null},
+              mailing_address = ${payload.mailingAddress || null},
+              internal_notes = ${payload.internalNotes || null},
+              updated_at = now()
           where id = ${payload.userId}
-          limit 1
+          returning id, email, full_name, phone, secondary_phone, company_name, mailing_address, internal_notes, is_active
         `;
 
     if (!user) {
@@ -205,7 +288,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         ${request.method === 'POST' ? 'user.created_by_admin' : 'user.roles_updated'},
         'app_user',
         ${user.id},
-        ${JSON.stringify({ roles: payload.roles, email: user.email })}::jsonb
+        ${JSON.stringify({ roles: payload.roles, email: user.email, updatedProfile: true })}::jsonb
       )
     `;
 
@@ -216,7 +299,11 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         email: user.email,
         fullName: user.full_name,
         phone: user.phone,
+        secondaryPhone: user.secondary_phone,
         companyName: user.company_name,
+        mailingAddress: user.mailing_address,
+        internalNotes: user.internal_notes,
+        isActive: user.is_active,
         roles: payload.roles,
       },
     });

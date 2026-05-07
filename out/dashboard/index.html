@@ -160,14 +160,24 @@
             <label>Full name
               <input name="fullName" data-admin-user-name placeholder="Worker Name">
             </label>
-            <label>Phone
+            <label>Primary phone
               <input name="phone" data-admin-user-phone placeholder="555-0100">
+            </label>
+            <label>Secondary phone
+              <input name="secondaryPhone" data-admin-user-secondary-phone placeholder="Optional second phone">
             </label>
             <label>Company
               <input name="companyName" data-admin-user-company placeholder="T&A Contracting">
             </label>
+            <label class="full">Mailing address
+              <input name="mailingAddress" data-admin-user-mailing-address placeholder="Street, city, state, ZIP">
+            </label>
+            <label class="full">Internal notes
+              <textarea name="internalNotes" data-admin-user-internal-notes placeholder="Admin-only notes, billing preferences, access needs, or contact instructions."></textarea>
+            </label>
+            <div class="full" data-admin-user-property-list></div>
             <div class="full" data-admin-user-role-list></div>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save user roles</button><span data-admin-user-form-status aria-live="polite"></span></div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save user</button><button class="btn btn-danger" type="button" data-admin-delete-user>Delete user</button><span data-admin-user-form-status aria-live="polite"></span></div>
           </form>
         </section>
       </div>
@@ -189,13 +199,16 @@
             <input name="phone" autocomplete="tel" placeholder="555-0100">
           </label>
           <label>Street address
-            <input name="streetAddress" autocomplete="street-address" placeholder="123 Main St">
+            <input name="streetAddress" data-client-property-street autocomplete="street-address" placeholder="123 Main St">
           </label>
           <label>City
-            <input name="city" autocomplete="address-level2" placeholder="Mesa">
+            <input name="city" data-client-property-city autocomplete="address-level2" placeholder="Mesa">
           </label>
           <label>Property label
-            <input name="label" placeholder="Home, rental, office">
+            <input name="label" data-client-property-label placeholder="Home, rental, office">
+          </label>
+          <label>Access notes
+            <input name="accessNotes" data-client-property-access-notes placeholder="Gate code, pets, best entrance">
           </label>
           <label>Preferred timeframe
             <input name="timeframe" placeholder="This week, flexible, urgent">
@@ -246,6 +259,7 @@
       const currentAdminRequests = new Map();
       const currentAdminRoles = new Map();
       const currentAdminUsers = new Map();
+      const currentClientProperties = new Map();
       let currentPermissions = [];
 
       const bindLogout = () => {
@@ -366,6 +380,8 @@
         const propertiesMetric = document.querySelector('[data-properties-metric]');
         const requests = result.requests || [];
         const properties = result.properties || [];
+        currentClientProperties.clear();
+        properties.forEach((property) => currentClientProperties.set(property.id, property));
 
         panelStatus.dataset.state = 'ready';
         panelStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No requests are connected to this account yet.';
@@ -385,6 +401,7 @@
           const selectedValue = propertySelect.value;
           propertySelect.innerHTML = '<option value="">New property / enter address below</option>' + properties.map((property) => `<option value="${escapeHtml(property.id)}">${escapeHtml(property.label || property.street || 'Property')} — ${escapeHtml(property.city || 'No city')}</option>`).join('');
           propertySelect.value = properties.some((property) => property.id === selectedValue) ? selectedValue : '';
+          fillClientPropertyFields(propertySelect.value, { overwrite: false });
         }
       };
 
@@ -511,6 +528,32 @@
         }
       };
 
+      const fillClientPropertyFields = (propertyId, { overwrite = true } = {}) => {
+        const property = currentClientProperties.get(propertyId);
+        const fields = {
+          streetAddress: document.querySelector('[data-client-property-street]'),
+          city: document.querySelector('[data-client-property-city]'),
+          label: document.querySelector('[data-client-property-label]'),
+          accessNotes: document.querySelector('[data-client-property-access-notes]'),
+        };
+
+        if (!property) {
+          if (overwrite) Object.values(fields).forEach((field) => { if (field) field.value = ''; });
+          return;
+        }
+
+        const values = {
+          streetAddress: property.street || '',
+          city: property.city || '',
+          label: property.label || '',
+          accessNotes: property.accessNotes || '',
+        };
+
+        Object.entries(fields).forEach(([key, field]) => {
+          if (field && (overwrite || !field.value)) field.value = values[key];
+        });
+      };
+
       const bindClientRequestForm = () => {
         const form = document.querySelector('[data-client-request-form]');
         const formStatus = document.querySelector('[data-client-request-form-status]');
@@ -520,6 +563,7 @@
         }
 
         form.dataset.bound = 'true';
+        form.querySelector('[data-client-property-select]')?.addEventListener('change', (event) => fillClientPropertyFields(event.target.value));
         form.addEventListener('submit', async (event) => {
           event.preventDefault();
           const formData = new FormData(form);
@@ -764,11 +808,15 @@
         if (form) form.reset();
         const userId = document.querySelector('[data-admin-user-id]');
         const email = document.querySelector('[data-admin-user-email]');
+        const deleteButton = document.querySelector('[data-admin-delete-user]');
+        const propertyList = document.querySelector('[data-admin-user-property-list]');
         const title = document.querySelector('[data-admin-user-modal-title]');
         const summary = document.querySelector('[data-admin-user-modal-summary]');
         const status = document.querySelector('[data-admin-user-form-status]');
         if (userId) userId.value = '';
         if (email) email.disabled = false;
+        if (deleteButton) deleteButton.hidden = true;
+        if (propertyList) propertyList.innerHTML = '';
         if (title) title.textContent = 'Create user';
         if (summary) summary.textContent = 'Create a user and assign roles.';
         if (status) status.textContent = '';
@@ -810,9 +858,14 @@
         document.querySelector('[data-admin-user-email]').disabled = true;
         document.querySelector('[data-admin-user-name]').value = user.fullName || '';
         document.querySelector('[data-admin-user-phone]').value = user.phone || '';
+        document.querySelector('[data-admin-user-secondary-phone]').value = user.secondaryPhone || '';
         document.querySelector('[data-admin-user-company]').value = user.companyName || '';
-        document.querySelector('[data-admin-user-modal-title]').textContent = `Edit roles: ${user.fullName || user.email}`;
-        document.querySelector('[data-admin-user-modal-summary]').textContent = `${user.email || ''}${user.phone ? ` • ${user.phone}` : ''}`;
+        document.querySelector('[data-admin-user-mailing-address]').value = user.mailingAddress || '';
+        document.querySelector('[data-admin-user-internal-notes]').value = user.internalNotes || '';
+        document.querySelector('[data-admin-delete-user]').hidden = false;
+        document.querySelector('[data-admin-user-modal-title]').textContent = `Edit user: ${user.fullName || user.email}`;
+        document.querySelector('[data-admin-user-modal-summary]').textContent = `${user.email || ''}${user.phone ? ` • ${user.phone}` : ''}${user.secondaryPhone ? ` • ${user.secondaryPhone}` : ''}`;
+        renderUserProperties(user.properties || []);
         renderUserRoleInputs(user.roles || []);
         openAdminUserModal();
       };
@@ -828,15 +881,15 @@
         }
 
         const matches = [...currentAdminUsers.values()]
-          .filter((user) => [user.fullName, user.email, user.phone, user.companyName, ...(user.roles || [])]
+          .filter((user) => [user.fullName, user.email, user.phone, user.secondaryPhone, user.companyName, user.mailingAddress, ...(user.roles || []), ...((user.properties || []).flatMap((property) => [property.label, property.street, property.city, property.postalCode]))]
             .some((value) => String(value || '').toLowerCase().includes(cleaned)))
           .slice(0, 8);
 
         results.innerHTML = matches.length ? matches.map((user) => `
           <article class="admin-request">
-            <span class="admin-request-badge">${escapeHtml((user.roles || []).join(', ') || 'no role')}</span>
+            <span class="admin-request-badge">${escapeHtml(user.isActive === false ? 'inactive' : ((user.roles || []).join(', ') || 'no role'))}</span>
             <strong>${escapeHtml(user.fullName || user.email)}</strong>
-            <div class="admin-request-meta"><span>${escapeHtml(user.email)}</span><span>${escapeHtml(user.phone || 'No phone')}</span></div>
+            <div class="admin-request-meta"><span>${escapeHtml(user.email)}</span><span>${escapeHtml(user.phone || 'No phone')}</span><span>${(user.properties || []).length} address${(user.properties || []).length === 1 ? '' : 'es'}</span></div>
             <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-edit-user="${escapeHtml(user.id)}">Open user</button></div>
           </article>
         `).join('') : '<p class="session-status">No users matched that search.</p>';
@@ -918,6 +971,31 @@
             if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save role.');
             if (status) status.textContent = 'Role saved.';
             closeAdminRoleModal();
+            await loadAdminAccess();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          }
+        });
+
+        document.querySelector('[data-admin-delete-user]')?.addEventListener('click', async () => {
+          const status = document.querySelector('[data-admin-user-form-status]');
+          const userId = document.querySelector('[data-admin-user-id]')?.value || '';
+          if (!userId) return;
+          const confirmation = window.prompt('This deactivates the user and revokes active sessions. Type DELETE to continue.');
+          if (confirmation !== 'DELETE') {
+            if (status) status.textContent = 'User delete cancelled.';
+            return;
+          }
+          if (status) status.textContent = 'Deleting user…';
+          try {
+            const response = await fetch('/api/admin/users', {
+              method: 'DELETE',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({ userId, confirmation }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not delete user.');
+            closeAdminUserModal();
             await loadAdminAccess();
           } catch (error) {
             if (status) status.textContent = error.message;
