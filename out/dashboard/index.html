@@ -11,14 +11,14 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Login</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Client Portal</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
         <div>
           <span class="eyebrow">Secure Dashboard Placeholder</span>
-          <h1>The real dashboard unlocks after secure login.</h1>
-          <p>This page is a placeholder until magic-link login, request-created client profiles, and /api/me session checks are connected. After secure login, the backend will load the user profile, roles, and permissions before showing client, worker, admin, or combined tools.</p>
+          <h1>The real dashboard unlocks after secure portal access.</h1>
+          <p>This page is a placeholder until magic-link portal access, request-created client profiles, and /api/me session checks are connected. After secure portal access, the backend will load the user profile, roles, and permissions before showing client, worker, admin, or combined tools.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
@@ -93,7 +93,7 @@
       <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
       <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
       <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
-      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure login gate</strong><p>Next step is making /dashboard/ require auth provider session verification through /api/me before data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
+      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>Next step is making /dashboard/ require auth provider session verification through /api/me before data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
     </section>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard placeholder. Magic-link authentication and /api/me session loading come next.</footer>
@@ -320,7 +320,7 @@
         })
         .catch(() => {
           status.dataset.state = 'error';
-          status.textContent = 'Session check is unavailable in this local/static preview. Deploy Netlify Functions to verify login.';
+          status.textContent = 'Session check is unavailable in this local/static preview. Deploy Netlify Functions to verify portal access.';
         });
     })();
   </script>
