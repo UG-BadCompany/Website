@@ -39,3 +39,10 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 - Use Netlify Functions to enforce permissions before reading or writing database records.
 - Use application-side guards to hide UI controls the user cannot access.
 - Never rely on hidden UI alone for security; server-side functions must enforce access.
+
+## Implemented API gates
+
+| API route | Required session | Required role | Access |
+| --- | --- | --- | --- |
+| `GET /api/me` | Yes | Any active user role | Returns the signed-in user and assigned roles. |
+| `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
