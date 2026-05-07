@@ -11,6 +11,7 @@ import {
   validateEmail,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
+import { createLogoutHandler } from '../netlify/functions/logout.mjs';
 import { createMagicLinkHandler } from '../netlify/functions/request-magic-link.mjs';
 import { createVerifyMagicLinkHandler } from '../netlify/functions/verify-magic-link.mjs';
 
@@ -234,6 +235,25 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
     defaultView: 'client',
     availableViews: ['client'],
   });
+});
+
+test('logout endpoint revokes the current session and clears the session cookie', async () => {
+  const db = createMockDb();
+  const handler = createLogoutHandler({ getDatabase: async () => db });
+
+  const response = await handler(new Request('https://site.test/api/auth/logout', {
+    method: 'POST',
+    headers: { cookie: 'ta_session=session-token' },
+  }));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.ok, true);
+  assert.match(response.headers.get('set-cookie'), /ta_session=;/);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(db.queries.length, 1);
+  assert.match(db.queries[0].text, /update auth_sessions/);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
 test('magic-link endpoint accepts honeypot submissions without writing tokens', async () => {

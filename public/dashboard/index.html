@@ -11,14 +11,14 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Client Portal</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Client Portal</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
         <div>
-          <span class="eyebrow">Secure Dashboard Placeholder</span>
-          <h1>The real dashboard unlocks after secure portal access.</h1>
-          <p>This page is a placeholder until magic-link portal access, request-created client profiles, and /api/me session checks are connected. After secure portal access, the backend will load the user profile, roles, and permissions before showing client, worker, admin, or combined tools.</p>
+          <span class="eyebrow">Secure Client Portal</span>
+          <h1>Your dashboard opens after secure portal access.</h1>
+          <p>Use one magic-link sign-in to load your profile, roles, permissions, requests, properties, and quotes. The dashboard only reveals tools after /api/me confirms a verified session.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
@@ -100,19 +100,41 @@
       <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
       <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
       <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
-      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>Next step is making /dashboard/ require auth provider session verification through /api/me before data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
+      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>/api/me now verifies the magic-link session before role-scoped dashboard data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
     </section>
   </main>
-  <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard placeholder. Magic-link authentication and /api/me session loading come next.</footer>
+  <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
     (() => {
       const status = document.querySelector('[data-session-status]');
+      const logoutButton = document.querySelector('[data-logout-button]');
 
       if (!status) {
         return;
       }
 
       const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+
+      const bindLogout = () => {
+        if (!logoutButton || logoutButton.dataset.bound) {
+          return;
+        }
+
+        logoutButton.dataset.bound = 'true';
+        logoutButton.addEventListener('click', async () => {
+          logoutButton.disabled = true;
+          status.textContent = 'Signing out…';
+
+          try {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { accept: 'application/json' },
+            });
+          } finally {
+            window.location.href = '/login/?signed-out=1';
+          }
+        });
+      };
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
       const setDashboardView = (view) => {
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
@@ -427,6 +449,12 @@
 
           status.dataset.state = 'ready';
           status.textContent = `Signed in as ${result.user.email}. Roles: ${result.user.roles.join(', ') || 'none yet'}.`;
+
+          if (logoutButton) {
+            logoutButton.hidden = false;
+          }
+
+          bindLogout();
           configureDashboardForUser(result.user);
 
           if (result.user.permissions?.canViewClientTools) {

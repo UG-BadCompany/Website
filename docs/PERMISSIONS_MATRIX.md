@@ -45,6 +45,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | API route | Required session | Required role | Access |
 | --- | --- | --- | --- |
 | `GET /api/me` | Yes | Any active user role | Returns the signed-in user and assigned roles. |
+| `POST /api/auth/logout` | Optional | Any signed-in user | Revokes the current session when present and clears the session cookie. |
 | `GET /api/client/job-requests` | Yes | `client` or `admin` | Returns job requests and property summaries scoped to the signed-in client account. |
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |

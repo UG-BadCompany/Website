@@ -171,6 +171,12 @@ export const createSessionCookie = (sessionToken, request) => {
   return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Expires=${expires}${secure}`;
 };
 
+export const createExpiredSessionCookie = (request) => {
+  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+
+  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
+};
+
 export const parseCookies = (cookieHeader = '') => Object.fromEntries(
   cookieHeader
     .split(';')

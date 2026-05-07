@@ -107,3 +107,9 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Accepting a quote updates the related job request to `accepted`; accepting or denying writes an audit event.
 - The public homepage portal section now explains real client actions: request quotes, approve/deny quotes, track repair status, manage properties, review quote history, and prepare for payments.
 
+
+## Added in Sprint 1I
+
+- `POST /api/auth/logout` revokes the current hashed session in `auth_sessions` and clears the HttpOnly session cookie.
+- The unified dashboard shows a signed-in-only Sign out button after `/api/me` confirms the session, then returns users to `/login/`.
+- Dashboard copy now reflects the connected magic-link session and `/api/me` role-loading flow instead of calling the page only a placeholder.
