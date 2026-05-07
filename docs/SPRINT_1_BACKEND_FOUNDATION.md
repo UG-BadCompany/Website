@@ -89,3 +89,9 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Client request and property counts update the dashboard summary without exposing worker, admin, or other-client data.
 - Request Work submissions reuse an existing property when the same client submits another request for the same address, while different addresses remain separate properties under the same account.
 
+## Added in Sprint 1F
+
+- Signed-in clients can submit new dashboard job requests through `POST /api/client/job-requests`.
+- Portal-created requests must use an existing property owned by the signed-in account or create a new property under that same account.
+- The client dashboard includes a request form that refreshes the client-scoped request and property lists after a successful submission.
+

@@ -203,3 +203,114 @@ test('client job request endpoint returns only requests for the signed-in client
   assert.equal(db.queries[4].values[0], 'client-1');
   assert.equal(db.queries[4].values[1], 'client-1');
 });
+
+test('client job request endpoint creates a portal request for an owned property', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [{ id: 'property-1', street: '123 Main St', city: 'Mesa' }],
+    [{ id: 'job-3', created_at: '2026-05-08T00:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
+    method: 'POST',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      propertyId: 'property-1',
+      service: 'Drywall repair',
+      timeframe: 'Next week',
+      description: 'Patch the hallway drywall.',
+    }),
+  })));
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.id, 'job-3');
+  assert.equal(response.body.propertyId, 'property-1');
+  assert.match(db.queries[3].text, /where id = \?/);
+  assert.match(db.queries[3].text, /and client_id = \?/);
+  assert.deepEqual(db.queries[3].values, ['property-1', 'client-1']);
+  assert.match(db.queries[4].text, /insert into job_requests/);
+  assert.deepEqual(db.queries[4].values.slice(0, 10), [
+    'client-1',
+    'property-1',
+    'Client',
+    'client@example.com',
+    '555-0100',
+    'Mesa',
+    '123 Main St',
+    'Drywall repair',
+    'Next week',
+    'Patch the hallway drywall.',
+  ]);
+});
+
+test('client job request endpoint blocks requests for another client property', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [],
+  ]);
+  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
+    method: 'POST',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      propertyId: 'other-property',
+      service: 'Fence repair',
+      description: 'Please fix the gate.',
+    }),
+  })));
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.authorized, false);
+  assert.equal(db.queries.length, 4);
+  assert.match(db.queries[3].text, /and client_id = \?/);
+  assert.deepEqual(db.queries[3].values, ['other-property', 'client-1']);
+});
+
+test('client job request endpoint creates a new property when the client enters a new address', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client', phone: null }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [],
+    [{ id: 'property-2', street: '456 Oak Ave', city: 'Tempe' }],
+    [{ id: 'job-4', created_at: '2026-05-08T01:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
+    method: 'POST',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      label: 'Rental',
+      phone: '555-0200',
+      streetAddress: '456 Oak Ave',
+      city: 'Tempe',
+      accessNotes: 'Text before arrival.',
+      service: 'Fence repair',
+      description: 'Please fix the gate.',
+    }),
+  })));
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.propertyId, 'property-2');
+  assert.match(db.queries[3].text, /from properties/);
+  assert.match(db.queries[4].text, /insert into properties/);
+  assert.deepEqual(db.queries[4].values, ['client-1', 'Rental', '456 Oak Ave', 'Tempe', 'Text before arrival.']);
+  assert.deepEqual(db.queries[5].values.slice(0, 10), [
+    'client-1',
+    'property-2',
+    'Client',
+    'client@example.com',
+    '555-0200',
+    'Tempe',
+    '456 Oak Ave',
+    'Fence repair',
+    null,
+    'Please fix the gate.',
+  ]);
+});
