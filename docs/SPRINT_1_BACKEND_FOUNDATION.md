@@ -123,7 +123,7 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1K
 
-- Added custom role and role-permission storage so admins can create roles beyond client/worker/admin.
+- Added custom role and role-permission storage in `0005_custom_roles_permissions.sql` so admins can create roles beyond client/worker/admin.
 - Added `GET/POST/PATCH /api/admin/roles` for role creation and permission toggles; the admin role keeps every permission by default.
 - Expanded `GET/POST/PATCH /api/admin/users` so admins can list users, see assignable roles, and assign custom roles.
 - `/api/me` now returns permission keys and dashboard capability flags derived from role permissions, not only hard-coded role names.
