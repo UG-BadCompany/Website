@@ -1,0 +1,1238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | T&A Contracting</title>
+  <meta name="description" content="Secure dashboard placeholder for T&A Contracting clients, workers, and admins.">
+  <style>
+    :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+  </style>
+</head>
+<body>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="dashboard-hero">
+        <div>
+          <span class="eyebrow">Secure Client Portal</span>
+          <h1>Your dashboard opens after secure portal access.</h1>
+          <p>Use one magic-link sign-in to load your profile, roles, permissions, requests, properties, and quotes. The dashboard only reveals tools after /api/me confirms a verified session.</p>
+          <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
+            <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
+            <button class="role active-client" type="button" data-view-button="client">Client view</button>
+            <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
+          </div>
+        </div>
+          <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
+        <div class="logo-panel"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"></div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
+      <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
+      <article class="card"><strong>Quotes Waiting</strong><div class="metric" data-quotes-metric>0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
+      <article class="card"><strong>Properties</strong><div class="metric" data-properties-metric>0</div><p>Client properties connected to submitted requests will appear here.</p></article>
+    </section>
+
+
+    <section class="card admin-inbox" data-admin-inbox data-dashboard-section data-views="admin" hidden>
+      <strong>Admin request inbox</strong>
+      <p>New estimate requests from the public form appear here for admins after sign-in.</p>
+      <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
+      <div class="admin-request-list" data-admin-request-list></div>
+      <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
+        <section class="admin-request-modal-panel">
+          <div class="admin-request-modal-header">
+            <div>
+              <strong id="admin-detail-title" data-admin-detail-title>Select a request to quote</strong>
+              <p data-admin-detail-summary>Open a client request to update status, create a quote, and prepare worker assignment details.</p>
+            </div>
+            <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close request workspace">×</button>
+          </div>
+          <div class="client-request-form">
+            <form data-admin-status-form>
+              <input type="hidden" name="jobRequestId" data-admin-status-request-id>
+              <div class="client-request-form-grid">
+                <label>Status
+                  <select name="status" data-admin-status-select>
+                    <option value="new">New</option>
+                    <option value="needs_review">Needs review</option>
+                    <option value="quote_in_progress">Quote in progress</option>
+                    <option value="quote_sent">Quote sent</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="in_progress">In progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </label>
+                <label>Estimated start date
+                  <input name="estimatedStartDate" type="date" data-admin-estimated-start-date>
+                </label>
+                <label>Completion date
+                  <input name="completionDate" type="date" data-admin-completion-date>
+                </label>
+                <label>Future worker assignment
+                  <select disabled>
+                    <option>Worker scheduling comes next</option>
+                  </select>
+                </label>
+                <label class="full">Admin notes
+                  <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
+                </label>
+              </div>
+              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Mark completed today</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
+            </form>
+            <form data-admin-quote-form>
+              <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
+              <div class="client-request-form-grid">
+                <label>Quote title
+                  <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
+                </label>
+                <label>Amount
+                  <input name="amount" type="number" min="0" step="0.01" required placeholder="250.00">
+                </label>
+                <label class="full">Quote summary
+                  <textarea name="summary" required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
+                </label>
+                <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
+              </div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </section>
+
+
+    <section class="card admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
+      <strong>Admin roles & users</strong>
+      <p>Search users, update profile details, and manage roles from one selector. Choose an existing role to edit it, or create a new role from the same role manager.</p>
+      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
+      <form class="client-request-form" data-admin-role-picker-form>
+        <strong>Manage roles</strong>
+        <div class="client-request-form-grid">
+          <label class="full">Find or edit a role
+            <select data-admin-role-select>
+              <option value="">Select a role to edit</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit selected role</button><button class="btn btn-primary" type="button" data-admin-new-role>Create new role</button></div>
+      </form>
+      <form class="client-request-form" data-admin-user-search-form>
+        <strong>Find a user</strong>
+        <label>Search by name, email, phone, company, or role
+          <input name="query" data-admin-user-search placeholder="Start typing a user name or email">
+        </label>
+        <div class="admin-request-list" data-admin-user-search-results></div>
+      </form>
+
+      <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" aria-labelledby="admin-role-modal-title" hidden>
+        <section class="admin-request-modal-panel">
+          <div class="admin-request-modal-header">
+            <div><strong id="admin-role-modal-title" data-admin-role-modal-title>Create role</strong><p>Create or update role permissions.</p></div>
+            <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-role-modal-close aria-label="Close role editor">×</button>
+          </div>
+          <form class="client-request-form" data-admin-role-form>
+            <input type="hidden" name="roleId" data-admin-role-id>
+            <label>Role key
+              <input name="key" data-admin-role-key placeholder="crew-lead">
+            </label>
+            <label>Role name
+              <input name="name" data-admin-role-name required placeholder="Crew Lead">
+            </label>
+            <label class="full">Description
+              <textarea name="description" data-admin-role-description placeholder="What this role can do."></textarea>
+            </label>
+            <div class="full" data-admin-permission-list></div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save role</button><span data-admin-role-form-status aria-live="polite"></span></div>
+          </form>
+        </section>
+      </div>
+
+      <div class="admin-request-modal" data-admin-user-modal role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title" hidden>
+        <section class="admin-request-modal-panel">
+          <div class="admin-request-modal-header">
+            <div><strong id="admin-user-modal-title" data-admin-user-modal-title>Edit user roles</strong><p data-admin-user-modal-summary>Select the roles this user should have.</p></div>
+            <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-user-modal-close aria-label="Close user role editor">×</button>
+          </div>
+          <form class="client-request-form" data-admin-user-form>
+            <input type="hidden" name="userId" data-admin-user-id>
+            <label>Email
+              <input name="email" type="email" data-admin-user-email placeholder="worker@example.com">
+            </label>
+            <label>Full name
+              <input name="fullName" data-admin-user-name placeholder="Worker Name">
+            </label>
+            <label>Primary phone
+              <input name="phone" data-admin-user-phone placeholder="555-0100">
+            </label>
+            <label>Secondary phone
+              <input name="secondaryPhone" data-admin-user-secondary-phone placeholder="Optional second phone">
+            </label>
+            <label>Company
+              <input name="companyName" data-admin-user-company placeholder="T&A Contracting">
+            </label>
+            <label class="full">Mailing address
+              <input name="mailingAddress" data-admin-user-mailing-address placeholder="Street, city, state, ZIP">
+            </label>
+            <label class="full">Internal notes
+              <textarea name="internalNotes" data-admin-user-internal-notes placeholder="Admin-only notes, billing preferences, access needs, or contact instructions."></textarea>
+            </label>
+            <div class="full" data-admin-user-property-list></div>
+            <div class="full" data-admin-user-role-list></div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save user</button><button class="btn btn-danger" type="button" data-admin-delete-user>Delete user</button><span data-admin-user-form-status aria-live="polite"></span></div>
+          </form>
+        </section>
+      </div>
+    </section>
+
+    <section class="card client-requests" id="submit-request" data-client-requests data-dashboard-section data-views="client" hidden>
+      <strong>My job requests</strong>
+      <p>Signed-in clients can see the estimate requests connected to their account.</p>
+      <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
+      <form class="client-request-form" data-client-request-form>
+        <strong>Submit another request</strong>
+        <div class="client-request-form-grid">
+          <label>Existing property
+            <select name="propertyId" data-client-property-select>
+              <option value="">New property / enter address below</option>
+            </select>
+          </label>
+          <label>Phone if missing from profile
+            <input name="phone" autocomplete="tel" placeholder="555-0100">
+          </label>
+          <label>Street address
+            <input name="streetAddress" data-client-property-street autocomplete="street-address" placeholder="123 Main St">
+          </label>
+          <label>City
+            <input name="city" data-client-property-city autocomplete="address-level2" placeholder="Mesa">
+          </label>
+          <label>Property label
+            <input name="label" data-client-property-label placeholder="Home, rental, office">
+          </label>
+          <label>Access notes
+            <input name="accessNotes" data-client-property-access-notes placeholder="Gate code, pets, best entrance">
+          </label>
+          <label>Preferred timeframe
+            <input name="timeframe" placeholder="This week, flexible, urgent">
+          </label>
+          <label class="full">Service needed
+            <input name="service" required placeholder="Drywall repair, fence repair, remodel help">
+          </label>
+          <label class="full">Project details
+            <textarea name="description" required placeholder="Tell us what needs to be done and any access details."></textarea>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
+      </form>
+      <div class="client-request-list" data-client-request-list></div>
+    </section>
+
+    <section class="card client-properties" data-client-properties data-dashboard-section data-views="client" hidden>
+      <strong>My properties</strong>
+      <p>Edit saved property details so future requests use the right address and access information.</p>
+      <p class="session-status" data-client-properties-status role="status" aria-live="polite">Loading your properties…</p>
+      <div class="client-property-list" data-client-property-list></div>
+    </section>
+
+    <section class="card client-quotes" data-client-quotes data-dashboard-section data-views="client" hidden>
+      <strong>My quotes</strong>
+      <p>Quotes connected to your account will appear here for review before approvals and payments are added.</p>
+      <p class="session-status" data-client-quotes-status role="status" aria-live="polite">Loading your quotes…</p>
+      <div class="client-quote-list" data-client-quote-list></div>
+    </section>
+
+
+    <section class="tools" aria-label="Role based dashboard tools">
+      <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
+      <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
+      <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
+      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>/api/me now verifies the magic-link session before role-scoped dashboard data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
+    </section>
+  </main>
+  <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
+  <script>
+    (() => {
+      const status = document.querySelector('[data-session-status]');
+      const logoutButton = document.querySelector('[data-logout-button]');
+
+      if (!status) {
+        return;
+      }
+
+      const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+      const currentAdminRequests = new Map();
+      const currentAdminRoles = new Map();
+      const currentAdminUsers = new Map();
+      const currentClientProperties = new Map();
+      let currentPermissions = [];
+
+      const bindLogout = () => {
+        if (!logoutButton || logoutButton.dataset.bound) {
+          return;
+        }
+
+        logoutButton.dataset.bound = 'true';
+        logoutButton.addEventListener('click', async () => {
+          logoutButton.disabled = true;
+          status.textContent = 'Signing out…';
+
+          try {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { accept: 'application/json' },
+            });
+          } finally {
+            window.location.href = '/login/?signed-out=1';
+          }
+        });
+      };
+      const bindRequestEstimateLink = () => {
+        const link = document.querySelector('[data-request-estimate-link]');
+        if (!link || link.dataset.bound) return;
+        link.dataset.bound = 'true';
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          setDashboardView('client');
+          document.querySelector('#submit-request')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.querySelector('[name="service"]')?.focus({ preventScroll: true });
+        });
+      };
+      const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
+      const formatDate = (value) => {
+        if (!value) return '';
+        const date = new Date(`${value}T00:00:00`);
+        return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+      };
+      const setDashboardView = (view) => {
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          const views = (section.dataset.views || '').split(' ');
+          section.hidden = !views.includes(view);
+        });
+
+        document.querySelectorAll('[data-view-button]').forEach((button) => {
+          button.dataset.active = String(button.dataset.viewButton === view);
+        });
+      };
+      const configureDashboardForUser = (user) => {
+        const permissions = user.permissions || {};
+        const availableViews = permissions.availableViews || user.roles || [];
+        const switcher = document.querySelector('[data-view-switcher]');
+
+        if (switcher && permissions.canSwitchDashboardView) {
+          switcher.hidden = false;
+          switcher.querySelectorAll('[data-view-button]').forEach((button) => {
+            button.hidden = !availableViews.includes(button.dataset.viewButton);
+            button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+          });
+        }
+
+        setDashboardView(permissions.defaultView || availableViews[0] || 'client');
+      };
+      const renderRequestCard = (request, { admin = false } = {}) => {
+        const className = admin ? 'admin-request' : 'client-request';
+        const badgeClass = admin ? 'admin-request-badge' : 'client-request-badge';
+        const metaClass = admin ? 'admin-request-meta' : 'client-request-meta';
+        const title = admin
+          ? `${escapeHtml(request.serviceType)} — ${escapeHtml(request.requesterName)}`
+          : `${escapeHtml(request.serviceType)} request`;
+        const contactMeta = admin
+          ? `<span>${escapeHtml(request.requesterPhone || 'No phone')}</span><span>${escapeHtml(request.requesterEmail || 'No email')}</span>`
+          : `<span>${escapeHtml(request.streetAddress || 'No street address')}</span>`;
+        const scheduleMeta = [
+          request.estimatedStartDate ? `Est. start: ${formatDate(request.estimatedStartDate)}` : '',
+          request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
+        ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
+
+        return `
+          <article class="${className}">
+            <span class="${badgeClass}">${escapeHtml(request.status.replaceAll('_', ' '))}</span>
+            <strong>${title}</strong>
+            <div class="${metaClass}">
+              <span>${escapeHtml(request.city || 'No city')}</span>
+              ${contactMeta}
+              <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
+              ${scheduleMeta}
+            </div>
+            <p>${escapeHtml(request.description)}</p>
+            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : ''}
+          </article>
+        `;
+      };
+
+      const renderQuoteCard = (quote) => `
+        <article class="client-quote">
+          <span class="client-quote-badge">${escapeHtml(quote.status.replaceAll('_', ' '))}</span>
+          <strong>${escapeHtml(quote.title)} — ${formatMoney(quote.amountCents)}</strong>
+          <div class="client-quote-meta">
+            <span>${escapeHtml(quote.jobRequest?.serviceType || 'No linked request')}</span>
+            <span>${escapeHtml(quote.property?.street || 'No property')}</span>
+            <span>${escapeHtml(quote.property?.city || 'No city')}</span>
+          </div>
+          ${quote.summary ? `<p>${escapeHtml(quote.summary)}</p>` : ''}
+          ${['sent', 'viewed'].includes(quote.status) ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-quote-action="accept" data-quote-id="${escapeHtml(quote.id)}">Approve quote</button><button class="btn btn-danger" type="button" data-quote-action="decline" data-quote-id="${escapeHtml(quote.id)}">Deny quote</button></div>` : ''}
+        </article>
+      `;
+
+      const renderPropertyCard = (property) => `
+        <article class="client-property">
+          <span class="client-property-badge">${property.requestCount || 0} request${property.requestCount === 1 ? '' : 's'}</span>
+          <strong>${escapeHtml(property.label || property.street || 'Property')}</strong>
+          <div class="client-property-meta">
+            <span>${escapeHtml(property.street || 'No street address')}</span>
+            <span>${escapeHtml([property.city, property.state].filter(Boolean).join(', ') || 'No city')}</span>
+            <span>${escapeHtml(property.postalCode || 'No ZIP')}</span>
+          </div>
+          ${property.accessNotes ? `<p>${escapeHtml(property.accessNotes)}</p>` : ''}
+          <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-edit-property="${escapeHtml(property.id)}">Edit property</button></div>
+        </article>
+      `;
+
+      const renderClientData = (result) => {
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const requestList = document.querySelector('[data-client-request-list]');
+        const propertyList = document.querySelector('[data-client-property-list]');
+        const propertyStatus = document.querySelector('[data-client-properties-status]');
+        const propertySelect = document.querySelector('[data-client-property-select]');
+        const openMetric = document.querySelector('[data-open-requests-metric]');
+        const propertiesMetric = document.querySelector('[data-properties-metric]');
+        const requests = result.requests || [];
+        const properties = result.properties || [];
+        currentClientProperties.clear();
+        properties.forEach((property) => currentClientProperties.set(property.id, property));
+
+        panelStatus.dataset.state = 'ready';
+        panelStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No requests are connected to this account yet.';
+        if (propertyStatus) {
+          propertyStatus.dataset.state = 'ready';
+          propertyStatus.textContent = properties.length ? `${properties.length} propert${properties.length === 1 ? 'y' : 'ies'} loaded.` : 'No saved properties yet.';
+        }
+
+        if (openMetric && result.summary) {
+          openMetric.textContent = String(result.summary.active || 0);
+        }
+
+        if (propertiesMetric && result.summary) {
+          propertiesMetric.textContent = String(result.summary.properties || 0);
+        }
+
+        requestList.innerHTML = requests.map((request) => renderRequestCard(request)).join('');
+        propertyList.innerHTML = properties.map((property) => renderPropertyCard(property)).join('');
+
+        if (propertySelect) {
+          const selectedValue = propertySelect.value;
+          propertySelect.innerHTML = '<option value="">New property / enter address below</option>' + properties.map((property) => `<option value="${escapeHtml(property.id)}">${escapeHtml(property.label || property.street || 'Property')} — ${escapeHtml(property.city || 'No city')}</option>`).join('');
+          propertySelect.value = properties.some((property) => property.id === selectedValue) ? selectedValue : '';
+          fillClientPropertyFields(propertySelect.value, { overwrite: false });
+        }
+      };
+
+      const renderClientQuoteData = (result) => {
+        const panelStatus = document.querySelector('[data-client-quotes-status]');
+        const quoteList = document.querySelector('[data-client-quote-list]');
+        const quotesMetric = document.querySelector('[data-quotes-metric]');
+        const quotes = result.quotes || [];
+
+        if (!panelStatus || !quoteList) {
+          return;
+        }
+
+        panelStatus.dataset.state = 'ready';
+        panelStatus.textContent = quotes.length ? `${quotes.length} quote${quotes.length === 1 ? '' : 's'} loaded.` : 'No quotes are connected to this account yet.';
+
+        if (quotesMetric && result.summary) {
+          quotesMetric.textContent = String(result.summary.waiting || 0);
+        }
+
+        quoteList.innerHTML = quotes.map((quote) => renderQuoteCard(quote)).join('');
+      };
+
+      const decideQuote = async (quoteId, action) => {
+        const panelStatus = document.querySelector('[data-client-quotes-status]');
+
+        if (panelStatus) {
+          panelStatus.textContent = action === 'accept' ? 'Approving quote…' : 'Denying quote…';
+        }
+
+        const response = await fetch('/api/client/quotes', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ quoteId, action }),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || 'We could not update that quote.');
+        }
+
+        await loadClientQuotes();
+      };
+
+      const bindQuoteDecisionActions = () => {
+        const quotePanel = document.querySelector('[data-client-quotes]');
+
+        if (!quotePanel || quotePanel.dataset.bound) {
+          return;
+        }
+
+        quotePanel.dataset.bound = 'true';
+        quotePanel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-quote-action]');
+
+          if (!button) {
+            return;
+          }
+
+          button.disabled = true;
+
+          try {
+            await decideQuote(button.dataset.quoteId, button.dataset.quoteAction);
+          } catch (error) {
+            const panelStatus = document.querySelector('[data-client-quotes-status]');
+
+            if (panelStatus) {
+              panelStatus.dataset.state = 'error';
+              panelStatus.textContent = error.message;
+            }
+          } finally {
+            button.disabled = false;
+          }
+        });
+      };
+
+      const loadClientQuotes = async () => {
+        const panel = document.querySelector('[data-client-quotes]');
+        const panelStatus = document.querySelector('[data-client-quotes-status]');
+        const quoteList = document.querySelector('[data-client-quote-list]');
+
+        if (!panel || !panelStatus || !quoteList) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/client/quotes', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Your quote list is not available.');
+          }
+
+          renderClientQuoteData(result);
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const loadClientRequests = async () => {
+        const panel = document.querySelector('[data-client-requests]');
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const requestList = document.querySelector('[data-client-request-list]');
+        const propertyPanel = document.querySelector('[data-client-properties]');
+        const propertyList = document.querySelector('[data-client-property-list]');
+
+        if (!panel || !panelStatus || !requestList || !propertyPanel || !propertyList) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/client/job-requests', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Your request list is not available.');
+          }
+
+          renderClientData(result);
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const fillClientPropertyFields = (propertyId, { overwrite = true } = {}) => {
+        const property = currentClientProperties.get(propertyId);
+        const fields = {
+          streetAddress: document.querySelector('[data-client-property-street]'),
+          city: document.querySelector('[data-client-property-city]'),
+          label: document.querySelector('[data-client-property-label]'),
+          accessNotes: document.querySelector('[data-client-property-access-notes]'),
+        };
+
+        if (!property) {
+          if (overwrite) Object.values(fields).forEach((field) => { if (field) field.value = ''; });
+          return;
+        }
+
+        const values = {
+          streetAddress: property.street || '',
+          city: property.city || '',
+          label: property.label || '',
+          accessNotes: property.accessNotes || '',
+        };
+
+        Object.entries(fields).forEach(([key, field]) => {
+          if (field && (overwrite || !field.value)) field.value = values[key];
+        });
+      };
+
+      const saveClientProperty = async (propertyId) => {
+        const propertyStatus = document.querySelector('[data-client-properties-status]');
+        const payload = {
+          propertyId,
+          streetAddress: document.querySelector('[data-client-property-street]')?.value || '',
+          city: document.querySelector('[data-client-property-city]')?.value || '',
+          label: document.querySelector('[data-client-property-label]')?.value || '',
+          accessNotes: document.querySelector('[data-client-property-access-notes]')?.value || '',
+        };
+
+        if (propertyStatus) propertyStatus.textContent = 'Saving property details…';
+
+        const response = await fetch('/api/client/job-requests', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || 'We could not update that property.');
+        }
+
+        if (propertyStatus) propertyStatus.textContent = 'Property updated.';
+        await loadClientRequests();
+      };
+
+      const bindClientPropertyActions = () => {
+        const panel = document.querySelector('[data-client-properties]');
+        const propertySelect = document.querySelector('[data-client-property-select]');
+
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-client-edit-property]');
+          if (!button) return;
+
+          const propertyId = button.dataset.clientEditProperty;
+          if (propertySelect) propertySelect.value = propertyId;
+          fillClientPropertyFields(propertyId);
+          document.querySelector('[data-client-property-street]')?.focus();
+
+          if (button.textContent.includes('Save')) {
+            button.disabled = true;
+            try {
+              await saveClientProperty(propertyId);
+            } catch (error) {
+              const propertyStatus = document.querySelector('[data-client-properties-status]');
+              if (propertyStatus) {
+                propertyStatus.dataset.state = 'error';
+                propertyStatus.textContent = error.message;
+              }
+            } finally {
+              button.disabled = false;
+            }
+          } else {
+            button.textContent = 'Save property changes';
+          }
+        });
+      };
+
+      const bindClientRequestForm = () => {
+        const form = document.querySelector('[data-client-request-form]');
+        const formStatus = document.querySelector('[data-client-request-form-status]');
+
+        if (!form || form.dataset.bound) {
+          return;
+        }
+
+        form.dataset.bound = 'true';
+        form.querySelector('[data-client-property-select]')?.addEventListener('change', (event) => fillClientPropertyFields(event.target.value));
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const formData = new FormData(form);
+          const payload = Object.fromEntries(formData.entries());
+          formStatus.textContent = 'Saving…';
+
+          try {
+            const response = await fetch('/api/client/job-requests', {
+              method: 'POST',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok || !result.ok) {
+              throw new Error(result.message || 'We could not save that request.');
+            }
+
+            form.reset();
+            formStatus.textContent = 'Request saved.';
+            await loadClientRequests();
+            await loadClientQuotes();
+          } catch (error) {
+            formStatus.textContent = error.message;
+          }
+        });
+      };
+
+      const selectAdminRequest = (requestId) => {
+        const request = currentAdminRequests.get(requestId);
+        const detail = document.querySelector('[data-admin-request-detail]');
+        const detailTitle = document.querySelector('[data-admin-detail-title]');
+        const detailSummary = document.querySelector('[data-admin-detail-summary]');
+        const statusRequestId = document.querySelector('[data-admin-status-request-id]');
+        const quoteRequestId = document.querySelector('[data-admin-quote-request-id]');
+        const statusSelect = document.querySelector('[data-admin-status-select]');
+        const adminNotes = document.querySelector('[data-admin-notes]');
+        const estimatedStartDate = document.querySelector('[data-admin-estimated-start-date]');
+        const completionDate = document.querySelector('[data-admin-completion-date]');
+        const quoteTitle = document.querySelector('[data-admin-quote-title]');
+        const closeButton = document.querySelector('[data-admin-detail-close]');
+
+        if (!request || !detail) {
+          return;
+        }
+
+        detail.hidden = false;
+        document.body.style.overflow = 'hidden';
+        detailTitle.textContent = `${request.serviceType || 'Request'} — ${request.requesterName || 'Client'}`;
+        detailSummary.textContent = `${request.city || 'No city'} • ${request.requesterPhone || 'No phone'} • ${request.requesterEmail || 'No email'} • ${request.preferredTimeframe || 'Flexible'}`;
+
+        if (statusRequestId) statusRequestId.value = request.id;
+        if (quoteRequestId) quoteRequestId.value = request.id;
+        if (statusSelect) statusSelect.value = request.status;
+        if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
+        if (completionDate) completionDate.value = request.completionDate || '';
+        if (adminNotes) adminNotes.value = request.adminNotes || '';
+        if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
+        if (closeButton) closeButton.focus();
+      };
+
+      const closeAdminRequest = () => {
+        const detail = document.querySelector('[data-admin-request-detail]');
+
+        if (detail) {
+          detail.hidden = true;
+        }
+
+        document.body.style.overflow = '';
+      };
+
+      const bindAdminRequestActions = () => {
+        const inbox = document.querySelector('[data-admin-inbox]');
+        const statusForm = document.querySelector('[data-admin-status-form]');
+        const quoteForm = document.querySelector('[data-admin-quote-form]');
+        const detail = document.querySelector('[data-admin-request-detail]');
+
+        if (detail && !detail.dataset.closeActionsBound) {
+          detail.dataset.closeActionsBound = 'true';
+          detail.addEventListener('click', (event) => {
+            if (event.target === detail || event.target.closest('[data-admin-detail-close]')) {
+              closeAdminRequest();
+            }
+          });
+          document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !detail.hidden) {
+              closeAdminRequest();
+            }
+          });
+        }
+
+        if (inbox && !inbox.dataset.requestActionsBound) {
+          inbox.dataset.requestActionsBound = 'true';
+          inbox.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-admin-open-request]');
+
+            if (button) {
+              selectAdminRequest(button.dataset.adminOpenRequest);
+            }
+          });
+        }
+
+        if (statusForm && !statusForm.dataset.bound) {
+          statusForm.dataset.bound = 'true';
+          statusForm.querySelector('[data-admin-mark-complete]')?.addEventListener('click', () => {
+            const statusSelect = statusForm.querySelector('[data-admin-status-select]');
+            const completionDate = statusForm.querySelector('[data-admin-completion-date]');
+            if (statusSelect) statusSelect.value = 'completed';
+            if (completionDate && !completionDate.value) completionDate.value = new Date().toISOString().slice(0, 10);
+          });
+          statusForm.querySelector('[data-admin-delete-request]')?.addEventListener('click', async () => {
+            const formStatus = document.querySelector('[data-admin-status-form-status]');
+            const jobRequestId = statusForm.querySelector('[data-admin-status-request-id]')?.value || '';
+            if (!jobRequestId) return;
+            const confirmation = window.prompt('This permanently deletes the request and any attached files. Type DELETE to continue.');
+            if (confirmation !== 'DELETE') {
+              if (formStatus) formStatus.textContent = 'Permanent delete cancelled.';
+              return;
+            }
+            if (formStatus) formStatus.textContent = 'Permanently deleting request…';
+            try {
+              const response = await fetch('/api/admin/job-requests', {
+                method: 'DELETE',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ jobRequestId, confirmation }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
+              closeAdminRequest();
+              await loadAdminRequests();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+          statusForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-status-form-status]');
+            const payload = Object.fromEntries(new FormData(statusForm).entries());
+
+            if (formStatus) formStatus.textContent = 'Updating request…';
+
+            try {
+              const response = await fetch('/api/admin/job-requests', {
+                method: 'PATCH',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+
+              if (!response.ok || !result.ok) {
+                throw new Error(result.message || 'We could not update that request.');
+              }
+
+              if (formStatus) formStatus.textContent = 'Request updated.';
+              await loadAdminRequests(result.request?.id);
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
+        if (quoteForm && !quoteForm.dataset.bound) {
+          quoteForm.dataset.bound = 'true';
+          quoteForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-quote-form-status]');
+            const formData = new FormData(quoteForm);
+            const amount = Number(formData.get('amount') || 0);
+            const payload = {
+              jobRequestId: formData.get('jobRequestId'),
+              title: formData.get('title'),
+              summary: formData.get('summary'),
+              amountCents: Math.round(amount * 100),
+              sendToClient: formData.get('sendToClient') === 'true',
+            };
+
+            if (formStatus) formStatus.textContent = payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…';
+
+            try {
+              const response = await fetch('/api/admin/quotes', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+
+              if (!response.ok || !result.ok) {
+                throw new Error(result.message || 'We could not create that quote.');
+              }
+
+              quoteForm.reset();
+              if (formStatus) formStatus.textContent = payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.';
+              await loadAdminRequests(payload.jobRequestId);
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+      };
+
+      const setModalOpen = (modal, open) => {
+        if (!modal) return;
+        modal.hidden = !open;
+        document.body.style.overflow = open ? 'hidden' : '';
+      };
+
+      const closeAdminRoleModal = () => setModalOpen(document.querySelector('[data-admin-role-modal]'), false);
+      const closeAdminUserModal = () => setModalOpen(document.querySelector('[data-admin-user-modal]'), false);
+
+      const renderCheckboxList = (items, selected, name) => items.map((item) => `
+        <label><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> ${escapeHtml(item.name || item.label || item.key)}</label>
+      `).join('');
+
+      const renderPermissionInputs = (selected = []) => {
+        const list = document.querySelector('[data-admin-permission-list]');
+        if (!list) return;
+        list.innerHTML = `<strong>Permissions</strong>${renderCheckboxList(currentPermissions, selected, 'permissions')}`;
+      };
+
+      const renderUserRoleInputs = (selected = []) => {
+        const list = document.querySelector('[data-admin-user-role-list]');
+        if (!list) return;
+        list.innerHTML = `<strong>Roles</strong>${renderCheckboxList([...currentAdminRoles.values()], selected, 'roles')}`;
+      };
+
+      const resetRoleForm = () => {
+        const form = document.querySelector('[data-admin-role-form]');
+        if (form) form.reset();
+        const roleId = document.querySelector('[data-admin-role-id]');
+        const key = document.querySelector('[data-admin-role-key]');
+        const title = document.querySelector('[data-admin-role-modal-title]');
+        const status = document.querySelector('[data-admin-role-form-status]');
+        if (roleId) roleId.value = '';
+        if (key) key.disabled = false;
+        if (title) title.textContent = 'Create role';
+        if (status) status.textContent = '';
+        renderPermissionInputs([]);
+      };
+
+      const resetUserForm = () => {
+        const form = document.querySelector('[data-admin-user-form]');
+        if (form) form.reset();
+        const userId = document.querySelector('[data-admin-user-id]');
+        const email = document.querySelector('[data-admin-user-email]');
+        const deleteButton = document.querySelector('[data-admin-delete-user]');
+        const propertyList = document.querySelector('[data-admin-user-property-list]');
+        const title = document.querySelector('[data-admin-user-modal-title]');
+        const summary = document.querySelector('[data-admin-user-modal-summary]');
+        const status = document.querySelector('[data-admin-user-form-status]');
+        if (userId) userId.value = '';
+        if (email) email.disabled = false;
+        if (deleteButton) deleteButton.hidden = true;
+        if (propertyList) propertyList.innerHTML = '';
+        if (title) title.textContent = 'Create user';
+        if (summary) summary.textContent = 'Create a user and assign roles.';
+        if (status) status.textContent = '';
+        renderUserRoleInputs(['client']);
+      };
+
+      const openAdminRoleModal = () => {
+        const modal = document.querySelector('[data-admin-role-modal]');
+        setModalOpen(modal, true);
+        document.querySelector('[data-admin-role-name]')?.focus();
+      };
+
+      const openAdminUserModal = () => {
+        const modal = document.querySelector('[data-admin-user-modal]');
+        setModalOpen(modal, true);
+        document.querySelector('[data-admin-user-form] button[type="submit"]')?.focus();
+      };
+
+      const selectAdminRole = (roleKey) => {
+        const role = currentAdminRoles.get(roleKey);
+        if (!role) return;
+        resetRoleForm();
+        document.querySelector('[data-admin-role-id]').value = role.id;
+        document.querySelector('[data-admin-role-key]').value = role.key;
+        document.querySelector('[data-admin-role-key]').disabled = true;
+        document.querySelector('[data-admin-role-name]').value = role.name || '';
+        document.querySelector('[data-admin-role-description]').value = role.description || '';
+        document.querySelector('[data-admin-role-modal-title]').textContent = `Edit role: ${role.name || role.key}`;
+        renderPermissionInputs(role.permissions || []);
+        openAdminRoleModal();
+      };
+
+      const renderUserProperties = (properties = []) => {
+        const list = document.querySelector('[data-admin-user-property-list]');
+        if (!list) return;
+        list.innerHTML = `<strong>Addresses / properties</strong>${properties.length ? properties.map((property) => `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(property.label || 'property')}</span>
+            <strong>${escapeHtml(property.street || 'No street address')}</strong>
+            <div class="admin-request-meta"><span>${escapeHtml([property.city, property.state].filter(Boolean).join(', ') || 'No city')}</span><span>${escapeHtml(property.postalCode || 'No ZIP')}</span></div>
+            ${property.accessNotes ? `<p>${escapeHtml(property.accessNotes)}</p>` : ''}
+          </article>
+        `).join('') : '<p class="session-status">No saved addresses yet. Client-submitted properties will appear here.</p>'}`;
+      };
+
+      const selectAdminUser = (userId) => {
+        const user = currentAdminUsers.get(userId);
+        if (!user) return;
+        resetUserForm();
+        document.querySelector('[data-admin-user-id]').value = user.id;
+        document.querySelector('[data-admin-user-email]').value = user.email || '';
+        document.querySelector('[data-admin-user-email]').disabled = true;
+        document.querySelector('[data-admin-user-name]').value = user.fullName || '';
+        document.querySelector('[data-admin-user-phone]').value = user.phone || '';
+        document.querySelector('[data-admin-user-secondary-phone]').value = user.secondaryPhone || '';
+        document.querySelector('[data-admin-user-company]').value = user.companyName || '';
+        document.querySelector('[data-admin-user-mailing-address]').value = user.mailingAddress || '';
+        document.querySelector('[data-admin-user-internal-notes]').value = user.internalNotes || '';
+        document.querySelector('[data-admin-delete-user]').hidden = false;
+        document.querySelector('[data-admin-user-modal-title]').textContent = `Edit user: ${user.fullName || user.email}`;
+        document.querySelector('[data-admin-user-modal-summary]').textContent = `${user.email || ''}${user.phone ? ` • ${user.phone}` : ''}${user.secondaryPhone ? ` • ${user.secondaryPhone}` : ''}`;
+        renderUserProperties(user.properties || []);
+        renderUserRoleInputs(user.roles || []);
+        openAdminUserModal();
+      };
+
+      const renderUserSearchResults = (query = '') => {
+        const results = document.querySelector('[data-admin-user-search-results]');
+        if (!results) return;
+        const cleaned = query.trim().toLowerCase();
+
+        if (!cleaned) {
+          results.innerHTML = '<p class="session-status">Search for a user to edit their roles. No full user list is shown here.</p>';
+          return;
+        }
+
+        const matches = [...currentAdminUsers.values()]
+          .filter((user) => [user.fullName, user.email, user.phone, user.secondaryPhone, user.companyName, user.mailingAddress, ...(user.roles || []), ...((user.properties || []).flatMap((property) => [property.label, property.street, property.city, property.postalCode]))]
+            .some((value) => String(value || '').toLowerCase().includes(cleaned)))
+          .slice(0, 8);
+
+        results.innerHTML = matches.length ? matches.map((user) => `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(user.isActive === false ? 'inactive' : ((user.roles || []).join(', ') || 'no role'))}</span>
+            <strong>${escapeHtml(user.fullName || user.email)}</strong>
+            <div class="admin-request-meta"><span>${escapeHtml(user.email)}</span><span>${escapeHtml(user.phone || 'No phone')}</span><span>${(user.properties || []).length} address${(user.properties || []).length === 1 ? '' : 'es'}</span></div>
+            <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-edit-user="${escapeHtml(user.id)}">Open user</button></div>
+          </article>
+        `).join('') : '<p class="session-status">No users matched that search.</p>';
+      };
+
+      const renderAdminAccess = ({ roles = [], users = [], permissions = [] }) => {
+        const roleSelect = document.querySelector('[data-admin-role-select]');
+        currentPermissions = permissions;
+        currentAdminRoles.clear();
+        currentAdminUsers.clear();
+        roles.forEach((role) => currentAdminRoles.set(role.key, role));
+        users.forEach((user) => currentAdminUsers.set(user.id, user));
+        renderPermissionInputs([]);
+        renderUserRoleInputs(['client']);
+        renderUserSearchResults(document.querySelector('[data-admin-user-search]')?.value || '');
+
+        if (roleSelect) {
+          const selectedValue = roleSelect.value;
+          roleSelect.innerHTML = '<option value="">Select a role to edit</option>' + roles.map((role) => `<option value="${escapeHtml(role.key)}">${escapeHtml(role.name)} (${escapeHtml(role.key)}) — ${(role.permissions || []).length} permission${(role.permissions || []).length === 1 ? '' : 's'}${role.isSystem ? ' • system' : ''}</option>`).join('');
+          roleSelect.value = roles.some((role) => role.key === selectedValue) ? selectedValue : '';
+        }
+      };
+
+      const bindAdminAccessForms = () => {
+        const panel = document.querySelector('[data-admin-access]');
+        const roleForm = document.querySelector('[data-admin-role-form]');
+        const userForm = document.querySelector('[data-admin-user-form]');
+        const search = document.querySelector('[data-admin-user-search]');
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+
+        panel.addEventListener('click', (event) => {
+          const roleButton = event.target.closest('[data-admin-edit-role]');
+          const userButton = event.target.closest('[data-admin-edit-user]');
+          const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
+          if (roleButton) selectAdminRole(roleButton.dataset.adminEditRole);
+          if (selectedRoleButton) {
+            const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
+            if (selectedRole) selectAdminRole(selectedRole);
+          }
+          if (userButton) selectAdminUser(userButton.dataset.adminEditUser);
+          if (event.target.closest('[data-admin-new-role]')) {
+            resetRoleForm();
+            openAdminRoleModal();
+          }
+          if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
+          if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
+        });
+
+        panel.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
+          if (event.target === event.currentTarget) closeAdminRoleModal();
+        });
+        panel.querySelector('[data-admin-user-modal]')?.addEventListener('click', (event) => {
+          if (event.target === event.currentTarget) closeAdminUserModal();
+        });
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            closeAdminRoleModal();
+            closeAdminUserModal();
+          }
+        });
+        search?.addEventListener('input', () => renderUserSearchResults(search.value));
+
+        roleForm?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const status = document.querySelector('[data-admin-role-form-status]');
+          const formData = new FormData(roleForm);
+          const payload = Object.fromEntries(formData.entries());
+          payload.permissions = formData.getAll('permissions');
+          if (status) status.textContent = 'Saving role…';
+          try {
+            const response = await fetch('/api/admin/roles', {
+              method: payload.roleId ? 'PATCH' : 'POST',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save role.');
+            if (status) status.textContent = 'Role saved.';
+            closeAdminRoleModal();
+            await loadAdminAccess();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          }
+        });
+
+        document.querySelector('[data-admin-delete-user]')?.addEventListener('click', async () => {
+          const status = document.querySelector('[data-admin-user-form-status]');
+          const userId = document.querySelector('[data-admin-user-id]')?.value || '';
+          if (!userId) return;
+          const confirmation = window.prompt('This deactivates the user and revokes active sessions. Type DELETE to continue.');
+          if (confirmation !== 'DELETE') {
+            if (status) status.textContent = 'User delete cancelled.';
+            return;
+          }
+          if (status) status.textContent = 'Deleting user…';
+          try {
+            const response = await fetch('/api/admin/users', {
+              method: 'DELETE',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({ userId, confirmation }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not delete user.');
+            closeAdminUserModal();
+            await loadAdminAccess();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          }
+        });
+
+        userForm?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const status = document.querySelector('[data-admin-user-form-status]');
+          const formData = new FormData(userForm);
+          const payload = Object.fromEntries(formData.entries());
+          payload.roles = formData.getAll('roles');
+          if (status) status.textContent = 'Saving user roles…';
+          try {
+            const response = await fetch('/api/admin/users', {
+              method: payload.userId ? 'PATCH' : 'POST',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save user.');
+            if (status) status.textContent = 'User roles saved.';
+            closeAdminUserModal();
+            await loadAdminAccess();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          }
+        });
+      };
+
+      const loadAdminAccess = async () => {
+        const status = document.querySelector('[data-admin-access-status]');
+        try {
+          const [rolesResponse, usersResponse] = await Promise.all([
+            fetch('/api/admin/roles', { headers: { accept: 'application/json' } }),
+            fetch('/api/admin/users', { headers: { accept: 'application/json' } }),
+          ]);
+          const rolesResult = await rolesResponse.json().catch(() => ({}));
+          const usersResult = await usersResponse.json().catch(() => ({}));
+          if (!rolesResponse.ok || !rolesResult.ok) throw new Error(rolesResult.message || 'Roles are not available.');
+          if (!usersResponse.ok || !usersResult.ok) throw new Error(usersResult.message || 'Users are not available.');
+          renderAdminAccess({ roles: rolesResult.roles, users: usersResult.users, permissions: rolesResult.permissions });
+          bindAdminAccessForms();
+          if (status) {
+            status.dataset.state = 'ready';
+            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? '' : 's'} and user search ready.`;
+          }
+        } catch (error) {
+          if (status) {
+            status.dataset.state = 'error';
+            status.textContent = error.message;
+          }
+        }
+      };
+
+      const loadAdminRequests = async (selectedRequestId = '') => {
+        const inbox = document.querySelector('[data-admin-inbox]');
+        const inboxStatus = document.querySelector('[data-admin-requests-status]');
+        const inboxList = document.querySelector('[data-admin-request-list]');
+        const openMetric = document.querySelector('[data-open-requests-metric]');
+
+        if (!inbox || !inboxStatus || !inboxList) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/admin/job-requests', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Admin request inbox is not available.');
+          }
+
+          const requests = result.requests || [];
+          const openCount = requests.filter((request) => request.status !== 'completed' && request.status !== 'cancelled').length;
+          inboxStatus.dataset.state = 'ready';
+          inboxStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No job requests yet.';
+
+          if (openMetric) {
+            openMetric.textContent = String(openCount);
+          }
+
+          currentAdminRequests.clear();
+          requests.forEach((request) => currentAdminRequests.set(request.id, request));
+          inboxList.innerHTML = requests.map((request) => renderRequestCard(request, { admin: true })).join('');
+          bindAdminRequestActions();
+
+          if (selectedRequestId && currentAdminRequests.has(selectedRequestId)) {
+            selectAdminRequest(selectedRequestId);
+          }
+        } catch (error) {
+          inboxStatus.dataset.state = 'error';
+          inboxStatus.textContent = error.message;
+        }
+      };
+
+      fetch('/api/me', { headers: { accept: 'application/json' } })
+        .then(async (response) => ({ response, result: await response.json().catch(() => ({})) }))
+        .then(({ response, result }) => {
+          if (!response.ok || !result.authenticated) {
+            status.dataset.state = 'error';
+            status.innerHTML = 'Secure dashboard access requires a verified magic-link session. <a href="/login/">Request a magic link</a>.';
+            return;
+          }
+
+          status.dataset.state = 'ready';
+          status.textContent = `Signed in as ${result.user.email}. Roles: ${result.user.roles.join(', ') || 'none yet'}.`;
+
+          if (logoutButton) {
+            logoutButton.hidden = false;
+          }
+
+          bindLogout();
+          bindRequestEstimateLink();
+          configureDashboardForUser(result.user);
+
+          if (result.user.permissions?.canViewClientTools) {
+            bindClientRequestForm();
+            bindClientPropertyActions();
+            bindQuoteDecisionActions();
+            loadClientRequests();
+            loadClientQuotes();
+          }
+
+          if (result.user.permissions?.canManageRequests) {
+            loadAdminRequests();
+          }
+
+          if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
+            loadAdminAccess();
+          }
+        })
+        .catch(() => {
+          status.dataset.state = 'error';
+          status.textContent = 'Session check is unavailable in this local/static preview. Deploy Netlify Functions to verify portal access.';
+        });
+    })();
+  </script>
+
+</body>
+</html>
