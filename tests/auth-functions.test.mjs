@@ -178,7 +178,39 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
   assert.deepEqual(response.body.user.roles, ['client', 'admin']);
+  assert.deepEqual(response.body.user.permissions, {
+    canViewClientTools: true,
+    canViewWorkerTools: true,
+    canViewAdminTools: true,
+    canSwitchDashboardView: true,
+    defaultView: 'admin',
+    availableViews: ['admin', 'client', 'worker'],
+  });
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+
+test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+  ]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.user.roles, ['client']);
+  assert.deepEqual(response.body.user.permissions, {
+    canViewClientTools: true,
+    canViewWorkerTools: false,
+    canViewAdminTools: false,
+    canSwitchDashboardView: false,
+    defaultView: 'client',
+    availableViews: ['client'],
+  });
 });
 
 test('magic-link endpoint accepts honeypot submissions without writing tokens', async () => {

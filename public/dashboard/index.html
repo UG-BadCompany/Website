@@ -19,10 +19,10 @@
           <span class="eyebrow">Secure Dashboard Placeholder</span>
           <h1>The real dashboard unlocks after secure login.</h1>
           <p>This page is a placeholder until magic-link login, request-created client profiles, and /api/me session checks are connected. After secure login, the backend will load the user profile, roles, and permissions before showing client, worker, admin, or combined tools.</p>
-          <div class="role-bar" aria-label="Example permissions planned for the secured dashboard">
-            <span class="role active-client">Client tools</span>
-            <span class="role active-worker">Worker tools</span>
-            <span class="role active-admin">Admin tools</span>
+          <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
+            <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
+            <button class="role active-client" type="button" data-view-button="client">Client view</button>
+            <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
           </div>
         </div>
           <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
@@ -30,14 +30,14 @@
       </div>
     </section>
 
-    <section class="grid" aria-label="Dashboard summary cards">
+    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
       <article class="card"><strong>Quotes Waiting</strong><div class="metric">0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
       <article class="card"><strong>Active Jobs</strong><div class="metric">0</div><p>Scheduled and in-progress jobs will be visible based on permission level.</p></article>
     </section>
 
 
-    <section class="card admin-inbox" data-admin-inbox hidden>
+    <section class="card admin-inbox" data-admin-inbox data-dashboard-section data-views="admin" hidden>
       <strong>Admin request inbox</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
@@ -45,10 +45,10 @@
     </section>
 
     <section class="tools" aria-label="Role based dashboard tools">
-      <article class="card"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
-      <article class="card"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
-      <article class="card"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
-      <article class="card locked"><strong>Secure login gate</strong><p>Next step is making /dashboard/ require auth provider session verification through /api/me before data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
+      <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
+      <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
+      <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
+      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure login gate</strong><p>Next step is making /dashboard/ require auth provider session verification through /api/me before data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
     </section>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard placeholder. Magic-link authentication and /api/me session loading come next.</footer>
@@ -61,6 +61,31 @@
       }
 
       const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+      const setDashboardView = (view) => {
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          const views = (section.dataset.views || '').split(' ');
+          section.hidden = !views.includes(view);
+        });
+
+        document.querySelectorAll('[data-view-button]').forEach((button) => {
+          button.dataset.active = String(button.dataset.viewButton === view);
+        });
+      };
+      const configureDashboardForUser = (user) => {
+        const permissions = user.permissions || {};
+        const availableViews = permissions.availableViews || user.roles || [];
+        const switcher = document.querySelector('[data-view-switcher]');
+
+        if (switcher && permissions.canSwitchDashboardView) {
+          switcher.hidden = false;
+          switcher.querySelectorAll('[data-view-button]').forEach((button) => {
+            button.hidden = !availableViews.includes(button.dataset.viewButton);
+            button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+          });
+        }
+
+        setDashboardView(permissions.defaultView || availableViews[0] || 'client');
+      };
       const loadAdminRequests = async () => {
         const inbox = document.querySelector('[data-admin-inbox]');
         const inboxStatus = document.querySelector('[data-admin-requests-status]');
@@ -120,6 +145,7 @@
 
           status.dataset.state = 'ready';
           status.textContent = `Signed in as ${result.user.email}. Roles: ${result.user.roles.join(', ') || 'none yet'}.`;
+          configureDashboardForUser(result.user);
 
           if ((result.user.roles || []).includes('admin')) {
             loadAdminRequests();

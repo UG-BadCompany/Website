@@ -5,6 +5,20 @@ import {
   loadDatabase,
 } from './auth-utils.mjs';
 
+const buildPermissions = (roles) => {
+  const roleSet = new Set(roles);
+  const isAdmin = roleSet.has('admin');
+
+  return {
+    canViewClientTools: isAdmin || roleSet.has('client'),
+    canViewWorkerTools: isAdmin || roleSet.has('worker'),
+    canViewAdminTools: isAdmin,
+    canSwitchDashboardView: isAdmin,
+    defaultView: isAdmin ? 'admin' : (roleSet.has('worker') ? 'worker' : 'client'),
+    availableViews: isAdmin ? ['admin', 'client', 'worker'] : roles,
+  };
+};
+
 export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (request.method !== 'GET') {
     return json(405, { ok: false, message: 'Method not allowed.' });
@@ -47,6 +61,8 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       order by roles.key
     `;
 
+    const roleKeys = roles.map((role) => role.key);
+
     return json(200, {
       ok: true,
       authenticated: true,
@@ -54,7 +70,8 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
         id: session.user_id,
         email: session.email,
         fullName: session.full_name,
-        roles: roles.map((role) => role.key),
+        roles: roleKeys,
+        permissions: buildPermissions(roleKeys),
       },
     });
   } catch (error) {

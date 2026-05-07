@@ -48,3 +48,10 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
 | `POST /api/admin/users` | Yes | `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin` | Replaces an existing user's assigned roles. |
+
+## Dashboard view rules
+
+- A user with only `client` sees only client sections; worker and admin sections stay hidden in the browser and remain blocked by server-side API checks.
+- A user with only `worker` sees worker sections only.
+- A user with `admin` defaults into the admin dashboard and can switch between admin, client, and worker views for support/troubleshooting.
+- Multi-role non-admin users can see the tools for their assigned roles, but they cannot access admin APIs unless they have the `admin` role.
