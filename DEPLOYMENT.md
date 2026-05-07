@@ -91,3 +91,16 @@ If the site is later converted back into a full Next.js application, choose one 
 2. **Netlify Next.js runtime:** remove `NETLIFY_NEXT_PLUGIN_SKIP`, remove static `out` publishing, and let the Netlify Next.js runtime handle deployment.
 
 Do not mix both modes. The current production fix is static `out` publishing because that is what the Netlify logs show the site is using.
+
+
+## Netlify Database duplicate migration number
+
+Netlify Database requires each migration filename to start with a unique four-digit number. If deploy logs still list `0004_custom_roles_permissions.sql` alongside `0004_work_order_schedule.sql`, the build checkout is stale or the deployed branch still contains the old custom-role migration. The custom role migration has been renamed to `0005_custom_roles_permissions.sql`; `0004_custom_roles_permissions.sql` should not exist.
+
+Before redeploying, verify the branch only has one migration per number:
+
+```bash
+node scripts/check-netlify-migrations.mjs
+```
+
+If Netlify logs still show the deleted `0004_custom_roles_permissions.sql`, trigger **Clear cache and deploy site** in Netlify so the old migration file is removed from the cached checkout before Netlify Database validates migrations.
