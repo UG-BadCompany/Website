@@ -191,8 +191,8 @@
     </section>
 
     <section class="card client-profile" data-client-profile data-dashboard-section data-views="client" hidden>
-      <strong>My profile</strong>
-      <p>Keep your contact information current. This is the information T&A Contracting uses for requests, quotes, scheduling, and property follow-up.</p>
+      <strong>My profile & properties</strong>
+      <p>Keep your contact and property information together. T&A Contracting uses this for requests, quotes, scheduling, and property follow-up.</p>
       <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
       <form class="client-request-form" data-client-profile-form>
         <div class="client-request-form-grid">
@@ -217,6 +217,38 @@
         </div>
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save profile</button><span data-client-profile-form-status aria-live="polite"></span></div>
       </form>
+      <div class="client-profile-properties" data-client-properties>
+        <strong>My properties</strong>
+        <p>Edit saved property details from your profile so future requests use the right address and access information.</p>
+        <p class="session-status" data-client-properties-status role="status" aria-live="polite">Loading your properties…</p>
+        <div class="client-property-list" data-client-property-list></div>
+      </div>
+      <div class="admin-request-modal" data-client-property-modal role="dialog" aria-modal="true" aria-labelledby="client-property-modal-title" hidden>
+        <section class="admin-request-modal-panel">
+          <div class="admin-request-modal-header">
+            <div><strong id="client-property-modal-title" data-client-property-modal-title>Edit property</strong><p>Update this property without creating another request.</p></div>
+            <button class="btn btn-soft admin-request-modal-close" type="button" data-client-property-modal-close aria-label="Close property editor">×</button>
+          </div>
+          <form class="client-request-form" data-client-property-form>
+            <input type="hidden" name="propertyId" data-client-property-edit-id>
+            <div class="client-request-form-grid">
+              <label>Property label
+                <input name="label" data-client-property-edit-label placeholder="Home, rental, office">
+              </label>
+              <label>City
+                <input name="city" data-client-property-edit-city autocomplete="address-level2" required placeholder="Mesa">
+              </label>
+              <label class="full">Street address
+                <input name="streetAddress" data-client-property-edit-street autocomplete="street-address" required placeholder="123 Main St">
+              </label>
+              <label class="full">Access notes
+                <textarea name="accessNotes" data-client-property-edit-access-notes placeholder="Gate code, pets, best entrance"></textarea>
+              </label>
+            </div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save property</button><span data-client-property-form-status aria-live="polite"></span></div>
+          </form>
+        </section>
+      </div>
     </section>
 
     <section class="card client-requests" id="submit-request" data-client-requests data-dashboard-section data-views="client" hidden>
@@ -259,39 +291,6 @@
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
       </form>
       <div class="client-request-list" data-client-request-list></div>
-    </section>
-
-    <section class="card client-properties" data-client-properties data-dashboard-section data-views="client" hidden>
-      <strong>My properties</strong>
-      <p>Edit saved property details so future requests use the right address and access information.</p>
-      <p class="session-status" data-client-properties-status role="status" aria-live="polite">Loading your properties…</p>
-      <div class="client-property-list" data-client-property-list></div>
-      <div class="admin-request-modal" data-client-property-modal role="dialog" aria-modal="true" aria-labelledby="client-property-modal-title" hidden>
-        <section class="admin-request-modal-panel">
-          <div class="admin-request-modal-header">
-            <div><strong id="client-property-modal-title" data-client-property-modal-title>Edit property</strong><p>Update this property without creating another request.</p></div>
-            <button class="btn btn-soft admin-request-modal-close" type="button" data-client-property-modal-close aria-label="Close property editor">×</button>
-          </div>
-          <form class="client-request-form" data-client-property-form>
-            <input type="hidden" name="propertyId" data-client-property-edit-id>
-            <div class="client-request-form-grid">
-              <label>Property label
-                <input name="label" data-client-property-edit-label placeholder="Home, rental, office">
-              </label>
-              <label>City
-                <input name="city" data-client-property-edit-city autocomplete="address-level2" required placeholder="Mesa">
-              </label>
-              <label class="full">Street address
-                <input name="streetAddress" data-client-property-edit-street autocomplete="street-address" required placeholder="123 Main St">
-              </label>
-              <label class="full">Access notes
-                <textarea name="accessNotes" data-client-property-edit-access-notes placeholder="Gate code, pets, best entrance"></textarea>
-              </label>
-            </div>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save property</button><span data-client-property-form-status aria-live="polite"></span></div>
-          </form>
-        </section>
-      </div>
     </section>
 
     <section class="card client-quotes" data-client-quotes data-dashboard-section data-views="client" hidden>

@@ -21,6 +21,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'signed-in dashboard nav should not show the Client Portal link');
   assert.match(html, /data-client-edit-property/, 'clients should have an edit action for saved properties');
   assert.match(html, /data-client-property-modal/, 'property edits should open in a dedicated popup instead of the request form');
+  assert.match(html, /My profile &amp; properties|My profile & properties/, 'profile section should organize contact info and properties together');
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
@@ -31,4 +32,5 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const bindClientPropertyActions =/, 'client property edit controls should be bound');
   assert.match(script, /const renderUserProperties =/, 'opening a user profile requires the property renderer to be declared');
   assert.match(script, /renderUserProperties\(user\.properties \|\| \[\]\)/, 'user profile opening should render saved addresses');
+  assert.ok(html.indexOf('data-client-profile-form') < html.indexOf('data-client-properties'), 'client properties should live inside/after the profile form, not as a separate earlier section');
 });
