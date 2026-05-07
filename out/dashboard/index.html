@@ -68,6 +68,12 @@
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </label>
+                <label>Planned service date
+                  <input name="plannedServiceAt" type="datetime-local" data-admin-planned-service-at>
+                </label>
+                <label>Completion date
+                  <input name="completedAt" type="datetime-local" data-admin-completed-at>
+                </label>
                 <label>Future worker assignment
                   <select disabled>
                     <option>Worker scheduling comes next</option>
@@ -77,7 +83,7 @@
                   <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
                 </label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><span data-admin-status-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-quote-form>
               <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
@@ -193,6 +199,13 @@
         });
       };
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
+      const formatDateTime = (value) => (value ? new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Not scheduled');
+      const toDateTimeLocalValue = (value) => {
+        if (!value) return '';
+        const date = new Date(value);
+        const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return offsetDate.toISOString().slice(0, 16);
+      };
       const setDashboardView = (view) => {
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
           const views = (section.dataset.views || '').split(' ');
@@ -229,6 +242,11 @@
           ? `<span>${escapeHtml(request.requesterPhone || 'No phone')}</span><span>${escapeHtml(request.requesterEmail || 'No email')}</span>`
           : `<span>${escapeHtml(request.streetAddress || 'No street address')}</span>`;
 
+        const scheduleMeta = request.plannedServiceAt ? `<span>Service: ${escapeHtml(formatDateTime(request.plannedServiceAt))}</span>` : '';
+        const completionMeta = request.completedAt ? `<span>Completed: ${escapeHtml(formatDateTime(request.completedAt))}</span>` : '';
+        const rescheduleMeta = request.clientRequestedServiceAt ? `<span>Reschedule requested: ${escapeHtml(formatDateTime(request.clientRequestedServiceAt))}</span>` : '';
+        const clientCanReschedule = !admin && ['accepted', 'scheduled', 'in_progress'].includes(request.status);
+
         return `
           <article class="${className}">
             <span class="${badgeClass}">${escapeHtml(request.status.replaceAll('_', ' '))}</span>
@@ -237,9 +255,14 @@
               <span>${escapeHtml(request.city || 'No city')}</span>
               ${contactMeta}
               <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
+              ${scheduleMeta}
+              ${completionMeta}
+              ${rescheduleMeta}
             </div>
             <p>${escapeHtml(request.description)}</p>
+            ${request.clientRescheduleNote ? `<p><strong>Reschedule note</strong> ${escapeHtml(request.clientRescheduleNote)}</p>` : ''}
             ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : ''}
+            ${clientCanReschedule ? `<form class="client-request-form" data-reschedule-form data-request-id="${escapeHtml(request.id)}"><div class="client-request-form-grid"><label>Request new service date<input name="requestedServiceAt" type="datetime-local" required></label><label class="full">Reschedule note<textarea name="rescheduleNote" placeholder="Tell us what changed or which times work best."></textarea></label></div><div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Request reschedule</button><span data-reschedule-status aria-live="polite"></span></div></form>` : ''}
           </article>
         `;
       };
@@ -293,6 +316,7 @@
         }
 
         requestList.innerHTML = requests.map((request) => renderRequestCard(request)).join('');
+        bindClientRescheduleForms();
         propertyList.innerHTML = properties.map((property) => renderPropertyCard(property)).join('');
 
         if (propertySelect) {
@@ -462,6 +486,43 @@
         });
       };
 
+      const bindClientRescheduleForms = () => {
+        document.querySelectorAll('[data-reschedule-form]').forEach((form) => {
+          if (form.dataset.bound) return;
+          form.dataset.bound = 'true';
+          form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const statusEl = form.querySelector('[data-reschedule-status]');
+            const formData = new FormData(form);
+            const payload = {
+              jobRequestId: form.dataset.requestId,
+              requestedServiceAt: formData.get('requestedServiceAt'),
+              rescheduleNote: formData.get('rescheduleNote'),
+            };
+
+            if (statusEl) statusEl.textContent = 'Sending reschedule request…';
+
+            try {
+              const response = await fetch('/api/client/job-requests', {
+                method: 'PATCH',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+
+              if (!response.ok || !result.ok) {
+                throw new Error(result.message || 'We could not request that reschedule.');
+              }
+
+              if (statusEl) statusEl.textContent = 'Reschedule request sent.';
+              await loadClientRequests();
+            } catch (error) {
+              if (statusEl) statusEl.textContent = error.message;
+            }
+          });
+        });
+      };
+
       const selectAdminRequest = (requestId) => {
         const request = currentAdminRequests.get(requestId);
         const detail = document.querySelector('[data-admin-request-detail]');
@@ -472,6 +533,8 @@
         const statusSelect = document.querySelector('[data-admin-status-select]');
         const adminNotes = document.querySelector('[data-admin-notes]');
         const quoteTitle = document.querySelector('[data-admin-quote-title]');
+        const plannedServiceAt = document.querySelector('[data-admin-planned-service-at]');
+        const completedAt = document.querySelector('[data-admin-completed-at]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
         if (!request || !detail) {
@@ -487,6 +550,8 @@
         if (quoteRequestId) quoteRequestId.value = request.id;
         if (statusSelect) statusSelect.value = request.status;
         if (adminNotes) adminNotes.value = request.adminNotes || '';
+        if (plannedServiceAt) plannedServiceAt.value = toDateTimeLocalValue(request.plannedServiceAt);
+        if (completedAt) completedAt.value = toDateTimeLocalValue(request.completedAt);
         if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
         if (closeButton) closeButton.focus();
       };
@@ -506,6 +571,7 @@
         const statusForm = document.querySelector('[data-admin-status-form]');
         const quoteForm = document.querySelector('[data-admin-quote-form]');
         const detail = document.querySelector('[data-admin-request-detail]');
+        const deleteButton = document.querySelector('[data-admin-delete-request]');
 
         if (detail && !detail.dataset.closeActionsBound) {
           detail.dataset.closeActionsBound = 'true';
@@ -528,6 +594,36 @@
 
             if (button) {
               selectAdminRequest(button.dataset.adminOpenRequest);
+            }
+          });
+        }
+
+        if (deleteButton && !deleteButton.dataset.bound) {
+          deleteButton.dataset.bound = 'true';
+          deleteButton.addEventListener('click', async () => {
+            const formStatus = document.querySelector('[data-admin-status-form-status]');
+            const requestId = document.querySelector('[data-admin-status-request-id]')?.value;
+
+            if (!requestId) return;
+            if (!confirm('Permanently delete this work order from the system? This cannot be undone.')) return;
+            if (formStatus) formStatus.textContent = 'Deleting work order…';
+
+            try {
+              const response = await fetch('/api/admin/job-requests', {
+                method: 'DELETE',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ jobRequestId: requestId }),
+              });
+              const result = await response.json().catch(() => ({}));
+
+              if (!response.ok || !result.ok) {
+                throw new Error(result.message || 'We could not delete that work order.');
+              }
+
+              closeAdminRequest();
+              await loadAdminRequests();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
             }
           });
         }

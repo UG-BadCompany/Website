@@ -120,3 +120,10 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Admins can update request status/internal notes and create a quote from the selected request.
 - Quotes can stay as drafts or be sent immediately; sent quotes move the request to `quote_sent` so clients can use the existing accept/decline flow.
 - Worker assignment is represented in the admin work panel as the next scheduled build-out area, pending a dedicated assignment table/API.
+
+## Added in Sprint 1K
+
+- Work orders now track planned service dates, completion dates, client-requested reschedule dates, and reschedule notes.
+- Admins can close work by setting `completed`, keep `cancelled` as a closed status, or permanently delete a work order when it must be removed from the system.
+- Clients can request a reschedule for accepted/scheduled/in-progress work from their dashboard; the request moves back to admin review.
+- Sending a quote to the client now updates the related work request to `quote_sent` and attempts a quote-ready email in addition to making the quote visible in the Client Portal.

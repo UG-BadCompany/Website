@@ -48,11 +48,13 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `POST /api/auth/logout` | Optional | Any signed-in user | Revokes the current session when present and clears the session cookie. |
 | `GET /api/client/job-requests` | Yes | `client` or `admin` | Returns job requests and property summaries scoped to the signed-in client account. |
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
+| `PATCH /api/client/job-requests` | Yes | `client` or `admin` | Lets a client request a new service date for accepted/scheduled/in-progress work. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
-| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status and internal admin notes from the admin work panel. |
-| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
+| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates request status, planned service date, completion date, and internal admin notes from the admin work panel. |
+| `DELETE /api/admin/job-requests` | Yes | `admin` | Permanently deletes a work order from the system and records an audit event. |
+| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote/email for an existing client-linked job request. |
 | `POST /api/admin/users` | Yes | `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin` | Replaces an existing user's assigned roles. |
 

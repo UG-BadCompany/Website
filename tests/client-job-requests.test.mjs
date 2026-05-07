@@ -136,7 +136,7 @@ test('client job request endpoint returns only requests for the signed-in client
       serviceType: 'Drywall repair',
       preferredTimeframe: 'This week',
       description: 'Patch garage drywall.',
-      createdAt: '2026-05-07T00:00:00.000Z',
+              createdAt: '2026-05-07T00:00:00.000Z',
       property: {
         id: 'property-1',
         label: 'Home',
@@ -155,7 +155,7 @@ test('client job request endpoint returns only requests for the signed-in client
       serviceType: 'Fence repair',
       preferredTimeframe: null,
       description: 'Re-hang gate.',
-      createdAt: '2026-05-06T00:00:00.000Z',
+              createdAt: '2026-05-06T00:00:00.000Z',
       property: {
         id: 'property-2',
         label: 'Rental',
@@ -313,4 +313,41 @@ test('client job request endpoint creates a new property when the client enters 
     null,
     'Please fix the gate.',
   ]);
+});
+
+
+test('client job request endpoint lets clients request rescheduling for scheduled work', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [{
+      id: 'job-1',
+      status: 'needs_review',
+      city: 'Mesa',
+      street_address: '123 Main St',
+      service_type: 'Fixture work',
+      preferred_timeframe: 'Flexible',
+      description: 'Ceiling fan install',
+      planned_service_at: '2026-05-10T15:00:00.000Z',
+      completed_at: null,
+      client_requested_service_at: '2026-05-12T18:00:00.000Z',
+      client_reschedule_note: 'Afternoon works better.',
+      created_at: '2026-05-07T00:00:00.000Z',
+    }],
+    [],
+  ]);
+  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ jobRequestId: 'job-1', requestedServiceAt: '2026-05-12T18:00:00.000Z', rescheduleNote: 'Afternoon works better.' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.request.clientRequestedServiceAt, '2026-05-12T18:00:00.000Z');
+  assert.equal(response.body.request.clientRescheduleNote, 'Afternoon works better.');
+  assert.match(db.queries[3].text, /client_requested_service_at/);
+  assert.deepEqual(db.queries[3].values, ['2026-05-12T18:00:00.000Z', 'Afternoon works better.', 'job-1', 'client-1']);
+  assert.match(db.queries[4].text, /insert into audit_events/);
 });

@@ -76,7 +76,7 @@ test('admin quote endpoint creates a draft quote from a job request', async () =
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
-    [{ id: 'job-1', client_id: 'client-1' }],
+    [{ id: 'job-1', client_id: 'client-1', requester_email: 'client@example.com', service_type: 'Drywall repair' }],
     [{
       id: 'quote-1',
       job_request_id: 'job-1',
@@ -134,7 +134,7 @@ test('admin quote endpoint can send a quote so clients can accept or decline it'
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
-    [{ id: 'job-1', client_id: 'client-1' }],
+    [{ id: 'job-1', client_id: 'client-1', requester_email: 'client@example.com', service_type: 'Fixture work' }],
     [{
       id: 'quote-1',
       job_request_id: 'job-1',
@@ -149,7 +149,14 @@ test('admin quote endpoint can send a quote so clients can accept or decline it'
     [],
     [],
   ]);
-  const handler = createAdminQuotesHandler({ getDatabase: async () => db });
+  const sentEmails = [];
+  const handler = createAdminQuotesHandler({
+    getDatabase: async () => db,
+    sendQuoteEmail: async (email) => {
+      sentEmails.push(email);
+      return { sent: true };
+    },
+  });
   const response = await readJson(await handler(quoteRequest({
     jobRequestId: 'job-1',
     title: 'Ceiling fan install quote',
@@ -160,6 +167,8 @@ test('admin quote endpoint can send a quote so clients can accept or decline it'
 
   assert.equal(response.status, 201);
   assert.equal(response.body.quote.status, 'sent');
+  assert.equal(response.body.quoteEmailSent, true);
+  assert.equal(sentEmails[0].to, 'client@example.com');
   assert.equal(db.queries[4].values[2], 'sent');
   assert.match(db.queries[4].values[6], /T/);
   assert.equal(db.queries[5].values[0], 'quote_sent');

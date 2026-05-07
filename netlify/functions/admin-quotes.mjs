@@ -4,6 +4,8 @@ import {
   hashToken,
   json,
   loadDatabase,
+  getSiteUrl,
+  sendQuoteReadyEmail,
   parseJsonBody,
 } from './auth-utils.mjs';
 
@@ -80,7 +82,7 @@ const loadRoleKeys = async (db, userId) => {
   return roles.map((role) => role.key);
 };
 
-export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
+export const createAdminQuotesHandler = ({ getDatabase = loadDatabase, sendQuoteEmail = sendQuoteReadyEmail } = {}) => async (request) => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
@@ -119,7 +121,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
     }
 
     const [jobRequest] = await db.sql`
-      select id, client_id
+      select id, client_id, requester_email, service_type
       from job_requests
       where id = ${payload.jobRequestId}
       limit 1
@@ -148,6 +150,22 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         and status in ('new', 'needs_review', 'quote_in_progress')
     `;
 
+    let quoteEmailResult = { sent: false };
+
+    if (payload.sendToClient) {
+      try {
+        quoteEmailResult = await sendQuoteEmail({
+          to: jobRequest.requester_email,
+          quoteTitle: payload.title,
+          amountCents: payload.amountCents,
+          dashboardUrl: `${getSiteUrl(request)}/dashboard/`,
+        });
+      } catch (emailError) {
+        console.error('Quote email delivery failed', emailError);
+        quoteEmailResult = { sent: false, reason: 'Quote was sent to the portal, but email delivery failed.' };
+      }
+    }
+
     await db.sql`
       insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
       values (
@@ -155,7 +173,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         ${'quote.created'},
         ${'quote'},
         ${quote.id},
-        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient })}::jsonb
+        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient, quoteEmailSent: quoteEmailResult.sent })}::jsonb
       )
     `;
 
@@ -170,6 +188,8 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         roles: roleKeys,
       },
       quote: mapQuote(quote),
+      quoteEmailSent: quoteEmailResult.sent,
+      ...(quoteEmailResult.reason ? { quoteEmailMessage: quoteEmailResult.reason } : {}),
     });
   } catch (error) {
     console.error('Failed to create admin quote', error);

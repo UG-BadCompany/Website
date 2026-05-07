@@ -42,6 +42,10 @@ const mapJobRequest = (request) => ({
   serviceType: request.service_type,
   preferredTimeframe: request.preferred_timeframe,
   description: request.description,
+  plannedServiceAt: request.planned_service_at,
+  completedAt: request.completed_at,
+  clientRequestedServiceAt: request.client_requested_service_at,
+  clientRescheduleNote: request.client_reschedule_note,
   createdAt: request.created_at,
   property: request.property_id ? {
     id: request.property_id,
@@ -165,6 +169,10 @@ const listClientData = async (db, userId) => {
       job_requests.service_type,
       job_requests.preferred_timeframe,
       job_requests.description,
+      job_requests.planned_service_at,
+      job_requests.completed_at,
+      job_requests.client_requested_service_at,
+      job_requests.client_reschedule_note,
       job_requests.created_at,
       properties.id as property_id,
       properties.label as property_label,
@@ -308,8 +316,73 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
   });
 };
 
+const normalizeReschedulePayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId, 80),
+  requestedServiceAt: clean(body.requestedServiceAt, 80),
+  rescheduleNote: clean(body.rescheduleNote, 1000),
+});
+
+const handlePatch = async ({ request, db, session, roleKeys }) => {
+  const body = await parseJsonBody(request);
+
+  if (!body) {
+    return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  }
+
+  const payload = normalizeReschedulePayload(body);
+
+  if (!payload.jobRequestId) {
+    return json(422, { ok: false, message: 'Job request is required.' });
+  }
+
+  if (!payload.requestedServiceAt) {
+    return json(422, { ok: false, message: 'Choose the date you want to reschedule for.' });
+  }
+
+  const [updatedRequest] = await db.sql`
+    update job_requests
+    set client_requested_service_at = ${payload.requestedServiceAt}::timestamptz,
+        client_reschedule_note = ${payload.rescheduleNote || null},
+        status = case when status in ('scheduled', 'in_progress', 'accepted') then 'needs_review' else status end,
+        updated_at = now()
+    where id = ${payload.jobRequestId}
+      and client_id = ${session.user_id}
+      and status in ('accepted', 'scheduled', 'in_progress')
+    returning id, status, city, street_address, service_type, preferred_timeframe, description, planned_service_at, completed_at, client_requested_service_at, client_reschedule_note, created_at
+  `;
+
+  if (!updatedRequest) {
+    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Work order not found or not eligible for rescheduling.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (
+      ${session.user_id},
+      ${'job_request.reschedule_requested'},
+      ${'job_request'},
+      ${updatedRequest.id},
+      ${JSON.stringify({ source: 'client_dashboard', requestedServiceAt: payload.requestedServiceAt })}::jsonb
+    )
+  `;
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    user: {
+      id: session.user_id,
+      email: session.email,
+      fullName: session.full_name,
+      roles: roleKeys,
+    },
+    request: mapJobRequest(updatedRequest),
+    message: 'Reschedule request sent to T&A Contracting.',
+  });
+};
+
 export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'POST'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -335,6 +408,10 @@ export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = 
 
     if (request.method === 'POST') {
       return await handlePost({ request, db, session, roleKeys });
+    }
+
+    if (request.method === 'PATCH') {
+      return await handlePatch({ request, db, session, roleKeys });
     }
 
     return await handleGet({ db, session, roleKeys });

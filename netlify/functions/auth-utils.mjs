@@ -164,6 +164,36 @@ export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, 
   return { sent: true };
 };
 
+
+export const sendQuoteReadyEmail = async ({ fetchImpl = fetch, to, quoteTitle, amountCents, dashboardUrl }) => {
+  if (!shouldSendEmail()) {
+    return { sent: false, reason: 'RESEND_API_KEY or MAGIC_LINK_FROM_EMAIL is not configured.' };
+  }
+
+  const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
+  const response = await fetchImpl('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: getFromEmail(),
+      to,
+      subject: `Your T&A Contracting quote is ready: ${quoteTitle}`,
+      html: `<p>Your quote <strong>${quoteTitle}</strong> for ${amount} is ready for review.</p><p><a href="${dashboardUrl}">Open your Client Portal to accept or decline the quote</a>.</p>`,
+      text: `Your quote ${quoteTitle} for ${amount} is ready for review. Open your Client Portal to accept or decline it: ${dashboardUrl}`,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Resend quote email failed with ${response.status}: ${detail}`);
+  }
+
+  return { sent: true };
+};
+
 export const createSessionCookie = (sessionToken, request) => {
   const expires = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000).toUTCString();
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
