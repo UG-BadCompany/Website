@@ -103,4 +103,4 @@ Before redeploying, verify the branch only has one migration per number:
 node scripts/check-netlify-migrations.mjs
 ```
 
-If Netlify logs still show the deleted `0004_custom_roles_permissions.sql`, trigger **Clear cache and deploy site** in Netlify so the old migration file is removed from the cached checkout before Netlify Database validates migrations.
+If Netlify logs still show the deleted `0004_custom_roles_permissions.sql`, the prebuild migration check removes that stale cached file when `0005_custom_roles_permissions.sql` is present. If Netlify Database still reports the duplicate before the prebuild can run, trigger **Clear cache and deploy site** in Netlify so the old migration file is removed from the cached checkout before Netlify Database validates migrations.
