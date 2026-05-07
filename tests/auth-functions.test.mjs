@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  getAllowedSiteUrls,
   getFromEmail,
+  getSiteUrl,
   hashToken,
   shouldSendEmail,
   normalizeClientAccountPayload,
@@ -70,6 +72,39 @@ test('email delivery stays disabled for missing or placeholder Resend settings',
   process.env.MAGIC_LINK_FROM_EMAIL = 'portal@example.com';
   assert.equal(shouldSendEmail(), true);
   assert.equal(getFromEmail(), 'portal@example.com');
+
+  for (const [key, value] of Object.entries(original)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
+
+test('site URL helper supports the production domain and Netlify subdomain alias', () => {
+  const original = {
+    SITE_URL: process.env.SITE_URL,
+    SITE_URL_ALIASES: process.env.SITE_URL_ALIASES,
+  };
+
+  process.env.SITE_URL = 'https://ta-contracting.org/';
+  process.env.SITE_URL_ALIASES = 'https://tacontracting.netlify.app';
+
+  assert.deepEqual(getAllowedSiteUrls(), ['https://ta-contracting.org', 'https://tacontracting.netlify.app']);
+  assert.equal(
+    getSiteUrl(new Request('https://tacontracting.netlify.app/login/')),
+    'https://tacontracting.netlify.app',
+  );
+  assert.equal(
+    getSiteUrl(new Request('https://ta-contracting.org/login/')),
+    'https://ta-contracting.org',
+  );
+  assert.equal(
+    getSiteUrl(new Request('https://unexpected.example/login/')),
+    'https://ta-contracting.org',
+  );
 
   for (const [key, value] of Object.entries(original)) {
     if (value === undefined) {

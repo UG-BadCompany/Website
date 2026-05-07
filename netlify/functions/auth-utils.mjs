@@ -86,14 +86,24 @@ export const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 
 
 export const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-export const getSiteUrl = (request) => {
-  const configuredUrl = clean(process.env.SITE_URL);
+export const normalizeSiteUrl = (url) => clean(url).replace(/\/$/, '');
 
-  if (configuredUrl && !configuredUrl.includes('your-domain.example')) {
-    return configuredUrl.replace(/\/$/, '');
+export const getAllowedSiteUrls = () => [
+  normalizeSiteUrl(process.env.SITE_URL),
+  ...clean(process.env.SITE_URL_ALIASES, 2000)
+    .split(',')
+    .map((url) => normalizeSiteUrl(url)),
+].filter((url) => url && !url.includes('your-domain.example'));
+
+export const getSiteUrl = (request) => {
+  const requestOrigin = new URL(request.url).origin;
+  const allowedSiteUrls = getAllowedSiteUrls();
+
+  if (allowedSiteUrls.includes(requestOrigin)) {
+    return requestOrigin;
   }
 
-  return new URL(request.url).origin;
+  return allowedSiteUrls[0] || requestOrigin;
 };
 
 export const createMagicLinkUrl = (request, token) => `${getSiteUrl(request)}/api/auth/verify?token=${encodeURIComponent(token)}`;
