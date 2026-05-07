@@ -116,7 +116,7 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1J
 
-- Admin request cards can be opened from the unified dashboard to work directly from the client request details.
+- Admin request cards open a focused modal workspace from the unified dashboard so quoting/status work does not push the inbox down the page.
 - Admins can update request status/internal notes and create a quote from the selected request.
 - Quotes can stay as drafts or be sent immediately; sent quotes move the request to `quote_sent` so clients can use the existing accept/decline flow.
 - Worker assignment is represented in the admin work panel as the next scheduled build-out area, pending a dedicated assignment table/API.
