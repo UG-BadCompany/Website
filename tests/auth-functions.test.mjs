@@ -61,7 +61,7 @@ test('email delivery stays disabled for missing or placeholder Resend settings',
   process.env.QUOTE_FROM_EMAIL = 'quotes@your-domain.example';
 
   assert.equal(shouldSendEmail(), false);
-  assert.equal(getFromEmail(), 'portal@ta-contracting.example');
+  assert.equal(getFromEmail(), 'portal@ta-contracting.org');
 
   process.env.RESEND_API_KEY = 're_replace_me';
   assert.equal(shouldSendEmail(), false);

@@ -118,7 +118,7 @@ export const getFromEmail = () => {
     return quoteFromEmail;
   }
 
-  return 'portal@ta-contracting.example';
+  return 'portal@ta-contracting.org';
 };
 
 export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, purpose }) => {
