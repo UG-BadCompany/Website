@@ -20,6 +20,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-request-estimate-link/, 'dashboard request estimate link should target the in-dashboard request form');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'signed-in dashboard nav should not show the Client Portal link');
   assert.match(html, /data-client-edit-property/, 'clients should have an edit action for saved properties');
+  assert.match(html, /data-client-property-modal/, 'property edits should open in a dedicated popup instead of the request form');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');

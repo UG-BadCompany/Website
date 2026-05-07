@@ -24,6 +24,7 @@ const defaultDbResponses = () => [
   [{ id: 'property-123' }],
   [{ id: 'job-123', created_at: '2026-05-06T22:00:00.000Z' }],
   [],
+  [],
 ];
 
 const createMockDb = (responses = defaultDbResponses()) => ({
@@ -106,7 +107,15 @@ test('silently accepts honeypot submissions without writing to the database', as
 
 test('creates or updates a client account, property, job request, and audit event for valid submissions', async () => {
   const db = createMockDb();
-  const handler = createJobRequestHandler({ getDatabase: async () => db });
+  const sentEmails = [];
+  const handler = createJobRequestHandler({
+    getDatabase: async () => db,
+    makeToken: () => 'request-token',
+    sendEmail: async (message) => {
+      sentEmails.push(message);
+      return { sent: true };
+    },
+  });
 
   const response = await readJson(await handler(request({
     name: 'Jane Customer',
@@ -126,15 +135,22 @@ test('creates or updates a client account, property, job request, and audit even
     clientId: 'client-123',
     propertyId: 'property-123',
     createdAt: '2026-05-06T22:00:00.000Z',
-    message: 'Estimate request saved.',
+    emailSent: true,
+    message: 'Estimate request saved. Check your email for a confirmation and secure client portal link.',
   });
-  assert.equal(db.queries.length, 6);
+  assert.deepEqual(sentEmails, [{
+    to: 'jane@example.com',
+    magicLinkUrl: 'https://example.test/api/auth/verify?token=request-token',
+    purpose: 'client_account',
+  }]);
+  assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /insert into app_users/);
   assert.match(db.queries[1].text, /insert into user_roles/);
   assert.match(db.queries[2].text, /from properties/);
   assert.match(db.queries[3].text, /insert into properties/);
   assert.match(db.queries[4].text, /insert into job_requests/);
   assert.match(db.queries[5].text, /insert into audit_events/);
+  assert.match(db.queries[6].text, /insert into auth_magic_links/);
   assert.deepEqual(db.queries[4].values, [
     'client-123',
     'property-123',
@@ -173,10 +189,11 @@ test('reuses an existing property for repeat requests at the same client address
 
   assert.equal(response.status, 201);
   assert.equal(response.body.propertyId, 'property-existing');
-  assert.equal(db.queries.length, 5);
+  assert.equal(db.queries.length, 6);
   assert.match(db.queries[2].text, /from properties/);
   assert.doesNotMatch(db.queries[3].text, /insert into properties/);
   assert.match(db.queries[3].text, /insert into job_requests/);
+  assert.match(db.queries[5].text, /insert into auth_magic_links/);
   assert.deepEqual(db.queries[3].values.slice(0, 2), ['client-123', 'property-existing']);
 });
 

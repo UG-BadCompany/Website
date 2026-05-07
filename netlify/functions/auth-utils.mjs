@@ -199,9 +199,13 @@ export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, 
     body: JSON.stringify({
       from: getFromEmail(),
       to,
-      subject: purpose === 'client_account' ? 'Create your T&A Contracting portal account' : 'Sign in to your T&A Contracting portal',
-      html: `<p>Use this secure link to ${purpose === 'client_account' ? 'finish creating your account' : 'sign in'}:</p><p><a href="${magicLinkUrl}">Open your secure portal link</a></p><p>This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>`,
-      text: `Use this secure link to ${purpose === 'client_account' ? 'finish creating your account' : 'sign in'}: ${magicLinkUrl}\n\nThis link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`,
+      subject: purpose === 'client_account' ? 'We received your T&A Contracting request' : 'Sign in to your T&A Contracting portal',
+      html: purpose === 'client_account'
+        ? `<p>We received your request for T&A Contracting.</p><p>Use this secure link to open your client portal, review your request, and add any property details:</p><p><a href="${magicLinkUrl}">Open your secure client portal</a></p><p>This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>`
+        : `<p>Use this secure link to sign in:</p><p><a href="${magicLinkUrl}">Open your secure portal link</a></p><p>This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>`,
+      text: purpose === 'client_account'
+        ? `We received your request for T&A Contracting. Use this secure link to open your client portal, review your request, and add any property details: ${magicLinkUrl}\n\nThis link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`
+        : `Use this secure link to sign in: ${magicLinkUrl}\n\nThis link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`,
     }),
   });
 

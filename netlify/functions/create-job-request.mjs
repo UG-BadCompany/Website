@@ -1,3 +1,12 @@
+import {
+  createMagicLinkUrl,
+  createToken,
+  hashToken,
+  MAGIC_LINK_TTL_MINUTES,
+  minutesFromNow,
+  sendMagicLinkEmail,
+} from './auth-utils.mjs';
+
 const REQUIRED_FIELDS = ['name', 'phone', 'email', 'city', 'streetAddress', 'service', 'description'];
 const MAX_FIELD_LENGTHS = {
   name: 140,
@@ -75,7 +84,7 @@ const findOrCreateProperty = async (db, clientId, payload) => {
   return property;
 };
 
-export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
+export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken = createToken, sendEmail = sendMagicLinkEmail } = {}) => async (request) => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
@@ -158,13 +167,34 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => 
       )
     `;
 
+    const token = makeToken();
+    const magicLinkUrl = createMagicLinkUrl(request, token);
+
+    await db.sql`
+      insert into auth_magic_links (email, token_hash, purpose, client_name, client_phone, expires_at)
+      values (${payload.email}, ${hashToken(token)}, 'client_account', ${payload.name}, ${payload.phone}, ${minutesFromNow(MAGIC_LINK_TTL_MINUTES)}::timestamptz)
+    `;
+
+    let emailResult = { sent: false, reason: 'Email delivery is not configured.' };
+
+    try {
+      emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'client_account' });
+    } catch (emailError) {
+      console.error('Request confirmation email delivery failed', emailError);
+      emailResult = { sent: false, reason: 'Email delivery failed.' };
+    }
+
     return json(201, {
       ok: true,
       id: jobRequest.id,
       clientId: client.id,
       propertyId: property.id,
       createdAt: jobRequest.created_at,
-      message: 'Estimate request saved.',
+      emailSent: emailResult.sent,
+      message: emailResult.sent
+        ? 'Estimate request saved. Check your email for a confirmation and secure client portal link.'
+        : 'Estimate request saved. We could not send the confirmation email yet, but your request is in the portal.',
+      ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
     });
   } catch (error) {
     console.error('Failed to create job request', error);
