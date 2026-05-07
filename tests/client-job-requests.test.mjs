@@ -326,3 +326,44 @@ test('client job request endpoint creates a new property when the client enters 
     'Please fix the gate.',
   ]);
 });
+
+
+test('client job request endpoint lets clients update their own property details', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [{
+      id: 'property-1',
+      label: 'Updated home',
+      street: '789 Pine St',
+      city: 'Mesa',
+      state: 'AZ',
+      postal_code: '85201',
+      access_notes: 'Use side gate.',
+      created_at: '2026-05-01T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+    }],
+    [],
+  ]);
+  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      propertyId: 'property-1',
+      label: 'Updated home',
+      streetAddress: '789 Pine St',
+      city: 'Mesa',
+      accessNotes: 'Use side gate.',
+    }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.property.street, '789 Pine St');
+  assert.equal(response.body.property.accessNotes, 'Use side gate.');
+  assert.match(db.queries[3].text, /update properties/);
+  assert.match(db.queries[3].text, /and client_id = \?/);
+  assert.deepEqual(db.queries[3].values, ['Updated home', '789 Pine St', 'Mesa', 'Use side gate.', 'property-1', 'client-1']);
+  assert.match(db.queries[4].text, /insert into audit_events/);
+});

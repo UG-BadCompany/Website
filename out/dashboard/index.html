@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Client Portal</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -190,7 +190,7 @@
       </div>
     </section>
 
-    <section class="card client-requests" data-client-requests data-dashboard-section data-views="client" hidden>
+    <section class="card client-requests" id="submit-request" data-client-requests data-dashboard-section data-views="client" hidden>
       <strong>My job requests</strong>
       <p>Signed-in clients can see the estimate requests connected to their account.</p>
       <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
@@ -232,6 +232,13 @@
       <div class="client-request-list" data-client-request-list></div>
     </section>
 
+    <section class="card client-properties" data-client-properties data-dashboard-section data-views="client" hidden>
+      <strong>My properties</strong>
+      <p>Edit saved property details so future requests use the right address and access information.</p>
+      <p class="session-status" data-client-properties-status role="status" aria-live="polite">Loading your properties…</p>
+      <div class="client-property-list" data-client-property-list></div>
+    </section>
+
     <section class="card client-quotes" data-client-quotes data-dashboard-section data-views="client" hidden>
       <strong>My quotes</strong>
       <p>Quotes connected to your account will appear here for review before approvals and payments are added.</p>
@@ -239,11 +246,6 @@
       <div class="client-quote-list" data-client-quote-list></div>
     </section>
 
-    <section class="card client-properties" data-client-properties data-dashboard-section data-views="client" hidden>
-      <strong>My properties</strong>
-      <p>Each account can have multiple properties. Only properties tied to your signed-in account are shown here.</p>
-      <div class="client-property-list" data-client-property-list></div>
-    </section>
 
     <section class="tools" aria-label="Role based dashboard tools">
       <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
@@ -287,6 +289,17 @@
           } finally {
             window.location.href = '/login/?signed-out=1';
           }
+        });
+      };
+      const bindRequestEstimateLink = () => {
+        const link = document.querySelector('[data-request-estimate-link]');
+        if (!link || link.dataset.bound) return;
+        link.dataset.bound = 'true';
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          setDashboardView('client');
+          document.querySelector('#submit-request')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.querySelector('[name="service"]')?.focus({ preventScroll: true });
         });
       };
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
@@ -375,6 +388,7 @@
             <span>${escapeHtml(property.postalCode || 'No ZIP')}</span>
           </div>
           ${property.accessNotes ? `<p>${escapeHtml(property.accessNotes)}</p>` : ''}
+          <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-edit-property="${escapeHtml(property.id)}">Edit property</button></div>
         </article>
       `;
 
@@ -382,6 +396,7 @@
         const panelStatus = document.querySelector('[data-client-requests-status]');
         const requestList = document.querySelector('[data-client-request-list]');
         const propertyList = document.querySelector('[data-client-property-list]');
+        const propertyStatus = document.querySelector('[data-client-properties-status]');
         const propertySelect = document.querySelector('[data-client-property-select]');
         const openMetric = document.querySelector('[data-open-requests-metric]');
         const propertiesMetric = document.querySelector('[data-properties-metric]');
@@ -392,6 +407,10 @@
 
         panelStatus.dataset.state = 'ready';
         panelStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No requests are connected to this account yet.';
+        if (propertyStatus) {
+          propertyStatus.dataset.state = 'ready';
+          propertyStatus.textContent = properties.length ? `${properties.length} propert${properties.length === 1 ? 'y' : 'ies'} loaded.` : 'No saved properties yet.';
+        }
 
         if (openMetric && result.summary) {
           openMetric.textContent = String(result.summary.active || 0);
@@ -558,6 +577,67 @@
 
         Object.entries(fields).forEach(([key, field]) => {
           if (field && (overwrite || !field.value)) field.value = values[key];
+        });
+      };
+
+      const saveClientProperty = async (propertyId) => {
+        const propertyStatus = document.querySelector('[data-client-properties-status]');
+        const payload = {
+          propertyId,
+          streetAddress: document.querySelector('[data-client-property-street]')?.value || '',
+          city: document.querySelector('[data-client-property-city]')?.value || '',
+          label: document.querySelector('[data-client-property-label]')?.value || '',
+          accessNotes: document.querySelector('[data-client-property-access-notes]')?.value || '',
+        };
+
+        if (propertyStatus) propertyStatus.textContent = 'Saving property details…';
+
+        const response = await fetch('/api/client/job-requests', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || 'We could not update that property.');
+        }
+
+        if (propertyStatus) propertyStatus.textContent = 'Property updated.';
+        await loadClientRequests();
+      };
+
+      const bindClientPropertyActions = () => {
+        const panel = document.querySelector('[data-client-properties]');
+        const propertySelect = document.querySelector('[data-client-property-select]');
+
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-client-edit-property]');
+          if (!button) return;
+
+          const propertyId = button.dataset.clientEditProperty;
+          if (propertySelect) propertySelect.value = propertyId;
+          fillClientPropertyFields(propertyId);
+          document.querySelector('[data-client-property-street]')?.focus();
+
+          if (button.textContent.includes('Save')) {
+            button.disabled = true;
+            try {
+              await saveClientProperty(propertyId);
+            } catch (error) {
+              const propertyStatus = document.querySelector('[data-client-properties-status]');
+              if (propertyStatus) {
+                propertyStatus.dataset.state = 'error';
+                propertyStatus.textContent = error.message;
+              }
+            } finally {
+              button.disabled = false;
+            }
+          } else {
+            button.textContent = 'Save property changes';
+          }
         });
       };
 
@@ -1128,10 +1208,12 @@
           }
 
           bindLogout();
+          bindRequestEstimateLink();
           configureDashboardForUser(result.user);
 
           if (result.user.permissions?.canViewClientTools) {
             bindClientRequestForm();
+            bindClientPropertyActions();
             bindQuoteDecisionActions();
             loadClientRequests();
             loadClientQuotes();

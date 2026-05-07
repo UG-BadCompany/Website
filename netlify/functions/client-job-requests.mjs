@@ -75,7 +75,7 @@ const normalizePayload = (body = {}) => Object.fromEntries(
   Object.entries(MAX_FIELD_LENGTHS).map(([field, maxLength]) => [field, clean(body[field], maxLength)]),
 );
 
-const validatePayload = (payload, session) => {
+const validateJobRequestPayload = (payload, session) => {
   if (!payload.service) {
     return 'Service is required.';
   }
@@ -133,6 +133,34 @@ const loadRoleKeys = async (db, userId) => {
 };
 
 const requireClientAccess = (roleKeys) => roleKeys.includes('client') || roleKeys.includes('admin');
+
+const validatePropertyPayload = (payload) => {
+  if (!payload.propertyId) {
+    return 'Property is required.';
+  }
+
+  if (!payload.streetAddress || !payload.city) {
+    return 'Street address and city are required to update a property.';
+  }
+
+  return null;
+};
+
+const updateClientProperty = async (db, userId, payload) => {
+  const [property] = await db.sql`
+    update properties
+    set label = ${payload.label || null},
+        street = ${payload.streetAddress},
+        city = ${payload.city},
+        access_notes = ${payload.accessNotes || null},
+        updated_at = now()
+    where id = ${payload.propertyId}
+      and client_id = ${userId}
+    returning id, label, street, city, state, postal_code, access_notes, created_at, updated_at
+  `;
+
+  return property || null;
+};
 
 const findOrCreateClientProperty = async (db, userId, payload) => {
   if (payload.propertyId) {
@@ -258,7 +286,7 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
   }
 
   const payload = normalizePayload(body);
-  const validationError = validatePayload(payload, session);
+  const validationError = validateJobRequestPayload(payload, session);
 
   if (validationError) {
     return json(422, { ok: false, message: validationError });
@@ -326,8 +354,53 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
   });
 };
 
+const handlePatch = async ({ request, db, session, roleKeys }) => {
+  const body = await parseJsonBody(request);
+
+  if (!body) {
+    return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  }
+
+  const payload = normalizePayload(body);
+  const validationError = validatePropertyPayload(payload);
+
+  if (validationError) {
+    return json(422, { ok: false, message: validationError });
+  }
+
+  const property = await updateClientProperty(db, session.user_id, payload);
+
+  if (!property) {
+    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Property not found for this account.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (
+      ${session.user_id},
+      ${'client_property.updated'},
+      ${'property'},
+      ${property.id},
+      ${JSON.stringify({ source: 'client_dashboard' })}::jsonb
+    )
+  `;
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    user: {
+      id: session.user_id,
+      email: session.email,
+      fullName: session.full_name,
+      roles: roleKeys,
+    },
+    property: mapProperty(property),
+  });
+};
+
 export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'POST'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -353,6 +426,10 @@ export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = 
 
     if (request.method === 'POST') {
       return await handlePost({ request, db, session, roleKeys });
+    }
+
+    if (request.method === 'PATCH') {
+      return await handlePatch({ request, db, session, roleKeys });
     }
 
     return await handleGet({ db, session, roleKeys });

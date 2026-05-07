@@ -17,9 +17,14 @@ test('dashboard user and role controls have their required handlers', async () =
   const html = await loadDashboardHtml();
   const [script] = extractInlineScripts(html);
 
+  assert.match(html, /data-request-estimate-link/, 'dashboard request estimate link should target the in-dashboard request form');
+  assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'signed-in dashboard nav should not show the Client Portal link');
+  assert.match(html, /data-client-edit-property/, 'clients should have an edit action for saved properties');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
+  assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
+  assert.match(script, /const bindClientPropertyActions =/, 'client property edit controls should be bound');
   assert.match(script, /const renderUserProperties =/, 'opening a user profile requires the property renderer to be declared');
   assert.match(script, /renderUserProperties\(user\.properties \|\| \[\]\)/, 'user profile opening should render saved addresses');
 });
