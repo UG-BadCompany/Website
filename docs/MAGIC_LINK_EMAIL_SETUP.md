@@ -82,7 +82,3 @@ SITE_URL_ALIASES=https://tacontracting.netlify.app
 ```
 
 When a magic link is requested from `https://tacontracting.netlify.app`, the API will generate a verification link on that same Netlify subdomain. When the request comes from `https://ta-contracting.org`, the API will generate the link on the main domain. This lets both domains keep working after the main-domain DNS is active.
-
-## Quote-ready email
-
-The same Resend configuration is used when an admin sends a quote from the dashboard. The quote is saved to the Client Portal first, the related work request moves to `quote_sent`, and then the backend attempts to email the client a portal link to review, accept, or decline the quote. If email delivery fails, the quote still remains visible in the Client Portal.

@@ -1,21 +1,35 @@
 import {
+  getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
 } from './auth-utils.mjs';
 
-const buildPermissions = (roles) => {
-  const roleSet = new Set(roles);
-  const isAdmin = roleSet.has('admin');
+const buildPermissions = (roles, assignedPermissionKeys = []) => {
+  const permissionKeys = getPermissionKeysForRoles(roles, assignedPermissionKeys);
+  const permissionSet = new Set(permissionKeys);
+  const canViewAdminTools = permissionSet.has('admin.tools');
+  const canViewWorkerTools = permissionSet.has('worker.tools');
+  const canViewClientTools = permissionSet.has('client.tools');
+  const availableViews = [
+    ...(canViewAdminTools ? ['admin'] : []),
+    ...(canViewClientTools ? ['client'] : []),
+    ...(canViewWorkerTools ? ['worker'] : []),
+  ];
 
   return {
-    canViewClientTools: isAdmin || roleSet.has('client'),
-    canViewWorkerTools: isAdmin || roleSet.has('worker'),
-    canViewAdminTools: isAdmin,
-    canSwitchDashboardView: isAdmin,
-    defaultView: isAdmin ? 'admin' : (roleSet.has('worker') ? 'worker' : 'client'),
-    availableViews: isAdmin ? ['admin', 'client', 'worker'] : roles,
+    canViewClientTools,
+    canViewWorkerTools,
+    canViewAdminTools,
+    canSwitchDashboardView: permissionSet.has('dashboard.switch_views'),
+    canManageUsers: permissionSet.has('admin.users.manage'),
+    canManageRoles: permissionSet.has('admin.roles.manage'),
+    canManageRequests: permissionSet.has('admin.requests.manage'),
+    canManageQuotes: permissionSet.has('admin.quotes.manage'),
+    defaultView: canViewAdminTools ? 'admin' : (canViewWorkerTools ? 'worker' : 'client'),
+    availableViews: availableViews.length ? availableViews : roles,
+    permissionKeys,
   };
 };
 
@@ -62,6 +76,15 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     `;
 
     const roleKeys = roles.map((role) => role.key);
+    const rolePermissions = await db.sql`
+      select distinct role_permissions.permission_key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+      where user_roles.user_id = ${session.user_id}
+      order by role_permissions.permission_key
+    `;
+    const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
 
     return json(200, {
       ok: true,
@@ -71,7 +94,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
         email: session.email,
         fullName: session.full_name,
         roles: roleKeys,
-        permissions: buildPermissions(roleKeys),
+        permissions: buildPermissions(roleKeys, permissionKeys),
       },
     });
   } catch (error) {

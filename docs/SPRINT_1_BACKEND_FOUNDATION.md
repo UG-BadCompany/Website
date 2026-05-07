@@ -123,7 +123,8 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1K
 
-- Work orders now track planned service dates, completion dates, client-requested reschedule dates, and reschedule notes.
-- Admins can close work by setting `completed`, keep `cancelled` as a closed status, or permanently delete a work order when it must be removed from the system.
-- Clients can request a reschedule for accepted/scheduled/in-progress work from their dashboard; the request moves back to admin review.
-- Sending a quote to the client now updates the related work request to `quote_sent` and attempts a quote-ready email in addition to making the quote visible in the Client Portal.
+- Added custom role and role-permission storage so admins can create roles beyond client/worker/admin.
+- Added `GET/POST/PATCH /api/admin/roles` for role creation and permission toggles; the admin role keeps every permission by default.
+- Expanded `GET/POST/PATCH /api/admin/users` so admins can list users, see assignable roles, and assign custom roles.
+- `/api/me` now returns permission keys and dashboard capability flags derived from role permissions, not only hard-coded role names.
+- The dashboard includes an Admin roles & users panel for creating roles, toggling permissions, and assigning users to roles.

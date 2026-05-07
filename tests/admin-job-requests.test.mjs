@@ -112,10 +112,6 @@ test('admin job request endpoint lets admins update request status and notes', a
       preferred_timeframe: 'Flexible',
       description: 'Ceiling fan install',
       admin_notes: 'Assign installer after quote acceptance.',
-      planned_service_at: '2026-05-10T15:00:00.000Z',
-      completed_at: null,
-      client_requested_service_at: null,
-      client_reschedule_note: null,
       created_at: '2026-05-07T00:00:00.000Z',
     }],
     [],
@@ -124,37 +120,13 @@ test('admin job request endpoint lets admins update request status and notes', a
   const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests', {
     method: 'PATCH',
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ jobRequestId: 'job-1', status: 'scheduled', adminNotes: 'Assign installer after quote acceptance.', plannedServiceAt: '2026-05-10T15:00:00.000Z' }),
+    body: JSON.stringify({ jobRequestId: 'job-1', status: 'scheduled', adminNotes: 'Assign installer after quote acceptance.' }),
   })));
 
   assert.equal(response.status, 200);
   assert.equal(response.body.request.status, 'scheduled');
   assert.equal(response.body.request.adminNotes, 'Assign installer after quote acceptance.');
-  assert.equal(response.body.request.plannedServiceAt, '2026-05-10T15:00:00.000Z');
   assert.match(db.queries[3].text, /update job_requests/);
-  assert.deepEqual(db.queries[3].values, ['scheduled', 'Assign installer after quote acceptance.', '2026-05-10T15:00:00.000Z', null, 'job-1']);
+  assert.deepEqual(db.queries[3].values, ['scheduled', 'Assign installer after quote acceptance.', 'job-1']);
   assert.match(db.queries[4].text, /insert into audit_events/);
-});
-
-
-test('admin job request endpoint can permanently delete work orders', async () => {
-  const db = createMockDb([
-    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
-    [],
-    [{ key: 'admin', name: 'Admin' }],
-    [{ id: 'job-1', status: 'cancelled', requester_email: 'client@example.com', service_type: 'Fixture work' }],
-    [],
-  ]);
-  const handler = createAdminJobRequestsHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests', {
-    method: 'DELETE',
-    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ jobRequestId: 'job-1' }),
-  })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.deleted, true);
-  assert.match(db.queries[3].text, /delete from job_requests/);
-  assert.equal(db.queries[3].values[0], 'job-1');
-  assert.equal(db.queries[4].values[1], 'job_request.deleted');
 });
