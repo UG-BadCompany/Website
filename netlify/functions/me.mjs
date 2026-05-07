@@ -1,9 +1,11 @@
 import {
+  clean,
   getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
+  parseJsonBody,
 } from './auth-utils.mjs';
 
 const buildPermissions = (roles, assignedPermissionKeys = []) => {
@@ -33,8 +35,29 @@ const buildPermissions = (roles, assignedPermissionKeys = []) => {
   };
 };
 
+
+const normalizeProfilePayload = (body = {}) => ({
+  fullName: clean(body.fullName || body.name, 140),
+  phone: clean(body.phone, 60),
+  secondaryPhone: clean(body.secondaryPhone, 60),
+  companyName: clean(body.companyName, 160),
+  mailingAddress: clean(body.mailingAddress, 500),
+});
+
+const mapUser = (session, roleKeys, permissionKeys) => ({
+  id: session.user_id,
+  email: session.email,
+  fullName: session.full_name,
+  phone: session.phone,
+  secondaryPhone: session.secondary_phone,
+  companyName: session.company_name,
+  mailingAddress: session.mailing_address,
+  roles: roleKeys,
+  permissions: buildPermissions(roleKeys, permissionKeys),
+});
+
 export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (request.method !== 'GET') {
+  if (!['GET', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -47,7 +70,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
   try {
     const db = await getDatabase();
     const [session] = await db.sql`
-      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name
+      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone, app_users.secondary_phone, app_users.company_name, app_users.mailing_address
       from auth_sessions
       join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
@@ -86,16 +109,48 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     `;
     const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
 
+    if (request.method === 'PATCH') {
+      const body = await parseJsonBody(request);
+
+      if (!body) {
+        return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+      }
+
+      const payload = normalizeProfilePayload(body);
+      const [updatedUser] = await db.sql`
+        update app_users
+        set full_name = ${payload.fullName || null},
+            phone = ${payload.phone || null},
+            secondary_phone = ${payload.secondaryPhone || null},
+            company_name = ${payload.companyName || null},
+            mailing_address = ${payload.mailingAddress || null},
+            updated_at = now()
+        where id = ${session.user_id}
+        returning id as user_id, email, full_name, phone, secondary_phone, company_name, mailing_address
+      `;
+
+      await db.sql`
+        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+        values (
+          ${session.user_id},
+          ${'client_profile.updated'},
+          ${'app_user'},
+          ${session.user_id},
+          ${JSON.stringify({ source: 'client_dashboard' })}::jsonb
+        )
+      `;
+
+      return json(200, {
+        ok: true,
+        authenticated: true,
+        user: mapUser(updatedUser, roleKeys, permissionKeys),
+      });
+    }
+
     return json(200, {
       ok: true,
       authenticated: true,
-      user: {
-        id: session.user_id,
-        email: session.email,
-        fullName: session.full_name,
-        roles: roleKeys,
-        permissions: buildPermissions(roleKeys, permissionKeys),
-      },
+      user: mapUser(session, roleKeys, permissionKeys),
     });
   } catch (error) {
     console.error('Failed to load current user', error);

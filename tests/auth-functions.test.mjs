@@ -190,7 +190,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
   const db = createMockDb([
-    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
+    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: '555-0101', company_name: 'T&A', mailing_address: '123 Main St' }],
     [],
     [{ key: 'client', name: 'Client' }, { key: 'admin', name: 'Admin' }],
     [],
@@ -203,6 +203,10 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
   assert.deepEqual(response.body.user.roles, ['client', 'admin']);
+  assert.equal(response.body.user.phone, '555-0100');
+  assert.equal(response.body.user.secondaryPhone, '555-0101');
+  assert.equal(response.body.user.companyName, 'T&A');
+  assert.equal(response.body.user.mailingAddress, '123 Main St');
   assert.equal(response.body.user.permissions.canViewClientTools, true);
   assert.equal(response.body.user.permissions.canViewWorkerTools, true);
   assert.equal(response.body.user.permissions.canViewAdminTools, true);
@@ -273,4 +277,31 @@ test('magic-link endpoint accepts honeypot submissions without writing tokens', 
 
 
   assert.equal(openedDatabase, false);
+});
+
+
+test('me endpoint lets a signed-in client update their profile', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: null, company_name: null, mailing_address: null }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [],
+    [{ id: 'user-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client Updated', phone: '555-0200', secondary_phone: '555-0300', company_name: 'Client Co', mailing_address: '456 Oak Ave' }],
+    [],
+  ]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ fullName: 'Client Updated', phone: '555-0200', secondaryPhone: '555-0300', companyName: 'Client Co', mailingAddress: '456 Oak Ave' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.user.fullName, 'Client Updated');
+  assert.equal(response.body.user.phone, '555-0200');
+  assert.equal(response.body.user.secondaryPhone, '555-0300');
+  assert.equal(response.body.user.companyName, 'Client Co');
+  assert.equal(response.body.user.mailingAddress, '456 Oak Ave');
+  assert.match(db.queries[4].text, /update app_users/);
+  assert.match(db.queries[5].text, /insert into audit_events/);
 });

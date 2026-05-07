@@ -190,6 +190,35 @@
       </div>
     </section>
 
+    <section class="card client-profile" data-client-profile data-dashboard-section data-views="client" hidden>
+      <strong>My profile</strong>
+      <p>Keep your contact information current. This is the information T&A Contracting uses for requests, quotes, scheduling, and property follow-up.</p>
+      <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
+      <form class="client-request-form" data-client-profile-form>
+        <div class="client-request-form-grid">
+          <label>Email
+            <input name="email" type="email" data-client-profile-email disabled>
+          </label>
+          <label>Full name
+            <input name="fullName" data-client-profile-name autocomplete="name" placeholder="Your name">
+          </label>
+          <label>Primary phone
+            <input name="phone" data-client-profile-phone autocomplete="tel" placeholder="555-0100">
+          </label>
+          <label>Secondary phone
+            <input name="secondaryPhone" data-client-profile-secondary-phone autocomplete="tel" placeholder="Optional second phone">
+          </label>
+          <label>Company
+            <input name="companyName" data-client-profile-company placeholder="Optional company name">
+          </label>
+          <label class="full">Mailing address
+            <input name="mailingAddress" data-client-profile-mailing-address autocomplete="street-address" placeholder="Street, city, state, ZIP">
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save profile</button><span data-client-profile-form-status aria-live="polite"></span></div>
+      </form>
+    </section>
+
     <section class="card client-requests" id="submit-request" data-client-requests data-dashboard-section data-views="client" hidden>
       <strong>My job requests</strong>
       <p>Signed-in clients can see the estimate requests connected to their account.</p>
@@ -417,6 +446,55 @@
           <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-edit-property="${escapeHtml(property.id)}">Edit property</button></div>
         </article>
       `;
+
+      const renderClientProfile = (user) => {
+        if (!user) return;
+        const setValue = (selector, value) => {
+          const field = document.querySelector(selector);
+          if (field) field.value = value || '';
+        };
+        setValue('[data-client-profile-email]', user.email);
+        setValue('[data-client-profile-name]', user.fullName);
+        setValue('[data-client-profile-phone]', user.phone);
+        setValue('[data-client-profile-secondary-phone]', user.secondaryPhone);
+        setValue('[data-client-profile-company]', user.companyName);
+        setValue('[data-client-profile-mailing-address]', user.mailingAddress);
+        const status = document.querySelector('[data-client-profile-status]');
+        if (status) {
+          status.dataset.state = 'ready';
+          status.textContent = 'Your profile information is loaded.';
+        }
+      };
+
+      const saveClientProfile = async (form) => {
+        const formStatus = document.querySelector('[data-client-profile-form-status]');
+        const payload = Object.fromEntries(new FormData(form).entries());
+        if (formStatus) formStatus.textContent = 'Saving profile…';
+        const response = await fetch('/api/me', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save profile.');
+        renderClientProfile(result.user);
+        if (formStatus) formStatus.textContent = 'Profile saved.';
+      };
+
+      const bindClientProfileForm = () => {
+        const form = document.querySelector('[data-client-profile-form]');
+        if (!form || form.dataset.bound) return;
+        form.dataset.bound = 'true';
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const formStatus = document.querySelector('[data-client-profile-form-status]');
+          try {
+            await saveClientProfile(form);
+          } catch (error) {
+            if (formStatus) formStatus.textContent = error.message;
+          }
+        });
+      };
 
       const renderClientData = (result) => {
         const panelStatus = document.querySelector('[data-client-requests-status]');
@@ -1239,6 +1317,7 @@
 
           status.dataset.state = 'ready';
           status.textContent = `Signed in as ${result.user.email}. Roles: ${result.user.roles.join(', ') || 'none yet'}.`;
+          renderClientProfile(result.user);
 
           if (logoutButton) {
             logoutButton.hidden = false;
@@ -1249,6 +1328,7 @@
           configureDashboardForUser(result.user);
 
           if (result.user.permissions?.canViewClientTools) {
+            bindClientProfileForm();
             bindClientRequestForm();
             bindClientPropertyActions();
             bindQuoteDecisionActions();
