@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | T&A Contracting</title>
+  <meta name="description" content="Secure dashboard placeholder for T&A Contracting clients, workers, and admins.">
+  <style>
+    :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-property-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-property{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-property strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-property-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-property-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-property p{margin:8px 0 0}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+  </style>
+</head>
+<body>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Login</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="dashboard-hero">
+        <div>
+          <span class="eyebrow">Secure Dashboard Placeholder</span>
+          <h1>The real dashboard unlocks after secure login.</h1>
+          <p>This page is a placeholder until magic-link login, request-created client profiles, and /api/me session checks are connected. After secure login, the backend will load the user profile, roles, and permissions before showing client, worker, admin, or combined tools.</p>
+          <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
+            <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
+            <button class="role active-client" type="button" data-view-button="client">Client view</button>
+            <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
+          </div>
+        </div>
+          <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
+        <div class="logo-panel"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"></div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
+      <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
+      <article class="card"><strong>Quotes Waiting</strong><div class="metric">0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
+      <article class="card"><strong>Properties</strong><div class="metric" data-properties-metric>0</div><p>Client properties connected to submitted requests will appear here.</p></article>
+    </section>
+
+
+    <section class="card admin-inbox" data-admin-inbox data-dashboard-section data-views="admin" hidden>
+      <strong>Admin request inbox</strong>
+      <p>New estimate requests from the public form appear here for admins after sign-in.</p>
+      <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
+      <div class="admin-request-list" data-admin-request-list></div>
+    </section>
+
+    <section class="card client-requests" data-client-requests data-dashboard-section data-views="client" hidden>
+      <strong>My job requests</strong>
+      <p>Signed-in clients can see the estimate requests connected to their account.</p>
+      <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
+      <form class="client-request-form" data-client-request-form>
+        <strong>Submit another request</strong>
+        <div class="client-request-form-grid">
+          <label>Existing property
+            <select name="propertyId" data-client-property-select>
+              <option value="">New property / enter address below</option>
+            </select>
+          </label>
+          <label>Phone if missing from profile
+            <input name="phone" autocomplete="tel" placeholder="555-0100">
+          </label>
+          <label>Street address
+            <input name="streetAddress" autocomplete="street-address" placeholder="123 Main St">
+          </label>
+          <label>City
+            <input name="city" autocomplete="address-level2" placeholder="Mesa">
+          </label>
+          <label>Property label
+            <input name="label" placeholder="Home, rental, office">
+          </label>
+          <label>Preferred timeframe
+            <input name="timeframe" placeholder="This week, flexible, urgent">
+          </label>
+          <label class="full">Service needed
+            <input name="service" required placeholder="Drywall repair, fence repair, remodel help">
+          </label>
+          <label class="full">Project details
+            <textarea name="description" required placeholder="Tell us what needs to be done and any access details."></textarea>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
+      </form>
+      <div class="client-request-list" data-client-request-list></div>
+    </section>
+
+    <section class="card client-properties" data-client-properties data-dashboard-section data-views="client" hidden>
+      <strong>My properties</strong>
+      <p>Each account can have multiple properties. Only properties tied to your signed-in account are shown here.</p>
+      <div class="client-property-list" data-client-property-list></div>
+    </section>
+
+    <section class="tools" aria-label="Role based dashboard tools">
+      <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
+      <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
+      <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
+      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure login gate</strong><p>Next step is making /dashboard/ require auth provider session verification through /api/me before data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
+    </section>
+  </main>
+  <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard placeholder. Magic-link authentication and /api/me session loading come next.</footer>
+  <script>
+    (() => {
+      const status = document.querySelector('[data-session-status]');
+
+      if (!status) {
+        return;
+      }
+
+      const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+      const setDashboardView = (view) => {
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          const views = (section.dataset.views || '').split(' ');
+          section.hidden = !views.includes(view);
+        });
+
+        document.querySelectorAll('[data-view-button]').forEach((button) => {
+          button.dataset.active = String(button.dataset.viewButton === view);
+        });
+      };
+      const configureDashboardForUser = (user) => {
+        const permissions = user.permissions || {};
+        const availableViews = permissions.availableViews || user.roles || [];
+        const switcher = document.querySelector('[data-view-switcher]');
+
+        if (switcher && permissions.canSwitchDashboardView) {
+          switcher.hidden = false;
+          switcher.querySelectorAll('[data-view-button]').forEach((button) => {
+            button.hidden = !availableViews.includes(button.dataset.viewButton);
+            button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+          });
+        }
+
+        setDashboardView(permissions.defaultView || availableViews[0] || 'client');
+      };
+      const renderRequestCard = (request, { admin = false } = {}) => {
+        const className = admin ? 'admin-request' : 'client-request';
+        const badgeClass = admin ? 'admin-request-badge' : 'client-request-badge';
+        const metaClass = admin ? 'admin-request-meta' : 'client-request-meta';
+        const title = admin
+          ? `${escapeHtml(request.serviceType)} — ${escapeHtml(request.requesterName)}`
+          : `${escapeHtml(request.serviceType)} request`;
+        const contactMeta = admin
+          ? `<span>${escapeHtml(request.requesterPhone || 'No phone')}</span><span>${escapeHtml(request.requesterEmail || 'No email')}</span>`
+          : `<span>${escapeHtml(request.streetAddress || 'No street address')}</span>`;
+
+        return `
+          <article class="${className}">
+            <span class="${badgeClass}">${escapeHtml(request.status.replaceAll('_', ' '))}</span>
+            <strong>${title}</strong>
+            <div class="${metaClass}">
+              <span>${escapeHtml(request.city || 'No city')}</span>
+              ${contactMeta}
+              <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
+            </div>
+            <p>${escapeHtml(request.description)}</p>
+          </article>
+        `;
+      };
+
+      const renderPropertyCard = (property) => `
+        <article class="client-property">
+          <span class="client-property-badge">${property.requestCount || 0} request${property.requestCount === 1 ? '' : 's'}</span>
+          <strong>${escapeHtml(property.label || property.street || 'Property')}</strong>
+          <div class="client-property-meta">
+            <span>${escapeHtml(property.street || 'No street address')}</span>
+            <span>${escapeHtml([property.city, property.state].filter(Boolean).join(', ') || 'No city')}</span>
+            <span>${escapeHtml(property.postalCode || 'No ZIP')}</span>
+          </div>
+          ${property.accessNotes ? `<p>${escapeHtml(property.accessNotes)}</p>` : ''}
+        </article>
+      `;
+
+      const renderClientData = (result) => {
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const requestList = document.querySelector('[data-client-request-list]');
+        const propertyList = document.querySelector('[data-client-property-list]');
+        const propertySelect = document.querySelector('[data-client-property-select]');
+        const openMetric = document.querySelector('[data-open-requests-metric]');
+        const propertiesMetric = document.querySelector('[data-properties-metric]');
+        const requests = result.requests || [];
+        const properties = result.properties || [];
+
+        panelStatus.dataset.state = 'ready';
+        panelStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No requests are connected to this account yet.';
+
+        if (openMetric && result.summary) {
+          openMetric.textContent = String(result.summary.active || 0);
+        }
+
+        if (propertiesMetric && result.summary) {
+          propertiesMetric.textContent = String(result.summary.properties || 0);
+        }
+
+        requestList.innerHTML = requests.map((request) => renderRequestCard(request)).join('');
+        propertyList.innerHTML = properties.map((property) => renderPropertyCard(property)).join('');
+
+        if (propertySelect) {
+          const selectedValue = propertySelect.value;
+          propertySelect.innerHTML = '<option value="">New property / enter address below</option>' + properties.map((property) => `<option value="${escapeHtml(property.id)}">${escapeHtml(property.label || property.street || 'Property')} — ${escapeHtml(property.city || 'No city')}</option>`).join('');
+          propertySelect.value = properties.some((property) => property.id === selectedValue) ? selectedValue : '';
+        }
+      };
+
+      const loadClientRequests = async () => {
+        const panel = document.querySelector('[data-client-requests]');
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const requestList = document.querySelector('[data-client-request-list]');
+        const propertyPanel = document.querySelector('[data-client-properties]');
+        const propertyList = document.querySelector('[data-client-property-list]');
+
+        if (!panel || !panelStatus || !requestList || !propertyPanel || !propertyList) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/client/job-requests', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Your request list is not available.');
+          }
+
+          renderClientData(result);
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const bindClientRequestForm = () => {
+        const form = document.querySelector('[data-client-request-form]');
+        const formStatus = document.querySelector('[data-client-request-form-status]');
+
+        if (!form || form.dataset.bound) {
+          return;
+        }
+
+        form.dataset.bound = 'true';
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const formData = new FormData(form);
+          const payload = Object.fromEntries(formData.entries());
+          formStatus.textContent = 'Saving…';
+
+          try {
+            const response = await fetch('/api/client/job-requests', {
+              method: 'POST',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok || !result.ok) {
+              throw new Error(result.message || 'We could not save that request.');
+            }
+
+            form.reset();
+            formStatus.textContent = 'Request saved.';
+            await loadClientRequests();
+          } catch (error) {
+            formStatus.textContent = error.message;
+          }
+        });
+      };
+
+      const loadAdminRequests = async () => {
+        const inbox = document.querySelector('[data-admin-inbox]');
+        const inboxStatus = document.querySelector('[data-admin-requests-status]');
+        const inboxList = document.querySelector('[data-admin-request-list]');
+        const openMetric = document.querySelector('[data-open-requests-metric]');
+
+        if (!inbox || !inboxStatus || !inboxList) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/admin/job-requests', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Admin request inbox is not available.');
+          }
+
+          const requests = result.requests || [];
+          const openCount = requests.filter((request) => request.status !== 'completed' && request.status !== 'cancelled').length;
+          inboxStatus.dataset.state = 'ready';
+          inboxStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No job requests yet.';
+
+          if (openMetric) {
+            openMetric.textContent = String(openCount);
+          }
+
+          inboxList.innerHTML = requests.map((request) => renderRequestCard(request, { admin: true })).join('');
+        } catch (error) {
+          inboxStatus.dataset.state = 'error';
+          inboxStatus.textContent = error.message;
+        }
+      };
+
+      fetch('/api/me', { headers: { accept: 'application/json' } })
+        .then(async (response) => ({ response, result: await response.json().catch(() => ({})) }))
+        .then(({ response, result }) => {
+          if (!response.ok || !result.authenticated) {
+            status.dataset.state = 'error';
+            status.innerHTML = 'Secure dashboard access requires a verified magic-link session. <a href="/login/">Request a magic link</a>.';
+            return;
+          }
+
+          status.dataset.state = 'ready';
+          status.textContent = `Signed in as ${result.user.email}. Roles: ${result.user.roles.join(', ') || 'none yet'}.`;
+          configureDashboardForUser(result.user);
+
+          if (result.user.permissions?.canViewClientTools) {
+            bindClientRequestForm();
+            loadClientRequests();
+          }
+
+          if ((result.user.roles || []).includes('admin')) {
+            loadAdminRequests();
+          }
+        })
+        .catch(() => {
+          status.dataset.state = 'error';
+          status.textContent = 'Session check is unavailable in this local/static preview. Deploy Netlify Functions to verify login.';
+        });
+    })();
+  </script>
+
+</body>
+</html>
