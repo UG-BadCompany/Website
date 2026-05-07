@@ -9,7 +9,7 @@ Use one login for clients, workers, and admins. Users should not manually choose
 The portal should support two client-friendly flows:
 
 1. **Magic-link login** — a user enters their email and receives a secure sign-in link.
-2. **Create client account** — a new client enters name, email, and phone, then receives a verification or magic-link email.
+2. **Request-created client account** — a new client submits Request Work with name, phone, email, city/area, and address; the backend creates or updates their client profile.
 
 Admins and workers use the same login entry point. Their extra tools come from assigned permissions, not a separate login page.
 
@@ -36,7 +36,7 @@ The database stores app-level user records in `app_users` and links those record
 ## Login flow
 
 1. User opens `/login/`.
-2. User requests a magic link or creates a client account.
+2. Existing users request a magic link; new clients start by submitting Request Work.
 3. Auth provider validates the email link/session.
 4. A Netlify Function validates the session/token.
 5. The function finds or creates the matching `app_users` row.
@@ -60,7 +60,7 @@ The database stores app-level user records in `app_users` and links those record
 2. Apply migrations from `netlify/database/migrations/`.
 3. Choose the auth provider.
 4. Add environment variables from `.env.example` to Netlify.
-5. Replace the static magic-link and account creation previews with provider-backed flows.
+5. Keep `/login/` magic-link only and create/update client accounts from Request Work submissions.
 6. Add Netlify Functions for session/profile/role loading.
 7. Add role-aware dashboard rendering.
 8. Convert estimate form submissions into `job_requests` records.
@@ -72,18 +72,19 @@ The database stores app-level user records in `app_users` and links those record
 - Application code must enforce permissions before returning data.
 - Log important admin actions to `audit_events`.
 
-## Timing decision: magic links, account creation, and dashboard access
+## Timing decision: magic links, request-created accounts, and dashboard access
 
-Account creation should go live in the same milestone as magic-link login. A client account is not considered created until the email is verified by the same secure magic-link flow used for returning users.
+Client account creation now starts from Request Work submissions. A client uses the same secure magic-link flow as returning users to access their profile after the request-created account exists.
 
 The `/login/` page should stop sending users to a dashboard preview before the auth provider is connected. The intended order is:
 
 1. Configure the auth provider environment variables.
 2. `POST /api/auth/magic-link` creates a hashed, expiring magic-link token in Netlify Database and sends it by email when `RESEND_API_KEY` is configured.
-3. `POST /api/auth/client-account` stages the client name/phone with the same hashed token flow, then links or creates `app_users` after verification.
-4. `GET /api/auth/verify` consumes the token, creates an HttpOnly session cookie, and redirects to `/dashboard/`.
+3. `POST /api/job-requests` creates or updates client accounts from Request Work submissions and assigns the `client` role.
+4. `GET /api/auth/verify` consumes magic-link tokens, creates an HttpOnly session cookie, and redirects to `/dashboard/`.
 5. `GET /api/me` verifies the session and loads `app_users`, `roles`, and permissions.
-6. Gate `/dashboard/` behind the verified session and render only role-scoped dashboard data.
+6. Admin-only user management APIs create users and update roles.
+7. Gate `/dashboard/` behind the verified session and render only role-scoped dashboard data.
 
 Until those steps are complete, login forms may validate input and report readiness, but they must not claim that a user has signed in or that the dashboard is secure.
 
@@ -92,7 +93,7 @@ Until those steps are complete, login forms may validate input and report readin
 
 The current implementation uses first-party passwordless login tables instead of a separate hosted-auth adapter:
 
-- `auth_magic_links` stores only SHA-256 token hashes, purpose, optional staged client profile fields, expiration, and consumption time.
+- `auth_magic_links` stores only SHA-256 token hashes, purpose, expiration, and consumption time.
 - `auth_sessions` stores only SHA-256 session hashes and expiration metadata.
 - Raw magic-link tokens and raw session tokens are never stored in the database.
 - Email delivery uses Resend when `RESEND_API_KEY` and a from-address are configured. Without Resend, the endpoint returns a development-only magic link so the flow can be tested before production email is ready.

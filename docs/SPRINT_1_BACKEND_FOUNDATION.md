@@ -67,10 +67,17 @@ Use Netlify Functions to connect the static portal shell to Netlify Database, be
 
 ## Account access decision
 
-Client onboarding should support magic-link login and client account creation from the same `/login/` page. The first admin email is `thomas.debacker.ii@gmail.com`, seeded as an admin in the Netlify Database migration.
+Client onboarding should start from Request Work, which creates or updates the client profile; `/login/` should stay magic-link only. The first admin email is `thomas.debacker.ii@gmail.com`, seeded as an admin in the Netlify Database migration.
 
 ## Added in Sprint 1C
 
 - `GET /api/admin/job-requests` for admin-only access to recent public job requests and status counts.
 - Dashboard admin request inbox that appears only after `/api/me` confirms the signed-in user has the `admin` role.
 - Tests for admin request access control and job request payload mapping.
+
+## Added in Sprint 1D
+
+- Request Work now requires email, city/area, and property address so a client account and property can be created with every request.
+- `POST /api/job-requests` creates or updates the client profile, assigns the `client` role, creates a property row, then stores the job request.
+- `POST /api/admin/users` lets admins create users and assign roles; `PATCH /api/admin/users` lets admins replace a user's assigned roles.
+- The quote data model now includes quote rows with magic-link token fields so future quote emails can send clients back to their website profile.

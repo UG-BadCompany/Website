@@ -46,3 +46,5 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | --- | --- | --- | --- |
 | `GET /api/me` | Yes | Any active user role | Returns the signed-in user and assigned roles. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
+| `POST /api/admin/users` | Yes | `admin` | Creates a user and assigns one or more roles. |
+| `PATCH /api/admin/users` | Yes | `admin` | Replaces an existing user's assigned roles. |

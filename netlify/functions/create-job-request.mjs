@@ -1,9 +1,10 @@
-const REQUIRED_FIELDS = ['name', 'phone', 'service', 'description'];
+const REQUIRED_FIELDS = ['name', 'phone', 'email', 'city', 'streetAddress', 'service', 'description'];
 const MAX_FIELD_LENGTHS = {
   name: 140,
   phone: 60,
   email: 254,
   city: 140,
+  streetAddress: 240,
   service: 120,
   timeframe: 80,
   description: 4000,
@@ -75,20 +76,51 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => 
 
   try {
     const db = await getDatabase();
+    const [client] = await db.sql`
+      insert into app_users (auth_provider, auth_subject, email, full_name, phone)
+      values ('magic_link', ${payload.email}, ${payload.email}, ${payload.name}, ${payload.phone})
+      on conflict (email) do update set
+        full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
+        phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
+        is_active = true,
+        updated_at = now()
+      returning id, email
+    `;
+
+    await db.sql`
+      insert into user_roles (user_id, role_id)
+      select ${client.id}, roles.id
+      from roles
+      where roles.key = 'client'
+      on conflict do nothing
+    `;
+
+    const [property] = await db.sql`
+      insert into properties (client_id, label, street, city, state)
+      values (${client.id}, 'Request property', ${payload.streetAddress}, ${payload.city}, 'AZ')
+      returning id
+    `;
+
     const [jobRequest] = await db.sql`
       insert into job_requests (
+        client_id,
+        property_id,
         requester_name,
         requester_email,
         requester_phone,
         city,
+        street_address,
         service_type,
         preferred_timeframe,
         description
       ) values (
+        ${client.id},
+        ${property.id},
         ${payload.name},
-        ${payload.email || null},
+        ${payload.email},
         ${payload.phone},
-        ${payload.city || null},
+        ${payload.city},
+        ${payload.streetAddress},
         ${payload.service},
         ${payload.timeframe || null},
         ${payload.description}
@@ -102,13 +134,15 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => 
         ${'job_request.created'},
         ${'job_request'},
         ${jobRequest.id},
-        ${JSON.stringify({ source: 'public_estimate_form', city: payload.city || null, service: payload.service })}::jsonb
+        ${JSON.stringify({ source: 'public_estimate_form', clientId: client.id, propertyId: property.id, city: payload.city, streetAddress: payload.streetAddress, service: payload.service })}::jsonb
       )
     `;
 
     return json(201, {
       ok: true,
       id: jobRequest.id,
+      clientId: client.id,
+      propertyId: property.id,
       createdAt: jobRequest.created_at,
       message: 'Estimate request saved.',
     });

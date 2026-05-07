@@ -25,6 +25,14 @@ const createMockDb = () => {
       queries.push({ text: strings.join('?'), values });
 
       if (queries.length === 1) {
+        return [{ id: 'client-123', email: 'jane@example.com' }];
+      }
+
+      if (queries.length === 3) {
+        return [{ id: 'property-123' }];
+      }
+
+      if (queries.length === 4) {
         return [{ id: 'job-123', created_at: '2026-05-06T22:00:00.000Z' }];
       }
 
@@ -41,6 +49,7 @@ test('normalizes strings and caps long public form fields', () => {
     phone: ' 555-0100 ',
     email: ' TEST@example.com ',
     city: undefined,
+    streetAddress: ` ${'Street '.repeat(80)} `,
     service: ' Home repair ',
     timeframe: ' Flexible ',
     description: ` ${'x'.repeat(5000)} `,
@@ -51,22 +60,23 @@ test('normalizes strings and caps long public form fields', () => {
   assert.equal(normalized.phone, '555-0100');
   assert.equal(normalized.email, 'TEST@example.com');
   assert.equal(normalized.city, '');
+  assert.equal(normalized.streetAddress.length, 240);
   assert.equal(normalized.service, 'Home repair');
   assert.equal(normalized.timeframe, 'Flexible');
   assert.equal(normalized.description.length, 4000);
   assert.equal(normalized.botField, '');
 });
 
-test('requires the minimum fields needed to create a job request', () => {
+test('requires the minimum fields needed to create a client account and job request', () => {
   assert.equal(
-    validatePayload({ name: '', phone: '', service: '', description: '' }),
-    'Missing required fields: name, phone, service, description',
+    validatePayload({ name: '', phone: '', email: '', city: '', streetAddress: '', service: '', description: '' }),
+    'Missing required fields: name, phone, email, city, streetAddress, service, description',
   );
 });
 
-test('rejects invalid optional email addresses', () => {
+test('rejects invalid required email addresses', () => {
   assert.equal(
-    validatePayload({ name: 'A', phone: 'B', service: 'C', description: 'D', email: 'not-email' }),
+    validatePayload({ name: 'A', phone: 'B', service: 'C', description: 'D', email: 'not-email', city: 'Mesa', streetAddress: '123 Main St' }),
     'Enter a valid email address.',
   );
 });
@@ -103,7 +113,7 @@ test('silently accepts honeypot submissions without writing to the database', as
   assert.equal(openedDatabase, false);
 });
 
-test('inserts a job request and audit event for valid submissions', async () => {
+test('creates or updates a client account, property, job request, and audit event for valid submissions', async () => {
   const db = createMockDb();
   const handler = createJobRequestHandler({ getDatabase: async () => db });
 
@@ -112,6 +122,7 @@ test('inserts a job request and audit event for valid submissions', async () => 
     phone: '555-0100',
     email: 'jane@example.com',
     city: 'Mesa',
+    streetAddress: '123 Main St',
     service: 'Home repair',
     timeframe: 'This week',
     description: 'Please repair drywall near the garage.',
@@ -121,17 +132,25 @@ test('inserts a job request and audit event for valid submissions', async () => 
   assert.deepEqual(response.body, {
     ok: true,
     id: 'job-123',
+    clientId: 'client-123',
+    propertyId: 'property-123',
     createdAt: '2026-05-06T22:00:00.000Z',
     message: 'Estimate request saved.',
   });
-  assert.equal(db.queries.length, 2);
-  assert.match(db.queries[0].text, /insert into job_requests/);
-  assert.match(db.queries[1].text, /insert into audit_events/);
-  assert.deepEqual(db.queries[0].values, [
+  assert.equal(db.queries.length, 5);
+  assert.match(db.queries[0].text, /insert into app_users/);
+  assert.match(db.queries[1].text, /insert into user_roles/);
+  assert.match(db.queries[2].text, /insert into properties/);
+  assert.match(db.queries[3].text, /insert into job_requests/);
+  assert.match(db.queries[4].text, /insert into audit_events/);
+  assert.deepEqual(db.queries[3].values, [
+    'client-123',
+    'property-123',
     'Jane Customer',
     'jane@example.com',
     '555-0100',
     'Mesa',
+    '123 Main St',
     'Home repair',
     'This week',
     'Please repair drywall near the garage.',

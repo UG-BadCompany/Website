@@ -10,7 +10,6 @@ import {
   validateClientAccount,
   validateEmail,
 } from '../netlify/functions/auth-utils.mjs';
-import { createClientAccountHandler } from '../netlify/functions/create-client-account.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createMagicLinkHandler } from '../netlify/functions/request-magic-link.mjs';
 import { createVerifyMagicLinkHandler } from '../netlify/functions/verify-magic-link.mjs';
@@ -140,35 +139,6 @@ test('magic-link endpoint stores a hashed token and returns a development link w
   assert.equal(db.queries[0].values[1], hashToken('magic-token'));
 });
 
-test('client-account endpoint stages profile fields with a hashed magic-link token', async () => {
-  const db = createMockDb();
-  const handler = createClientAccountHandler({
-    getDatabase: async () => db,
-    makeToken: () => 'account-token',
-    sendEmail: async () => ({ sent: true }),
-  });
-
-  assert.deepEqual(await readJson(await handler(request({ name: '', email: '', phone: '' }))), {
-    status: 422,
-    body: { ok: false, message: 'Name is required.' },
-  });
-
-  const response = await readJson(await handler(request({ name: 'Client', email: 'client@example.com', phone: '555-0100' })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.ok, true);
-  assert.equal(response.body.emailSent, true);
-  assert.equal(response.body.devMagicLink, undefined);
-  assert.equal(db.queries.length, 1);
-  assert.match(db.queries[0].text, /insert into auth_magic_links/);
-  assert.deepEqual(db.queries[0].values.slice(0, 4), [
-    'client@example.com',
-    hashToken('account-token'),
-    'Client',
-    '555-0100',
-  ]);
-});
-
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
@@ -211,24 +181,19 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
-test('auth endpoints accept honeypot submissions without writing tokens', async () => {
+test('magic-link endpoint accepts honeypot submissions without writing tokens', async () => {
   let openedDatabase = false;
   const getDatabase = async () => {
     openedDatabase = true;
     return createMockDb();
   };
   const magicLinkHandler = createMagicLinkHandler({ getDatabase });
-  const clientAccountHandler = createClientAccountHandler({ getDatabase });
 
   assert.deepEqual(await readJson(await magicLinkHandler(request({ 'bot-field': 'spam' }))), {
     status: 200,
     body: { ok: true, message: 'If this email can sign in, a secure link will be sent.' },
   });
 
-  assert.deepEqual(await readJson(await clientAccountHandler(request({ 'bot-field': 'spam' }))), {
-    status: 200,
-    body: { ok: true, message: 'If this account can be created, a secure link will be sent.' },
-  });
 
   assert.equal(openedDatabase, false);
 });

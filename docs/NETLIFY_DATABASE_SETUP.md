@@ -94,3 +94,13 @@ It adds first-party passwordless login storage:
 - `auth_sessions` for HttpOnly session cookie hashes.
 
 Only SHA-256 hashes are stored for magic-link tokens and session tokens. Raw tokens exist only in the emailed link or browser cookie.
+
+## Request account and quote migration
+
+The third migration is:
+
+```text
+netlify/database/migrations/0003_request_accounts_quotes.sql
+```
+
+It adds `job_requests.street_address` and a first `quotes` table. Public Request Work submissions now create or update the client account, assign the `client` role, create a property row, and then create the job request linked to both records.

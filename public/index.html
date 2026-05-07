@@ -499,8 +499,8 @@
             <h2>Tell us what needs to get handled.</h2>
             <p>Use this form to send T&A Contracting the basics for a repair, maintenance item, installation, punch list, or property project. The form saves requests to the job database when available, with Netlify Forms still in place as a fallback capture path.</p>
             <ul class="estimate-list">
-              <li>Share contact info and the best way to reach you.</li>
-              <li>Describe the job, property, and preferred timeframe.</li>
+              <li>Share contact info so a client account can be created automatically.</li>
+              <li>Describe the job, property address, city/area, and preferred timeframe.</li>
               <li>Upload photos when available so quoting is easier.</li>
             </ul>
           </div>
@@ -518,12 +518,17 @@
                 <input id="phone" name="phone" type="tel" autocomplete="tel" required>
               </div>
               <div class="field">
-                <label for="email">Email</label>
-                <input id="email" name="email" type="email" autocomplete="email">
+                <label for="email">Email *</label>
+                <input id="email" name="email" type="email" autocomplete="email" required>
               </div>
               <div class="field">
-                <label for="city">City / Area</label>
-                <input id="city" name="city" type="text" autocomplete="address-level2">
+                <label for="city">City / Area *</label>
+                <input id="city" name="city" type="text" autocomplete="address-level2" required>
+              </div>
+
+              <div class="field field-full">
+                <label for="streetAddress">Property Address *</label>
+                <input id="streetAddress" name="streetAddress" type="text" autocomplete="street-address" placeholder="Street address for the requested work" required>
               </div>
               <div class="field">
                 <label for="service">Type of Work *</label>
@@ -557,7 +562,7 @@
                 <input id="photos" name="photos" type="file" accept="image/*,.pdf">
               </div>
             </div>
-            <p class="form-note">Submitting this form does not confirm scheduling. T&A Contracting will review the request and follow up with next steps.</p>
+            <p class="form-note">Submitting this form creates or updates your client profile and saves this request for admin review. Scheduling is not confirmed until T&A Contracting follows up.</p>
             <button class="btn btn-primary" type="submit">Submit Estimate Request</button>
             <p class="form-status" data-job-request-status role="status" aria-live="polite"></p>
           </form>
