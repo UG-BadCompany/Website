@@ -166,3 +166,105 @@ test('client quotes endpoint returns only quotes for the signed-in client', asyn
   assert.equal(db.queries[3].values[1], 'client-1');
   assert.equal(db.queries[3].values[2], 'client-1');
 });
+
+test('client quotes endpoint accepts an owned sent quote and updates the request', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [{ id: 'quote-1', job_request_id: 'job-1', client_id: 'client-1', status: 'sent' }],
+    [{
+      id: 'quote-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      status: 'accepted',
+      title: 'Drywall repair quote',
+      summary: 'Patch hallway drywall.',
+      amount_cents: 27500,
+      sent_at: '2026-05-08T00:00:00.000Z',
+      viewed_at: null,
+      accepted_at: '2026-05-08T01:00:00.000Z',
+      declined_at: null,
+      created_at: '2026-05-07T00:00:00.000Z',
+    }],
+    [],
+    [],
+  ]);
+  const handler = createClientQuotesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/quotes', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ quoteId: 'quote-1', action: 'accept' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.message, 'Quote accepted.');
+  assert.equal(response.body.quote.status, 'accepted');
+  assert.match(db.queries[3].text, /where id = \?/);
+  assert.match(db.queries[3].text, /and client_id = \?/);
+  assert.deepEqual(db.queries[3].values, ['quote-1', 'client-1']);
+  assert.match(db.queries[4].text, /update quotes/);
+  assert.equal(db.queries[4].values[0], 'accepted');
+  assert.match(db.queries[5].text, /update job_requests/);
+  assert.deepEqual(db.queries[5].values, ['job-1', 'client-1']);
+  assert.match(db.queries[6].text, /insert into audit_events/);
+});
+
+test('client quotes endpoint declines an owned viewed quote without accepting the request', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [{ id: 'quote-2', job_request_id: 'job-2', client_id: 'client-1', status: 'viewed' }],
+    [{
+      id: 'quote-2',
+      job_request_id: 'job-2',
+      client_id: 'client-1',
+      status: 'declined',
+      title: 'Fence repair quote',
+      summary: null,
+      amount_cents: 50000,
+      sent_at: '2026-05-08T00:00:00.000Z',
+      viewed_at: '2026-05-08T00:30:00.000Z',
+      accepted_at: null,
+      declined_at: '2026-05-08T01:00:00.000Z',
+      created_at: '2026-05-07T00:00:00.000Z',
+    }],
+    [],
+  ]);
+  const handler = createClientQuotesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/quotes', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ quoteId: 'quote-2', action: 'decline' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.message, 'Quote declined.');
+  assert.equal(response.body.quote.status, 'declined');
+  assert.equal(db.queries.length, 6);
+  assert.match(db.queries[4].text, /update quotes/);
+  assert.doesNotMatch(db.queries[5].text, /update job_requests/);
+  assert.match(db.queries[5].text, /insert into audit_events/);
+});
+
+test('client quotes endpoint blocks decisions for another client quote', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [],
+  ]);
+  const handler = createClientQuotesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/quotes', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ quoteId: 'other-quote', action: 'accept' }),
+  })));
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.authorized, false);
+  assert.equal(db.queries.length, 4);
+  assert.match(db.queries[3].text, /and client_id = \?/);
+  assert.deepEqual(db.queries[3].values, ['other-quote', 'client-1']);
+});

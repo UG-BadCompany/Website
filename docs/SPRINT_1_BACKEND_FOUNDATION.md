@@ -101,3 +101,9 @@ Client onboarding should start from Request Work, which creates or updates the c
 - `GET /api/client/quotes` lets signed-in clients load only non-draft quotes tied to their own `app_users.id`, including safe request/property context.
 - The unified dashboard now includes a client quote panel and quote waiting metric fed by the client-scoped quote API.
 
+## Added in Sprint 1H
+
+- `PATCH /api/client/quotes` lets signed-in clients approve or deny quotes that belong to their account and are ready for a decision.
+- Accepting a quote updates the related job request to `accepted`; accepting or denying writes an audit event.
+- The public homepage portal section now explains real client actions: request quotes, approve/deny quotes, track repair status, manage properties, review quote history, and prepare for payments.
+
