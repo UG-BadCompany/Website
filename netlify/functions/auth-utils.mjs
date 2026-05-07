@@ -6,6 +6,55 @@ export const SESSION_COOKIE_NAME = process.env.AUTH_SESSION_COOKIE_NAME || 'ta_s
 export const MAGIC_LINK_TTL_MINUTES = Number(process.env.MAGIC_LINK_TTL_MINUTES || 20);
 export const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
 
+
+export const PORTAL_PERMISSIONS = [
+  { key: 'client.tools', label: 'Client dashboard tools', description: 'View client dashboard sections.' },
+  { key: 'client.requests.manage', label: 'Client request management', description: 'Create and view own client job requests.' },
+  { key: 'client.quotes.manage', label: 'Client quote decisions', description: 'View, accept, and decline own quotes.' },
+  { key: 'worker.tools', label: 'Worker dashboard tools', description: 'View worker dashboard sections and assigned job tools.' },
+  { key: 'admin.tools', label: 'Admin dashboard tools', description: 'View admin dashboard sections.' },
+  { key: 'admin.requests.manage', label: 'Admin request management', description: 'View and update all job requests.' },
+  { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
+  { key: 'admin.users.manage', label: 'Admin user management', description: 'Create users and assign roles.' },
+  { key: 'admin.roles.manage', label: 'Admin role management', description: 'Create roles and manage permissions.' },
+  { key: 'dashboard.switch_views', label: 'Dashboard view switching', description: 'Switch between role views for support.' },
+];
+
+export const ALL_PERMISSION_KEYS = PORTAL_PERMISSIONS.map((permission) => permission.key);
+
+export const DEFAULT_ROLE_PERMISSIONS = {
+  client: ['client.tools', 'client.requests.manage', 'client.quotes.manage'],
+  worker: ['worker.tools'],
+  admin: ALL_PERMISSION_KEYS,
+};
+
+export const normalizeRoleKey = (value) => clean(value, 80)
+  .toLowerCase()
+  .replace(/[^a-z0-9_-]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
+export const normalizePermissionKeys = (permissions) => {
+  const allowed = new Set(ALL_PERMISSION_KEYS);
+
+  return [...new Set((Array.isArray(permissions) ? permissions : [])
+    .map((permission) => clean(permission, 120))
+    .filter((permission) => allowed.has(permission)))];
+};
+
+export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = []) => {
+  const permissionKeys = new Set(assignedPermissionKeys);
+
+  roleKeys.forEach((roleKey) => {
+    (DEFAULT_ROLE_PERMISSIONS[roleKey] || []).forEach((permission) => permissionKeys.add(permission));
+  });
+
+  if (roleKeys.includes('admin')) {
+    ALL_PERMISSION_KEYS.forEach((permission) => permissionKeys.add(permission));
+  }
+
+  return [...permissionKeys].sort();
+};
+
 export const clean = (value, maxLength = 254) => (
   typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
 );

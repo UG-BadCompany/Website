@@ -27,6 +27,7 @@ test('admin users endpoint creates an account and assigns roles', async () => {
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin' }],
+    [],
     [{ id: 'user-1', email: 'worker@example.com', full_name: 'Worker', phone: '555-0100', company_name: 'T&A' }],
     [],
     [],
@@ -38,16 +39,16 @@ test('admin users endpoint creates an account and assigns roles', async () => {
     fullName: 'Worker',
     phone: '555-0100',
     companyName: 'T&A',
-    roles: ['worker', 'admin', 'bogus'],
+    roles: ['worker', 'admin', 'crew-lead'],
   })));
 
   assert.equal(response.status, 201);
-  assert.deepEqual(response.body.user.roles, ['worker', 'admin']);
+  assert.deepEqual(response.body.user.roles, ['worker', 'admin', 'crew-lead']);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
-  assert.match(db.queries[3].text, /insert into app_users/);
-  assert.match(db.queries[4].text, /delete from user_roles/);
-  assert.match(db.queries[5].text, /insert into user_roles/);
-  assert.match(db.queries[6].text, /insert into audit_events/);
+  assert.match(db.queries[4].text, /insert into app_users/);
+  assert.match(db.queries[5].text, /delete from user_roles/);
+  assert.match(db.queries[6].text, /insert into user_roles/);
+  assert.match(db.queries[7].text, /insert into audit_events/);
 });
 
 test('admin users endpoint rejects non-admin users', async () => {
@@ -68,6 +69,7 @@ test('admin users endpoint updates existing roles', async () => {
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin' }],
+    [],
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', company_name: null }],
     [],
     [],
@@ -78,5 +80,24 @@ test('admin users endpoint updates existing roles', async () => {
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body.user.roles, ['client', 'worker']);
-  assert.match(db.queries[3].text, /from app_users/);
+  assert.match(db.queries[4].text, /from app_users/);
+});
+
+
+test('admin users endpoint lists users and assignable custom roles', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'user-1', email: 'worker@example.com', full_name: 'Worker', phone: '555-0100', company_name: 'T&A', is_active: true, roles: ['crew-lead'], created_at: '2026-05-07T00:00:00.000Z' }],
+    [{ id: 'role-1', key: 'crew-lead', name: 'Crew Lead', description: 'Runs jobs.', is_system: false, permissions: ['worker.tools'] }],
+  ]);
+  const handler = createAdminUsersHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(request(undefined, 'GET')));
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.users[0].roles, ['crew-lead']);
+  assert.equal(response.body.roles[0].key, 'crew-lead');
+  assert.deepEqual(response.body.roles[0].permissions, ['worker.tools']);
 });

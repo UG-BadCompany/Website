@@ -193,6 +193,7 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
     [],
     [{ key: 'client', name: 'Client' }, { key: 'admin', name: 'Admin' }],
+    [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
   const response = await readJson(await handler(new Request('https://site.test/api/me', {
@@ -202,14 +203,15 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
   assert.deepEqual(response.body.user.roles, ['client', 'admin']);
-  assert.deepEqual(response.body.user.permissions, {
-    canViewClientTools: true,
-    canViewWorkerTools: true,
-    canViewAdminTools: true,
-    canSwitchDashboardView: true,
-    defaultView: 'admin',
-    availableViews: ['admin', 'client', 'worker'],
-  });
+  assert.equal(response.body.user.permissions.canViewClientTools, true);
+  assert.equal(response.body.user.permissions.canViewWorkerTools, true);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
+  assert.equal(response.body.user.permissions.canManageUsers, true);
+  assert.equal(response.body.user.permissions.canManageRoles, true);
+  assert.equal(response.body.user.permissions.defaultView, 'admin');
+  assert.deepEqual(response.body.user.permissions.availableViews, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.permissionKeys.includes('admin.roles.manage'), true);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
@@ -219,6 +221,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
     [],
     [{ key: 'client', name: 'Client' }],
+    [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
   const response = await readJson(await handler(new Request('https://site.test/api/me', {
@@ -227,14 +230,13 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body.user.roles, ['client']);
-  assert.deepEqual(response.body.user.permissions, {
-    canViewClientTools: true,
-    canViewWorkerTools: false,
-    canViewAdminTools: false,
-    canSwitchDashboardView: false,
-    defaultView: 'client',
-    availableViews: ['client'],
-  });
+  assert.equal(response.body.user.permissions.canViewClientTools, true);
+  assert.equal(response.body.user.permissions.canViewWorkerTools, false);
+  assert.equal(response.body.user.permissions.canViewAdminTools, false);
+  assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
+  assert.equal(response.body.user.permissions.defaultView, 'client');
+  assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
+  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.quotes.manage', 'client.requests.manage', 'client.tools']);
 });
 
 test('logout endpoint revokes the current session and clears the session cookie', async () => {

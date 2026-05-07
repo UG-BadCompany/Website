@@ -120,3 +120,11 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Admins can update request status/internal notes and create a quote from the selected request.
 - Quotes can stay as drafts or be sent immediately; sent quotes move the request to `quote_sent` so clients can use the existing accept/decline flow.
 - Worker assignment is represented in the admin work panel as the next scheduled build-out area, pending a dedicated assignment table/API.
+
+## Added in Sprint 1K
+
+- Added custom role and role-permission storage so admins can create roles beyond client/worker/admin.
+- Added `GET/POST/PATCH /api/admin/roles` for role creation and permission toggles; the admin role keeps every permission by default.
+- Expanded `GET/POST/PATCH /api/admin/users` so admins can list users, see assignable roles, and assign custom roles.
+- `/api/me` now returns permission keys and dashboard capability flags derived from role permissions, not only hard-coded role names.
+- The dashboard includes an Admin roles & users panel for creating roles, toggling permissions, and assigning users to roles.

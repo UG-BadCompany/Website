@@ -53,8 +53,12 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
 | `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status and internal admin notes from the admin work panel. |
 | `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
-| `POST /api/admin/users` | Yes | `admin` | Creates a user and assigns one or more roles. |
-| `PATCH /api/admin/users` | Yes | `admin` | Replaces an existing user's assigned roles. |
+| `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
+| `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
+| `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |
+| `GET /api/admin/roles` | Yes | `admin.roles.manage` or `admin` | Lists roles and permissions for the admin access panel. |
+| `POST /api/admin/roles` | Yes | `admin.roles.manage` or `admin` | Creates a custom role with enabled permissions. |
+| `PATCH /api/admin/roles` | Yes | `admin.roles.manage` or `admin` | Updates role metadata and enabled permissions; admin keeps all permissions. |
 
 ## Dashboard view rules
 
