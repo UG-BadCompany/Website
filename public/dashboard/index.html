@@ -670,10 +670,6 @@
         }
       };
 
-      const renderCheckboxList = (items, selected, name) => items.map((item) => `
-        <label><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> ${escapeHtml(item.name || item.label || item.key)}</label>
-      `).join('');
-
       const setModalOpen = (modal, open) => {
         if (!modal) return;
         modal.hidden = !open;
