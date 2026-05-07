@@ -84,7 +84,8 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1E
 
-- `GET /api/client/job-requests` lets signed-in clients load only the job requests tied to their own `app_users.id`.
+- `GET /api/client/job-requests` lets signed-in clients load only the job requests and property summaries tied to their own `app_users.id`.
 - The unified dashboard now includes a client request panel that is populated from the client-scoped API after `/api/me` confirms client access.
-- Client request counts update the dashboard summary without exposing worker or admin-only data.
+- Client request and property counts update the dashboard summary without exposing worker, admin, or other-client data.
+- Request Work submissions reuse an existing property when the same client submits another request for the same address, while different addresses remain separate properties under the same account.
 

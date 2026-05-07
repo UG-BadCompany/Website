@@ -64,6 +64,13 @@ test('client job request endpoint returns only requests for the signed-in client
         preferred_timeframe: 'This week',
         description: 'Patch garage drywall.',
         created_at: '2026-05-07T00:00:00.000Z',
+        property_id: 'property-1',
+        property_label: 'Home',
+        property_street: '123 Main St',
+        property_city: 'Mesa',
+        property_state: 'AZ',
+        property_postal_code: '85201',
+        property_access_notes: 'Gate code 1234',
       },
       {
         id: 'job-2',
@@ -74,6 +81,41 @@ test('client job request endpoint returns only requests for the signed-in client
         preferred_timeframe: null,
         description: 'Re-hang gate.',
         created_at: '2026-05-06T00:00:00.000Z',
+        property_id: 'property-2',
+        property_label: 'Rental',
+        property_street: '456 Oak Ave',
+        property_city: 'Tempe',
+        property_state: 'AZ',
+        property_postal_code: null,
+        property_access_notes: null,
+      },
+    ],
+    [
+      {
+        id: 'property-1',
+        label: 'Home',
+        street: '123 Main St',
+        city: 'Mesa',
+        state: 'AZ',
+        postal_code: '85201',
+        access_notes: 'Gate code 1234',
+        request_count: 1,
+        last_request_at: '2026-05-07T00:00:00.000Z',
+        created_at: '2026-05-01T00:00:00.000Z',
+        updated_at: '2026-05-02T00:00:00.000Z',
+      },
+      {
+        id: 'property-2',
+        label: 'Rental',
+        street: '456 Oak Ave',
+        city: 'Tempe',
+        state: 'AZ',
+        postal_code: null,
+        access_notes: null,
+        request_count: 1,
+        last_request_at: '2026-05-06T00:00:00.000Z',
+        created_at: '2026-05-03T00:00:00.000Z',
+        updated_at: '2026-05-04T00:00:00.000Z',
       },
     ],
   ]);
@@ -84,7 +126,7 @@ test('client job request endpoint returns only requests for the signed-in client
 
   assert.equal(response.status, 200);
   assert.equal(response.body.authorized, true);
-  assert.deepEqual(response.body.summary, { total: 2, active: 1 });
+  assert.deepEqual(response.body.summary, { total: 2, active: 1, properties: 2 });
   assert.deepEqual(response.body.requests, [
     {
       id: 'job-1',
@@ -95,6 +137,15 @@ test('client job request endpoint returns only requests for the signed-in client
       preferredTimeframe: 'This week',
       description: 'Patch garage drywall.',
       createdAt: '2026-05-07T00:00:00.000Z',
+      property: {
+        id: 'property-1',
+        label: 'Home',
+        street: '123 Main St',
+        city: 'Mesa',
+        state: 'AZ',
+        postalCode: '85201',
+        accessNotes: 'Gate code 1234',
+      },
     },
     {
       id: 'job-2',
@@ -105,8 +156,50 @@ test('client job request endpoint returns only requests for the signed-in client
       preferredTimeframe: null,
       description: 'Re-hang gate.',
       createdAt: '2026-05-06T00:00:00.000Z',
+      property: {
+        id: 'property-2',
+        label: 'Rental',
+        street: '456 Oak Ave',
+        city: 'Tempe',
+        state: 'AZ',
+        postalCode: null,
+        accessNotes: null,
+      },
     },
   ]);
-  assert.match(db.queries[3].text, /where client_id = \?/);
+  assert.deepEqual(response.body.properties, [
+    {
+      id: 'property-1',
+      label: 'Home',
+      street: '123 Main St',
+      city: 'Mesa',
+      state: 'AZ',
+      postalCode: '85201',
+      accessNotes: 'Gate code 1234',
+      requestCount: 1,
+      lastRequestAt: '2026-05-07T00:00:00.000Z',
+      createdAt: '2026-05-01T00:00:00.000Z',
+      updatedAt: '2026-05-02T00:00:00.000Z',
+    },
+    {
+      id: 'property-2',
+      label: 'Rental',
+      street: '456 Oak Ave',
+      city: 'Tempe',
+      state: 'AZ',
+      postalCode: null,
+      accessNotes: null,
+      requestCount: 1,
+      lastRequestAt: '2026-05-06T00:00:00.000Z',
+      createdAt: '2026-05-03T00:00:00.000Z',
+      updatedAt: '2026-05-04T00:00:00.000Z',
+    },
+  ]);
+  assert.match(db.queries[3].text, /properties.client_id = \?/);
+  assert.match(db.queries[3].text, /where job_requests.client_id = \?/);
   assert.equal(db.queries[3].values[0], 'client-1');
+  assert.equal(db.queries[3].values[1], 'client-1');
+  assert.match(db.queries[4].text, /where properties.client_id = \?/);
+  assert.equal(db.queries[4].values[0], 'client-1');
+  assert.equal(db.queries[4].values[1], 'client-1');
 });

@@ -51,6 +51,30 @@ const loadDatabase = async () => {
   return getDatabase();
 };
 
+const findOrCreateProperty = async (db, clientId, payload) => {
+  const [existingProperty] = await db.sql`
+    select id
+    from properties
+    where client_id = ${clientId}
+      and lower(street) = lower(${payload.streetAddress})
+      and lower(city) = lower(${payload.city})
+      and state = 'AZ'
+    limit 1
+  `;
+
+  if (existingProperty) {
+    return existingProperty;
+  }
+
+  const [property] = await db.sql`
+    insert into properties (client_id, label, street, city, state)
+    values (${clientId}, 'Request property', ${payload.streetAddress}, ${payload.city}, 'AZ')
+    returning id
+  `;
+
+  return property;
+};
+
 export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, message: 'Method not allowed.' });
@@ -95,11 +119,7 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase } = {}) => 
       on conflict do nothing
     `;
 
-    const [property] = await db.sql`
-      insert into properties (client_id, label, street, city, state)
-      values (${client.id}, 'Request property', ${payload.streetAddress}, ${payload.city}, 'AZ')
-      returning id
-    `;
+    const property = await findOrCreateProperty(db, client.id, payload);
 
     const [jobRequest] = await db.sql`
       insert into job_requests (

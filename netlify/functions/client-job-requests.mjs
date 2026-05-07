@@ -7,6 +7,20 @@ import {
 
 const ACTIVE_REQUEST_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress']);
 
+const mapProperty = (property) => ({
+  id: property.id,
+  label: property.label,
+  street: property.street,
+  city: property.city,
+  state: property.state,
+  postalCode: property.postal_code,
+  accessNotes: property.access_notes,
+  requestCount: property.request_count ?? 0,
+  lastRequestAt: property.last_request_at,
+  createdAt: property.created_at,
+  updatedAt: property.updated_at,
+});
+
 const mapJobRequest = (request) => ({
   id: request.id,
   status: request.status,
@@ -16,6 +30,15 @@ const mapJobRequest = (request) => ({
   preferredTimeframe: request.preferred_timeframe,
   description: request.description,
   createdAt: request.created_at,
+  property: request.property_id ? {
+    id: request.property_id,
+    label: request.property_label,
+    street: request.property_street,
+    city: request.property_city,
+    state: request.property_state,
+    postalCode: request.property_postal_code,
+    accessNotes: request.property_access_notes,
+  } : null,
 });
 
 const countActiveRequests = (requests) => requests.filter((request) => ACTIVE_REQUEST_STATUSES.has(request.status)).length;
@@ -68,13 +91,52 @@ export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = 
     }
 
     const jobRequests = await db.sql`
-      select id, status, city, street_address, service_type, preferred_timeframe, description, created_at
+      select
+        job_requests.id,
+        job_requests.status,
+        job_requests.city,
+        job_requests.street_address,
+        job_requests.service_type,
+        job_requests.preferred_timeframe,
+        job_requests.description,
+        job_requests.created_at,
+        properties.id as property_id,
+        properties.label as property_label,
+        properties.street as property_street,
+        properties.city as property_city,
+        properties.state as property_state,
+        properties.postal_code as property_postal_code,
+        properties.access_notes as property_access_notes
       from job_requests
-      where client_id = ${session.user_id}
-      order by created_at desc
+      left join properties on properties.id = job_requests.property_id
+        and properties.client_id = ${session.user_id}
+      where job_requests.client_id = ${session.user_id}
+      order by job_requests.created_at desc
+      limit 25
+    `;
+    const properties = await db.sql`
+      select
+        properties.id,
+        properties.label,
+        properties.street,
+        properties.city,
+        properties.state,
+        properties.postal_code,
+        properties.access_notes,
+        properties.created_at,
+        properties.updated_at,
+        count(job_requests.id)::int as request_count,
+        max(job_requests.created_at) as last_request_at
+      from properties
+      left join job_requests on job_requests.property_id = properties.id
+        and job_requests.client_id = ${session.user_id}
+      where properties.client_id = ${session.user_id}
+      group by properties.id
+      order by coalesce(max(job_requests.created_at), properties.created_at) desc
       limit 25
     `;
     const mappedRequests = jobRequests.map(mapJobRequest);
+    const mappedProperties = properties.map(mapProperty);
 
     return json(200, {
       ok: true,
@@ -87,9 +149,11 @@ export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = 
         roles: roleKeys,
       },
       requests: mappedRequests,
+      properties: mappedProperties,
       summary: {
         total: mappedRequests.length,
         active: countActiveRequests(mappedRequests),
+        properties: mappedProperties.length,
       },
     });
   } catch (error) {

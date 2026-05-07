@@ -17,31 +17,22 @@ const readJson = async (response) => ({
   body: await response.json(),
 });
 
-const createMockDb = () => {
-  const queries = [];
-  const db = {
-    queries,
-    sql(strings, ...values) {
-      queries.push({ text: strings.join('?'), values });
+const defaultDbResponses = () => [
+  [{ id: 'client-123', email: 'jane@example.com' }],
+  [],
+  [],
+  [{ id: 'property-123' }],
+  [{ id: 'job-123', created_at: '2026-05-06T22:00:00.000Z' }],
+  [],
+];
 
-      if (queries.length === 1) {
-        return [{ id: 'client-123', email: 'jane@example.com' }];
-      }
-
-      if (queries.length === 3) {
-        return [{ id: 'property-123' }];
-      }
-
-      if (queries.length === 4) {
-        return [{ id: 'job-123', created_at: '2026-05-06T22:00:00.000Z' }];
-      }
-
-      return [];
-    },
-  };
-
-  return db;
-};
+const createMockDb = (responses = defaultDbResponses()) => ({
+  queries: [],
+  sql(strings, ...values) {
+    this.queries.push({ text: strings.join('?'), values });
+    return responses.shift() || [];
+  },
+});
 
 test('normalizes strings and caps long public form fields', () => {
   const normalized = normalizePayload({
@@ -137,13 +128,14 @@ test('creates or updates a client account, property, job request, and audit even
     createdAt: '2026-05-06T22:00:00.000Z',
     message: 'Estimate request saved.',
   });
-  assert.equal(db.queries.length, 5);
+  assert.equal(db.queries.length, 6);
   assert.match(db.queries[0].text, /insert into app_users/);
   assert.match(db.queries[1].text, /insert into user_roles/);
-  assert.match(db.queries[2].text, /insert into properties/);
-  assert.match(db.queries[3].text, /insert into job_requests/);
-  assert.match(db.queries[4].text, /insert into audit_events/);
-  assert.deepEqual(db.queries[3].values, [
+  assert.match(db.queries[2].text, /from properties/);
+  assert.match(db.queries[3].text, /insert into properties/);
+  assert.match(db.queries[4].text, /insert into job_requests/);
+  assert.match(db.queries[5].text, /insert into audit_events/);
+  assert.deepEqual(db.queries[4].values, [
     'client-123',
     'property-123',
     'Jane Customer',
@@ -155,6 +147,37 @@ test('creates or updates a client account, property, job request, and audit even
     'This week',
     'Please repair drywall near the garage.',
   ]);
+});
+
+
+test('reuses an existing property for repeat requests at the same client address', async () => {
+  const db = createMockDb([
+    [{ id: 'client-123', email: 'jane@example.com' }],
+    [],
+    [{ id: 'property-existing' }],
+    [{ id: 'job-456', created_at: '2026-05-07T22:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createJobRequestHandler({ getDatabase: async () => db });
+
+  const response = await readJson(await handler(request({
+    name: 'Jane Customer',
+    phone: '555-0100',
+    email: 'jane@example.com',
+    city: 'Mesa',
+    streetAddress: '123 Main St',
+    service: 'Home repair',
+    timeframe: 'Next week',
+    description: 'A second request for the same property.',
+  })));
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.propertyId, 'property-existing');
+  assert.equal(db.queries.length, 5);
+  assert.match(db.queries[2].text, /from properties/);
+  assert.doesNotMatch(db.queries[3].text, /insert into properties/);
+  assert.match(db.queries[3].text, /insert into job_requests/);
+  assert.deepEqual(db.queries[3].values.slice(0, 2), ['client-123', 'property-existing']);
 });
 
 test('returns method and JSON parse errors with useful statuses', async () => {
