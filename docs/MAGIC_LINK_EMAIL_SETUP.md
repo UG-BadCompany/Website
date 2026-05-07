@@ -6,7 +6,7 @@ If the login page says:
 Account magic link created, but email delivery is off.
 ```
 
-then the database token was created successfully, but the site does not yet have email delivery credentials.
+then the database token was created successfully, but the site either does not yet have email delivery credentials or Resend rejected the sender settings.
 
 ## Required Netlify environment variables
 
@@ -33,7 +33,7 @@ MAGIC_LINK_TTL_MINUTES=20
 
 ## Safe testing without email
 
-When `RESEND_API_KEY` is missing or still a placeholder, the API returns a development-only link as `devMagicLink`. The login page shows that as **Open development magic link** so the flow can be tested before production email is ready.
+When `RESEND_API_KEY` or `MAGIC_LINK_FROM_EMAIL` is missing/still a placeholder, or Resend rejects the sender, the API returns a development-only link as `devMagicLink`. The login page shows that as **Open development magic link** so the flow can be tested before production email is ready.
 
 Do not share development magic links with customers. They are intended only for setup/testing.
 
@@ -41,7 +41,7 @@ Do not share development magic links with customers. They are intended only for 
 
 1. Enable Netlify Database and apply migrations.
 2. Add `RESEND_API_KEY` in Netlify environment variables.
-3. Add `MAGIC_LINK_FROM_EMAIL=portal@ta-contracting.org` using the Resend-verified domain.
+3. Add `MAGIC_LINK_FROM_EMAIL=portal@ta-contracting.org` using the Resend-verified domain. Email sending intentionally stays off until this sender variable is configured.
 4. Set `SITE_URL=https://ta-contracting.org` and `SITE_URL_ALIASES=https://tacontracting.netlify.app` while DNS finishes updating.
 5. Redeploy the site.
 6. Test `/login/` with your own email and confirm an email arrives.

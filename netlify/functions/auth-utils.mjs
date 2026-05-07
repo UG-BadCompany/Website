@@ -114,9 +114,7 @@ export const isConfiguredSecret = (value, placeholderFragments = []) => {
   return Boolean(cleaned && !placeholderFragments.some((fragment) => cleaned.includes(fragment)));
 };
 
-export const shouldSendEmail = () => isConfiguredSecret(process.env.RESEND_API_KEY, ['replace_me', 'your-resend-api-key']);
-
-export const getFromEmail = () => {
+const getConfiguredFromEmail = () => {
   const configuredFromEmail = clean(process.env.MAGIC_LINK_FROM_EMAIL);
   const quoteFromEmail = clean(process.env.QUOTE_FROM_EMAIL);
 
@@ -128,12 +126,19 @@ export const getFromEmail = () => {
     return quoteFromEmail;
   }
 
-  return 'portal@ta-contracting.org';
+  return '';
 };
+
+export const shouldSendEmail = () => (
+  isConfiguredSecret(process.env.RESEND_API_KEY, ['replace_me', 'your-resend-api-key'])
+  && Boolean(getConfiguredFromEmail())
+);
+
+export const getFromEmail = () => getConfiguredFromEmail() || 'portal@ta-contracting.org';
 
 export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, purpose }) => {
   if (!shouldSendEmail()) {
-    return { sent: false, reason: 'RESEND_API_KEY is not configured.' };
+    return { sent: false, reason: 'RESEND_API_KEY or MAGIC_LINK_FROM_EMAIL is not configured.' };
   }
 
   const response = await fetchImpl('https://api.resend.com/emails', {

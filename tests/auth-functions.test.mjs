@@ -68,6 +68,8 @@ test('email delivery stays disabled for missing or placeholder Resend settings',
   assert.equal(shouldSendEmail(), false);
 
   process.env.RESEND_API_KEY = 're_real_key';
+  assert.equal(shouldSendEmail(), false);
+
   process.env.MAGIC_LINK_FROM_EMAIL = 'portal@example.com';
   assert.equal(shouldSendEmail(), true);
   assert.equal(getFromEmail(), 'portal@example.com');
@@ -137,6 +139,27 @@ test('magic-link endpoint stores a hashed token and returns a development link w
   assert.match(db.queries[0].text, /insert into auth_magic_links/);
   assert.equal(db.queries[0].values[0], 'client@example.com');
   assert.equal(db.queries[0].values[1], hashToken('magic-token'));
+});
+
+
+test('magic-link endpoint still returns a usable development link when email delivery fails', async () => {
+  const db = createMockDb();
+  const handler = createMagicLinkHandler({
+    getDatabase: async () => db,
+    makeToken: () => 'magic-token',
+    sendEmail: async () => {
+      throw new Error('Resend rejected sender');
+    },
+  });
+
+  const response = await readJson(await handler(request({ email: 'client@example.com' }, 'POST', 'https://site.test/login/')));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.ok, true);
+  assert.equal(response.body.emailSent, false);
+  assert.match(response.body.message, /Email delivery failed/);
+  assert.equal(response.body.devMagicLink, 'https://site.test/api/auth/verify?token=magic-token');
+  assert.equal(db.queries.length, 1);
 });
 
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {

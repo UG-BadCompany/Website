@@ -49,14 +49,24 @@ export const createMagicLinkHandler = ({
       values (${payload.email}, ${hashToken(token)}, 'sign_in', ${minutesFromNow(MAGIC_LINK_TTL_MINUTES)}::timestamptz)
     `;
 
-    const emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'sign_in' });
+    let emailResult;
+
+    try {
+      emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'sign_in' });
+    } catch (emailError) {
+      console.error('Magic-link email delivery failed', emailError);
+      emailResult = {
+        sent: false,
+        reason: 'Email delivery failed. Check RESEND_API_KEY, MAGIC_LINK_FROM_EMAIL, and the verified sender domain in Resend.',
+      };
+    }
 
     return json(200, {
       ok: true,
       emailSent: emailResult.sent,
       message: emailResult.sent
         ? 'Check your email for a secure sign-in link.'
-        : 'Magic link created, but email delivery is off. Add RESEND_API_KEY and MAGIC_LINK_FROM_EMAIL in Netlify to send emails. For now, use the development link below.',
+        : `${emailResult.reason || 'Email delivery is off.'} The magic link was still created; use the development link below while email is being fixed.`,
       ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
     });
   } catch (error) {
