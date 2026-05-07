@@ -1,0 +1,429 @@
+import {
+  clean,
+  getSessionToken,
+  hashToken,
+  json,
+  loadDatabase,
+  parseJsonBody,
+} from './auth-utils.mjs';
+
+const ACTIVE_REQUEST_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress']);
+const MAX_FIELD_LENGTHS = {
+  propertyId: 80,
+  label: 120,
+  phone: 60,
+  city: 140,
+  streetAddress: 240,
+  accessNotes: 1000,
+  service: 120,
+  timeframe: 80,
+  description: 4000,
+};
+
+const mapProperty = (property) => ({
+  id: property.id,
+  label: property.label,
+  street: property.street,
+  city: property.city,
+  state: property.state,
+  postalCode: property.postal_code,
+  accessNotes: property.access_notes,
+  requestCount: property.request_count ?? 0,
+  lastRequestAt: property.last_request_at,
+  createdAt: property.created_at,
+  updatedAt: property.updated_at,
+});
+
+const mapJobRequest = (request) => ({
+  id: request.id,
+  status: request.status,
+  city: request.city,
+  streetAddress: request.street_address,
+  serviceType: request.service_type,
+  preferredTimeframe: request.preferred_timeframe,
+  description: request.description,
+  plannedServiceAt: request.planned_service_at,
+  completedAt: request.completed_at,
+  clientRequestedServiceAt: request.client_requested_service_at,
+  clientRescheduleNote: request.client_reschedule_note,
+  createdAt: request.created_at,
+  property: request.property_id ? {
+    id: request.property_id,
+    label: request.property_label,
+    street: request.property_street,
+    city: request.property_city,
+    state: request.property_state,
+    postalCode: request.property_postal_code,
+    accessNotes: request.property_access_notes,
+  } : null,
+});
+
+const countActiveRequests = (requests) => requests.filter((request) => ACTIVE_REQUEST_STATUSES.has(request.status)).length;
+
+const normalizePayload = (body = {}) => Object.fromEntries(
+  Object.entries(MAX_FIELD_LENGTHS).map(([field, maxLength]) => [field, clean(body[field], maxLength)]),
+);
+
+const validatePayload = (payload, session) => {
+  if (!payload.service) {
+    return 'Service is required.';
+  }
+
+  if (!payload.description) {
+    return 'Description is required.';
+  }
+
+  if (!payload.propertyId && (!payload.streetAddress || !payload.city)) {
+    return 'Choose an existing property or enter a street address and city.';
+  }
+
+  if (!session.phone && !payload.phone) {
+    return 'Phone is required before creating a portal request.';
+  }
+
+  return null;
+};
+
+const loadSession = async (db, sessionToken) => {
+  const [session] = await db.sql`
+    select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone
+    from auth_sessions
+    join app_users on app_users.id = auth_sessions.user_id
+    where auth_sessions.session_hash = ${hashToken(sessionToken)}
+      and auth_sessions.revoked_at is null
+      and auth_sessions.expires_at > now()
+      and app_users.is_active = true
+    limit 1
+  `;
+
+  if (!session) {
+    return null;
+  }
+
+  await db.sql`
+    update auth_sessions
+    set last_seen_at = now()
+    where id = ${session.id}
+  `;
+
+  return session;
+};
+
+const loadRoleKeys = async (db, userId) => {
+  const roles = await db.sql`
+    select roles.key, roles.name
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    where user_roles.user_id = ${userId}
+    order by roles.key
+  `;
+
+  return roles.map((role) => role.key);
+};
+
+const requireClientAccess = (roleKeys) => roleKeys.includes('client') || roleKeys.includes('admin');
+
+const findOrCreateClientProperty = async (db, userId, payload) => {
+  if (payload.propertyId) {
+    const [property] = await db.sql`
+      select id, street, city
+      from properties
+      where id = ${payload.propertyId}
+        and client_id = ${userId}
+      limit 1
+    `;
+
+    return property || null;
+  }
+
+  const [existingProperty] = await db.sql`
+    select id, street, city
+    from properties
+    where client_id = ${userId}
+      and lower(street) = lower(${payload.streetAddress})
+      and lower(city) = lower(${payload.city})
+      and state = 'AZ'
+    limit 1
+  `;
+
+  if (existingProperty) {
+    return existingProperty;
+  }
+
+  const [property] = await db.sql`
+    insert into properties (client_id, label, street, city, state, access_notes)
+    values (${userId}, ${payload.label || 'Portal property'}, ${payload.streetAddress}, ${payload.city}, 'AZ', ${payload.accessNotes || null})
+    returning id, street, city
+  `;
+
+  return property;
+};
+
+const listClientData = async (db, userId) => {
+  const jobRequests = await db.sql`
+    select
+      job_requests.id,
+      job_requests.status,
+      job_requests.city,
+      job_requests.street_address,
+      job_requests.service_type,
+      job_requests.preferred_timeframe,
+      job_requests.description,
+      job_requests.planned_service_at,
+      job_requests.completed_at,
+      job_requests.client_requested_service_at,
+      job_requests.client_reschedule_note,
+      job_requests.created_at,
+      properties.id as property_id,
+      properties.label as property_label,
+      properties.street as property_street,
+      properties.city as property_city,
+      properties.state as property_state,
+      properties.postal_code as property_postal_code,
+      properties.access_notes as property_access_notes
+    from job_requests
+    left join properties on properties.id = job_requests.property_id
+      and properties.client_id = ${userId}
+    where job_requests.client_id = ${userId}
+    order by job_requests.created_at desc
+    limit 25
+  `;
+  const properties = await db.sql`
+    select
+      properties.id,
+      properties.label,
+      properties.street,
+      properties.city,
+      properties.state,
+      properties.postal_code,
+      properties.access_notes,
+      properties.created_at,
+      properties.updated_at,
+      count(job_requests.id)::int as request_count,
+      max(job_requests.created_at) as last_request_at
+    from properties
+    left join job_requests on job_requests.property_id = properties.id
+      and job_requests.client_id = ${userId}
+    where properties.client_id = ${userId}
+    group by properties.id
+    order by coalesce(max(job_requests.created_at), properties.created_at) desc
+    limit 25
+  `;
+  const mappedRequests = jobRequests.map(mapJobRequest);
+  const mappedProperties = properties.map(mapProperty);
+
+  return {
+    requests: mappedRequests,
+    properties: mappedProperties,
+    summary: {
+      total: mappedRequests.length,
+      active: countActiveRequests(mappedRequests),
+      properties: mappedProperties.length,
+    },
+  };
+};
+
+const handleGet = async ({ db, session, roleKeys }) => {
+  const clientData = await listClientData(db, session.user_id);
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    user: {
+      id: session.user_id,
+      email: session.email,
+      fullName: session.full_name,
+      roles: roleKeys,
+    },
+    ...clientData,
+  });
+};
+
+const handlePost = async ({ request, db, session, roleKeys }) => {
+  const body = await parseJsonBody(request);
+
+  if (!body) {
+    return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  }
+
+  const payload = normalizePayload(body);
+  const validationError = validatePayload(payload, session);
+
+  if (validationError) {
+    return json(422, { ok: false, message: validationError });
+  }
+
+  const property = await findOrCreateClientProperty(db, session.user_id, payload);
+
+  if (!property) {
+    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Property not found for this account.' });
+  }
+
+  const requestPhone = session.phone || payload.phone;
+  const [jobRequest] = await db.sql`
+    insert into job_requests (
+      client_id,
+      property_id,
+      requester_name,
+      requester_email,
+      requester_phone,
+      city,
+      street_address,
+      service_type,
+      preferred_timeframe,
+      description
+    ) values (
+      ${session.user_id},
+      ${property.id},
+      ${session.full_name || session.email},
+      ${session.email},
+      ${requestPhone},
+      ${property.city || payload.city},
+      ${property.street || payload.streetAddress},
+      ${payload.service},
+      ${payload.timeframe || null},
+      ${payload.description}
+    )
+    returning id, created_at
+  `;
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (
+      ${session.user_id},
+      ${'client_job_request.created'},
+      ${'job_request'},
+      ${jobRequest.id},
+      ${JSON.stringify({ source: 'client_dashboard', propertyId: property.id, service: payload.service })}::jsonb
+    )
+  `;
+
+  return json(201, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    user: {
+      id: session.user_id,
+      email: session.email,
+      fullName: session.full_name,
+      roles: roleKeys,
+    },
+    id: jobRequest.id,
+    propertyId: property.id,
+    createdAt: jobRequest.created_at,
+    message: 'Request saved to your account.',
+  });
+};
+
+const normalizeReschedulePayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId, 80),
+  requestedServiceAt: clean(body.requestedServiceAt, 80),
+  rescheduleNote: clean(body.rescheduleNote, 1000),
+});
+
+const handlePatch = async ({ request, db, session, roleKeys }) => {
+  const body = await parseJsonBody(request);
+
+  if (!body) {
+    return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  }
+
+  const payload = normalizeReschedulePayload(body);
+
+  if (!payload.jobRequestId) {
+    return json(422, { ok: false, message: 'Job request is required.' });
+  }
+
+  if (!payload.requestedServiceAt) {
+    return json(422, { ok: false, message: 'Choose the date you want to reschedule for.' });
+  }
+
+  const [updatedRequest] = await db.sql`
+    update job_requests
+    set client_requested_service_at = ${payload.requestedServiceAt}::timestamptz,
+        client_reschedule_note = ${payload.rescheduleNote || null},
+        status = case when status in ('scheduled', 'in_progress', 'accepted') then 'needs_review' else status end,
+        updated_at = now()
+    where id = ${payload.jobRequestId}
+      and client_id = ${session.user_id}
+      and status in ('accepted', 'scheduled', 'in_progress')
+    returning id, status, city, street_address, service_type, preferred_timeframe, description, planned_service_at, completed_at, client_requested_service_at, client_reschedule_note, created_at
+  `;
+
+  if (!updatedRequest) {
+    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Work order not found or not eligible for rescheduling.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (
+      ${session.user_id},
+      ${'job_request.reschedule_requested'},
+      ${'job_request'},
+      ${updatedRequest.id},
+      ${JSON.stringify({ source: 'client_dashboard', requestedServiceAt: payload.requestedServiceAt })}::jsonb
+    )
+  `;
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    user: {
+      id: session.user_id,
+      email: session.email,
+      fullName: session.full_name,
+      roles: roleKeys,
+    },
+    request: mapJobRequest(updatedRequest),
+    message: 'Reschedule request sent to T&A Contracting.',
+  });
+};
+
+export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
+  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
+    return json(405, { ok: false, message: 'Method not allowed.' });
+  }
+
+  const sessionToken = getSessionToken(request);
+
+  if (!sessionToken) {
+    return json(401, { ok: false, authenticated: false, message: 'Sign in to view your job requests.' });
+  }
+
+  try {
+    const db = await getDatabase();
+    const session = await loadSession(db, sessionToken);
+
+    if (!session) {
+      return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
+    }
+
+    const roleKeys = await loadRoleKeys(db, session.user_id);
+
+    if (!requireClientAccess(roleKeys)) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client role required to view client job requests.' });
+    }
+
+    if (request.method === 'POST') {
+      return await handlePost({ request, db, session, roleKeys });
+    }
+
+    if (request.method === 'PATCH') {
+      return await handlePatch({ request, db, session, roleKeys });
+    }
+
+    return await handleGet({ db, session, roleKeys });
+  } catch (error) {
+    console.error('Failed to load client job requests', error);
+
+    return json(500, { ok: false, message: 'We could not load your job requests right now.' });
+  }
+};
+
+export default createClientJobRequestsHandler();
+
+export const config = {
+  path: '/api/client/job-requests',
+};
