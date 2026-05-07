@@ -42,6 +42,53 @@
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-request-list></div>
+      <section class="client-request-form" data-admin-request-detail hidden>
+        <strong data-admin-detail-title>Select a request to quote</strong>
+        <p data-admin-detail-summary>Open a client request to update status, create a quote, and prepare worker assignment details.</p>
+        <form data-admin-status-form>
+          <input type="hidden" name="jobRequestId" data-admin-status-request-id>
+          <div class="client-request-form-grid">
+            <label>Status
+              <select name="status" data-admin-status-select>
+                <option value="new">New</option>
+                <option value="needs_review">Needs review</option>
+                <option value="quote_in_progress">Quote in progress</option>
+                <option value="quote_sent">Quote sent</option>
+                <option value="accepted">Accepted</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in_progress">In progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </label>
+            <label>Future worker assignment
+              <select disabled>
+                <option>Worker scheduling comes next</option>
+              </select>
+            </label>
+            <label class="full">Admin notes
+              <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
+            </label>
+          </div>
+          <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><span data-admin-status-form-status aria-live="polite"></span></div>
+        </form>
+        <form data-admin-quote-form>
+          <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
+          <div class="client-request-form-grid">
+            <label>Quote title
+              <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
+            </label>
+            <label>Amount
+              <input name="amount" type="number" min="0" step="0.01" required placeholder="250.00">
+            </label>
+            <label class="full">Quote summary
+              <textarea name="summary" required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
+            </label>
+            <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
+          </div>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+        </form>
+      </section>
     </section>
 
     <section class="card client-requests" data-client-requests data-dashboard-section data-views="client" hidden>
@@ -114,6 +161,7 @@
       }
 
       const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+      const currentAdminRequests = new Map();
 
       const bindLogout = () => {
         if (!logoutButton || logoutButton.dataset.bound) {
@@ -182,6 +230,7 @@
               <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
             </div>
             <p>${escapeHtml(request.description)}</p>
+            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : ''}
           </article>
         `;
       };
@@ -404,7 +453,117 @@
         });
       };
 
-      const loadAdminRequests = async () => {
+      const selectAdminRequest = (requestId) => {
+        const request = currentAdminRequests.get(requestId);
+        const detail = document.querySelector('[data-admin-request-detail]');
+        const detailTitle = document.querySelector('[data-admin-detail-title]');
+        const detailSummary = document.querySelector('[data-admin-detail-summary]');
+        const statusRequestId = document.querySelector('[data-admin-status-request-id]');
+        const quoteRequestId = document.querySelector('[data-admin-quote-request-id]');
+        const statusSelect = document.querySelector('[data-admin-status-select]');
+        const adminNotes = document.querySelector('[data-admin-notes]');
+        const quoteTitle = document.querySelector('[data-admin-quote-title]');
+
+        if (!request || !detail) {
+          return;
+        }
+
+        detail.hidden = false;
+        detailTitle.textContent = `${request.serviceType || 'Request'} — ${request.requesterName || 'Client'}`;
+        detailSummary.textContent = `${request.city || 'No city'} • ${request.requesterPhone || 'No phone'} • ${request.requesterEmail || 'No email'} • ${request.preferredTimeframe || 'Flexible'}`;
+
+        if (statusRequestId) statusRequestId.value = request.id;
+        if (quoteRequestId) quoteRequestId.value = request.id;
+        if (statusSelect) statusSelect.value = request.status;
+        if (adminNotes) adminNotes.value = request.adminNotes || '';
+        if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
+      };
+
+      const bindAdminRequestActions = () => {
+        const inbox = document.querySelector('[data-admin-inbox]');
+        const statusForm = document.querySelector('[data-admin-status-form]');
+        const quoteForm = document.querySelector('[data-admin-quote-form]');
+
+        if (inbox && !inbox.dataset.requestActionsBound) {
+          inbox.dataset.requestActionsBound = 'true';
+          inbox.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-admin-open-request]');
+
+            if (button) {
+              selectAdminRequest(button.dataset.adminOpenRequest);
+            }
+          });
+        }
+
+        if (statusForm && !statusForm.dataset.bound) {
+          statusForm.dataset.bound = 'true';
+          statusForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-status-form-status]');
+            const payload = Object.fromEntries(new FormData(statusForm).entries());
+
+            if (formStatus) formStatus.textContent = 'Updating request…';
+
+            try {
+              const response = await fetch('/api/admin/job-requests', {
+                method: 'PATCH',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+
+              if (!response.ok || !result.ok) {
+                throw new Error(result.message || 'We could not update that request.');
+              }
+
+              if (formStatus) formStatus.textContent = 'Request updated.';
+              await loadAdminRequests(result.request?.id);
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
+        if (quoteForm && !quoteForm.dataset.bound) {
+          quoteForm.dataset.bound = 'true';
+          quoteForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-quote-form-status]');
+            const formData = new FormData(quoteForm);
+            const amount = Number(formData.get('amount') || 0);
+            const payload = {
+              jobRequestId: formData.get('jobRequestId'),
+              title: formData.get('title'),
+              summary: formData.get('summary'),
+              amountCents: Math.round(amount * 100),
+              sendToClient: formData.get('sendToClient') === 'true',
+            };
+
+            if (formStatus) formStatus.textContent = payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…';
+
+            try {
+              const response = await fetch('/api/admin/quotes', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+
+              if (!response.ok || !result.ok) {
+                throw new Error(result.message || 'We could not create that quote.');
+              }
+
+              quoteForm.reset();
+              if (formStatus) formStatus.textContent = payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.';
+              await loadAdminRequests(payload.jobRequestId);
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+      };
+
+      const loadAdminRequests = async (selectedRequestId = '') => {
         const inbox = document.querySelector('[data-admin-inbox]');
         const inboxStatus = document.querySelector('[data-admin-requests-status]');
         const inboxList = document.querySelector('[data-admin-request-list]');
@@ -431,7 +590,14 @@
             openMetric.textContent = String(openCount);
           }
 
+          currentAdminRequests.clear();
+          requests.forEach((request) => currentAdminRequests.set(request.id, request));
           inboxList.innerHTML = requests.map((request) => renderRequestCard(request, { admin: true })).join('');
+          bindAdminRequestActions();
+
+          if (selectedRequestId && currentAdminRequests.has(selectedRequestId)) {
+            selectAdminRequest(selectedRequestId);
+          }
         } catch (error) {
           inboxStatus.dataset.state = 'error';
           inboxStatus.textContent = error.message;

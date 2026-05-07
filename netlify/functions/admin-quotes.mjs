@@ -12,6 +12,7 @@ const normalizePayload = (body = {}) => ({
   title: clean(body.title, 180),
   summary: clean(body.summary, 4000),
   amountCents: Number(body.amountCents),
+  sendToClient: Boolean(body.sendToClient),
 });
 
 const validatePayload = (payload) => {
@@ -132,17 +133,19 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       return json(422, { ok: false, authenticated: true, authorized: true, message: 'Job request must be linked to a client before quoting.' });
     }
 
+    const quoteStatus = payload.sendToClient ? 'sent' : 'draft';
+
     const [quote] = await db.sql`
-      insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, created_by)
-      values (${jobRequest.id}, ${jobRequest.client_id}, 'draft', ${payload.title}, ${payload.summary || null}, ${payload.amountCents}, ${session.user_id})
+      insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, sent_at, created_by)
+      values (${jobRequest.id}, ${jobRequest.client_id}, ${quoteStatus}, ${payload.title}, ${payload.summary || null}, ${payload.amountCents}, ${payload.sendToClient ? new Date().toISOString() : null}::timestamptz, ${session.user_id})
       returning id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
     `;
 
     await db.sql`
       update job_requests
-      set status = 'quote_in_progress', updated_at = now()
+      set status = ${payload.sendToClient ? 'quote_sent' : 'quote_in_progress'}, updated_at = now()
       where id = ${jobRequest.id}
-        and status in ('new', 'needs_review')
+        and status in ('new', 'needs_review', 'quote_in_progress')
     `;
 
     await db.sql`
@@ -152,7 +155,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         ${'quote.created'},
         ${'quote'},
         ${quote.id},
-        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents })}::jsonb
+        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient })}::jsonb
       )
     `;
 

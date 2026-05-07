@@ -113,3 +113,10 @@ Client onboarding should start from Request Work, which creates or updates the c
 - `POST /api/auth/logout` revokes the current hashed session in `auth_sessions` and clears the HttpOnly session cookie.
 - The unified dashboard shows a signed-in-only Sign out button after `/api/me` confirms the session, then returns users to `/login/`.
 - Dashboard copy now reflects the connected magic-link session and `/api/me` role-loading flow instead of calling the page only a placeholder.
+
+## Added in Sprint 1J
+
+- Admin request cards can be opened from the unified dashboard to work directly from the client request details.
+- Admins can update request status/internal notes and create a quote from the selected request.
+- Quotes can stay as drafts or be sent immediately; sent quotes move the request to `quote_sent` so clients can use the existing accept/decline flow.
+- Worker assignment is represented in the admin work panel as the next scheduled build-out area, pending a dedicated assignment table/API.

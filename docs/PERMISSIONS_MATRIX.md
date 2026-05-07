@@ -51,7 +51,8 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
-| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote for an existing client-linked job request. |
+| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status and internal admin notes from the admin work panel. |
+| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
 | `POST /api/admin/users` | Yes | `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin` | Replaces an existing user's assigned roles. |
 

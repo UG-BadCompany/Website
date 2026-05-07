@@ -1,9 +1,29 @@
 import {
+  clean,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
+  parseJsonBody,
 } from './auth-utils.mjs';
+
+const ADMIN_STATUSES = new Set([
+  'new',
+  'needs_review',
+  'quote_in_progress',
+  'quote_sent',
+  'accepted',
+  'scheduled',
+  'in_progress',
+  'completed',
+  'cancelled',
+]);
+
+const normalizeStatusPayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId, 80),
+  status: clean(body.status, 40),
+  adminNotes: clean(body.adminNotes, 4000),
+});
 
 const mapJobRequest = (request) => ({
   id: request.id,
@@ -15,11 +35,12 @@ const mapJobRequest = (request) => ({
   serviceType: request.service_type,
   preferredTimeframe: request.preferred_timeframe,
   description: request.description,
+  adminNotes: request.admin_notes,
   createdAt: request.created_at,
 });
 
 export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (request.method !== 'GET') {
+  if (!['GET', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -65,8 +86,57 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to view job requests.' });
     }
 
+    if (request.method === 'PATCH') {
+      const body = await parseJsonBody(request);
+
+      if (!body) {
+        return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+      }
+
+      const payload = normalizeStatusPayload(body);
+
+      if (!payload.jobRequestId) {
+        return json(422, { ok: false, message: 'Job request is required.' });
+      }
+
+      if (!ADMIN_STATUSES.has(payload.status)) {
+        return json(422, { ok: false, message: 'Choose a valid request status.' });
+      }
+
+      const [updatedRequest] = await db.sql`
+        update job_requests
+        set status = ${payload.status},
+            admin_notes = ${payload.adminNotes || null},
+            updated_at = now()
+        where id = ${payload.jobRequestId}
+        returning id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, created_at
+      `;
+
+      if (!updatedRequest) {
+        return json(404, { ok: false, authenticated: true, authorized: true, message: 'Job request not found.' });
+      }
+
+      await db.sql`
+        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+        values (
+          ${session.user_id},
+          ${'job_request.status_updated'},
+          ${'job_request'},
+          ${updatedRequest.id},
+          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status })}::jsonb
+        )
+      `;
+
+      return json(200, {
+        ok: true,
+        authenticated: true,
+        authorized: true,
+        request: mapJobRequest(updatedRequest),
+      });
+    }
+
     const jobRequests = await db.sql`
-      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, created_at
+      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, created_at
       from job_requests
       order by created_at desc
       limit 50
