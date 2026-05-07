@@ -95,3 +95,9 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Portal-created requests must use an existing property owned by the signed-in account or create a new property under that same account.
 - The client dashboard includes a request form that refreshes the client-scoped request and property lists after a successful submission.
 
+## Added in Sprint 1G
+
+- `POST /api/admin/quotes` lets admins create draft quotes for existing job requests that are linked to client accounts.
+- `GET /api/client/quotes` lets signed-in clients load only non-draft quotes tied to their own `app_users.id`, including safe request/property context.
+- The unified dashboard now includes a client quote panel and quote waiting metric fed by the client-scoped quote API.
+
