@@ -233,3 +233,53 @@ test('admin job request endpoint assigns workers while scheduling a request', as
   assert.deepEqual(db.queries[4].values.slice(0, 8), ['job-1', 'worker-1', 'admin-1', 'assigned', '2026-05-13', '09:00', '11:00', 'Bring ladder.']);
   assert.equal(db.queries[5].values[1], 'worker_assignment.assigned');
 });
+
+test('admin job request endpoint verifies completion by moving request to waiting payment and opening invoice', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'job-1',
+      status: 'waiting_payment',
+      requester_name: 'Jane Customer',
+      requester_email: 'jane@example.com',
+      requester_phone: '555-0100',
+      city: 'Mesa',
+      service_type: 'Drywall repair',
+      preferred_timeframe: 'Morning',
+      description: 'Patch hallway.',
+      admin_notes: 'Verified with client.',
+      estimated_start_date: '2026-05-13',
+      completion_date: '2026-05-14',
+      created_at: '2026-05-07T00:00:00.000Z',
+      updated_at: '2026-05-14T00:00:00.000Z',
+    }],
+    [{ id: 'quote-1', client_id: 'client-1', title: 'Drywall repair quote', amount_cents: 42500 }],
+    [{
+      id: 'invoice-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      quote_id: 'quote-1',
+      status: 'open',
+      title: 'Drywall repair quote',
+      amount_cents: 42500,
+      created_at: '2026-05-14T00:00:00.000Z',
+      updated_at: '2026-05-14T00:00:00.000Z',
+    }],
+    [],
+  ]);
+  const handler = createAdminJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ jobRequestId: 'job-1', status: 'waiting_payment', adminNotes: 'Verified with client.', estimatedStartDate: '2026-05-13', completionDate: '2026-05-14' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.request.status, 'waiting_payment');
+  assert.equal(response.body.invoice.id, 'invoice-1');
+  assert.match(db.queries[4].text, /from quotes/);
+  assert.match(db.queries[5].text, /insert into invoices/);
+  assert.deepEqual(db.queries[5].values.slice(0, 7), ['job-1', 'client-1', 'quote-1', 'open', 'Drywall repair quote', 42500, 'admin-1']);
+});
