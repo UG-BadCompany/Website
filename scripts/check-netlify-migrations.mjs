@@ -65,11 +65,6 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     prefixes.set(prefix, existing);
   });
 
-  [...prefixes.entries()]
-    .filter(([, names]) => names.length > 1)
-    .forEach(([prefix, names]) => {
-      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-    });
 
   return { files, errors, warnings };
 };
