@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { rm, stat, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs';
 
 test('Netlify Database migrations use unique numeric prefixes', async () => {
@@ -70,8 +71,20 @@ test('migration validator keeps the applied 0004 work order schedule migration d
 
 test('restored applied 0004 schedule migration matches the known schedule migration body', async () => {
   const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-  const appliedSchedule = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('0004_work_order_schedule.sql', migrationsDir), 'utf8'));
-  const currentSchedule = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('0006_job_request_schedule_dates.sql', migrationsDir), 'utf8'));
+  const appliedSchedule = await readFile(new URL('0004_work_order_schedule.sql', migrationsDir), 'utf8');
+  const currentSchedule = await readFile(new URL('0006_job_request_schedule_dates.sql', migrationsDir), 'utf8');
 
   assert.equal(appliedSchedule, currentSchedule, '0004_work_order_schedule must keep the originally applied schedule migration body.');
+});
+
+test('restored applied 0004 schedule migration keeps the locked applied checksum', async () => {
+  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
+  const appliedSchedule = await readFile(new URL('0004_work_order_schedule.sql', migrationsDir));
+  const checksum = createHash('sha256').update(appliedSchedule).digest('hex');
+
+  assert.equal(
+    checksum,
+    'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
+    'The applied Netlify Database migration must not be edited in place.',
+  );
 });

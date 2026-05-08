@@ -1,4 +1,5 @@
-import { readdir, unlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { readFile, readdir, unlink } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
@@ -10,10 +11,23 @@ const STALE_CACHED_MIGRATIONS = new Set([
   '0009_quote_payment_completion_controls.sql',
   '0010_invoices_payments.sql',
 ]);
+const APPLIED_MIGRATION_LOCKS = new Map([
+  [
+    '0004_work_order_schedule.sql',
+    {
+      sha256: 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
+      reason: 'Netlify Database already applied this migration; edit only by pulling the applied file or adding a later migration.',
+    },
+  ],
+]);
 
 const listMigrationFiles = async () => (await readdir(MIGRATIONS_DIR))
   .filter((file) => file.endsWith('.sql'))
   .sort();
+
+const sha256File = async (file) => createHash('sha256')
+  .update(await readFile(new URL(file, MIGRATIONS_DIR)))
+  .digest('hex');
 
 const removeStaleCachedMigrations = async (files) => {
   const warnings = [];
@@ -73,6 +87,19 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     .forEach(([prefix, names]) => {
       errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
     });
+
+  for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
+    if (!files.includes(file)) {
+      errors.push(`${file} must remain committed because Netlify Database has already applied it.`);
+      continue;
+    }
+
+    const actualSha256 = await sha256File(file);
+
+    if (actualSha256 !== lock.sha256) {
+      errors.push(`${file} checksum changed after it was applied (${actualSha256}); expected ${lock.sha256}. ${lock.reason}`);
+    }
+  }
 
   return { files, errors, warnings };
 };
