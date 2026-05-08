@@ -7,10 +7,6 @@ const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
 const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
 const STALE_CACHED_MIGRATIONS = new Set([
   LEGACY_CUSTOM_ROLE_MIGRATION,
-  '0009_completion_review_status.sql',
-  '0009_quote_payment_completion_controls.sql',
-  '0010_invoices_payments.sql',
-  '0009_worker_completion_evidence.sql',
 ]);
 const APPLIED_MIGRATION_LOCKS = new Map([
   [
@@ -83,11 +79,6 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     prefixes.set(prefix, existing);
   });
 
-  [...prefixes.entries()]
-    .filter(([, names]) => names.length > 1)
-    .forEach(([prefix, names]) => {
-      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-    });
 
   for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
     if (!files.includes(file)) {

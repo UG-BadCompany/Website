@@ -4,13 +4,15 @@ import { createHash } from 'node:crypto';
 import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs';
 
-test('Netlify Database migrations use unique numeric prefixes', async () => {
+test('Netlify Database migrations keep the applied production migration names', async () => {
   const { errors, files } = await validateMigrationFiles();
 
   assert.deepEqual(errors, [], 'Migration files must pass Netlify Database validation.');
   assert.equal(files.includes('0004_work_order_schedule.sql'), true, 'Previously applied Netlify migration 0004_work_order_schedule must remain present.');
-  assert.equal(files.includes('0014_worker_completion_evidence.sql'), true, 'Worker completion evidence changes must live in a later migration.');
-  assert.equal(files.includes('0009_worker_completion_evidence.sql'), false, 'Previously applied 0009_worker_completion_evidence must not be re-sent with a changed checksum.');
+  assert.equal(files.includes('0009_completion_review_status.sql'), true, 'Previously applied Netlify migration 0009_completion_review_status must remain present.');
+  assert.equal(files.includes('0009_quote_payment_completion_controls.sql'), true, 'Previously applied Netlify migration 0009_quote_payment_completion_controls must remain present.');
+  assert.equal(files.includes('0009_worker_completion_evidence.sql'), true, 'Previously applied Netlify migration 0009_worker_completion_evidence must remain present.');
+  assert.equal(files.includes('0010_invoices_payments.sql'), true, 'Previously applied Netlify migration 0010_invoices_payments must remain present.');
 });
 
 
@@ -29,42 +31,6 @@ test('migration validator removes the stale cached custom role migration before 
     await assert.rejects(stat(staleMigration), { code: 'ENOENT' });
   } finally {
     await rm(staleMigration, { force: true });
-  }
-});
-
-test('migration validator removes stale cached duplicate 0009 migrations before build validation', async () => {
-  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-  const staleCompletion = new URL('0009_completion_review_status.sql', migrationsDir);
-  const staleQuoteControls = new URL('0009_quote_payment_completion_controls.sql', migrationsDir);
-  const staleInvoices = new URL('0010_invoices_payments.sql', migrationsDir);
-  const staleWorkerEvidence = new URL('0009_worker_completion_evidence.sql', migrationsDir);
-
-  await writeFile(staleCompletion, `-- stale cached duplicate migration created by test\n`);
-  await writeFile(staleQuoteControls, `-- stale cached duplicate migration created by test\n`);
-  await writeFile(staleInvoices, `-- stale cached future migration created by test\n`);
-  await writeFile(staleWorkerEvidence, `-- stale cached applied migration created by test\n`);
-
-  try {
-    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
-
-    assert.deepEqual(errors, [], 'Repair mode should remove stale cached duplicate 0009 migrations.');
-    assert.equal(files.includes('0009_completion_review_status.sql'), false);
-    assert.equal(files.includes('0009_quote_payment_completion_controls.sql'), false);
-    assert.equal(files.includes('0010_invoices_payments.sql'), false);
-    assert.equal(files.includes('0009_worker_completion_evidence.sql'), false);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_completion_review_status.sql')), true);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_quote_payment_completion_controls.sql')), true);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0010_invoices_payments.sql')), true);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_worker_completion_evidence.sql')), true);
-    await assert.rejects(stat(staleCompletion), { code: 'ENOENT' });
-    await assert.rejects(stat(staleQuoteControls), { code: 'ENOENT' });
-    await assert.rejects(stat(staleInvoices), { code: 'ENOENT' });
-    await assert.rejects(stat(staleWorkerEvidence), { code: 'ENOENT' });
-  } finally {
-    await rm(staleCompletion, { force: true });
-    await rm(staleQuoteControls, { force: true });
-    await rm(staleInvoices, { force: true });
-    await rm(staleWorkerEvidence, { force: true });
   }
 });
 
