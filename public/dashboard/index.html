@@ -41,6 +41,27 @@
       <strong>Admin request inbox</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
+      <div class="admin-request-list" data-admin-pipeline-summary></div>
+      <div class="client-request-form-grid" data-admin-request-filters>
+        <label>Search work orders
+          <input type="search" data-admin-request-search placeholder="Client, service, city, phone, or notes">
+        </label>
+        <label>Status filter
+          <select data-admin-request-status-filter>
+            <option value="">All active statuses</option>
+            <option value="new">New</option>
+            <option value="needs_review">Needs review</option>
+            <option value="quote_in_progress">Quote in progress</option>
+            <option value="quote_sent">Quote sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="in_progress">In progress</option>
+            <option value="pending_review">Pending review</option>
+            <option value="waiting_payment">Waiting payment</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+      </div>
       <div class="admin-request-list" data-admin-request-list></div>
       <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
         <section class="admin-request-modal-panel">
@@ -405,6 +426,18 @@
       const currentAdminWorkers = new Map();
       const currentAdminAssignments = new Map();
       const currentAdminQuotes = new Map();
+      const adminStatusOrder = [
+        ['new', 'New'],
+        ['needs_review', 'Needs review'],
+        ['quote_in_progress', 'Quoting'],
+        ['quote_sent', 'Quote sent'],
+        ['accepted', 'Accepted'],
+        ['scheduled', 'Scheduled'],
+        ['in_progress', 'In progress'],
+        ['pending_review', 'Pending review'],
+        ['waiting_payment', 'Waiting payment'],
+        ['cancelled', 'Cancelled'],
+      ];
       const currentClientProperties = new Map();
       const currentClientRequests = new Map();
       let currentPermissions = [];
@@ -515,6 +548,73 @@
             ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
+      };
+
+      const renderAdminPipelineSummary = (statusCounts = {}) => {
+        const cards = adminStatusOrder
+          .map(([statusKey, label]) => ({ statusKey, label, count: Number(statusCounts[statusKey] || 0) }))
+          .filter((item) => item.count > 0 || ['new', 'needs_review', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment'].includes(item.statusKey));
+
+        return cards.map((item) => `
+          <article class="admin-request" data-admin-filter-status="${escapeHtml(item.statusKey)}">
+            <span class="admin-request-badge">${escapeHtml(item.label)}</span>
+            <strong>${item.count}</strong>
+            <p>${item.count === 1 ? 'work order' : 'work orders'}</p>
+          </article>
+        `).join('');
+      };
+
+      const getFilteredAdminRequests = () => {
+        const search = (document.querySelector('[data-admin-request-search]')?.value || '').trim().toLowerCase();
+        const statusFilter = document.querySelector('[data-admin-request-status-filter]')?.value || '';
+
+        return [...currentAdminRequests.values()].filter((request) => {
+          if (statusFilter && request.status !== statusFilter) return false;
+          if (!search) return true;
+
+          return [
+            request.serviceType,
+            request.requesterName,
+            request.requesterEmail,
+            request.requesterPhone,
+            request.city,
+            request.preferredTimeframe,
+            request.description,
+            request.adminNotes,
+          ].some((value) => String(value || '').toLowerCase().includes(search));
+        });
+      };
+
+      const applyAdminRequestFilters = () => {
+        const inboxList = document.querySelector('[data-admin-request-list]');
+        const inboxStatus = document.querySelector('[data-admin-requests-status]');
+        if (!inboxList) return;
+
+        const filteredRequests = getFilteredAdminRequests();
+        inboxList.innerHTML = filteredRequests.length
+          ? filteredRequests.map((request) => renderRequestCard(request, { admin: true })).join('')
+          : '<p class="session-status">No work orders match those filters.</p>';
+
+        if (inboxStatus) {
+          const total = currentAdminRequests.size;
+          inboxStatus.dataset.state = 'ready';
+          inboxStatus.textContent = total
+            ? `${filteredRequests.length} of ${total} active work order${total === 1 ? '' : 's'} shown.`
+            : 'No job requests yet.';
+        }
+
+        bindAdminRequestActions();
+      };
+
+      const bindAdminRequestFilters = () => {
+        const search = document.querySelector('[data-admin-request-search]');
+        const statusFilter = document.querySelector('[data-admin-request-status-filter]');
+        [search, statusFilter].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', applyAdminRequestFilters);
+          control.addEventListener('change', applyAdminRequestFilters);
+        });
       };
 
       const renderQuoteCard = (quote) => `
@@ -1716,6 +1816,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inbox = document.querySelector('[data-admin-inbox]');
         const inboxStatus = document.querySelector('[data-admin-requests-status]');
         const inboxList = document.querySelector('[data-admin-request-list]');
+        const pipelineSummary = document.querySelector('[data-admin-pipeline-summary]');
         const openMetric = document.querySelector('[data-open-requests-metric]');
 
         if (!inbox || !inboxStatus || !inboxList) {
@@ -1734,6 +1835,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const openCount = requests.filter((request) => request.status !== 'completed' && request.status !== 'cancelled').length;
           inboxStatus.dataset.state = 'ready';
           inboxStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No job requests yet.';
+          if (pipelineSummary) {
+            pipelineSummary.innerHTML = renderAdminPipelineSummary(result.statusCounts || {});
+          }
+          bindAdminRequestFilters();
 
           if (openMetric) {
             openMetric.textContent = String(openCount);
@@ -1753,8 +1858,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             workerSelect.innerHTML = '<option value="">Select a worker</option>' + [...currentAdminWorkers.values()].map((worker) => `<option value="${escapeHtml(worker.id)}">${escapeHtml(worker.fullName || worker.email || 'Worker')}</option>`).join('');
             workerSelect.value = currentAdminWorkers.has(selectedWorker) ? selectedWorker : '';
           }
-          inboxList.innerHTML = requests.map((request) => renderRequestCard(request, { admin: true })).join('');
-          bindAdminRequestActions();
+          applyAdminRequestFilters();
 
           if (selectedRequestId && currentAdminRequests.has(selectedRequestId)) {
             selectAdminRequest(selectedRequestId);

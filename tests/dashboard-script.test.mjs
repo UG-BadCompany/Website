@@ -26,6 +26,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
+  assert.match(html, /data-admin-pipeline-summary/, 'admins should have a work order pipeline summary');
+  assert.match(html, /data-admin-request-search/, 'admins should be able to search work orders');
+  assert.match(html, /data-admin-request-status-filter/, 'admins should be able to filter work orders by status');
   assert.match(html, /data-admin-quote-id/, 'admin quote form should edit saved quotes by id');
   assert.match(html, /data-client-approve-completion/, 'clients should be able to approve completed work');
   assert.match(html, /value="pending_review"/, 'admins should be able to verify pending-review work');
@@ -46,6 +49,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /canSwitchDashboardView && \(user\.roles \|\| \[\]\)\.includes\('admin'\)/, 'role view tabs should be admin-only');
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
+  assert.match(script, /const renderAdminPipelineSummary =/, 'admins should render pipeline counts');
+  assert.match(script, /const applyAdminRequestFilters =/, 'admins should filter the work order inbox');
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
