@@ -367,3 +367,47 @@ test('client job request endpoint lets clients update their own property details
   assert.deepEqual(db.queries[3].values, ['Updated home', '789 Pine St', 'Mesa', 'Use side gate.', 'property-1', 'client-1']);
   assert.match(db.queries[4].text, /insert into audit_events/);
 });
+
+test('client job request endpoint lets clients update open job requests', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client', name: 'Client' }],
+    [{
+      id: 'job-1',
+      status: 'needs_review',
+      service_type: 'Drywall repair and paint touch-up',
+      preferred_timeframe: 'Next Thursday morning',
+      description: 'Patch the hallway and include the garage ceiling crack.',
+      updated_at: '2026-05-08T00:00:00.000Z',
+    }],
+    [],
+  ]);
+  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jobRequestId: 'job-1',
+      service: 'Drywall repair and paint touch-up',
+      requestedDate: 'Next Thursday morning',
+      description: 'Patch the hallway and include the garage ceiling crack.',
+      updateType: 'date_change_or_details',
+    }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.request.id, 'job-1');
+  assert.equal(response.body.request.preferredTimeframe, 'Next Thursday morning');
+  assert.match(db.queries[3].text, /update job_requests/);
+  assert.match(db.queries[3].text, /and client_id = \?/);
+  assert.match(db.queries[3].text, /status in/);
+  assert.deepEqual(db.queries[3].values.slice(0, 5), [
+    'Drywall repair and paint touch-up',
+    'Next Thursday morning',
+    'Patch the hallway and include the garage ceiling crack.',
+    'job-1',
+    'client-1',
+  ]);
+  assert.equal(db.queries[4].values[1], 'client_job_request.updated');
+});

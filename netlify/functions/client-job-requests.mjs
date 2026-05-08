@@ -18,6 +18,10 @@ const MAX_FIELD_LENGTHS = {
   service: 120,
   timeframe: 80,
   description: 4000,
+  jobRequestId: 80,
+  requestedDate: 80,
+  additionalInfo: 4000,
+  updateType: 40,
 };
 
 const mapProperty = (property) => ({
@@ -134,6 +138,22 @@ const loadRoleKeys = async (db, userId) => {
 
 const requireClientAccess = (roleKeys) => roleKeys.includes('client') || roleKeys.includes('admin');
 
+const validateClientRequestUpdatePayload = (payload) => {
+  if (!payload.jobRequestId) {
+    return 'Job request is required.';
+  }
+
+  if (!payload.service) {
+    return 'Service is required.';
+  }
+
+  if (!payload.description && !payload.additionalInfo && !payload.requestedDate) {
+    return 'Add project details, a requested date change, or additional information.';
+  }
+
+  return null;
+};
+
 const validatePropertyPayload = (payload) => {
   if (!payload.propertyId) {
     return 'Property is required.';
@@ -144,6 +164,23 @@ const validatePropertyPayload = (payload) => {
   }
 
   return null;
+};
+
+
+const updateClientJobRequest = async (db, userId, payload) => {
+  const [jobRequest] = await db.sql`
+    update job_requests
+    set service_type = ${payload.service},
+        preferred_timeframe = ${payload.requestedDate || payload.timeframe || null},
+        description = ${payload.description || payload.additionalInfo || ''},
+        updated_at = now()
+    where id = ${payload.jobRequestId}
+      and client_id = ${userId}
+      and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress')
+    returning id, status, service_type, preferred_timeframe, description, updated_at
+  `;
+
+  return jobRequest || null;
 };
 
 const updateClientProperty = async (db, userId, payload) => {
@@ -362,6 +399,52 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
   }
 
   const payload = normalizePayload(body);
+
+  if (payload.jobRequestId) {
+    const validationError = validateClientRequestUpdatePayload(payload);
+
+    if (validationError) {
+      return json(422, { ok: false, message: validationError });
+    }
+
+    const jobRequest = await updateClientJobRequest(db, session.user_id, payload);
+
+    if (!jobRequest) {
+      return json(404, { ok: false, authenticated: true, authorized: false, message: 'Open job request not found for this account.' });
+    }
+
+    await db.sql`
+      insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+      values (
+        ${session.user_id},
+        ${'client_job_request.updated'},
+        ${'job_request'},
+        ${jobRequest.id},
+        ${JSON.stringify({ source: 'client_dashboard', requestedDate: payload.requestedDate || null, updateType: payload.updateType || 'client_edit' })}::jsonb
+      )
+    `;
+
+    return json(200, {
+      ok: true,
+      authenticated: true,
+      authorized: true,
+      user: {
+        id: session.user_id,
+        email: session.email,
+        fullName: session.full_name,
+        roles: roleKeys,
+      },
+      request: {
+        id: jobRequest.id,
+        status: jobRequest.status,
+        serviceType: jobRequest.service_type,
+        preferredTimeframe: jobRequest.preferred_timeframe,
+        description: jobRequest.description,
+        updatedAt: jobRequest.updated_at,
+      },
+    });
+  }
+
   const validationError = validatePropertyPayload(payload);
 
   if (validationError) {

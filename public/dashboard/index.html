@@ -7,11 +7,11 @@
   <meta name="description" content="Secure dashboard placeholder for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -190,10 +190,17 @@
       </div>
     </section>
 
-    <section class="card client-profile" data-client-profile data-dashboard-section data-views="client" hidden>
-      <strong>My profile & properties</strong>
-      <p>Keep your contact and property information together. T&A Contracting uses this for requests, quotes, scheduling, and property follow-up.</p>
-      <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
+    <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
+      <section class="admin-request-modal-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="client-profile-title">My profile &amp; properties</strong><p>See your contact details and saved properties, then edit your profile in this pop out.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-client-profile-modal-close aria-label="Close profile">×</button>
+        </div>
+        <div class="client-request-form">
+          <strong>Profile details</strong>
+          <div class="profile-summary" data-client-profile-summary></div>
+          <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
+        </div>
       <form class="client-request-form" data-client-profile-form>
         <div class="client-request-form-grid">
           <label>Email
@@ -249,6 +256,7 @@
           </form>
         </section>
       </div>
+      </section>
     </section>
 
     <section class="card client-requests" id="submit-request" data-client-requests data-dashboard-section data-views="client" hidden>
@@ -291,6 +299,33 @@
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
       </form>
       <div class="client-request-list" data-client-request-list></div>
+      <div class="admin-request-modal" data-client-request-modal role="dialog" aria-modal="true" aria-labelledby="client-request-modal-title" hidden>
+        <section class="admin-request-modal-panel">
+          <div class="admin-request-modal-header">
+            <div><strong id="client-request-modal-title" data-client-request-modal-title>Edit job request</strong><p>Update an open request, ask for a date change, or add information for T&A Contracting.</p></div>
+            <button class="btn btn-soft admin-request-modal-close" type="button" data-client-request-modal-close aria-label="Close request editor">×</button>
+          </div>
+          <form class="client-request-form" data-client-request-edit-form>
+            <input type="hidden" name="jobRequestId" data-client-request-edit-id>
+            <div class="client-request-form-grid">
+              <label>Service needed
+                <input name="service" data-client-request-edit-service required>
+              </label>
+              <label>Request a date / timeframe change
+                <input name="requestedDate" data-client-request-edit-date placeholder="May 20, mornings, next week">
+              </label>
+              <label class="full">Project details
+                <textarea name="description" data-client-request-edit-description required></textarea>
+              </label>
+              <label class="full">Add info for T&A
+                <textarea name="additionalInfo" data-client-request-edit-additional placeholder="Optional: new access notes, extra details, questions, or scheduling notes."></textarea>
+              </label>
+            </div>
+            <p class="request-update-note">Saved changes stay on this open request and alert the team in the audit trail.</p>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request update</button><span data-client-request-edit-status aria-live="polite"></span></div>
+          </form>
+        </section>
+      </div>
     </section>
 
     <section class="card client-quotes" data-client-quotes data-dashboard-section data-views="client" hidden>
@@ -302,7 +337,6 @@
 
 
     <section class="tools" aria-label="Role based dashboard tools">
-      <article class="card" data-dashboard-section data-views="client"><strong>Client tools</strong><p>Visible to clients and admins.</p><ul class="tool-list"><li>Request a new job</li><li>View my properties</li><li>Review quotes and invoices</li><li>Message T&A Contracting</li></ul></article>
       <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
       <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
       <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>/api/me now verifies the magic-link session before role-scoped dashboard data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
@@ -313,6 +347,7 @@
     (() => {
       const status = document.querySelector('[data-session-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
+      const profileButton = document.querySelector('[data-profile-button]');
 
       if (!status) {
         return;
@@ -323,6 +358,7 @@
       const currentAdminRoles = new Map();
       const currentAdminUsers = new Map();
       const currentClientProperties = new Map();
+      const currentClientRequests = new Map();
       let currentPermissions = [];
 
       const bindLogout = () => {
@@ -356,6 +392,21 @@
           document.querySelector('[name="service"]')?.focus({ preventScroll: true });
         });
       };
+      const closeClientProfileModal = () => setModalOpen(document.querySelector('[data-client-profile]'), false);
+
+      const bindClientProfileButton = () => {
+        const modal = document.querySelector('[data-client-profile]');
+        if (!profileButton || !modal || profileButton.dataset.bound) return;
+        profileButton.dataset.bound = 'true';
+        profileButton.addEventListener('click', () => {
+          setModalOpen(modal, true);
+          document.querySelector('[data-client-profile-name]')?.focus({ preventScroll: true });
+        });
+        modal.addEventListener('click', (event) => {
+          if (event.target === modal || event.target.closest('[data-client-profile-modal-close]')) closeClientProfileModal();
+        });
+      };
+
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
       const formatDate = (value) => {
         if (!value) return '';
@@ -413,7 +464,7 @@
               ${scheduleMeta}
             </div>
             <p>${escapeHtml(request.description)}</p>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : ''}
+            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button></div>`}
           </article>
         `;
       };
@@ -458,6 +509,17 @@
         setValue('[data-client-profile-secondary-phone]', user.secondaryPhone);
         setValue('[data-client-profile-company]', user.companyName);
         setValue('[data-client-profile-mailing-address]', user.mailingAddress);
+        const summary = document.querySelector('[data-client-profile-summary]');
+        if (summary) {
+          summary.innerHTML = [
+            ['Name', user.fullName || 'Not provided'],
+            ['Email', user.email || 'Not provided'],
+            ['Primary phone', user.phone || 'Not provided'],
+            ['Secondary phone', user.secondaryPhone || 'Not provided'],
+            ['Company', user.companyName || 'Not provided'],
+            ['Mailing address', user.mailingAddress || 'Not provided'],
+          ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+        }
         const status = document.querySelector('[data-client-profile-status]');
         if (status) {
           status.dataset.state = 'ready';
@@ -506,7 +568,9 @@
         const requests = result.requests || [];
         const properties = result.properties || [];
         currentClientProperties.clear();
+        currentClientRequests.clear();
         properties.forEach((property) => currentClientProperties.set(property.id, property));
+        requests.forEach((request) => currentClientRequests.set(request.id, request));
 
         panelStatus.dataset.state = 'ready';
         panelStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No requests are connected to this account yet.';
@@ -751,6 +815,71 @@
             await saveClientProperty();
           } catch (error) {
             if (formStatus) formStatus.textContent = error.message;
+          }
+        });
+      };
+
+      const closeClientRequestModal = () => setModalOpen(document.querySelector('[data-client-request-modal]'), false);
+
+      const openClientRequestModal = (requestId) => {
+        const request = currentClientRequests.get(requestId);
+        if (!request) return;
+        document.querySelector('[data-client-request-edit-id]').value = request.id;
+        document.querySelector('[data-client-request-edit-service]').value = request.serviceType || '';
+        document.querySelector('[data-client-request-edit-date]').value = request.preferredTimeframe || '';
+        document.querySelector('[data-client-request-edit-description]').value = request.description || '';
+        document.querySelector('[data-client-request-edit-additional]').value = '';
+        document.querySelector('[data-client-request-modal-title]').textContent = `Edit request: ${request.serviceType || 'Job request'}`;
+        const editStatus = document.querySelector('[data-client-request-edit-status]');
+        if (editStatus) editStatus.textContent = '';
+        setModalOpen(document.querySelector('[data-client-request-modal]'), true);
+        document.querySelector('[data-client-request-edit-service]')?.focus();
+      };
+
+      const saveClientRequestUpdate = async (form) => {
+        const editStatus = document.querySelector('[data-client-request-edit-status]');
+        const payload = Object.fromEntries(new FormData(form).entries());
+        payload.updateType = payload.requestedDate ? 'date_change_or_details' : 'client_edit';
+        const baseDescription = payload.description || '';
+        const extraInfo = payload.additionalInfo ? `
+
+Additional info from client: ${payload.additionalInfo}` : '';
+        payload.description = `${baseDescription}${extraInfo}`.trim();
+        if (editStatus) editStatus.textContent = 'Saving request update…';
+        const response = await fetch('/api/client/job-requests', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'We could not update that request.');
+        closeClientRequestModal();
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        if (panelStatus) panelStatus.textContent = 'Request updated.';
+        await loadClientRequests();
+      };
+
+      const bindClientRequestEditActions = () => {
+        const panel = document.querySelector('[data-client-requests]');
+        const modal = document.querySelector('[data-client-request-modal]');
+        const form = document.querySelector('[data-client-request-edit-form]');
+        if (!panel || panel.dataset.editActionsBound) return;
+        panel.dataset.editActionsBound = 'true';
+        panel.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-client-open-request]');
+          if (!button) return;
+          openClientRequestModal(button.dataset.clientOpenRequest);
+        });
+        modal?.addEventListener('click', (event) => {
+          if (event.target === modal || event.target.closest('[data-client-request-modal-close]')) closeClientRequestModal();
+        });
+        form?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const editStatus = document.querySelector('[data-client-request-edit-status]');
+          try {
+            await saveClientRequestUpdate(form);
+          } catch (error) {
+            if (editStatus) editStatus.textContent = error.message;
           }
         });
       };
@@ -1322,13 +1451,19 @@
             logoutButton.hidden = false;
           }
 
+          if (profileButton) {
+            profileButton.hidden = false;
+          }
+
           bindLogout();
+          bindClientProfileButton();
           bindRequestEstimateLink();
           configureDashboardForUser(result.user);
 
           if (result.user.permissions?.canViewClientTools) {
             bindClientProfileForm();
             bindClientRequestForm();
+            bindClientRequestEditActions();
             bindClientPropertyActions();
             bindQuoteDecisionActions();
             loadClientRequests();
