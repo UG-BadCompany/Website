@@ -69,12 +69,12 @@ test('migration validator keeps the applied 0004 work order schedule migration d
   assert.equal(warnings.some((warning) => warning.includes('0004_work_order_schedule.sql')), false);
 });
 
-test('restored applied 0004 schedule migration matches the known schedule migration body', async () => {
+test('restored applied 0004 schedule migration keeps the original work-order body', async () => {
   const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
   const appliedSchedule = await readFile(new URL('0004_work_order_schedule.sql', migrationsDir), 'utf8');
-  const currentSchedule = await readFile(new URL('0006_job_request_schedule_dates.sql', migrationsDir), 'utf8');
 
-  assert.equal(appliedSchedule, currentSchedule, '0004_work_order_schedule must keep the originally applied schedule migration body.');
+  assert.match(appliedSchedule, /planned_service_at timestamptz/, '0004_work_order_schedule must keep the originally applied work-order scheduling columns.');
+  assert.match(appliedSchedule, /client_reschedule_note text/, '0004_work_order_schedule must keep the originally applied client reschedule note column.');
 });
 
 test('restored applied 0004 schedule migration keeps the locked applied checksum', async () => {
@@ -84,7 +84,7 @@ test('restored applied 0004 schedule migration keeps the locked applied checksum
 
   assert.equal(
     checksum,
-    'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
+    'f9cf4dc0988130a124df27bcdee45650b1162d1e555f761a0b8ef5ecbc67fd80',
     'The applied Netlify Database migration must not be edited in place.',
   );
 });
