@@ -28,7 +28,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 ## Dashboard behavior
 
 - Clients see only their own properties, requests, quotes, invoices, payments, files, and messages.
-- Workers see assigned jobs, status filters, pop-out work orders, job notes, checklists, access details, material/parts notes, and completion photo/attachment evidence tools.
+- Workers see assigned jobs, job notes, checklists, access details, materials, and photo upload tools.
 - Admins see every operational tool.
 - Multi-role users can either see combined tools or a role switcher, depending on final UX preference.
 
@@ -48,13 +48,18 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `POST /api/auth/logout` | Optional | Any signed-in user | Revokes the current session when present and clears the session cookie. |
 | `GET /api/client/job-requests` | Yes | `client` or `admin` | Returns job requests and property summaries scoped to the signed-in client account. |
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
+| `PATCH /api/client/job-requests` | Yes | `client` or `admin` | Updates owned property/request details and lets clients approve work in `pending_review`. |
+| `GET /api/client/invoices` | Yes | `client` or `admin` | Returns unpaid invoices scoped to the signed-in client account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
 | `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
-| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status, worker notes, checklist items, material notes, and required completion notes/photo evidence for an assigned job; workers are scoped to their own assignments. |
+| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status and worker notes for an assigned job; workers are scoped to their own assignments, and completed work moves to admin/client pending review. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
 | `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
-| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
+| `POST /api/admin/quotes` | Yes | `admin` | Creates the first draft/sent quote for an existing client-linked job request. |
+| `PATCH /api/admin/quotes` | Yes | `admin` | Edits an existing saved quote from the open work request. |
+| `GET /api/admin/invoices` | Yes | `admin` | Lists open invoices waiting payment confirmation. |
+| `PATCH /api/admin/invoices` | Yes | `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |
