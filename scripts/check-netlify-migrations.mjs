@@ -10,6 +10,7 @@ const STALE_CACHED_MIGRATIONS = new Set([
   '0009_completion_review_status.sql',
   '0009_quote_payment_completion_controls.sql',
   '0010_invoices_payments.sql',
+  '0009_worker_completion_evidence.sql',
 ]);
 const APPLIED_MIGRATION_LOCKS = new Map([
   [
