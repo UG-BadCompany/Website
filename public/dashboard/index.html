@@ -72,6 +72,7 @@
             </div>
             <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close request workspace">×</button>
           </div>
+          <div class="client-quote-list" data-admin-work-order-summary></div>
           <div class="client-request-form">
             <form data-admin-status-form>
               <input type="hidden" name="jobRequestId" data-admin-status-request-id>
@@ -546,6 +547,52 @@
             </div>
             <p>${escapeHtml(request.description)}</p>
             ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+          </article>
+        `;
+      };
+
+      const renderAdminWorkOrderSummary = (request, assignments = [], quote = null) => {
+        const primaryAssignment = assignments[0] || null;
+        const timeline = [
+          { label: 'Request created', value: request.createdAt ? formatDate(String(request.createdAt).slice(0, 10)) : '' },
+          { label: 'Quote status', value: quote ? (quote.status || 'draft').replaceAll('_', ' ') : 'Not quoted' },
+          { label: 'Worker assignment', value: primaryAssignment ? `${primaryAssignment.workerName || primaryAssignment.workerEmail || 'Worker'} — ${(primaryAssignment.status || 'assigned').replaceAll('_', ' ')}` : 'Not assigned' },
+          { label: 'Schedule', value: primaryAssignment?.scheduledDate ? formatDate(primaryAssignment.scheduledDate) : (request.estimatedStartDate ? `Target ${formatDate(request.estimatedStartDate)}` : 'Not scheduled') },
+          { label: 'Completion', value: request.completionDate ? formatDate(request.completionDate) : (request.status === 'pending_review' ? 'Pending admin review' : 'Not complete') },
+          { label: 'Billing', value: request.status === 'waiting_payment' ? 'Invoice waiting payment' : (request.status === 'completed' ? 'Completed' : 'Not ready') },
+        ];
+
+        const assignmentMeta = assignments.length
+          ? `${assignments.length} assignment${assignments.length === 1 ? '' : 's'}${primaryAssignment?.scheduledDate ? ` • Next ${formatDate(primaryAssignment.scheduledDate)}` : ''}`
+          : 'No assignments yet';
+        const quoteMeta = quote
+          ? `${quote.title || 'Saved quote'} • ${formatMoney(quote.amountCents)} • ${(quote.status || 'draft').replaceAll('_', ' ')}`
+          : 'No quote saved';
+
+        return `
+          <article class="client-quote" data-admin-work-order-summary-card>
+            <span class="client-quote-badge">${escapeHtml((request.status || 'new').replaceAll('_', ' '))}</span>
+            <strong>Work order command center</strong>
+            <div class="client-quote-meta">
+              <span>WO ${escapeHtml(String(request.id || '').slice(0, 8) || 'new')}</span>
+              <span>${escapeHtml(request.requesterName || 'Client')}</span>
+              <span>${escapeHtml(request.requesterPhone || request.requesterEmail || 'No contact')}</span>
+              <span>${escapeHtml(request.city || 'No city')}</span>
+            </div>
+            <p>${escapeHtml(request.description || 'No work description provided.')}</p>
+            <div class="client-quote-meta">
+              <span>${escapeHtml(quoteMeta)}</span>
+              <span>${escapeHtml(assignmentMeta)}</span>
+              <span>${escapeHtml(request.adminNotes ? 'Internal notes saved' : 'No internal notes')}</span>
+            </div>
+            <div class="client-quote-list">
+              ${timeline.map((item) => `
+                <article class="admin-assignment">
+                  <span class="admin-assignment-badge">${escapeHtml(item.label)}</span>
+                  <strong>${escapeHtml(item.value || '—')}</strong>
+                </article>
+              `).join('')}
+            </div>
           </article>
         `;
       };
@@ -1211,6 +1258,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
+        const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
         if (!request || !detail) {
@@ -1238,8 +1286,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
         if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
+        const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
+        if (workOrderSummary) {
+          workOrderSummary.innerHTML = renderAdminWorkOrderSummary(request, requestAssignments, savedQuote);
+        }
         if (assignmentList) {
-          const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
         if (closeButton) closeButton.focus();
