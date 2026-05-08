@@ -38,6 +38,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
   assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
+  assert.match(html, /data-admin-invoice-summary/, 'admins should have invoice totals before payment confirmation');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
@@ -50,6 +51,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /canSwitchDashboardView && \(user\.roles \|\| \[\]\)\.includes\('admin'\)/, 'role view tabs should be admin-only');
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
+  assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
   assert.match(script, /const renderAdminPipelineSummary =/, 'admins should render pipeline counts');
   assert.match(script, /const applyAdminRequestFilters =/, 'admins should filter the work order inbox');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');

@@ -241,6 +241,7 @@
       <strong>Payments waiting</strong>
       <p>Completed work that has been verified moves here until payment is confirmed.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
       <div class="client-quote-list" data-admin-invoice-list></div>
     </section>
 
@@ -690,6 +691,23 @@
           <p>Payment is waiting for admin confirmation. Paid invoices stay in your records but leave this dashboard.</p>
         </article>
       `;
+
+      const renderAdminInvoiceSummary = (summary = {}) => {
+        const open = Number(summary.open || 0);
+        const amountDueCents = Number(summary.amountDueCents || 0);
+        return `
+          <article class="admin-request">
+            <span class="admin-request-badge">Open invoices</span>
+            <strong>${open}</strong>
+            <p>${open === 1 ? 'invoice awaiting confirmation' : 'invoices awaiting confirmation'}</p>
+          </article>
+          <article class="admin-request">
+            <span class="admin-request-badge">Amount due</span>
+            <strong>${formatMoney(amountDueCents)}</strong>
+            <p>Expected payment total</p>
+          </article>
+        `;
+      };
 
       const renderAdminInvoiceCard = (invoice) => `
         <article class="client-quote">
@@ -1796,6 +1814,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const loadAdminInvoices = async () => {
         const panel = document.querySelector('[data-admin-invoices]');
         const status = document.querySelector('[data-admin-invoices-status]');
+        const invoiceSummary = document.querySelector('[data-admin-invoice-summary]');
         const invoiceList = document.querySelector('[data-admin-invoice-list]');
         if (!panel || !status || !invoiceList) return;
         try {
@@ -1805,6 +1824,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const invoices = result.invoices || [];
           status.dataset.state = 'ready';
           status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} waiting payment confirmation.` : 'No open invoices waiting for payment.';
+          if (invoiceSummary) invoiceSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
           invoiceList.innerHTML = invoices.map(renderAdminInvoiceCard).join('');
           bindAdminInvoiceActions();
         } catch (error) {
