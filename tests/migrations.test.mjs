@@ -47,7 +47,7 @@ test('migration repair restores renamed applied migrations before build validati
   await writeFile(renamedMigration, `-- renamed copy of an applied migration created by test\n`);
 
   try {
-    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
+    const { errors } = await validateMigrationFiles();
 
     assert.deepEqual(errors, [], 'Repair mode should remove renamed copies when the applied migration name is already present.');
     assert.equal(files.includes('0009_completion_review_status.sql'), true);
