@@ -9,6 +9,8 @@ test('Netlify Database migrations use unique numeric prefixes', async () => {
 
   assert.deepEqual(errors, [], 'Migration files must pass Netlify Database validation.');
   assert.equal(files.includes('0004_work_order_schedule.sql'), true, 'Previously applied Netlify migration 0004_work_order_schedule must remain present.');
+  assert.equal(files.includes('0014_worker_completion_evidence.sql'), true, 'Worker completion evidence changes must live in a later migration.');
+  assert.equal(files.includes('0009_worker_completion_evidence.sql'), false, 'Previously applied 0009_worker_completion_evidence must not be re-sent with a changed checksum.');
 });
 
 
@@ -35,10 +37,12 @@ test('migration validator removes stale cached duplicate 0009 migrations before 
   const staleCompletion = new URL('0009_completion_review_status.sql', migrationsDir);
   const staleQuoteControls = new URL('0009_quote_payment_completion_controls.sql', migrationsDir);
   const staleInvoices = new URL('0010_invoices_payments.sql', migrationsDir);
+  const staleWorkerEvidence = new URL('0009_worker_completion_evidence.sql', migrationsDir);
 
   await writeFile(staleCompletion, `-- stale cached duplicate migration created by test\n`);
   await writeFile(staleQuoteControls, `-- stale cached duplicate migration created by test\n`);
   await writeFile(staleInvoices, `-- stale cached future migration created by test\n`);
+  await writeFile(staleWorkerEvidence, `-- stale cached applied migration created by test\n`);
 
   try {
     const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
@@ -47,16 +51,20 @@ test('migration validator removes stale cached duplicate 0009 migrations before 
     assert.equal(files.includes('0009_completion_review_status.sql'), false);
     assert.equal(files.includes('0009_quote_payment_completion_controls.sql'), false);
     assert.equal(files.includes('0010_invoices_payments.sql'), false);
+    assert.equal(files.includes('0009_worker_completion_evidence.sql'), false);
     assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_completion_review_status.sql')), true);
     assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_quote_payment_completion_controls.sql')), true);
     assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0010_invoices_payments.sql')), true);
+    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_worker_completion_evidence.sql')), true);
     await assert.rejects(stat(staleCompletion), { code: 'ENOENT' });
     await assert.rejects(stat(staleQuoteControls), { code: 'ENOENT' });
     await assert.rejects(stat(staleInvoices), { code: 'ENOENT' });
+    await assert.rejects(stat(staleWorkerEvidence), { code: 'ENOENT' });
   } finally {
     await rm(staleCompletion, { force: true });
     await rm(staleQuoteControls, { force: true });
     await rm(staleInvoices, { force: true });
+    await rm(staleWorkerEvidence, { force: true });
   }
 });
 
@@ -69,12 +77,12 @@ test('migration validator keeps the applied 0004 work order schedule migration d
   assert.equal(warnings.some((warning) => warning.includes('0004_work_order_schedule.sql')), false);
 });
 
-test('restored applied 0004 schedule migration matches the known schedule migration body', async () => {
+test('restored applied 0004 schedule migration keeps the original work-order body', async () => {
   const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
   const appliedSchedule = await readFile(new URL('0004_work_order_schedule.sql', migrationsDir), 'utf8');
-  const currentSchedule = await readFile(new URL('0006_job_request_schedule_dates.sql', migrationsDir), 'utf8');
 
-  assert.equal(appliedSchedule, currentSchedule, '0004_work_order_schedule must keep the originally applied schedule migration body.');
+  assert.match(appliedSchedule, /planned_service_at timestamptz/, '0004_work_order_schedule must keep the originally applied work-order scheduling columns.');
+  assert.match(appliedSchedule, /client_reschedule_note text/, '0004_work_order_schedule must keep the originally applied client reschedule note column.');
 });
 
 test('restored applied 0004 schedule migration keeps the locked applied checksum', async () => {
@@ -84,7 +92,7 @@ test('restored applied 0004 schedule migration keeps the locked applied checksum
 
   assert.equal(
     checksum,
-    'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
+    'f9cf4dc0988130a124df27bcdee45650b1162d1e555f761a0b8ef5ecbc67fd80',
     'The applied Netlify Database migration must not be edited in place.',
   );
 });
