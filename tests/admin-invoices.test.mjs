@@ -1,0 +1,90 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createAdminInvoicesHandler } from '../netlify/functions/admin-invoices.mjs';
+import { hashToken } from '../netlify/functions/auth-utils.mjs';
+
+const readJson = async (response) => ({ status: response.status, body: await response.json() });
+const createMockDb = (responses = []) => ({
+  queries: [],
+  sql(strings, ...values) {
+    this.queries.push({ text: strings.join('?'), values });
+    return responses.shift() || [];
+  },
+});
+
+test('admin invoices endpoint requires a signed-in session', async () => {
+  let openedDatabase = false;
+  const handler = createAdminInvoicesHandler({ getDatabase: async () => { openedDatabase = true; return createMockDb(); } });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/invoices')));
+  assert.equal(response.status, 401);
+  assert.equal(response.body.authenticated, false);
+  assert.equal(openedDatabase, false);
+});
+
+test('admin invoices endpoint lists open invoices for admins', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'invoice-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      status: 'open',
+      title: 'Repair invoice',
+      amount_cents: 42500,
+      paid_at: null,
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+      client_full_name: 'Client',
+      client_email: 'client@example.com',
+      client_phone: '555-0100',
+      job_request_status: 'waiting_payment',
+      service_type: 'Drywall repair',
+      city: 'Mesa',
+      street_address: '123 Main St',
+    }],
+  ]);
+  const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/invoices', { headers: { cookie: 'ta_session=session-token' } })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.invoices.length, 1);
+  assert.equal(response.body.summary.amountDueCents, 42500);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+test('admin invoices endpoint confirms payment and completes the job request', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'invoice-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      status: 'paid',
+      title: 'Repair invoice',
+      amount_cents: 42500,
+      paid_at: '2026-05-10T00:00:00.000Z',
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-10T00:00:00.000Z',
+    }],
+    [{ id: 'payment-1', invoice_id: 'invoice-1', amount_cents: 42500, method: 'cash', reference: 'receipt-1', confirmed_at: '2026-05-10T00:00:00.000Z' }],
+    [],
+    [],
+  ]);
+  const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/invoices', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ invoiceId: 'invoice-1', amountCents: 42500, method: 'cash', reference: 'receipt-1' }),
+  })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.invoice.status, 'paid');
+  assert.equal(response.body.payment.id, 'payment-1');
+  assert.match(db.queries[3].text, /update invoices/);
+  assert.match(db.queries[5].text, /update job_requests/);
+  assert.equal(db.queries[5].values[0], 'completed');
+  assert.equal(db.queries[5].values[1], 'job-1');
+  assert.equal(db.queries[6].values[1], 'payment.confirmed');
+});
