@@ -27,6 +27,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
+  assert.match(html, /data-worker-job-filter/, 'worker jobs should have a status filter dropdown');
+  assert.match(html, /data-worker-completion-photos/, 'worker completion form should collect photo or attachment evidence');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
@@ -36,6 +38,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
+  assert.match(script, /const renderWorkerJobs =/, 'worker job filter should rerender the jobs list');
+  assert.match(script, /completionPhotoNames/, 'worker completion updates should send completion photo file names');
   assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
   assert.match(script, /const bindClientPropertyActions =/, 'client property edit controls should be bound');
   assert.match(script, /const renderUserProperties =/, 'opening a user profile requires the property renderer to be declared');

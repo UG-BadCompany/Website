@@ -360,6 +360,18 @@
     <section class="card worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
       <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
+      <label class="client-request-form" data-worker-filter-control>Show jobs
+        <select data-worker-job-filter aria-label="Filter worker jobs by status">
+          <option value="active">Active</option>
+          <option value="assigned">Assigned</option>
+          <option value="accepted">Accepted</option>
+          <option value="in_progress">In progress</option>
+          <option value="blocked">Blocked</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="all">All statuses</option>
+        </select>
+      </label>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
       <div class="worker-job-list" data-worker-job-list></div>
     </section>
@@ -389,6 +401,8 @@
       const currentAdminAssignments = new Map();
       const currentClientProperties = new Map();
       const currentClientRequests = new Map();
+      let currentWorkerAssignments = [];
+      let currentWorkerJobFilter = 'active';
       let currentPermissions = [];
 
       const bindLogout = () => {
@@ -540,7 +554,11 @@
         </article>
       `;
 
-      const renderWorkerJobCard = (assignment) => `
+      const renderWorkerJobCard = (assignment) => {
+        const completionPhotoNames = assignment.completionPhotoNames || [];
+        const completionPhotoList = completionPhotoNames.length ? `<p><strong>Completion photos:</strong> ${escapeHtml(completionPhotoNames.join(', '))}</p>` : '';
+
+        return `
         <article class="worker-job">
           <span class="worker-job-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
           <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Assigned job')}</strong>
@@ -553,25 +571,37 @@
           <p>${escapeHtml(assignment.jobRequest?.description || 'No job details yet.')}</p>
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
+          ${assignment.completionNotes ? `<p><strong>Completion notes:</strong> ${escapeHtml(assignment.completionNotes)}</p>` : ''}
+          ${completionPhotoList}
           <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}">
             <div class="client-request-form-grid">
               <label>Status
-                <select name="status">
+                <select name="status" data-worker-job-status>
                   <option value="assigned" ${assignment.status === 'assigned' ? 'selected' : ''}>Assigned</option>
                   <option value="accepted" ${assignment.status === 'accepted' ? 'selected' : ''}>Accepted</option>
                   <option value="in_progress" ${assignment.status === 'in_progress' ? 'selected' : ''}>In progress</option>
                   <option value="blocked" ${assignment.status === 'blocked' ? 'selected' : ''}>Blocked</option>
                   <option value="completed" ${assignment.status === 'completed' ? 'selected' : ''}>Completed</option>
+                  <option value="cancelled" ${assignment.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
               </label>
               <label class="full">Worker notes
                 <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
               </label>
+              <label class="full">Completion notes required before completing
+                <textarea name="completionNotes" data-worker-completion-notes placeholder="Describe the completed work, materials used, cleanup notes, and anything the client/admin should review.">${escapeHtml(assignment.completionNotes || '')}</textarea>
+              </label>
+              <label class="full">Completion photos / attachments required before completing
+                <input name="completionPhotos" type="file" accept="image/*,.pdf" multiple data-worker-completion-photos>
+              </label>
+              <input type="hidden" name="existingCompletionPhotoNames" value="${escapeHtml(completionPhotoNames.join('|'))}">
             </div>
+            <p class="request-update-note">To mark a job completed, add completion notes and at least one photo/attachment. File names are saved for the work order record.</p>
             <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
           </form>
         </article>
       `;
+      };
 
       const renderClientProfile = (user) => {
         if (!user) return;
@@ -1507,17 +1537,48 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+      const getFilteredWorkerAssignments = () => currentWorkerAssignments.filter((assignment) => {
+        if (currentWorkerJobFilter === 'all') return true;
+        if (currentWorkerJobFilter === 'active') return !['completed', 'cancelled'].includes(assignment.status);
+        return assignment.status === currentWorkerJobFilter;
+      });
+
+      const renderWorkerJobs = () => {
+        const panelStatus = document.querySelector('[data-worker-jobs-status]');
+        const jobList = document.querySelector('[data-worker-job-list]');
+        if (!panelStatus || !jobList) return;
+        const filteredAssignments = getFilteredWorkerAssignments();
+        panelStatus.dataset.state = 'ready';
+        panelStatus.textContent = filteredAssignments.length
+          ? `${filteredAssignments.length} ${currentWorkerJobFilter === 'all' ? '' : currentWorkerJobFilter.replaceAll('_', ' ')} assigned job${filteredAssignments.length === 1 ? '' : 's'} loaded.`
+          : `No ${currentWorkerJobFilter === 'all' ? '' : currentWorkerJobFilter.replaceAll('_', ' ')} assigned jobs.`;
+        jobList.innerHTML = filteredAssignments.map(renderWorkerJobCard).join('');
+      };
+
       const bindWorkerJobActions = () => {
         const panel = document.querySelector('[data-worker-jobs]');
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
+        panel.querySelector('[data-worker-job-filter]')?.addEventListener('change', (event) => {
+          currentWorkerJobFilter = event.target.value;
+          renderWorkerJobs();
+        });
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-worker-job-form]');
           if (!form) return;
           event.preventDefault();
           const formStatus = form.querySelector('[data-worker-job-form-status]');
-          const payload = Object.fromEntries(new FormData(form).entries());
+          const formData = new FormData(form);
+          const payload = Object.fromEntries(formData.entries());
           payload.assignmentId = form.dataset.assignmentId;
+          const photoInput = form.querySelector('[data-worker-completion-photos]');
+          const selectedPhotoNames = [...(photoInput?.files || [])].map((file) => file.name).filter(Boolean);
+          const existingPhotoNames = String(formData.get('existingCompletionPhotoNames') || '').split('|').filter(Boolean);
+          payload.completionPhotoNames = [...new Set([...existingPhotoNames, ...selectedPhotoNames])];
+          if (payload.status === 'completed' && (!payload.completionNotes || payload.completionPhotoNames.length === 0)) {
+            if (formStatus) formStatus.textContent = 'Completion notes and at least one photo/attachment are required before completing work.';
+            return;
+          }
           if (formStatus) formStatus.textContent = 'Saving job update…';
           try {
             const response = await fetch('/api/worker/jobs', {
@@ -1544,10 +1605,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const response = await fetch('/api/worker/jobs', { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Assigned jobs are not available.');
-          const assignments = result.assignments || [];
-          panelStatus.dataset.state = 'ready';
-          panelStatus.textContent = assignments.length ? `${assignments.length} assigned job${assignments.length === 1 ? '' : 's'} loaded.` : 'No assigned jobs yet.';
-          jobList.innerHTML = assignments.map(renderWorkerJobCard).join('');
+          currentWorkerAssignments = result.assignments || [];
+          renderWorkerJobs();
           const openMetric = document.querySelector('[data-open-requests-metric]');
           if (openMetric && result.summary) openMetric.textContent = String(result.summary.assigned || 0);
           bindWorkerJobActions();

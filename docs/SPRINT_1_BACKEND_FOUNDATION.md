@@ -141,3 +141,9 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Admins can assign a worker from the request workspace with scheduled date/time and worker-facing notes.
 - Added `GET/PATCH /api/worker/jobs` so workers can load only their assigned jobs and update assignment status or worker notes.
 - The unified dashboard now includes a real worker assigned-jobs panel with schedule, address/access details, admin notes, and worker update controls.
+
+## Added in Sprint 1N
+
+- Worker assigned jobs now include a status filter dropdown for active, assigned, accepted, in-progress, blocked, completed, cancelled, and all jobs.
+- Worker completion updates require closeout notes and at least one photo/attachment filename before an assignment can be marked completed.
+- `0009_worker_completion_evidence.sql` adds completion notes, photo filename storage, and completion submission timestamps to worker assignments.
