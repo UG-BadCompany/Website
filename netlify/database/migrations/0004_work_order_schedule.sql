@@ -1,6 +1,4 @@
--- Restore the applied work-order schedule migration expected by Netlify Database.
--- These statements are intentionally idempotent because later migrations also
--- ensure the same schedule columns exist for fresh databases.
+-- Restore admin-managed work order schedule dates used in the dashboard.
 
 alter table job_requests
   add column if not exists estimated_start_date date,

@@ -67,3 +67,11 @@ test('migration validator keeps the applied 0004 work order schedule migration d
   assert.equal(files.includes('0004_work_order_schedule.sql'), true);
   assert.equal(warnings.some((warning) => warning.includes('0004_work_order_schedule.sql')), false);
 });
+
+test('restored applied 0004 schedule migration matches the known schedule migration body', async () => {
+  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
+  const appliedSchedule = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('0004_work_order_schedule.sql', migrationsDir), 'utf8'));
+  const currentSchedule = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('0006_job_request_schedule_dates.sql', migrationsDir), 'utf8'));
+
+  assert.equal(appliedSchedule, currentSchedule, '0004_work_order_schedule must keep the originally applied schedule migration body.');
+});
