@@ -1,21 +1,31 @@
 import { createHash } from 'node:crypto';
-import { readFile, readdir, unlink } from 'node:fs/promises';
+import { readFile, readdir, rename, unlink } from 'node:fs/promises';
 
-const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
+const MIGRATIONS_DIR = new URL('../netlify/database/manual-migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
 const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
 const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
 const STALE_CACHED_MIGRATIONS = new Set([
   LEGACY_CUSTOM_ROLE_MIGRATION,
+]);
+const REQUIRED_APPLIED_MIGRATIONS = new Set([
+  '0004_work_order_schedule.sql',
   '0009_completion_review_status.sql',
   '0009_quote_payment_completion_controls.sql',
+  '0009_worker_completion_evidence.sql',
   '0010_invoices_payments.sql',
+]);
+const RENAMED_APPLIED_MIGRATION_REPAIRS = new Map([
+  ['0011_completion_review_status.sql', '0009_completion_review_status.sql'],
+  ['0012_quote_payment_completion_controls.sql', '0009_quote_payment_completion_controls.sql'],
+  ['0013_invoices_payments.sql', '0010_invoices_payments.sql'],
+  ['0014_worker_completion_evidence.sql', '0009_worker_completion_evidence.sql'],
 ]);
 const APPLIED_MIGRATION_LOCKS = new Map([
   [
     '0004_work_order_schedule.sql',
     {
-      sha256: 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
+      sha256: 'f9cf4dc0988130a124df27bcdee45650b1162d1e555f761a0b8ef5ecbc67fd80',
       reason: 'Netlify Database already applied this migration; edit only by pulling the applied file or adding a later migration.',
     },
   ],
@@ -32,6 +42,25 @@ const sha256File = async (file) => createHash('sha256')
 const removeStaleCachedMigrations = async (files) => {
   const warnings = [];
   let repairedFiles = [...files];
+
+  for (const [renamedMigration, appliedMigration] of RENAMED_APPLIED_MIGRATION_REPAIRS.entries()) {
+    if (!repairedFiles.includes(renamedMigration)) {
+      continue;
+    }
+
+    if (repairedFiles.includes(appliedMigration)) {
+      await unlink(new URL(renamedMigration, MIGRATIONS_DIR));
+      repairedFiles = repairedFiles.filter((file) => file !== renamedMigration);
+      warnings.push(`Removed renamed copy ${renamedMigration}; ${appliedMigration} is the Netlify-applied migration name.`);
+      continue;
+    }
+
+    await rename(new URL(renamedMigration, MIGRATIONS_DIR), new URL(appliedMigration, MIGRATIONS_DIR));
+    repairedFiles = repairedFiles.filter((file) => file !== renamedMigration);
+    repairedFiles.push(appliedMigration);
+    repairedFiles.sort();
+    warnings.push(`Restored ${appliedMigration} from renamed ${renamedMigration}.`);
+  }
 
   for (const staleMigration of STALE_CACHED_MIGRATIONS) {
     if (!repairedFiles.includes(staleMigration)) {
@@ -82,11 +111,18 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     prefixes.set(prefix, existing);
   });
 
-  [...prefixes.entries()]
-    .filter(([, names]) => names.length > 1)
-    .forEach(([prefix, names]) => {
-      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-    });
+
+  for (const requiredMigration of REQUIRED_APPLIED_MIGRATIONS) {
+    if (!files.includes(requiredMigration)) {
+      errors.push(`${requiredMigration} must remain committed because Netlify Database has already applied it.`);
+    }
+  }
+
+  RENAMED_APPLIED_MIGRATION_REPAIRS.forEach((appliedMigration, renamedMigration) => {
+    if (files.includes(renamedMigration)) {
+      errors.push(`${renamedMigration} must not exist; Netlify Database already applied this migration under its original name.`);
+    }
+  });
 
   for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
     if (!files.includes(file)) {
