@@ -8,6 +8,19 @@ const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
 const STALE_CACHED_MIGRATIONS = new Set([
   LEGACY_CUSTOM_ROLE_MIGRATION,
 ]);
+const REQUIRED_APPLIED_MIGRATIONS = new Set([
+  '0004_work_order_schedule.sql',
+  '0009_completion_review_status.sql',
+  '0009_quote_payment_completion_controls.sql',
+  '0009_worker_completion_evidence.sql',
+  '0010_invoices_payments.sql',
+]);
+const RENAMED_APPLIED_MIGRATIONS = new Set([
+  '0011_completion_review_status.sql',
+  '0012_quote_payment_completion_controls.sql',
+  '0013_invoices_payments.sql',
+  '0014_worker_completion_evidence.sql',
+]);
 const APPLIED_MIGRATION_LOCKS = new Map([
   [
     '0004_work_order_schedule.sql',
@@ -79,6 +92,18 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     prefixes.set(prefix, existing);
   });
 
+
+  for (const requiredMigration of REQUIRED_APPLIED_MIGRATIONS) {
+    if (!files.includes(requiredMigration)) {
+      errors.push(`${requiredMigration} must remain committed because Netlify Database has already applied it.`);
+    }
+  }
+
+  RENAMED_APPLIED_MIGRATIONS.forEach((renamedMigration) => {
+    if (files.includes(renamedMigration)) {
+      errors.push(`${renamedMigration} must not exist; Netlify Database already applied this migration under its original name.`);
+    }
+  });
 
   for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
     if (!files.includes(file)) {

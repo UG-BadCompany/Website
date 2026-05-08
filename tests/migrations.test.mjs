@@ -13,6 +13,30 @@ test('Netlify Database migrations keep the applied production migration names', 
   assert.equal(files.includes('0009_quote_payment_completion_controls.sql'), true, 'Previously applied Netlify migration 0009_quote_payment_completion_controls must remain present.');
   assert.equal(files.includes('0009_worker_completion_evidence.sql'), true, 'Previously applied Netlify migration 0009_worker_completion_evidence must remain present.');
   assert.equal(files.includes('0010_invoices_payments.sql'), true, 'Previously applied Netlify migration 0010_invoices_payments must remain present.');
+  assert.equal(files.includes('0011_completion_review_status.sql'), false, 'Renamed copies of applied migrations must not be committed.');
+  assert.equal(files.includes('0012_quote_payment_completion_controls.sql'), false, 'Renamed copies of applied migrations must not be committed.');
+  assert.equal(files.includes('0013_invoices_payments.sql'), false, 'Renamed copies of applied migrations must not be committed.');
+  assert.equal(files.includes('0014_worker_completion_evidence.sql'), false, 'Renamed copies of applied migrations must not be committed.');
+});
+
+
+test('migration validator rejects renamed copies of applied migrations', async () => {
+  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
+  const renamedMigration = new URL('0011_completion_review_status.sql', migrationsDir);
+
+  await writeFile(renamedMigration, `-- renamed copy of an applied migration created by test\n`);
+
+  try {
+    const { errors } = await validateMigrationFiles();
+
+    assert.equal(
+      errors.some((error) => error.includes('0011_completion_review_status.sql must not exist')),
+      true,
+      'Validator should reject renamed copies of migrations Netlify already applied under the original name.',
+    );
+  } finally {
+    await rm(renamedMigration, { force: true });
+  }
 });
 
 
