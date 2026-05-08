@@ -16,6 +16,7 @@ const ADMIN_STATUSES = new Set([
   'scheduled',
   'in_progress',
   'pending_review',
+  'waiting_payment',
   'completed',
   'cancelled',
 ]);
@@ -195,7 +196,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
         set status = ${payload.status},
             admin_notes = ${payload.adminNotes || null},
             estimated_start_date = ${payload.estimatedStartDate || null},
-            completion_date = ${payload.status === 'completed' ? (payload.completionDate || new Date().toISOString().slice(0, 10)) : (payload.completionDate || null)},
+            completion_date = ${['waiting_payment', 'completed'].includes(payload.status) ? (payload.completionDate || new Date().toISOString().slice(0, 10)) : (payload.completionDate || null)},
             updated_at = now()
         where id = ${payload.jobRequestId}
         returning id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
@@ -203,6 +204,33 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
 
       if (!updatedRequest) {
         return json(404, { ok: false, authenticated: true, authorized: true, message: 'Job request not found.' });
+      }
+
+
+      let invoice = null;
+
+      if (payload.status === 'waiting_payment') {
+        const [quoteForInvoice] = await db.sql`
+          select id, client_id, title, amount_cents
+          from quotes
+          where job_request_id = ${updatedRequest.id}
+            and status in ('accepted', 'sent', 'viewed')
+          order by case when status = 'accepted' then 0 else 1 end, updated_at desc
+          limit 1
+        `;
+
+        [invoice] = await db.sql`
+          insert into invoices (job_request_id, client_id, quote_id, status, title, amount_cents, created_by)
+          values (${updatedRequest.id}, ${quoteForInvoice?.client_id || null}, ${quoteForInvoice?.id || null}, ${'open'}, ${quoteForInvoice?.title || `${updatedRequest.service_type || 'Service'} invoice`}, ${quoteForInvoice?.amount_cents || 0}, ${session.user_id})
+          on conflict (job_request_id) do update set
+            client_id = coalesce(invoices.client_id, excluded.client_id),
+            quote_id = coalesce(invoices.quote_id, excluded.quote_id),
+            status = case when invoices.status = 'paid' then invoices.status else 'open' end,
+            title = excluded.title,
+            amount_cents = excluded.amount_cents,
+            updated_at = now()
+          returning id, job_request_id, client_id, quote_id, status, title, amount_cents, created_at, updated_at
+        `;
       }
 
       let assignment = null;
@@ -230,7 +258,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
           ${assignment ? 'worker_assignment.assigned' : 'job_request.status_updated'},
           ${assignment ? 'worker_assignment' : 'job_request'},
           ${assignment ? assignment.id : updatedRequest.id},
-          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status, estimatedStartDate: payload.estimatedStartDate || null, completionDate: updatedRequest.completion_date || null, workerId: payload.workerId || null, jobRequestId: updatedRequest.id })}::jsonb
+          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status, estimatedStartDate: payload.estimatedStartDate || null, completionDate: updatedRequest.completion_date || null, invoiceId: invoice?.id || null, workerId: payload.workerId || null, jobRequestId: updatedRequest.id })}::jsonb
         )
       `;
 
@@ -240,6 +268,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
         authorized: true,
         request: mapJobRequest(updatedRequest),
         assignment,
+        invoice,
       });
     }
 
@@ -293,12 +322,14 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
     const jobRequests = await db.sql`
       select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
       from job_requests
+      where status <> 'completed'
       order by created_at desc
       limit 50
     `;
     const statusCounts = await db.sql`
       select status, count(*)::int as count
       from job_requests
+      where status <> 'completed'
       group by status
       order by status
     `;
@@ -316,13 +347,13 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
       from worker_assignments
       join app_users workers on workers.id = worker_assignments.worker_id
-      where worker_assignments.job_request_id in (select id from job_requests order by created_at desc limit 50)
+      where worker_assignments.job_request_id in (select id from job_requests where status <> 'completed' order by created_at desc limit 50)
       order by worker_assignments.created_at desc
     `;
     const quotes = await db.sql`
       select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
       from quotes
-      where job_request_id in (select id from job_requests order by created_at desc limit 50)
+      where job_request_id in (select id from job_requests where status <> 'completed' order by created_at desc limit 50)
       order by created_at desc
     `;
 

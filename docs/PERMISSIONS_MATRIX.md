@@ -49,6 +49,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/client/job-requests` | Yes | `client` or `admin` | Returns job requests and property summaries scoped to the signed-in client account. |
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
 | `PATCH /api/client/job-requests` | Yes | `client` or `admin` | Updates owned property/request details and lets clients approve work in `pending_review`. |
+| `GET /api/client/invoices` | Yes | `client` or `admin` | Returns unpaid invoices scoped to the signed-in client account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
 | `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
@@ -57,6 +58,8 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
 | `POST /api/admin/quotes` | Yes | `admin` | Creates the first draft/sent quote for an existing client-linked job request. |
 | `PATCH /api/admin/quotes` | Yes | `admin` | Edits an existing saved quote from the open work request. |
+| `GET /api/admin/invoices` | Yes | `admin` | Lists open invoices waiting payment confirmation. |
+| `PATCH /api/admin/invoices` | Yes | `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |

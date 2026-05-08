@@ -149,3 +149,10 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Clients can approve pending completed work from their own request list, which marks the request `completed`.
 - Dashboard copy now uses production-facing language and removes the implementation detail/secure gate placeholder card.
 - Profile editing is bound for signed-in users beyond client-only dashboards, and dashboard view switching is restricted to admins.
+
+## Added in Sprint 1O
+
+- Added invoice and payment storage so admin-verified completed work moves into `waiting_payment` and opens a matching invoice.
+- Added client invoice viewing for unpaid invoices; paid invoices remain in the database but leave the active dashboard.
+- Added admin invoice/payment APIs and dashboard controls for confirming payment, which records a payment row and moves the job request to `completed`.
+- Active client/admin request dashboards now exclude completed paid work while preserving records in the system.

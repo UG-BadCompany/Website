@@ -65,6 +65,7 @@
                     <option value="scheduled">Scheduled</option>
                     <option value="in_progress">In progress</option>
                     <option value="pending_review">Pending review</option>
+                    <option value="waiting_payment">Waiting payment</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
@@ -79,7 +80,7 @@
                   <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
                 </label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Mark completed today</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Verify complete / waiting payment</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-quote-form>
               <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
@@ -212,6 +213,13 @@
           </form>
         </section>
       </div>
+    </section>
+
+    <section class="card admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Payments waiting</strong>
+      <p>Completed work that has been verified moves here until payment is confirmed.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-quote-list" data-admin-invoice-list></div>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
@@ -359,6 +367,13 @@
       <div class="client-quote-list" data-client-quote-list></div>
     </section>
 
+
+    <section class="card client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
+      <strong>My invoices &amp; payments</strong>
+      <p>Invoices waiting for payment confirmation will appear here. Paid invoices are kept in the system but removed from this dashboard.</p>
+      <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
+      <div class="client-quote-list" data-client-invoice-list></div>
+    </section>
 
     <section class="card worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
@@ -513,6 +528,32 @@
           </div>
           ${quote.summary ? `<p>${escapeHtml(quote.summary)}</p>` : ''}
           ${['sent', 'viewed'].includes(quote.status) ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-quote-action="accept" data-quote-id="${escapeHtml(quote.id)}">Approve quote</button><button class="btn btn-danger" type="button" data-quote-action="decline" data-quote-id="${escapeHtml(quote.id)}">Deny quote</button></div>` : ''}
+        </article>
+      `;
+
+      const renderClientInvoiceCard = (invoice) => `
+        <article class="client-quote">
+          <span class="client-quote-badge">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
+          <strong>${escapeHtml(invoice.title || 'Invoice')} — ${formatMoney(invoice.amountCents)}</strong>
+          <div class="client-quote-meta">
+            <span>${escapeHtml(invoice.jobRequest?.serviceType || 'Completed work')}</span>
+            <span>${escapeHtml(invoice.jobRequest?.streetAddress || 'No address')}</span>
+            <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
+          </div>
+          <p>Payment is waiting for admin confirmation. Paid invoices stay in your records but leave this dashboard.</p>
+        </article>
+      `;
+
+      const renderAdminInvoiceCard = (invoice) => `
+        <article class="client-quote">
+          <span class="client-quote-badge">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
+          <strong>${escapeHtml(invoice.title || 'Invoice')} — ${formatMoney(invoice.amountCents)}</strong>
+          <div class="client-quote-meta">
+            <span>${escapeHtml(invoice.client?.fullName || invoice.client?.email || 'Client')}</span>
+            <span>${escapeHtml(invoice.jobRequest?.serviceType || 'Completed work')}</span>
+            <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
+          </div>
+          <div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${invoice.amountCents || 0}">Confirm payment</button></div>
         </article>
       `;
 
@@ -768,6 +809,32 @@
           }
 
           renderClientQuoteData(result);
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const renderClientInvoiceData = (result) => {
+        const panelStatus = document.querySelector('[data-client-invoices-status]');
+        const invoiceList = document.querySelector('[data-client-invoice-list]');
+        if (!panelStatus || !invoiceList) return;
+        const invoices = result.invoices || [];
+        panelStatus.dataset.state = 'ready';
+        panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} waiting payment confirmation.` : 'No open invoices waiting for payment.';
+        invoiceList.innerHTML = invoices.map(renderClientInvoiceCard).join('');
+      };
+
+      const loadClientInvoices = async () => {
+        const panel = document.querySelector('[data-client-invoices]');
+        const panelStatus = document.querySelector('[data-client-invoices-status]');
+        const invoiceList = document.querySelector('[data-client-invoice-list]');
+        if (!panel || !panelStatus || !invoiceList) return;
+        try {
+          const response = await fetch('/api/client/invoices', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Your invoices are not available.');
+          renderClientInvoiceData(result);
         } catch (error) {
           panelStatus.dataset.state = 'error';
           panelStatus.textContent = error.message;
@@ -1125,7 +1192,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           statusForm.querySelector('[data-admin-mark-complete]')?.addEventListener('click', () => {
             const statusSelect = statusForm.querySelector('[data-admin-status-select]');
             const completionDate = statusForm.querySelector('[data-admin-completion-date]');
-            if (statusSelect) statusSelect.value = 'completed';
+            if (statusSelect) statusSelect.value = 'waiting_payment';
             if (completionDate && !completionDate.value) completionDate.value = new Date().toISOString().slice(0, 10);
           });
           statusForm.querySelector('[data-admin-delete-request]')?.addEventListener('click', async () => {
@@ -1547,6 +1614,54 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+      const bindAdminInvoiceActions = () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-admin-confirm-payment]');
+          if (!button) return;
+          button.disabled = true;
+          const status = document.querySelector('[data-admin-invoices-status]');
+          if (status) status.textContent = 'Confirming payment…';
+          try {
+            const response = await fetch('/api/admin/invoices', {
+              method: 'PATCH',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({ invoiceId: button.dataset.adminConfirmPayment, amountCents: Number(button.dataset.adminPaymentAmount || 0), method: 'manual' }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not confirm payment.');
+            await loadAdminInvoices();
+            await loadAdminRequests();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          } finally {
+            button.disabled = false;
+          }
+        });
+      };
+
+      const loadAdminInvoices = async () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const invoiceList = document.querySelector('[data-admin-invoice-list]');
+        if (!panel || !status || !invoiceList) return;
+        try {
+          const response = await fetch('/api/admin/invoices', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Open invoices are not available.');
+          const invoices = result.invoices || [];
+          status.dataset.state = 'ready';
+          status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} waiting payment confirmation.` : 'No open invoices waiting for payment.';
+          invoiceList.innerHTML = invoices.map(renderAdminInvoiceCard).join('');
+          bindAdminInvoiceActions();
+        } catch (error) {
+          status.dataset.state = 'error';
+          status.textContent = error.message;
+        }
+      };
+
       const bindWorkerJobActions = () => {
         const panel = document.querySelector('[data-worker-jobs]');
         if (!panel || panel.dataset.bound) return;
@@ -1684,6 +1799,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             bindQuoteDecisionActions();
             loadClientRequests();
             loadClientQuotes();
+            loadClientInvoices();
           }
 
           if (result.user.permissions?.canViewWorkerTools) {
@@ -1693,6 +1809,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
           }
 
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {

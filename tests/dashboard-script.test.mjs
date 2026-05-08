@@ -32,6 +32,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /Secure portal gate/, 'dashboard should not show implementation placeholder cards');
   assert.doesNotMatch(html, /Use one magic-link sign-in/, 'dashboard hero should use production-facing copy');
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
+  assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
+  assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
@@ -42,6 +44,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const approveClientCompletion =/, 'clients should have completed-work approval handler');
   assert.match(script, /quoteMethod = payload.quoteId \? 'PATCH' : 'POST'/, 'saved quotes should be edited instead of recreated');
   assert.match(script, /canSwitchDashboardView && \(user\.roles \|\| \[\]\)\.includes\('admin'\)/, 'role view tabs should be admin-only');
+  assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
+  assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
+  assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
   assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
