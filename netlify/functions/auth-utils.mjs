@@ -12,6 +12,7 @@ export const PORTAL_PERMISSIONS = [
   { key: 'client.requests.manage', label: 'Client request management', description: 'Create and view own client job requests.' },
   { key: 'client.quotes.manage', label: 'Client quote decisions', description: 'View, accept, and decline own quotes.' },
   { key: 'worker.tools', label: 'Worker dashboard tools', description: 'View worker dashboard sections and assigned job tools.' },
+  { key: 'worker.jobs.manage', label: 'Worker assigned jobs', description: 'View and update assigned worker jobs.' },
   { key: 'admin.tools', label: 'Admin dashboard tools', description: 'View admin dashboard sections.' },
   { key: 'admin.requests.manage', label: 'Admin request management', description: 'View and update all job requests.' },
   { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
@@ -24,7 +25,7 @@ export const ALL_PERMISSION_KEYS = PORTAL_PERMISSIONS.map((permission) => permis
 
 export const DEFAULT_ROLE_PERMISSIONS = {
   client: ['client.tools', 'client.requests.manage', 'client.quotes.manage'],
-  worker: ['worker.tools'],
+  worker: ['worker.tools', 'worker.jobs.manage'],
   admin: ALL_PERMISSION_KEYS,
 };
 

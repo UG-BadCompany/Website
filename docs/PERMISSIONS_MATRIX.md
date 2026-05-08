@@ -50,8 +50,10 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
+| `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
+| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status and worker notes for an assigned job; workers are scoped to their own assignments. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
-| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status and internal admin notes from the admin work panel. |
+| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
 | `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |

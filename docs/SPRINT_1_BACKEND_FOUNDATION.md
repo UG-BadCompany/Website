@@ -134,3 +134,10 @@ Client onboarding should start from Request Work, which creates or updates the c
 - The Admin roles & users panel no longer renders every user by default; admins search by name, email, phone, company, or role before opening a user.
 - User role editing now happens in a focused popup workspace after selecting a search result.
 - Role creation and editing now open from a New role/Edit role button into a focused popup workspace instead of keeping the role form always visible.
+
+## Added in Sprint 1M
+
+- Added `netlify/database/migrations/0008_worker_assignments.sql` with the `worker_assignments` table for assigning scheduled job requests to worker users.
+- Admins can assign a worker from the request workspace with scheduled date/time and worker-facing notes.
+- Added `GET/PATCH /api/worker/jobs` so workers can load only their assigned jobs and update assignment status or worker notes.
+- The unified dashboard now includes a real worker assigned-jobs panel with schedule, address/access details, admin notes, and worker update controls.

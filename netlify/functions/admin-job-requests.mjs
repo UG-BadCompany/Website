@@ -41,6 +41,11 @@ const normalizeStatusPayload = (body = {}) => ({
   adminNotes: clean(body.adminNotes, 4000),
   estimatedStartDate: normalizeOptionalDate(body.estimatedStartDate),
   completionDate: normalizeOptionalDate(body.completionDate),
+  workerId: clean(body.workerId, 80),
+  assignmentNotes: clean(body.assignmentNotes, 2000),
+  scheduledDate: normalizeOptionalDate(body.scheduledDate),
+  startTime: clean(body.startTime, 40),
+  endTime: clean(body.endTime, 40),
 });
 
 const normalizeDeletePayload = (body = {}) => ({
@@ -59,6 +64,29 @@ const mapDate = (value) => {
 
   return String(value).slice(0, 10);
 };
+
+const mapWorker = (worker) => ({
+  id: worker.id,
+  fullName: worker.full_name,
+  email: worker.email,
+  phone: worker.phone,
+});
+
+const mapAssignment = (assignment) => ({
+  id: assignment.id,
+  jobRequestId: assignment.job_request_id,
+  workerId: assignment.worker_id,
+  workerName: assignment.worker_full_name,
+  workerEmail: assignment.worker_email,
+  status: assignment.status,
+  scheduledDate: mapDate(assignment.scheduled_date),
+  startTime: assignment.start_time,
+  endTime: assignment.end_time,
+  notes: assignment.notes,
+  workerNotes: assignment.worker_notes,
+  createdAt: assignment.created_at,
+  updatedAt: assignment.updated_at,
+});
 
 const mapJobRequest = (request) => ({
   id: request.id,
@@ -143,9 +171,10 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
 
       const estimatedStartError = validateOptionalDate(payload.estimatedStartDate, 'Estimated start date');
       const completionDateError = validateOptionalDate(payload.completionDate, 'Completion date');
+      const scheduledDateError = validateOptionalDate(payload.scheduledDate, 'Scheduled worker date');
 
-      if (estimatedStartError || completionDateError) {
-        return json(422, { ok: false, message: estimatedStartError || completionDateError });
+      if (estimatedStartError || completionDateError || scheduledDateError) {
+        return json(422, { ok: false, message: estimatedStartError || completionDateError || scheduledDateError });
       }
 
       const [updatedRequest] = await db.sql`
@@ -163,14 +192,32 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
         return json(404, { ok: false, authenticated: true, authorized: true, message: 'Job request not found.' });
       }
 
+      let assignment = null;
+
+      if (payload.workerId) {
+        [assignment] = await db.sql`
+          insert into worker_assignments (job_request_id, worker_id, assigned_by_user_id, status, scheduled_date, start_time, end_time, notes)
+          values (${updatedRequest.id}, ${payload.workerId}, ${session.user_id}, ${'assigned'}, ${payload.scheduledDate || payload.estimatedStartDate || null}, ${payload.startTime || null}, ${payload.endTime || null}, ${payload.assignmentNotes || null})
+          on conflict (job_request_id, worker_id) do update set
+            assigned_by_user_id = excluded.assigned_by_user_id,
+            status = case when worker_assignments.status in ('completed', 'cancelled') then worker_assignments.status else excluded.status end,
+            scheduled_date = excluded.scheduled_date,
+            start_time = excluded.start_time,
+            end_time = excluded.end_time,
+            notes = excluded.notes,
+            updated_at = now()
+          returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
+        `;
+      }
+
       await db.sql`
         insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
         values (
           ${session.user_id},
-          ${'job_request.status_updated'},
-          ${'job_request'},
-          ${updatedRequest.id},
-          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status, estimatedStartDate: payload.estimatedStartDate || null, completionDate: updatedRequest.completion_date || null })}::jsonb
+          ${assignment ? 'worker_assignment.assigned' : 'job_request.status_updated'},
+          ${assignment ? 'worker_assignment' : 'job_request'},
+          ${assignment ? assignment.id : updatedRequest.id},
+          ${JSON.stringify({ source: 'admin_dashboard', status: payload.status, estimatedStartDate: payload.estimatedStartDate || null, completionDate: updatedRequest.completion_date || null, workerId: payload.workerId || null, jobRequestId: updatedRequest.id })}::jsonb
         )
       `;
 
@@ -179,6 +226,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
         authenticated: true,
         authorized: true,
         request: mapJobRequest(updatedRequest),
+        assignment,
       });
     }
 
@@ -241,6 +289,23 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       group by status
       order by status
     `;
+    const workers = await db.sql`
+      select app_users.id, app_users.full_name, app_users.email, app_users.phone
+      from app_users
+      join user_roles on user_roles.user_id = app_users.id
+      join roles on roles.id = user_roles.role_id
+      where roles.key = ${'worker'}
+        and app_users.is_active = true
+      order by app_users.full_name nulls last, app_users.email
+      limit 100
+    `;
+    const assignments = await db.sql`
+      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+      from worker_assignments
+      join app_users workers on workers.id = worker_assignments.worker_id
+      where worker_assignments.job_request_id in (select id from job_requests order by created_at desc limit 50)
+      order by worker_assignments.created_at desc
+    `;
 
     return json(200, {
       ok: true,
@@ -254,6 +319,8 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       },
       requests: jobRequests.map(mapJobRequest),
       statusCounts: Object.fromEntries(statusCounts.map((row) => [row.status, row.count])),
+      workers: workers.map(mapWorker),
+      assignments: assignments.map(mapAssignment),
     });
   } catch (error) {
     console.error('Failed to load admin job requests', error);

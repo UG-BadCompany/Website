@@ -171,3 +171,65 @@ test('admin job request endpoint permanently deletes requests after confirmation
   assert.deepEqual(db.queries[3].values, ['job-1']);
   assert.match(db.queries[4].text, /insert into audit_events/);
 });
+
+test('admin job request endpoint assigns workers while scheduling a request', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'job-1',
+      status: 'scheduled',
+      requester_name: 'Jane Customer',
+      requester_email: 'jane@example.com',
+      requester_phone: '555-0100',
+      city: 'Mesa',
+      service_type: 'Fixture work',
+      preferred_timeframe: 'Morning',
+      description: 'Install fan.',
+      admin_notes: 'Assign installer.',
+      estimated_start_date: '2026-05-13',
+      completion_date: null,
+      created_at: '2026-05-07T00:00:00.000Z',
+      updated_at: '2026-05-08T00:00:00.000Z',
+    }],
+    [{
+      id: 'assignment-1',
+      job_request_id: 'job-1',
+      worker_id: 'worker-1',
+      status: 'assigned',
+      scheduled_date: '2026-05-13',
+      start_time: '09:00',
+      end_time: '11:00',
+      notes: 'Bring ladder.',
+      worker_notes: null,
+      created_at: '2026-05-08T00:00:00.000Z',
+      updated_at: '2026-05-08T00:00:00.000Z',
+    }],
+    [],
+  ]);
+  const handler = createAdminJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jobRequestId: 'job-1',
+      status: 'scheduled',
+      adminNotes: 'Assign installer.',
+      estimatedStartDate: '2026-05-13',
+      workerId: 'worker-1',
+      scheduledDate: '2026-05-13',
+      startTime: '09:00',
+      endTime: '11:00',
+      assignmentNotes: 'Bring ladder.',
+    }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.request.status, 'scheduled');
+  assert.equal(response.body.assignment.id, 'assignment-1');
+  assert.match(db.queries[4].text, /insert into worker_assignments/);
+  assert.match(db.queries[4].text, /on conflict \(job_request_id, worker_id\)/);
+  assert.deepEqual(db.queries[4].values.slice(0, 8), ['job-1', 'worker-1', 'admin-1', 'assigned', '2026-05-13', '09:00', '11:00', 'Bring ladder.']);
+  assert.equal(db.queries[5].values[1], 'worker_assignment.assigned');
+});
