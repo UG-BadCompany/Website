@@ -138,7 +138,7 @@ test('worker jobs endpoint lets workers update their assigned job status and not
   assert.equal(response.body.assignment.workerNotes, 'Started prep and confirmed parts.');
   assert.match(db.queries[4].text, /update worker_assignments/);
   assert.match(db.queries[4].text, /and worker_id = \?/);
-  assert.deepEqual(db.queries[4].values, ['in_progress', 'Started prep and confirmed parts.', null, '[]', 'in_progress', 'assignment-1', 'worker-1']);
+  assert.deepEqual(db.queries[4].values, ['in_progress', 'Started prep and confirmed parts.', null, '[]', null, '[]', 'in_progress', 'assignment-1', 'worker-1']);
   assert.equal(db.queries[5].values[1], 'worker_assignment.updated');
 });
 
@@ -178,6 +178,8 @@ test('worker jobs endpoint stores completion notes and photo names when completi
       end_time: '11:00',
       notes: 'Use side gate.',
       worker_notes: 'Finished install.',
+      material_notes: 'Two fan boxes, wire nuts, mounting screws.',
+      checklist_items: ['Turned off breaker', 'Mounted fan', 'Tested switch'],
       completion_notes: 'Installed and tested both fans.',
       completion_photo_names: ['before.jpg', 'after.jpg'],
       completion_submitted_at: '2026-05-13T19:00:00.000Z',
@@ -194,6 +196,8 @@ test('worker jobs endpoint stores completion notes and photo names when completi
       assignmentId: 'assignment-1',
       status: 'completed',
       workerNotes: 'Finished install.',
+      materialNotes: 'Two fan boxes, wire nuts, mounting screws.',
+      checklistItems: ['Turned off breaker', 'Mounted fan', 'Tested switch'],
       completionNotes: 'Installed and tested both fans.',
       completionPhotoNames: ['before.jpg', 'after.jpg'],
     }),
@@ -201,8 +205,10 @@ test('worker jobs endpoint stores completion notes and photo names when completi
 
   assert.equal(response.status, 200);
   assert.equal(response.body.assignment.status, 'completed');
+  assert.equal(response.body.assignment.materialNotes, 'Two fan boxes, wire nuts, mounting screws.');
+  assert.deepEqual(response.body.assignment.checklistItems, ['Turned off breaker', 'Mounted fan', 'Tested switch']);
   assert.equal(response.body.assignment.completionNotes, 'Installed and tested both fans.');
   assert.deepEqual(response.body.assignment.completionPhotoNames, ['before.jpg', 'after.jpg']);
   assert.match(db.queries[4].text, /completion_notes/);
-  assert.deepEqual(db.queries[4].values.slice(0, 5), ['completed', 'Finished install.', 'Installed and tested both fans.', '["before.jpg","after.jpg"]', 'completed']);
+  assert.deepEqual(db.queries[4].values.slice(0, 7), ['completed', 'Finished install.', 'Two fan boxes, wire nuts, mounting screws.', '["Turned off breaker","Mounted fan","Tested switch"]', 'Installed and tested both fans.', '["before.jpg","after.jpg"]', 'completed']);
 });

@@ -7,7 +7,7 @@
   <meta name="description" content="Secure dashboard placeholder for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.worker-filter-toolbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin:18px 0;padding:16px;border:2px solid rgba(173,63,24,.18);border-radius:20px;background:#fff}.worker-filter-toolbar label{display:grid;gap:7px;color:var(--muted);font-weight:950}.worker-filter-toolbar select{min-width:230px;border:1px solid var(--line);border-radius:14px;padding:12px;font:inherit;background:#fffaf4}.worker-filter-count{font-weight:950;color:var(--rust)}.worker-evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.worker-evidence-grid div{padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
   </style>
 </head>
 <body>
@@ -359,21 +359,66 @@
 
     <section class="card worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
-      <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
-      <label class="client-request-form" data-worker-filter-control>Show jobs
-        <select data-worker-job-filter aria-label="Filter worker jobs by status">
-          <option value="active">Active</option>
-          <option value="assigned">Assigned</option>
-          <option value="accepted">Accepted</option>
-          <option value="in_progress">In progress</option>
-          <option value="blocked">Blocked</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="all">All statuses</option>
-        </select>
-      </label>
+      <p>Use the status dropdown to switch this page between active, completed, cancelled, or a specific work-order status. Open any work order to add notes, checklist items, materials, and completion photos/attachments.</p>
+      <div class="worker-filter-toolbar" data-worker-filter-control>
+        <label>Show work orders by status
+          <select data-worker-job-filter aria-label="Filter worker jobs by status">
+            <option value="active">Active work orders</option>
+            <option value="assigned">Assigned</option>
+            <option value="accepted">Accepted</option>
+            <option value="in_progress">In progress</option>
+            <option value="blocked">Blocked</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="all">All statuses</option>
+          </select>
+        </label>
+        <span class="worker-filter-count" data-worker-filter-count>0 shown</span>
+      </div>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
       <div class="worker-job-list" data-worker-job-list></div>
+      <div class="admin-request-modal" data-worker-job-modal role="dialog" aria-modal="true" aria-labelledby="worker-job-modal-title" hidden>
+        <section class="admin-request-modal-panel">
+          <div class="admin-request-modal-header">
+            <div><strong id="worker-job-modal-title" data-worker-job-modal-title>Work order</strong><p data-worker-job-modal-summary>Update this work order before closing it out.</p></div>
+            <button class="btn btn-soft admin-request-modal-close" type="button" data-worker-job-modal-close aria-label="Close work order">×</button>
+          </div>
+          <form class="client-request-form" data-worker-job-form>
+            <input type="hidden" name="assignmentId" data-worker-job-edit-id>
+            <input type="hidden" name="existingCompletionPhotoNames" data-worker-existing-completion-photo-names>
+            <div class="worker-evidence-grid" data-worker-job-evidence-summary></div>
+            <div class="client-request-form-grid">
+              <label>Status
+                <select name="status" data-worker-job-status>
+                  <option value="assigned">Assigned</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </label>
+              <label class="full">Worker notes
+                <textarea name="workerNotes" data-worker-notes placeholder="Progress, access updates, blockers, or extra job notes."></textarea>
+              </label>
+              <label class="full">Checklist items completed / still needed
+                <textarea name="checklistItemsText" data-worker-checklist-items placeholder="One checklist item per line, such as: Turn off breaker, install fan, test switches."></textarea>
+              </label>
+              <label class="full">Materials / parts used or needed
+                <textarea name="materialNotes" data-worker-material-notes placeholder="List materials, parts, supplies, receipts, or anything admin should know."></textarea>
+              </label>
+              <label class="full">Completion notes required before completing
+                <textarea name="completionNotes" data-worker-completion-notes placeholder="Describe the completed work, cleanup, testing, and client/admin follow-up."></textarea>
+              </label>
+              <label class="full">Completion photos / attachments required before completing
+                <input name="completionPhotos" type="file" accept="image/*,.pdf" multiple data-worker-completion-photos>
+              </label>
+            </div>
+            <p class="request-update-note">To mark a work order completed, add completion notes and at least one photo/attachment. File names are saved to the work order record.</p>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save work order update</button><span data-worker-job-form-status aria-live="polite"></span></div>
+          </form>
+        </section>
+      </div>
     </section>
 
     <section class="tools" aria-label="Role based dashboard tools">
@@ -556,7 +601,13 @@
 
       const renderWorkerJobCard = (assignment) => {
         const completionPhotoNames = assignment.completionPhotoNames || [];
-        const completionPhotoList = completionPhotoNames.length ? `<p><strong>Completion photos:</strong> ${escapeHtml(completionPhotoNames.join(', '))}</p>` : '';
+        const checklistItems = assignment.checklistItems || [];
+        const activeEvidence = [
+          assignment.workerNotes ? 'notes' : '',
+          assignment.materialNotes ? 'materials' : '',
+          checklistItems.length ? `${checklistItems.length} checklist` : '',
+          completionPhotoNames.length ? `${completionPhotoNames.length} attachment${completionPhotoNames.length === 1 ? '' : 's'}` : '',
+        ].filter(Boolean).join(' • ') || 'No worker evidence yet';
 
         return `
         <article class="worker-job">
@@ -571,34 +622,8 @@
           <p>${escapeHtml(assignment.jobRequest?.description || 'No job details yet.')}</p>
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
-          ${assignment.completionNotes ? `<p><strong>Completion notes:</strong> ${escapeHtml(assignment.completionNotes)}</p>` : ''}
-          ${completionPhotoList}
-          <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}">
-            <div class="client-request-form-grid">
-              <label>Status
-                <select name="status" data-worker-job-status>
-                  <option value="assigned" ${assignment.status === 'assigned' ? 'selected' : ''}>Assigned</option>
-                  <option value="accepted" ${assignment.status === 'accepted' ? 'selected' : ''}>Accepted</option>
-                  <option value="in_progress" ${assignment.status === 'in_progress' ? 'selected' : ''}>In progress</option>
-                  <option value="blocked" ${assignment.status === 'blocked' ? 'selected' : ''}>Blocked</option>
-                  <option value="completed" ${assignment.status === 'completed' ? 'selected' : ''}>Completed</option>
-                  <option value="cancelled" ${assignment.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                </select>
-              </label>
-              <label class="full">Worker notes
-                <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
-              </label>
-              <label class="full">Completion notes required before completing
-                <textarea name="completionNotes" data-worker-completion-notes placeholder="Describe the completed work, materials used, cleanup notes, and anything the client/admin should review.">${escapeHtml(assignment.completionNotes || '')}</textarea>
-              </label>
-              <label class="full">Completion photos / attachments required before completing
-                <input name="completionPhotos" type="file" accept="image/*,.pdf" multiple data-worker-completion-photos>
-              </label>
-              <input type="hidden" name="existingCompletionPhotoNames" value="${escapeHtml(completionPhotoNames.join('|'))}">
-            </div>
-            <p class="request-update-note">To mark a job completed, add completion notes and at least one photo/attachment. File names are saved for the work order record.</p>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
-          </form>
+          <p><strong>Worker evidence:</strong> ${escapeHtml(activeEvidence)}</p>
+          <div class="client-quote-actions"><button class="btn btn-primary" type="button" data-worker-open-job="${escapeHtml(assignment.id)}">Open work order</button></div>
         </article>
       `;
       };
@@ -1537,6 +1562,36 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+      const closeWorkerJobModal = () => setModalOpen(document.querySelector('[data-worker-job-modal]'), false);
+
+      const openWorkerJobModal = (assignmentId) => {
+        const assignment = currentWorkerAssignments.find((item) => item.id === assignmentId);
+        if (!assignment) return;
+        const completionPhotoNames = assignment.completionPhotoNames || [];
+        const checklistItems = assignment.checklistItems || [];
+        document.querySelector('[data-worker-job-edit-id]').value = assignment.id;
+        document.querySelector('[data-worker-job-status]').value = assignment.status || 'assigned';
+        document.querySelector('[data-worker-notes]').value = assignment.workerNotes || '';
+        document.querySelector('[data-worker-material-notes]').value = assignment.materialNotes || '';
+        document.querySelector('[data-worker-checklist-items]').value = checklistItems.join('\n');
+        document.querySelector('[data-worker-completion-notes]').value = assignment.completionNotes || '';
+        document.querySelector('[data-worker-existing-completion-photo-names]').value = completionPhotoNames.join('|');
+        document.querySelector('[data-worker-job-modal-title]').textContent = assignment.jobRequest?.serviceType || 'Work order';
+        document.querySelector('[data-worker-job-modal-summary]').textContent = `${assignment.jobRequest?.city || 'No city'} • ${assignment.jobRequest?.property?.street || assignment.jobRequest?.streetAddress || 'No address'} • ${assignment.scheduledDate ? formatDate(assignment.scheduledDate) : 'No scheduled date'}`;
+        const evidenceSummary = document.querySelector('[data-worker-job-evidence-summary]');
+        if (evidenceSummary) {
+          evidenceSummary.innerHTML = [
+            ['Status', (assignment.status || 'assigned').replaceAll('_', ' ')],
+            ['Attachments', completionPhotoNames.length ? completionPhotoNames.join(', ') : 'None yet'],
+            ['Checklist', checklistItems.length ? `${checklistItems.length} item${checklistItems.length === 1 ? '' : 's'}` : 'No checklist yet'],
+          ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+        }
+        const formStatus = document.querySelector('[data-worker-job-form-status]');
+        if (formStatus) formStatus.textContent = '';
+        setModalOpen(document.querySelector('[data-worker-job-modal]'), true);
+        document.querySelector('[data-worker-job-status]')?.focus();
+      };
+
       const getFilteredWorkerAssignments = () => currentWorkerAssignments.filter((assignment) => {
         if (currentWorkerJobFilter === 'all') return true;
         if (currentWorkerJobFilter === 'active') return !['completed', 'cancelled'].includes(assignment.status);
@@ -1563,6 +1618,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
           currentWorkerJobFilter = event.target.value;
           renderWorkerJobs();
         });
+        panel.addEventListener('click', (event) => {
+          const openButton = event.target.closest('[data-worker-open-job]');
+          if (openButton) openWorkerJobModal(openButton.dataset.workerOpenJob);
+          if (event.target === document.querySelector('[data-worker-job-modal]') || event.target.closest('[data-worker-job-modal-close]')) closeWorkerJobModal();
+        });
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-worker-job-form]');
           if (!form) return;
@@ -1570,7 +1630,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const formStatus = form.querySelector('[data-worker-job-form-status]');
           const formData = new FormData(form);
           const payload = Object.fromEntries(formData.entries());
-          payload.assignmentId = form.dataset.assignmentId;
+          payload.assignmentId = form.querySelector('[data-worker-job-edit-id]')?.value || payload.assignmentId;
+          payload.checklistItems = String(formData.get('checklistItemsText') || '').split('\n').map((item) => item.trim()).filter(Boolean);
           const photoInput = form.querySelector('[data-worker-completion-photos]');
           const selectedPhotoNames = [...(photoInput?.files || [])].map((file) => file.name).filter(Boolean);
           const existingPhotoNames = String(formData.get('existingCompletionPhotoNames') || '').split('|').filter(Boolean);
@@ -1588,7 +1649,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.ok) throw new Error(result.message || 'We could not update that assigned job.');
-            if (formStatus) formStatus.textContent = 'Job updated.';
+            if (formStatus) formStatus.textContent = 'Work order updated.';
+            closeWorkerJobModal();
             await loadWorkerJobs();
           } catch (error) {
             if (formStatus) formStatus.textContent = error.message;

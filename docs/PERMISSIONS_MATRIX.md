@@ -28,7 +28,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 ## Dashboard behavior
 
 - Clients see only their own properties, requests, quotes, invoices, payments, files, and messages.
-- Workers see assigned jobs, job notes, checklists, access details, materials, status filters, and completion photo/attachment evidence tools.
+- Workers see assigned jobs, status filters, pop-out work orders, job notes, checklists, access details, material/parts notes, and completion photo/attachment evidence tools.
 - Admins see every operational tool.
 - Multi-role users can either see combined tools or a role switcher, depending on final UX preference.
 
@@ -51,7 +51,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
 | `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
-| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status, worker notes, and required completion notes/photo evidence for an assigned job; workers are scoped to their own assignments. |
+| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status, worker notes, checklist items, material notes, and required completion notes/photo evidence for an assigned job; workers are scoped to their own assignments. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
 | `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
 | `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
