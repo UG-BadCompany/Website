@@ -18,7 +18,7 @@
         <div>
           <span class="eyebrow">Secure Client Portal</span>
           <h1>Your dashboard opens after secure portal access.</h1>
-          <p>Use one magic-link sign-in to load your profile, roles, permissions, requests, properties, and quotes. The dashboard only reveals tools after /api/me confirms a verified session.</p>
+          <p>Manage your requests, quotes, profile, schedule, and assigned work from one secure dashboard.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
@@ -64,6 +64,7 @@
                     <option value="accepted">Accepted</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="in_progress">In progress</option>
+                    <option value="pending_review">Pending review</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
@@ -82,6 +83,8 @@
             </form>
             <form data-admin-quote-form>
               <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
+              <input type="hidden" name="quoteId" data-admin-quote-id>
+              <strong data-admin-quote-form-title>Create quote</strong>
               <div class="client-request-form-grid">
                 <label>Quote title
                   <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
@@ -94,7 +97,7 @@
                 </label>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-assignment-form>
               <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -367,7 +370,6 @@
     <section class="tools" aria-label="Role based dashboard tools">
       <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
       <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
-      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>/api/me now verifies the magic-link session before role-scoped dashboard data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
     </section>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
@@ -387,6 +389,7 @@
       const currentAdminUsers = new Map();
       const currentAdminWorkers = new Map();
       const currentAdminAssignments = new Map();
+      const currentAdminQuotes = new Map();
       const currentClientProperties = new Map();
       const currentClientRequests = new Map();
       let currentPermissions = [];
@@ -458,7 +461,7 @@
         const availableViews = permissions.availableViews || user.roles || [];
         const switcher = document.querySelector('[data-view-switcher]');
 
-        if (switcher && permissions.canSwitchDashboardView) {
+        if (switcher && permissions.canSwitchDashboardView && (user.roles || []).includes('admin')) {
           switcher.hidden = false;
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             button.hidden = !availableViews.includes(button.dataset.viewButton);
@@ -494,7 +497,7 @@
               ${scheduleMeta}
             </div>
             <p>${escapeHtml(request.description)}</p>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button></div>`}
+            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };
@@ -942,6 +945,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || panel.dataset.editActionsBound) return;
         panel.dataset.editActionsBound = 'true';
         panel.addEventListener('click', (event) => {
+          const approveButton = event.target.closest('[data-client-approve-completion]');
+          if (approveButton) {
+            approveButton.disabled = true;
+            approveClientCompletion(approveButton.dataset.clientApproveCompletion).catch((error) => {
+              const panelStatus = document.querySelector('[data-client-requests-status]');
+              if (panelStatus) panelStatus.textContent = error.message;
+            }).finally(() => { approveButton.disabled = false; });
+            return;
+          }
           const button = event.target.closest('[data-client-open-request]');
           if (!button) return;
           openClientRequestModal(button.dataset.clientOpenRequest);
@@ -958,6 +970,19 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (editStatus) editStatus.textContent = error.message;
           }
         });
+      };
+
+      const approveClientCompletion = async (requestId) => {
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        if (panelStatus) panelStatus.textContent = 'Approving completed work…';
+        const response = await fetch('/api/client/job-requests', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ jobRequestId: requestId, completionAction: 'approve_completed' }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'We could not approve the completed work.');
+        await loadClientRequests();
       };
 
       const bindClientRequestForm = () => {
@@ -1011,6 +1036,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const estimatedStartDate = document.querySelector('[data-admin-estimated-start-date]');
         const completionDate = document.querySelector('[data-admin-completion-date]');
         const quoteTitle = document.querySelector('[data-admin-quote-title]');
+        const quoteId = document.querySelector('[data-admin-quote-id]');
+        const quoteAmount = document.querySelector('[data-admin-quote-form] [name="amount"]');
+        const quoteSummary = document.querySelector('[data-admin-quote-form] [name="summary"]');
+        const quoteSend = document.querySelector('[data-admin-quote-form] [name="sendToClient"]');
+        const quoteFormTitle = document.querySelector('[data-admin-quote-form-title]');
+        const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
@@ -1031,7 +1062,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
         if (completionDate) completionDate.value = request.completionDate || '';
         if (adminNotes) adminNotes.value = request.adminNotes || '';
-        if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
+        const savedQuote = [...currentAdminQuotes.values()].find((quote) => quote.jobRequestId === request.id);
+        if (quoteId) quoteId.value = savedQuote?.id || '';
+        if (quoteTitle) quoteTitle.value = savedQuote?.title || `${request.serviceType || 'Service'} quote`;
+        if (quoteAmount) quoteAmount.value = savedQuote ? String((savedQuote.amountCents || 0) / 100) : '';
+        if (quoteSummary) quoteSummary.value = savedQuote?.summary || '';
+        if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
+        if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
+        if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         if (assignmentList) {
           const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
@@ -1177,6 +1215,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const formData = new FormData(quoteForm);
             const amount = Number(formData.get('amount') || 0);
             const payload = {
+              quoteId: formData.get('quoteId'),
               jobRequestId: formData.get('jobRequestId'),
               title: formData.get('title'),
               summary: formData.get('summary'),
@@ -1184,11 +1223,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
               sendToClient: formData.get('sendToClient') === 'true',
             };
 
-            if (formStatus) formStatus.textContent = payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…';
+            const quoteMethod = payload.quoteId ? 'PATCH' : 'POST';
+            if (formStatus) formStatus.textContent = payload.quoteId ? 'Saving quote…' : (payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…');
 
             try {
               const response = await fetch('/api/admin/quotes', {
-                method: 'POST',
+                method: quoteMethod,
                 headers: { accept: 'application/json', 'content-type': 'application/json' },
                 body: JSON.stringify(payload),
               });
@@ -1198,8 +1238,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
                 throw new Error(result.message || 'We could not create that quote.');
               }
 
-              quoteForm.reset();
-              if (formStatus) formStatus.textContent = payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.';
+              if (!payload.quoteId) quoteForm.reset();
+              if (formStatus) formStatus.textContent = payload.quoteId ? 'Quote saved.' : (payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.');
               await loadAdminRequests(payload.jobRequestId);
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
@@ -1587,9 +1627,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
           currentAdminRequests.clear();
           currentAdminWorkers.clear();
           currentAdminAssignments.clear();
+          currentAdminQuotes.clear();
           requests.forEach((request) => currentAdminRequests.set(request.id, request));
           (result.workers || []).forEach((worker) => currentAdminWorkers.set(worker.id, worker));
           (result.assignments || []).forEach((assignment) => currentAdminAssignments.set(assignment.id, assignment));
+          (result.quotes || []).forEach((quote) => currentAdminQuotes.set(quote.id, quote));
           const workerSelect = document.querySelector('[data-admin-assignment-worker]');
           if (workerSelect) {
             const selectedWorker = workerSelect.value;
@@ -1631,11 +1673,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           bindLogout();
           bindClientProfileButton();
+          bindClientProfileForm();
           bindRequestEstimateLink();
           configureDashboardForUser(result.user);
 
           if (result.user.permissions?.canViewClientTools) {
-            bindClientProfileForm();
             bindClientRequestForm();
             bindClientRequestEditActions();
             bindClientPropertyActions();

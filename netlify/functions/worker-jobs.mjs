@@ -236,6 +236,16 @@ const handlePatch = async ({ request, db, context }) => {
     return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
   }
 
+  if (payload.status === 'completed') {
+    await db.sql`
+      update job_requests
+      set status = ${'pending_review'},
+          updated_at = now()
+      where id = ${updatedAssignment.job_request_id}
+        and status in ('scheduled', 'in_progress', 'accepted')
+    `;
+  }
+
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
     values (

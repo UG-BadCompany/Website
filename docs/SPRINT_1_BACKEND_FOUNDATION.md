@@ -141,3 +141,11 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Admins can assign a worker from the request workspace with scheduled date/time and worker-facing notes.
 - Added `GET/PATCH /api/worker/jobs` so workers can load only their assigned jobs and update assignment status or worker notes.
 - The unified dashboard now includes a real worker assigned-jobs panel with schedule, address/access details, admin notes, and worker update controls.
+
+## Added in Sprint 1N
+
+- Saved quotes are now edited from the open admin work request instead of creating duplicate quotes after a request has already been quoted.
+- Worker-completed assignments move the job request to `pending_review` so an admin can verify with the client before marking it complete.
+- Clients can approve pending completed work from their own request list, which marks the request `completed`.
+- Dashboard copy now uses production-facing language and removes the implementation detail/secure gate placeholder card.
+- Profile editing is bound for signed-in users beyond client-only dashboards, and dashboard view switching is restricted to admins.

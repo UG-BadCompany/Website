@@ -15,6 +15,7 @@ const ADMIN_STATUSES = new Set([
   'accepted',
   'scheduled',
   'in_progress',
+  'pending_review',
   'completed',
   'cancelled',
 ]);
@@ -70,6 +71,18 @@ const mapWorker = (worker) => ({
   fullName: worker.full_name,
   email: worker.email,
   phone: worker.phone,
+});
+
+const mapQuote = (quote) => ({
+  id: quote.id,
+  jobRequestId: quote.job_request_id,
+  clientId: quote.client_id,
+  status: quote.status,
+  title: quote.title,
+  summary: quote.summary,
+  amountCents: quote.amount_cents,
+  createdAt: quote.created_at,
+  updatedAt: quote.updated_at,
 });
 
 const mapAssignment = (assignment) => ({
@@ -306,6 +319,12 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       where worker_assignments.job_request_id in (select id from job_requests order by created_at desc limit 50)
       order by worker_assignments.created_at desc
     `;
+    const quotes = await db.sql`
+      select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+      from quotes
+      where job_request_id in (select id from job_requests order by created_at desc limit 50)
+      order by created_at desc
+    `;
 
     return json(200, {
       ok: true,
@@ -321,6 +340,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       statusCounts: Object.fromEntries(statusCounts.map((row) => [row.status, row.count])),
       workers: workers.map(mapWorker),
       assignments: assignments.map(mapAssignment),
+      quotes: quotes.map(mapQuote),
     });
   } catch (error) {
     console.error('Failed to load admin job requests', error);
