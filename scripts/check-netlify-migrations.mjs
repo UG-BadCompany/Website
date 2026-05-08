@@ -60,11 +60,18 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     prefixes.set(prefix, existing);
   });
 
-  [...prefixes.entries()]
-    .filter(([, names]) => names.length > 1)
-    .forEach(([prefix, names]) => {
-      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-    });
+
+  for (const requiredMigration of REQUIRED_APPLIED_MIGRATIONS) {
+    if (!files.includes(requiredMigration)) {
+      errors.push(`${requiredMigration} must remain committed because Netlify Database has already applied it.`);
+    }
+  }
+
+  RENAMED_APPLIED_MIGRATION_REPAIRS.forEach((appliedMigration, renamedMigration) => {
+    if (files.includes(renamedMigration)) {
+      errors.push(`${renamedMigration} must not exist; Netlify Database already applied this migration under its original name.`);
+    }
+  });
 
   return { files, errors, warnings };
 };
