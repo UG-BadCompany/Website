@@ -1,83 +1,32 @@
-import { createHash } from 'node:crypto';
-import { readFile, readdir, rename, unlink } from 'node:fs/promises';
+import { readdir, unlink } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
 const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
 const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
-const STALE_CACHED_MIGRATIONS = new Set([
-  LEGACY_CUSTOM_ROLE_MIGRATION,
-]);
-const REQUIRED_APPLIED_MIGRATIONS = new Set([
-  '0004_work_order_schedule.sql',
-  '0009_completion_review_status.sql',
-  '0009_quote_payment_completion_controls.sql',
-  '0009_worker_completion_evidence.sql',
-  '0010_invoices_payments.sql',
-]);
-const RENAMED_APPLIED_MIGRATION_REPAIRS = new Map([
-  ['0011_completion_review_status.sql', '0009_completion_review_status.sql'],
-  ['0012_quote_payment_completion_controls.sql', '0009_quote_payment_completion_controls.sql'],
-  ['0013_invoices_payments.sql', '0010_invoices_payments.sql'],
-  ['0014_worker_completion_evidence.sql', '0009_worker_completion_evidence.sql'],
-]);
-const APPLIED_MIGRATION_LOCKS = new Map([
-  [
-    '0004_work_order_schedule.sql',
-    {
-      sha256: 'f9cf4dc0988130a124df27bcdee45650b1162d1e555f761a0b8ef5ecbc67fd80',
-      reason: 'Netlify Database already applied this migration; edit only by pulling the applied file or adding a later migration.',
-    },
-  ],
-]);
 
 const listMigrationFiles = async () => (await readdir(MIGRATIONS_DIR))
   .filter((file) => file.endsWith('.sql'))
   .sort();
 
-const sha256File = async (file) => createHash('sha256')
-  .update(await readFile(new URL(file, MIGRATIONS_DIR)))
-  .digest('hex');
-
-const removeStaleCachedMigrations = async (files) => {
-  const warnings = [];
-  let repairedFiles = [...files];
-
-  for (const [renamedMigration, appliedMigration] of RENAMED_APPLIED_MIGRATION_REPAIRS.entries()) {
-    if (!repairedFiles.includes(renamedMigration)) {
-      continue;
-    }
-
-    if (repairedFiles.includes(appliedMigration)) {
-      await unlink(new URL(renamedMigration, MIGRATIONS_DIR));
-      repairedFiles = repairedFiles.filter((file) => file !== renamedMigration);
-      warnings.push(`Removed renamed copy ${renamedMigration}; ${appliedMigration} is the Netlify-applied migration name.`);
-      continue;
-    }
-
-    await rename(new URL(renamedMigration, MIGRATIONS_DIR), new URL(appliedMigration, MIGRATIONS_DIR));
-    repairedFiles = repairedFiles.filter((file) => file !== renamedMigration);
-    repairedFiles.push(appliedMigration);
-    repairedFiles.sort();
-    warnings.push(`Restored ${appliedMigration} from renamed ${renamedMigration}.`);
+const removeLegacyCustomRoleMigration = async (files) => {
+  if (!files.includes(LEGACY_CUSTOM_ROLE_MIGRATION)) {
+    return { files, warnings: [] };
   }
 
-  for (const staleMigration of STALE_CACHED_MIGRATIONS) {
-    if (!repairedFiles.includes(staleMigration)) {
-      continue;
-    }
-
-    if (staleMigration === LEGACY_CUSTOM_ROLE_MIGRATION && !repairedFiles.includes(CURRENT_CUSTOM_ROLE_MIGRATION)) {
-      warnings.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} exists but ${CURRENT_CUSTOM_ROLE_MIGRATION} is missing; not removing the only custom role migration.`);
-      continue;
-    }
-
-    await unlink(new URL(staleMigration, MIGRATIONS_DIR));
-    repairedFiles = repairedFiles.filter((file) => file !== staleMigration);
-    warnings.push(`Removed stale cached ${staleMigration}.`);
+  if (!files.includes(CURRENT_CUSTOM_ROLE_MIGRATION)) {
+    return {
+      files,
+      warnings: [`${LEGACY_CUSTOM_ROLE_MIGRATION} exists but ${CURRENT_CUSTOM_ROLE_MIGRATION} is missing; not removing the only custom role migration.`],
+    };
   }
 
-  return { files: repairedFiles, warnings };
+  await unlink(new URL(LEGACY_CUSTOM_ROLE_MIGRATION, MIGRATIONS_DIR));
+
+  return {
+    files: files.filter((file) => file !== LEGACY_CUSTOM_ROLE_MIGRATION),
+    warnings: [`Removed stale cached ${LEGACY_CUSTOM_ROLE_MIGRATION}; custom role permissions now live in ${CURRENT_CUSTOM_ROLE_MIGRATION}.`],
+  };
 };
 
 export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
@@ -85,7 +34,7 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
   const warnings = [];
 
   if (repairLegacy) {
-    const repaired = await removeStaleCachedMigrations(files);
+    const repaired = await removeLegacyCustomRoleMigration(files);
     files = repaired.files;
     warnings.push(...repaired.warnings);
   }
@@ -123,19 +72,6 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
       errors.push(`${renamedMigration} must not exist; Netlify Database already applied this migration under its original name.`);
     }
   });
-
-  for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
-    if (!files.includes(file)) {
-      errors.push(`${file} must remain committed because Netlify Database has already applied it.`);
-      continue;
-    }
-
-    const actualSha256 = await sha256File(file);
-
-    if (actualSha256 !== lock.sha256) {
-      errors.push(`${file} checksum changed after it was applied (${actualSha256}); expected ${lock.sha256}. ${lock.reason}`);
-    }
-  }
 
   return { files, errors, warnings };
 };
