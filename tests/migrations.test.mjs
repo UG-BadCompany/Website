@@ -4,9 +4,10 @@ import { rm, stat, writeFile } from 'node:fs/promises';
 import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs';
 
 test('Netlify Database migrations use unique numeric prefixes', async () => {
-  const { errors } = await validateMigrationFiles();
+  const { errors, files } = await validateMigrationFiles();
 
   assert.deepEqual(errors, [], 'Migration files must pass Netlify Database validation.');
+  assert.equal(files.includes('0004_work_order_schedule.sql'), true, 'Previously applied Netlify migration 0004_work_order_schedule must remain present.');
 });
 
 
@@ -56,4 +57,13 @@ test('migration validator removes stale cached duplicate 0009 migrations before 
     await rm(staleQuoteControls, { force: true });
     await rm(staleInvoices, { force: true });
   }
+});
+
+
+test('migration validator keeps the applied 0004 work order schedule migration during repair', async () => {
+  const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
+
+  assert.deepEqual(errors, [], 'Repair mode should keep the applied work-order schedule migration valid.');
+  assert.equal(files.includes('0004_work_order_schedule.sql'), true);
+  assert.equal(warnings.some((warning) => warning.includes('0004_work_order_schedule.sql')), false);
 });
