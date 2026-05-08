@@ -240,7 +240,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
-  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
+  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.quotes.manage', 'client.requests.manage', 'client.tools']);
 });
 
 test('logout endpoint revokes the current session and clears the session cookie', async () => {

@@ -411,36 +411,3 @@ test('client job request endpoint lets clients update open job requests', async 
   ]);
   assert.equal(db.queries[4].values[1], 'client_job_request.updated');
 });
-
-test('client job request endpoint lets clients approve pending completed work', async () => {
-  const db = createMockDb([
-    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
-    [],
-    [{ key: 'client', name: 'Client' }],
-    [{
-      id: 'job-1',
-      status: 'completed',
-      service_type: 'Drywall repair',
-      preferred_timeframe: 'Morning',
-      description: 'Patch hallway.',
-      completion_date: '2026-05-13',
-      updated_at: '2026-05-13T00:00:00.000Z',
-    }],
-    [],
-  ]);
-  const handler = createClientJobRequestsHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/client/job-requests', {
-    method: 'PATCH',
-    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ jobRequestId: 'job-1', completionAction: 'approve_completed' }),
-  })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.request.status, 'completed');
-  assert.match(db.queries[3].text, /status = \?/);
-  assert.equal(db.queries[3].values[0], 'completed');
-  assert.equal(db.queries[3].values[1], 'job-1');
-  assert.equal(db.queries[3].values[2], 'client-1');
-  assert.equal(db.queries[3].values[3], 'pending_review');
-  assert.equal(db.queries[4].values[1], 'client_job_request.completed_approved');
-});

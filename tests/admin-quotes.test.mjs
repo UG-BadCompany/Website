@@ -77,7 +77,6 @@ test('admin quote endpoint creates a draft quote from a job request', async () =
     [],
     [{ key: 'admin', name: 'Admin' }],
     [{ id: 'job-1', client_id: 'client-1' }],
-    [],
     [{
       id: 'quote-1',
       job_request_id: 'job-1',
@@ -115,18 +114,17 @@ test('admin quote endpoint creates a draft quote from a job request', async () =
   });
   assert.match(db.queries[3].text, /from job_requests/);
   assert.equal(db.queries[3].values[0], 'job-1');
-  assert.match(db.queries[4].text, /from quotes/);
-  assert.match(db.queries[5].text, /insert into quotes/);
-  assert.equal(db.queries[5].values[0], 'job-1');
-  assert.equal(db.queries[5].values[1], 'client-1');
-  assert.equal(db.queries[5].values[2], 'draft');
-  assert.equal(db.queries[5].values[3], 'Drywall repair quote');
-  assert.equal(db.queries[5].values[4], 'Patch and paint hallway drywall.');
-  assert.equal(db.queries[5].values[5], 27500);
-  assert.equal(db.queries[5].values[6], null);
-  assert.equal(db.queries[5].values[7], 'admin-1');
-  assert.match(db.queries[6].text, /update job_requests/);
-  assert.match(db.queries[7].text, /insert into audit_events/);
+  assert.match(db.queries[4].text, /insert into quotes/);
+  assert.equal(db.queries[4].values[0], 'job-1');
+  assert.equal(db.queries[4].values[1], 'client-1');
+  assert.equal(db.queries[4].values[2], 'draft');
+  assert.equal(db.queries[4].values[3], 'Drywall repair quote');
+  assert.equal(db.queries[4].values[4], 'Patch and paint hallway drywall.');
+  assert.equal(db.queries[4].values[5], 27500);
+  assert.equal(db.queries[4].values[6], null);
+  assert.equal(db.queries[4].values[7], 'admin-1');
+  assert.match(db.queries[5].text, /update job_requests/);
+  assert.match(db.queries[6].text, /insert into audit_events/);
 });
 
 
@@ -137,7 +135,6 @@ test('admin quote endpoint can send a quote so clients can accept or decline it'
     [],
     [{ key: 'admin', name: 'Admin' }],
     [{ id: 'job-1', client_id: 'client-1' }],
-    [],
     [{
       id: 'quote-1',
       job_request_id: 'job-1',
@@ -163,10 +160,10 @@ test('admin quote endpoint can send a quote so clients can accept or decline it'
 
   assert.equal(response.status, 201);
   assert.equal(response.body.quote.status, 'sent');
-  assert.equal(db.queries[5].values[2], 'sent');
-  assert.match(db.queries[5].values[6], /T/);
-  assert.equal(db.queries[6].values[0], 'quote_sent');
-  assert.match(db.queries[7].values[4], /"sentToClient":true/);
+  assert.equal(db.queries[4].values[2], 'sent');
+  assert.match(db.queries[4].values[6], /T/);
+  assert.equal(db.queries[5].values[0], 'quote_sent');
+  assert.match(db.queries[6].values[4], /"sentToClient":true/);
 });
 
 test('admin quote endpoint returns not found for missing job requests', async () => {
@@ -184,37 +181,38 @@ test('admin quote endpoint returns not found for missing job requests', async ()
   assert.equal(db.queries.length, 4);
 });
 
-
-test('admin quote endpoint blocks creating a second quote for an already quoted request', async () => {
+test('admin quote endpoint requires explicit edit confirmation before resending a sent quote', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
-    [{ id: 'job-1', client_id: 'client-1' }],
-    [{ id: 'quote-1' }],
   ]);
   const handler = createAdminQuotesHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(quoteRequest({ jobRequestId: 'job-1', title: 'Repair quote', amountCents: 25000 })));
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ quoteId: 'quote-1', title: 'Updated quote', amountCents: 30000 }),
+  })));
 
   assert.equal(response.status, 409);
-  assert.match(response.body.message, /already has a quote/);
-  assert.equal(db.queries.length, 5);
+  assert.equal(response.body.message, 'Click Edit quote before changing a sent quote.');
+  assert.equal(db.queries.length, 3);
 });
 
-test('admin quote endpoint edits an existing quote from the open request', async () => {
+test('admin quote endpoint updates and resends sent quotes after explicit edit confirmation', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
-    [{ id: 'quote-1', job_request_id: 'job-1', client_id: 'client-1', status: 'draft' }],
+    [{ id: 'quote-1', job_request_id: 'job-1', client_id: 'client-1', status: 'sent', amount_cents: 22500, revision: 1 }],
     [{
       id: 'quote-1',
       job_request_id: 'job-1',
       client_id: 'client-1',
       status: 'sent',
-      title: 'Updated repair quote',
-      summary: 'Updated scope.',
-      amount_cents: 32500,
+      title: 'Updated quote',
+      summary: 'Added materials.',
+      amount_cents: 30000,
       created_at: '2026-05-08T00:00:00.000Z',
       updated_at: '2026-05-09T00:00:00.000Z',
     }],
@@ -222,18 +220,16 @@ test('admin quote endpoint edits an existing quote from the open request', async
     [],
   ]);
   const handler = createAdminQuotesHandler({ getDatabase: async () => db });
-  const request = new Request('https://site.test/api/admin/quotes', {
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes', {
     method: 'PATCH',
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ quoteId: 'quote-1', title: 'Updated repair quote', summary: 'Updated scope.', amountCents: 32500, sendToClient: true }),
-  });
-  const response = await readJson(await handler(request));
+    body: JSON.stringify({ quoteId: 'quote-1', title: 'Updated quote', summary: 'Added materials.', amountCents: 30000, editConfirmed: true, editReason: 'Material cost changed.' }),
+  })));
 
   assert.equal(response.status, 200);
-  assert.equal(response.body.quote.id, 'quote-1');
-  assert.equal(response.body.quote.status, 'sent');
+  assert.equal(response.body.quote.amountCents, 30000);
+  assert.equal(response.body.message, 'Updated quote sent to the client for approval.');
   assert.match(db.queries[4].text, /update quotes/);
-  assert.equal(db.queries[4].values[0], 'Updated repair quote');
-  assert.equal(db.queries[5].values[0], 'quote_sent');
-  assert.equal(db.queries[6].values[1], 'quote.updated');
+  assert.equal(db.queries[4].values[2], 30000);
+  assert.equal(db.queries[6].values[1], 'quote.updated_and_resent');
 });

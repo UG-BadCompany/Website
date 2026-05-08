@@ -111,6 +111,7 @@ test('worker jobs endpoint lets workers update their assigned job status and not
     [],
     [{ key: 'worker', name: 'Worker' }],
     [{ permission_key: 'worker.jobs.manage' }],
+    [{ id: 'assignment-1', completion_photo_paths: [] }],
     [{
       id: 'assignment-1',
       job_request_id: 'job-1',
@@ -136,45 +137,27 @@ test('worker jobs endpoint lets workers update their assigned job status and not
   assert.equal(response.status, 200);
   assert.equal(response.body.assignment.status, 'in_progress');
   assert.equal(response.body.assignment.workerNotes, 'Started prep and confirmed parts.');
-  assert.match(db.queries[4].text, /update worker_assignments/);
-  assert.match(db.queries[4].text, /and worker_id = \?/);
-  assert.deepEqual(db.queries[4].values, ['in_progress', 'Started prep and confirmed parts.', 'assignment-1', 'worker-1']);
-  assert.equal(db.queries[5].values[1], 'worker_assignment.updated');
+  assert.match(db.queries[5].text, /update worker_assignments/);
+  assert.match(db.queries[5].text, /and worker_id = \?/);
+  assert.deepEqual(db.queries[5].values, ['in_progress', 'Started prep and confirmed parts.', '[]', 'assignment-1', 'worker-1']);
+  assert.equal(db.queries[6].values[1], 'worker_assignment.updated');
 });
 
-test('worker jobs endpoint moves completed work to pending review', async () => {
+test('worker jobs endpoint requires completion photos before closing work orders', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'worker-1', email: 'worker@example.com', full_name: 'Worker' }],
     [],
     [{ key: 'worker', name: 'Worker' }],
     [{ permission_key: 'worker.jobs.manage' }],
-    [{
-      id: 'assignment-1',
-      job_request_id: 'job-1',
-      worker_id: 'worker-1',
-      status: 'completed',
-      scheduled_date: '2026-05-13',
-      start_time: '09:00',
-      end_time: '11:00',
-      notes: 'Use side gate.',
-      worker_notes: 'Work is complete.',
-      created_at: '2026-05-08T00:00:00.000Z',
-      updated_at: '2026-05-09T00:00:00.000Z',
-    }],
-    [],
-    [],
+    [{ id: 'assignment-1', completion_photo_paths: [] }],
   ]);
   const handler = createWorkerJobsHandler({ getDatabase: async () => db });
   const response = await readJson(await handler(new Request('https://site.test/api/worker/jobs', {
     method: 'PATCH',
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ assignmentId: 'assignment-1', status: 'completed', workerNotes: 'Work is complete.' }),
+    body: JSON.stringify({ assignmentId: 'assignment-1', status: 'completed', workerNotes: 'Done.' }),
   })));
 
-  assert.equal(response.status, 200);
-  assert.equal(response.body.assignment.status, 'completed');
-  assert.match(db.queries[5].text, /update job_requests/);
-  assert.equal(db.queries[5].values[0], 'pending_review');
-  assert.equal(db.queries[5].values[1], 'job-1');
-  assert.equal(db.queries[6].values[1], 'worker_assignment.updated');
+  assert.equal(response.status, 422);
+  assert.equal(response.body.message, 'Attach at least one completion photo before closing out the work order.');
 });

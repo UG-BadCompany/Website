@@ -144,15 +144,6 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1N
 
-- Saved quotes are now edited from the open admin work request instead of creating duplicate quotes after a request has already been quoted.
-- Worker-completed assignments move the job request to `pending_review` so an admin can verify with the client before marking it complete.
-- Clients can approve pending completed work from their own request list, which marks the request `completed`.
-- Dashboard copy now uses production-facing language and removes the implementation detail/secure gate placeholder card.
-- Profile editing is bound for signed-in users beyond client-only dashboards, and dashboard view switching is restricted to admins.
-
-## Added in Sprint 1O
-
-- Added invoice and payment storage so admin-verified completed work moves into `waiting_payment` and opens a matching invoice.
-- Added client invoice viewing for unpaid invoices; paid invoices remain in the database but leave the active dashboard.
-- Added admin invoice/payment APIs and dashboard controls for confirming payment, which records a payment row and moves the job request to `completed`.
-- Active client/admin request dashboards now exclude completed paid work while preserving records in the system.
+- Sent quotes now require an explicit Edit quote action before the admin can change the amount or scope; saving an edited quote resends it to the client for approval and records a quote revision audit trail.
+- Payment verification state is modeled separately from admin review with `pending_system_verification` and `system_verified` statuses so payments should remain visible until provider/system verification completes.
+- Worker assignments now store completion photo paths, and workers cannot mark a work order completed until at least one completion photo is attached.
