@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFile, readdir, unlink } from 'node:fs/promises';
+import { readFile, readdir, rename, unlink } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
@@ -15,11 +15,11 @@ const REQUIRED_APPLIED_MIGRATIONS = new Set([
   '0009_worker_completion_evidence.sql',
   '0010_invoices_payments.sql',
 ]);
-const RENAMED_APPLIED_MIGRATIONS = new Set([
-  '0011_completion_review_status.sql',
-  '0012_quote_payment_completion_controls.sql',
-  '0013_invoices_payments.sql',
-  '0014_worker_completion_evidence.sql',
+const RENAMED_APPLIED_MIGRATION_REPAIRS = new Map([
+  ['0011_completion_review_status.sql', '0009_completion_review_status.sql'],
+  ['0012_quote_payment_completion_controls.sql', '0009_quote_payment_completion_controls.sql'],
+  ['0013_invoices_payments.sql', '0010_invoices_payments.sql'],
+  ['0014_worker_completion_evidence.sql', '0009_worker_completion_evidence.sql'],
 ]);
 const APPLIED_MIGRATION_LOCKS = new Map([
   [
@@ -42,6 +42,25 @@ const sha256File = async (file) => createHash('sha256')
 const removeStaleCachedMigrations = async (files) => {
   const warnings = [];
   let repairedFiles = [...files];
+
+  for (const [renamedMigration, appliedMigration] of RENAMED_APPLIED_MIGRATION_REPAIRS.entries()) {
+    if (!repairedFiles.includes(renamedMigration)) {
+      continue;
+    }
+
+    if (repairedFiles.includes(appliedMigration)) {
+      await unlink(new URL(renamedMigration, MIGRATIONS_DIR));
+      repairedFiles = repairedFiles.filter((file) => file !== renamedMigration);
+      warnings.push(`Removed renamed copy ${renamedMigration}; ${appliedMigration} is the Netlify-applied migration name.`);
+      continue;
+    }
+
+    await rename(new URL(renamedMigration, MIGRATIONS_DIR), new URL(appliedMigration, MIGRATIONS_DIR));
+    repairedFiles = repairedFiles.filter((file) => file !== renamedMigration);
+    repairedFiles.push(appliedMigration);
+    repairedFiles.sort();
+    warnings.push(`Restored ${appliedMigration} from renamed ${renamedMigration}.`);
+  }
 
   for (const staleMigration of STALE_CACHED_MIGRATIONS) {
     if (!repairedFiles.includes(staleMigration)) {
@@ -99,7 +118,7 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     }
   }
 
-  RENAMED_APPLIED_MIGRATIONS.forEach((renamedMigration) => {
+  RENAMED_APPLIED_MIGRATION_REPAIRS.forEach((appliedMigration, renamedMigration) => {
     if (files.includes(renamedMigration)) {
       errors.push(`${renamedMigration} must not exist; Netlify Database already applied this migration under its original name.`);
     }
