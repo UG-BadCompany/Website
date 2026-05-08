@@ -26,8 +26,6 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
-  assert.match(html, /data-admin-edit-quote/, 'sent quote amount changes should require an explicit edit click');
-  assert.match(html, /completionPhotoPaths/, 'worker completion forms should ask for completion photo paths');
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
@@ -38,7 +36,6 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
-  assert.match(script, /payload\.quoteId \? 'PATCH' : 'POST'/, 'existing quotes should be resent through an explicit update path');
   assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
   assert.match(script, /const bindClientPropertyActions =/, 'client property edit controls should be bound');
   assert.match(script, /const renderUserProperties =/, 'opening a user profile requires the property renderer to be declared');

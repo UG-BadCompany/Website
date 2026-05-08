@@ -4,29 +4,38 @@ const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.ur
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
 const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
 const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
+const STALE_CACHED_MIGRATIONS = new Set([
+  LEGACY_CUSTOM_ROLE_MIGRATION,
+  '0004_work_order_schedule.sql',
+  '0009_completion_review_status.sql',
+  '0009_quote_payment_completion_controls.sql',
+  '0010_invoices_payments.sql',
+]);
 
 const listMigrationFiles = async () => (await readdir(MIGRATIONS_DIR))
   .filter((file) => file.endsWith('.sql'))
   .sort();
 
-const removeLegacyCustomRoleMigration = async (files) => {
-  if (!files.includes(LEGACY_CUSTOM_ROLE_MIGRATION)) {
-    return { files, warnings: [] };
+const removeStaleCachedMigrations = async (files) => {
+  const warnings = [];
+  let repairedFiles = [...files];
+
+  for (const staleMigration of STALE_CACHED_MIGRATIONS) {
+    if (!repairedFiles.includes(staleMigration)) {
+      continue;
+    }
+
+    if (staleMigration === LEGACY_CUSTOM_ROLE_MIGRATION && !repairedFiles.includes(CURRENT_CUSTOM_ROLE_MIGRATION)) {
+      warnings.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} exists but ${CURRENT_CUSTOM_ROLE_MIGRATION} is missing; not removing the only custom role migration.`);
+      continue;
+    }
+
+    await unlink(new URL(staleMigration, MIGRATIONS_DIR));
+    repairedFiles = repairedFiles.filter((file) => file !== staleMigration);
+    warnings.push(`Removed stale cached ${staleMigration}.`);
   }
 
-  if (!files.includes(CURRENT_CUSTOM_ROLE_MIGRATION)) {
-    return {
-      files,
-      warnings: [`${LEGACY_CUSTOM_ROLE_MIGRATION} exists but ${CURRENT_CUSTOM_ROLE_MIGRATION} is missing; not removing the only custom role migration.`],
-    };
-  }
-
-  await unlink(new URL(LEGACY_CUSTOM_ROLE_MIGRATION, MIGRATIONS_DIR));
-
-  return {
-    files: files.filter((file) => file !== LEGACY_CUSTOM_ROLE_MIGRATION),
-    warnings: [`Removed stale cached ${LEGACY_CUSTOM_ROLE_MIGRATION}; custom role permissions now live in ${CURRENT_CUSTOM_ROLE_MIGRATION}.`],
-  };
+  return { files: repairedFiles, warnings };
 };
 
 export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
@@ -34,7 +43,7 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
   const warnings = [];
 
   if (repairLegacy) {
-    const repaired = await removeLegacyCustomRoleMigration(files);
+    const repaired = await removeStaleCachedMigrations(files);
     files = repaired.files;
     warnings.push(...repaired.warnings);
   }

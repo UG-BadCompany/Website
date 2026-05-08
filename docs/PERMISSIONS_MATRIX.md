@@ -55,7 +55,6 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
 | `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
 | `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
-| `PATCH /api/admin/quotes` | Yes | `admin` | Requires an explicit edit confirmation before updating and resending a sent quote to the client. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |

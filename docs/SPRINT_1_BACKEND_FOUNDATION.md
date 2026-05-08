@@ -141,9 +141,3 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Admins can assign a worker from the request workspace with scheduled date/time and worker-facing notes.
 - Added `GET/PATCH /api/worker/jobs` so workers can load only their assigned jobs and update assignment status or worker notes.
 - The unified dashboard now includes a real worker assigned-jobs panel with schedule, address/access details, admin notes, and worker update controls.
-
-## Added in Sprint 1N
-
-- Sent quotes now require an explicit Edit quote action before the admin can change the amount or scope; saving an edited quote resends it to the client for approval and records a quote revision audit trail.
-- Payment verification state is modeled separately from admin review with `pending_system_verification` and `system_verified` statuses so payments should remain visible until provider/system verification completes.
-- Worker assignments now store completion photo paths, and workers cannot mark a work order completed until at least one completion photo is attached.

@@ -13,13 +13,10 @@ const normalizePayload = (body = {}) => ({
   summary: clean(body.summary, 4000),
   amountCents: Number(body.amountCents),
   sendToClient: Boolean(body.sendToClient),
-  quoteId: clean(body.quoteId, 80),
-  editConfirmed: Boolean(body.editConfirmed),
-  editReason: clean(body.editReason, 500),
 });
 
-const validatePayload = (payload, method = 'POST') => {
-  if (method === 'POST' && !payload.jobRequestId) {
+const validatePayload = (payload) => {
+  if (!payload.jobRequestId) {
     return 'Job request is required.';
   }
 
@@ -84,7 +81,7 @@ const loadRoleKeys = async (db, userId) => {
 };
 
 export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['POST', 'PATCH'].includes(request.method)) {
+  if (request.method !== 'POST') {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -101,7 +98,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
   }
 
   const payload = normalizePayload(body);
-  const validationError = validatePayload(payload, request.method);
+  const validationError = validatePayload(payload);
 
   if (validationError) {
     return json(422, { ok: false, message: validationError });
@@ -119,81 +116,6 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
 
     if (!roleKeys.includes('admin')) {
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to create quotes.' });
-    }
-
-    if (request.method === 'PATCH') {
-      if (!payload.quoteId) {
-        return json(422, { ok: false, message: 'Quote is required for editing.' });
-      }
-
-      if (!payload.editConfirmed) {
-        return json(409, { ok: false, message: 'Click Edit quote before changing a sent quote.' });
-      }
-
-      const [existingQuote] = await db.sql`
-        select id, job_request_id, client_id, status, amount_cents, revision
-        from quotes
-        where id = ${payload.quoteId}
-        limit 1
-      `;
-
-      if (!existingQuote) {
-        return json(404, { ok: false, authenticated: true, authorized: true, message: 'Quote not found.' });
-      }
-
-      if (!['sent', 'viewed', 'declined'].includes(existingQuote.status)) {
-        return json(422, { ok: false, authenticated: true, authorized: true, message: 'Only sent quotes can be edited and resent to clients.' });
-      }
-
-      const [quote] = await db.sql`
-        update quotes
-        set title = ${payload.title},
-            summary = ${payload.summary || null},
-            amount_cents = ${payload.amountCents},
-            status = ${'sent'},
-            sent_at = now(),
-            resent_at = now(),
-            viewed_at = null,
-            declined_at = null,
-            revision = coalesce(revision, 1) + 1,
-            edit_unlocked_at = now(),
-            edit_unlocked_by = ${session.user_id},
-            edit_reason = ${payload.editReason || 'Admin updated quote and resent for client approval'},
-            updated_at = now()
-        where id = ${existingQuote.id}
-        returning id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
-      `;
-
-      await db.sql`
-        update job_requests
-        set status = ${'quote_sent'}, updated_at = now()
-        where id = ${existingQuote.job_request_id}
-      `;
-
-      await db.sql`
-        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-        values (
-          ${session.user_id},
-          ${'quote.updated_and_resent'},
-          ${'quote'},
-          ${quote.id},
-          ${JSON.stringify({ source: 'admin_dashboard', previousAmountCents: existingQuote.amount_cents, amountCents: payload.amountCents, revision: (existingQuote.revision || 1) + 1, editReason: payload.editReason || null })}::jsonb
-        )
-      `;
-
-      return json(200, {
-        ok: true,
-        authenticated: true,
-        authorized: true,
-        user: {
-          id: session.user_id,
-          email: session.email,
-          fullName: session.full_name,
-          roles: roleKeys,
-        },
-        quote: mapQuote(quote),
-        message: 'Updated quote sent to the client for approval.',
-      });
     }
 
     const [jobRequest] = await db.sql`

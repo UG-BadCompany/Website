@@ -10,16 +10,10 @@ import {
 
 const WORKER_ASSIGNMENT_STATUSES = new Set(['assigned', 'accepted', 'in_progress', 'blocked', 'completed', 'cancelled']);
 
-const normalizePhotoPaths = (value) => (Array.isArray(value) ? value : String(value || '').split(/\n|,/))
-  .map((item) => clean(item, 500))
-  .filter(Boolean)
-  .slice(0, 20);
-
 const normalizeWorkerUpdatePayload = (body = {}) => ({
   assignmentId: clean(body.assignmentId, 80),
   status: clean(body.status, 40),
   workerNotes: clean(body.workerNotes, 4000),
-  completionPhotoPaths: normalizePhotoPaths(body.completionPhotoPaths),
 });
 
 const mapDate = (value) => {
@@ -36,7 +30,6 @@ const mapAssignment = (row) => ({
   endTime: row.end_time,
   notes: row.notes,
   workerNotes: row.worker_notes,
-  completionPhotoPaths: Array.isArray(row.completion_photo_paths) ? row.completion_photo_paths : [],
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   worker: {
@@ -125,7 +118,6 @@ const listAssignments = async (db, context) => {
       worker_assignments.end_time,
       worker_assignments.notes,
       worker_assignments.worker_notes,
-      worker_assignments.completion_photo_paths,
       worker_assignments.created_at,
       worker_assignments.updated_at,
       workers.id as worker_id,
@@ -167,7 +159,6 @@ const listAssignments = async (db, context) => {
       worker_assignments.end_time,
       worker_assignments.notes,
       worker_assignments.worker_notes,
-      worker_assignments.completion_photo_paths,
       worker_assignments.created_at,
       worker_assignments.updated_at,
       workers.id as worker_id,
@@ -223,43 +214,22 @@ const handlePatch = async ({ request, db, context }) => {
     return json(422, { ok: false, message: 'Choose a valid assignment status.' });
   }
 
-  const [existingAssignment] = await db.sql`
-    select id, completion_photo_paths
-    from worker_assignments
-    where id = ${payload.assignmentId}
-      and (${context.roleKeys.includes('admin')} or worker_id = ${context.session.user_id})
-    limit 1
-  `;
-
-  if (!existingAssignment) {
-    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
-  }
-
-  const existingPhotoPaths = Array.isArray(existingAssignment.completion_photo_paths) ? existingAssignment.completion_photo_paths : [];
-  const completionPhotoPaths = payload.completionPhotoPaths.length ? payload.completionPhotoPaths : existingPhotoPaths;
-
-  if (payload.status === 'completed' && completionPhotoPaths.length === 0) {
-    return json(422, { ok: false, message: 'Attach at least one completion photo before closing out the work order.' });
-  }
-
   const isAdmin = context.roleKeys.includes('admin');
   const [updatedAssignment] = isAdmin ? await db.sql`
     update worker_assignments
     set status = ${payload.status},
         worker_notes = ${payload.workerNotes || null},
-        completion_photo_paths = ${JSON.stringify(completionPhotoPaths)}::jsonb,
         updated_at = now()
     where id = ${payload.assignmentId}
-    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, completion_photo_paths, created_at, updated_at
+    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
   ` : await db.sql`
     update worker_assignments
     set status = ${payload.status},
         worker_notes = ${payload.workerNotes || null},
-        completion_photo_paths = ${JSON.stringify(completionPhotoPaths)}::jsonb,
         updated_at = now()
     where id = ${payload.assignmentId}
       and worker_id = ${context.session.user_id}
-    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, completion_photo_paths, created_at, updated_at
+    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
   `;
 
   if (!updatedAssignment) {
@@ -291,7 +261,6 @@ const handlePatch = async ({ request, db, context }) => {
       endTime: updatedAssignment.end_time,
       notes: updatedAssignment.notes,
       workerNotes: updatedAssignment.worker_notes,
-      completionPhotoPaths: Array.isArray(updatedAssignment.completion_photo_paths) ? updatedAssignment.completion_photo_paths : [],
       createdAt: updatedAssignment.created_at,
       updatedAt: updatedAssignment.updated_at,
     },

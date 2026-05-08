@@ -82,29 +82,19 @@
             </form>
             <form data-admin-quote-form>
               <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
-              <input type="hidden" name="quoteId" data-admin-quote-id>
-              <input type="hidden" name="editConfirmed" data-admin-quote-edit-confirmed>
               <div class="client-request-form-grid">
-                <label class="full">Existing sent quote
-                  <select data-admin-existing-quote-select>
-                    <option value="">Create a new quote</option>
-                  </select>
-                </label>
                 <label>Quote title
                   <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
                 </label>
                 <label>Amount
-                  <input name="amount" data-admin-quote-amount type="number" min="0" step="0.01" required placeholder="250.00">
+                  <input name="amount" type="number" min="0" step="0.01" required placeholder="250.00">
                 </label>
                 <label class="full">Quote summary
-                  <textarea name="summary" data-admin-quote-summary required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
-                </label>
-                <label class="full">Reason for quote change
-                  <input name="editReason" data-admin-quote-edit-reason placeholder="Required when editing a sent quote amount or scope">
+                  <textarea name="summary" required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
                 </label>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-edit-quote>Click to edit sent quote</button><button class="btn btn-primary" type="submit" data-admin-save-quote>Create / send quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-assignment-form>
               <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -397,7 +387,6 @@
       const currentAdminUsers = new Map();
       const currentAdminWorkers = new Map();
       const currentAdminAssignments = new Map();
-      const currentAdminQuotes = new Map();
       const currentClientProperties = new Map();
       const currentClientRequests = new Map();
       let currentPermissions = [];
@@ -577,9 +566,6 @@
               </label>
               <label class="full">Worker notes
                 <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
-              </label>
-              <label class="full">Completion photo links / paths
-                <textarea name="completionPhotoPaths" placeholder="Required before marking completed. Add one photo path or URL per line.">${escapeHtml((assignment.completionPhotoPaths || []).join('\n'))}</textarea>
               </label>
             </div>
             <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
@@ -1025,12 +1011,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const estimatedStartDate = document.querySelector('[data-admin-estimated-start-date]');
         const completionDate = document.querySelector('[data-admin-completion-date]');
         const quoteTitle = document.querySelector('[data-admin-quote-title]');
-        const quoteId = document.querySelector('[data-admin-quote-id]');
-        const quoteAmount = document.querySelector('[data-admin-quote-amount]');
-        const quoteSummary = document.querySelector('[data-admin-quote-summary]');
-        const quoteEditConfirmed = document.querySelector('[data-admin-quote-edit-confirmed]');
-        const quoteSelect = document.querySelector('[data-admin-existing-quote-select]');
-        const quoteEditReason = document.querySelector('[data-admin-quote-edit-reason]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
@@ -1052,16 +1032,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (completionDate) completionDate.value = request.completionDate || '';
         if (adminNotes) adminNotes.value = request.adminNotes || '';
         if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
-        if (quoteId) quoteId.value = '';
-        if (quoteAmount) quoteAmount.disabled = false;
-        if (quoteSummary) quoteSummary.disabled = false;
-        if (quoteEditConfirmed) quoteEditConfirmed.value = '';
-        if (quoteEditReason) quoteEditReason.value = '';
-        if (quoteSelect) {
-          const requestQuotes = [...currentAdminQuotes.values()].filter((quote) => quote.jobRequestId === request.id);
-          quoteSelect.innerHTML = '<option value="">Create a new quote</option>' + requestQuotes.map((quote) => `<option value="${escapeHtml(quote.id)}">${escapeHtml(quote.title || 'Quote')} — ${formatMoney(quote.amountCents)} — ${escapeHtml((quote.status || '').replaceAll('_', ' '))}</option>`).join('');
-          quoteSelect.value = '';
-        }
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         if (assignmentList) {
           const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
@@ -1201,39 +1171,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
-          quoteForm.querySelector('[data-admin-existing-quote-select]')?.addEventListener('change', (event) => {
-            const quote = currentAdminQuotes.get(event.target.value);
-            const quoteId = quoteForm.querySelector('[data-admin-quote-id]');
-            const title = quoteForm.querySelector('[data-admin-quote-title]');
-            const amount = quoteForm.querySelector('[data-admin-quote-amount]');
-            const summary = quoteForm.querySelector('[data-admin-quote-summary]');
-            const editConfirmed = quoteForm.querySelector('[data-admin-quote-edit-confirmed]');
-            const saveButton = quoteForm.querySelector('[data-admin-save-quote]');
-            if (!quote) {
-              if (quoteId) quoteId.value = '';
-              if (amount) amount.disabled = false;
-              if (summary) summary.disabled = false;
-              if (editConfirmed) editConfirmed.value = '';
-              if (saveButton) saveButton.textContent = 'Create / send quote';
-              return;
-            }
-            if (quoteId) quoteId.value = quote.id;
-            if (title) title.value = quote.title || '';
-            if (amount) { amount.value = ((quote.amountCents || 0) / 100).toFixed(2); amount.disabled = true; }
-            if (summary) { summary.value = quote.summary || ''; summary.disabled = true; }
-            if (editConfirmed) editConfirmed.value = '';
-            if (saveButton) saveButton.textContent = 'Send updated quote';
-          });
-          quoteForm.querySelector('[data-admin-edit-quote]')?.addEventListener('click', () => {
-            const quoteId = quoteForm.querySelector('[data-admin-quote-id]')?.value || '';
-            const formStatus = document.querySelector('[data-admin-quote-form-status]');
-            if (!quoteId) { if (formStatus) formStatus.textContent = 'Select a sent quote first.'; return; }
-            quoteForm.querySelector('[data-admin-quote-amount]')?.removeAttribute('disabled');
-            quoteForm.querySelector('[data-admin-quote-summary]')?.removeAttribute('disabled');
-            const editConfirmed = quoteForm.querySelector('[data-admin-quote-edit-confirmed]');
-            if (editConfirmed) editConfirmed.value = 'true';
-            if (formStatus) formStatus.textContent = 'Quote unlocked. Change the amount or scope, add a reason, then save to send the updated quote to the client.';
-          });
           quoteForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
@@ -1245,16 +1182,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
               summary: formData.get('summary'),
               amountCents: Math.round(amount * 100),
               sendToClient: formData.get('sendToClient') === 'true',
-              quoteId: formData.get('quoteId'),
-              editConfirmed: formData.get('editConfirmed') === 'true',
-              editReason: formData.get('editReason'),
             };
 
-            if (formStatus) formStatus.textContent = payload.quoteId ? 'Sending updated quote…' : (payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…');
+            if (formStatus) formStatus.textContent = payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…';
 
             try {
               const response = await fetch('/api/admin/quotes', {
-                method: payload.quoteId ? 'PATCH' : 'POST',
+                method: 'POST',
                 headers: { accept: 'application/json', 'content-type': 'application/json' },
                 body: JSON.stringify(payload),
               });
@@ -1265,7 +1199,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               }
 
               quoteForm.reset();
-              if (formStatus) formStatus.textContent = payload.quoteId ? 'Updated quote sent for client approval.' : (payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.');
+              if (formStatus) formStatus.textContent = payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.';
               await loadAdminRequests(payload.jobRequestId);
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
@@ -1653,11 +1587,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
           currentAdminRequests.clear();
           currentAdminWorkers.clear();
           currentAdminAssignments.clear();
-          currentAdminQuotes.clear();
           requests.forEach((request) => currentAdminRequests.set(request.id, request));
           (result.workers || []).forEach((worker) => currentAdminWorkers.set(worker.id, worker));
           (result.assignments || []).forEach((assignment) => currentAdminAssignments.set(assignment.id, assignment));
-          (result.quotes || []).forEach((quote) => currentAdminQuotes.set(quote.id, quote));
           const workerSelect = document.querySelector('[data-admin-assignment-worker]');
           if (workerSelect) {
             const selectedWorker = workerSelect.value;

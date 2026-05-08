@@ -72,17 +72,6 @@ const mapWorker = (worker) => ({
   phone: worker.phone,
 });
 
-const mapQuote = (quote) => ({
-  id: quote.id,
-  jobRequestId: quote.job_request_id,
-  status: quote.status,
-  title: quote.title,
-  summary: quote.summary,
-  amountCents: quote.amount_cents,
-  revision: quote.revision || 1,
-  updatedAt: quote.updated_at,
-});
-
 const mapAssignment = (assignment) => ({
   id: assignment.id,
   jobRequestId: assignment.job_request_id,
@@ -317,12 +306,6 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       where worker_assignments.job_request_id in (select id from job_requests order by created_at desc limit 50)
       order by worker_assignments.created_at desc
     `;
-    const quotes = await db.sql`
-      select id, job_request_id, status, title, summary, amount_cents, revision, updated_at
-      from quotes
-      where job_request_id in (select id from job_requests order by created_at desc limit 50)
-      order by updated_at desc
-    `;
 
     return json(200, {
       ok: true,
@@ -338,7 +321,6 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       statusCounts: Object.fromEntries(statusCounts.map((row) => [row.status, row.count])),
       workers: workers.map(mapWorker),
       assignments: assignments.map(mapAssignment),
-      quotes: quotes.map(mapQuote),
     });
   } catch (error) {
     console.error('Failed to load admin job requests', error);
