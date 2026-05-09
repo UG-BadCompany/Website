@@ -404,6 +404,138 @@
       font-weight: 650;
     }
 
+
+
+    /* Modern visual refresh, accessibility, and stable scrolling */
+    html {
+      overflow-x: clip;
+      scrollbar-gutter: stable;
+      scroll-padding-top: 96px;
+    }
+
+    body {
+      overflow-x: clip;
+      accent-color: var(--rust);
+    }
+
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 12px; }
+    html::-webkit-scrollbar-track, body::-webkit-scrollbar-track { background: #fff4e5; }
+    html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+      border: 3px solid #fff4e5;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--rust), var(--copper));
+    }
+
+    .site-shell { overflow-x: clip; }
+
+    .skip-link {
+      position: fixed;
+      left: 18px;
+      top: 14px;
+      z-index: 1000;
+      transform: translateY(-160%);
+      padding: 12px 16px;
+      border-radius: 999px;
+      color: var(--white);
+      background: var(--ink);
+      font-weight: 950;
+      box-shadow: var(--soft-shadow);
+      transition: transform 160ms ease;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid rgba(173, 63, 24, 0.72);
+      outline-offset: 4px;
+    }
+
+    .brand-logo {
+      flex: 0 0 auto;
+      padding: 5px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 24px rgba(45, 27, 13, 0.08);
+    }
+
+    .hero {
+      isolation: isolate;
+      animation: page-rise 700ms ease both;
+    }
+
+    .hero-media {
+      overflow: clip;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 24px 60px rgba(45,27,13,.1);
+    }
+
+    .hero-logo {
+      max-height: 420px;
+      object-fit: contain;
+    }
+
+    .section {
+      scroll-margin-top: 110px;
+      animation: content-rise both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+
+    .service-card,
+    .workflow-card,
+    .estimate-form,
+    .estimate-shell {
+      transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+    }
+
+    .service-card:hover,
+    .workflow-card:hover,
+    .estimate-form:focus-within {
+      transform: translateY(-4px);
+      border-color: rgba(173, 63, 24, 0.24);
+      box-shadow: 0 24px 60px rgba(45, 27, 13, 0.12);
+    }
+
+    @keyframes page-rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes content-rise {
+      from { opacity: .35; transform: translateY(28px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+
+
+    /* Logo presentation fix: keep the detailed wordmark from being squeezed. */
+    .brand-logo {
+      width: clamp(86px, 8vw, 118px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+    }
+
+    .hero-logo {
+      width: min(100%, 720px);
+      max-height: none;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+    }
+
     @media (max-width: 920px) {
       .nav-links a:not(.btn) { display: none; }
       .hero { grid-template-columns: 1fr; }
@@ -415,15 +547,205 @@
 
     @media (max-width: 560px) {
       .brand span { display: none; }
-      .brand-logo { width: 76px; height: 52px; }
+      .brand-logo { width: 72px; height: 72px; }
       .nav-inner { width: min(100% - 24px, 1180px); }
       .hero, .section { width: min(100% - 24px, 1180px); }
       .hero { margin-top: 24px; border-radius: 26px; }
       .footer { width: min(100% - 24px, 1180px); }
     }
+    /* 2026 premium redesign: dark hero, bento cards, refined glass, accessible motion */
+    :root {
+      --modern-bg: #080b10;
+      --modern-panel: rgba(255, 255, 255, 0.08);
+      --modern-panel-strong: rgba(255, 255, 255, 0.14);
+      --modern-line: rgba(255, 255, 255, 0.16);
+      --modern-text: #f8fafc;
+      --modern-muted: #cbd5e1;
+      --modern-amber: #f59e0b;
+      --modern-orange: #f97316;
+    }
+
+    body {
+      color: var(--modern-text);
+      background:
+        radial-gradient(circle at 14% -10%, rgba(249, 115, 22, .34), transparent 34rem),
+        radial-gradient(circle at 92% 12%, rgba(245, 158, 11, .22), transparent 30rem),
+        linear-gradient(135deg, #080b10 0%, #111827 48%, #2b130a 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 78%);
+    }
+
+    .nav {
+      background: rgba(8, 11, 16, .78);
+      border-bottom: 1px solid var(--modern-line);
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+
+    .brand,
+    .nav-links { color: var(--modern-text); }
+
+    .brand-logo {
+      width: clamp(86px, 8vw, 118px);
+      padding: 0;
+      border-radius: 18px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .btn {
+      border-color: var(--modern-line);
+      color: var(--modern-text);
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(14px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--modern-orange), #b93815);
+      box-shadow: 0 16px 42px rgba(249,115,22,.28);
+    }
+
+    .btn-secondary { background: rgba(255,255,255,.11); color: var(--modern-text); }
+
+    .hero {
+      border-color: var(--modern-line);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.055)),
+        radial-gradient(circle at 74% 24%, rgba(249,115,22,.22), transparent 24rem);
+      box-shadow: 0 34px 100px rgba(0,0,0,.35);
+      backdrop-filter: blur(22px);
+    }
+
+    .hero::before {
+      background:
+        linear-gradient(125deg, rgba(249,115,22,.18), transparent 40%),
+        linear-gradient(90deg, rgba(255,255,255,.08), transparent 55%);
+    }
+
+    .eyebrow {
+      color: #fed7aa;
+      background: rgba(249, 115, 22, .16);
+      border-color: rgba(251, 146, 60, .36);
+    }
+
+    h1, h2 { color: var(--modern-text); text-wrap: balance; }
+    .hero-copy, .section-heading p, .estimate-copy p, .form-note, .footer { color: var(--modern-muted); }
+
+    .hero-media {
+      min-height: 500px;
+      border-color: var(--modern-line);
+      background:
+        radial-gradient(circle at 50% 24%, rgba(249,115,22,.24), transparent 18rem),
+        linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+    }
+
+    .hero-logo {
+      width: min(100%, 820px);
+      padding: clamp(8px, 2vw, 20px);
+      filter: drop-shadow(0 28px 50px rgba(0,0,0,.32));
+    }
+
+    .section { margin: 110px auto; }
+
+    .grid { gap: 18px; }
+
+    .service-card,
+    .workflow-card,
+    .estimate-shell,
+    .estimate-form {
+      border-color: var(--modern-line);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      box-shadow: 0 24px 70px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
+    }
+
+    .service-card strong,
+    .workflow-card strong,
+    label { color: var(--modern-text); }
+
+    .service-card p,
+    .workflow-card p,
+    .estimate-list li { color: var(--modern-muted); }
+
+    .band {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(249,115,22,.30), transparent 20rem),
+        linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.045));
+      border-color: var(--modern-line);
+      backdrop-filter: blur(18px);
+    }
+
+    .band .workflow-card { color: var(--modern-text); background: rgba(255,255,255,.10); }
+
+    input, select, textarea {
+      color: var(--modern-text);
+      background: rgba(8,11,16,.62);
+      border-color: var(--modern-line);
+    }
+
+    input::placeholder, textarea::placeholder { color: #94a3b8; }
+
+    input:focus, select:focus, textarea:focus {
+      color: var(--modern-text);
+      background: rgba(8,11,16,.86);
+      border-color: rgba(249,115,22,.72);
+      box-shadow: 0 0 0 4px rgba(249,115,22,.16);
+    }
+
+    .footer { border-top-color: var(--modern-line); }
+
+
+    html[data-theme="light"] body {
+      color: #111827;
+      background:
+        radial-gradient(circle at 14% -10%, rgba(249,115,22,.16), transparent 34rem),
+        radial-gradient(circle at 92% 12%, rgba(245,158,11,.12), transparent 30rem),
+        linear-gradient(135deg, #fffaf2 0%, #ffffff 48%, #f7eadc 100%);
+    }
+    html[data-theme="light"] body::before { opacity: .25; }
+    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .brand,
+    html[data-theme="light"] .nav-links,
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] label,
+    html[data-theme="light"] .service-card strong,
+    html[data-theme="light"] .workflow-card strong { color: #111827; }
+    html[data-theme="light"] .hero-copy,
+    html[data-theme="light"] .section-heading p,
+    html[data-theme="light"] .estimate-copy p,
+    html[data-theme="light"] .form-note,
+    html[data-theme="light"] .footer,
+    html[data-theme="light"] .service-card p,
+    html[data-theme="light"] .workflow-card p,
+    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+    html[data-theme="light"] .hero,
+    html[data-theme="light"] .service-card,
+    html[data-theme="light"] .workflow-card,
+    html[data-theme="light"] .estimate-shell,
+    html[data-theme="light"] .estimate-form,
+    html[data-theme="light"] .band { background: rgba(255,255,255,.88); border-color: rgba(17,17,17,.12); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="light"] .hero-media { background: rgba(255,255,255,.72); border-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .btn,
+    html[data-theme="light"] .btn-secondary { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
+    html[data-theme="light"] input,
+    html[data-theme="light"] select,
+    html[data-theme="light"] textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
+
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#content">Skip to main content</a>
   <div class="site-shell">
     <header class="nav" aria-label="Main navigation">
       <div class="nav-inner">
@@ -433,16 +755,17 @@
         </a>
         <nav class="nav-links" aria-label="Primary links">
           <a href="#services">Services</a>
-          <a href="/login/">Client Portal</a>
+          <a href="/dashboard/">Dashboard</a>
+          <button class="btn btn-secondary" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button>
           <a class="btn btn-primary" href="#estimate">Request Estimate</a>
         </nav>
       </div>
     </header>
 
-    <main>
+    <main id="content">
       <section class="hero">
         <div class="hero-content">
-          <div class="eyebrow">Arizona Native • Maintenance • Anything • Everything</div>
+          <div class="eyebrow">Maintenance • Anything • Everything</div>
           <h1>Contracting help without the runaround.</h1>
           <p class="hero-copy">T&A Contracting is building a professional repair, maintenance, improvement, quote, scheduling, and payment experience for Arizona homeowners, landlords, property managers, and businesses.</p>
           <div class="hero-actions">
@@ -456,7 +779,7 @@
           </div>
         </div>
         <div class="hero-media" aria-label="T&A Contracting logo showcase">
-          <img class="hero-logo" src="/assets/ta-contracting-logo.svg" alt="T&A Contracting Arizona Native logo">
+          <img class="hero-logo" src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo">
         </div>
       </section>
 
@@ -489,7 +812,7 @@
           <article class="workflow-card"><strong>Payments and invoices next</strong><p>The same portal is being prepared for invoice review, deposits, final payments, and receipts.</p></article>
         </div>
         <div class="portal-actions">
-          <a class="btn btn-primary" href="/login/">Open Client Portal</a>
+          <a class="btn btn-primary" href="/dashboard/">Open Dashboard</a>
         </div>
       </section>
 
@@ -636,6 +959,26 @@
         } finally {
           submitButton.disabled = false;
         }
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const toggle = document.querySelector('[data-theme-toggle]');
+      const applyTheme = (theme) => {
+        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = normalizedTheme;
+        if (toggle) {
+          toggle.textContent = normalizedTheme === 'light' ? 'Dark mode' : 'Light mode';
+          toggle.setAttribute('aria-label', `Switch to ${normalizedTheme === 'light' ? 'dark' : 'light'} theme`);
+        }
+      };
+      applyTheme(localStorage.getItem('ta-theme') || 'dark');
+      toggle?.addEventListener('click', () => {
+        const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('ta-theme', nextTheme);
+        applyTheme(nextTheme);
       });
     })();
   </script>
