@@ -18,7 +18,7 @@
     .brand img {
       width: clamp(118px, 12vw, 156px);
       height: auto;
-      aspect-ratio: 920 / 620;
+      aspect-ratio: 20 / 7;
       object-fit: contain;
     }
 
@@ -28,7 +28,7 @@
       width: min(100%, 620px);
       height: auto;
       max-height: none;
-      aspect-ratio: 920 / 620;
+      aspect-ratio: 20 / 7;
       object-fit: contain;
     }
 
@@ -107,6 +107,137 @@
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
+
+    /* 2026 dashboard redesign: product-style shell, bento workspace, clear logo */
+    :root {
+      --dash-bg: #070a0f;
+      --dash-surface: rgba(255,255,255,.085);
+      --dash-surface-strong: rgba(255,255,255,.14);
+      --dash-line: rgba(255,255,255,.15);
+      --dash-text: #f8fafc;
+      --dash-muted: #cbd5e1;
+      --dash-orange: #f97316;
+      --dash-amber: #f59e0b;
+      --dash-green: #22c55e;
+      --dash-blue: #60a5fa;
+    }
+
+    body {
+      color: var(--dash-text);
+      background:
+        radial-gradient(circle at 12% -8%, rgba(249,115,22,.34), transparent 34rem),
+        radial-gradient(circle at 92% 0%, rgba(96,165,250,.16), transparent 28rem),
+        linear-gradient(135deg, #070a0f 0%, #111827 48%, #251109 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 82%);
+    }
+
+    p { color: var(--dash-muted); }
+    .nav { background: rgba(7,10,15,.80); border-bottom-color: var(--dash-line); }
+    .brand, .nav-links { color: var(--dash-text); }
+    .brand img { width: clamp(150px, 14vw, 210px); padding: 0; background: transparent; box-shadow: none; }
+    .btn { color: var(--dash-text); border-color: var(--dash-line); background: rgba(255,255,255,.08); backdrop-filter: blur(14px); }
+    .btn-primary { background: linear-gradient(135deg, var(--dash-orange), #b93815); box-shadow: 0 16px 42px rgba(249,115,22,.28); }
+    .btn-soft { background: rgba(255,255,255,.10); }
+
+    .dashboard-hero {
+      border-color: var(--dash-line);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.055)),
+        radial-gradient(circle at 78% 22%, rgba(249,115,22,.24), transparent 24rem);
+      box-shadow: 0 34px 100px rgba(0,0,0,.34);
+      backdrop-filter: blur(22px);
+    }
+
+    .eyebrow { color: #fed7aa; background: rgba(249,115,22,.16); }
+    h1, h2 { color: var(--dash-text); text-wrap: balance; }
+    .logo-panel { border-color: var(--dash-line); background: linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.055)); }
+    .logo-panel img { width: min(100%, 760px); padding: clamp(8px, 2vw, 18px); background: transparent; box-shadow: none; filter: drop-shadow(0 26px 48px rgba(0,0,0,.34)); }
+
+    .workspace-tabs {
+      border-color: var(--dash-line);
+      background: rgba(7,10,15,.78);
+      box-shadow: 0 20px 60px rgba(0,0,0,.30);
+    }
+
+    .workspace-tabs a { color: var(--dash-muted); }
+    .workspace-tabs a:hover, .workspace-tabs a:focus-visible { color: var(--dash-text); background: rgba(255,255,255,.10); }
+
+    .card,
+    .admin-request,
+    .client-request,
+    .client-quote,
+    .client-property,
+    .worker-job,
+    .admin-assignment,
+    .client-request-form,
+    .session-status,
+    .client-profile-properties,
+    .admin-request-modal-panel {
+      color: var(--dash-text);
+      border-color: var(--dash-line);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.055));
+      box-shadow: 0 24px 70px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
+    }
+
+    .card strong,
+    .admin-request strong,
+    .client-request strong,
+    .client-quote strong,
+    .client-property strong,
+    .worker-job strong,
+    .admin-assignment strong,
+    .client-request-form label { color: var(--dash-text); }
+
+    .metric { color: #fdba74; }
+
+    .admin-request-badge,
+    .client-request-badge,
+    .client-quote-badge,
+    .client-property-badge,
+    .worker-job-badge,
+    .admin-assignment-badge,
+    .role {
+      color: #fed7aa;
+      border-color: rgba(249,115,22,.30);
+      background: rgba(249,115,22,.13);
+    }
+
+    .admin-request-meta,
+    .client-request-meta,
+    .client-quote-meta,
+    .client-property-meta,
+    .worker-job-meta,
+    .admin-assignment-meta,
+    .tool-list li { color: var(--dash-muted); }
+
+    .client-request-form input,
+    .client-request-form select,
+    .client-request-form textarea {
+      color: var(--dash-text);
+      background: rgba(7,10,15,.64);
+      border-color: var(--dash-line);
+    }
+
+    .client-request-form input::placeholder,
+    .client-request-form textarea::placeholder { color: #94a3b8; }
+
+    .profile-summary div,
+    .tool-list li { border-color: var(--dash-line); background: rgba(255,255,255,.075); }
+    .profile-summary span { color: #94a3b8; }
+    .footer { border-top-color: var(--dash-line); color: var(--dash-muted); }
 
   </style>
 </head>
@@ -359,51 +490,6 @@
         </section>
       </div>
       </section>
-    </section>
-
-    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
-      <strong>Payments waiting</strong>
-      <p>Completed work that has been verified moves here until payment is confirmed.</p>
-      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
-      <div class="client-request-form" data-admin-invoice-controls>
-        <div class="client-request-form-grid">
-          <label>Invoice view
-            <select data-admin-invoice-status-filter>
-              <option value="open">Open / unpaid</option>
-              <option value="paid">Paid history</option>
-              <option value="all">All active invoices</option>
-            </select>
-          </label>
-          <label>Search invoices
-            <input data-admin-invoice-search placeholder="Client, address, service, reference">
-          </label>
-        </div>
-      </div>
-      <div class="admin-request-list" data-admin-invoice-summary></div>
-      <div class="client-quote-list" data-admin-invoice-list></div>
-    </section>
-
-    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Recent admin activity</strong>
-      <p>Review the latest status changes, quotes, assignments, payments, and account updates recorded in the audit trail.</p>
-      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading recent admin activity…</p>
-      <div class="client-request-form" data-admin-activity-controls>
-        <div class="client-request-form-grid">
-          <label>Activity type
-            <select data-admin-activity-type-filter>
-              <option value="">All activity</option>
-              <option value="job">Requests &amp; work orders</option>
-              <option value="quote">Quotes</option>
-              <option value="payment">Invoices &amp; payments</option>
-              <option value="user">Users &amp; roles</option>
-            </select>
-          </label>
-          <label>Search activity
-            <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
-          </label>
-        </div>
-      </div>
-      <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
@@ -2435,6 +2521,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageInvoices) {
             bindAdminInvoiceActions();
             loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
           }
 
           if (result.user.permissions?.canManageInvoices) {
