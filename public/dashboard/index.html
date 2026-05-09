@@ -353,8 +353,8 @@
       <div class="dashboard-hero">
         <div>
           <span class="eyebrow">Secure Client Portal</span>
-          <h1>Your dashboard opens after secure portal access.</h1>
-          <p>Manage your requests, quotes, profile, schedule, and assigned work from one secure dashboard.</p>
+          <h1>Welcome back to your T&A workspace.</h1>
+          <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
@@ -2620,7 +2620,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         .then(({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
-            status.innerHTML = 'Secure dashboard access requires a verified magic-link session. <a href="/login/">Request a magic link</a>.';
+            status.textContent = 'Redirecting to secure magic-link sign in…';
+            window.location.replace('/login/?next=dashboard');
             return;
           }
 
@@ -2660,10 +2661,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
             loadAdminActivity();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {
