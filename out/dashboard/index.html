@@ -13,6 +13,101 @@
     /* Modern dashboard refresh, ADA helpers, and stable scrolling */
     html{overflow-x:clip;scrollbar-gutter:stable;scroll-padding-top:98px}body{overflow-x:clip;accent-color:var(--rust)}html::-webkit-scrollbar,body::-webkit-scrollbar{width:12px}html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:#fff4e5}html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{border:3px solid #fff4e5;border-radius:999px;background:linear-gradient(180deg,var(--rust),var(--copper))}.skip-link{position:fixed;left:18px;top:14px;z-index:1000;transform:translateY(-160%);padding:12px 16px;border-radius:999px;color:#fff;background:#111;font-weight:950;box-shadow:var(--shadow);transition:transform .16s ease}.skip-link:focus{transform:translateY(0)}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(173,63,24,.72);outline-offset:4px}.nav{z-index:12;box-shadow:0 10px 34px rgba(45,27,13,.06)}.brand img,.logo-panel img{padding:5px;border-radius:16px;background:rgba(255,255,255,.96);box-shadow:0 10px 24px rgba(45,27,13,.08)}.logo-panel img{max-height:320px;object-fit:contain}.dashboard-hero{position:relative;overflow:clip;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,248,238,.82));isolation:isolate;animation:dashboard-rise .7s ease both}.dashboard-hero::before{content:"";position:absolute;inset:-30% auto auto 48%;width:520px;height:520px;border-radius:999px;background:radial-gradient(circle,rgba(216,135,52,.22),transparent 66%);z-index:-1}.workspace-tabs{position:sticky;top:86px;z-index:9;display:flex;gap:10px;align-items:center;overflow-x:auto;margin:8px 0 26px;padding:12px;border:1px solid var(--line);border-radius:22px;background:rgba(255,250,244,.9);backdrop-filter:blur(16px);box-shadow:0 14px 38px rgba(45,27,13,.08);scrollbar-width:thin}.workspace-tabs a{flex:0 0 auto;padding:11px 14px;border:1px solid transparent;border-radius:999px;color:var(--muted);font-weight:950}.workspace-tabs a:hover,.workspace-tabs a:focus-visible{border-color:rgba(173,63,24,.22);color:var(--rust);background:#fff}.grid{align-items:stretch}.card{scroll-margin-top:160px;position:relative;overflow:clip;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,250,244,.92));transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}.card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--rust),var(--copper));opacity:.78}.card:hover,.card:focus-within{transform:translateY(-3px);border-color:rgba(173,63,24,.24);box-shadow:0 24px 60px rgba(45,27,13,.12)}.admin-inbox,.admin-access,.admin-invoices,.admin-activity,.client-requests,.client-quotes,.client-invoices,.worker-jobs{margin:26px 0 0;padding:clamp(20px,3vw,32px)}.client-request-form{background:rgba(255,255,255,.82);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}.client-request-form input,.client-request-form select,.client-request-form textarea{min-height:48px}.session-status{border-left:4px solid var(--copper)}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{background:#fff;box-shadow:0 10px 24px rgba(45,27,13,.06);transition:transform .18s ease,border-color .18s ease}.admin-request:hover,.client-request:hover,.client-quote:hover,.client-property:hover,.worker-job:hover,.admin-assignment:hover{transform:translateY(-2px);border-color:rgba(173,63,24,.22)}.admin-request-modal{padding:clamp(14px,4vw,28px)}.admin-request-modal-panel{scrollbar-width:thin}.admin-request-modal-panel::-webkit-scrollbar,.workspace-tabs::-webkit-scrollbar{height:10px;width:10px}.admin-request-modal-panel::-webkit-scrollbar-thumb,.workspace-tabs::-webkit-scrollbar-thumb{border-radius:999px;background:rgba(173,63,24,.45)}@keyframes dashboard-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}@media(max-width:850px){.workspace-tabs{top:74px}.card:hover,.card:focus-within{transform:none}}
 
+
+    /* Cleanup pass: logo sizing, dashboard grouping, modal scrollbars, and profile edit state */
+    .brand img {
+      width: clamp(118px, 12vw, 156px);
+      height: auto;
+      aspect-ratio: 920 / 620;
+      object-fit: contain;
+    }
+
+    .logo-panel { min-height: clamp(300px, 34vw, 430px); }
+
+    .logo-panel img {
+      width: min(100%, 620px);
+      height: auto;
+      max-height: none;
+      aspect-ratio: 920 / 620;
+      object-fit: contain;
+    }
+
+    .workspace-tabs .workspace-action {
+      flex: 0 0 auto;
+      min-height: 44px;
+      padding: 11px 16px;
+      border: 1px solid rgba(173,63,24,.22);
+      border-radius: 999px;
+      color: #fff;
+      background: linear-gradient(135deg,var(--rust),var(--rust-dark));
+      font: inherit;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
+    .workspace-tabs .workspace-action:hover,
+    .workspace-tabs .workspace-action:focus-visible {
+      box-shadow: 0 14px 28px rgba(173,63,24,.18);
+      transform: translateY(-1px);
+    }
+
+    [data-admin-pipeline-summary] {
+      grid-template-columns: repeat(3,minmax(0,1fr));
+      align-items: stretch;
+    }
+
+    [data-admin-pipeline-summary] .admin-request {
+      text-align: center;
+      min-height: 128px;
+      display: grid;
+      align-content: center;
+    }
+
+    .admin-access-panel {
+      width: min(980px,100%);
+      padding: 0 20px 20px;
+      overscroll-behavior: contain;
+    }
+
+    .client-profile .admin-request-modal-panel {
+      width: min(860px,100%);
+      max-height: min(82vh,900px);
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
+    .client-profile .admin-request-modal-panel::-webkit-scrollbar,
+    .admin-access-panel::-webkit-scrollbar { width: 12px; }
+
+    .client-profile .admin-request-modal-panel::-webkit-scrollbar-track,
+    .admin-access-panel::-webkit-scrollbar-track {
+      background: #fff4e5;
+      border-radius: 999px;
+    }
+
+    .client-profile .admin-request-modal-panel::-webkit-scrollbar-thumb,
+    .admin-access-panel::-webkit-scrollbar-thumb {
+      border: 3px solid #fff4e5;
+      border-radius: 999px;
+      background: linear-gradient(180deg,var(--rust),var(--copper));
+    }
+
+    .client-profile [data-client-profile-form][hidden] { display: none; }
+
+    .client-profile-properties {
+      margin: 18px 0 22px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.82);
+    }
+
+    @media(max-width:760px) {
+      [data-admin-pipeline-summary] { grid-template-columns: 1fr; }
+      .brand img { width: 104px; }
+      .logo-panel { min-height: 230px; }
+    }
+
   </style>
 </head>
 <body>
@@ -38,7 +133,7 @@
 
     <nav class="workspace-tabs" aria-label="Dashboard workspace sections">
       <a href="#admin-work-orders" data-dashboard-section data-views="admin" hidden>Work orders</a>
-      <a href="#admin-access" data-dashboard-section data-views="admin" hidden>Access</a>
+      <button class="workspace-action" type="button" data-admin-access-open data-dashboard-section data-views="admin" hidden>Manage roles &amp; users</button>
       <a href="#admin-invoices" data-dashboard-section data-views="admin" hidden>Invoices</a>
       <a href="#admin-activity" data-dashboard-section data-views="admin" hidden>Activity</a>
       <a href="#submit-request" data-dashboard-section data-views="client" hidden>Requests</a>
@@ -179,9 +274,12 @@
     </section>
 
 
-    <section class="card admin-access" id="admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
-      <strong>Admin roles & users</strong>
-      <p>Search users, update profile details, and manage roles from one selector. Choose an existing role to edit it, or create a new role from the same role manager.</p>
+    <section class="admin-request-modal admin-access" id="admin-access" data-admin-access role="dialog" aria-modal="true" aria-labelledby="admin-access-title" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="admin-access-title">Admin roles &amp; users</strong><p>Search users, update profile details, and manage roles without crowding the main dashboard.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-access-close aria-label="Close roles and users manager">×</button>
+        </div>
       <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
       <form class="client-request-form" data-admin-role-picker-form>
         <strong>Manage roles</strong>
@@ -260,6 +358,52 @@
           </form>
         </section>
       </div>
+      </section>
+    </section>
+
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Payments waiting</strong>
+      <p>Completed work that has been verified moves here until payment is confirmed.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Recent admin activity</strong>
+      <p>Review the latest status changes, quotes, assignments, payments, and account updates recorded in the audit trail.</p>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading recent admin activity…</p>
+      <div class="client-request-form" data-admin-activity-controls>
+        <div class="client-request-form-grid">
+          <label>Activity type
+            <select data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="job">Requests &amp; work orders</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Invoices &amp; payments</option>
+              <option value="user">Users &amp; roles</option>
+            </select>
+          </label>
+          <label>Search activity
+            <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
@@ -310,15 +454,16 @@
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
-          <div><strong id="client-profile-title">My profile &amp; properties</strong><p>See your contact details and saved properties, then edit your profile in this pop out.</p></div>
+          <div><strong id="client-profile-title">My profile &amp; properties</strong><p>Review your contact details first. Use Edit profile when you need to make changes.</p></div>
           <button class="btn btn-soft admin-request-modal-close" type="button" data-client-profile-modal-close aria-label="Close profile">×</button>
         </div>
         <div class="client-request-form">
           <strong>Profile details</strong>
           <div class="profile-summary" data-client-profile-summary></div>
           <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="button" data-client-profile-edit>Edit profile</button></div>
         </div>
-      <form class="client-request-form" data-client-profile-form>
+      <form class="client-request-form" data-client-profile-form hidden>
         <div class="client-request-form-grid">
           <label>Email
             <input name="email" type="email" data-client-profile-email disabled>
@@ -339,7 +484,7 @@
             <input name="mailingAddress" data-client-profile-mailing-address autocomplete="street-address" placeholder="Street, city, state, ZIP">
           </label>
         </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save profile</button><span data-client-profile-form-status aria-live="polite"></span></div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save profile</button><button class="btn btn-soft" type="button" data-client-profile-cancel>Cancel edit</button><span data-client-profile-form-status aria-live="polite"></span></div>
       </form>
       <div class="client-profile-properties" data-client-properties>
         <strong>My properties</strong>
@@ -541,7 +686,11 @@
           document.querySelector('[name="service"]')?.focus({ preventScroll: true });
         });
       };
-      const closeClientProfileModal = () => setModalOpen(document.querySelector('[data-client-profile]'), false);
+      const closeClientProfileModal = () => {
+        const form = document.querySelector('[data-client-profile-form]');
+        if (form) form.hidden = true;
+        setModalOpen(document.querySelector('[data-client-profile]'), false);
+      };
 
       const bindClientProfileButton = () => {
         const modal = document.querySelector('[data-client-profile]');
@@ -549,7 +698,7 @@
         profileButton.dataset.bound = 'true';
         profileButton.addEventListener('click', () => {
           setModalOpen(modal, true);
-          document.querySelector('[data-client-profile-name]')?.focus({ preventScroll: true });
+          document.querySelector('[data-client-profile-edit]')?.focus({ preventScroll: true });
         });
         modal.addEventListener('click', (event) => {
           if (event.target === modal || event.target.closest('[data-client-profile-modal-close]')) closeClientProfileModal();
@@ -665,9 +814,17 @@
       };
 
       const renderAdminPipelineSummary = (statusCounts = {}) => {
-        const cards = adminStatusOrder
+        const summaryOrder = [
+          ['new', 'New'],
+          ['in_progress', 'In progress'],
+          ['needs_review', 'Needs review'],
+          ['scheduled', 'Scheduled'],
+          ['pending_review', 'Pending review'],
+          ['waiting_payment', 'Waiting payment'],
+        ];
+        const cards = summaryOrder
           .map(([statusKey, label]) => ({ statusKey, label, count: Number(statusCounts[statusKey] || 0) }))
-          .filter((item) => item.count > 0 || ['new', 'needs_review', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment'].includes(item.statusKey));
+          .filter((item) => item.count > 0 || summaryOrder.some(([statusKey]) => statusKey === item.statusKey));
 
         return cards.map((item) => `
           <article class="admin-request" data-admin-filter-status="${escapeHtml(item.statusKey)}">
@@ -1031,13 +1188,25 @@
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save profile.');
         renderClientProfile(result.user);
+        form.hidden = true;
+        document.querySelector('[data-client-profile-edit]')?.focus({ preventScroll: true });
         if (formStatus) formStatus.textContent = 'Profile saved.';
       };
 
       const bindClientProfileForm = () => {
         const form = document.querySelector('[data-client-profile-form]');
+        const editButton = document.querySelector('[data-client-profile-edit]');
+        const cancelButton = document.querySelector('[data-client-profile-cancel]');
         if (!form || form.dataset.bound) return;
         form.dataset.bound = 'true';
+        editButton?.addEventListener('click', () => {
+          form.hidden = false;
+          document.querySelector('[data-client-profile-name]')?.focus({ preventScroll: true });
+        });
+        cancelButton?.addEventListener('click', () => {
+          form.hidden = true;
+          document.querySelector('[data-client-profile-edit]')?.focus({ preventScroll: true });
+        });
         form.addEventListener('submit', async (event) => {
           event.preventDefault();
           const formStatus = document.querySelector('[data-client-profile-form-status]');
@@ -1969,6 +2138,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
       };
 
+      const bindAdminAccessLauncher = () => {
+        const panel = document.querySelector('[data-admin-access]');
+        const openButton = document.querySelector('[data-admin-access-open]');
+        if (!panel || !openButton || openButton.dataset.bound) return;
+        openButton.dataset.bound = 'true';
+        openButton.addEventListener('click', () => {
+          setModalOpen(panel, true);
+          document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+        });
+        panel.querySelector('[data-admin-access-close]')?.addEventListener('click', () => setModalOpen(panel, false));
+        panel.addEventListener('click', (event) => {
+          if (event.target === panel) setModalOpen(panel, false);
+        });
+      };
+
       const loadAdminAccess = async () => {
         const status = document.querySelector('[data-admin-access-status]');
         try {
@@ -2321,7 +2505,17 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminInvoices();
           }
 
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
+            bindAdminAccessLauncher();
             loadAdminAccess();
           }
         })
