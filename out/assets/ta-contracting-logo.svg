@@ -1,43 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 620" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
   <title id="title">T&amp;A Contracting</title>
-  <desc id="desc">Modern T&amp;A Contracting Arizona Native logo with roofline, desert sun, state outline, and contracting wordmark.</desc>
+  <desc id="desc">Clean modern T&amp;A Contracting logo with desert sun, roofline, bold T&amp;A wordmark, and maintenance tagline.</desc>
   <defs>
-    <linearGradient id="sunset" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#f7b34a"/>
-      <stop offset="1" stop-color="#b64018"/>
+    <linearGradient id="copper" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffb357"/>
+      <stop offset="0.55" stop-color="#d86f2c"/>
+      <stop offset="1" stop-color="#9c3518"/>
     </linearGradient>
-    <linearGradient id="rust" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#c84e1d"/>
-      <stop offset="1" stop-color="#8e2f14"/>
+    <linearGradient id="ink" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#2a1711"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000000" flood-opacity="0.16"/>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#1b100b" flood-opacity="0.18"/>
     </filter>
   </defs>
 
-  <rect width="920" height="620" rx="34" fill="#ffffff"/>
-
-  <g filter="url(#shadow)">
-    <g transform="translate(98 48)">
-      <path d="M96 208 78 121l58-8 61 52 37-31V26h335v128l74-48 196 142h-72L641 158 476 267H90l38-59H96Z" fill="#fff"/>
-      <path d="M94 208 76 121l60-8 61 52 37-31V26h335v128" fill="none" stroke="url(#rust)" stroke-width="15" stroke-linejoin="round"/>
-      <path d="M267 50h278v168H267z" fill="#ead2ba" opacity="0.72"/>
-      <circle cx="409" cy="193" r="73" fill="url(#sunset)"/>
-      <g stroke="#fff" stroke-width="14" opacity="0.9">
-        <path d="M409 76v54"/><path d="M353 91l30 49"/><path d="M304 125l49 38"/><path d="M465 91l-28 52"/><path d="M516 125l-51 39"/>
-      </g>
-      <path d="M265 259c35-30 64-50 88-58 19-6 40 17 59 12 25-6 37-33 63-22 22 10 40 34 64 25 20-7 43 9 68 43H265Z" fill="#6d421f"/>
-      <path d="M90 267h351l-46 83H242l-38 224H102l38-224H28l49-83h13Z" fill="#171717"/>
-      <path d="M439 574 594 299 837 472h-77L597 360 481 574h-42Z" fill="#171717"/>
-      <path d="M534 574 662 356 785 574h-88l-18-45H566l-24 45h-8Zm62-106h54l-25-68-29 68Z" fill="#171717"/>
-      <path d="M334 405h91c36 0 51 15 45 45l-5 33h-55l2-15c2-12-4-18-18-18h-38c-15 0-23 6-25 19l-3 20 55 48 19-26h63l-46 62h-78l-9-9c-19 10-41 15-66 15h-34c-45 0-65-20-59-61l6-33c4-26 22-43 54-50-13-13-17-28-13-45 5-24 27-36 68-36Zm-32 117c-2 12 4 18 19 18h34l-57-51c-12 4-18 10-20 19l-2 12Z" fill="url(#rust)"/>
-    </g>
+  <rect width="1200" height="420" rx="52" fill="#fffaf2"/>
+  <g filter="url(#softShadow)">
+    <rect x="54" y="54" width="312" height="312" rx="42" fill="#ffffff"/>
+    <circle cx="210" cy="176" r="82" fill="url(#copper)" opacity="0.95"/>
+    <path d="M110 218 210 134l100 84" fill="none" stroke="#111827" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M131 240h158" stroke="#111827" stroke-width="22" stroke-linecap="round"/>
+    <path d="M156 286h108" stroke="#d86f2c" stroke-width="20" stroke-linecap="round"/>
+    <path d="M178 134 210 106l32 28" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
   </g>
 
-  <text x="460" y="510" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="52" letter-spacing="18" fill="#171717">CONTRACTING</text>
-  <g fill="#a83a18">
-    <circle cx="310" cy="558" r="4"/><circle cx="460" cy="558" r="4"/><circle cx="610" cy="558" r="4"/>
-  </g>
-  <text x="460" y="570" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="24" letter-spacing="8" fill="#171717">MAINTENANCE • ANYTHING • EVERYTHING</text>
-  <text x="460" y="604" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="18" letter-spacing="10" fill="#a83a18">ARIZONA NATIVE</text>
+  <text x="420" y="174" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="104" letter-spacing="-5" fill="url(#ink)">T&amp;A</text>
+  <text x="420" y="256" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="62" letter-spacing="9" fill="#111827">CONTRACTING</text>
+  <rect x="422" y="287" width="428" height="5" rx="3" fill="url(#copper)"/>
+  <text x="420" y="335" font-family="Inter, Montserrat, Arial, sans-serif" font-size="25" font-weight="900" letter-spacing="5" fill="#9c3518">LOCALLY OWNED</text>
+  <text x="704" y="335" font-family="Inter, Montserrat, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="4" fill="#374151">MAINTENANCE • REPAIRS • IMPROVEMENTS</text>
 </svg>
