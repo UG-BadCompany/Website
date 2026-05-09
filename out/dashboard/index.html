@@ -338,7 +338,7 @@
     <nav class="workspace-tabs" aria-label="Dashboard workspace sections">
       <a href="#admin-work-orders" data-dashboard-section data-views="admin" hidden>Work orders</a>
       <a href="#admin-invoices" data-dashboard-section data-views="admin" hidden>Invoices</a>
-      <a href="#admin-inventory" data-dashboard-section data-views="admin" hidden>Inventory</a>
+      <a href="/inventory/" data-dashboard-section data-views="admin" data-permission="canManageInventory" hidden>Inventory</a>
       <button class="workspace-action" type="button" data-admin-access-open data-dashboard-section data-views="admin" hidden>Roles &amp; users</button>
       <button class="workspace-action" type="button" data-admin-activity-open data-dashboard-section data-views="admin" hidden>Activity</button>
       <a href="#submit-request" data-dashboard-section data-views="client" hidden>Requests</a>
@@ -588,29 +588,6 @@
       <div class="client-quote-list" data-admin-invoice-list></div>
     </section>
 
-    <section class="card admin-inventory" id="admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
-      <strong>Inventory</strong>
-      <p>Track materials, tools, stock levels, suppliers, and low-stock items for upcoming work orders.</p>
-      <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
-      <form class="client-request-form" data-admin-inventory-form>
-        <strong>Add inventory item</strong>
-        <div class="client-request-form-grid">
-          <label>Item name<input name="name" required placeholder="Drywall screws"></label>
-          <label>SKU / reference<input name="sku" placeholder="DW-SCREW-1"></label>
-          <label>Category<input name="category" placeholder="Fasteners, paint, tools"></label>
-          <label>Unit<input name="unit" placeholder="each, box, gallon"></label>
-          <label>Quantity on hand<input name="quantityOnHand" type="number" step="0.01" placeholder="10"></label>
-          <label>Reorder point<input name="reorderPoint" type="number" step="0.01" placeholder="3"></label>
-          <label>Supplier<input name="supplier" placeholder="Supplier or store"></label>
-          <label>Location<input name="storageLocation" placeholder="Shop shelf, truck, trailer"></label>
-          <label class="full">Notes<textarea name="notes" placeholder="Size, color, preferred brand, purchase notes"></textarea></label>
-        </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
-      </form>
-      <div class="admin-request-list" data-admin-inventory-summary></div>
-      <div class="client-quote-list" data-admin-inventory-list></div>
-    </section>
-
     <section class="admin-request-modal admin-activity" id="admin-activity" data-admin-activity role="dialog" aria-modal="true" aria-labelledby="admin-activity-title" hidden>
       <section class="admin-request-modal-panel admin-access-panel">
         <div class="admin-request-modal-header">
@@ -836,7 +813,6 @@
       const currentAdminAssignments = new Map();
       const currentAdminQuotes = new Map();
       let currentAdminInvoices = [];
-      let currentAdminInventory = [];
       let currentAdminActivity = [];
       let currentProfileUser = null;
       let adminActivityLoaded = false;
@@ -916,7 +892,9 @@
       const setDashboardView = (view) => {
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
           const views = (section.dataset.views || '').split(' ');
-          section.hidden = !views.includes(view);
+          const requiredPermission = section.dataset.permission;
+          const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
+          section.hidden = !views.includes(view) || !hasRequiredPermission;
         });
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
@@ -1122,43 +1100,6 @@
           <p>Payment is waiting for admin confirmation. Paid invoices stay in your records but leave this dashboard.</p>
         </article>
       `;
-
-      const renderAdminInventorySummary = (summary = {}) => `
-        <article class="admin-request"><span class="admin-request-badge">Inventory items</span><strong>${Number(summary.total || 0)}</strong><p>active tracked items</p></article>
-        <article class="admin-request"><span class="admin-request-badge">Low stock</span><strong>${Number(summary.lowStock || 0)}</strong><p>at or under reorder point</p></article>
-        <article class="admin-request"><span class="admin-request-badge">Categories</span><strong>${Number(summary.categories || 0)}</strong><p>organized item groups</p></article>
-      `;
-
-      const renderAdminInventoryCard = (item) => `
-        <article class="client-quote">
-          <span class="client-quote-badge">${escapeHtml(item.stockStatus === 'low' ? 'low stock' : 'in stock')}</span>
-          <strong>${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || 'each')}</strong>
-          <div class="client-quote-meta">
-            <span>${escapeHtml(item.category || 'Uncategorized')}</span>
-            <span>${escapeHtml(item.sku || 'No SKU')}</span>
-            <span>${escapeHtml(item.storageLocation || 'No location')}</span>
-            <span>Reorder at ${Number(item.reorderPoint || 0)}</span>
-          </div>
-          ${item.supplier ? `<p><strong>Supplier:</strong> ${escapeHtml(item.supplier)}</p>` : ''}
-          ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ''}
-          <form class="client-request-form" data-admin-inventory-adjust-form data-inventory-item-id="${escapeHtml(item.id)}">
-            <div class="client-request-form-grid">
-              <label>Adjustment type
-                <select name="adjustmentType"><option value="received">Received</option><option value="used">Used</option><option value="correction">Correction</option><option value="manual">Manual</option></select>
-              </label>
-              <label>Quantity change<input name="quantityDelta" type="number" step="0.01" placeholder="5 or -2" required></label>
-              <label class="full">Note<input name="adjustmentNote" placeholder="Restocked, used on job, count correction"></label>
-            </div>
-            <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Save adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
-          </form>
-        </article>
-      `;
-
-      const renderAdminInventoryList = () => {
-        const list = document.querySelector('[data-admin-inventory-list]');
-        if (!list) return;
-        list.innerHTML = currentAdminInventory.length ? currentAdminInventory.map(renderAdminInventoryCard).join('') : '<p class="session-status">No inventory items yet.</p>';
-      };
 
       const renderAdminInvoiceSummary = (summary = {}) => {
         const open = Number(summary.open || 0);
@@ -2419,68 +2360,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const bindAdminInventoryActions = () => {
-        const panel = document.querySelector('[data-admin-inventory]');
-        const form = document.querySelector('[data-admin-inventory-form]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
-        form?.addEventListener('submit', async (event) => {
-          event.preventDefault();
-          const status = document.querySelector('[data-admin-inventory-form-status]');
-          const payload = Object.fromEntries(new FormData(form).entries());
-          if (status) status.textContent = 'Adding item…';
-          try {
-            const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add inventory item.');
-            form.reset();
-            if (status) status.textContent = 'Inventory item added.';
-            await loadAdminInventory();
-          } catch (error) {
-            if (status) status.textContent = error.message;
-          }
-        });
-        panel.addEventListener('submit', async (event) => {
-          const adjustmentForm = event.target.closest('[data-admin-inventory-adjust-form]');
-          if (!adjustmentForm) return;
-          event.preventDefault();
-          const status = adjustmentForm.querySelector('[data-admin-inventory-adjust-status]');
-          const formData = new FormData(adjustmentForm);
-          const payload = { itemId: adjustmentForm.dataset.inventoryItemId, adjustmentType: formData.get('adjustmentType'), quantityDelta: Number(formData.get('quantityDelta') || 0), adjustmentNote: formData.get('adjustmentNote') || '' };
-          if (status) status.textContent = 'Saving adjustment…';
-          try {
-            const response = await fetch('/api/admin/inventory', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save inventory adjustment.');
-            await loadAdminInventory();
-          } catch (error) {
-            if (status) status.textContent = error.message;
-          }
-        });
-      };
-
-      const loadAdminInventory = async () => {
-        const panel = document.querySelector('[data-admin-inventory]');
-        const status = document.querySelector('[data-admin-inventory-status]');
-        const summary = document.querySelector('[data-admin-inventory-summary]');
-        if (!panel || !status) return;
-        try {
-          const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
-          currentAdminInventory = result.items || [];
-          status.dataset.state = 'ready';
-          status.textContent = currentAdminInventory.length ? `${currentAdminInventory.length} inventory item${currentAdminInventory.length === 1 ? '' : 's'} loaded.` : 'No inventory items yet.';
-          if (summary) summary.innerHTML = renderAdminInventorySummary(result.summary || {});
-          renderAdminInventoryList();
-          bindAdminInventoryActions();
-        } catch (error) {
-          currentAdminInventory = [];
-          status.dataset.state = 'error';
-          status.textContent = error.message;
-        }
-      };
-
       const bindAdminInvoiceActions = () => {
         const panel = document.querySelector('[data-admin-invoices]');
         if (!panel || panel.dataset.bound) return;
@@ -2884,6 +2763,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
             bindAdminInventoryActions();
             loadAdminInventory();
           }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
 
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
             bindAdminAccessLauncher();

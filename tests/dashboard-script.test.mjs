@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
+const loadInventoryHtml = () => readFile(new URL('../public/inventory/index.html', import.meta.url), 'utf8');
 const extractInlineScripts = (html) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
 test('dashboard inline scripts parse without duplicate declarations', async () => {
@@ -39,6 +40,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
   assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
+  assert.match(html, /href="\/inventory\/"/, 'admins should navigate to inventory as a separate page');
+  assert.match(html, /data-permission="canManageInventory"/, 'inventory navigation should be permission-gated');
+  assert.doesNotMatch(html, /<section class="card admin-inventory"/, 'inventory management should not render on the main dashboard');
   assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
   assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
   assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
@@ -57,8 +61,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /canSwitchDashboardView && \(user\.roles \|\| \[\]\)\.includes\('admin'\)/, 'role view tabs should be admin-only');
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
-  assert.match(script, /const loadAdminInventory =/, 'admins should load inventory records');
-  assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'admin inventory should use the inventory API');
+  assert.match(script, /requiredPermission = section\.dataset\.permission/, 'dashboard sections should support permission-gated navigation links');
   assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
@@ -85,4 +88,18 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const renderUserProperties =/, 'opening a user profile requires the property renderer to be declared');
   assert.match(script, /renderUserProperties\(user\.properties \|\| \[\]\)/, 'user profile opening should render saved addresses');
   assert.ok(html.indexOf('data-client-profile-form') < html.indexOf('data-client-properties'), 'client properties should live inside/after the profile form, not as a separate earlier section');
+});
+
+
+test('inventory page owns inventory UI and API handlers', async () => {
+  const html = await loadInventoryHtml();
+  const [script] = extractInlineScripts(html);
+
+  assert.match(html, /<title>Inventory \| T&A Contracting<\/title>/, 'inventory should have its own page title');
+  assert.match(html, /data-admin-inventory-form/, 'inventory page should include the item creation form');
+  assert.match(html, /data-admin-inventory-list/, 'inventory page should include the item list');
+  assert.match(script, /const requireInventoryAccess =/, 'inventory page should verify signed-in inventory permission');
+  assert.match(script, /const loadAdminInventory =/, 'inventory page should load inventory records');
+  assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'inventory page should use the inventory API');
+  assert.doesNotThrow(() => new Function(script));
 });
