@@ -642,6 +642,9 @@
           </div>
         </div>
         <div class="admin-request-list" data-admin-activity-list></div>
+        <div class="client-request-form-actions">
+          <button class="btn btn-soft" type="button" data-admin-activity-more hidden>Load more activity</button>
+        </div>
       </section>
     </section>
 
@@ -847,6 +850,8 @@
       let currentProfileUser = null;
       let adminActivityLoaded = false;
       let adminActivityFilterTimer = null;
+      let currentAdminActivityPage = 1;
+      let adminActivityHasNextPage = false;
       let currentAdminRequestScope = 'active';
       const adminStatusOrder = [
         ['new', 'New'],
@@ -1284,6 +1289,13 @@
           return !search || getAdminActivitySearchText(event).includes(search);
         });
         activityList.innerHTML = filteredEvents.length ? filteredEvents.map(renderAdminActivityCard).join('') : '<p class="session-status">No audit events match those filters.</p>';
+      };
+
+      const updateAdminActivityMoreButton = () => {
+        const moreButton = document.querySelector('[data-admin-activity-more]');
+        if (!moreButton) return;
+        moreButton.hidden = !adminActivityHasNextPage;
+        moreButton.textContent = adminActivityHasNextPage ? 'Load more activity' : 'All matching activity loaded';
       };
 
       const scheduleAdminActivityReload = () => {
@@ -2471,35 +2483,48 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const loadAdminActivity = async ({ filtered = false } = {}) => {
+      const loadAdminActivity = async ({ filtered = false, append = false } = {}) => {
         const panel = document.querySelector('[data-admin-activity]');
         const status = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
+        const moreButton = document.querySelector('[data-admin-activity-more]');
         if (!panel || !status || !activityList) return;
         const typeFilter = document.querySelector('[data-admin-activity-type-filter]')?.value || '';
         const search = (document.querySelector('[data-admin-activity-search]')?.value || '').trim();
+        const nextPage = append ? currentAdminActivityPage + 1 : 1;
         const url = new URL('/api/admin/activity', window.location.origin);
         url.searchParams.set('limit', '75');
+        url.searchParams.set('page', String(nextPage));
         if (typeFilter) url.searchParams.set('type', typeFilter);
         if (search) url.searchParams.set('q', search);
         try {
           status.dataset.state = 'loading';
+          if (moreButton) moreButton.disabled = true;
           if (filtered) status.textContent = 'Refreshing filtered activity…';
+          if (append) status.textContent = 'Loading more audit activity…';
           const response = await fetch(url, { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Admin activity is not available.');
-          currentAdminActivity = result.events || [];
+          const events = result.events || [];
+          currentAdminActivity = append ? [...currentAdminActivity, ...events] : events;
+          currentAdminActivityPage = result.pagination?.page || nextPage;
+          adminActivityHasNextPage = Boolean(result.pagination?.hasNextPage);
           adminActivityLoaded = true;
           status.dataset.state = 'ready';
           const filterLabel = typeFilter || search ? ' matching audit' : ' recent audit';
           status.textContent = currentAdminActivity.length ? `${currentAdminActivity.length}${filterLabel} event${currentAdminActivity.length === 1 ? '' : 's'} loaded.` : (typeFilter || search ? 'No audit events match those filters.' : 'No recent admin activity yet.');
           bindAdminActivityFilters();
           renderAdminActivityList();
+          updateAdminActivityMoreButton();
         } catch (error) {
-          currentAdminActivity = [];
-          adminActivityLoaded = false;
+          if (!append) currentAdminActivity = [];
+          if (!append) adminActivityLoaded = false;
+          if (!append) adminActivityHasNextPage = false;
           status.dataset.state = 'error';
           status.textContent = error.message;
+          updateAdminActivityMoreButton();
+        } finally {
+          if (moreButton) moreButton.disabled = false;
         }
       };
 
@@ -2513,6 +2538,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           document.querySelector('[data-admin-activity-type-filter]')?.focus({ preventScroll: true });
           if (!adminActivityLoaded) await loadAdminActivity();
         });
+        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivity({ append: true }));
         panel.querySelector('[data-admin-activity-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
           if (event.target === panel) setModalOpen(panel, false);
@@ -2676,10 +2702,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
             loadAdminActivity();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {

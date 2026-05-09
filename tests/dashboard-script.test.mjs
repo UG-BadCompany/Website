@@ -53,6 +53,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
   assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
   assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
+  assert.match(html, /data-admin-activity-more/, 'admins should page through more audit activity');
   assert.match(html, /data-admin-invoice-summary/, 'admins should have invoice totals before payment confirmation');
   assert.match(html, /data-admin-invoice-status-filter/, 'admins should switch between open and paid invoice views');
   assert.match(html, /data-admin-invoice-search/, 'admins should search invoice records');
@@ -74,8 +75,12 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
   assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
+  assert.match(script, /const updateAdminActivityMoreButton =/, 'admins should update the activity pagination button');
   assert.match(script, /const scheduleAdminActivityReload =/, 'admins should debounce server-side activity filter refreshes');
-  assert.match(script, /const loadAdminActivity = async \(\{ filtered = false \} = \{\}\)/, 'admins should load recent audit activity with filter options');
+  assert.match(script, /const loadAdminActivity = async \(\{ filtered = false, append = false \} = \{\}\)/, 'admins should load recent audit activity with filter and append options');
+  assert.match(script, /url\.searchParams\.set\('page', String\(nextPage\)\)/, 'admin activity loading should request the current activity page');
+  assert.match(script, /currentAdminActivity = append \? \[\.\.\.currentAdminActivity, \.\.\.events\] : events/, 'admin activity load more should append events');
+  assert.match(script, /adminActivityHasNextPage = Boolean\(result\.pagination\?\.hasNextPage\)/, 'admin activity should track whether another page exists');
   assert.match(script, /url\.searchParams\.set\('type', typeFilter\)/, 'admin activity loading should request the selected type filter');
   assert.match(script, /url\.searchParams\.set\('q', search\)/, 'admin activity loading should request the selected activity search term');
   assert.match(script, /const renderAdminInvoiceList =/, 'admins should render filtered invoice records');
@@ -87,6 +92,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /canViewAdminActivity/, 'admin activity should use its own permission flag');
   assert.match(script, /new URL\('\/api\/admin\/activity', window\.location\.origin\)/, 'admin activity should load from the audit activity endpoint');
   assert.match(script, /fetch\(url, \{ headers: \{ accept: 'application\/json' \} \}\)/, 'admin activity should fetch the filtered activity URL');
+  assert.match(script, /loadAdminActivity\(\{ append: true \}\)/, 'admin activity load more button should fetch the next page');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
   assert.match(script, /data-admin-work-order-summary-card/, 'work order summary should render a dedicated summary card');
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
