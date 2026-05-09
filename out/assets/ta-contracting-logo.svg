@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
   <title id="title">T&amp;A Contracting</title>
-  <desc id="desc">Clean modern T&amp;A Contracting logo with desert sun, roofline, bold T&amp;A wordmark, and Arizona Native tagline.</desc>
+  <desc id="desc">Clean modern T&amp;A Contracting logo with desert sun, roofline, bold T&amp;A wordmark, and maintenance tagline.</desc>
   <defs>
     <linearGradient id="copper" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0" stop-color="#ffb357"/>
@@ -29,6 +29,6 @@
   <text x="420" y="174" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="104" letter-spacing="-5" fill="url(#ink)">T&amp;A</text>
   <text x="420" y="256" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="62" letter-spacing="9" fill="#111827">CONTRACTING</text>
   <rect x="422" y="287" width="428" height="5" rx="3" fill="url(#copper)"/>
-  <text x="420" y="335" font-family="Inter, Montserrat, Arial, sans-serif" font-size="25" font-weight="900" letter-spacing="5" fill="#9c3518">ARIZONA NATIVE</text>
-  <text x="704" y="335" font-family="Inter, Montserrat, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="4" fill="#374151">MAINTENANCE • ANYTHING • EVERYTHING</text>
+  <text x="420" y="335" font-family="Inter, Montserrat, Arial, sans-serif" font-size="25" font-weight="900" letter-spacing="5" fill="#9c3518">LOCALLY OWNED</text>
+  <text x="704" y="335" font-family="Inter, Montserrat, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="4" fill="#374151">MAINTENANCE • REPAIRS • IMPROVEMENTS</text>
 </svg>

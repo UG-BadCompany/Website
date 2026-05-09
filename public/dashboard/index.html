@@ -239,11 +239,33 @@
     .profile-summary span { color: #94a3b8; }
     .footer { border-top-color: var(--dash-line); color: var(--dash-muted); }
 
+
+    .account-status {
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 9px 12px;
+      border: 1px solid var(--dash-line);
+      border-radius: 999px;
+      color: var(--dash-muted);
+      background: rgba(255,255,255,.08);
+      font-size: .86rem;
+      font-weight: 850;
+    }
+
+    .client-request-form input:disabled:not([data-client-profile-email]) {
+      opacity: .86;
+      cursor: default;
+      color: var(--dash-text);
+      background: rgba(255,255,255,.075);
+    }
+
   </style>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to dashboard content</a>
-  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><span class="account-status" data-session-status role="status" aria-live="polite">Checking session…</span><button class="btn btn-soft" type="button" data-admin-access-open data-dashboard-section data-views="admin" hidden>Roles &amp; users</button><button class="btn btn-soft" type="button" data-admin-activity-open data-dashboard-section data-views="admin" hidden>Activity</button><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
   <main class="wrap" id="content">
     <section class="hero">
       <div class="dashboard-hero">
@@ -257,16 +279,13 @@
             <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
           </div>
         </div>
-          <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
         <div class="logo-panel"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
     <nav class="workspace-tabs" aria-label="Dashboard workspace sections">
       <a href="#admin-work-orders" data-dashboard-section data-views="admin" hidden>Work orders</a>
-      <button class="workspace-action" type="button" data-admin-access-open data-dashboard-section data-views="admin" hidden>Manage roles &amp; users</button>
       <a href="#admin-invoices" data-dashboard-section data-views="admin" hidden>Invoices</a>
-      <a href="#admin-activity" data-dashboard-section data-views="admin" hidden>Activity</a>
       <a href="#submit-request" data-dashboard-section data-views="client" hidden>Requests</a>
       <a href="#client-quotes" data-dashboard-section data-views="client" hidden>Quotes</a>
       <a href="#client-invoices" data-dashboard-section data-views="client" hidden>Invoices</a>
@@ -514,63 +533,63 @@
       <div class="client-quote-list" data-admin-invoice-list></div>
     </section>
 
-    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Recent admin activity</strong>
-      <p>Review the latest status changes, quotes, assignments, payments, and account updates recorded in the audit trail.</p>
-      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading recent admin activity…</p>
-      <div class="client-request-form" data-admin-activity-controls>
-        <div class="client-request-form-grid">
-          <label>Activity type
-            <select data-admin-activity-type-filter>
-              <option value="">All activity</option>
-              <option value="job">Requests &amp; work orders</option>
-              <option value="quote">Quotes</option>
-              <option value="payment">Invoices &amp; payments</option>
-              <option value="user">Users &amp; roles</option>
-            </select>
-          </label>
-          <label>Search activity
-            <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
-          </label>
+    <section class="admin-request-modal admin-activity" id="admin-activity" data-admin-activity role="dialog" aria-modal="true" aria-labelledby="admin-activity-title" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="admin-activity-title">Recent admin activity</strong><p>Review status changes, quotes, assignments, payments, and account updates only when you need the audit trail.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-activity-close aria-label="Close admin activity">×</button>
         </div>
-      </div>
-      <div class="admin-request-list" data-admin-activity-list></div>
+        <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Open activity to load recent audit events.</p>
+        <div class="client-request-form" data-admin-activity-controls>
+          <div class="client-request-form-grid">
+            <label>Activity type
+              <select data-admin-activity-type-filter>
+                <option value="">All activity</option>
+                <option value="job">Requests &amp; work orders</option>
+                <option value="quote">Quotes</option>
+                <option value="payment">Invoices &amp; payments</option>
+                <option value="user">Users &amp; roles</option>
+              </select>
+            </label>
+            <label>Search activity
+              <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+            </label>
+          </div>
+        </div>
+        <div class="admin-request-list" data-admin-activity-list></div>
+      </section>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
-          <div><strong id="client-profile-title">My profile &amp; properties</strong><p>Review your contact details first. Use Edit profile when you need to make changes.</p></div>
+          <div><strong id="client-profile-title">My profile &amp; properties</strong><p>Your contact fields stay locked until you choose Edit profile.</p></div>
           <button class="btn btn-soft admin-request-modal-close" type="button" data-client-profile-modal-close aria-label="Close profile">×</button>
         </div>
-        <div class="client-request-form">
-          <strong>Profile details</strong>
-          <div class="profile-summary" data-client-profile-summary></div>
-          <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="button" data-client-profile-edit>Edit profile</button></div>
-        </div>
-      <form class="client-request-form" data-client-profile-form hidden>
+      <form class="client-request-form" data-client-profile-form>
+        <strong>Profile details</strong>
+        <p class="session-status" data-client-profile-status role="status" aria-live="polite">Profile ready.</p>
         <div class="client-request-form-grid">
           <label>Email
             <input name="email" type="email" data-client-profile-email disabled>
           </label>
           <label>Full name
-            <input name="fullName" data-client-profile-name autocomplete="name" placeholder="Your name">
+            <input name="fullName" data-client-profile-name data-client-profile-editable autocomplete="name" placeholder="Your name" disabled>
           </label>
           <label>Primary phone
-            <input name="phone" data-client-profile-phone autocomplete="tel" placeholder="555-0100">
+            <input name="phone" data-client-profile-phone data-client-profile-editable autocomplete="tel" placeholder="555-0100" disabled>
           </label>
           <label>Secondary phone
-            <input name="secondaryPhone" data-client-profile-secondary-phone autocomplete="tel" placeholder="Optional second phone">
+            <input name="secondaryPhone" data-client-profile-secondary-phone data-client-profile-editable autocomplete="tel" placeholder="Optional second phone" disabled>
           </label>
           <label>Company
-            <input name="companyName" data-client-profile-company placeholder="Optional company name">
+            <input name="companyName" data-client-profile-company data-client-profile-editable placeholder="Optional company name" disabled>
           </label>
           <label class="full">Mailing address
-            <input name="mailingAddress" data-client-profile-mailing-address autocomplete="street-address" placeholder="Street, city, state, ZIP">
+            <input name="mailingAddress" data-client-profile-mailing-address data-client-profile-editable autocomplete="street-address" placeholder="Street, city, state, ZIP" disabled>
           </label>
         </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save profile</button><button class="btn btn-soft" type="button" data-client-profile-cancel>Cancel edit</button><span data-client-profile-form-status aria-live="polite"></span></div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="button" data-client-profile-edit>Edit profile</button><button class="btn btn-primary" type="submit" data-client-profile-save hidden>Save profile</button><button class="btn btn-soft" type="button" data-client-profile-cancel hidden>Cancel edit</button><span data-client-profile-form-status aria-live="polite"></span></div>
       </form>
       <div class="client-profile-properties" data-client-properties>
         <strong>My properties</strong>
@@ -723,6 +742,8 @@
       const currentAdminQuotes = new Map();
       let currentAdminInvoices = [];
       let currentAdminActivity = [];
+      let currentProfileUser = null;
+      let adminActivityLoaded = false;
       let currentAdminRequestScope = 'active';
       const adminStatusOrder = [
         ['new', 'New'],
@@ -773,8 +794,7 @@
         });
       };
       const closeClientProfileModal = () => {
-        const form = document.querySelector('[data-client-profile-form]');
-        if (form) form.hidden = true;
+        setClientProfileEditing(false);
         setModalOpen(document.querySelector('[data-client-profile]'), false);
       };
 
@@ -1232,8 +1252,21 @@
         </article>
       `;
 
+      const setClientProfileEditing = (isEditing) => {
+        document.querySelectorAll('[data-client-profile-editable]').forEach((field) => {
+          field.disabled = !isEditing;
+        });
+        const editButton = document.querySelector('[data-client-profile-edit]');
+        const saveButton = document.querySelector('[data-client-profile-save]');
+        const cancelButton = document.querySelector('[data-client-profile-cancel]');
+        if (editButton) editButton.hidden = isEditing;
+        if (saveButton) saveButton.hidden = !isEditing;
+        if (cancelButton) cancelButton.hidden = !isEditing;
+      };
+
       const renderClientProfile = (user) => {
         if (!user) return;
+        currentProfileUser = user;
         const setValue = (selector, value) => {
           const field = document.querySelector(selector);
           if (field) field.value = value || '';
@@ -1244,21 +1277,11 @@
         setValue('[data-client-profile-secondary-phone]', user.secondaryPhone);
         setValue('[data-client-profile-company]', user.companyName);
         setValue('[data-client-profile-mailing-address]', user.mailingAddress);
-        const summary = document.querySelector('[data-client-profile-summary]');
-        if (summary) {
-          summary.innerHTML = [
-            ['Name', user.fullName || 'Not provided'],
-            ['Email', user.email || 'Not provided'],
-            ['Primary phone', user.phone || 'Not provided'],
-            ['Secondary phone', user.secondaryPhone || 'Not provided'],
-            ['Company', user.companyName || 'Not provided'],
-            ['Mailing address', user.mailingAddress || 'Not provided'],
-          ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
-        }
+        setClientProfileEditing(false);
         const status = document.querySelector('[data-client-profile-status]');
         if (status) {
           status.dataset.state = 'ready';
-          status.textContent = 'Your profile information is loaded.';
+          status.textContent = 'Profile loaded. Choose Edit profile to make changes.';
         }
       };
 
@@ -1274,7 +1297,6 @@
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save profile.');
         renderClientProfile(result.user);
-        form.hidden = true;
         document.querySelector('[data-client-profile-edit]')?.focus({ preventScroll: true });
         if (formStatus) formStatus.textContent = 'Profile saved.';
       };
@@ -1286,11 +1308,11 @@
         if (!form || form.dataset.bound) return;
         form.dataset.bound = 'true';
         editButton?.addEventListener('click', () => {
-          form.hidden = false;
+          setClientProfileEditing(true);
           document.querySelector('[data-client-profile-name]')?.focus({ preventScroll: true });
         });
         cancelButton?.addEventListener('click', () => {
-          form.hidden = true;
+          if (currentProfileUser) renderClientProfile(currentProfileUser);
           document.querySelector('[data-client-profile-edit]')?.focus({ preventScroll: true });
         });
         form.addEventListener('submit', async (event) => {
@@ -2349,15 +2371,33 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Admin activity is not available.');
           currentAdminActivity = result.events || [];
+          adminActivityLoaded = true;
           status.dataset.state = 'ready';
           status.textContent = currentAdminActivity.length ? `${currentAdminActivity.length} recent audit event${currentAdminActivity.length === 1 ? '' : 's'} loaded.` : 'No recent admin activity yet.';
           bindAdminActivityFilters();
           renderAdminActivityList();
         } catch (error) {
           currentAdminActivity = [];
+          adminActivityLoaded = false;
           status.dataset.state = 'error';
           status.textContent = error.message;
         }
+      };
+
+      const bindAdminActivityLauncher = () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const openButton = document.querySelector('[data-admin-activity-open]');
+        if (!panel || !openButton || openButton.dataset.bound) return;
+        openButton.dataset.bound = 'true';
+        openButton.addEventListener('click', async () => {
+          setModalOpen(panel, true);
+          document.querySelector('[data-admin-activity-type-filter]')?.focus({ preventScroll: true });
+          if (!adminActivityLoaded) await loadAdminActivity();
+        });
+        panel.querySelector('[data-admin-activity-close]')?.addEventListener('click', () => setModalOpen(panel, false));
+        panel.addEventListener('click', (event) => {
+          if (event.target === panel) setModalOpen(panel, false);
+        });
       };
 
       const bindWorkerJobActions = () => {
@@ -2481,7 +2521,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
 
           status.dataset.state = 'ready';
-          status.textContent = `Signed in as ${result.user.email}. Roles: ${result.user.roles.join(', ') || 'none yet'}.`;
+          status.textContent = `${result.user.email} • ${(result.user.roles || []).join(', ') || 'signed in'}`;
           renderClientProfile(result.user);
 
           if (logoutButton) {
@@ -2602,6 +2642,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canViewAdminActivity) {
             loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canManageInvoices) {
