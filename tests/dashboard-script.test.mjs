@@ -57,6 +57,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
   assert.match(script, /data-admin-work-order-summary-card/, 'work order summary should render a dedicated summary card');
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
+  assert.match(script, /data-admin-payment-form/, 'admins should capture payment confirmation details from the dashboard');
+  assert.match(script, /reference: formData\.get\('reference'\)/, 'admin payment confirmations should send payment reference notes');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
   assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
