@@ -23,7 +23,8 @@ Recommended session settings are already shown in `.env.example`:
 
 ```text
 AUTH_SESSION_COOKIE_NAME=ta_session
-AUTH_SESSION_TTL_DAYS=14
+CLIENT_SESSION_TTL_MINUTES=30
+STAFF_SESSION_TTL_MINUTES=120
 MAGIC_LINK_TTL_MINUTES=20
 ```
 
