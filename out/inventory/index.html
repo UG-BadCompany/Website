@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory | T&A Contracting</title>
+  <meta name="description" content="Admin inventory tracking for T&A Contracting materials, tools, stock levels, suppliers, and adjustments.">
+  <style>
+    :root { --ink:#111827; --muted:#64748b; --line:rgba(15,23,42,.12); --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --cream:#fff8ee; --white:#fff; --green:#287a4b; --shadow:0 22px 70px rgba(45,27,13,.12); }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.88);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:92px;height:auto;aspect-ratio:1/1;object-fit:contain}.nav-links{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900;background:#fff}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.hero{padding:44px 0 22px}.hero-card{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:22px;align-items:end;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.9);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.7rem,6vw,5.1rem);line-height:.96;letter-spacing:-.07em}p{color:var(--muted);font-weight:650;line-height:1.65}.status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--copper);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:850}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0}.card,.inventory-card{position:relative;overflow:clip;padding:22px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.92);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card::before,.inventory-card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--rust),var(--copper));opacity:.78}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.form{display:grid;gap:12px;margin:24px 0;padding:18px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.9)}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.form input,.form select,.form textarea{width:100%;min-height:48px;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.form textarea{min-height:110px;resize:vertical}.full{grid-column:1/-1}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.inventory-list{display:grid;gap:14px;margin:24px 0 70px}.badge{display:inline-flex;margin-bottom:9px;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:850;font-size:.9rem}.meta span{padding:6px 9px;border-radius:999px;background:#fffaf4;border:1px solid var(--line)}.inventory-card strong{display:block;margin-bottom:8px;font-size:1.1rem}.inventory-card p{margin:10px 0 0}.hidden{display:none!important}@media(max-width:840px){.hero-card,.grid,.form-grid{grid-template-columns:1fr}.brand img{width:82px}}
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Inventory navigation">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/dashboard/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>Inventory</span></a>
+      <div class="nav-links"><a class="btn" href="/dashboard/">Back to dashboard</a><a class="btn btn-primary" href="/login/">Sign in</a></div>
+    </div>
+  </nav>
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-card">
+        <div><span class="eyebrow">Admin operations</span><h1>Inventory control</h1><p>Track materials, tools, stock levels, suppliers, and low-stock reorder needs away from the main dashboard workspace.</p></div>
+        <div><p class="status" data-admin-inventory-status role="status" aria-live="polite">Checking inventory access…</p></div>
+      </div>
+    </section>
+    <section class="grid" data-admin-inventory-summary aria-label="Inventory summary"></section>
+    <section class="card" data-inventory-workspace hidden>
+      <strong>Add inventory item</strong>
+      <form class="form" data-admin-inventory-form>
+        <div class="form-grid">
+          <label>Item name<input name="name" required placeholder="Drywall screws"></label>
+          <label>SKU / reference<input name="sku" placeholder="DW-SCREW-1"></label>
+          <label>Category<input name="category" placeholder="Fasteners, paint, tools"></label>
+          <label>Unit<input name="unit" placeholder="each, box, gallon"></label>
+          <label>Quantity on hand<input name="quantityOnHand" type="number" step="0.01" placeholder="10"></label>
+          <label>Reorder point<input name="reorderPoint" type="number" step="0.01" placeholder="3"></label>
+          <label>Supplier<input name="supplier" placeholder="Supplier or store"></label>
+          <label>Location<input name="storageLocation" placeholder="Shop shelf, truck, trailer"></label>
+          <label class="full">Notes<textarea name="notes" placeholder="Size, color, preferred brand, purchase notes"></textarea></label>
+        </div>
+        <div class="actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
+      </form>
+    </section>
+    <section class="inventory-list" data-admin-inventory-list aria-label="Inventory items"></section>
+  </main>
+  <script>
+    const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    let currentAdminInventory = [];
+
+    const renderAdminInventorySummary = (summary = {}) => `
+      <article class="card"><span class="badge">Inventory items</span><div class="metric">${Number(summary.total || 0)}</div><p>active tracked items</p></article>
+      <article class="card"><span class="badge">Low stock</span><div class="metric">${Number(summary.lowStock || 0)}</div><p>at or under reorder point</p></article>
+      <article class="card"><span class="badge">Categories</span><div class="metric">${Number(summary.categories || 0)}</div><p>organized item groups</p></article>
+    `;
+
+    const renderAdminInventoryCard = (item) => `
+      <article class="inventory-card">
+        <span class="badge">${escapeHtml(item.stockStatus === 'low' ? 'low stock' : 'in stock')}</span>
+        <strong>${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || 'each')}</strong>
+        <div class="meta"><span>${escapeHtml(item.category || 'Uncategorized')}</span><span>${escapeHtml(item.sku || 'No SKU')}</span><span>${escapeHtml(item.storageLocation || 'No location')}</span><span>Reorder at ${Number(item.reorderPoint || 0)}</span></div>
+        ${item.supplier ? `<p><strong>Supplier:</strong> ${escapeHtml(item.supplier)}</p>` : ''}
+        ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ''}
+        <form class="form" data-admin-inventory-adjust-form data-inventory-item-id="${escapeHtml(item.id)}">
+          <div class="form-grid"><label>Adjustment type<select name="adjustmentType"><option value="received">Received</option><option value="used">Used</option><option value="correction">Correction</option><option value="manual">Manual</option></select></label><label>Quantity change<input name="quantityDelta" type="number" step="0.01" placeholder="5 or -2" required></label><label class="full">Note<input name="adjustmentNote" placeholder="Restocked, used on job, count correction"></label></div>
+          <div class="actions"><button class="btn" type="submit">Save adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
+        </form>
+      </article>
+    `;
+
+    const renderAdminInventoryList = () => {
+      const list = document.querySelector('[data-admin-inventory-list]');
+      if (!list) return;
+      list.innerHTML = currentAdminInventory.length ? currentAdminInventory.map(renderAdminInventoryCard).join('') : '<p class="status">No inventory items yet.</p>';
+    };
+
+    const bindAdminInventoryActions = () => {
+      const workspace = document.querySelector('[data-inventory-workspace]');
+      const form = document.querySelector('[data-admin-inventory-form]');
+      if (!workspace || workspace.dataset.bound) return;
+      workspace.dataset.bound = 'true';
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const status = document.querySelector('[data-admin-inventory-form-status]');
+        const payload = Object.fromEntries(new FormData(form).entries());
+        if (status) status.textContent = 'Adding item…';
+        try {
+          const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add inventory item.');
+          form.reset();
+          if (status) status.textContent = 'Inventory item added.';
+          await loadAdminInventory();
+        } catch (error) {
+          if (status) status.textContent = error.message;
+        }
+      });
+      document.querySelector('[data-admin-inventory-list]')?.addEventListener('submit', async (event) => {
+        const adjustmentForm = event.target.closest('[data-admin-inventory-adjust-form]');
+        if (!adjustmentForm) return;
+        event.preventDefault();
+        const status = adjustmentForm.querySelector('[data-admin-inventory-adjust-status]');
+        const formData = new FormData(adjustmentForm);
+        const payload = { itemId: adjustmentForm.dataset.inventoryItemId, adjustmentType: formData.get('adjustmentType'), quantityDelta: Number(formData.get('quantityDelta') || 0), adjustmentNote: formData.get('adjustmentNote') || '' };
+        if (status) status.textContent = 'Saving adjustment…';
+        try {
+          const response = await fetch('/api/admin/inventory', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save inventory adjustment.');
+          await loadAdminInventory();
+        } catch (error) {
+          if (status) status.textContent = error.message;
+        }
+      });
+    };
+
+    const loadAdminInventory = async () => {
+      const status = document.querySelector('[data-admin-inventory-status]');
+      const summary = document.querySelector('[data-admin-inventory-summary]');
+      try {
+        const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
+        currentAdminInventory = result.items || [];
+        if (status) status.textContent = currentAdminInventory.length ? `${currentAdminInventory.length} inventory item${currentAdminInventory.length === 1 ? '' : 's'} loaded.` : 'No inventory items yet.';
+        if (summary) summary.innerHTML = renderAdminInventorySummary(result.summary || {});
+        document.querySelector('[data-inventory-workspace]')?.removeAttribute('hidden');
+        renderAdminInventoryList();
+        bindAdminInventoryActions();
+      } catch (error) {
+        currentAdminInventory = [];
+        if (status) status.textContent = error.message;
+      }
+    };
+
+    const requireInventoryAccess = async () => {
+      const status = document.querySelector('[data-admin-inventory-status]');
+      try {
+        const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.authenticated) throw new Error('Sign in with an admin account to manage inventory.');
+        if (!result.user?.permissions?.canManageInventory) throw new Error('Admin inventory permission required.');
+        await loadAdminInventory();
+      } catch (error) {
+        if (status) status.textContent = error.message;
+      }
+    };
+
+    requireInventoryAccess();
+  </script>
+</body>
+</html>
