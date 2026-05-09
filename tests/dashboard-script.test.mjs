@@ -144,6 +144,12 @@ test('login page redirects existing sessions back to the dashboard', async () =>
 
   assert.match(html, /href="\/dashboard\/">Dashboard/, 'login nav should point users with sessions back to the dashboard');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'login nav should not loop portal users back to login');
+  assert.match(html, /portal-hero/, 'login page should use the refreshed portal hero layout');
+  assert.match(html, /linear-gradient\(135deg, #070a0f 0%, #111827 48%, #251109 100%\)/, 'login page should match the dark dashboard visual system');
+  assert.match(html, /Secure Client Portal/, 'login page should use production-facing secure portal copy');
+  assert.match(html, /Send Secure Link/, 'login submit button should use polished action copy');
+  assert.match(html, /requests, saved properties, quotes, invoices, and schedule updates/, 'login page should mention the current portal capabilities');
+  assert.doesNotMatch(html, /Open your Client Portal with a secure magic link/, 'login page should not use the old standalone light-page hero copy');
   assert.match(script, /const redirectExistingSession = async/, 'login page should check for an existing session');
   assert.match(script, /fetch\('\/api\/me'/, 'login page should use api\/me for the existing-session check');
   assert.match(script, /window\.location\.replace\('\/dashboard\/'\)/, 'authenticated users should be sent to the dashboard');
