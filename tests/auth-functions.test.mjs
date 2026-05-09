@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   getAllowedSiteUrls,
+  getSessionTtlMinutesForRoles,
   getFromEmail,
   getSiteUrl,
   hashToken,
@@ -48,6 +49,12 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(normalized.botField, '');
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
+});
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
 });
 
 
@@ -169,6 +176,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
     [],
     [],
+    [{ key: 'client' }],
     [],
   ]);
   const handler = createVerifyMagicLinkHandler({
@@ -181,11 +189,35 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.equal(response.status, 302);
   assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 5);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=1800/);
+  assert.equal(db.queries.length, 6);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
-  assert.match(db.queries[4].text, /insert into auth_sessions/);
-  assert.equal(db.queries[4].values[1], hashToken('session-token'));
+  assert.match(db.queries[4].text, /from user_roles/);
+  assert.match(db.queries[5].text, /insert into auth_sessions/);
+  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+});
+
+
+test('verify endpoint gives admin and worker sessions a two-hour cookie', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'admin@example.com', purpose: 'login', client_name: null, client_phone: null }],
+    [{ id: 'user-1', email: 'admin@example.com', full_name: 'Admin', phone: null }],
+    [],
+    [],
+    [{ key: 'admin' }],
+    [],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
+
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=7200/);
+  assert.match(db.queries[5].text, /insert into auth_sessions/);
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {

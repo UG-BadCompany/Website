@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
 const loadInventoryHtml = () => readFile(new URL('../public/inventory/index.html', import.meta.url), 'utf8');
+const loadHomeHtml = () => readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const extractInlineScripts = (html) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
 test('dashboard inline scripts parse without duplicate declarations', async () => {
@@ -98,11 +99,25 @@ test('inventory page owns inventory UI and API handlers', async () => {
   assert.match(html, /<title>Inventory \| T&A Contracting<\/title>/, 'inventory should have its own page title');
   assert.match(html, /data-admin-inventory-form/, 'inventory page should include the item creation form');
   assert.match(html, /data-admin-inventory-list/, 'inventory page should include the item list');
+  assert.doesNotMatch(html, /href="\/login\/">Sign in/, 'inventory nav should not look signed out by default');
+  assert.match(html, /data-inventory-account-status/, 'inventory nav should show the signed-in account status');
+  assert.match(html, /data-inventory-logout/, 'inventory nav should expose sign out after auth');
   assert.match(html, /data-admin-inventory-edit-form/, 'inventory page should allow admins to edit item details');
   assert.match(html, /data-admin-inventory-archive/, 'inventory page should allow admins to archive inactive items');
   assert.match(script, /const requireInventoryAccess =/, 'inventory page should verify signed-in inventory permission');
+  assert.match(script, /Signed in as/, 'inventory page should show the authenticated user instead of a login button');
   assert.match(script, /const loadAdminInventory =/, 'inventory page should load inventory records');
   assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'inventory page should use the inventory API');
   assert.match(script, /action: 'archive'/, 'inventory page should send archive actions to the API');
   assert.doesNotThrow(() => new Function(script));
+});
+
+
+test('homepage portal links return existing sessions to the dashboard', async () => {
+  const html = await loadHomeHtml();
+
+  assert.match(html, /href="\/dashboard\/">Dashboard/, 'primary nav portal link should open the dashboard directly');
+  assert.match(html, /href="\/dashboard\/">Open Dashboard/, 'portal CTA should open the dashboard directly');
+  assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'homepage should not force signed-in users through login for the portal');
+  assert.doesNotMatch(html, /href="\/login\/">Open Client Portal/, 'homepage CTA should not force signed-in users through login for the portal');
 });

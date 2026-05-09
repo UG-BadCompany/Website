@@ -111,6 +111,7 @@ Client onboarding should start from Request Work, which creates or updates the c
 ## Added in Sprint 1I
 
 - `POST /api/auth/logout` revokes the current hashed session in `auth_sessions` and clears the HttpOnly session cookie.
+- Magic-link verification now issues role-based sessions: clients receive a 30-minute cookie/database expiration, while admin and worker sessions last 2 hours.
 - The unified dashboard shows a signed-in-only Sign out button after `/api/me` confirms the session, then returns users to `/login/`.
 - Dashboard copy now reflects the connected magic-link session and `/api/me` role-loading flow instead of calling the page only a placeholder.
 
