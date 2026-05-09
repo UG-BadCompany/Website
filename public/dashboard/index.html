@@ -478,6 +478,18 @@
       </div>
     </section>
 
+    <nav class="workspace-tabs" aria-label="Dashboard workspace sections">
+      <a href="#admin-work-orders" data-dashboard-section data-views="admin" hidden>Work orders</a>
+      <a href="#admin-invoices" data-dashboard-section data-views="admin" hidden>Invoices</a>
+      <a href="/inventory/" data-dashboard-section data-views="admin" data-permission="canManageInventory" hidden>Inventory</a>
+      <button class="workspace-action" type="button" data-admin-access-open data-dashboard-section data-views="admin" hidden>Roles &amp; users</button>
+      <button class="workspace-action" type="button" data-admin-activity-open data-dashboard-section data-views="admin" hidden>Activity</button>
+      <a href="#submit-request" data-dashboard-section data-views="client" hidden>Requests</a>
+      <a href="#client-quotes" data-dashboard-section data-views="client" hidden>Quotes</a>
+      <a href="#client-invoices" data-dashboard-section data-views="client" hidden>Invoices</a>
+      <a href="#worker-jobs" data-dashboard-section data-views="worker" hidden>Assigned jobs</a>
+    </nav>
+
     <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
       <article class="card"><strong>Quotes Waiting</strong><div class="metric" data-quotes-metric>0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
@@ -2808,6 +2820,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {
