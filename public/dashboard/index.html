@@ -267,6 +267,29 @@
       <div class="client-quote-list" data-admin-invoice-list></div>
     </section>
 
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Recent admin activity</strong>
+      <p>Review the latest status changes, quotes, assignments, payments, and account updates recorded in the audit trail.</p>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading recent admin activity…</p>
+      <div class="client-request-form" data-admin-activity-controls>
+        <div class="client-request-form-grid">
+          <label>Activity type
+            <select data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="job">Requests &amp; work orders</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Invoices &amp; payments</option>
+              <option value="user">Users &amp; roles</option>
+            </select>
+          </label>
+          <label>Search activity
+            <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -451,6 +474,7 @@
       const currentAdminAssignments = new Map();
       const currentAdminQuotes = new Map();
       let currentAdminInvoices = [];
+      let currentAdminActivity = [];
       let currentAdminRequestScope = 'active';
       const adminStatusOrder = [
         ['new', 'New'],
@@ -811,6 +835,81 @@
           ? currentAdminInvoices.filter((invoice) => getAdminInvoiceSearchText(invoice).includes(term))
           : currentAdminInvoices;
         invoiceList.innerHTML = filteredInvoices.length ? filteredInvoices.map(renderAdminInvoiceCard).join('') : '<p class="session-status">No invoices match this view.</p>';
+      };
+
+      const formatActivityType = (eventType = '') => eventType.replaceAll('_', ' ').replaceAll('.', ' · ');
+
+      const getAdminActivityType = (event = {}) => {
+        const eventType = event.eventType || '';
+        const entityType = event.entityType || '';
+        if (eventType.includes('quote') || entityType === 'quote') return 'quote';
+        if (eventType.includes('payment') || eventType.includes('invoice') || ['invoice', 'payment'].includes(entityType)) return 'payment';
+        if (eventType.includes('user') || eventType.includes('role') || ['user', 'role'].includes(entityType)) return 'user';
+        if (eventType.includes('job') || eventType.includes('request') || eventType.includes('worker_assignment') || ['job_request', 'worker_assignment'].includes(entityType)) return 'job';
+        return 'other';
+      };
+
+      const getAdminActivitySearchText = (event = {}) => {
+        const metadata = event.metadata || {};
+        return [
+          event.eventType,
+          event.entityType,
+          event.entityId,
+          event.actor?.fullName,
+          event.actor?.email,
+          metadata.status,
+          metadata.jobRequestId,
+          metadata.invoiceId,
+          metadata.paymentId,
+          metadata.amountCents,
+          metadata.email,
+          metadata.serviceType,
+        ].filter(Boolean).join(' ').toLowerCase();
+      };
+
+      const renderAdminActivityCard = (event) => {
+        const metadata = event.metadata || {};
+        const metadataSummary = [
+          metadata.status ? `Status: ${metadata.status}` : '',
+          metadata.jobRequestId ? `Request: ${metadata.jobRequestId}` : '',
+          metadata.invoiceId ? `Invoice: ${metadata.invoiceId}` : '',
+          metadata.paymentId ? `Payment: ${metadata.paymentId}` : '',
+          metadata.amountCents ? `Amount: ${formatMoney(metadata.amountCents)}` : '',
+        ].filter(Boolean).join(' • ');
+        return `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(formatActivityType(event.eventType || 'activity'))}</span>
+            <strong>${escapeHtml(event.actor?.fullName || event.actor?.email || 'System activity')}</strong>
+            <div class="admin-request-meta">
+              <span>${escapeHtml(event.entityType || 'record')}</span>
+              <span>${escapeHtml(event.createdAt ? formatDate(String(event.createdAt).slice(0, 10)) : 'No date')}</span>
+            </div>
+            ${metadataSummary ? `<p>${escapeHtml(metadataSummary)}</p>` : ''}
+          </article>
+        `;
+      };
+
+      const renderAdminActivityList = () => {
+        const activityList = document.querySelector('[data-admin-activity-list]');
+        const typeFilter = document.querySelector('[data-admin-activity-type-filter]')?.value || '';
+        const search = (document.querySelector('[data-admin-activity-search]')?.value || '').trim().toLowerCase();
+        if (!activityList) return;
+        const filteredEvents = currentAdminActivity.filter((event) => {
+          if (typeFilter && getAdminActivityType(event) !== typeFilter) return false;
+          return !search || getAdminActivitySearchText(event).includes(search);
+        });
+        activityList.innerHTML = filteredEvents.length ? filteredEvents.map(renderAdminActivityCard).join('') : '<p class="session-status">No audit events match those filters.</p>';
+      };
+
+      const bindAdminActivityFilters = () => {
+        const typeFilter = document.querySelector('[data-admin-activity-type-filter]');
+        const search = document.querySelector('[data-admin-activity-search]');
+        [typeFilter, search].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', renderAdminActivityList);
+          control.addEventListener('change', renderAdminActivityList);
+        });
       };
 
       const renderPropertyCard = (property) => `
@@ -1475,6 +1574,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
               closeAdminRequest();
               await loadAdminRequests();
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1500,6 +1600,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
               if (formStatus) formStatus.textContent = 'Request updated.';
               await loadAdminRequests(result.request?.id);
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1528,6 +1629,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               assignmentForm.reset();
               if (formStatus) formStatus.textContent = 'Worker assigned.';
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1568,6 +1670,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (!payload.quoteId) quoteForm.reset();
               if (formStatus) formStatus.textContent = payload.quoteId ? 'Quote saved.' : (payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.');
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1914,6 +2017,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (!response.ok || !result.ok) throw new Error(result.message || 'Could not confirm payment.');
             await loadAdminInvoices();
             await loadAdminRequests();
+            await loadAdminActivity();
           } catch (error) {
             if (status) status.textContent = error.message;
           } finally {
@@ -1943,6 +2047,27 @@ Additional info from client: ${payload.additionalInfo}` : '';
           bindAdminInvoiceActions();
         } catch (error) {
           currentAdminInvoices = [];
+          status.dataset.state = 'error';
+          status.textContent = error.message;
+        }
+      };
+
+      const loadAdminActivity = async () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const status = document.querySelector('[data-admin-activity-status]');
+        const activityList = document.querySelector('[data-admin-activity-list]');
+        if (!panel || !status || !activityList) return;
+        try {
+          const response = await fetch('/api/admin/activity', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Admin activity is not available.');
+          currentAdminActivity = result.events || [];
+          status.dataset.state = 'ready';
+          status.textContent = currentAdminActivity.length ? `${currentAdminActivity.length} recent audit event${currentAdminActivity.length === 1 ? '' : 's'} loaded.` : 'No recent admin activity yet.';
+          bindAdminActivityFilters();
+          renderAdminActivityList();
+        } catch (error) {
+          currentAdminActivity = [];
           status.dataset.state = 'error';
           status.textContent = error.message;
         }
@@ -2103,6 +2228,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
           }
 
           if (result.user.permissions?.canManageInvoices) {

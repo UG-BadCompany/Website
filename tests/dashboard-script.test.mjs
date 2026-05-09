@@ -39,6 +39,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
   assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
+  assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
+  assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
+  assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
   assert.match(html, /data-admin-invoice-summary/, 'admins should have invoice totals before payment confirmation');
   assert.match(html, /data-admin-invoice-status-filter/, 'admins should switch between open and paid invoice views');
   assert.match(html, /data-admin-invoice-search/, 'admins should search invoice records');
@@ -61,6 +64,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const applyAdminRequestFilters =/, 'admins should filter the work order inbox');
   assert.match(script, /currentAdminRequestScope = result\.scope \|\| scope/, 'admin work order view should track the API scope');
   assert.match(script, /scope=\$\{encodeURIComponent\(scope\)\}/, 'admin work order loading should request the selected scope');
+  assert.match(script, /fetch\('\/api\/admin\/activity'/, 'admin activity should load from the audit activity endpoint');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
   assert.match(script, /data-admin-work-order-summary-card/, 'work order summary should render a dedicated summary card');
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
