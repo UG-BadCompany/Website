@@ -321,6 +321,19 @@
 
     .client-request-attachment-list { margin: 0; }
 
+    .job-file-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .job-file-list article {
+      padding: 10px 12px;
+      border: 1px solid var(--dash-line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.07);
+    }
+
     .client-command .admin-command-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .worker-command .admin-command-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
@@ -1099,6 +1112,59 @@
       </section>
     </section>
 
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Invoice &amp; payment desk</strong>
+      <p>Review open invoices, confirm payments, and scan paid history without leaving the admin workspace.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="admin-request-modal admin-activity" id="admin-activity" data-admin-activity role="dialog" aria-modal="true" aria-labelledby="admin-activity-title" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="admin-activity-title">Activity audit trail</strong><p>Filter and page through status changes, quotes, assignments, payments, inventory, and account updates.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-activity-close aria-label="Close admin activity">×</button>
+        </div>
+        <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Open activity to load recent audit events.</p>
+        <div class="client-request-form" data-admin-activity-controls>
+          <div class="client-request-form-grid">
+            <label>Activity type
+              <select data-admin-activity-type-filter>
+                <option value="">All activity</option>
+                <option value="job">Requests &amp; work orders</option>
+                <option value="quote">Quotes</option>
+                <option value="payment">Invoices &amp; payments</option>
+                <option value="inventory">Inventory</option>
+                <option value="user">Users &amp; roles</option>
+              </select>
+            </label>
+            <label>Search activity
+              <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+            </label>
+          </div>
+        </div>
+        <div class="admin-request-list" data-admin-activity-list></div>
+        <div class="client-request-form-actions">
+          <button class="btn btn-soft" type="button" data-admin-activity-more hidden>Load more activity</button>
+        </div>
+      </section>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -1447,6 +1513,7 @@
               ${scheduleMeta}
             </div>
             <p>${escapeHtml(request.description)}</p>
+            <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
             ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
@@ -1880,7 +1947,7 @@
           <p>${escapeHtml(assignment.jobRequest?.description || 'No job details yet.')}</p>
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
-          <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}">
+          <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}" data-job-request-id="${escapeHtml(assignment.jobRequest?.id || '')}">
             <div class="client-request-form-grid">
               <label>Status
                 <select name="status">
@@ -1894,9 +1961,20 @@
               <label class="full">Worker notes
                 <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
               </label>
+              <label class="full client-request-attachments">Before photos / files
+                <input name="beforeFiles" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-worker-before-files>
+                <small>Attach site condition photos, measurements, or reference documents before work starts.</small>
+                <span class="client-request-attachment-list" data-worker-before-file-list>No files selected yet.</span>
+              </label>
+              <label class="full client-request-attachments">After photos / completion files
+                <input name="afterFiles" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-worker-after-files>
+                <small>Attach after photos, completion proof, or documents for admin/client review.</small>
+                <span class="client-request-attachment-list" data-worker-after-file-list>No files selected yet.</span>
+              </label>
             </div>
             <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
           </form>
+          <div class="job-file-list" data-job-files="${escapeHtml(assignment.jobRequest?.id || '')}" aria-live="polite"></div>
         </article>
       `;
 
@@ -2350,6 +2428,51 @@ Additional info from client: ${payload.additionalInfo}` : '';
       };
 
 
+      const fileMetadataFromInput = (input, category) => [...(input?.files || [])].map((file) => ({
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        category,
+      }));
+
+      const renderJobFiles = (jobRequestId, files = []) => {
+        document.querySelectorAll(`[data-job-files="${CSS.escape(jobRequestId)}"]`).forEach((list) => {
+          list.innerHTML = files.length ? files.map((file) => `
+            <article>
+              <strong>${escapeHtml(file.fileName || 'Attached file')}</strong>
+              <div class="client-request-meta"><span>${escapeHtml(file.mimeType || 'file')}</span><span>${escapeHtml(`${Math.ceil((Number(file.sizeBytes) || 0) / 1024)} KB`)}</span></div>
+            </article>
+          `).join('') : '<p class="session-status">No files attached yet.</p>';
+        });
+      };
+
+      const loadJobFiles = async (jobRequestId) => {
+        if (!jobRequestId) return [];
+        const response = await fetch(`/api/job-files?jobRequestId=${encodeURIComponent(jobRequestId)}`, { headers: { accept: 'application/json' } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Files are not available.');
+        renderJobFiles(jobRequestId, result.files || []);
+        return result.files || [];
+      };
+
+      const refreshVisibleJobFiles = () => {
+        const jobIds = [...new Set([...document.querySelectorAll('[data-job-files]')].map((list) => list.dataset.jobFiles).filter(Boolean))];
+        jobIds.forEach((jobId) => loadJobFiles(jobId).catch(() => renderJobFiles(jobId, [])));
+      };
+
+      const uploadJobFiles = async ({ jobRequestId, files }) => {
+        if (!jobRequestId || !files?.length) return [];
+        const response = await fetch('/api/job-files', {
+          method: 'POST',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ jobRequestId, files }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Files could not be attached.');
+        await loadJobFiles(jobRequestId);
+        return result.files || [];
+      };
+
       const summarizeClientRequestAttachments = (formData) => {
         const files = formData.getAll('attachments').filter((file) => file && file.name);
         return files.map((file) => `${file.name} (${Math.ceil((file.size || 0) / 1024)} KB)`).join('\n');
@@ -2376,6 +2499,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         form.addEventListener('submit', async (event) => {
           event.preventDefault();
           const formData = new FormData(form);
+          const attachmentFiles = fileMetadataFromInput(form.querySelector('[data-client-request-attachments]'), 'client_request');
           const payload = Object.fromEntries([...formData.entries()].filter(([, value]) => !(value && typeof value === 'object' && 'name' in value)));
           payload.attachmentNames = summarizeClientRequestAttachments(formData);
           formStatus.textContent = 'Saving…';
@@ -2392,9 +2516,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
               throw new Error(result.message || 'We could not save that request.');
             }
 
+            if (attachmentFiles.length) {
+              formStatus.textContent = 'Request saved. Attaching files…';
+              await uploadJobFiles({ jobRequestId: result.id, files: attachmentFiles });
+            }
             form.reset();
             updateClientRequestAttachmentList(form.querySelector('[data-client-request-attachments]'));
-            formStatus.textContent = 'Request saved.';
+            formStatus.textContent = attachmentFiles.length ? `Request saved with ${attachmentFiles.length} file${attachmentFiles.length === 1 ? '' : 's'}.` : 'Request saved.';
             await loadClientRequests();
             await loadClientQuotes();
           } catch (error) {
@@ -3148,12 +3276,25 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-worker-jobs]');
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
+        panel.addEventListener('change', (event) => {
+          if (event.target.matches('[data-worker-before-files]')) {
+            const list = event.target.closest('form')?.querySelector('[data-worker-before-file-list]');
+            if (list) list.textContent = [...event.target.files].map((file) => file.name).join(', ') || 'No files selected yet.';
+          }
+          if (event.target.matches('[data-worker-after-files]')) {
+            const list = event.target.closest('form')?.querySelector('[data-worker-after-file-list]');
+            if (list) list.textContent = [...event.target.files].map((file) => file.name).join(', ') || 'No files selected yet.';
+          }
+        });
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-worker-job-form]');
           if (!form) return;
           event.preventDefault();
           const formStatus = form.querySelector('[data-worker-job-form-status]');
-          const payload = Object.fromEntries(new FormData(form).entries());
+          const formData = new FormData(form);
+          const beforeFiles = fileMetadataFromInput(form.querySelector('[data-worker-before-files]'), 'worker_before');
+          const afterFiles = fileMetadataFromInput(form.querySelector('[data-worker-after-files]'), 'worker_after');
+          const payload = Object.fromEntries([...formData.entries()].filter(([, value]) => !(value && typeof value === 'object' && 'name' in value)));
           payload.assignmentId = form.dataset.assignmentId;
           if (formStatus) formStatus.textContent = 'Saving job update…';
           try {
@@ -3164,7 +3305,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.ok) throw new Error(result.message || 'We could not update that assigned job.');
-            if (formStatus) formStatus.textContent = 'Job updated.';
+            const filesToUpload = [...beforeFiles, ...afterFiles];
+            if (filesToUpload.length) {
+              if (formStatus) formStatus.textContent = 'Job updated. Attaching files…';
+              await uploadJobFiles({ jobRequestId: form.dataset.jobRequestId, files: filesToUpload });
+            }
+            if (formStatus) formStatus.textContent = filesToUpload.length ? `Job updated with ${filesToUpload.length} file${filesToUpload.length === 1 ? '' : 's'}.` : 'Job updated.';
+            form.querySelectorAll('[data-worker-before-files], [data-worker-after-files]').forEach((input) => { input.value = ''; });
+            form.querySelector('[data-worker-before-file-list]') && (form.querySelector('[data-worker-before-file-list]').textContent = 'No files selected yet.');
+            form.querySelector('[data-worker-after-file-list]') && (form.querySelector('[data-worker-after-file-list]').textContent = 'No files selected yet.');
             await loadWorkerJobs();
           } catch (error) {
             if (formStatus) formStatus.textContent = error.message;
@@ -3185,6 +3334,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           panelStatus.dataset.state = 'ready';
           panelStatus.textContent = assignments.length ? `${assignments.length} assigned job${assignments.length === 1 ? '' : 's'} loaded.` : 'No assigned jobs yet.';
           jobList.innerHTML = assignments.map(renderWorkerJobCard).join('');
+          refreshVisibleJobFiles();
           const openMetric = document.querySelector('[data-open-requests-metric]');
           if (openMetric && result.summary) openMetric.textContent = String(result.summary.assigned || 0);
           bindWorkerJobActions();
@@ -3298,6 +3448,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
             loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {

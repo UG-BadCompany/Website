@@ -95,6 +95,10 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /Photos \/ attachments/, 'client request form should label the attachment area clearly');
   assert.match(script, /const summarizeClientRequestAttachments =/, 'client request submit should summarize selected files');
   assert.match(script, /payload\.attachmentNames = summarizeClientRequestAttachments\(formData\)/, 'client request submit should send attachment names to the API');
+  assert.match(script, /const uploadJobFiles = async/, 'dashboard should upload job file records through the shared files API');
+  assert.match(script, /fetch\('\/api\/job-files'/, 'dashboard file uploads should call the job files API');
+  assert.match(html, /data-worker-before-files/, 'worker job form should accept before photos and files');
+  assert.match(html, /data-worker-after-files/, 'worker job form should accept after photos and completion files');
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
   assert.match(script, /const approveClientCompletion =/, 'clients should have completed-work approval handler');
   assert.match(script, /quoteMethod = payload.quoteId \? 'PATCH' : 'POST'/, 'saved quotes should be edited instead of recreated');
