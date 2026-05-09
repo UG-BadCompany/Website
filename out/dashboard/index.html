@@ -2268,6 +2268,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminInvoices();
           }
 
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
             loadAdminAccess();
           }

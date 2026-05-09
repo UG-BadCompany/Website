@@ -156,3 +156,11 @@ Client onboarding should start from Request Work, which creates or updates the c
 - Added client invoice viewing for unpaid invoices; paid invoices remain in the database but leave the active dashboard.
 - Added admin invoice/payment APIs and dashboard controls for confirming payment, which records a payment row and moves the job request to `completed`.
 - Active client/admin request dashboards now exclude completed paid work while preserving records in the system.
+
+
+## Added in Sprint 1P
+
+- Added a dedicated admin audit activity endpoint and `admin.activity.view` permission so audit visibility can be managed separately from request/invoice permissions.
+- Added admin activity dashboard filters for activity category and free-text search across actor, event, record, amount, and status.
+- Added scoped admin work-order and invoice views so admins can switch between active work, completed history, open invoices, paid history, and all active invoice records.
+- Hardened migration repair logic for renamed admin activity permission migrations so stale cached files do not break Netlify prebuild validation.
