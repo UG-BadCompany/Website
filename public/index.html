@@ -755,7 +755,7 @@
         </a>
         <nav class="nav-links" aria-label="Primary links">
           <a href="#services">Services</a>
-          <a href="/dashboard/">Dashboard</a>
+          <a href="/login/?next=dashboard" data-dashboard-link>Dashboard</a>
           <button class="btn btn-secondary" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button>
           <a class="btn btn-primary" href="#estimate">Request Estimate</a>
         </nav>
@@ -800,8 +800,8 @@
 
       <section class="section band" id="portal">
         <div class="section-heading">
-          <h2>Your project details, quotes, and repair status in one place.</h2>
-          <p>The Client Portal is where customers can request work, keep property details organized, review quotes, approve or deny quotes, and follow repair progress without digging through texts or emails.</p>
+          <h2>Your project details, quotes, and repair status in one clean portal.</h2>
+          <p>The Client Portal keeps requests, saved properties, quote decisions, invoices, and repair progress organized without digging through texts or emails.</p>
         </div>
         <div class="grid">
           <article class="workflow-card"><strong>Request quotes</strong><p>Send a new repair, maintenance, installation, or punch-list request tied to the right property.</p></article>
@@ -812,7 +812,7 @@
           <article class="workflow-card"><strong>Payments and invoices next</strong><p>The same portal is being prepared for invoice review, deposits, final payments, and receipts.</p></article>
         </div>
         <div class="portal-actions">
-          <a class="btn btn-primary" href="/dashboard/">Open Dashboard</a>
+          <a class="btn btn-primary" href="/login/?next=dashboard" data-dashboard-link>Open Client Portal</a>
         </div>
       </section>
 
@@ -959,6 +959,26 @@
         } finally {
           submitButton.disabled = false;
         }
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');
+
+      dashboardLinks.forEach((link) => {
+        link.addEventListener('click', async (event) => {
+          event.preventDefault();
+
+          try {
+            const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            window.location.assign(response.ok && result.authenticated ? '/dashboard/' : '/login/?next=dashboard');
+          } catch {
+            window.location.assign('/login/?next=dashboard');
+          }
+        });
       });
     })();
   </script>

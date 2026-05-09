@@ -121,14 +121,20 @@ test('inventory page owns inventory UI and API handlers', async () => {
 });
 
 
-test('homepage portal links return existing sessions to the dashboard', async () => {
+test('homepage portal links route logged-out users straight to login and active sessions to dashboard', async () => {
   const html = await loadHomeHtml();
+  const script = extractInlineScripts(html).join('\n');
 
   assert.match(html, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3.png\?raw=true/, 'homepage should use the real logo asset from the provided URL');
-  assert.match(html, /href="\/dashboard\/">Dashboard/, 'primary nav portal link should open the dashboard directly');
-  assert.match(html, /href="\/dashboard\/">Open Dashboard/, 'portal CTA should open the dashboard directly');
-  assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'homepage should not force signed-in users through login for the portal');
-  assert.doesNotMatch(html, /href="\/login\/">Open Client Portal/, 'homepage CTA should not force signed-in users through login for the portal');
+  assert.match(html, /href="\/login\/\?next=dashboard" data-dashboard-link>Dashboard/, 'primary dashboard link should fall back directly to magic-link login');
+  assert.match(html, /href="\/login\/\?next=dashboard" data-dashboard-link>Open Client Portal/, 'portal CTA should fall back directly to magic-link login');
+  assert.match(html, /one clean portal/, 'portal copy should be cleaner and more polished');
+  assert.match(html, /data-dashboard-link/, 'homepage dashboard links should be session-aware');
+  assert.doesNotMatch(html, /href="\/dashboard\/">Dashboard/, 'homepage should not send logged-out users to the dashboard before login');
+  assert.doesNotMatch(html, /href="\/dashboard\/">Open Dashboard/, 'homepage CTA should not send logged-out users to the dashboard before login');
+  assert.match(script, /const dashboardLinks = document\.querySelectorAll\('\[data-dashboard-link\]'\)/, 'homepage should intercept dashboard links');
+  assert.match(script, /fetch\('\/api\/me'/, 'homepage should check session before routing dashboard links');
+  assert.match(script, /response\.ok && result\.authenticated \? '\/dashboard\/' : '\/login\/\?next=dashboard'/, 'homepage should route signed-in users to dashboard and logged-out users to login');
 });
 
 
