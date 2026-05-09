@@ -7,7 +7,7 @@
   <meta name="description" content="Secure dashboard placeholder for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.worker-filter-toolbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin:18px 0;padding:16px;border:2px solid rgba(173,63,24,.18);border-radius:20px;background:#fff}.worker-filter-toolbar label{display:grid;gap:7px;color:var(--muted);font-weight:950}.worker-filter-toolbar select{min-width:230px;border:1px solid var(--line);border-radius:14px;padding:12px;font:inherit;background:#fffaf4}.worker-filter-count{font-weight:950;color:var(--rust)}.worker-evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.worker-evidence-grid div{padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
   </style>
 </head>
 <body>
@@ -18,7 +18,7 @@
         <div>
           <span class="eyebrow">Secure Client Portal</span>
           <h1>Your dashboard opens after secure portal access.</h1>
-          <p>Use one magic-link sign-in to load your profile, roles, permissions, requests, properties, and quotes. The dashboard only reveals tools after /api/me confirms a verified session.</p>
+          <p>Manage your requests, quotes, profile, schedule, and assigned work from one secure dashboard.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
@@ -41,6 +41,35 @@
       <strong>Admin request inbox</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
+      <div class="admin-request-list" data-admin-pipeline-summary></div>
+      <div class="client-request-form-grid" data-admin-request-filters>
+        <label>Work order view
+          <select data-admin-request-scope-filter>
+            <option value="active">Active work orders</option>
+            <option value="completed">Completed history</option>
+            <option value="all">All work orders</option>
+          </select>
+        </label>
+        <label>Search work orders
+          <input type="search" data-admin-request-search placeholder="Client, service, city, phone, or notes">
+        </label>
+        <label>Status filter
+          <select data-admin-request-status-filter>
+            <option value="">All statuses in view</option>
+            <option value="new">New</option>
+            <option value="needs_review">Needs review</option>
+            <option value="quote_in_progress">Quote in progress</option>
+            <option value="quote_sent">Quote sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="in_progress">In progress</option>
+            <option value="pending_review">Pending review</option>
+            <option value="waiting_payment">Waiting payment</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+      </div>
       <div class="admin-request-list" data-admin-request-list></div>
       <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
         <section class="admin-request-modal-panel">
@@ -51,6 +80,7 @@
             </div>
             <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close request workspace">×</button>
           </div>
+          <div class="client-quote-list" data-admin-work-order-summary></div>
           <div class="client-request-form">
             <form data-admin-status-form>
               <input type="hidden" name="jobRequestId" data-admin-status-request-id>
@@ -64,6 +94,8 @@
                     <option value="accepted">Accepted</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="in_progress">In progress</option>
+                    <option value="pending_review">Pending review</option>
+                    <option value="waiting_payment">Waiting payment</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
@@ -78,10 +110,12 @@
                   <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
                 </label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Mark completed today</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Verify complete / waiting payment</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-quote-form>
               <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
+              <input type="hidden" name="quoteId" data-admin-quote-id>
+              <strong data-admin-quote-form-title>Create quote</strong>
               <div class="client-request-form-grid">
                 <label>Quote title
                   <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
@@ -94,7 +128,7 @@
                 </label>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-assignment-form>
               <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -209,6 +243,51 @@
           </form>
         </section>
       </div>
+    </section>
+
+    <section class="card admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Payments waiting</strong>
+      <p>Completed work that has been verified moves here until payment is confirmed.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Recent admin activity</strong>
+      <p>Review the latest status changes, quotes, assignments, payments, and account updates recorded in the audit trail.</p>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading recent admin activity…</p>
+      <div class="client-request-form" data-admin-activity-controls>
+        <div class="client-request-form-grid">
+          <label>Activity type
+            <select data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="job">Requests &amp; work orders</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Invoices &amp; payments</option>
+              <option value="user">Users &amp; roles</option>
+            </select>
+          </label>
+          <label>Search activity
+            <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
@@ -357,74 +436,23 @@
     </section>
 
 
+    <section class="card client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
+      <strong>My invoices &amp; payments</strong>
+      <p>Invoices waiting for payment confirmation will appear here. Paid invoices are kept in the system but removed from this dashboard.</p>
+      <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
+      <div class="client-quote-list" data-client-invoice-list></div>
+    </section>
+
     <section class="card worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
-      <p>Use the status dropdown to switch this page between active, completed, cancelled, or a specific work-order status. Open any work order to add notes, checklist items, materials, and completion photos/attachments.</p>
-      <div class="worker-filter-toolbar" data-worker-filter-control>
-        <label>Show work orders by status
-          <select data-worker-job-filter aria-label="Filter worker jobs by status">
-            <option value="active">Active work orders</option>
-            <option value="assigned">Assigned</option>
-            <option value="accepted">Accepted</option>
-            <option value="in_progress">In progress</option>
-            <option value="blocked">Blocked</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="all">All statuses</option>
-          </select>
-        </label>
-        <span class="worker-filter-count" data-worker-filter-count>0 shown</span>
-      </div>
+      <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
       <div class="worker-job-list" data-worker-job-list></div>
-      <div class="admin-request-modal" data-worker-job-modal role="dialog" aria-modal="true" aria-labelledby="worker-job-modal-title" hidden>
-        <section class="admin-request-modal-panel">
-          <div class="admin-request-modal-header">
-            <div><strong id="worker-job-modal-title" data-worker-job-modal-title>Work order</strong><p data-worker-job-modal-summary>Update this work order before closing it out.</p></div>
-            <button class="btn btn-soft admin-request-modal-close" type="button" data-worker-job-modal-close aria-label="Close work order">×</button>
-          </div>
-          <form class="client-request-form" data-worker-job-form>
-            <input type="hidden" name="assignmentId" data-worker-job-edit-id>
-            <input type="hidden" name="existingCompletionPhotoNames" data-worker-existing-completion-photo-names>
-            <div class="worker-evidence-grid" data-worker-job-evidence-summary></div>
-            <div class="client-request-form-grid">
-              <label>Status
-                <select name="status" data-worker-job-status>
-                  <option value="assigned">Assigned</option>
-                  <option value="accepted">Accepted</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="blocked">Blocked</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </label>
-              <label class="full">Worker notes
-                <textarea name="workerNotes" data-worker-notes placeholder="Progress, access updates, blockers, or extra job notes."></textarea>
-              </label>
-              <label class="full">Checklist items completed / still needed
-                <textarea name="checklistItemsText" data-worker-checklist-items placeholder="One checklist item per line, such as: Turn off breaker, install fan, test switches."></textarea>
-              </label>
-              <label class="full">Materials / parts used or needed
-                <textarea name="materialNotes" data-worker-material-notes placeholder="List materials, parts, supplies, receipts, or anything admin should know."></textarea>
-              </label>
-              <label class="full">Completion notes required before completing
-                <textarea name="completionNotes" data-worker-completion-notes placeholder="Describe the completed work, cleanup, testing, and client/admin follow-up."></textarea>
-              </label>
-              <label class="full">Completion photos / attachments required before completing
-                <input name="completionPhotos" type="file" accept="image/*,.pdf" multiple data-worker-completion-photos>
-              </label>
-            </div>
-            <p class="request-update-note">To mark a work order completed, add completion notes and at least one photo/attachment. File names are saved to the work order record.</p>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save work order update</button><span data-worker-job-form-status aria-live="polite"></span></div>
-          </form>
-        </section>
-      </div>
     </section>
 
     <section class="tools" aria-label="Role based dashboard tools">
       <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
       <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
-      <article class="card locked" data-dashboard-section data-views="admin"><strong>Secure portal gate</strong><p>/api/me now verifies the magic-link session before role-scoped dashboard data loads.</p><ul class="tool-list"><li>Magic-link verified session</li><li>app_users profile lookup</li><li>Role and permission loading</li><li>Dashboard data scoped by role</li></ul></article>
     </section>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
@@ -444,10 +472,25 @@
       const currentAdminUsers = new Map();
       const currentAdminWorkers = new Map();
       const currentAdminAssignments = new Map();
+      const currentAdminQuotes = new Map();
+      let currentAdminInvoices = [];
+      let currentAdminActivity = [];
+      let currentAdminRequestScope = 'active';
+      const adminStatusOrder = [
+        ['new', 'New'],
+        ['needs_review', 'Needs review'],
+        ['quote_in_progress', 'Quoting'],
+        ['quote_sent', 'Quote sent'],
+        ['accepted', 'Accepted'],
+        ['scheduled', 'Scheduled'],
+        ['in_progress', 'In progress'],
+        ['pending_review', 'Pending review'],
+        ['waiting_payment', 'Waiting payment'],
+        ['completed', 'Completed'],
+        ['cancelled', 'Cancelled'],
+      ];
       const currentClientProperties = new Map();
       const currentClientRequests = new Map();
-      let currentWorkerAssignments = [];
-      let currentWorkerJobFilter = 'active';
       let currentPermissions = [];
 
       const bindLogout = () => {
@@ -517,7 +560,7 @@
         const availableViews = permissions.availableViews || user.roles || [];
         const switcher = document.querySelector('[data-view-switcher]');
 
-        if (switcher && permissions.canSwitchDashboardView) {
+        if (switcher && permissions.canSwitchDashboardView && (user.roles || []).includes('admin')) {
           switcher.hidden = false;
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             button.hidden = !availableViews.includes(button.dataset.viewButton);
@@ -553,9 +596,128 @@
               ${scheduleMeta}
             </div>
             <p>${escapeHtml(request.description)}</p>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button></div>`}
+            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
+      };
+
+      const renderAdminWorkOrderSummary = (request, assignments = [], quote = null) => {
+        const primaryAssignment = assignments[0] || null;
+        const timeline = [
+          { label: 'Request created', value: request.createdAt ? formatDate(String(request.createdAt).slice(0, 10)) : '' },
+          { label: 'Quote status', value: quote ? (quote.status || 'draft').replaceAll('_', ' ') : 'Not quoted' },
+          { label: 'Worker assignment', value: primaryAssignment ? `${primaryAssignment.workerName || primaryAssignment.workerEmail || 'Worker'} — ${(primaryAssignment.status || 'assigned').replaceAll('_', ' ')}` : 'Not assigned' },
+          { label: 'Schedule', value: primaryAssignment?.scheduledDate ? formatDate(primaryAssignment.scheduledDate) : (request.estimatedStartDate ? `Target ${formatDate(request.estimatedStartDate)}` : 'Not scheduled') },
+          { label: 'Completion', value: request.completionDate ? formatDate(request.completionDate) : (request.status === 'pending_review' ? 'Pending admin review' : 'Not complete') },
+          { label: 'Billing', value: request.status === 'waiting_payment' ? 'Invoice waiting payment' : (request.status === 'completed' ? 'Completed' : 'Not ready') },
+        ];
+
+        const assignmentMeta = assignments.length
+          ? `${assignments.length} assignment${assignments.length === 1 ? '' : 's'}${primaryAssignment?.scheduledDate ? ` • Next ${formatDate(primaryAssignment.scheduledDate)}` : ''}`
+          : 'No assignments yet';
+        const quoteMeta = quote
+          ? `${quote.title || 'Saved quote'} • ${formatMoney(quote.amountCents)} • ${(quote.status || 'draft').replaceAll('_', ' ')}`
+          : 'No quote saved';
+
+        return `
+          <article class="client-quote" data-admin-work-order-summary-card>
+            <span class="client-quote-badge">${escapeHtml((request.status || 'new').replaceAll('_', ' '))}</span>
+            <strong>Work order command center</strong>
+            <div class="client-quote-meta">
+              <span>WO ${escapeHtml(String(request.id || '').slice(0, 8) || 'new')}</span>
+              <span>${escapeHtml(request.requesterName || 'Client')}</span>
+              <span>${escapeHtml(request.requesterPhone || request.requesterEmail || 'No contact')}</span>
+              <span>${escapeHtml(request.city || 'No city')}</span>
+            </div>
+            <p>${escapeHtml(request.description || 'No work description provided.')}</p>
+            <div class="client-quote-meta">
+              <span>${escapeHtml(quoteMeta)}</span>
+              <span>${escapeHtml(assignmentMeta)}</span>
+              <span>${escapeHtml(request.adminNotes ? 'Internal notes saved' : 'No internal notes')}</span>
+            </div>
+            <div class="client-quote-list">
+              ${timeline.map((item) => `
+                <article class="admin-assignment">
+                  <span class="admin-assignment-badge">${escapeHtml(item.label)}</span>
+                  <strong>${escapeHtml(item.value || '—')}</strong>
+                </article>
+              `).join('')}
+            </div>
+          </article>
+        `;
+      };
+
+      const renderAdminPipelineSummary = (statusCounts = {}) => {
+        const cards = adminStatusOrder
+          .map(([statusKey, label]) => ({ statusKey, label, count: Number(statusCounts[statusKey] || 0) }))
+          .filter((item) => item.count > 0 || ['new', 'needs_review', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment'].includes(item.statusKey));
+
+        return cards.map((item) => `
+          <article class="admin-request" data-admin-filter-status="${escapeHtml(item.statusKey)}">
+            <span class="admin-request-badge">${escapeHtml(item.label)}</span>
+            <strong>${item.count}</strong>
+            <p>${item.count === 1 ? 'work order' : 'work orders'}</p>
+          </article>
+        `).join('');
+      };
+
+      const getFilteredAdminRequests = () => {
+        const search = (document.querySelector('[data-admin-request-search]')?.value || '').trim().toLowerCase();
+        const statusFilter = document.querySelector('[data-admin-request-status-filter]')?.value || '';
+
+        return [...currentAdminRequests.values()].filter((request) => {
+          if (statusFilter && request.status !== statusFilter) return false;
+          if (!search) return true;
+
+          return [
+            request.serviceType,
+            request.requesterName,
+            request.requesterEmail,
+            request.requesterPhone,
+            request.city,
+            request.preferredTimeframe,
+            request.description,
+            request.adminNotes,
+          ].some((value) => String(value || '').toLowerCase().includes(search));
+        });
+      };
+
+      const applyAdminRequestFilters = () => {
+        const inboxList = document.querySelector('[data-admin-request-list]');
+        const inboxStatus = document.querySelector('[data-admin-requests-status]');
+        if (!inboxList) return;
+
+        const filteredRequests = getFilteredAdminRequests();
+        inboxList.innerHTML = filteredRequests.length
+          ? filteredRequests.map((request) => renderRequestCard(request, { admin: true })).join('')
+          : '<p class="session-status">No work orders match those filters.</p>';
+
+        if (inboxStatus) {
+          const total = currentAdminRequests.size;
+          const scopeLabel = currentAdminRequestScope === 'completed' ? 'completed' : currentAdminRequestScope === 'all' ? 'total' : 'active';
+          inboxStatus.dataset.state = 'ready';
+          inboxStatus.textContent = total
+            ? `${filteredRequests.length} of ${total} ${scopeLabel} work order${total === 1 ? '' : 's'} shown.`
+            : `No ${scopeLabel} job requests yet.`;
+        }
+
+        bindAdminRequestActions();
+      };
+
+      const bindAdminRequestFilters = () => {
+        const scopeFilter = document.querySelector('[data-admin-request-scope-filter]');
+        const search = document.querySelector('[data-admin-request-search]');
+        const statusFilter = document.querySelector('[data-admin-request-status-filter]');
+        if (scopeFilter && !scopeFilter.dataset.bound) {
+          scopeFilter.dataset.bound = 'true';
+          scopeFilter.addEventListener('change', () => loadAdminRequests());
+        }
+        [search, statusFilter].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', applyAdminRequestFilters);
+          control.addEventListener('change', applyAdminRequestFilters);
+        });
       };
 
       const renderQuoteCard = (quote) => `
@@ -571,6 +733,184 @@
           ${['sent', 'viewed'].includes(quote.status) ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-quote-action="accept" data-quote-id="${escapeHtml(quote.id)}">Approve quote</button><button class="btn btn-danger" type="button" data-quote-action="decline" data-quote-id="${escapeHtml(quote.id)}">Deny quote</button></div>` : ''}
         </article>
       `;
+
+      const renderClientInvoiceCard = (invoice) => `
+        <article class="client-quote">
+          <span class="client-quote-badge">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
+          <strong>${escapeHtml(invoice.title || 'Invoice')} — ${formatMoney(invoice.amountCents)}</strong>
+          <div class="client-quote-meta">
+            <span>${escapeHtml(invoice.jobRequest?.serviceType || 'Completed work')}</span>
+            <span>${escapeHtml(invoice.jobRequest?.streetAddress || 'No address')}</span>
+            <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
+          </div>
+          <p>Payment is waiting for admin confirmation. Paid invoices stay in your records but leave this dashboard.</p>
+        </article>
+      `;
+
+      const renderAdminInvoiceSummary = (summary = {}) => {
+        const open = Number(summary.open || 0);
+        const paid = Number(summary.paid || 0);
+        const amountDueCents = Number(summary.amountDueCents || 0);
+        const amountCollectedCents = Number(summary.amountCollectedCents || 0);
+        return `
+          <article class="admin-request">
+            <span class="admin-request-badge">Open invoices</span>
+            <strong>${open}</strong>
+            <p>${open === 1 ? 'invoice awaiting confirmation' : 'invoices awaiting confirmation'}</p>
+          </article>
+          <article class="admin-request">
+            <span class="admin-request-badge">Amount due</span>
+            <strong>${formatMoney(amountDueCents)}</strong>
+            <p>Expected payment total</p>
+          </article>
+          <article class="admin-request">
+            <span class="admin-request-badge">Paid invoices</span>
+            <strong>${paid}</strong>
+            <p>${formatMoney(amountCollectedCents)} confirmed in this view</p>
+          </article>
+        `;
+      };
+
+      const renderAdminInvoiceCard = (invoice) => {
+        const amountDollars = (Number(invoice.amountCents || 0) / 100).toFixed(2);
+        const paymentDetails = invoice.payment ? `
+          <p><strong>Payment confirmed</strong> ${formatMoney(invoice.payment.amountCents || invoice.amountCents)}${invoice.payment.method ? ` via ${escapeHtml(invoice.payment.method)}` : ''}${invoice.payment.confirmedAt ? ` on ${escapeHtml(formatDate(String(invoice.payment.confirmedAt).slice(0, 10)))}` : ''}</p>
+          ${invoice.payment.reference ? `<p><strong>Reference</strong> ${escapeHtml(invoice.payment.reference)}</p>` : ''}
+        ` : '';
+        return `
+          <article class="client-quote">
+            <span class="client-quote-badge">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
+            <strong>${escapeHtml(invoice.title || 'Invoice')} — ${formatMoney(invoice.amountCents)}</strong>
+            <div class="client-quote-meta">
+              <span>${escapeHtml(invoice.client?.fullName || invoice.client?.email || 'Client')}</span>
+              <span>${escapeHtml(invoice.jobRequest?.serviceType || 'Completed work')}</span>
+              <span>${escapeHtml(invoice.jobRequest?.streetAddress || 'No address')}</span>
+              <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
+            </div>
+            ${paymentDetails}
+            ${invoice.status === 'open' ? `
+              <form class="client-request-form" data-admin-payment-form data-admin-invoice-id="${escapeHtml(invoice.id)}">
+                <div class="client-request-form-grid">
+                  <label>Amount received
+                    <input name="amountDollars" type="number" min="0" step="0.01" value="${amountDollars}" required>
+                  </label>
+                  <label>Payment method
+                    <select name="method">
+                      <option value="manual">Manual confirmation</option>
+                      <option value="cash">Cash</option>
+                      <option value="check">Check</option>
+                      <option value="card">Card</option>
+                      <option value="ach">ACH / bank transfer</option>
+                    </select>
+                  </label>
+                  <label class="full">Reference / notes
+                    <input name="reference" placeholder="Receipt, check, transaction, or internal note">
+                  </label>
+                </div>
+                <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-confirm-payment="${escapeHtml(invoice.id)}">Confirm payment</button></div>
+              </form>
+            ` : ''}
+          </article>
+        `;
+      };
+
+      const getAdminInvoiceSearchText = (invoice) => [
+        invoice.title,
+        invoice.status,
+        invoice.client?.fullName,
+        invoice.client?.email,
+        invoice.jobRequest?.serviceType,
+        invoice.jobRequest?.streetAddress,
+        invoice.jobRequest?.city,
+        invoice.payment?.method,
+        invoice.payment?.reference,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const renderAdminInvoiceList = () => {
+        const invoiceList = document.querySelector('[data-admin-invoice-list]');
+        const search = document.querySelector('[data-admin-invoice-search]');
+        if (!invoiceList) return;
+        const term = (search?.value || '').trim().toLowerCase();
+        const filteredInvoices = term
+          ? currentAdminInvoices.filter((invoice) => getAdminInvoiceSearchText(invoice).includes(term))
+          : currentAdminInvoices;
+        invoiceList.innerHTML = filteredInvoices.length ? filteredInvoices.map(renderAdminInvoiceCard).join('') : '<p class="session-status">No invoices match this view.</p>';
+      };
+
+      const formatActivityType = (eventType = '') => eventType.replaceAll('_', ' ').replaceAll('.', ' · ');
+
+      const getAdminActivityType = (event = {}) => {
+        const eventType = event.eventType || '';
+        const entityType = event.entityType || '';
+        if (eventType.includes('quote') || entityType === 'quote') return 'quote';
+        if (eventType.includes('payment') || eventType.includes('invoice') || ['invoice', 'payment'].includes(entityType)) return 'payment';
+        if (eventType.includes('user') || eventType.includes('role') || ['user', 'role'].includes(entityType)) return 'user';
+        if (eventType.includes('job') || eventType.includes('request') || eventType.includes('worker_assignment') || ['job_request', 'worker_assignment'].includes(entityType)) return 'job';
+        return 'other';
+      };
+
+      const getAdminActivitySearchText = (event = {}) => {
+        const metadata = event.metadata || {};
+        return [
+          event.eventType,
+          event.entityType,
+          event.entityId,
+          event.actor?.fullName,
+          event.actor?.email,
+          metadata.status,
+          metadata.jobRequestId,
+          metadata.invoiceId,
+          metadata.paymentId,
+          metadata.amountCents,
+          metadata.email,
+          metadata.serviceType,
+        ].filter(Boolean).join(' ').toLowerCase();
+      };
+
+      const renderAdminActivityCard = (event) => {
+        const metadata = event.metadata || {};
+        const metadataSummary = [
+          metadata.status ? `Status: ${metadata.status}` : '',
+          metadata.jobRequestId ? `Request: ${metadata.jobRequestId}` : '',
+          metadata.invoiceId ? `Invoice: ${metadata.invoiceId}` : '',
+          metadata.paymentId ? `Payment: ${metadata.paymentId}` : '',
+          metadata.amountCents ? `Amount: ${formatMoney(metadata.amountCents)}` : '',
+        ].filter(Boolean).join(' • ');
+        return `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(formatActivityType(event.eventType || 'activity'))}</span>
+            <strong>${escapeHtml(event.actor?.fullName || event.actor?.email || 'System activity')}</strong>
+            <div class="admin-request-meta">
+              <span>${escapeHtml(event.entityType || 'record')}</span>
+              <span>${escapeHtml(event.createdAt ? formatDate(String(event.createdAt).slice(0, 10)) : 'No date')}</span>
+            </div>
+            ${metadataSummary ? `<p>${escapeHtml(metadataSummary)}</p>` : ''}
+          </article>
+        `;
+      };
+
+      const renderAdminActivityList = () => {
+        const activityList = document.querySelector('[data-admin-activity-list]');
+        const typeFilter = document.querySelector('[data-admin-activity-type-filter]')?.value || '';
+        const search = (document.querySelector('[data-admin-activity-search]')?.value || '').trim().toLowerCase();
+        if (!activityList) return;
+        const filteredEvents = currentAdminActivity.filter((event) => {
+          if (typeFilter && getAdminActivityType(event) !== typeFilter) return false;
+          return !search || getAdminActivitySearchText(event).includes(search);
+        });
+        activityList.innerHTML = filteredEvents.length ? filteredEvents.map(renderAdminActivityCard).join('') : '<p class="session-status">No audit events match those filters.</p>';
+      };
+
+      const bindAdminActivityFilters = () => {
+        const typeFilter = document.querySelector('[data-admin-activity-type-filter]');
+        const search = document.querySelector('[data-admin-activity-search]');
+        [typeFilter, search].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', renderAdminActivityList);
+          control.addEventListener('change', renderAdminActivityList);
+        });
+      };
 
       const renderPropertyCard = (property) => `
         <article class="client-property">
@@ -599,17 +939,7 @@
         </article>
       `;
 
-      const renderWorkerJobCard = (assignment) => {
-        const completionPhotoNames = assignment.completionPhotoNames || [];
-        const checklistItems = assignment.checklistItems || [];
-        const activeEvidence = [
-          assignment.workerNotes ? 'notes' : '',
-          assignment.materialNotes ? 'materials' : '',
-          checklistItems.length ? `${checklistItems.length} checklist` : '',
-          completionPhotoNames.length ? `${completionPhotoNames.length} attachment${completionPhotoNames.length === 1 ? '' : 's'}` : '',
-        ].filter(Boolean).join(' • ') || 'No worker evidence yet';
-
-        return `
+      const renderWorkerJobCard = (assignment) => `
         <article class="worker-job">
           <span class="worker-job-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
           <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Assigned job')}</strong>
@@ -622,11 +952,25 @@
           <p>${escapeHtml(assignment.jobRequest?.description || 'No job details yet.')}</p>
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
-          <p><strong>Worker evidence:</strong> ${escapeHtml(activeEvidence)}</p>
-          <div class="client-quote-actions"><button class="btn btn-primary" type="button" data-worker-open-job="${escapeHtml(assignment.id)}">Open work order</button></div>
+          <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}">
+            <div class="client-request-form-grid">
+              <label>Status
+                <select name="status">
+                  <option value="assigned" ${assignment.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                  <option value="accepted" ${assignment.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+                  <option value="in_progress" ${assignment.status === 'in_progress' ? 'selected' : ''}>In progress</option>
+                  <option value="blocked" ${assignment.status === 'blocked' ? 'selected' : ''}>Blocked</option>
+                  <option value="completed" ${assignment.status === 'completed' ? 'selected' : ''}>Completed</option>
+                </select>
+              </label>
+              <label class="full">Worker notes
+                <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
+              </label>
+            </div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
+          </form>
         </article>
       `;
-      };
 
       const renderClientProfile = (user) => {
         if (!user) return;
@@ -826,6 +1170,32 @@
         }
       };
 
+      const renderClientInvoiceData = (result) => {
+        const panelStatus = document.querySelector('[data-client-invoices-status]');
+        const invoiceList = document.querySelector('[data-client-invoice-list]');
+        if (!panelStatus || !invoiceList) return;
+        const invoices = result.invoices || [];
+        panelStatus.dataset.state = 'ready';
+        panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} waiting payment confirmation.` : 'No open invoices waiting for payment.';
+        invoiceList.innerHTML = invoices.map(renderClientInvoiceCard).join('');
+      };
+
+      const loadClientInvoices = async () => {
+        const panel = document.querySelector('[data-client-invoices]');
+        const panelStatus = document.querySelector('[data-client-invoices-status]');
+        const invoiceList = document.querySelector('[data-client-invoice-list]');
+        if (!panel || !panelStatus || !invoiceList) return;
+        try {
+          const response = await fetch('/api/client/invoices', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Your invoices are not available.');
+          renderClientInvoiceData(result);
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
       const loadClientRequests = async () => {
         const panel = document.querySelector('[data-client-requests]');
         const panelStatus = document.querySelector('[data-client-requests-status]');
@@ -997,6 +1367,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || panel.dataset.editActionsBound) return;
         panel.dataset.editActionsBound = 'true';
         panel.addEventListener('click', (event) => {
+          const approveButton = event.target.closest('[data-client-approve-completion]');
+          if (approveButton) {
+            approveButton.disabled = true;
+            approveClientCompletion(approveButton.dataset.clientApproveCompletion).catch((error) => {
+              const panelStatus = document.querySelector('[data-client-requests-status]');
+              if (panelStatus) panelStatus.textContent = error.message;
+            }).finally(() => { approveButton.disabled = false; });
+            return;
+          }
           const button = event.target.closest('[data-client-open-request]');
           if (!button) return;
           openClientRequestModal(button.dataset.clientOpenRequest);
@@ -1013,6 +1392,19 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (editStatus) editStatus.textContent = error.message;
           }
         });
+      };
+
+      const approveClientCompletion = async (requestId) => {
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        if (panelStatus) panelStatus.textContent = 'Approving completed work…';
+        const response = await fetch('/api/client/job-requests', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ jobRequestId: requestId, completionAction: 'approve_completed' }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'We could not approve the completed work.');
+        await loadClientRequests();
       };
 
       const bindClientRequestForm = () => {
@@ -1066,8 +1458,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const estimatedStartDate = document.querySelector('[data-admin-estimated-start-date]');
         const completionDate = document.querySelector('[data-admin-completion-date]');
         const quoteTitle = document.querySelector('[data-admin-quote-title]');
+        const quoteId = document.querySelector('[data-admin-quote-id]');
+        const quoteAmount = document.querySelector('[data-admin-quote-form] [name="amount"]');
+        const quoteSummary = document.querySelector('[data-admin-quote-form] [name="summary"]');
+        const quoteSend = document.querySelector('[data-admin-quote-form] [name="sendToClient"]');
+        const quoteFormTitle = document.querySelector('[data-admin-quote-form-title]');
+        const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
+        const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
         if (!request || !detail) {
@@ -1086,10 +1485,20 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
         if (completionDate) completionDate.value = request.completionDate || '';
         if (adminNotes) adminNotes.value = request.adminNotes || '';
-        if (quoteTitle) quoteTitle.value = `${request.serviceType || 'Service'} quote`;
+        const savedQuote = [...currentAdminQuotes.values()].find((quote) => quote.jobRequestId === request.id);
+        if (quoteId) quoteId.value = savedQuote?.id || '';
+        if (quoteTitle) quoteTitle.value = savedQuote?.title || `${request.serviceType || 'Service'} quote`;
+        if (quoteAmount) quoteAmount.value = savedQuote ? String((savedQuote.amountCents || 0) / 100) : '';
+        if (quoteSummary) quoteSummary.value = savedQuote?.summary || '';
+        if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
+        if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
+        if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
+        const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
+        if (workOrderSummary) {
+          workOrderSummary.innerHTML = renderAdminWorkOrderSummary(request, requestAssignments, savedQuote);
+        }
         if (assignmentList) {
-          const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
         if (closeButton) closeButton.focus();
@@ -1142,7 +1551,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           statusForm.querySelector('[data-admin-mark-complete]')?.addEventListener('click', () => {
             const statusSelect = statusForm.querySelector('[data-admin-status-select]');
             const completionDate = statusForm.querySelector('[data-admin-completion-date]');
-            if (statusSelect) statusSelect.value = 'completed';
+            if (statusSelect) statusSelect.value = 'waiting_payment';
             if (completionDate && !completionDate.value) completionDate.value = new Date().toISOString().slice(0, 10);
           });
           statusForm.querySelector('[data-admin-delete-request]')?.addEventListener('click', async () => {
@@ -1165,6 +1574,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
               closeAdminRequest();
               await loadAdminRequests();
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1190,6 +1600,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
               if (formStatus) formStatus.textContent = 'Request updated.';
               await loadAdminRequests(result.request?.id);
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1218,6 +1629,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               assignmentForm.reset();
               if (formStatus) formStatus.textContent = 'Worker assigned.';
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1232,6 +1644,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const formData = new FormData(quoteForm);
             const amount = Number(formData.get('amount') || 0);
             const payload = {
+              quoteId: formData.get('quoteId'),
               jobRequestId: formData.get('jobRequestId'),
               title: formData.get('title'),
               summary: formData.get('summary'),
@@ -1239,11 +1652,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
               sendToClient: formData.get('sendToClient') === 'true',
             };
 
-            if (formStatus) formStatus.textContent = payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…';
+            const quoteMethod = payload.quoteId ? 'PATCH' : 'POST';
+            if (formStatus) formStatus.textContent = payload.quoteId ? 'Saving quote…' : (payload.sendToClient ? 'Creating and sending quote…' : 'Creating draft quote…');
 
             try {
               const response = await fetch('/api/admin/quotes', {
-                method: 'POST',
+                method: quoteMethod,
                 headers: { accept: 'application/json', 'content-type': 'application/json' },
                 body: JSON.stringify(payload),
               });
@@ -1253,9 +1667,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
                 throw new Error(result.message || 'We could not create that quote.');
               }
 
-              quoteForm.reset();
-              if (formStatus) formStatus.textContent = payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.';
+              if (!payload.quoteId) quoteForm.reset();
+              if (formStatus) formStatus.textContent = payload.quoteId ? 'Quote saved.' : (payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.');
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
             }
@@ -1562,84 +1977,113 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const closeWorkerJobModal = () => setModalOpen(document.querySelector('[data-worker-job-modal]'), false);
+      const bindAdminInvoiceActions = () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+        const invoiceFilter = panel.querySelector('[data-admin-invoice-status-filter]');
+        const invoiceSearch = panel.querySelector('[data-admin-invoice-search]');
+        invoiceFilter?.addEventListener('change', () => loadAdminInvoices());
+        invoiceSearch?.addEventListener('input', renderAdminInvoiceList);
+        panel.addEventListener('submit', async (event) => {
+          const form = event.target.closest('[data-admin-payment-form]');
+          if (!form) return;
+          event.preventDefault();
+          const button = form.querySelector('[data-admin-confirm-payment]');
+          const formData = new FormData(form);
+          const amountDollars = Number(formData.get('amountDollars') || 0);
+          const amountCents = Math.round(amountDollars * 100);
+          const status = document.querySelector('[data-admin-invoices-status]');
 
-      const openWorkerJobModal = (assignmentId) => {
-        const assignment = currentWorkerAssignments.find((item) => item.id === assignmentId);
-        if (!assignment) return;
-        const completionPhotoNames = assignment.completionPhotoNames || [];
-        const checklistItems = assignment.checklistItems || [];
-        document.querySelector('[data-worker-job-edit-id]').value = assignment.id;
-        document.querySelector('[data-worker-job-status]').value = assignment.status || 'assigned';
-        document.querySelector('[data-worker-notes]').value = assignment.workerNotes || '';
-        document.querySelector('[data-worker-material-notes]').value = assignment.materialNotes || '';
-        document.querySelector('[data-worker-checklist-items]').value = checklistItems.join('\n');
-        document.querySelector('[data-worker-completion-notes]').value = assignment.completionNotes || '';
-        document.querySelector('[data-worker-existing-completion-photo-names]').value = completionPhotoNames.join('|');
-        document.querySelector('[data-worker-job-modal-title]').textContent = assignment.jobRequest?.serviceType || 'Work order';
-        document.querySelector('[data-worker-job-modal-summary]').textContent = `${assignment.jobRequest?.city || 'No city'} • ${assignment.jobRequest?.property?.street || assignment.jobRequest?.streetAddress || 'No address'} • ${assignment.scheduledDate ? formatDate(assignment.scheduledDate) : 'No scheduled date'}`;
-        const evidenceSummary = document.querySelector('[data-worker-job-evidence-summary]');
-        if (evidenceSummary) {
-          evidenceSummary.innerHTML = [
-            ['Status', (assignment.status || 'assigned').replaceAll('_', ' ')],
-            ['Attachments', completionPhotoNames.length ? completionPhotoNames.join(', ') : 'None yet'],
-            ['Checklist', checklistItems.length ? `${checklistItems.length} item${checklistItems.length === 1 ? '' : 's'}` : 'No checklist yet'],
-          ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
-        }
-        const formStatus = document.querySelector('[data-worker-job-form-status]');
-        if (formStatus) formStatus.textContent = '';
-        setModalOpen(document.querySelector('[data-worker-job-modal]'), true);
-        document.querySelector('[data-worker-job-status]')?.focus();
+          if (!Number.isFinite(amountDollars) || amountDollars < 0) {
+            if (status) status.textContent = 'Enter a valid non-negative payment amount.';
+            return;
+          }
+
+          if (button) button.disabled = true;
+          if (status) status.textContent = 'Confirming payment…';
+          try {
+            const response = await fetch('/api/admin/invoices', {
+              method: 'PATCH',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({
+                invoiceId: form.dataset.adminInvoiceId,
+                amountCents,
+                method: formData.get('method') || 'manual',
+                reference: formData.get('reference') || '',
+              }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not confirm payment.');
+            await loadAdminInvoices();
+            await loadAdminRequests();
+            await loadAdminActivity();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          } finally {
+            if (button) button.disabled = false;
+          }
+        });
       };
 
-      const getFilteredWorkerAssignments = () => currentWorkerAssignments.filter((assignment) => {
-        if (currentWorkerJobFilter === 'all') return true;
-        if (currentWorkerJobFilter === 'active') return !['completed', 'cancelled'].includes(assignment.status);
-        return assignment.status === currentWorkerJobFilter;
-      });
+      const loadAdminInvoices = async () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const invoiceSummary = document.querySelector('[data-admin-invoice-summary]');
+        const invoiceList = document.querySelector('[data-admin-invoice-list]');
+        const invoiceFilter = document.querySelector('[data-admin-invoice-status-filter]');
+        if (!panel || !status || !invoiceList) return;
+        try {
+          const filter = invoiceFilter?.value || 'open';
+          const response = await fetch(`/api/admin/invoices?status=${encodeURIComponent(filter)}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Invoices are not available.');
+          currentAdminInvoices = result.invoices || [];
+          const label = filter === 'paid' ? 'paid invoice history' : filter === 'all' ? 'active invoice records' : 'invoice payment confirmation';
+          status.dataset.state = 'ready';
+          status.textContent = currentAdminInvoices.length ? `${currentAdminInvoices.length} ${label} item${currentAdminInvoices.length === 1 ? '' : 's'} loaded.` : `No ${label} items found.`;
+          if (invoiceSummary) invoiceSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
+          renderAdminInvoiceList();
+          bindAdminInvoiceActions();
+        } catch (error) {
+          currentAdminInvoices = [];
+          status.dataset.state = 'error';
+          status.textContent = error.message;
+        }
+      };
 
-      const renderWorkerJobs = () => {
-        const panelStatus = document.querySelector('[data-worker-jobs-status]');
-        const jobList = document.querySelector('[data-worker-job-list]');
-        if (!panelStatus || !jobList) return;
-        const filteredAssignments = getFilteredWorkerAssignments();
-        panelStatus.dataset.state = 'ready';
-        panelStatus.textContent = filteredAssignments.length
-          ? `${filteredAssignments.length} ${currentWorkerJobFilter === 'all' ? '' : currentWorkerJobFilter.replaceAll('_', ' ')} assigned job${filteredAssignments.length === 1 ? '' : 's'} loaded.`
-          : `No ${currentWorkerJobFilter === 'all' ? '' : currentWorkerJobFilter.replaceAll('_', ' ')} assigned jobs.`;
-        jobList.innerHTML = filteredAssignments.map(renderWorkerJobCard).join('');
+      const loadAdminActivity = async () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const status = document.querySelector('[data-admin-activity-status]');
+        const activityList = document.querySelector('[data-admin-activity-list]');
+        if (!panel || !status || !activityList) return;
+        try {
+          const response = await fetch('/api/admin/activity', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Admin activity is not available.');
+          currentAdminActivity = result.events || [];
+          status.dataset.state = 'ready';
+          status.textContent = currentAdminActivity.length ? `${currentAdminActivity.length} recent audit event${currentAdminActivity.length === 1 ? '' : 's'} loaded.` : 'No recent admin activity yet.';
+          bindAdminActivityFilters();
+          renderAdminActivityList();
+        } catch (error) {
+          currentAdminActivity = [];
+          status.dataset.state = 'error';
+          status.textContent = error.message;
+        }
       };
 
       const bindWorkerJobActions = () => {
         const panel = document.querySelector('[data-worker-jobs]');
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
-        panel.querySelector('[data-worker-job-filter]')?.addEventListener('change', (event) => {
-          currentWorkerJobFilter = event.target.value;
-          renderWorkerJobs();
-        });
-        panel.addEventListener('click', (event) => {
-          const openButton = event.target.closest('[data-worker-open-job]');
-          if (openButton) openWorkerJobModal(openButton.dataset.workerOpenJob);
-          if (event.target === document.querySelector('[data-worker-job-modal]') || event.target.closest('[data-worker-job-modal-close]')) closeWorkerJobModal();
-        });
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-worker-job-form]');
           if (!form) return;
           event.preventDefault();
           const formStatus = form.querySelector('[data-worker-job-form-status]');
-          const formData = new FormData(form);
-          const payload = Object.fromEntries(formData.entries());
-          payload.assignmentId = form.querySelector('[data-worker-job-edit-id]')?.value || payload.assignmentId;
-          payload.checklistItems = String(formData.get('checklistItemsText') || '').split('\n').map((item) => item.trim()).filter(Boolean);
-          const photoInput = form.querySelector('[data-worker-completion-photos]');
-          const selectedPhotoNames = [...(photoInput?.files || [])].map((file) => file.name).filter(Boolean);
-          const existingPhotoNames = String(formData.get('existingCompletionPhotoNames') || '').split('|').filter(Boolean);
-          payload.completionPhotoNames = [...new Set([...existingPhotoNames, ...selectedPhotoNames])];
-          if (payload.status === 'completed' && (!payload.completionNotes || payload.completionPhotoNames.length === 0)) {
-            if (formStatus) formStatus.textContent = 'Completion notes and at least one photo/attachment are required before completing work.';
-            return;
-          }
+          const payload = Object.fromEntries(new FormData(form).entries());
+          payload.assignmentId = form.dataset.assignmentId;
           if (formStatus) formStatus.textContent = 'Saving job update…';
           try {
             const response = await fetch('/api/worker/jobs', {
@@ -1649,8 +2093,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.ok) throw new Error(result.message || 'We could not update that assigned job.');
-            if (formStatus) formStatus.textContent = 'Work order updated.';
-            closeWorkerJobModal();
+            if (formStatus) formStatus.textContent = 'Job updated.';
             await loadWorkerJobs();
           } catch (error) {
             if (formStatus) formStatus.textContent = error.message;
@@ -1667,8 +2110,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const response = await fetch('/api/worker/jobs', { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Assigned jobs are not available.');
-          currentWorkerAssignments = result.assignments || [];
-          renderWorkerJobs();
+          const assignments = result.assignments || [];
+          panelStatus.dataset.state = 'ready';
+          panelStatus.textContent = assignments.length ? `${assignments.length} assigned job${assignments.length === 1 ? '' : 's'} loaded.` : 'No assigned jobs yet.';
+          jobList.innerHTML = assignments.map(renderWorkerJobCard).join('');
           const openMetric = document.querySelector('[data-open-requests-metric]');
           if (openMetric && result.summary) openMetric.textContent = String(result.summary.assigned || 0);
           bindWorkerJobActions();
@@ -1682,14 +2127,17 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inbox = document.querySelector('[data-admin-inbox]');
         const inboxStatus = document.querySelector('[data-admin-requests-status]');
         const inboxList = document.querySelector('[data-admin-request-list]');
+        const pipelineSummary = document.querySelector('[data-admin-pipeline-summary]');
         const openMetric = document.querySelector('[data-open-requests-metric]');
+        const scopeFilter = document.querySelector('[data-admin-request-scope-filter]');
 
         if (!inbox || !inboxStatus || !inboxList) {
           return;
         }
 
         try {
-          const response = await fetch('/api/admin/job-requests', { headers: { accept: 'application/json' } });
+          const scope = scopeFilter?.value || 'active';
+          const response = await fetch(`/api/admin/job-requests?scope=${encodeURIComponent(scope)}`, { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
 
           if (!response.ok || !result.ok) {
@@ -1697,9 +2145,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
 
           const requests = result.requests || [];
+          currentAdminRequestScope = result.scope || scope;
           const openCount = requests.filter((request) => request.status !== 'completed' && request.status !== 'cancelled').length;
+          const scopeLabel = currentAdminRequestScope === 'completed' ? 'completed history' : currentAdminRequestScope === 'all' ? 'total history' : 'active';
           inboxStatus.dataset.state = 'ready';
-          inboxStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No job requests yet.';
+          inboxStatus.textContent = requests.length ? `${requests.length} ${scopeLabel} request${requests.length === 1 ? '' : 's'} loaded.` : `No ${scopeLabel} job requests yet.`;
+          if (pipelineSummary) {
+            pipelineSummary.innerHTML = renderAdminPipelineSummary(result.statusCounts || {});
+          }
+          bindAdminRequestFilters();
 
           if (openMetric) {
             openMetric.textContent = String(openCount);
@@ -1708,17 +2162,18 @@ Additional info from client: ${payload.additionalInfo}` : '';
           currentAdminRequests.clear();
           currentAdminWorkers.clear();
           currentAdminAssignments.clear();
+          currentAdminQuotes.clear();
           requests.forEach((request) => currentAdminRequests.set(request.id, request));
           (result.workers || []).forEach((worker) => currentAdminWorkers.set(worker.id, worker));
           (result.assignments || []).forEach((assignment) => currentAdminAssignments.set(assignment.id, assignment));
+          (result.quotes || []).forEach((quote) => currentAdminQuotes.set(quote.id, quote));
           const workerSelect = document.querySelector('[data-admin-assignment-worker]');
           if (workerSelect) {
             const selectedWorker = workerSelect.value;
             workerSelect.innerHTML = '<option value="">Select a worker</option>' + [...currentAdminWorkers.values()].map((worker) => `<option value="${escapeHtml(worker.id)}">${escapeHtml(worker.fullName || worker.email || 'Worker')}</option>`).join('');
             workerSelect.value = currentAdminWorkers.has(selectedWorker) ? selectedWorker : '';
           }
-          inboxList.innerHTML = requests.map((request) => renderRequestCard(request, { admin: true })).join('');
-          bindAdminRequestActions();
+          applyAdminRequestFilters();
 
           if (selectedRequestId && currentAdminRequests.has(selectedRequestId)) {
             selectAdminRequest(selectedRequestId);
@@ -1752,17 +2207,18 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           bindLogout();
           bindClientProfileButton();
+          bindClientProfileForm();
           bindRequestEstimateLink();
           configureDashboardForUser(result.user);
 
           if (result.user.permissions?.canViewClientTools) {
-            bindClientProfileForm();
             bindClientRequestForm();
             bindClientRequestEditActions();
             bindClientPropertyActions();
             bindQuoteDecisionActions();
             loadClientRequests();
             loadClientQuotes();
+            loadClientInvoices();
           }
 
           if (result.user.permissions?.canViewWorkerTools) {
@@ -1772,6 +2228,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
           }
 
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
