@@ -29,7 +29,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-edit-property/, 'clients should have an edit action for saved properties');
   assert.match(html, /data-client-property-modal/, 'property edits should open in a dedicated popup instead of the request form');
   assert.match(html, /My profile &amp; properties|My profile & properties/, 'profile section should organize contact info and properties together');
-  assert.match(html, /data-profile-button/, 'top navigation should expose a My Profile button');
+  assert.doesNotMatch(html, /data-profile-button/, 'top navigation should not show a duplicate My Profile button');
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
@@ -85,12 +85,16 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
   assert.match(script, /const saveClientProfile =/, 'clients should be able to save profile changes');
-  assert.match(script, /const bindClientProfileButton =/, 'top My Profile button should open the profile modal');
-  assert.match(script, /querySelectorAll\('\[data-profile-button\], \[data-client-profile-shortcut\]'\)/, 'profile command-center cards should open the same profile modal');
+  assert.match(script, /const bindClientProfileButton =/, 'profile command-center cards should open the profile modal');
+  assert.match(script, /querySelectorAll\('\[data-client-profile-shortcut\]'\)/, 'profile command-center cards should open the same profile modal');
   assert.match(script, /const getUserDisplayName =/, 'dashboard session status should derive a human display name');
   assert.match(script, /Signed in as \$\{getUserDisplayName\(result\.user\)\}/, 'dashboard session status should not expose email and role strings as the primary label');
   assert.match(script, /const bindClientProfileForm =/, 'client profile form should be bound');
   assert.match(script, /querySelectorAll\('\[data-request-estimate-link\]'\)/, 'request command-center card and nav link should share request-estimate binding');
+  assert.match(html, /data-client-request-attachments/, 'client request form should accept photo and document attachments');
+  assert.match(html, /Photos \/ attachments/, 'client request form should label the attachment area clearly');
+  assert.match(script, /const summarizeClientRequestAttachments =/, 'client request submit should summarize selected files');
+  assert.match(script, /payload\.attachmentNames = summarizeClientRequestAttachments\(formData\)/, 'client request submit should send attachment names to the API');
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
   assert.match(script, /const approveClientCompletion =/, 'clients should have completed-work approval handler');
   assert.match(script, /quoteMethod = payload.quoteId \? 'PATCH' : 'POST'/, 'saved quotes should be edited instead of recreated');

@@ -283,6 +283,44 @@
     .admin-command-card strong { color: var(--dash-text); font-size: 1rem; }
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
 
+    .client-command {
+      background:
+        linear-gradient(135deg, rgba(96,165,250,.16), rgba(255,255,255,.06)),
+        radial-gradient(circle at 88% 18%, rgba(249,115,22,.14), transparent 22rem);
+    }
+
+    .worker-command {
+      background:
+        linear-gradient(135deg, rgba(34,197,94,.14), rgba(255,255,255,.06)),
+        radial-gradient(circle at 88% 18%, rgba(96,165,250,.14), transparent 22rem);
+    }
+
+    .client-command .admin-command-card,
+    .client-requests,
+    .client-quotes,
+    .client-invoices,
+    .client-profile .admin-request-modal-panel {
+      border-color: rgba(96,165,250,.22);
+    }
+
+    .client-request-attachments {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px dashed rgba(96,165,250,.38);
+      border-radius: 18px;
+      background: rgba(96,165,250,.08);
+    }
+
+    .client-request-attachments small,
+    .client-request-attachment-list {
+      color: var(--dash-muted);
+      font-weight: 760;
+      line-height: 1.45;
+    }
+
+    .client-request-attachment-list { margin: 0; }
+
     .client-command .admin-command-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .worker-command .admin-command-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
@@ -436,12 +474,15 @@
     html[data-theme="light"] .admin-command-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.70); }
     html[data-theme="light"] .admin-command-card strong { color: #111827; }
     html[data-theme="light"] .admin-command-card span { color: #5f5148; }
+    html[data-theme="light"] .client-request-attachments { border-color: rgba(38,94,157,.24); background: rgba(38,94,157,.07); }
+    html[data-theme="light"] .client-request-attachments small,
+    html[data-theme="light"] .client-request-attachment-list { color: #5f5148; }
 
   </style>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to dashboard content</a>
-  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><div class="dashboard-nav-row"><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button></div><span class="account-status" data-session-status role="status" aria-live="polite">Checking session…</span></div></div></header>
+  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><div class="dashboard-nav-row"><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button></div><span class="account-status" data-session-status role="status" aria-live="polite">Checking session…</span></div></div></header>
   <main class="wrap" id="content">
     <section class="hero">
       <div class="dashboard-hero">
@@ -1005,6 +1046,59 @@
       </section>
     </section>
 
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Invoice &amp; payment desk</strong>
+      <p>Review open invoices, confirm payments, and scan paid history without leaving the admin workspace.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="admin-request-modal admin-activity" id="admin-activity" data-admin-activity role="dialog" aria-modal="true" aria-labelledby="admin-activity-title" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="admin-activity-title">Activity audit trail</strong><p>Filter and page through status changes, quotes, assignments, payments, inventory, and account updates.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-activity-close aria-label="Close admin activity">×</button>
+        </div>
+        <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Open activity to load recent audit events.</p>
+        <div class="client-request-form" data-admin-activity-controls>
+          <div class="client-request-form-grid">
+            <label>Activity type
+              <select data-admin-activity-type-filter>
+                <option value="">All activity</option>
+                <option value="job">Requests &amp; work orders</option>
+                <option value="quote">Quotes</option>
+                <option value="payment">Invoices &amp; payments</option>
+                <option value="inventory">Inventory</option>
+                <option value="user">Users &amp; roles</option>
+              </select>
+            </label>
+            <label>Search activity
+              <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+            </label>
+          </div>
+        </div>
+        <div class="admin-request-list" data-admin-activity-list></div>
+        <div class="client-request-form-actions">
+          <button class="btn btn-soft" type="button" data-admin-activity-more hidden>Load more activity</button>
+        </div>
+      </section>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -1107,6 +1201,11 @@
           <label class="full">Project details
             <textarea name="description" required placeholder="Tell us what needs to be done and any access details."></textarea>
           </label>
+          <label class="full client-request-attachments">Photos / attachments
+            <input name="attachments" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-client-request-attachments>
+            <small>Attach project photos, measurements, inspiration images, or PDFs. Files are summarized on this request so the team knows what to review.</small>
+            <span class="client-request-attachment-list" data-client-request-attachment-list>No files selected yet.</span>
+          </label>
         </div>
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
       </form>
@@ -1172,7 +1271,6 @@
     (() => {
       const status = document.querySelector('[data-session-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
-      const profileButton = document.querySelector('[data-profile-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
 
       const applyTheme = (theme) => {
@@ -1268,7 +1366,7 @@
 
       const bindClientProfileButton = () => {
         const modal = document.querySelector('[data-client-profile]');
-        const openButtons = [...document.querySelectorAll('[data-profile-button], [data-client-profile-shortcut]')].filter(Boolean);
+        const openButtons = [...document.querySelectorAll('[data-client-profile-shortcut]')].filter(Boolean);
         if (!modal || !openButtons.length) return;
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
@@ -2251,6 +2349,19 @@ Additional info from client: ${payload.additionalInfo}` : '';
         await loadClientRequests();
       };
 
+
+      const summarizeClientRequestAttachments = (formData) => {
+        const files = formData.getAll('attachments').filter((file) => file && file.name);
+        return files.map((file) => `${file.name} (${Math.ceil((file.size || 0) / 1024)} KB)`).join('\n');
+      };
+
+      const updateClientRequestAttachmentList = (input) => {
+        const list = document.querySelector('[data-client-request-attachment-list]');
+        const files = [...(input?.files || [])];
+        if (!list) return;
+        list.textContent = files.length ? files.map((file) => file.name).join(', ') : 'No files selected yet.';
+      };
+
       const bindClientRequestForm = () => {
         const form = document.querySelector('[data-client-request-form]');
         const formStatus = document.querySelector('[data-client-request-form-status]');
@@ -2261,10 +2372,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         form.dataset.bound = 'true';
         form.querySelector('[data-client-property-select]')?.addEventListener('change', (event) => fillClientPropertyFields(event.target.value));
+        form.querySelector('[data-client-request-attachments]')?.addEventListener('change', (event) => updateClientRequestAttachmentList(event.target));
         form.addEventListener('submit', async (event) => {
           event.preventDefault();
           const formData = new FormData(form);
-          const payload = Object.fromEntries(formData.entries());
+          const payload = Object.fromEntries([...formData.entries()].filter(([, value]) => !(value && typeof value === 'object' && 'name' in value)));
+          payload.attachmentNames = summarizeClientRequestAttachments(formData);
           formStatus.textContent = 'Saving…';
 
           try {
@@ -2280,6 +2393,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             }
 
             form.reset();
+            updateClientRequestAttachmentList(form.querySelector('[data-client-request-attachments]'));
             formStatus.textContent = 'Request saved.';
             await loadClientRequests();
             await loadClientQuotes();
@@ -3159,9 +3273,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
             logoutButton.hidden = false;
           }
 
-          if (profileButton) {
-            profileButton.hidden = false;
-          }
 
           bindLogout();
           bindClientProfileButton();

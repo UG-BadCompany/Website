@@ -18,6 +18,7 @@ const MAX_FIELD_LENGTHS = {
   service: 120,
   timeframe: 80,
   description: 4000,
+  attachmentNames: 1200,
   jobRequestId: 80,
   requestedDate: 80,
   additionalInfo: 4000,
@@ -79,6 +80,14 @@ const countActiveRequests = (requests) => requests.filter((request) => ACTIVE_RE
 const normalizePayload = (body = {}) => Object.fromEntries(
   Object.entries(MAX_FIELD_LENGTHS).map(([field, maxLength]) => [field, clean(body[field], maxLength)]),
 );
+
+const getDescriptionWithAttachmentSummary = (payload) => [
+  payload.description,
+  payload.attachmentNames ? `
+
+Client attachments to review:
+${payload.attachmentNames}` : '',
+].filter(Boolean).join('');
 
 const validateJobRequestPayload = (payload, session) => {
   if (!payload.service) {
@@ -376,7 +385,7 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
       ${property.street || payload.streetAddress},
       ${payload.service},
       ${payload.timeframe || null},
-      ${payload.description}
+      ${getDescriptionWithAttachmentSummary(payload)}
     )
     returning id, created_at
   `;
@@ -388,7 +397,7 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
       ${'client_job_request.created'},
       ${'job_request'},
       ${jobRequest.id},
-      ${JSON.stringify({ source: 'client_dashboard', propertyId: property.id, service: payload.service })}::jsonb
+      ${JSON.stringify({ source: 'client_dashboard', propertyId: property.id, service: payload.service, attachments: payload.attachmentNames || null })}::jsonb
     )
   `;
 
