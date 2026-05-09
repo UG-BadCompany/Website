@@ -704,6 +704,44 @@
 
     .footer { border-top-color: var(--modern-line); }
 
+
+    html[data-theme="light"] body {
+      color: #111827;
+      background:
+        radial-gradient(circle at 14% -10%, rgba(249,115,22,.16), transparent 34rem),
+        radial-gradient(circle at 92% 12%, rgba(245,158,11,.12), transparent 30rem),
+        linear-gradient(135deg, #fffaf2 0%, #ffffff 48%, #f7eadc 100%);
+    }
+    html[data-theme="light"] body::before { opacity: .25; }
+    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .brand,
+    html[data-theme="light"] .nav-links,
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] label,
+    html[data-theme="light"] .service-card strong,
+    html[data-theme="light"] .workflow-card strong { color: #111827; }
+    html[data-theme="light"] .hero-copy,
+    html[data-theme="light"] .section-heading p,
+    html[data-theme="light"] .estimate-copy p,
+    html[data-theme="light"] .form-note,
+    html[data-theme="light"] .footer,
+    html[data-theme="light"] .service-card p,
+    html[data-theme="light"] .workflow-card p,
+    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+    html[data-theme="light"] .hero,
+    html[data-theme="light"] .service-card,
+    html[data-theme="light"] .workflow-card,
+    html[data-theme="light"] .estimate-shell,
+    html[data-theme="light"] .estimate-form,
+    html[data-theme="light"] .band { background: rgba(255,255,255,.88); border-color: rgba(17,17,17,.12); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="light"] .hero-media { background: rgba(255,255,255,.72); border-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .btn,
+    html[data-theme="light"] .btn-secondary { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
+    html[data-theme="light"] input,
+    html[data-theme="light"] select,
+    html[data-theme="light"] textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
+
   </style>
 </head>
 <body>
@@ -718,6 +756,7 @@
         <nav class="nav-links" aria-label="Primary links">
           <a href="#services">Services</a>
           <a href="/login/">Client Portal</a>
+          <button class="btn btn-secondary" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button>
           <a class="btn btn-primary" href="#estimate">Request Estimate</a>
         </nav>
       </div>
@@ -726,7 +765,7 @@
     <main id="content">
       <section class="hero">
         <div class="hero-content">
-          <div class="eyebrow">Maintenance • Repairs • Improvements</div>
+          <div class="eyebrow">Maintenance • Anything • Everything</div>
           <h1>Contracting help without the runaround.</h1>
           <p class="hero-copy">T&A Contracting is building a professional repair, maintenance, improvement, quote, scheduling, and payment experience for Arizona homeowners, landlords, property managers, and businesses.</p>
           <div class="hero-actions">
@@ -920,6 +959,26 @@
         } finally {
           submitButton.disabled = false;
         }
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const toggle = document.querySelector('[data-theme-toggle]');
+      const applyTheme = (theme) => {
+        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = normalizedTheme;
+        if (toggle) {
+          toggle.textContent = normalizedTheme === 'light' ? 'Dark mode' : 'Light mode';
+          toggle.setAttribute('aria-label', `Switch to ${normalizedTheme === 'light' ? 'dark' : 'light'} theme`);
+        }
+      };
+      applyTheme(localStorage.getItem('ta-theme') || 'dark');
+      toggle?.addEventListener('click', () => {
+        const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('ta-theme', nextTheme);
+        applyTheme(nextTheme);
       });
     })();
   </script>
