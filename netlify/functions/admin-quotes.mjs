@@ -8,6 +8,7 @@ import {
 } from './auth-utils.mjs';
 
 const normalizePayload = (body = {}) => ({
+  quoteId: clean(body.quoteId, 80),
   jobRequestId: clean(body.jobRequestId, 80),
   title: clean(body.title, 180),
   summary: clean(body.summary, 4000),
@@ -15,8 +16,12 @@ const normalizePayload = (body = {}) => ({
   sendToClient: Boolean(body.sendToClient),
 });
 
-const validatePayload = (payload) => {
-  if (!payload.jobRequestId) {
+const validatePayload = (payload, method = 'POST') => {
+  if (method === 'PATCH' && !payload.quoteId) {
+    return 'Quote is required.';
+  }
+
+  if (method === 'POST' && !payload.jobRequestId) {
     return 'Job request is required.';
   }
 
@@ -81,7 +86,7 @@ const loadRoleKeys = async (db, userId) => {
 };
 
 export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (request.method !== 'POST') {
+  if (!['POST', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -98,7 +103,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
   }
 
   const payload = normalizePayload(body);
-  const validationError = validatePayload(payload);
+  const validationError = validatePayload(payload, request.method);
 
   if (validationError) {
     return json(422, { ok: false, message: validationError });
@@ -118,6 +123,65 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to create quotes.' });
     }
 
+    if (request.method === 'PATCH') {
+      const [existingQuote] = await db.sql`
+        select id, job_request_id, client_id, status
+        from quotes
+        where id = ${payload.quoteId}
+        limit 1
+      `;
+
+      if (!existingQuote) {
+        return json(404, { ok: false, authenticated: true, authorized: true, message: 'Quote not found.' });
+      }
+
+      const quoteStatus = payload.sendToClient ? 'sent' : existingQuote.status;
+      const [quote] = await db.sql`
+        update quotes
+        set title = ${payload.title},
+            summary = ${payload.summary || null},
+            amount_cents = ${payload.amountCents},
+            status = ${quoteStatus},
+            sent_at = case when ${payload.sendToClient} then coalesce(sent_at, now()) else sent_at end,
+            updated_at = now()
+        where id = ${existingQuote.id}
+        returning id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+      `;
+
+      if (payload.sendToClient) {
+        await db.sql`
+          update job_requests
+          set status = ${'quote_sent'}, updated_at = now()
+          where id = ${existingQuote.job_request_id}
+            and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent')
+        `;
+      }
+
+      await db.sql`
+        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+        values (
+          ${session.user_id},
+          ${'quote.updated'},
+          ${'quote'},
+          ${quote.id},
+          ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: quote.job_request_id, clientId: quote.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient })}::jsonb
+        )
+      `;
+
+      return json(200, {
+        ok: true,
+        authenticated: true,
+        authorized: true,
+        user: {
+          id: session.user_id,
+          email: session.email,
+          fullName: session.full_name,
+          roles: roleKeys,
+        },
+        quote: mapQuote(quote),
+      });
+    }
+
     const [jobRequest] = await db.sql`
       select id, client_id
       from job_requests
@@ -131,6 +195,18 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
 
     if (!jobRequest.client_id) {
       return json(422, { ok: false, authenticated: true, authorized: true, message: 'Job request must be linked to a client before quoting.' });
+    }
+
+    const [existingQuote] = await db.sql`
+      select id
+      from quotes
+      where job_request_id = ${jobRequest.id}
+      order by created_at desc
+      limit 1
+    `;
+
+    if (existingQuote) {
+      return json(409, { ok: false, authenticated: true, authorized: true, message: 'This request already has a quote. Open the request and edit the saved quote.' });
     }
 
     const quoteStatus = payload.sendToClient ? 'sent' : 'draft';
