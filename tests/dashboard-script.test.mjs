@@ -65,7 +65,12 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /<a href="#admin-work-orders" data-dashboard-section/, 'admin work orders should not render as a duplicate tab above the command center');
   assert.doesNotMatch(html, /<a href="#admin-invoices" data-dashboard-section/, 'admin invoices should not render as a duplicate tab above the command center');
   assert.doesNotMatch(html, /<a href="\/inventory\/" data-dashboard-section/, 'admin inventory should not render as a duplicate tab above the command center');
-  assert.match(html, /workspace-tabs\[hidden\] \{ display: none !important; \}/, 'old shortcut tab shell should be fully hidden when inactive');
+  assert.doesNotMatch(html, /workspace-tabs/, 'old shortcut tab shell should be fully removed');
+  assert.match(html, /data-client-command-center/, 'clients should have their own command center');
+  assert.match(html, /data-worker-command-center/, 'workers should have their own command center');
+  assert.match(html, /Manage your project from one command center/, 'client command center should use command-center copy');
+  assert.match(html, /Run assigned jobs from one command center/, 'worker command center should use command-center copy');
+  assert.match(html, /data-client-profile-shortcut/, 'client and worker command centers should open profile from a command card');
   assert.match(html, /aria-label="Dashboard summary cards" data-dashboard-section data-views="client worker"/, 'summary cards below command center should be hidden from admin view');
   assert.doesNotMatch(html, /workspace-action/, 'removed admin shortcut button styles should not leave stale button hooks behind');
   assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
@@ -81,9 +86,11 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
   assert.match(script, /const saveClientProfile =/, 'clients should be able to save profile changes');
   assert.match(script, /const bindClientProfileButton =/, 'top My Profile button should open the profile modal');
+  assert.match(script, /querySelectorAll\('\[data-profile-button\], \[data-client-profile-shortcut\]'\)/, 'profile command-center cards should open the same profile modal');
   assert.match(script, /const getUserDisplayName =/, 'dashboard session status should derive a human display name');
   assert.match(script, /Signed in as \$\{getUserDisplayName\(result\.user\)\}/, 'dashboard session status should not expose email and role strings as the primary label');
   assert.match(script, /const bindClientProfileForm =/, 'client profile form should be bound');
+  assert.match(script, /querySelectorAll\('\[data-request-estimate-link\]'\)/, 'request command-center card and nav link should share request-estimate binding');
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
   assert.match(script, /const approveClientCompletion =/, 'clients should have completed-work approval handler');
   assert.match(script, /quoteMethod = payload.quoteId \? 'PATCH' : 'POST'/, 'saved quotes should be edited instead of recreated');
