@@ -50,7 +50,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
   assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
-  assert.match(html, /href="\/inventory\/"/, 'admins should navigate to inventory as a separate page');
+  assert.match(html, /href="\/inventory\/"/, 'admins should navigate to inventory as a separate command-center page');
   assert.match(html, /data-permission="canManageInventory"/, 'inventory navigation should be permission-gated');
   assert.doesNotMatch(html, /<section class="card admin-inventory"/, 'inventory management should not render on the main dashboard');
   assert.match(html, /data-admin-command-center/, 'admins should have a polished command center overview');
@@ -62,6 +62,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-activity-shortcut/, 'admin command center should open activity');
   assert.doesNotMatch(html, /<button[^>]+data-admin-access-open/, 'roles and users should no longer render as a duplicate workspace-tab button');
   assert.doesNotMatch(html, /<button[^>]+data-admin-activity-open/, 'activity should no longer render as a duplicate workspace-tab button');
+  assert.doesNotMatch(html, /<a href="#admin-work-orders" data-dashboard-section/, 'admin work orders should not render as a duplicate tab above the command center');
+  assert.doesNotMatch(html, /<a href="#admin-invoices" data-dashboard-section/, 'admin invoices should not render as a duplicate tab above the command center');
+  assert.doesNotMatch(html, /<a href="\/inventory\/" data-dashboard-section/, 'admin inventory should not render as a duplicate tab above the command center');
   assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
   assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
   assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
@@ -97,8 +100,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /jobRequestId,[\s\S]*adjustmentType: 'used'/, 'work order inventory adjustments should be tied to the job and marked used');
   assert.match(script, /document\.querySelector\('\.admin-request-modal:not\(\[hidden\]\)'\)/, 'modal body scroll locking should account for nested admin modals');
   assert.ok(html.indexOf('</form>\n      </section>\n\n      <div class="admin-request-modal" data-admin-role-modal') > -1, 'role and user editor popups should sit outside the scrolling access panel');
-  assert.match(script, /querySelectorAll\('\[data-admin-access-open\], \[data-admin-access-shortcut\]'\)/, 'admin access launcher should bind nav and command-center shortcuts');
-  assert.match(script, /querySelectorAll\('\[data-admin-activity-open\], \[data-admin-activity-shortcut\]'\)/, 'admin activity launcher should bind nav and command-center shortcuts');
+  assert.match(script, /querySelectorAll\('\[data-admin-access-shortcut\]'\)/, 'admin access launcher should bind only command-center shortcuts');
+  assert.match(script, /querySelectorAll\('\[data-admin-activity-shortcut\]'\)/, 'admin activity launcher should bind only command-center shortcuts');
   assert.match(script, /const updateAdminActivityMoreButton =/, 'admins should update the activity pagination button');
   assert.match(script, /const scheduleAdminActivityReload =/, 'admins should debounce server-side activity filter refreshes');
   assert.match(script, /const loadAdminActivity = async \(\{ filtered = false, append = false \} = \{\}\)/, 'admins should load recent audit activity with filter and append options');

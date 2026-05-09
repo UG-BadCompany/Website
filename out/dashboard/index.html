@@ -483,10 +483,7 @@
       </div>
     </section>
 
-    <nav class="workspace-tabs" aria-label="Dashboard workspace sections">
-      <a href="#admin-work-orders" data-dashboard-section data-views="admin" hidden>Work orders</a>
-      <a href="#admin-invoices" data-dashboard-section data-views="admin" hidden>Invoices</a>
-      <a href="/inventory/" data-dashboard-section data-views="admin" data-permission="canManageInventory" hidden>Inventory</a>
+    <nav class="workspace-tabs" aria-label="Dashboard workspace sections" data-dashboard-section data-views="client worker" hidden>
       <a href="#submit-request" data-dashboard-section data-views="client" hidden>Requests</a>
       <a href="#client-quotes" data-dashboard-section data-views="client" hidden>Quotes</a>
       <a href="#client-invoices" data-dashboard-section data-views="client" hidden>Invoices</a>
@@ -499,7 +496,7 @@
       <div class="admin-command-header">
         <span class="eyebrow">Admin operations</span>
         <h2>Run today’s work from one command center.</h2>
-        <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail without duplicate buttons below the command center.</p>
+        <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail from the command center cards.</p>
       </div>
       <div class="admin-command-actions" aria-label="Admin quick actions">
         <a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Review intake, quote, schedule, assign, and verify completed work.</span></a>
@@ -759,6 +756,59 @@
           </form>
         </section>
       </div>
+      </section>
+    </section>
+
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Invoice &amp; payment desk</strong>
+      <p>Review open invoices, confirm payments, and scan paid history without leaving the admin workspace.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="admin-request-modal admin-activity" id="admin-activity" data-admin-activity role="dialog" aria-modal="true" aria-labelledby="admin-activity-title" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="admin-activity-title">Activity audit trail</strong><p>Filter and page through status changes, quotes, assignments, payments, inventory, and account updates.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-activity-close aria-label="Close admin activity">×</button>
+        </div>
+        <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Open activity to load recent audit events.</p>
+        <div class="client-request-form" data-admin-activity-controls>
+          <div class="client-request-form-grid">
+            <label>Activity type
+              <select data-admin-activity-type-filter>
+                <option value="">All activity</option>
+                <option value="job">Requests &amp; work orders</option>
+                <option value="quote">Quotes</option>
+                <option value="payment">Invoices &amp; payments</option>
+                <option value="inventory">Inventory</option>
+                <option value="user">Users &amp; roles</option>
+              </select>
+            </label>
+            <label>Search activity
+              <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+            </label>
+          </div>
+        </div>
+        <div class="admin-request-list" data-admin-activity-list></div>
+        <div class="client-request-form-actions">
+          <button class="btn btn-soft" type="button" data-admin-activity-more hidden>Load more activity</button>
+        </div>
       </section>
     </section>
 
@@ -2707,7 +2757,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
       const bindAdminAccessLauncher = () => {
         const panel = document.querySelector('[data-admin-access]');
-        const openButtons = document.querySelectorAll('[data-admin-access-open], [data-admin-access-shortcut]');
+        const openButtons = document.querySelectorAll('[data-admin-access-shortcut]');
         if (!panel || !openButtons.length) return;
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
@@ -2870,7 +2920,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
       const bindAdminActivityLauncher = () => {
         const panel = document.querySelector('[data-admin-activity]');
-        const openButtons = document.querySelectorAll('[data-admin-activity-open], [data-admin-activity-shortcut]');
+        const openButtons = document.querySelectorAll('[data-admin-activity-shortcut]');
         if (!panel || !openButtons.length) return;
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
