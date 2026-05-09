@@ -58,12 +58,17 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
   assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
+  assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
+  assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
+  assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
+  assert.match(script, /const loadAdminActivity =/, 'admins should load recent audit activity');
   assert.match(script, /const renderAdminInvoiceList =/, 'admins should render filtered invoice records');
   assert.match(script, /status=\$\{encodeURIComponent\(filter\)\}/, 'admin invoice loading should request the selected invoice status');
   assert.match(script, /const renderAdminPipelineSummary =/, 'admins should render pipeline counts');
   assert.match(script, /const applyAdminRequestFilters =/, 'admins should filter the work order inbox');
   assert.match(script, /currentAdminRequestScope = result\.scope \|\| scope/, 'admin work order view should track the API scope');
   assert.match(script, /scope=\$\{encodeURIComponent\(scope\)\}/, 'admin work order loading should request the selected scope');
+  assert.match(script, /canViewAdminActivity/, 'admin activity should use its own permission flag');
   assert.match(script, /fetch\('\/api\/admin\/activity'/, 'admin activity should load from the audit activity endpoint');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
   assert.match(script, /data-admin-work-order-summary-card/, 'work order summary should render a dedicated summary card');

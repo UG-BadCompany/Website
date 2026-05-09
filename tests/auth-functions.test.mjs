@@ -213,6 +213,7 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
   assert.equal(response.body.user.permissions.canManageUsers, true);
   assert.equal(response.body.user.permissions.canManageRoles, true);
+  assert.equal(response.body.user.permissions.canViewAdminActivity, true);
   assert.equal(response.body.user.permissions.defaultView, 'admin');
   assert.deepEqual(response.body.user.permissions.availableViews, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.permissionKeys.includes('admin.roles.manage'), true);

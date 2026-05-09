@@ -26,6 +26,7 @@ test('admin activity endpoint rejects non-admin users', async () => {
     [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
     [],
     [{ key: 'client' }],
+    [],
   ]);
   const handler = createAdminActivityHandler({ getDatabase: async () => db });
   const response = await readJson(await handler(new Request('https://site.test/api/admin/activity', { headers: { cookie: 'ta_session=session-token' } })));
@@ -39,6 +40,7 @@ test('admin activity endpoint lists recent audit events for admins', async () =>
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin' }],
+    [],
     [{
       id: 'event-1',
       actor_user_id: 'admin-1',
@@ -58,5 +60,5 @@ test('admin activity endpoint lists recent audit events for admins', async () =>
   assert.equal(response.body.events[0].eventType, 'payment.confirmed');
   assert.equal(response.body.events[0].actor.email, 'admin@example.com');
   assert.equal(response.body.events[0].metadata.amountCents, 42500);
-  assert.match(db.queries[3].text, /from audit_events/);
+  assert.match(db.queries[4].text, /from audit_events/);
 });

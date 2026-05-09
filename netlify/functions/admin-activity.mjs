@@ -1,4 +1,5 @@
 import {
+  getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
@@ -42,7 +43,7 @@ const loadSession = async (db, sessionToken) => {
   return session;
 };
 
-const loadRoleKeys = async (db, userId) => {
+const loadPermissions = async (db, userId) => {
   const roles = await db.sql`
     select roles.key
     from user_roles
@@ -50,8 +51,21 @@ const loadRoleKeys = async (db, userId) => {
     where user_roles.user_id = ${userId}
     order by roles.key
   `;
+  const roleKeys = roles.map((role) => role.key);
 
-  return roles.map((role) => role.key);
+  const rolePermissions = await db.sql`
+    select distinct role_permissions.permission_key
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+    where user_roles.user_id = ${userId}
+    order by role_permissions.permission_key
+  `;
+
+  return {
+    roleKeys,
+    permissionKeys: getPermissionKeysForRoles(roleKeys, rolePermissions.map((permission) => permission.permission_key)),
+  };
 };
 
 const listAdminActivity = async (db) => {
@@ -94,10 +108,10 @@ export const createAdminActivityHandler = ({ getDatabase = loadDatabase } = {}) 
       return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
     }
 
-    const roleKeys = await loadRoleKeys(db, session.user_id);
+    const { roleKeys, permissionKeys } = await loadPermissions(db, session.user_id);
 
-    if (!roleKeys.includes('admin')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to view activity.' });
+    if (!permissionKeys.includes('admin.activity.view')) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin activity permission required to view activity.' });
     }
 
     return json(200, {
