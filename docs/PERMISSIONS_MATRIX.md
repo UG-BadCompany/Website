@@ -63,7 +63,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Lists open, paid, or all active invoices with payment summary data. |
 | `GET /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Lists active inventory items and low-stock summary data. |
 | `POST /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Creates a tracked inventory item for materials, tools, or supplies. |
-| `PATCH /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Records quantity adjustments and updates stock on hand. |
+| `PATCH /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Records quantity adjustments, updates item details, archives inactive items, and updates stock on hand. |
 | `PATCH /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
 | `GET /api/admin/activity` | Yes | `admin.activity.view` or `admin` | Lists paginated recent audit events for the admin activity feed. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |

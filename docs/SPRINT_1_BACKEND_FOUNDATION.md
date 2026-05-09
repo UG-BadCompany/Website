@@ -172,4 +172,4 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1Q
 
-- Added admin inventory permissions, database tables, API, standalone admin inventory page, and tests for tracking materials/tools, suppliers, stock levels, low-stock summaries, and quantity adjustments.
+- Added admin inventory permissions, database tables, API, standalone admin inventory page, and tests for tracking materials/tools, suppliers, stock levels, low-stock summaries, item detail edits, archived inactive items, and quantity adjustments.

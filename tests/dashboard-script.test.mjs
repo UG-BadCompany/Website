@@ -98,8 +98,11 @@ test('inventory page owns inventory UI and API handlers', async () => {
   assert.match(html, /<title>Inventory \| T&A Contracting<\/title>/, 'inventory should have its own page title');
   assert.match(html, /data-admin-inventory-form/, 'inventory page should include the item creation form');
   assert.match(html, /data-admin-inventory-list/, 'inventory page should include the item list');
+  assert.match(html, /data-admin-inventory-edit-form/, 'inventory page should allow admins to edit item details');
+  assert.match(html, /data-admin-inventory-archive/, 'inventory page should allow admins to archive inactive items');
   assert.match(script, /const requireInventoryAccess =/, 'inventory page should verify signed-in inventory permission');
   assert.match(script, /const loadAdminInventory =/, 'inventory page should load inventory records');
   assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'inventory page should use the inventory API');
+  assert.match(script, /action: 'archive'/, 'inventory page should send archive actions to the API');
   assert.doesNotThrow(() => new Function(script));
 });

@@ -14,6 +14,7 @@ const normalizeNumber = (value, fallback = 0) => {
 };
 
 const normalizeInventoryPayload = (body = {}) => ({
+  action: clean(body.action, 40) || 'adjust',
   itemId: clean(body.itemId || body.id, 80),
   name: clean(body.name, 180),
   sku: clean(body.sku, 80),
@@ -133,6 +134,70 @@ const createInventoryItem = async ({ db, session, payload }) => {
   return json(201, { ok: true, item: mapInventoryItem(item) });
 };
 
+
+const updateInventoryItem = async ({ db, session, payload }) => {
+  if (!payload.itemId) {
+    return json(400, { ok: false, message: 'Inventory item ID is required.' });
+  }
+
+  if (!payload.name) {
+    return json(400, { ok: false, message: 'Inventory item name is required.' });
+  }
+
+  const [item] = await db.sql`
+    update inventory_items
+    set name = ${payload.name},
+        sku = ${payload.sku || null},
+        category = ${payload.category || null},
+        unit = ${payload.unit},
+        reorder_point = ${payload.reorderPoint},
+        supplier = ${payload.supplier || null},
+        storage_location = ${payload.storageLocation || null},
+        notes = ${payload.notes || null},
+        updated_at = now()
+    where id = ${payload.itemId}
+      and is_active = true
+    returning id, name, sku, category, unit, quantity_on_hand, reorder_point, supplier, storage_location, notes, is_active, created_at, updated_at
+  `;
+
+  if (!item) {
+    return json(404, { ok: false, message: 'Inventory item not found.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (${session.user_id}, ${'inventory.updated'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, reorderPoint: item.reorder_point })}::jsonb)
+  `;
+
+  return json(200, { ok: true, item: mapInventoryItem(item) });
+};
+
+const archiveInventoryItem = async ({ db, session, payload }) => {
+  if (!payload.itemId) {
+    return json(400, { ok: false, message: 'Inventory item ID is required.' });
+  }
+
+  const [item] = await db.sql`
+    update inventory_items
+    set is_active = false,
+        updated_at = now()
+    where id = ${payload.itemId}
+      and is_active = true
+    returning id, name, sku, category, unit, quantity_on_hand, reorder_point, supplier, storage_location, notes, is_active, created_at, updated_at
+  `;
+
+  if (!item) {
+    return json(404, { ok: false, message: 'Inventory item not found.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (${session.user_id}, ${'inventory.archived'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name })}::jsonb)
+  `;
+
+  return json(200, { ok: true, item: mapInventoryItem(item) });
+};
+
 const adjustInventoryItem = async ({ db, session, payload }) => {
   if (!payload.itemId) {
     return json(400, { ok: false, message: 'Inventory item ID is required.' });
@@ -219,6 +284,14 @@ export const createAdminInventoryHandler = ({ getDatabase = loadDatabase } = {})
 
     if (request.method === 'POST') {
       return await createInventoryItem({ db, session, payload });
+    }
+
+    if (payload.action === 'update') {
+      return await updateInventoryItem({ db, session, payload });
+    }
+
+    if (payload.action === 'archive') {
+      return await archiveInventoryItem({ db, session, payload });
     }
 
     return await adjustInventoryItem({ db, session, payload });
