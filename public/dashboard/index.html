@@ -241,6 +241,20 @@
       <strong>Payments waiting</strong>
       <p>Completed work that has been verified moves here until payment is confirmed.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
       <div class="admin-request-list" data-admin-invoice-summary></div>
       <div class="client-quote-list" data-admin-invoice-list></div>
     </section>
@@ -428,6 +442,7 @@
       const currentAdminWorkers = new Map();
       const currentAdminAssignments = new Map();
       const currentAdminQuotes = new Map();
+      let currentAdminInvoices = [];
       const adminStatusOrder = [
         ['new', 'New'],
         ['needs_review', 'Needs review'],
@@ -694,7 +709,9 @@
 
       const renderAdminInvoiceSummary = (summary = {}) => {
         const open = Number(summary.open || 0);
+        const paid = Number(summary.paid || 0);
         const amountDueCents = Number(summary.amountDueCents || 0);
+        const amountCollectedCents = Number(summary.amountCollectedCents || 0);
         return `
           <article class="admin-request">
             <span class="admin-request-badge">Open invoices</span>
@@ -706,11 +723,20 @@
             <strong>${formatMoney(amountDueCents)}</strong>
             <p>Expected payment total</p>
           </article>
+          <article class="admin-request">
+            <span class="admin-request-badge">Paid invoices</span>
+            <strong>${paid}</strong>
+            <p>${formatMoney(amountCollectedCents)} confirmed in this view</p>
+          </article>
         `;
       };
 
       const renderAdminInvoiceCard = (invoice) => {
         const amountDollars = (Number(invoice.amountCents || 0) / 100).toFixed(2);
+        const paymentDetails = invoice.payment ? `
+          <p><strong>Payment confirmed</strong> ${formatMoney(invoice.payment.amountCents || invoice.amountCents)}${invoice.payment.method ? ` via ${escapeHtml(invoice.payment.method)}` : ''}${invoice.payment.confirmedAt ? ` on ${escapeHtml(formatDate(String(invoice.payment.confirmedAt).slice(0, 10)))}` : ''}</p>
+          ${invoice.payment.reference ? `<p><strong>Reference</strong> ${escapeHtml(invoice.payment.reference)}</p>` : ''}
+        ` : '';
         return `
           <article class="client-quote">
             <span class="client-quote-badge">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
@@ -721,28 +747,54 @@
               <span>${escapeHtml(invoice.jobRequest?.streetAddress || 'No address')}</span>
               <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
             </div>
-            <form class="client-request-form" data-admin-payment-form data-admin-invoice-id="${escapeHtml(invoice.id)}">
-              <div class="client-request-form-grid">
-                <label>Amount received
-                  <input name="amountDollars" type="number" min="0" step="0.01" value="${amountDollars}" required>
-                </label>
-                <label>Payment method
-                  <select name="method">
-                    <option value="manual">Manual confirmation</option>
-                    <option value="cash">Cash</option>
-                    <option value="check">Check</option>
-                    <option value="card">Card</option>
-                    <option value="ach">ACH / bank transfer</option>
-                  </select>
-                </label>
-                <label class="full">Reference / notes
-                  <input name="reference" placeholder="Receipt, check, transaction, or internal note">
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-confirm-payment="${escapeHtml(invoice.id)}">Confirm payment</button></div>
-            </form>
+            ${paymentDetails}
+            ${invoice.status === 'open' ? `
+              <form class="client-request-form" data-admin-payment-form data-admin-invoice-id="${escapeHtml(invoice.id)}">
+                <div class="client-request-form-grid">
+                  <label>Amount received
+                    <input name="amountDollars" type="number" min="0" step="0.01" value="${amountDollars}" required>
+                  </label>
+                  <label>Payment method
+                    <select name="method">
+                      <option value="manual">Manual confirmation</option>
+                      <option value="cash">Cash</option>
+                      <option value="check">Check</option>
+                      <option value="card">Card</option>
+                      <option value="ach">ACH / bank transfer</option>
+                    </select>
+                  </label>
+                  <label class="full">Reference / notes
+                    <input name="reference" placeholder="Receipt, check, transaction, or internal note">
+                  </label>
+                </div>
+                <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-confirm-payment="${escapeHtml(invoice.id)}">Confirm payment</button></div>
+              </form>
+            ` : ''}
           </article>
         `;
+      };
+
+      const getAdminInvoiceSearchText = (invoice) => [
+        invoice.title,
+        invoice.status,
+        invoice.client?.fullName,
+        invoice.client?.email,
+        invoice.jobRequest?.serviceType,
+        invoice.jobRequest?.streetAddress,
+        invoice.jobRequest?.city,
+        invoice.payment?.method,
+        invoice.payment?.reference,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const renderAdminInvoiceList = () => {
+        const invoiceList = document.querySelector('[data-admin-invoice-list]');
+        const search = document.querySelector('[data-admin-invoice-search]');
+        if (!invoiceList) return;
+        const term = (search?.value || '').trim().toLowerCase();
+        const filteredInvoices = term
+          ? currentAdminInvoices.filter((invoice) => getAdminInvoiceSearchText(invoice).includes(term))
+          : currentAdminInvoices;
+        invoiceList.innerHTML = filteredInvoices.length ? filteredInvoices.map(renderAdminInvoiceCard).join('') : '<p class="session-status">No invoices match this view.</p>';
       };
 
       const renderPropertyCard = (property) => `
@@ -1810,6 +1862,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-invoices]');
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
+        const invoiceFilter = panel.querySelector('[data-admin-invoice-status-filter]');
+        const invoiceSearch = panel.querySelector('[data-admin-invoice-search]');
+        invoiceFilter?.addEventListener('change', () => loadAdminInvoices());
+        invoiceSearch?.addEventListener('input', renderAdminInvoiceList);
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-admin-payment-form]');
           if (!form) return;
@@ -1855,18 +1911,22 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const status = document.querySelector('[data-admin-invoices-status]');
         const invoiceSummary = document.querySelector('[data-admin-invoice-summary]');
         const invoiceList = document.querySelector('[data-admin-invoice-list]');
+        const invoiceFilter = document.querySelector('[data-admin-invoice-status-filter]');
         if (!panel || !status || !invoiceList) return;
         try {
-          const response = await fetch('/api/admin/invoices', { headers: { accept: 'application/json' } });
+          const filter = invoiceFilter?.value || 'open';
+          const response = await fetch(`/api/admin/invoices?status=${encodeURIComponent(filter)}`, { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Open invoices are not available.');
-          const invoices = result.invoices || [];
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Invoices are not available.');
+          currentAdminInvoices = result.invoices || [];
+          const label = filter === 'paid' ? 'paid invoice history' : filter === 'all' ? 'active invoice records' : 'invoice payment confirmation';
           status.dataset.state = 'ready';
-          status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} waiting payment confirmation.` : 'No open invoices waiting for payment.';
+          status.textContent = currentAdminInvoices.length ? `${currentAdminInvoices.length} ${label} item${currentAdminInvoices.length === 1 ? '' : 's'} loaded.` : `No ${label} items found.`;
           if (invoiceSummary) invoiceSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
-          invoiceList.innerHTML = invoices.map(renderAdminInvoiceCard).join('');
+          renderAdminInvoiceList();
           bindAdminInvoiceActions();
         } catch (error) {
+          currentAdminInvoices = [];
           status.dataset.state = 'error';
           status.textContent = error.message;
         }

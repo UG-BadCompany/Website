@@ -39,6 +39,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
   assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
   assert.match(html, /data-admin-invoice-summary/, 'admins should have invoice totals before payment confirmation');
+  assert.match(html, /data-admin-invoice-status-filter/, 'admins should switch between open and paid invoice views');
+  assert.match(html, /data-admin-invoice-search/, 'admins should search invoice records');
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
@@ -52,6 +54,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
   assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
+  assert.match(script, /const renderAdminInvoiceList =/, 'admins should render filtered invoice records');
+  assert.match(script, /status=\$\{encodeURIComponent\(filter\)\}/, 'admin invoice loading should request the selected invoice status');
   assert.match(script, /const renderAdminPipelineSummary =/, 'admins should render pipeline counts');
   assert.match(script, /const applyAdminRequestFilters =/, 'admins should filter the work order inbox');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
@@ -59,6 +63,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
   assert.match(script, /data-admin-payment-form/, 'admins should capture payment confirmation details from the dashboard');
   assert.match(script, /reference: formData\.get\('reference'\)/, 'admin payment confirmations should send payment reference notes');
+  assert.match(script, /invoiceSearch\?\.addEventListener\('input', renderAdminInvoiceList\)/, 'admin invoice search should filter without refetching');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
   assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
