@@ -33,6 +33,29 @@ test('migration validator removes the stale cached custom role migration before 
 });
 
 
+test('migration validator removes stale cached admin activity migration before build validation', async () => {
+  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
+  const staleMigration = new URL('0011_admin_activity_permission.sql', migrationsDir);
+
+  await writeFile(staleMigration, `-- stale cached duplicate admin activity migration created by test
+`);
+
+  try {
+    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
+
+    assert.deepEqual(errors, [], 'Repair mode should remove the stale admin activity migration.');
+    assert.equal(files.includes('0011_admin_activity_permission.sql'), false);
+    assert.equal(files.includes('0015_admin_activity_permission.sql'), true);
+    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0011_admin_activity_permission.sql')), true);
+    await assert.rejects(stat(staleMigration), { code: 'ENOENT' });
+  } finally {
+    await rm(staleMigration, { force: true });
+  }
+});
+
+test('migration prebuild script runs without undefined migration guard references', async () => {
+  const { stdout } = await execFileAsync(process.execPath, ['scripts/check-netlify-migrations.mjs']);
+
 test('migration prebuild script runs without undefined migration guard references', async () => {
   const { stdout } = await execFileAsync(process.execPath, ['scripts/check-netlify-migrations.mjs']);
 
