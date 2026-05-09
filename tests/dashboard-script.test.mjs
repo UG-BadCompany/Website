@@ -29,6 +29,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-pipeline-summary/, 'admins should have a work order pipeline summary');
   assert.match(html, /data-admin-request-search/, 'admins should be able to search work orders');
   assert.match(html, /data-admin-request-status-filter/, 'admins should be able to filter work orders by status');
+  assert.match(html, /data-admin-request-scope-filter/, 'admins should switch between active and completed work order views');
   assert.match(html, /data-admin-work-order-summary/, 'admins should have a work order detail summary panel');
   assert.match(html, /data-admin-quote-id/, 'admin quote form should edit saved quotes by id');
   assert.match(html, /data-client-approve-completion/, 'clients should be able to approve completed work');
@@ -58,6 +59,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /status=\$\{encodeURIComponent\(filter\)\}/, 'admin invoice loading should request the selected invoice status');
   assert.match(script, /const renderAdminPipelineSummary =/, 'admins should render pipeline counts');
   assert.match(script, /const applyAdminRequestFilters =/, 'admins should filter the work order inbox');
+  assert.match(script, /currentAdminRequestScope = result\.scope \|\| scope/, 'admin work order view should track the API scope');
+  assert.match(script, /scope=\$\{encodeURIComponent\(scope\)\}/, 'admin work order loading should request the selected scope');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
   assert.match(script, /data-admin-work-order-summary-card/, 'work order summary should render a dedicated summary card');
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');

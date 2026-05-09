@@ -102,6 +102,46 @@ test('admin job request endpoint returns recent requests and status counts for a
 });
 
 
+test('admin job request endpoint returns completed work order history for admins', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'job-2',
+      status: 'completed',
+      requester_name: 'Paid Customer',
+      requester_email: 'paid@example.com',
+      requester_phone: '555-0200',
+      city: 'Tempe',
+      service_type: 'Fence repair',
+      preferred_timeframe: 'Done',
+      description: 'Completed fence repair.',
+      admin_notes: 'Paid in full.',
+      estimated_start_date: '2026-05-10',
+      completion_date: '2026-05-12',
+      created_at: '2026-05-07T00:00:00.000Z',
+      updated_at: '2026-05-12T00:00:00.000Z',
+    }],
+    [{ status: 'completed', count: 1 }],
+    [],
+    [],
+    [],
+  ]);
+  const handler = createAdminJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests?scope=completed', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.scope, 'completed');
+  assert.equal(response.body.requests[0].status, 'completed');
+  assert.deepEqual(response.body.statusCounts, { completed: 1 });
+  assert.match(db.queries[3].text, /where status = \?/);
+  assert.equal(db.queries[3].values[0], 'completed');
+});
+
+
 test('admin job request endpoint lets admins update request status and notes', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],

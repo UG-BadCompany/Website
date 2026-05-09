@@ -7,6 +7,8 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
+const REQUEST_SCOPES = new Set(['active', 'completed', 'all']);
+
 const ADMIN_STATUSES = new Set([
   'new',
   'needs_review',
@@ -22,6 +24,11 @@ const ADMIN_STATUSES = new Set([
 ]);
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const normalizeRequestScope = (value) => {
+  const scope = clean(value, 20) || 'active';
+  return REQUEST_SCOPES.has(scope) ? scope : 'active';
+};
 
 const normalizeOptionalDate = (value) => clean(value, 20);
 
@@ -118,6 +125,122 @@ const mapJobRequest = (request) => ({
   createdAt: request.created_at,
   updatedAt: request.updated_at,
 });
+
+const selectScopedJobRequests = async (db, scope) => {
+  if (scope === 'completed') {
+    return await db.sql`
+      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
+      from job_requests
+      where status = ${'completed'}
+      order by coalesce(completion_date, updated_at::date, created_at::date) desc, created_at desc
+      limit 75
+    `;
+  }
+
+  if (scope === 'all') {
+    return await db.sql`
+      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
+      from job_requests
+      order by created_at desc
+      limit 75
+    `;
+  }
+
+  return await db.sql`
+    select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
+    from job_requests
+    where status not in (${'completed'}, ${'cancelled'})
+    order by created_at desc
+    limit 75
+  `;
+};
+
+const selectScopedStatusCounts = async (db, scope) => {
+  if (scope === 'completed') {
+    return await db.sql`
+      select status, count(*)::int as count
+      from job_requests
+      where status = ${'completed'}
+      group by status
+      order by status
+    `;
+  }
+
+  if (scope === 'all') {
+    return await db.sql`
+      select status, count(*)::int as count
+      from job_requests
+      group by status
+      order by status
+    `;
+  }
+
+  return await db.sql`
+    select status, count(*)::int as count
+    from job_requests
+    where status not in (${'completed'}, ${'cancelled'})
+    group by status
+    order by status
+  `;
+};
+
+const selectScopedAssignments = async (db, scope) => {
+  if (scope === 'completed') {
+    return await db.sql`
+      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+      from worker_assignments
+      join app_users workers on workers.id = worker_assignments.worker_id
+      where worker_assignments.job_request_id in (select id from job_requests where status = ${'completed'} order by coalesce(completion_date, updated_at::date, created_at::date) desc, created_at desc limit 75)
+      order by worker_assignments.created_at desc
+    `;
+  }
+
+  if (scope === 'all') {
+    return await db.sql`
+      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+      from worker_assignments
+      join app_users workers on workers.id = worker_assignments.worker_id
+      where worker_assignments.job_request_id in (select id from job_requests order by created_at desc limit 75)
+      order by worker_assignments.created_at desc
+    `;
+  }
+
+  return await db.sql`
+    select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+    from worker_assignments
+    join app_users workers on workers.id = worker_assignments.worker_id
+    where worker_assignments.job_request_id in (select id from job_requests where status not in (${'completed'}, ${'cancelled'}) order by created_at desc limit 75)
+    order by worker_assignments.created_at desc
+  `;
+};
+
+const selectScopedQuotes = async (db, scope) => {
+  if (scope === 'completed') {
+    return await db.sql`
+      select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+      from quotes
+      where job_request_id in (select id from job_requests where status = ${'completed'} order by coalesce(completion_date, updated_at::date, created_at::date) desc, created_at desc limit 75)
+      order by created_at desc
+    `;
+  }
+
+  if (scope === 'all') {
+    return await db.sql`
+      select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+      from quotes
+      where job_request_id in (select id from job_requests order by created_at desc limit 75)
+      order by created_at desc
+    `;
+  }
+
+  return await db.sql`
+    select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+    from quotes
+    where job_request_id in (select id from job_requests where status not in (${'completed'}, ${'cancelled'}) order by created_at desc limit 75)
+    order by created_at desc
+  `;
+};
+
 
 export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (!['GET', 'PATCH', 'DELETE'].includes(request.method)) {
@@ -319,20 +442,9 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       });
     }
 
-    const jobRequests = await db.sql`
-      select id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
-      from job_requests
-      where status <> 'completed'
-      order by created_at desc
-      limit 50
-    `;
-    const statusCounts = await db.sql`
-      select status, count(*)::int as count
-      from job_requests
-      where status <> 'completed'
-      group by status
-      order by status
-    `;
+    const requestScope = normalizeRequestScope(new URL(request.url).searchParams.get('scope'));
+    const jobRequests = await selectScopedJobRequests(db, requestScope);
+    const statusCounts = await selectScopedStatusCounts(db, requestScope);
     const workers = await db.sql`
       select app_users.id, app_users.full_name, app_users.email, app_users.phone
       from app_users
@@ -343,19 +455,8 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
       order by app_users.full_name nulls last, app_users.email
       limit 100
     `;
-    const assignments = await db.sql`
-      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
-      from worker_assignments
-      join app_users workers on workers.id = worker_assignments.worker_id
-      where worker_assignments.job_request_id in (select id from job_requests where status <> 'completed' order by created_at desc limit 50)
-      order by worker_assignments.created_at desc
-    `;
-    const quotes = await db.sql`
-      select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
-      from quotes
-      where job_request_id in (select id from job_requests where status <> 'completed' order by created_at desc limit 50)
-      order by created_at desc
-    `;
+    const assignments = await selectScopedAssignments(db, requestScope);
+    const quotes = await selectScopedQuotes(db, requestScope);
 
     return json(200, {
       ok: true,
@@ -367,6 +468,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
         fullName: session.full_name,
         roles: roleKeys,
       },
+      scope: requestScope,
       requests: jobRequests.map(mapJobRequest),
       statusCounts: Object.fromEntries(statusCounts.map((row) => [row.status, row.count])),
       workers: workers.map(mapWorker),

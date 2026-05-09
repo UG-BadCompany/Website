@@ -43,12 +43,19 @@
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-pipeline-summary></div>
       <div class="client-request-form-grid" data-admin-request-filters>
+        <label>Work order view
+          <select data-admin-request-scope-filter>
+            <option value="active">Active work orders</option>
+            <option value="completed">Completed history</option>
+            <option value="all">All work orders</option>
+          </select>
+        </label>
         <label>Search work orders
           <input type="search" data-admin-request-search placeholder="Client, service, city, phone, or notes">
         </label>
         <label>Status filter
           <select data-admin-request-status-filter>
-            <option value="">All active statuses</option>
+            <option value="">All statuses in view</option>
             <option value="new">New</option>
             <option value="needs_review">Needs review</option>
             <option value="quote_in_progress">Quote in progress</option>
@@ -58,6 +65,7 @@
             <option value="in_progress">In progress</option>
             <option value="pending_review">Pending review</option>
             <option value="waiting_payment">Waiting payment</option>
+            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </label>
@@ -443,6 +451,7 @@
       const currentAdminAssignments = new Map();
       const currentAdminQuotes = new Map();
       let currentAdminInvoices = [];
+      let currentAdminRequestScope = 'active';
       const adminStatusOrder = [
         ['new', 'New'],
         ['needs_review', 'Needs review'],
@@ -453,6 +462,7 @@
         ['in_progress', 'In progress'],
         ['pending_review', 'Pending review'],
         ['waiting_payment', 'Waiting payment'],
+        ['completed', 'Completed'],
         ['cancelled', 'Cancelled'],
       ];
       const currentClientProperties = new Map();
@@ -660,18 +670,24 @@
 
         if (inboxStatus) {
           const total = currentAdminRequests.size;
+          const scopeLabel = currentAdminRequestScope === 'completed' ? 'completed' : currentAdminRequestScope === 'all' ? 'total' : 'active';
           inboxStatus.dataset.state = 'ready';
           inboxStatus.textContent = total
-            ? `${filteredRequests.length} of ${total} active work order${total === 1 ? '' : 's'} shown.`
-            : 'No job requests yet.';
+            ? `${filteredRequests.length} of ${total} ${scopeLabel} work order${total === 1 ? '' : 's'} shown.`
+            : `No ${scopeLabel} job requests yet.`;
         }
 
         bindAdminRequestActions();
       };
 
       const bindAdminRequestFilters = () => {
+        const scopeFilter = document.querySelector('[data-admin-request-scope-filter]');
         const search = document.querySelector('[data-admin-request-search]');
         const statusFilter = document.querySelector('[data-admin-request-status-filter]');
+        if (scopeFilter && !scopeFilter.dataset.bound) {
+          scopeFilter.dataset.bound = 'true';
+          scopeFilter.addEventListener('change', () => loadAdminRequests());
+        }
         [search, statusFilter].forEach((control) => {
           if (!control || control.dataset.bound) return;
           control.dataset.bound = 'true';
@@ -1988,13 +2004,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inboxList = document.querySelector('[data-admin-request-list]');
         const pipelineSummary = document.querySelector('[data-admin-pipeline-summary]');
         const openMetric = document.querySelector('[data-open-requests-metric]');
+        const scopeFilter = document.querySelector('[data-admin-request-scope-filter]');
 
         if (!inbox || !inboxStatus || !inboxList) {
           return;
         }
 
         try {
-          const response = await fetch('/api/admin/job-requests', { headers: { accept: 'application/json' } });
+          const scope = scopeFilter?.value || 'active';
+          const response = await fetch(`/api/admin/job-requests?scope=${encodeURIComponent(scope)}`, { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
 
           if (!response.ok || !result.ok) {
@@ -2002,9 +2020,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
 
           const requests = result.requests || [];
+          currentAdminRequestScope = result.scope || scope;
           const openCount = requests.filter((request) => request.status !== 'completed' && request.status !== 'cancelled').length;
+          const scopeLabel = currentAdminRequestScope === 'completed' ? 'completed history' : currentAdminRequestScope === 'all' ? 'total history' : 'active';
           inboxStatus.dataset.state = 'ready';
-          inboxStatus.textContent = requests.length ? `${requests.length} request${requests.length === 1 ? '' : 's'} loaded.` : 'No job requests yet.';
+          inboxStatus.textContent = requests.length ? `${requests.length} ${scopeLabel} request${requests.length === 1 ? '' : 's'} loaded.` : `No ${scopeLabel} job requests yet.`;
           if (pipelineSummary) {
             pipelineSummary.innerHTML = renderAdminPipelineSummary(result.statusCounts || {});
           }
