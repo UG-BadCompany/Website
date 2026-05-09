@@ -160,7 +160,7 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1P
 
-- Added a dedicated admin audit activity endpoint and `admin.activity.view` permission so audit visibility can be managed separately from request/invoice permissions.
+- Added a dedicated, paginated admin audit activity endpoint and `admin.activity.view` permission so audit visibility can be managed separately from request/invoice permissions.
 - Added admin activity dashboard filters for activity category and free-text search across actor, event, record, amount, and status.
 - Added scoped admin work-order and invoice views so admins can switch between active work, completed history, open invoices, paid history, and all active invoice records.
 - Hardened migration repair logic for renamed admin activity permission migrations so stale cached files do not break Netlify prebuild validation.

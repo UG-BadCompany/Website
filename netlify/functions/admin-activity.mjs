@@ -6,6 +6,26 @@ import {
   loadDatabase,
 } from './auth-utils.mjs';
 
+const DEFAULT_ACTIVITY_LIMIT = 50;
+const MAX_ACTIVITY_LIMIT = 100;
+
+const parsePositiveInteger = (value, fallback) => {
+  const parsed = Number.parseInt(value || '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getActivityPagination = (request) => {
+  const url = new URL(request.url);
+  const limit = Math.min(parsePositiveInteger(url.searchParams.get('limit'), DEFAULT_ACTIVITY_LIMIT), MAX_ACTIVITY_LIMIT);
+  const page = parsePositiveInteger(url.searchParams.get('page'), 1);
+
+  return {
+    limit,
+    page,
+    offset: (page - 1) * limit,
+  };
+};
+
 const mapActivity = (event) => ({
   id: event.id,
   eventType: event.event_type,
@@ -68,7 +88,8 @@ const loadPermissions = async (db, userId) => {
   };
 };
 
-const listAdminActivity = async (db) => {
+const listAdminActivity = async (db, { limit, offset }) => {
+  const fetchLimit = limit + 1;
   const events = await db.sql`
     select
       audit_events.id,
@@ -83,10 +104,14 @@ const listAdminActivity = async (db) => {
     from audit_events
     left join app_users actors on actors.id = audit_events.actor_user_id
     order by audit_events.created_at desc
-    limit 50
+    limit ${fetchLimit}
+    offset ${offset}
   `;
 
-  return events.map(mapActivity);
+  return {
+    events: events.slice(0, limit).map(mapActivity),
+    hasNextPage: events.length > limit,
+  };
 };
 
 export const createAdminActivityHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
@@ -114,6 +139,9 @@ export const createAdminActivityHandler = ({ getDatabase = loadDatabase } = {}) 
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin activity permission required to view activity.' });
     }
 
+    const pagination = getActivityPagination(request);
+    const activity = await listAdminActivity(db, pagination);
+
     return json(200, {
       ok: true,
       authenticated: true,
@@ -124,7 +152,12 @@ export const createAdminActivityHandler = ({ getDatabase = loadDatabase } = {}) 
         fullName: session.full_name,
         roles: roleKeys,
       },
-      events: await listAdminActivity(db),
+      events: activity.events,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        hasNextPage: activity.hasNextPage,
+      },
     });
   } catch (error) {
     console.error('Failed to load admin activity', error);

@@ -61,7 +61,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `PATCH /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Edits an existing saved quote from the open work request. |
 | `GET /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Lists open, paid, or all active invoices with payment summary data. |
 | `PATCH /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
-| `GET /api/admin/activity` | Yes | `admin.activity.view` or `admin` | Lists recent audit events for the admin activity feed. |
+| `GET /api/admin/activity` | Yes | `admin.activity.view` or `admin` | Lists paginated recent audit events for the admin activity feed. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |
