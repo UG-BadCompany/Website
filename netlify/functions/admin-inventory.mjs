@@ -245,6 +245,19 @@ const archiveInventoryItem = async ({ db, session, payload }) => {
   return json(200, { ok: true, item: mapInventoryItem(item) });
 };
 
+const loadWorkOrderForInventoryUsage = async (db, jobRequestId) => {
+  if (!jobRequestId) return null;
+
+  const [jobRequest] = await db.sql`
+    select id, service_type, status
+    from job_requests
+    where id = ${jobRequestId}
+    limit 1
+  `;
+
+  return jobRequest || null;
+};
+
 const adjustInventoryItem = async ({ db, session, payload }) => {
   if (!payload.itemId) {
     return json(400, { ok: false, message: 'Inventory item ID is required.' });
@@ -252,6 +265,16 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
 
   if (!payload.quantityDelta) {
     return json(400, { ok: false, message: 'Quantity adjustment cannot be zero.' });
+  }
+
+  const linkedWorkOrder = payload.jobRequestId ? await loadWorkOrderForInventoryUsage(db, payload.jobRequestId) : null;
+
+  if (payload.jobRequestId && !linkedWorkOrder) {
+    return json(404, { ok: false, message: 'Linked work order not found.' });
+  }
+
+  if (payload.jobRequestId && payload.quantityDelta > 0) {
+    return json(400, { ok: false, message: 'Work order usage must subtract inventory stock.' });
   }
 
   const [item] = await db.sql`
@@ -275,7 +298,7 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
 
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-    values (${session.user_id}, ${payload.jobRequestId ? 'inventory.used' : 'inventory.adjusted'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, quantityDelta: payload.quantityDelta, adjustmentType: payload.adjustmentType, jobRequestId: payload.jobRequestId || null })}::jsonb)
+    values (${session.user_id}, ${payload.jobRequestId ? 'inventory.used' : 'inventory.adjusted'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, quantityDelta: payload.quantityDelta, adjustmentType: payload.adjustmentType, jobRequestId: payload.jobRequestId || null, workOrderService: linkedWorkOrder?.service_type || null, workOrderStatus: linkedWorkOrder?.status || null })}::jsonb)
   `;
 
   return json(200, {

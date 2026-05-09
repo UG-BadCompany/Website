@@ -313,6 +313,40 @@
     @media(max-width:620px) { .admin-command-actions { grid-template-columns: 1fr; } }
 
 
+    .admin-access > [data-admin-role-modal],
+    .admin-access > [data-admin-user-modal] {
+      z-index: 45;
+    }
+
+    .admin-access > [data-admin-role-modal] .admin-request-modal-panel,
+    .admin-access > [data-admin-user-modal] .admin-request-modal-panel {
+      width: min(760px, calc(100vw - 32px));
+      max-height: min(86vh, 900px);
+      padding: 0 20px 20px;
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+
+    .admin-access > [data-admin-user-modal] .client-request-form,
+    .admin-access > [data-admin-role-modal] .client-request-form {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-access > [data-admin-user-modal] .client-request-form > label,
+    .admin-access > [data-admin-role-modal] .client-request-form > label,
+    .admin-access > [data-admin-user-modal] .client-request-form > .full,
+    .admin-access > [data-admin-role-modal] .client-request-form > .full,
+    .admin-access > [data-admin-user-modal] .client-request-form > .client-request-form-actions,
+    .admin-access > [data-admin-role-modal] .client-request-form > .client-request-form-actions {
+      min-width: 0;
+    }
+
+    @media(max-width:680px) {
+      .admin-access > [data-admin-user-modal] .client-request-form,
+      .admin-access > [data-admin-role-modal] .client-request-form { grid-template-columns: 1fr; }
+    }
+
+
     .dashboard-nav-cluster {
       display: grid;
       justify-items: end;
@@ -453,8 +487,6 @@
       <a href="#admin-work-orders" data-dashboard-section data-views="admin" hidden>Work orders</a>
       <a href="#admin-invoices" data-dashboard-section data-views="admin" hidden>Invoices</a>
       <a href="/inventory/" data-dashboard-section data-views="admin" data-permission="canManageInventory" hidden>Inventory</a>
-      <button class="workspace-action" type="button" data-admin-access-open data-dashboard-section data-views="admin" hidden>Roles &amp; users</button>
-      <button class="workspace-action" type="button" data-admin-activity-open data-dashboard-section data-views="admin" hidden>Activity</button>
       <a href="#submit-request" data-dashboard-section data-views="client" hidden>Requests</a>
       <a href="#client-quotes" data-dashboard-section data-views="client" hidden>Quotes</a>
       <a href="#client-invoices" data-dashboard-section data-views="client" hidden>Invoices</a>
@@ -467,7 +499,7 @@
       <div class="admin-command-header">
         <span class="eyebrow">Admin operations</span>
         <h2>Run today’s work from one command center.</h2>
-        <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail without hunting through the dashboard.</p>
+        <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail without duplicate buttons below the command center.</p>
       </div>
       <div class="admin-command-actions" aria-label="Admin quick actions">
         <a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Review intake, quote, schedule, assign, and verify completed work.</span></a>
@@ -618,8 +650,8 @@
             </form>
             <form data-admin-work-order-inventory-form data-admin-work-order-inventory-panel hidden>
               <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
-              <strong>Inventory used</strong>
-              <p>Record materials or tools consumed on this work order so stock levels and job history stay accurate.</p>
+              <strong>Work order inventory usage</strong>
+              <p>Record materials or tools consumed on this work order so stock levels and job history stay accurate. Use the Inventory command-center card for item setup and restocks.</p>
               <div class="client-request-form-grid">
                 <label>Inventory item
                   <select name="itemId" data-admin-work-order-inventory-item required>
@@ -667,6 +699,7 @@
         </label>
         <div class="admin-request-list" data-admin-user-search-results></div>
       </form>
+      </section>
 
       <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" aria-labelledby="admin-role-modal-title" hidden>
         <section class="admin-request-modal-panel">
@@ -726,6 +759,59 @@
           </form>
         </section>
       </div>
+      </section>
+    </section>
+
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Invoice &amp; payment desk</strong>
+      <p>Review open invoices, confirm payments, and scan paid history without leaving the admin workspace.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="admin-request-modal admin-activity" id="admin-activity" data-admin-activity role="dialog" aria-modal="true" aria-labelledby="admin-activity-title" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div><strong id="admin-activity-title">Activity audit trail</strong><p>Filter and page through status changes, quotes, assignments, payments, inventory, and account updates.</p></div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-activity-close aria-label="Close admin activity">×</button>
+        </div>
+        <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Open activity to load recent audit events.</p>
+        <div class="client-request-form" data-admin-activity-controls>
+          <div class="client-request-form-grid">
+            <label>Activity type
+              <select data-admin-activity-type-filter>
+                <option value="">All activity</option>
+                <option value="job">Requests &amp; work orders</option>
+                <option value="quote">Quotes</option>
+                <option value="payment">Invoices &amp; payments</option>
+                <option value="inventory">Inventory</option>
+                <option value="user">Users &amp; roles</option>
+              </select>
+            </label>
+            <label>Search activity
+              <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+            </label>
+          </div>
+        </div>
+        <div class="admin-request-list" data-admin-activity-list></div>
+        <div class="client-request-form-actions">
+          <button class="btn btn-soft" type="button" data-admin-activity-more hidden>Load more activity</button>
+        </div>
       </section>
     </section>
 
@@ -1053,6 +1139,13 @@
         modal.addEventListener('click', (event) => {
           if (event.target === modal || event.target.closest('[data-client-profile-modal-close]')) closeClientProfileModal();
         });
+      };
+
+      const getUserDisplayName = (user = {}) => {
+        const name = String(user.fullName || '').trim();
+        if (name) return name;
+        const emailName = String(user.email || '').split('@')[0].replace(/[._-]+/g, ' ').trim();
+        return emailName ? emailName.replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'your account';
       };
 
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
@@ -2526,10 +2619,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
         });
 
-        panel.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
+        document.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
           if (event.target === event.currentTarget) closeAdminRoleModal();
         });
-        panel.querySelector('[data-admin-user-modal]')?.addEventListener('click', (event) => {
+        document.querySelector('[data-admin-user-modal]')?.addEventListener('click', (event) => {
           if (event.target === event.currentTarget) closeAdminUserModal();
         });
         document.addEventListener('keydown', (event) => {
@@ -2917,7 +3010,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
 
           status.dataset.state = 'ready';
-          status.textContent = `${result.user.email} • ${(result.user.roles || []).join(', ') || 'signed in'}`;
+          status.textContent = `Signed in as ${getUserDisplayName(result.user)}`;
           renderClientProfile(result.user);
 
           if (logoutButton) {

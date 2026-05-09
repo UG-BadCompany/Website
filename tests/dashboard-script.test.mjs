@@ -60,6 +60,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /Activity audit trail/, 'admin activity modal should use audit-trail copy');
   assert.match(html, /data-admin-access-shortcut/, 'admin command center should open roles and users');
   assert.match(html, /data-admin-activity-shortcut/, 'admin command center should open activity');
+  assert.doesNotMatch(html, /<button[^>]+data-admin-access-open/, 'roles and users should no longer render as a duplicate workspace-tab button');
+  assert.doesNotMatch(html, /<button[^>]+data-admin-activity-open/, 'activity should no longer render as a duplicate workspace-tab button');
   assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
   assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
   assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
@@ -73,6 +75,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
   assert.match(script, /const saveClientProfile =/, 'clients should be able to save profile changes');
   assert.match(script, /const bindClientProfileButton =/, 'top My Profile button should open the profile modal');
+  assert.match(script, /const getUserDisplayName =/, 'dashboard session status should derive a human display name');
+  assert.match(script, /Signed in as \$\{getUserDisplayName\(result\.user\)\}/, 'dashboard session status should not expose email and role strings as the primary label');
   assert.match(script, /const bindClientProfileForm =/, 'client profile form should be bound');
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
   assert.match(script, /const approveClientCompletion =/, 'clients should have completed-work approval handler');
@@ -92,6 +96,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /quantityDelta: -Math\.abs\(quantityUsed\)/, 'work order inventory usage should subtract stock');
   assert.match(script, /jobRequestId,[\s\S]*adjustmentType: 'used'/, 'work order inventory adjustments should be tied to the job and marked used');
   assert.match(script, /document\.querySelector\('\.admin-request-modal:not\(\[hidden\]\)'\)/, 'modal body scroll locking should account for nested admin modals');
+  assert.ok(html.indexOf('</form>\n      </section>\n\n      <div class="admin-request-modal" data-admin-role-modal') > -1, 'role and user editor popups should sit outside the scrolling access panel');
   assert.match(script, /querySelectorAll\('\[data-admin-access-open\], \[data-admin-access-shortcut\]'\)/, 'admin access launcher should bind nav and command-center shortcuts');
   assert.match(script, /querySelectorAll\('\[data-admin-activity-open\], \[data-admin-activity-shortcut\]'\)/, 'admin activity launcher should bind nav and command-center shortcuts');
   assert.match(script, /const updateAdminActivityMoreButton =/, 'admins should update the activity pagination button');

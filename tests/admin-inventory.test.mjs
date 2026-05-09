@@ -171,6 +171,7 @@ test('admin inventory endpoint links used materials to work orders', async () =>
     [],
     [{ key: 'admin' }],
     [],
+    [{ id: 'job-1', service_type: 'Drywall repair', status: 'in_progress' }],
     [{ id: 'item-1', name: 'Drywall screws', sku: 'DW-1', category: 'Fasteners', unit: 'box', quantity_on_hand: 5, reorder_point: 5, supplier: '', storage_location: 'Shelf A', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
     [{ id: 'adjustment-1', inventory_item_id: 'item-1', adjustment_type: 'used', quantity_delta: -2, note: 'Used on job', job_request_id: 'job-1', created_at: '2026-05-09T00:00:00.000Z' }],
     [],
@@ -185,8 +186,49 @@ test('admin inventory endpoint links used materials to work orders', async () =>
   assert.equal(response.status, 200);
   assert.equal(response.body.adjustment.jobRequestId, 'job-1');
   assert.equal(response.body.adjustment.quantityDelta, -2);
-  assert.match(db.queries[5].text, /job_request_id/);
-  assert.equal(db.queries[5].values[4], 'job-1');
-  assert.equal(db.queries[6].values[1], 'inventory.used');
-  assert.match(db.queries[6].values[4], /job-1/);
+  assert.match(db.queries[4].text, /from job_requests/);
+  assert.equal(db.queries[4].values[0], 'job-1');
+  assert.match(db.queries[6].text, /job_request_id/);
+  assert.equal(db.queries[6].values[4], 'job-1');
+  assert.equal(db.queries[7].values[1], 'inventory.used');
+  assert.match(db.queries[7].values[4], /Drywall repair/);
+});
+
+
+test('admin inventory endpoint rejects work order usage when the job is missing or stock would increase', async () => {
+  const missingJobDb = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => missingJobDb });
+  const missingJobResponse = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ itemId: 'item-1', quantityDelta: -1, adjustmentType: 'used', jobRequestId: 'missing-job' }),
+  })));
+
+  assert.equal(missingJobResponse.status, 404);
+  assert.match(missingJobResponse.body.message, /work order/i);
+  assert.match(missingJobDb.queries[4].text, /from job_requests/);
+
+  const increaseDb = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'job-1', service_type: 'Drywall repair', status: 'in_progress' }],
+  ]);
+  const increaseHandler = createAdminInventoryHandler({ getDatabase: async () => increaseDb });
+  const increaseResponse = await readJson(await increaseHandler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ itemId: 'item-1', quantityDelta: 2, adjustmentType: 'used', jobRequestId: 'job-1' }),
+  })));
+
+  assert.equal(increaseResponse.status, 400);
+  assert.match(increaseResponse.body.message, /subtract inventory/i);
+  assert.equal(increaseDb.queries.length, 5);
 });
