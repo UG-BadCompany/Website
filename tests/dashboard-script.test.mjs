@@ -50,6 +50,13 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /href="\/inventory\/"/, 'admins should navigate to inventory as a separate page');
   assert.match(html, /data-permission="canManageInventory"/, 'inventory navigation should be permission-gated');
   assert.doesNotMatch(html, /<section class="card admin-inventory"/, 'inventory management should not render on the main dashboard');
+  assert.match(html, /data-admin-command-center/, 'admins should have a polished command center overview');
+  assert.match(html, /Run today’s work from one command center/, 'admin command center should use production-facing operations copy');
+  assert.match(html, /Work order command center/, 'admin work order section should use cleaner operations copy');
+  assert.match(html, /Invoice &amp; payment desk|Invoice & payment desk/, 'admin invoices should use clearer payment desk copy');
+  assert.match(html, /Activity audit trail/, 'admin activity modal should use audit-trail copy');
+  assert.match(html, /data-admin-access-shortcut/, 'admin command center should open roles and users');
+  assert.match(html, /data-admin-activity-shortcut/, 'admin command center should open activity');
   assert.match(html, /data-admin-activity/, 'admins should have a recent activity audit section');
   assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
   assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
@@ -75,6 +82,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
   assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
+  assert.match(script, /querySelectorAll\('\[data-admin-access-open\], \[data-admin-access-shortcut\]'\)/, 'admin access launcher should bind nav and command-center shortcuts');
+  assert.match(script, /querySelectorAll\('\[data-admin-activity-open\], \[data-admin-activity-shortcut\]'\)/, 'admin activity launcher should bind nav and command-center shortcuts');
   assert.match(script, /const updateAdminActivityMoreButton =/, 'admins should update the activity pagination button');
   assert.match(script, /const scheduleAdminActivityReload =/, 'admins should debounce server-side activity filter refreshes');
   assert.match(script, /const loadAdminActivity = async \(\{ filtered = false, append = false \} = \{\}\)/, 'admins should load recent audit activity with filter and append options');
