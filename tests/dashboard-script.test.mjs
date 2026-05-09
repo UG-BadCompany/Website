@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
 const loadInventoryHtml = () => readFile(new URL('../public/inventory/index.html', import.meta.url), 'utf8');
 const loadHomeHtml = () => readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+const loadLoginHtml = () => readFile(new URL('../public/login/index.html', import.meta.url), 'utf8');
 const extractInlineScripts = (html) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
 test('dashboard inline scripts parse without duplicate declarations', async () => {
@@ -120,4 +121,18 @@ test('homepage portal links return existing sessions to the dashboard', async ()
   assert.match(html, /href="\/dashboard\/">Open Dashboard/, 'portal CTA should open the dashboard directly');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'homepage should not force signed-in users through login for the portal');
   assert.doesNotMatch(html, /href="\/login\/">Open Client Portal/, 'homepage CTA should not force signed-in users through login for the portal');
+});
+
+
+test('login page redirects existing sessions back to the dashboard', async () => {
+  const html = await loadLoginHtml();
+  const [script] = extractInlineScripts(html);
+
+  assert.match(html, /href="\/dashboard\/">Dashboard/, 'login nav should point users with sessions back to the dashboard');
+  assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'login nav should not loop portal users back to login');
+  assert.match(script, /const redirectExistingSession = async/, 'login page should check for an existing session');
+  assert.match(script, /fetch\('\/api\/me'/, 'login page should use api\/me for the existing-session check');
+  assert.match(script, /window\.location\.replace\('\/dashboard\/'\)/, 'authenticated users should be sent to the dashboard');
+  assert.match(script, /signed-out/, 'signed-out redirects should not bounce straight back to the dashboard');
+  assert.doesNotThrow(() => new Function(script));
 });
