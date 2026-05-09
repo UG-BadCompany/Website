@@ -2675,6 +2675,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {
