@@ -240,8 +240,30 @@
     .footer { border-top-color: var(--dash-line); color: var(--dash-muted); }
 
 
+
+    .dashboard-nav-cluster {
+      display: grid;
+      justify-items: end;
+      gap: 8px;
+      min-width: min(100%, 620px);
+    }
+
+    .dashboard-nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .theme-toggle {
+      min-height: 40px;
+      padding: 0 14px;
+      font-size: .88rem;
+    }
+
     .account-status {
-      max-width: 320px;
+      max-width: min(100%, 620px);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -252,6 +274,14 @@
       background: rgba(255,255,255,.08);
       font-size: .86rem;
       font-weight: 850;
+      text-align: right;
+    }
+
+    @media(max-width:850px) {
+      .nav-inner { align-items: flex-start; }
+      .dashboard-nav-cluster { justify-items: stretch; min-width: 0; }
+      .dashboard-nav-row, .nav-links { justify-content: flex-start; }
+      .account-status { text-align: left; }
     }
 
     .client-request-form input:disabled:not([data-client-profile-email]) {
@@ -317,7 +347,7 @@
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to dashboard content</a>
-  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><span class="account-status" data-session-status role="status" aria-live="polite">Checking session…</span><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><div class="dashboard-nav-row"><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button></div><span class="account-status" data-session-status role="status" aria-live="polite">Checking session…</span></div></div></header>
   <main class="wrap" id="content">
     <section class="hero">
       <div class="dashboard-hero">
@@ -331,7 +361,7 @@
             <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
           </div>
         </div>
-        <div class="logo-panel"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"></div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
@@ -2630,6 +2660,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
             loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {

@@ -20,6 +20,10 @@ test('dashboard user and role controls have their required handlers', async () =
   const html = await loadDashboardHtml();
   const [script] = extractInlineScripts(html);
 
+  assert.match(html, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3.png\?raw=true/, 'dashboard should use the real logo asset from the provided URL');
+  assert.match(html, /dashboard-nav-cluster/, 'dashboard navigation should group controls separately from login status');
+  assert.ok(html.indexOf('data-theme-toggle') > html.indexOf('data-request-estimate-link'), 'theme toggle should be moved after the primary dashboard actions');
+  assert.ok(html.indexOf('data-session-status') > html.indexOf('dashboard-nav-row'), 'login status should sit below the dashboard nav actions');
   assert.match(html, /data-request-estimate-link/, 'dashboard request estimate link should target the in-dashboard request form');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'signed-in dashboard nav should not show the Client Portal link');
   assert.match(html, /data-client-edit-property/, 'clients should have an edit action for saved properties');
@@ -97,6 +101,7 @@ test('inventory page owns inventory UI and API handlers', async () => {
   const html = await loadInventoryHtml();
   const [script] = extractInlineScripts(html);
 
+  assert.match(html, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3.png\?raw=true/, 'inventory should use the real logo asset from the provided URL');
   assert.match(html, /<title>Inventory \| T&A Contracting<\/title>/, 'inventory should have its own page title');
   assert.match(html, /data-admin-inventory-form/, 'inventory page should include the item creation form');
   assert.match(html, /data-admin-inventory-list/, 'inventory page should include the item list');
@@ -117,6 +122,7 @@ test('inventory page owns inventory UI and API handlers', async () => {
 test('homepage portal links return existing sessions to the dashboard', async () => {
   const html = await loadHomeHtml();
 
+  assert.match(html, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3.png\?raw=true/, 'homepage should use the real logo asset from the provided URL');
   assert.match(html, /href="\/dashboard\/">Dashboard/, 'primary nav portal link should open the dashboard directly');
   assert.match(html, /href="\/dashboard\/">Open Dashboard/, 'portal CTA should open the dashboard directly');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'homepage should not force signed-in users through login for the portal');
