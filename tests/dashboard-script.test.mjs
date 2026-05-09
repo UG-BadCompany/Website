@@ -57,6 +57,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /canSwitchDashboardView && \(user\.roles \|\| \[\]\)\.includes\('admin'\)/, 'role view tabs should be admin-only');
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
+  assert.match(script, /const loadAdminInventory =/, 'admins should load inventory records');
+  assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'admin inventory should use the inventory API');
   assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');

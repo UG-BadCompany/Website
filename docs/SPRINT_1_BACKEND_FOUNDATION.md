@@ -168,3 +168,8 @@ Client onboarding should start from Request Work, which creates or updates the c
 ## Future portal backlog
 
 - Inventory system for tracking materials, tools, stock levels, suppliers, and job-level usage from admin and worker workflows.
+
+
+## Added in Sprint 1Q
+
+- Added admin inventory permissions, database tables, API, dashboard panel, and tests for tracking materials/tools, suppliers, stock levels, low-stock summaries, and quantity adjustments.

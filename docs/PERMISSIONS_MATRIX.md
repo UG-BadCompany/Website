@@ -23,6 +23,7 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | View own invoices | Yes | No | Yes |
 | Manage invoices | No | No | Yes |
 | Pay invoices | Own invoices only | No | Admin override |
+| Manage inventory | No | No | Yes |
 | View admin activity/audit trail | No | No | Yes |
 | View reports/settings | No | No | Yes |
 
@@ -60,6 +61,9 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `POST /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Creates the first draft/sent quote for an existing client-linked job request. |
 | `PATCH /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Edits an existing saved quote from the open work request. |
 | `GET /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Lists open, paid, or all active invoices with payment summary data. |
+| `GET /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Lists active inventory items and low-stock summary data. |
+| `POST /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Creates a tracked inventory item for materials, tools, or supplies. |
+| `PATCH /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Records quantity adjustments and updates stock on hand. |
 | `PATCH /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
 | `GET /api/admin/activity` | Yes | `admin.activity.view` or `admin` | Lists paginated recent audit events for the admin activity feed. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
