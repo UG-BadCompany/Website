@@ -406,6 +406,51 @@
       <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Payments waiting</strong>
+      <p>Completed work that has been verified moves here until payment is confirmed.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
+      <div class="client-request-form" data-admin-invoice-controls>
+        <div class="client-request-form-grid">
+          <label>Invoice view
+            <select data-admin-invoice-status-filter>
+              <option value="open">Open / unpaid</option>
+              <option value="paid">Paid history</option>
+              <option value="all">All active invoices</option>
+            </select>
+          </label>
+          <label>Search invoices
+            <input data-admin-invoice-search placeholder="Client, address, service, reference">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-invoice-summary></div>
+      <div class="client-quote-list" data-admin-invoice-list></div>
+    </section>
+
+    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Recent admin activity</strong>
+      <p>Review the latest status changes, quotes, assignments, payments, and account updates recorded in the audit trail.</p>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading recent admin activity…</p>
+      <div class="client-request-form" data-admin-activity-controls>
+        <div class="client-request-form-grid">
+          <label>Activity type
+            <select data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="job">Requests &amp; work orders</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Invoices &amp; payments</option>
+              <option value="user">Users &amp; roles</option>
+            </select>
+          </label>
+          <label>Search activity
+            <input type="search" data-admin-activity-search placeholder="Actor, event, record, amount, or status">
+          </label>
+        </div>
+      </div>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -2384,6 +2429,80 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {
