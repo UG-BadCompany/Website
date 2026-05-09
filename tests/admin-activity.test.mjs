@@ -99,6 +99,41 @@ test('admin activity endpoint paginates audit events with a bounded limit', asyn
 
   assert.equal(response.status, 200);
   assert.equal(response.body.events.length, 1);
-  assert.deepEqual(response.body.pagination, { page: 2, limit: 1, hasNextPage: true });
-  assert.deepEqual(db.queries[4].values, [2, 1]);
+  assert.deepEqual(response.body.pagination, { page: 2, limit: 1, hasNextPage: true, type: '', search: '' });
+  assert.equal(db.queries[4].values.at(-2), 2);
+  assert.equal(db.queries[4].values.at(-1), 1);
+});
+
+
+test('admin activity endpoint filters audit events by type and search term', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{
+      id: 'event-1',
+      actor_user_id: 'admin-1',
+      event_type: 'payment.confirmed',
+      entity_type: 'invoice',
+      entity_id: 'invoice-1',
+      metadata: { amountCents: 42500, reference: 'receipt-1001' },
+      created_at: '2026-05-09T00:00:00.000Z',
+      actor_full_name: 'Admin User',
+      actor_email: 'admin@example.com',
+    }],
+  ]);
+  const handler = createAdminActivityHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/activity?type=payment&q=receipt&limit=500', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.pagination.type, 'payment');
+  assert.equal(response.body.pagination.search, 'receipt');
+  assert.equal(response.body.pagination.limit, 100);
+  assert.equal(response.body.events[0].metadata.reference, 'receipt-1001');
+  assert.match(db.queries[4].text, /audit_events\.metadata::text/);
+  assert.ok(db.queries[4].values.includes('payment'));
+  assert.ok(db.queries[4].values.includes('%receipt%'));
+  assert.equal(db.queries[4].values.at(-2), 101);
+  assert.equal(db.queries[4].values.at(-1), 0);
 });

@@ -1,4 +1,5 @@
 import {
+  clean,
   getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
@@ -8,21 +9,27 @@ import {
 
 const DEFAULT_ACTIVITY_LIMIT = 50;
 const MAX_ACTIVITY_LIMIT = 100;
+const ACTIVITY_TYPE_FILTERS = new Set(['', 'job', 'quote', 'payment', 'user']);
 
 const parsePositiveInteger = (value, fallback) => {
   const parsed = Number.parseInt(value || '', 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const getActivityPagination = (request) => {
+const getActivityFilters = (request) => {
   const url = new URL(request.url);
   const limit = Math.min(parsePositiveInteger(url.searchParams.get('limit'), DEFAULT_ACTIVITY_LIMIT), MAX_ACTIVITY_LIMIT);
   const page = parsePositiveInteger(url.searchParams.get('page'), 1);
+  const type = clean(url.searchParams.get('type'), 20).toLowerCase();
+  const search = clean(url.searchParams.get('q'), 120).toLowerCase();
 
   return {
     limit,
     page,
     offset: (page - 1) * limit,
+    type: ACTIVITY_TYPE_FILTERS.has(type) ? type : '',
+    search,
+    searchPattern: search ? `%${search}%` : '',
   };
 };
 
@@ -88,7 +95,7 @@ const loadPermissions = async (db, userId) => {
   };
 };
 
-const listAdminActivity = async (db, { limit, offset }) => {
+const listAdminActivity = async (db, { limit, offset, type = '', search = '', searchPattern = '' }) => {
   const fetchLimit = limit + 1;
   const events = await db.sql`
     select
@@ -103,6 +110,22 @@ const listAdminActivity = async (db, { limit, offset }) => {
       actors.email as actor_email
     from audit_events
     left join app_users actors on actors.id = audit_events.actor_user_id
+    where (
+        ${type} = ${''}
+        or (${type} = ${'quote'} and (audit_events.event_type ilike ${'%quote%'} or audit_events.entity_type = ${'quote'}))
+        or (${type} = ${'payment'} and (audit_events.event_type ilike ${'%payment%'} or audit_events.event_type ilike ${'%invoice%'} or audit_events.entity_type in (${'invoice'}, ${'payment'})))
+        or (${type} = ${'user'} and (audit_events.event_type ilike ${'%user%'} or audit_events.event_type ilike ${'%role%'} or audit_events.entity_type in (${'user'}, ${'role'})))
+        or (${type} = ${'job'} and (audit_events.event_type ilike ${'%job%'} or audit_events.event_type ilike ${'%request%'} or audit_events.event_type ilike ${'%worker_assignment%'} or audit_events.entity_type in (${'job_request'}, ${'worker_assignment'})))
+      )
+      and (
+        ${search} = ${''}
+        or lower(coalesce(audit_events.event_type, '')) like ${searchPattern}
+        or lower(coalesce(audit_events.entity_type, '')) like ${searchPattern}
+        or lower(coalesce(audit_events.entity_id::text, '')) like ${searchPattern}
+        or lower(coalesce(actors.full_name, '')) like ${searchPattern}
+        or lower(coalesce(actors.email, '')) like ${searchPattern}
+        or lower(coalesce(audit_events.metadata::text, '')) like ${searchPattern}
+      )
     order by audit_events.created_at desc
     limit ${fetchLimit}
     offset ${offset}
@@ -139,8 +162,8 @@ export const createAdminActivityHandler = ({ getDatabase = loadDatabase } = {}) 
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin activity permission required to view activity.' });
     }
 
-    const pagination = getActivityPagination(request);
-    const activity = await listAdminActivity(db, pagination);
+    const filters = getActivityFilters(request);
+    const activity = await listAdminActivity(db, filters);
 
     return json(200, {
       ok: true,
@@ -154,9 +177,11 @@ export const createAdminActivityHandler = ({ getDatabase = loadDatabase } = {}) 
       },
       events: activity.events,
       pagination: {
-        page: pagination.page,
-        limit: pagination.limit,
+        page: filters.page,
+        limit: filters.limit,
         hasNextPage: activity.hasNextPage,
+        type: filters.type,
+        search: filters.search,
       },
     });
   } catch (error) {

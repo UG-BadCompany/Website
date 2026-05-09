@@ -846,6 +846,7 @@
       let currentAdminActivity = [];
       let currentProfileUser = null;
       let adminActivityLoaded = false;
+      let adminActivityFilterTimer = null;
       let currentAdminRequestScope = 'active';
       const adminStatusOrder = [
         ['new', 'New'],
@@ -1285,14 +1286,19 @@
         activityList.innerHTML = filteredEvents.length ? filteredEvents.map(renderAdminActivityCard).join('') : '<p class="session-status">No audit events match those filters.</p>';
       };
 
+      const scheduleAdminActivityReload = () => {
+        window.clearTimeout(adminActivityFilterTimer);
+        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivity({ filtered: true }), 220);
+      };
+
       const bindAdminActivityFilters = () => {
         const typeFilter = document.querySelector('[data-admin-activity-type-filter]');
         const search = document.querySelector('[data-admin-activity-search]');
         [typeFilter, search].forEach((control) => {
           if (!control || control.dataset.bound) return;
           control.dataset.bound = 'true';
-          control.addEventListener('input', renderAdminActivityList);
-          control.addEventListener('change', renderAdminActivityList);
+          control.addEventListener('input', () => { renderAdminActivityList(); scheduleAdminActivityReload(); });
+          control.addEventListener('change', () => { renderAdminActivityList(); scheduleAdminActivityReload(); });
         });
       };
 
@@ -2465,19 +2471,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const loadAdminActivity = async () => {
+      const loadAdminActivity = async ({ filtered = false } = {}) => {
         const panel = document.querySelector('[data-admin-activity]');
         const status = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
         if (!panel || !status || !activityList) return;
+        const typeFilter = document.querySelector('[data-admin-activity-type-filter]')?.value || '';
+        const search = (document.querySelector('[data-admin-activity-search]')?.value || '').trim();
+        const url = new URL('/api/admin/activity', window.location.origin);
+        url.searchParams.set('limit', '75');
+        if (typeFilter) url.searchParams.set('type', typeFilter);
+        if (search) url.searchParams.set('q', search);
         try {
-          const response = await fetch('/api/admin/activity', { headers: { accept: 'application/json' } });
+          status.dataset.state = 'loading';
+          if (filtered) status.textContent = 'Refreshing filtered activity…';
+          const response = await fetch(url, { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Admin activity is not available.');
           currentAdminActivity = result.events || [];
           adminActivityLoaded = true;
           status.dataset.state = 'ready';
-          status.textContent = currentAdminActivity.length ? `${currentAdminActivity.length} recent audit event${currentAdminActivity.length === 1 ? '' : 's'} loaded.` : 'No recent admin activity yet.';
+          const filterLabel = typeFilter || search ? ' matching audit' : ' recent audit';
+          status.textContent = currentAdminActivity.length ? `${currentAdminActivity.length}${filterLabel} event${currentAdminActivity.length === 1 ? '' : 's'} loaded.` : (typeFilter || search ? 'No audit events match those filters.' : 'No recent admin activity yet.');
           bindAdminActivityFilters();
           renderAdminActivityList();
         } catch (error) {
@@ -2661,6 +2676,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
             loadAdminActivity();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {

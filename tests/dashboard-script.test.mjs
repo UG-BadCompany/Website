@@ -74,7 +74,10 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
   assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
-  assert.match(script, /const loadAdminActivity =/, 'admins should load recent audit activity');
+  assert.match(script, /const scheduleAdminActivityReload =/, 'admins should debounce server-side activity filter refreshes');
+  assert.match(script, /const loadAdminActivity = async \(\{ filtered = false \} = \{\}\)/, 'admins should load recent audit activity with filter options');
+  assert.match(script, /url\.searchParams\.set\('type', typeFilter\)/, 'admin activity loading should request the selected type filter');
+  assert.match(script, /url\.searchParams\.set\('q', search\)/, 'admin activity loading should request the selected activity search term');
   assert.match(script, /const renderAdminInvoiceList =/, 'admins should render filtered invoice records');
   assert.match(script, /status=\$\{encodeURIComponent\(filter\)\}/, 'admin invoice loading should request the selected invoice status');
   assert.match(script, /const renderAdminPipelineSummary =/, 'admins should render pipeline counts');
@@ -82,7 +85,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /currentAdminRequestScope = result\.scope \|\| scope/, 'admin work order view should track the API scope');
   assert.match(script, /scope=\$\{encodeURIComponent\(scope\)\}/, 'admin work order loading should request the selected scope');
   assert.match(script, /canViewAdminActivity/, 'admin activity should use its own permission flag');
-  assert.match(script, /fetch\('\/api\/admin\/activity'/, 'admin activity should load from the audit activity endpoint');
+  assert.match(script, /new URL\('\/api\/admin\/activity', window\.location\.origin\)/, 'admin activity should load from the audit activity endpoint');
+  assert.match(script, /fetch\(url, \{ headers: \{ accept: 'application\/json' \} \}\)/, 'admin activity should fetch the filtered activity URL');
   assert.match(script, /const renderAdminWorkOrderSummary =/, 'admins should render a CMMS-style work order summary');
   assert.match(script, /data-admin-work-order-summary-card/, 'work order summary should render a dedicated summary card');
   assert.match(script, /data-admin-confirm-payment/, 'admins should be able to confirm payment from the dashboard');
