@@ -33,6 +33,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
+  assert.match(html, /data-admin-work-order-inventory-form/, 'admins should record inventory usage from work orders');
+  assert.match(html, /data-admin-work-order-inventory-usage/, 'work orders should show linked inventory usage');
+  assert.match(html, /Record inventory usage/, 'work order inventory form should use clear action copy');
   assert.match(html, /data-admin-pipeline-summary/, 'admins should have a work order pipeline summary');
   assert.match(html, /data-admin-request-search/, 'admins should be able to search work orders');
   assert.match(html, /data-admin-request-status-filter/, 'admins should be able to filter work orders by status');
@@ -61,6 +64,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-activity-type-filter/, 'admins should filter recent activity by type');
   assert.match(html, /data-admin-activity-search/, 'admins should search recent activity');
   assert.match(html, /data-admin-activity-more/, 'admins should page through more audit activity');
+  assert.match(html, /<option value="inventory">Inventory<\/option>/, 'admin activity filters should include inventory events');
   assert.match(html, /data-admin-invoice-summary/, 'admins should have invoice totals before payment confirmation');
   assert.match(html, /data-admin-invoice-status-filter/, 'admins should switch between open and paid invoice views');
   assert.match(html, /data-admin-invoice-search/, 'admins should search invoice records');
@@ -82,6 +86,12 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
   assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
+  assert.match(script, /const renderAdminWorkOrderInventoryUsage =/, 'admins should render inventory usage on work orders');
+  assert.match(script, /const loadAdminWorkOrderInventory = async/, 'admins should load inventory usage for selected work orders');
+  assert.match(script, /fetch\(`\/api\/admin\/inventory\?jobRequestId=\$\{encodeURIComponent\(jobRequestId\)\}`/, 'work order inventory usage should load from inventory API');
+  assert.match(script, /quantityDelta: -Math\.abs\(quantityUsed\)/, 'work order inventory usage should subtract stock');
+  assert.match(script, /jobRequestId,[\s\S]*adjustmentType: 'used'/, 'work order inventory adjustments should be tied to the job and marked used');
+  assert.match(script, /document\.querySelector\('\.admin-request-modal:not\(\[hidden\]\)'\)/, 'modal body scroll locking should account for nested admin modals');
   assert.match(script, /querySelectorAll\('\[data-admin-access-open\], \[data-admin-access-shortcut\]'\)/, 'admin access launcher should bind nav and command-center shortcuts');
   assert.match(script, /querySelectorAll\('\[data-admin-activity-open\], \[data-admin-activity-shortcut\]'\)/, 'admin activity launcher should bind nav and command-center shortcuts');
   assert.match(script, /const updateAdminActivityMoreButton =/, 'admins should update the activity pagination button');

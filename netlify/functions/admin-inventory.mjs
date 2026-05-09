@@ -28,6 +28,7 @@ const normalizeInventoryPayload = (body = {}) => ({
   adjustmentType: clean(body.adjustmentType, 40) || 'manual',
   quantityDelta: normalizeNumber(body.quantityDelta, 0),
   adjustmentNote: clean(body.adjustmentNote || body.note, 500),
+  jobRequestId: clean(body.jobRequestId, 80),
 });
 
 const mapInventoryItem = (item) => ({
@@ -45,6 +46,28 @@ const mapInventoryItem = (item) => ({
   createdAt: item.created_at,
   updatedAt: item.updated_at,
   stockStatus: Number(item.quantity_on_hand || 0) <= Number(item.reorder_point || 0) ? 'low' : 'ok',
+});
+
+
+const mapInventoryUsage = (usage) => ({
+  id: usage.id,
+  itemId: usage.inventory_item_id,
+  jobRequestId: usage.job_request_id,
+  adjustmentType: usage.adjustment_type,
+  quantityDelta: Number(usage.quantity_delta || 0),
+  note: usage.note,
+  createdAt: usage.created_at,
+  item: {
+    name: usage.item_name,
+    sku: usage.item_sku,
+    category: usage.item_category,
+    unit: usage.item_unit,
+  },
+  createdBy: usage.created_by ? {
+    id: usage.created_by,
+    fullName: usage.created_by_full_name,
+    email: usage.created_by_email,
+  } : null,
 });
 
 const loadSession = async (db, sessionToken) => {
@@ -95,7 +118,7 @@ const loadPermissions = async (db, userId) => {
   };
 };
 
-const listInventory = async (db) => {
+const listInventory = async (db, { jobRequestId = '' } = {}) => {
   const items = await db.sql`
     select id, name, sku, category, unit, quantity_on_hand, reorder_point, supplier, storage_location, notes, is_active, created_at, updated_at
     from inventory_items
@@ -104,9 +127,33 @@ const listInventory = async (db) => {
     limit 200
   `;
   const mappedItems = items.map(mapInventoryItem);
+  const usage = jobRequestId ? await db.sql`
+    select
+      inventory_adjustments.id,
+      inventory_adjustments.inventory_item_id,
+      inventory_adjustments.job_request_id,
+      inventory_adjustments.adjustment_type,
+      inventory_adjustments.quantity_delta,
+      inventory_adjustments.note,
+      inventory_adjustments.created_by,
+      inventory_adjustments.created_at,
+      inventory_items.name as item_name,
+      inventory_items.sku as item_sku,
+      inventory_items.category as item_category,
+      inventory_items.unit as item_unit,
+      app_users.full_name as created_by_full_name,
+      app_users.email as created_by_email
+    from inventory_adjustments
+    join inventory_items on inventory_items.id = inventory_adjustments.inventory_item_id
+    left join app_users on app_users.id = inventory_adjustments.created_by
+    where inventory_adjustments.job_request_id = ${jobRequestId}
+    order by inventory_adjustments.created_at desc
+    limit 50
+  ` : [];
 
   return {
     items: mappedItems,
+    usage: usage.map(mapInventoryUsage),
     summary: {
       total: mappedItems.length,
       lowStock: mappedItems.filter((item) => item.stockStatus === 'low').length,
@@ -221,14 +268,14 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
   }
 
   const [adjustment] = await db.sql`
-    insert into inventory_adjustments (inventory_item_id, adjustment_type, quantity_delta, note, created_by)
-    values (${payload.itemId}, ${payload.adjustmentType}, ${payload.quantityDelta}, ${payload.adjustmentNote || null}, ${session.user_id})
-    returning id, inventory_item_id, adjustment_type, quantity_delta, note, created_at
+    insert into inventory_adjustments (inventory_item_id, adjustment_type, quantity_delta, note, job_request_id, created_by)
+    values (${payload.itemId}, ${payload.adjustmentType}, ${payload.quantityDelta}, ${payload.adjustmentNote || null}, ${payload.jobRequestId || null}, ${session.user_id})
+    returning id, inventory_item_id, adjustment_type, quantity_delta, note, job_request_id, created_at
   `;
 
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-    values (${session.user_id}, ${'inventory.adjusted'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, quantityDelta: payload.quantityDelta, adjustmentType: payload.adjustmentType })}::jsonb)
+    values (${session.user_id}, ${payload.jobRequestId ? 'inventory.used' : 'inventory.adjusted'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, quantityDelta: payload.quantityDelta, adjustmentType: payload.adjustmentType, jobRequestId: payload.jobRequestId || null })}::jsonb)
   `;
 
   return json(200, {
@@ -240,6 +287,7 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
       adjustmentType: adjustment.adjustment_type,
       quantityDelta: Number(adjustment.quantity_delta || 0),
       note: adjustment.note,
+      jobRequestId: adjustment.job_request_id,
       createdAt: adjustment.created_at,
     },
   });
@@ -271,7 +319,8 @@ export const createAdminInventoryHandler = ({ getDatabase = loadDatabase } = {})
     }
 
     if (request.method === 'GET') {
-      return json(200, { ok: true, authenticated: true, authorized: true, user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys }, ...(await listInventory(db)) });
+      const jobRequestId = clean(new URL(request.url).searchParams.get('jobRequestId'), 80);
+      return json(200, { ok: true, authenticated: true, authorized: true, user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys }, ...(await listInventory(db, { jobRequestId })) });
     }
 
     const body = await parseJsonBody(request);

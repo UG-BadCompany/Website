@@ -616,6 +616,26 @@
               <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-admin-assignment-form-status aria-live="polite"></span></div>
               <div class="admin-assignment-list" data-admin-assignment-list></div>
             </form>
+            <form data-admin-work-order-inventory-form data-admin-work-order-inventory-panel hidden>
+              <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
+              <strong>Inventory used</strong>
+              <p>Record materials or tools consumed on this work order so stock levels and job history stay accurate.</p>
+              <div class="client-request-form-grid">
+                <label>Inventory item
+                  <select name="itemId" data-admin-work-order-inventory-item required>
+                    <option value="">Load inventory first</option>
+                  </select>
+                </label>
+                <label>Quantity used
+                  <input name="quantityUsed" type="number" min="0.01" step="0.01" placeholder="1" required>
+                </label>
+                <label class="full">Usage note
+                  <input name="adjustmentNote" placeholder="Used on drywall patch, installed on site, moved to truck">
+                </label>
+              </div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Record inventory usage</button><span data-admin-work-order-inventory-status aria-live="polite"></span></div>
+              <div class="admin-assignment-list" data-admin-work-order-inventory-usage></div>
+            </form>
           </div>
         </section>
       </div>
@@ -746,6 +766,7 @@
                 <option value="job">Requests &amp; work orders</option>
                 <option value="quote">Quotes</option>
                 <option value="payment">Invoices &amp; payments</option>
+                <option value="inventory">Inventory</option>
                 <option value="user">Users &amp; roles</option>
               </select>
             </label>
@@ -960,6 +981,8 @@
       const currentAdminQuotes = new Map();
       let currentAdminInvoices = [];
       let currentAdminActivity = [];
+      let currentAdminInventoryItems = [];
+      let currentAdminInventoryUsage = [];
       let currentProfileUser = null;
       let adminActivityLoaded = false;
       let adminActivityFilterTimer = null;
@@ -1347,6 +1370,7 @@
         const entityType = event.entityType || '';
         if (eventType.includes('quote') || entityType === 'quote') return 'quote';
         if (eventType.includes('payment') || eventType.includes('invoice') || ['invoice', 'payment'].includes(entityType)) return 'payment';
+        if (eventType.includes('inventory') || entityType === 'inventory_item') return 'inventory';
         if (eventType.includes('user') || eventType.includes('role') || ['user', 'role'].includes(entityType)) return 'user';
         if (eventType.includes('job') || eventType.includes('request') || eventType.includes('worker_assignment') || ['job_request', 'worker_assignment'].includes(entityType)) return 'job';
         return 'other';
@@ -1361,6 +1385,9 @@
           event.actor?.fullName,
           event.actor?.email,
           metadata.status,
+          metadata.name,
+          metadata.adjustmentType,
+          metadata.quantityDelta,
           metadata.jobRequestId,
           metadata.invoiceId,
           metadata.paymentId,
@@ -1374,6 +1401,9 @@
         const metadata = event.metadata || {};
         const metadataSummary = [
           metadata.status ? `Status: ${metadata.status}` : '',
+          metadata.name ? `Item: ${metadata.name}` : '',
+          metadata.adjustmentType ? `Adjustment: ${metadata.adjustmentType}` : '',
+          metadata.quantityDelta ? `Qty: ${metadata.quantityDelta}` : '',
           metadata.jobRequestId ? `Request: ${metadata.jobRequestId}` : '',
           metadata.invoiceId ? `Invoice: ${metadata.invoiceId}` : '',
           metadata.paymentId ? `Payment: ${metadata.paymentId}` : '',
@@ -1425,6 +1455,56 @@
           control.addEventListener('input', () => { renderAdminActivityList(); scheduleAdminActivityReload(); });
           control.addEventListener('change', () => { renderAdminActivityList(); scheduleAdminActivityReload(); });
         });
+      };
+
+      const renderAdminWorkOrderInventoryUsage = (usage = []) => {
+        const usageList = document.querySelector('[data-admin-work-order-inventory-usage]');
+        if (!usageList) return;
+        usageList.innerHTML = usage.length ? usage.map((entry) => `
+          <article class="admin-assignment">
+            <span class="admin-assignment-badge">${escapeHtml(entry.adjustmentType || 'used')}</span>
+            <strong>${escapeHtml(entry.item?.name || 'Inventory item')}</strong>
+            <div class="admin-assignment-meta">
+              <span>${escapeHtml(`${Math.abs(Number(entry.quantityDelta || 0))} ${entry.item?.unit || ''}`.trim())}</span>
+              <span>${escapeHtml(entry.createdAt ? formatDate(String(entry.createdAt).slice(0, 10)) : 'No date')}</span>
+              <span>${escapeHtml(entry.createdBy?.fullName || entry.createdBy?.email || 'Admin')}</span>
+            </div>
+            ${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ''}
+          </article>
+        `).join('') : '<p class="session-status">No inventory usage recorded for this work order yet.</p>';
+      };
+
+      const populateAdminWorkOrderInventoryItems = () => {
+        const itemSelect = document.querySelector('[data-admin-work-order-inventory-item]');
+        if (!itemSelect) return;
+        const selectedItem = itemSelect.value;
+        itemSelect.innerHTML = '<option value="">Select inventory item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}${item.stockStatus === 'low' ? ' • low' : ''}</option>`).join('');
+        itemSelect.value = currentAdminInventoryItems.some((item) => item.id === selectedItem) ? selectedItem : '';
+      };
+
+      const loadAdminWorkOrderInventory = async (jobRequestId) => {
+        const panel = document.querySelector('[data-admin-work-order-inventory-panel]');
+        const status = document.querySelector('[data-admin-work-order-inventory-status]');
+        if (!panel) return;
+        panel.hidden = !currentProfileUser?.permissions?.canManageInventory;
+        if (panel.hidden) return;
+        if (status) status.textContent = 'Loading inventory usage…';
+        try {
+          const response = await fetch(`/api/admin/inventory?jobRequestId=${encodeURIComponent(jobRequestId)}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory usage is not available.');
+          currentAdminInventoryItems = result.items || [];
+          currentAdminInventoryUsage = result.usage || [];
+          populateAdminWorkOrderInventoryItems();
+          renderAdminWorkOrderInventoryUsage(currentAdminInventoryUsage);
+          if (status) status.textContent = currentAdminInventoryUsage.length ? `${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No inventory usage recorded yet.';
+        } catch (error) {
+          currentAdminInventoryItems = [];
+          currentAdminInventoryUsage = [];
+          populateAdminWorkOrderInventoryItems();
+          renderAdminWorkOrderInventoryUsage([]);
+          if (status) status.textContent = error.message;
+        }
       };
 
       const renderPropertyCard = (property) => `
@@ -1995,6 +2075,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
+        const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
+        const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
@@ -2010,6 +2092,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (statusRequestId) statusRequestId.value = request.id;
         if (quoteRequestId) quoteRequestId.value = request.id;
         if (assignmentRequestId) assignmentRequestId.value = request.id;
+        if (inventoryRequestId) inventoryRequestId.value = request.id;
+        if (inventoryForm) inventoryForm.reset();
         if (statusSelect) statusSelect.value = request.status;
         if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
         if (completionDate) completionDate.value = request.completionDate || '';
@@ -2030,6 +2114,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (assignmentList) {
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
+        loadAdminWorkOrderInventory(request.id);
         if (closeButton) closeButton.focus();
       };
 
@@ -2048,6 +2133,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const statusForm = document.querySelector('[data-admin-status-form]');
         const quoteForm = document.querySelector('[data-admin-quote-form]');
         const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const detail = document.querySelector('[data-admin-request-detail]');
 
         if (detail && !detail.dataset.closeActionsBound) {
@@ -2165,6 +2251,50 @@ Additional info from client: ${payload.additionalInfo}` : '';
           });
         }
 
+
+
+        if (inventoryForm && !inventoryForm.dataset.bound) {
+          inventoryForm.dataset.bound = 'true';
+          inventoryForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-work-order-inventory-status]');
+            const formData = new FormData(inventoryForm);
+            const quantityUsed = Number(formData.get('quantityUsed') || 0);
+            const jobRequestId = formData.get('jobRequestId');
+            const payload = {
+              itemId: formData.get('itemId'),
+              jobRequestId,
+              adjustmentType: 'used',
+              quantityDelta: -Math.abs(quantityUsed),
+              adjustmentNote: formData.get('adjustmentNote'),
+            };
+            if (!payload.itemId) {
+              if (formStatus) formStatus.textContent = 'Choose an inventory item.';
+              return;
+            }
+            if (!quantityUsed || quantityUsed <= 0) {
+              if (formStatus) formStatus.textContent = 'Enter a quantity used greater than zero.';
+              return;
+            }
+            if (formStatus) formStatus.textContent = 'Recording inventory usage…';
+            try {
+              const response = await fetch('/api/admin/inventory', {
+                method: 'PATCH',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not record inventory usage.');
+              inventoryForm.reset();
+              if (formStatus) formStatus.textContent = 'Inventory usage recorded.';
+              await loadAdminWorkOrderInventory(jobRequestId);
+              await loadAdminActivity();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
           quoteForm.addEventListener('submit', async (event) => {
@@ -2210,7 +2340,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const setModalOpen = (modal, open) => {
         if (!modal) return;
         modal.hidden = !open;
-        document.body.style.overflow = open ? 'hidden' : '';
+        const hasOpenModal = Boolean(document.querySelector('.admin-request-modal:not([hidden])'));
+        document.body.style.overflow = hasOpenModal ? 'hidden' : '';
       };
 
       const closeAdminRoleModal = () => setModalOpen(document.querySelector('[data-admin-role-modal]'), false);
@@ -2821,10 +2952,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageRequests) {
             loadAdminRequests();
             loadAdminActivity();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityLauncher();
           }
 
           if (result.user.permissions?.canViewAdminActivity) {

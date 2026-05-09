@@ -9,7 +9,7 @@ import {
 
 const DEFAULT_ACTIVITY_LIMIT = 50;
 const MAX_ACTIVITY_LIMIT = 100;
-const ACTIVITY_TYPE_FILTERS = new Set(['', 'job', 'quote', 'payment', 'user']);
+const ACTIVITY_TYPE_FILTERS = new Set(['', 'job', 'quote', 'payment', 'inventory', 'user']);
 
 const parsePositiveInteger = (value, fallback) => {
   const parsed = Number.parseInt(value || '', 10);
@@ -115,6 +115,7 @@ const listAdminActivity = async (db, { limit, offset, type = '', search = '', se
         or (${type} = ${'quote'} and (audit_events.event_type ilike ${'%quote%'} or audit_events.entity_type = ${'quote'}))
         or (${type} = ${'payment'} and (audit_events.event_type ilike ${'%payment%'} or audit_events.event_type ilike ${'%invoice%'} or audit_events.entity_type in (${'invoice'}, ${'payment'})))
         or (${type} = ${'user'} and (audit_events.event_type ilike ${'%user%'} or audit_events.event_type ilike ${'%role%'} or audit_events.entity_type in (${'user'}, ${'role'})))
+        or (${type} = ${'inventory'} and (audit_events.event_type ilike ${'%inventory%'} or audit_events.entity_type = ${'inventory_item'}))
         or (${type} = ${'job'} and (audit_events.event_type ilike ${'%job%'} or audit_events.event_type ilike ${'%request%'} or audit_events.event_type ilike ${'%worker_assignment%'} or audit_events.entity_type in (${'job_request'}, ${'worker_assignment'})))
       )
       and (
