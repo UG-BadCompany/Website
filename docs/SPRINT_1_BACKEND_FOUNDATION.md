@@ -144,12 +144,15 @@ Client onboarding should start from Request Work, which creates or updates the c
 
 ## Added in Sprint 1N
 
-- Worker assigned jobs now include a status filter dropdown for active, assigned, accepted, in-progress, blocked, completed, cancelled, and all jobs.
-- Worker completion updates require closeout notes and at least one photo/attachment filename before an assignment can be marked completed.
-- `0009_worker_completion_evidence.sql` adds completion notes, photo filename storage, and completion submission timestamps to worker assignments.
+- Saved quotes are now edited from the open admin work request instead of creating duplicate quotes after a request has already been quoted.
+- Worker-completed assignments move the job request to `pending_review` so an admin can verify with the client before marking it complete.
+- Clients can approve pending completed work from their own request list, which marks the request `completed`.
+- Dashboard copy now uses production-facing language and removes the implementation detail/secure gate placeholder card.
+- Profile editing is bound for signed-in users beyond client-only dashboards, and dashboard view switching is restricted to admins.
 
 ## Added in Sprint 1O
 
-- The worker section now shows a prominent status filter toolbar and opens each assignment in a focused work-order popup.
-- Worker work orders now include fields for progress notes, checklist items, material/parts notes, completion notes, and photo/attachment evidence.
-- `0010_worker_job_details.sql` adds worker material notes and checklist item storage to assignment records.
+- Added invoice and payment storage so admin-verified completed work moves into `waiting_payment` and opens a matching invoice.
+- Added client invoice viewing for unpaid invoices; paid invoices remain in the database but leave the active dashboard.
+- Added admin invoice/payment APIs and dashboard controls for confirming payment, which records a payment row and moves the job request to `completed`.
+- Active client/admin request dashboards now exclude completed paid work while preserving records in the system.
