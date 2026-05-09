@@ -11,7 +11,7 @@
 </style>
 </head>
 <body>
-<header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Client Portal</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
+<header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/dashboard/">Dashboard</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
 <main class="wrap">
 <section class="hero">
   <div class="hero-card">
@@ -45,6 +45,22 @@
 <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure client portal access for requests, properties, quotes, and project updates.</footer>
 <script>
   (() => {
+    const redirectExistingSession = async () => {
+      if (new URLSearchParams(window.location.search).has('signed-out')) return;
+
+      try {
+        const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.authenticated) {
+          window.location.replace('/dashboard/');
+        }
+      } catch {
+        // Stay on the magic-link request form if the session check is unavailable.
+      }
+    };
+
+    redirectExistingSession();
+
     const forms = document.querySelectorAll('[data-auth-form]');
 
     forms.forEach((form) => {
