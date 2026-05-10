@@ -110,8 +110,12 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
   assert.match(script, /requiredPermission = section\.dataset\.permission/, 'dashboard sections should support permission-gated navigation links');
   assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
+  assert.match(script, /const getInvoiceDisplayTitle =/, 'invoice rows should avoid repeating the invoice desk heading as an invoice title');
+  assert.match(script, /rawTitle\.toLowerCase\(\) !== 'invoice & payment desk'/, 'invoice rows should replace stale desk-heading titles with service-specific invoice labels');
+  assert.match(script, /const getDashboardSingletonKey =/, 'dashboard should identify singleton panels by marker, id, or heading');
   assert.match(script, /const dedupeDashboardSingletons = \(\) =>/, 'dashboard should remove duplicate singleton panels before choosing a role view');
   assert.match(script, /section\.remove\(\)/, 'duplicate singleton dashboard panels should be removed from the DOM');
+  assert.match(script, /currentProfileUser = user/, 'dashboard view selection should retain the active user permissions');
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
   assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
