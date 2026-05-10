@@ -47,37 +47,32 @@ const CURRENT_ADMIN_ACTIVITY_MIGRATION = '0015_admin_activity_permission.sql';
 const REQUIRED_APPLIED_MIGRATIONS = new Set();
 const RENAMED_APPLIED_MIGRATIONS = new Set();
 
-const listMigrationFiles = async () => (await readdir(MIGRATIONS_DIR))
+const listMigrationFiles = async (migrationsDir = MIGRATIONS_DIR) => (await readdir(migrationsDir))
   .filter((file) => file.endsWith('.sql'))
   .sort();
 
-const removeLegacyMigration = async ({ files, legacyMigration, currentMigration, label }) => {
+const removeLegacyMigration = async ({ files, legacyMigration, currentMigration, label, migrationsDir = MIGRATIONS_DIR }) => {
   if (!files.includes(legacyMigration)) {
     return { files, warnings: [] };
   }
 
-  if (!files.includes(currentMigration)) {
-    return {
-      files,
-      warnings: [`${legacyMigration} exists but ${currentMigration} is missing; not removing the only ${label} migration.`],
-    };
-  }
-
-  await unlink(new URL(legacyMigration, MIGRATIONS_DIR));
+  await unlink(new URL(legacyMigration, migrationsDir));
 
   return {
     files: files.filter((file) => file !== legacyMigration),
-    warnings: [`Removed stale cached ${legacyMigration}; ${label} now lives in ${currentMigration}.`],
+    warnings: [files.includes(currentMigration)
+      ? `Removed stale cached ${legacyMigration}; ${label} now lives in ${currentMigration}.`
+      : `Removed stale cached ${legacyMigration}; ${currentMigration} was not present in this deploy checkout, but ${legacyMigration} is an obsolete cached migration name.`],
   };
 };
 
-export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
-  let files = await listMigrationFiles();
+export const validateMigrationFiles = async ({ repairLegacy = false, migrationsDir = MIGRATIONS_DIR } = {}) => {
+  let files = await listMigrationFiles(migrationsDir);
   const warnings = [];
 
   if (repairLegacy) {
     for (const legacy of LEGACY_MIGRATIONS) {
-      const repaired = await removeLegacyMigration({ files, ...legacy });
+      const repaired = await removeLegacyMigration({ files, migrationsDir, ...legacy });
       files = repaired.files;
       warnings.push(...repaired.warnings);
     }
