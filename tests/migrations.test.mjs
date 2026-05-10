@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { rm, stat, writeFile } from 'node:fs/promises';
+import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -11,6 +11,15 @@ test('Netlify Database migrations use unique numeric prefixes', async () => {
   const { errors } = await validateMigrationFiles();
 
   assert.deepEqual(errors, [], 'Migration files must pass Netlify Database validation.');
+});
+
+
+test('invoice title backfill migration removes dashboard heading copy', async () => {
+  const migration = await readFile(new URL('../netlify/database/migrations/0017_normalize_invoice_titles.sql', import.meta.url), 'utf8');
+
+  assert.match(migration, /lower\(trim\(invoices\.title\)\) = 'invoice & payment desk'/);
+  assert.match(migration, /coalesce\(nullif\(trim\(job_requests\.service_type\), ''\), 'Completed work'\)/);
+  assert.match(migration, /updated_at = now\(\)/);
 });
 
 
