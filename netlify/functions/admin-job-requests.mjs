@@ -23,6 +23,14 @@ const ADMIN_STATUSES = new Set([
   'cancelled',
 ]);
 
+const RESERVED_INVOICE_TITLES = new Set(['invoice & payment desk']);
+
+const getInvoiceTitle = ({ quoteTitle = '', serviceType = '' } = {}) => {
+  const rawQuoteTitle = clean(quoteTitle, 180);
+  if (rawQuoteTitle && !RESERVED_INVOICE_TITLES.has(rawQuoteTitle.toLowerCase())) return rawQuoteTitle;
+  return `${clean(serviceType, 120) || 'Service'} invoice`;
+};
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const normalizeRequestScope = (value) => {
@@ -344,7 +352,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
 
         [invoice] = await db.sql`
           insert into invoices (job_request_id, client_id, quote_id, status, title, amount_cents, created_by)
-          values (${updatedRequest.id}, ${quoteForInvoice?.client_id || null}, ${quoteForInvoice?.id || null}, ${'open'}, ${quoteForInvoice?.title || `${updatedRequest.service_type || 'Service'} invoice`}, ${quoteForInvoice?.amount_cents || 0}, ${session.user_id})
+          values (${updatedRequest.id}, ${quoteForInvoice?.client_id || null}, ${quoteForInvoice?.id || null}, ${'open'}, ${getInvoiceTitle({ quoteTitle: quoteForInvoice?.title, serviceType: updatedRequest.service_type })}, ${quoteForInvoice?.amount_cents || 0}, ${session.user_id})
           on conflict (job_request_id) do update set
             client_id = coalesce(invoices.client_id, excluded.client_id),
             quote_id = coalesce(invoices.quote_id, excluded.quote_id),

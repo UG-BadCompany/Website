@@ -21,12 +21,22 @@ const normalizePaymentPayload = (body = {}) => ({
   reference: clean(body.reference, 160),
 });
 
+const RESERVED_INVOICE_TITLES = new Set(['invoice & payment desk']);
+
+const getInvoiceTitle = (invoice = {}) => {
+  const rawTitle = clean(invoice.title, 180);
+  if (rawTitle && !RESERVED_INVOICE_TITLES.has(rawTitle.toLowerCase())) return rawTitle;
+  const service = clean(invoice.service_type, 120) || 'Completed work';
+  const client = clean(invoice.client_full_name || invoice.client_email, 120);
+  return `${service}${client ? ` — ${client}` : ''} invoice`;
+};
+
 const mapInvoice = (invoice) => ({
   id: invoice.id,
   jobRequestId: invoice.job_request_id,
   clientId: invoice.client_id,
   status: invoice.status,
-  title: invoice.title,
+  title: getInvoiceTitle(invoice),
   amountCents: invoice.amount_cents,
   paidAt: invoice.paid_at,
   createdAt: invoice.created_at,

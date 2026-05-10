@@ -295,14 +295,14 @@ test('admin job request endpoint verifies completion by moving request to waitin
       created_at: '2026-05-07T00:00:00.000Z',
       updated_at: '2026-05-14T00:00:00.000Z',
     }],
-    [{ id: 'quote-1', client_id: 'client-1', title: 'Drywall repair quote', amount_cents: 42500 }],
+    [{ id: 'quote-1', client_id: 'client-1', title: 'Invoice & payment desk', amount_cents: 42500 }],
     [{
       id: 'invoice-1',
       job_request_id: 'job-1',
       client_id: 'client-1',
       quote_id: 'quote-1',
       status: 'open',
-      title: 'Drywall repair quote',
+      title: 'Drywall repair invoice',
       amount_cents: 42500,
       created_at: '2026-05-14T00:00:00.000Z',
       updated_at: '2026-05-14T00:00:00.000Z',
@@ -321,5 +321,5 @@ test('admin job request endpoint verifies completion by moving request to waitin
   assert.equal(response.body.invoice.id, 'invoice-1');
   assert.match(db.queries[4].text, /from quotes/);
   assert.match(db.queries[5].text, /insert into invoices/);
-  assert.deepEqual(db.queries[5].values.slice(0, 7), ['job-1', 'client-1', 'quote-1', 'open', 'Drywall repair quote', 42500, 'admin-1']);
+  assert.deepEqual(db.queries[5].values.slice(0, 7), ['job-1', 'client-1', 'quote-1', 'open', 'Drywall repair invoice', 42500, 'admin-1']);
 });

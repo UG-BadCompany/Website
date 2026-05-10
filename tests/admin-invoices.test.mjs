@@ -31,7 +31,7 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
       job_request_id: 'job-1',
       client_id: 'client-1',
       status: 'open',
-      title: 'Repair invoice',
+      title: 'Invoice & payment desk',
       amount_cents: 42500,
       paid_at: null,
       created_at: '2026-05-09T00:00:00.000Z',
@@ -50,6 +50,7 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
   assert.equal(response.status, 200);
   assert.equal(response.body.invoices.length, 1);
   assert.equal(response.body.summary.amountDueCents, 42500);
+  assert.equal(response.body.invoices[0].title, 'Drywall repair — Client invoice');
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
