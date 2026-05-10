@@ -1,0 +1,234 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createAdminInventoryHandler } from '../netlify/functions/admin-inventory.mjs';
+import { hashToken } from '../netlify/functions/auth-utils.mjs';
+
+const readJson = async (response) => ({ status: response.status, body: await response.json() });
+const createMockDb = (responses = []) => ({
+  queries: [],
+  sql(strings, ...values) {
+    this.queries.push({ text: strings.join('?'), values });
+    return responses.shift() || [];
+  },
+});
+
+test('admin inventory endpoint requires a signed-in session', async () => {
+  let openedDatabase = false;
+  const handler = createAdminInventoryHandler({ getDatabase: async () => { openedDatabase = true; return createMockDb(); } });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory')));
+  assert.equal(response.status, 401);
+  assert.equal(response.body.authenticated, false);
+  assert.equal(openedDatabase, false);
+});
+
+test('admin inventory endpoint rejects users without inventory permission', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [{ key: 'client' }],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', { headers: { cookie: 'ta_session=session-token' } })));
+  assert.equal(response.status, 403);
+  assert.equal(response.body.authorized, false);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+test('admin inventory endpoint lists active items and low-stock summary', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [
+      { id: 'item-1', name: 'Drywall screws', sku: 'DW-1', category: 'Fasteners', unit: 'box', quantity_on_hand: 2, reorder_point: 5, supplier: 'Supply Co', storage_location: 'Shelf A', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' },
+      { id: 'item-2', name: 'Paint roller', sku: 'PR-1', category: 'Paint', unit: 'each', quantity_on_hand: 12, reorder_point: 4, supplier: '', storage_location: 'Shelf B', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' },
+    ],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', { headers: { cookie: 'ta_session=session-token' } })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.items.length, 2);
+  assert.equal(response.body.items[0].stockStatus, 'low');
+  assert.equal(response.body.summary.lowStock, 1);
+  assert.match(db.queries[4].text, /from inventory_items/);
+});
+
+test('admin inventory endpoint creates an item and writes audit event', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'item-1', name: 'Caulk', sku: 'CA-1', category: 'Sealants', unit: 'tube', quantity_on_hand: 10, reorder_point: 3, supplier: 'Supply Co', storage_location: 'Van', notes: 'White', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'POST',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Caulk', sku: 'CA-1', category: 'Sealants', unit: 'tube', quantityOnHand: 10, reorderPoint: 3, supplier: 'Supply Co', storageLocation: 'Van', notes: 'White' }),
+  })));
+  assert.equal(response.status, 201);
+  assert.equal(response.body.item.name, 'Caulk');
+  assert.match(db.queries[4].text, /insert into inventory_items/);
+  assert.equal(db.queries[5].values[1], 'inventory.created');
+});
+
+test('admin inventory endpoint records quantity adjustments', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'item-1', name: 'Drywall screws', sku: 'DW-1', category: 'Fasteners', unit: 'box', quantity_on_hand: 7, reorder_point: 5, supplier: '', storage_location: 'Shelf A', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
+    [{ id: 'adjustment-1', inventory_item_id: 'item-1', adjustment_type: 'received', quantity_delta: 5, note: 'Restocked', created_at: '2026-05-09T00:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ itemId: 'item-1', quantityDelta: 5, adjustmentType: 'received', adjustmentNote: 'Restocked' }),
+  })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.item.quantityOnHand, 7);
+  assert.equal(response.body.adjustment.quantityDelta, 5);
+  assert.match(db.queries[4].text, /update inventory_items/);
+  assert.equal(db.queries[6].values[1], 'inventory.adjusted');
+});
+
+test('admin inventory endpoint updates item details and writes audit event', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'item-1', name: 'Updated screws', sku: 'DW-2', category: 'Fasteners', unit: 'box', quantity_on_hand: 7, reorder_point: 8, supplier: 'Supply Co', storage_location: 'Shelf C', notes: 'Coarse thread', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'update', itemId: 'item-1', name: 'Updated screws', sku: 'DW-2', category: 'Fasteners', unit: 'box', reorderPoint: 8, supplier: 'Supply Co', storageLocation: 'Shelf C', notes: 'Coarse thread' }),
+  })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.item.name, 'Updated screws');
+  assert.equal(response.body.item.reorderPoint, 8);
+  assert.match(db.queries[4].text, /update inventory_items/);
+  assert.match(db.queries[4].text, /reorder_point/);
+  assert.equal(db.queries[5].values[1], 'inventory.updated');
+});
+
+test('admin inventory endpoint archives items and writes audit event', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'item-1', name: 'Old roller', sku: 'OR-1', category: 'Paint', unit: 'each', quantity_on_hand: 1, reorder_point: 0, supplier: '', storage_location: 'Shelf D', notes: '', is_active: false, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'archive', itemId: 'item-1' }),
+  })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.item.isActive, false);
+  assert.match(db.queries[4].text, /set is_active = false/);
+  assert.equal(db.queries[5].values[1], 'inventory.archived');
+});
+
+test('admin inventory endpoint returns usage for a selected work order', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'item-1', name: 'Drywall screws', sku: 'DW-1', category: 'Fasteners', unit: 'box', quantity_on_hand: 7, reorder_point: 5, supplier: '', storage_location: 'Shelf A', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
+    [{ id: 'adjustment-1', inventory_item_id: 'item-1', job_request_id: 'job-1', adjustment_type: 'used', quantity_delta: -2, note: 'Used on drywall patch', created_by: 'admin-1', created_at: '2026-05-09T00:00:00.000Z', item_name: 'Drywall screws', item_sku: 'DW-1', item_category: 'Fasteners', item_unit: 'box', created_by_full_name: 'Admin', created_by_email: 'admin@example.com' }],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory?jobRequestId=job-1', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.items.length, 1);
+  assert.equal(response.body.usage.length, 1);
+  assert.equal(response.body.usage[0].jobRequestId, 'job-1');
+  assert.equal(response.body.usage[0].item.name, 'Drywall screws');
+  assert.equal(response.body.usage[0].quantityDelta, -2);
+  assert.match(db.queries[5].text, /from inventory_adjustments/);
+  assert.equal(db.queries[5].values[0], 'job-1');
+});
+
+test('admin inventory endpoint links used materials to work orders', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'job-1', service_type: 'Drywall repair', status: 'in_progress' }],
+    [{ id: 'item-1', name: 'Drywall screws', sku: 'DW-1', category: 'Fasteners', unit: 'box', quantity_on_hand: 5, reorder_point: 5, supplier: '', storage_location: 'Shelf A', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }],
+    [{ id: 'adjustment-1', inventory_item_id: 'item-1', adjustment_type: 'used', quantity_delta: -2, note: 'Used on job', job_request_id: 'job-1', created_at: '2026-05-09T00:00:00.000Z' }],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ itemId: 'item-1', quantityDelta: -2, adjustmentType: 'used', adjustmentNote: 'Used on job', jobRequestId: 'job-1' }),
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.adjustment.jobRequestId, 'job-1');
+  assert.equal(response.body.adjustment.quantityDelta, -2);
+  assert.match(db.queries[4].text, /from job_requests/);
+  assert.equal(db.queries[4].values[0], 'job-1');
+  assert.match(db.queries[6].text, /job_request_id/);
+  assert.equal(db.queries[6].values[4], 'job-1');
+  assert.equal(db.queries[7].values[1], 'inventory.used');
+  assert.match(db.queries[7].values[4], /Drywall repair/);
+});
+
+
+test('admin inventory endpoint rejects work order usage when the job is missing or stock would increase', async () => {
+  const missingJobDb = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [],
+  ]);
+  const handler = createAdminInventoryHandler({ getDatabase: async () => missingJobDb });
+  const missingJobResponse = await readJson(await handler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ itemId: 'item-1', quantityDelta: -1, adjustmentType: 'used', jobRequestId: 'missing-job' }),
+  })));
+
+  assert.equal(missingJobResponse.status, 404);
+  assert.match(missingJobResponse.body.message, /work order/i);
+  assert.match(missingJobDb.queries[4].text, /from job_requests/);
+
+  const increaseDb = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+    [{ id: 'job-1', service_type: 'Drywall repair', status: 'in_progress' }],
+  ]);
+  const increaseHandler = createAdminInventoryHandler({ getDatabase: async () => increaseDb });
+  const increaseResponse = await readJson(await increaseHandler(new Request('https://site.test/api/admin/inventory', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ itemId: 'item-1', quantityDelta: 2, adjustmentType: 'used', jobRequestId: 'job-1' }),
+  })));
+
+  assert.equal(increaseResponse.status, 400);
+  assert.match(increaseResponse.body.message, /subtract inventory/i);
+  assert.equal(increaseDb.queries.length, 5);
+});
