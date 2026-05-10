@@ -35,6 +35,13 @@ const LEGACY_MIGRATIONS = [
   },
 ];
 
+// Keep these named constants defined for older/conflicted deploy diffs that may
+// still reference the pre-table migration guard names during Netlify prebuild.
+const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
+const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
+const LEGACY_ADMIN_ACTIVITY_MIGRATION = '0011_admin_activity_permission.sql';
+const CURRENT_ADMIN_ACTIVITY_MIGRATION = '0015_admin_activity_permission.sql';
+
 // Keep these compatibility guards defined so older/conflicted PR diffs that still
 // reference them cannot crash prebuild with a ReferenceError before validation runs.
 const REQUIRED_APPLIED_MIGRATIONS = new Set();
@@ -84,10 +91,6 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     .forEach(({ legacyMigration, currentMigration, label }) => {
       errors.push(`${legacyMigration} must not exist; ${label} now lives in ${currentMigration}.`);
     });
-
-  if (files.includes(LEGACY_ADMIN_ACTIVITY_MIGRATION)) {
-    errors.push(`${LEGACY_ADMIN_ACTIVITY_MIGRATION} must not exist; admin activity permission now lives in ${CURRENT_ADMIN_ACTIVITY_MIGRATION}.`);
-  }
 
   files.forEach((file) => {
     const match = file.match(MIGRATION_PREFIX_PATTERN);
