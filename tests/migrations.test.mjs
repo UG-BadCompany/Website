@@ -17,9 +17,12 @@ test('Netlify Database migrations use unique numeric prefixes', async () => {
 test('invoice title backfill migration removes dashboard heading copy', async () => {
   const migration = await readFile(new URL('../netlify/database/migrations/0017_normalize_invoice_titles.sql', import.meta.url), 'utf8');
 
+  assert.match(migration, /with normalized_invoice_titles as/);
   assert.match(migration, /lower\(trim\(invoices\.title\)\) = 'invoice & payment desk'/);
   assert.match(migration, /coalesce\(nullif\(trim\(job_requests\.service_type\), ''\), 'Completed work'\)/);
-  assert.match(migration, /updated_at = now\(\)/);
+  assert.match(migration, /set title = normalized_invoice_titles\.title/);
+  assert.match(migration, /where invoices\.id = normalized_invoice_titles\.id/);
+  assert.doesNotMatch(migration, /update invoices[\s\S]*from job_requests[\s\S]*clients\.id = invoices\.client_id/i, 'target table should not be referenced inside a direct UPDATE FROM join');
 });
 
 
