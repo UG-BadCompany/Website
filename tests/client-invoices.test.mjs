@@ -20,7 +20,7 @@ test('client invoices endpoint returns only unpaid client invoices', async () =>
       id: 'invoice-1',
       job_request_id: 'job-1',
       status: 'open',
-      title: 'Repair invoice',
+      title: 'Invoice & payment desk',
       amount_cents: 42500,
       due_at: null,
       paid_at: null,
@@ -37,6 +37,7 @@ test('client invoices endpoint returns only unpaid client invoices', async () =>
   assert.equal(response.status, 200);
   assert.equal(response.body.invoices.length, 1);
   assert.equal(response.body.summary.amountDueCents, 42500);
+  assert.equal(response.body.invoices[0].title, 'Drywall repair invoice');
   assert.match(db.queries[3].text, /invoices.status <> 'paid'/);
   assert.equal(db.queries[3].values[0], 'client-1');
   assert.equal(db.queries[3].values[1], 'client-1');
