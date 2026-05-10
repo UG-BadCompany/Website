@@ -57,6 +57,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /Run today’s work from one command center/, 'admin command center should use production-facing operations copy');
   assert.match(html, /Work order command center/, 'admin work order section should use cleaner operations copy');
   assert.match(html, /Invoice &amp; payment desk|Invoice & payment desk/, 'admin invoices should use clearer payment desk copy');
+  assert.equal((html.match(/Invoice &amp; payment desk/g) || []).length, 1, 'admin invoice desk should render only one heading');
+  assert.equal((html.match(/data-dashboard-singleton=\"admin-invoices\"/g) || []).length, 1, 'admin invoice desk should be marked as a singleton section');
   assert.match(html, /Activity audit trail/, 'admin activity modal should use audit-trail copy');
   assert.match(html, /data-admin-access-shortcut/, 'admin command center should open roles and users');
   assert.match(html, /data-admin-activity-shortcut/, 'admin command center should open activity');
@@ -108,6 +110,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoices awaiting payment confirmation');
   assert.match(script, /requiredPermission = section\.dataset\.permission/, 'dashboard sections should support permission-gated navigation links');
   assert.match(script, /const renderAdminInvoiceSummary =/, 'admins should render invoice totals');
+  assert.match(script, /const dedupeDashboardSingletons = \(\) =>/, 'dashboard should remove duplicate singleton panels before choosing a role view');
+  assert.match(script, /section\.remove\(\)/, 'duplicate singleton dashboard panels should be removed from the DOM');
   assert.match(script, /const renderAdminActivityCard =/, 'admins should render recent audit activity');
   assert.match(script, /const renderAdminActivityList =/, 'admins should render filtered audit activity');
   assert.match(script, /const bindAdminActivityFilters =/, 'admins should bind activity filters');
