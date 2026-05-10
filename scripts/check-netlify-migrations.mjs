@@ -85,6 +85,10 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
       errors.push(`${legacyMigration} must not exist; ${label} now lives in ${currentMigration}.`);
     });
 
+  if (files.includes(LEGACY_ADMIN_ACTIVITY_MIGRATION)) {
+    errors.push(`${LEGACY_ADMIN_ACTIVITY_MIGRATION} must not exist; admin activity permission now lives in ${CURRENT_ADMIN_ACTIVITY_MIGRATION}.`);
+  }
+
   files.forEach((file) => {
     const match = file.match(MIGRATION_PREFIX_PATTERN);
 

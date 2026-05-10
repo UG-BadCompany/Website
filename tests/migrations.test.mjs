@@ -65,6 +65,8 @@ test('migration validator removes stale cached admin activity migration before b
   }
 });
 
+test('migration prebuild script runs without undefined migration guard references', async () => {
+  const { stdout } = await execFileAsync(process.execPath, ['scripts/check-netlify-migrations.mjs']);
 
 test('migration validator removes stale cached deploy-era migration names before build validation', async () => {
   const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
