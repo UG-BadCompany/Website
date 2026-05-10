@@ -68,6 +68,35 @@ test('migration validator removes stale cached admin activity migration before b
 test('migration prebuild script runs without undefined migration guard references', async () => {
   const { stdout } = await execFileAsync(process.execPath, ['scripts/check-netlify-migrations.mjs']);
 
+test('migration validator removes stale cached deploy-era migration names before build validation', async () => {
+  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
+  const staleMigrations = [
+    '0011_completion_review_status.sql',
+    '0012_quote_payment_completion_controls.sql',
+    '0013_invoices_payments.sql',
+    '0014_worker_completion_evidence.sql',
+  ];
+
+  await Promise.all(staleMigrations.map((file) => writeFile(new URL(file, migrationsDir), `-- stale cached duplicate ${file}
+`)));
+
+  try {
+    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
+
+    assert.deepEqual(errors, [], 'Repair mode should remove stale deploy-era migration names.');
+    staleMigrations.forEach((file) => {
+      assert.equal(files.includes(file), false);
+      assert.equal(warnings.some((warning) => warning.includes(`Removed stale cached ${file}`)), true);
+    });
+    assert.equal(files.includes('0009_completion_review_status.sql'), true);
+    assert.equal(files.includes('0010_invoices_payments.sql'), true);
+    await Promise.all(staleMigrations.map((file) => assert.rejects(stat(new URL(file, migrationsDir)), { code: 'ENOENT' })));
+  } finally {
+    await Promise.all(staleMigrations.map((file) => rm(new URL(file, migrationsDir), { force: true })));
+  }
+});
+
+
 test('migration prebuild script runs without undefined migration guard references', async () => {
   const { stdout } = await execFileAsync(process.execPath, ['scripts/check-netlify-migrations.mjs']);
 

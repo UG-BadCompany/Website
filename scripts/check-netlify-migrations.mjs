@@ -2,10 +2,38 @@ import { readdir, unlink } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
-const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
-const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
-const LEGACY_ADMIN_ACTIVITY_MIGRATION = '0011_admin_activity_permission.sql';
-const CURRENT_ADMIN_ACTIVITY_MIGRATION = '0015_admin_activity_permission.sql';
+const LEGACY_MIGRATIONS = [
+  {
+    legacyMigration: '0004_custom_roles_permissions.sql',
+    currentMigration: '0005_custom_roles_permissions.sql',
+    label: 'custom role permissions',
+  },
+  {
+    legacyMigration: '0011_admin_activity_permission.sql',
+    currentMigration: '0015_admin_activity_permission.sql',
+    label: 'admin activity permission',
+  },
+  {
+    legacyMigration: '0011_completion_review_status.sql',
+    currentMigration: '0009_completion_review_status.sql',
+    label: 'completion review status',
+  },
+  {
+    legacyMigration: '0012_quote_payment_completion_controls.sql',
+    currentMigration: '0010_invoices_payments.sql',
+    label: 'quote payment completion controls',
+  },
+  {
+    legacyMigration: '0013_invoices_payments.sql',
+    currentMigration: '0010_invoices_payments.sql',
+    label: 'invoice and payment tables',
+  },
+  {
+    legacyMigration: '0014_worker_completion_evidence.sql',
+    currentMigration: '0009_completion_review_status.sql',
+    label: 'worker completion review status',
+  },
+];
 
 // Keep these compatibility guards defined so older/conflicted PR diffs that still
 // reference them cannot crash prebuild with a ReferenceError before validation runs.
@@ -36,27 +64,13 @@ const removeLegacyMigration = async ({ files, legacyMigration, currentMigration,
   };
 };
 
-const removeLegacyCustomRoleMigration = async (files) => removeLegacyMigration({
-  files,
-  legacyMigration: LEGACY_CUSTOM_ROLE_MIGRATION,
-  currentMigration: CURRENT_CUSTOM_ROLE_MIGRATION,
-  label: 'custom role permissions',
-});
-
-const removeLegacyAdminActivityMigration = async (files) => removeLegacyMigration({
-  files,
-  legacyMigration: LEGACY_ADMIN_ACTIVITY_MIGRATION,
-  currentMigration: CURRENT_ADMIN_ACTIVITY_MIGRATION,
-  label: 'admin activity permission',
-});
-
 export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
   let files = await listMigrationFiles();
   const warnings = [];
 
   if (repairLegacy) {
-    for (const repair of [removeLegacyCustomRoleMigration, removeLegacyAdminActivityMigration]) {
-      const repaired = await repair(files);
+    for (const legacy of LEGACY_MIGRATIONS) {
+      const repaired = await removeLegacyMigration({ files, ...legacy });
       files = repaired.files;
       warnings.push(...repaired.warnings);
     }
@@ -65,9 +79,11 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
   const prefixes = new Map();
   const errors = [];
 
-  if (files.includes(LEGACY_CUSTOM_ROLE_MIGRATION)) {
-    errors.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} must not exist; custom role permissions now live in ${CURRENT_CUSTOM_ROLE_MIGRATION}.`);
-  }
+  LEGACY_MIGRATIONS
+    .filter(({ legacyMigration }) => files.includes(legacyMigration))
+    .forEach(({ legacyMigration, currentMigration, label }) => {
+      errors.push(`${legacyMigration} must not exist; ${label} now lives in ${currentMigration}.`);
+    });
 
   if (files.includes(LEGACY_ADMIN_ACTIVITY_MIGRATION)) {
     errors.push(`${LEGACY_ADMIN_ACTIVITY_MIGRATION} must not exist; admin activity permission now lives in ${CURRENT_ADMIN_ACTIVITY_MIGRATION}.`);
