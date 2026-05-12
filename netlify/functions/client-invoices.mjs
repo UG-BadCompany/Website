@@ -11,11 +11,20 @@ const mapDate = (value) => {
   return String(value);
 };
 
+const RESERVED_INVOICE_TITLES = new Set(['invoice & payment desk']);
+
+const getInvoiceTitle = (invoice = {}) => {
+  const rawTitle = String(invoice.title || '').trim();
+  if (rawTitle && !RESERVED_INVOICE_TITLES.has(rawTitle.toLowerCase())) return rawTitle;
+  const service = String(invoice.service_type || '').trim() || 'Completed work';
+  return `${service} invoice`;
+};
+
 const mapInvoice = (invoice) => ({
   id: invoice.id,
   jobRequestId: invoice.job_request_id,
   status: invoice.status,
-  title: invoice.title,
+  title: getInvoiceTitle(invoice),
   amountCents: invoice.amount_cents,
   dueAt: mapDate(invoice.due_at),
   paidAt: mapDate(invoice.paid_at),
