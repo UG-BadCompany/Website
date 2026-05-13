@@ -292,8 +292,6 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
     values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
-      auth_provider = case when app_users.auth_provider = 'pending' then 'magic_link' else app_users.auth_provider end,
-      auth_subject = case when app_users.auth_provider = 'pending' or app_users.auth_subject is null then excluded.auth_subject else app_users.auth_subject end,
       full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
       phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
       is_active = true,
