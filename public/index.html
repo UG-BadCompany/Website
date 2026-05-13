@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T&A Contracting | Arizona Maintenance, Repairs & Improvements</title>
+  <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quote approvals, client requests, and online payments.">
+  <style>
+    :root {
+      --ink: #111111;
+      --charcoal: #25211f;
+      --rust: #ad3f18;
+      --rust-dark: #7d2b13;
+      --copper: #d88734;
+      --sand: #f3dfc8;
+      --cream: #fff8ee;
+      --white: #ffffff;
+      --muted: #706760;
+      --line: rgba(17, 17, 17, 0.1);
+      --soft-shadow: 0 22px 70px rgba(45, 27, 13, 0.12);
+      --card-shadow: 0 18px 45px rgba(45, 27, 13, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 84% 6%, rgba(216, 135, 52, 0.22), transparent 28rem),
+        radial-gradient(circle at 6% 12%, rgba(173, 63, 24, 0.12), transparent 24rem),
+        linear-gradient(180deg, #fffaf4 0%, #ffffff 42%, #fff7ec 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .site-shell { min-height: 100vh; overflow: hidden; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(255, 250, 244, 0.84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 14px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .brand-logo {
+      display: block;
+      width: 82px;
+      height: 56px;
+      object-fit: contain;
+    }
+
+    .brand span { white-space: nowrap; }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--charcoal);
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border: 1px solid rgba(17, 17, 17, 0.12);
+      border-radius: 999px;
+      font-weight: 900;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 16px 30px rgba(173, 63, 24, 0.16); }
+    .btn-primary { color: var(--white); background: linear-gradient(135deg, var(--rust), var(--rust-dark)); border-color: transparent; }
+    .btn-secondary { color: var(--ink); background: rgba(255,255,255,0.82); }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: clamp(28px, 5vw, 74px);
+      align-items: center;
+      width: min(1180px, calc(100% - 36px));
+      margin: 54px auto 0;
+      padding: clamp(28px, 5vw, 64px);
+      border: 1px solid rgba(17, 17, 17, 0.1);
+      border-radius: 36px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(173, 63, 24, 0.08), transparent 42%);
+      pointer-events: none;
+    }
+
+    .hero-content, .hero-media { position: relative; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 8px 12px;
+      border: 1px solid rgba(173, 63, 24, 0.18);
+      border-radius: 999px;
+      color: var(--rust);
+      background: rgba(255, 248, 238, 0.88);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    h1 {
+      max-width: 790px;
+      margin: 0;
+      font-size: clamp(3.2rem, 7vw, 6.75rem);
+      line-height: 0.94;
+      letter-spacing: -0.075em;
+    }
+
+    .hero-copy {
+      max-width: 650px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(1.08rem, 2vw, 1.26rem);
+      line-height: 1.7;
+      font-weight: 620;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
+
+    .trust-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .trust-pill {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .trust-pill strong { display: block; color: var(--ink); font-size: 1.1rem; margin-bottom: 3px; }
+
+    .hero-media {
+      display: grid;
+      place-items: center;
+      min-height: 470px;
+      border-radius: 30px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.76), rgba(255,248,238,0.9)),
+        radial-gradient(circle at 50% 12%, rgba(216, 135, 52, 0.24), transparent 18rem);
+      border: 1px solid rgba(17, 17, 17, 0.08);
+    }
+
+    .hero-logo {
+      display: block;
+      width: min(100%, 610px);
+      height: auto;
+      padding: clamp(14px, 3vw, 28px);
+      filter: drop-shadow(0 24px 34px rgba(35, 20, 11, 0.16));
+    }
+
+    .section {
+      width: min(1180px, calc(100% - 36px));
+      margin: 88px auto;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      max-width: 770px;
+      margin: 0;
+      font-size: clamp(2.25rem, 4.3vw, 4.6rem);
+      line-height: 0.98;
+      letter-spacing: -0.06em;
+    }
+
+    .section-heading p {
+      max-width: 430px;
+      margin: 0;
+      color: var(--muted);
+      font-weight: 620;
+      line-height: 1.65;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+    .service-card, .workflow-card {
+      position: relative;
+      min-height: 180px;
+      padding: 26px;
+      border: 1px solid rgba(17, 17, 17, 0.09);
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+
+    .service-card::before, .workflow-card::before {
+      content: "";
+      position: absolute;
+      left: 26px;
+      top: 0;
+      width: 54px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--rust), var(--copper));
+    }
+
+    .service-card strong, .workflow-card strong { display: block; margin-bottom: 11px; font-size: 1.18rem; font-weight: 950; }
+    .service-card p, .workflow-card p { margin: 0; color: var(--muted); line-height: 1.58; font-weight: 620; }
+
+    .band {
+      padding: clamp(28px, 5vw, 54px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 92% 0%, rgba(216, 135, 52, 0.3), transparent 18rem),
+        linear-gradient(135deg, #171717, #2a1d17);
+      color: var(--white);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .band .grid { margin-top: 28px; }
+    .band .section-heading p { color: rgba(255,255,255,0.7); }
+    .band .workflow-card { color: var(--ink); background: rgba(255,255,255,0.94); }
+
+
+    .estimate-shell {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 24px;
+      align-items: start;
+      padding: clamp(28px, 5vw, 54px);
+      border: 1px solid rgba(17, 17, 17, 0.1);
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(216, 135, 52, 0.18), transparent 22rem),
+        rgba(255, 255, 255, 0.86);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .estimate-copy p {
+      color: var(--muted);
+      font-weight: 620;
+      line-height: 1.65;
+      margin: 18px 0 0;
+    }
+
+    .estimate-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 26px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .estimate-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .estimate-list li::before {
+      content: "✓";
+      display: grid;
+      place-items: center;
+      flex: 0 0 24px;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--rust), var(--copper));
+      font-size: 0.82rem;
+      font-weight: 950;
+    }
+
+    .estimate-form {
+      display: grid;
+      gap: 16px;
+      padding: clamp(20px, 4vw, 30px);
+      border: 1px solid rgba(17, 17, 17, 0.1);
+      border-radius: 28px;
+      background: #ffffff;
+      box-shadow: var(--card-shadow);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .field { display: grid; gap: 8px; }
+    .field-full { grid-column: 1 / -1; }
+
+    label {
+      color: var(--charcoal);
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(17, 17, 17, 0.14);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: var(--ink);
+      background: #fffaf4;
+      font: inherit;
+      outline: none;
+      transition: border 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    textarea { min-height: 132px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(173, 63, 24, 0.55);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(173, 63, 24, 0.1);
+    }
+
+    .form-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      font-weight: 620;
+    }
+
+    .form-status {
+      min-height: 24px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .form-status[data-state="success"] { color: #1f6f43; }
+    .form-status[data-state="error"] { color: var(--rust-dark); }
+
+    .portal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .footer {
+      width: min(1180px, calc(100% - 36px));
+      margin: 76px auto 30px;
+      padding: 28px 0 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+
+
+    /* Modern visual refresh, accessibility, and stable scrolling */
+    html {
+      overflow-x: clip;
+      scrollbar-gutter: stable;
+      scroll-padding-top: 96px;
+    }
+
+    body {
+      overflow-x: clip;
+      accent-color: var(--rust);
+    }
+
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 12px; }
+    html::-webkit-scrollbar-track, body::-webkit-scrollbar-track { background: #fff4e5; }
+    html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+      border: 3px solid #fff4e5;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--rust), var(--copper));
+    }
+
+    .site-shell { overflow-x: clip; }
+
+    .skip-link {
+      position: fixed;
+      left: 18px;
+      top: 14px;
+      z-index: 1000;
+      transform: translateY(-160%);
+      padding: 12px 16px;
+      border-radius: 999px;
+      color: var(--white);
+      background: var(--ink);
+      font-weight: 950;
+      box-shadow: var(--soft-shadow);
+      transition: transform 160ms ease;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid rgba(173, 63, 24, 0.72);
+      outline-offset: 4px;
+    }
+
+    .brand-logo {
+      flex: 0 0 auto;
+      padding: 5px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 24px rgba(45, 27, 13, 0.08);
+    }
+
+    .hero {
+      isolation: isolate;
+      animation: page-rise 700ms ease both;
+    }
+
+    .hero-media {
+      overflow: clip;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 24px 60px rgba(45,27,13,.1);
+    }
+
+    .hero-logo {
+      max-height: 420px;
+      object-fit: contain;
+    }
+
+    .section {
+      scroll-margin-top: 110px;
+      animation: content-rise both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+
+    .service-card,
+    .workflow-card,
+    .estimate-form,
+    .estimate-shell {
+      transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+    }
+
+    .service-card:hover,
+    .workflow-card:hover,
+    .estimate-form:focus-within {
+      transform: translateY(-4px);
+      border-color: rgba(173, 63, 24, 0.24);
+      box-shadow: 0 24px 60px rgba(45, 27, 13, 0.12);
+    }
+
+    @keyframes page-rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes content-rise {
+      from { opacity: .35; transform: translateY(28px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+
+
+    /* Logo presentation fix: keep the detailed wordmark from being squeezed. */
+    .brand-logo {
+      width: clamp(86px, 8vw, 118px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+    }
+
+    .hero-logo {
+      width: min(100%, 720px);
+      max-height: none;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-media { min-height: auto; }
+      .trust-row, .grid, .estimate-shell, .form-grid { grid-template-columns: 1fr; }
+      .section-heading { display: block; }
+      .section-heading p { margin-top: 14px; }
+    }
+
+    @media (max-width: 560px) {
+      .brand span { display: none; }
+      .brand-logo { width: 72px; height: 72px; }
+      .nav-inner { width: min(100% - 24px, 1180px); }
+      .hero, .section { width: min(100% - 24px, 1180px); }
+      .hero { margin-top: 24px; border-radius: 26px; }
+      .footer { width: min(100% - 24px, 1180px); }
+    }
+    /* 2026 premium redesign: dark hero, bento cards, refined glass, accessible motion */
+    :root {
+      --modern-bg: #080b10;
+      --modern-panel: rgba(255, 255, 255, 0.08);
+      --modern-panel-strong: rgba(255, 255, 255, 0.14);
+      --modern-line: rgba(255, 255, 255, 0.16);
+      --modern-text: #f8fafc;
+      --modern-muted: #cbd5e1;
+      --modern-amber: #f59e0b;
+      --modern-orange: #f97316;
+    }
+
+    body {
+      color: var(--modern-text);
+      background:
+        radial-gradient(circle at 14% -10%, rgba(249, 115, 22, .34), transparent 34rem),
+        radial-gradient(circle at 92% 12%, rgba(245, 158, 11, .22), transparent 30rem),
+        linear-gradient(135deg, #080b10 0%, #111827 48%, #2b130a 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 78%);
+    }
+
+    .nav {
+      background: rgba(8, 11, 16, .78);
+      border-bottom: 1px solid var(--modern-line);
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+
+    .brand,
+    .nav-links { color: var(--modern-text); }
+
+    .brand-logo {
+      width: clamp(86px, 8vw, 118px);
+      padding: 0;
+      border-radius: 18px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .btn {
+      border-color: var(--modern-line);
+      color: var(--modern-text);
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(14px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--modern-orange), #b93815);
+      box-shadow: 0 16px 42px rgba(249,115,22,.28);
+    }
+
+    .btn-secondary { background: rgba(255,255,255,.11); color: var(--modern-text); }
+
+    .hero {
+      border-color: var(--modern-line);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.055)),
+        radial-gradient(circle at 74% 24%, rgba(249,115,22,.22), transparent 24rem);
+      box-shadow: 0 34px 100px rgba(0,0,0,.35);
+      backdrop-filter: blur(22px);
+    }
+
+    .hero::before {
+      background:
+        linear-gradient(125deg, rgba(249,115,22,.18), transparent 40%),
+        linear-gradient(90deg, rgba(255,255,255,.08), transparent 55%);
+    }
+
+    .eyebrow {
+      color: #fed7aa;
+      background: rgba(249, 115, 22, .16);
+      border-color: rgba(251, 146, 60, .36);
+    }
+
+    h1, h2 { color: var(--modern-text); text-wrap: balance; }
+    .hero-copy, .section-heading p, .estimate-copy p, .form-note, .footer { color: var(--modern-muted); }
+
+    .hero-media {
+      min-height: 500px;
+      border-color: var(--modern-line);
+      background:
+        radial-gradient(circle at 50% 24%, rgba(249,115,22,.24), transparent 18rem),
+        linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+    }
+
+    .hero-logo {
+      width: min(100%, 820px);
+      padding: clamp(8px, 2vw, 20px);
+      filter: drop-shadow(0 28px 50px rgba(0,0,0,.32));
+    }
+
+    .section { margin: 110px auto; }
+
+    .grid { gap: 18px; }
+
+    .service-card,
+    .workflow-card,
+    .estimate-shell,
+    .estimate-form {
+      border-color: var(--modern-line);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      box-shadow: 0 24px 70px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
+    }
+
+    .service-card strong,
+    .workflow-card strong,
+    label { color: var(--modern-text); }
+
+    .service-card p,
+    .workflow-card p,
+    .estimate-list li { color: var(--modern-muted); }
+
+    .band {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(249,115,22,.30), transparent 20rem),
+        linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.045));
+      border-color: var(--modern-line);
+      backdrop-filter: blur(18px);
+    }
+
+    .band .workflow-card { color: var(--modern-text); background: rgba(255,255,255,.10); }
+
+    input, select, textarea {
+      color: var(--modern-text);
+      background: rgba(8,11,16,.62);
+      border-color: var(--modern-line);
+    }
+
+    input::placeholder, textarea::placeholder { color: #94a3b8; }
+
+    input:focus, select:focus, textarea:focus {
+      color: var(--modern-text);
+      background: rgba(8,11,16,.86);
+      border-color: rgba(249,115,22,.72);
+      box-shadow: 0 0 0 4px rgba(249,115,22,.16);
+    }
+
+    .footer { border-top-color: var(--modern-line); }
+
+
+    html[data-theme="light"] body {
+      color: #111827;
+      background:
+        radial-gradient(circle at 14% -10%, rgba(249,115,22,.16), transparent 34rem),
+        radial-gradient(circle at 92% 12%, rgba(245,158,11,.12), transparent 30rem),
+        linear-gradient(135deg, #fffaf2 0%, #ffffff 48%, #f7eadc 100%);
+    }
+    html[data-theme="light"] body::before { opacity: .25; }
+    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .brand,
+    html[data-theme="light"] .nav-links,
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] label,
+    html[data-theme="light"] .service-card strong,
+    html[data-theme="light"] .workflow-card strong { color: #111827; }
+    html[data-theme="light"] .hero-copy,
+    html[data-theme="light"] .section-heading p,
+    html[data-theme="light"] .estimate-copy p,
+    html[data-theme="light"] .form-note,
+    html[data-theme="light"] .footer,
+    html[data-theme="light"] .service-card p,
+    html[data-theme="light"] .workflow-card p,
+    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+    html[data-theme="light"] .hero,
+    html[data-theme="light"] .service-card,
+    html[data-theme="light"] .workflow-card,
+    html[data-theme="light"] .estimate-shell,
+    html[data-theme="light"] .estimate-form,
+    html[data-theme="light"] .band { background: rgba(255,255,255,.88); border-color: rgba(17,17,17,.12); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="light"] .hero-media { background: rgba(255,255,255,.72); border-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .btn,
+    html[data-theme="light"] .btn-secondary { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
+    html[data-theme="light"] input,
+    html[data-theme="light"] select,
+    html[data-theme="light"] textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
+
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to main content</a>
+  <div class="site-shell">
+    <header class="nav" aria-label="Main navigation">
+      <div class="nav-inner">
+        <a class="brand" href="/" aria-label="T&A Contracting home">
+          <img class="brand-logo" src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo">
+          <span>T&A Contracting</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary links">
+          <a href="#services">Services</a>
+          <a href="/login/?next=dashboard" data-dashboard-link>Dashboard</a>
+          <button class="btn btn-secondary" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button>
+          <a class="btn btn-primary" href="#estimate">Request Estimate</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content">
+      <section class="hero">
+        <div class="hero-content">
+          <div class="eyebrow">Maintenance • Anything • Everything</div>
+          <h1>Contracting help without the runaround.</h1>
+          <p class="hero-copy">T&A Contracting is building a professional repair, maintenance, improvement, quote, scheduling, and payment experience for Arizona homeowners, landlords, property managers, and businesses.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#estimate">Request an Estimate</a>
+            <a class="btn btn-secondary" href="#services">Explore Services</a>
+          </div>
+          <div class="trust-row" aria-label="Company highlights">
+            <div class="trust-pill"><strong>Locally Owned</strong>Practical, reliable service for Arizona properties.</div>
+            <div class="trust-pill"><strong>More Organized</strong>Quotes, approvals, jobs, and payments online.</div>
+            <div class="trust-pill"><strong>One Call</strong>Repairs, installs, maintenance, and punch lists.</div>
+          </div>
+        </div>
+        <div class="hero-media" aria-label="T&A Contracting logo showcase">
+          <img class="hero-logo" src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo">
+        </div>
+      </section>
+
+      <section class="section" id="services">
+        <div class="section-heading">
+          <h2>Professional maintenance and repair services.</h2>
+          <p>Clear service categories make it easy for customers to understand what T&A Contracting handles before they request a quote.</p>
+        </div>
+        <div class="grid">
+          <article class="service-card"><strong>Home Repairs</strong><p>Drywall, doors, trim, punch lists, fixtures, cabinets, and minor carpentry.</p></article>
+          <article class="service-card"><strong>Property Maintenance</strong><p>Rental turns, preventive maintenance, move-in/move-out repairs, and landlord support.</p></article>
+          <article class="service-card"><strong>Painting & Finish Work</strong><p>Interior painting, touch-ups, patching, caulking, prep, and clean finish details.</p></article>
+          <article class="service-card"><strong>Fixture Work</strong><p>Faucets, toilets, lighting, fans, outlets, switches, smoke detectors, and related installs.</p></article>
+          <article class="service-card"><strong>Installations</strong><p>Shelving, TV mounting, hardware, appliance support, and general improvements.</p></article>
+          <article class="service-card"><strong>Commercial Support</strong><p>Small business and property manager maintenance with organized quote-to-payment tracking.</p></article>
+        </div>
+      </section>
+
+      <section class="section band" id="portal">
+        <div class="section-heading">
+          <h2>Your project details, quotes, and repair status in one clean portal.</h2>
+          <p>The Client Portal keeps requests, saved properties, quote decisions, invoices, and repair progress organized without digging through texts or emails.</p>
+        </div>
+        <div class="grid">
+          <article class="workflow-card"><strong>Request quotes</strong><p>Send a new repair, maintenance, installation, or punch-list request tied to the right property.</p></article>
+          <article class="workflow-card"><strong>Approve or deny quotes</strong><p>Review quote details, see the related job/property, then accept or decline from your account.</p></article>
+          <article class="workflow-card"><strong>Track repair status</strong><p>See whether a request is new, quoted, accepted, scheduled, in progress, or completed.</p></article>
+          <article class="workflow-card"><strong>Manage multiple properties</strong><p>Keep home, rental, business, and property-manager jobs separated under one account.</p></article>
+          <article class="workflow-card"><strong>Review quote history</strong><p>Look back at sent, viewed, accepted, declined, and expired quotes as the job moves forward.</p></article>
+          <article class="workflow-card"><strong>Payments and invoices next</strong><p>The same portal is being prepared for invoice review, deposits, final payments, and receipts.</p></article>
+        </div>
+        <div class="portal-actions">
+          <a class="btn btn-primary" href="/login/?next=dashboard" data-dashboard-link>Open Client Portal</a>
+        </div>
+      </section>
+
+      <section class="section" id="estimate">
+        <div class="estimate-shell">
+          <div class="estimate-copy">
+            <div class="eyebrow">Request Work</div>
+            <h2>Tell us what needs to get handled.</h2>
+            <p>Use this form to send T&A Contracting the basics for a repair, maintenance item, installation, punch list, or property project. The form saves requests to the job database when available, with Netlify Forms still in place as a fallback capture path.</p>
+            <ul class="estimate-list">
+              <li>Share contact info so a client account can be created automatically.</li>
+              <li>Describe the job, property address, city/area, and preferred timeframe.</li>
+              <li>Upload photos when available so quoting is easier.</li>
+            </ul>
+          </div>
+
+          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
+            <input type="hidden" name="form-name" value="estimate-request">
+            <p hidden><label>Don’t fill this out: <input name="bot-field"></label></p>
+            <div class="form-grid">
+              <div class="field">
+                <label for="name">Name *</label>
+                <input id="name" name="name" type="text" autocomplete="name" required>
+              </div>
+              <div class="field">
+                <label for="phone">Phone *</label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" required>
+              </div>
+              <div class="field">
+                <label for="email">Email *</label>
+                <input id="email" name="email" type="email" autocomplete="email" required>
+              </div>
+              <div class="field">
+                <label for="city">City / Area *</label>
+                <input id="city" name="city" type="text" autocomplete="address-level2" required>
+              </div>
+
+              <div class="field field-full">
+                <label for="streetAddress">Property Address *</label>
+                <input id="streetAddress" name="streetAddress" type="text" autocomplete="street-address" placeholder="Street address for the requested work" required>
+              </div>
+              <div class="field">
+                <label for="service">Type of Work *</label>
+                <select id="service" name="service" required>
+                  <option value="">Select one</option>
+                  <option>Home repair</option>
+                  <option>Property maintenance</option>
+                  <option>Painting / finish work</option>
+                  <option>Fixture work</option>
+                  <option>Installation</option>
+                  <option>Commercial support</option>
+                  <option>Other / not sure</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="timeframe">Preferred Timeframe</label>
+                <select id="timeframe" name="timeframe">
+                  <option>Flexible</option>
+                  <option>As soon as possible</option>
+                  <option>This week</option>
+                  <option>Next 2–3 weeks</option>
+                  <option>Planning ahead</option>
+                </select>
+              </div>
+              <div class="field field-full">
+                <label for="description">Project Details *</label>
+                <textarea id="description" name="description" placeholder="Tell us what needs to be repaired, installed, replaced, maintained, or improved." required></textarea>
+              </div>
+              <div class="field field-full">
+                <label for="photos">Photo / File</label>
+                <input id="photos" name="photos" type="file" accept="image/*,.pdf">
+              </div>
+            </div>
+            <p class="form-note">Submitting this form creates or updates your client profile and saves this request for admin review. Scheduling is not confirmed until T&A Contracting follows up.</p>
+            <button class="btn btn-primary" type="submit">Submit Estimate Request</button>
+            <p class="form-status" data-job-request-status role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><strong>T&A Contracting</strong> — Arizona-native contracting, maintenance, repairs, and improvements. Replace placeholder contact details before production launch.</p>
+    </footer>
+  </div>
+  <script>
+    (() => {
+      const form = document.querySelector('[data-job-request-form]');
+
+      if (!form || !window.fetch) {
+        return;
+      }
+
+      const status = form.querySelector('[data-job-request-status]');
+      const submitButton = form.querySelector('button[type="submit"]');
+      const setStatus = (message, state = '') => {
+        if (!status) {
+          return;
+        }
+
+        status.textContent = message;
+        status.dataset.state = state;
+      };
+
+      const submitWithNetlifyForms = () => {
+        setStatus('Saving with the standard form fallback…');
+        HTMLFormElement.prototype.submit.call(form);
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const photo = formData.get('photos');
+        const hasUpload = window.File && photo instanceof File && photo.size > 0;
+
+        if (hasUpload) {
+          submitWithNetlifyForms();
+          return;
+        }
+
+        const payload = Object.fromEntries(formData.entries());
+
+        submitButton.disabled = true;
+        setStatus('Saving your request…');
+
+        try {
+          const response = await fetch('/api/job-requests', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'The database request did not complete.');
+          }
+
+          setStatus('Request received. Redirecting…', 'success');
+          window.location.assign('/thank-you/');
+        } catch (error) {
+          console.warn('Database request failed; using Netlify Forms fallback.', error);
+          submitWithNetlifyForms();
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');
+
+      dashboardLinks.forEach((link) => {
+        link.addEventListener('click', async (event) => {
+          event.preventDefault();
+
+          try {
+            const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            window.location.assign(response.ok && result.authenticated ? '/dashboard/' : '/login/?next=dashboard');
+          } catch {
+            window.location.assign('/login/?next=dashboard');
+          }
+        });
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const toggle = document.querySelector('[data-theme-toggle]');
+      const applyTheme = (theme) => {
+        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = normalizedTheme;
+        if (toggle) {
+          toggle.textContent = normalizedTheme === 'light' ? 'Dark mode' : 'Light mode';
+          toggle.setAttribute('aria-label', `Switch to ${normalizedTheme === 'light' ? 'dark' : 'light'} theme`);
+        }
+      };
+      applyTheme(localStorage.getItem('ta-theme') || 'dark');
+      toggle?.addEventListener('click', () => {
+        const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('ta-theme', nextTheme);
+        applyTheme(nextTheme);
+      });
+    })();
+  </script>
+
+</body>
+</html>

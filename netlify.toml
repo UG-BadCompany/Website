@@ -1,0 +1,33 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+[[redirects]]
+  from = "/dashboard/"
+  to = "/api/auth/verify?token=:token"
+  status = 302
+  force = true
+  query = { token = ":token" }
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/api/auth/verify?token=:token"
+  status = 302
+  force = true
+  query = { token = ":token" }
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/dashboard/*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
