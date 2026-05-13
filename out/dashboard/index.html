@@ -1729,6 +1729,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+      // Keep this as a named async loader so the deployed dashboard does not use the old broken promise chain.
       const loadSignedInDashboard = async () => {
         try {
           const response = await fetch('/api/me', {
