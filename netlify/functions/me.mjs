@@ -117,7 +117,8 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       order by roles.key
     `;
 
-    const roleKeys = roles.map((role) => role.key);
+    const assignedRoleKeys = roles.map((role) => role.key);
+    const roleKeys = assignedRoleKeys.length ? assignedRoleKeys : ['client'];
     const rolePermissions = await db.sql`
       select distinct role_permissions.permission_key
       from user_roles

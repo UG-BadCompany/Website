@@ -319,6 +319,26 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 });
 
 
+
+test('me endpoint falls back to client access when a magic-link account has no assigned roles', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
+    [],
+    [],
+    [],
+  ]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.user.roles, ['client']);
+  assert.equal(response.body.user.permissions.canViewClientTools, true);
+  assert.equal(response.body.user.permissions.defaultView, 'client');
+  assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
+});
+
 test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
