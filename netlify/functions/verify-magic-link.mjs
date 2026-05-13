@@ -2,13 +2,14 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
-  daysFromNow,
+  getSessionTtlMinutesForRoles,
   getSiteUrl,
   hashToken,
   json,
   loadDatabase,
-  SESSION_TTL_DAYS,
+  minutesFromNow,
 } from './auth-utils.mjs';
+
 
 export const createVerifyMagicLinkHandler = ({
   getDatabase = loadDatabase,
@@ -53,17 +54,25 @@ export const createVerifyMagicLinkHandler = ({
     `;
 
     const sessionToken = makeSessionToken();
+    const sessionRoleRows = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const verifySessionTtlMinutes = getSessionTtlMinutesForRoles(sessionRoleRows.map((role) => role.key));
 
     await db.sql`
       insert into auth_sessions (user_id, session_hash, expires_at)
-      values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
+      values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
     `;
 
     return new Response(null, {
       status: 302,
       headers: {
         location: `${getSiteUrl(request)}/dashboard/`,
-        'set-cookie': createSessionCookie(sessionToken, request),
+        'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
       },
     });
   } catch (error) {
