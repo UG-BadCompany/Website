@@ -124,7 +124,17 @@ test('site URL helper supports the production domain and Netlify subdomain alias
 
 
 
-test('session cookies keep the original same-site behavior while adding Secure on HTTPS and forwarded HTTPS requests', () => {
+test('session cookies keep same-site behavior, add Secure, and share across configured www/apex hosts', () => {
+  const original = {
+    SITE_URL: process.env.SITE_URL,
+    SITE_URL_ALIASES: process.env.SITE_URL_ALIASES,
+    AUTH_COOKIE_DOMAIN: process.env.AUTH_COOKIE_DOMAIN,
+  };
+
+  delete process.env.SITE_URL;
+  delete process.env.SITE_URL_ALIASES;
+  delete process.env.AUTH_COOKIE_DOMAIN;
+
   const httpsCookie = createSessionCookie('session-token', new Request('https://site.test/api/auth/verify'));
   const forwardedCookie = createSessionCookie('session-token', new Request('http://site.test/api/auth/verify', {
     headers: { 'x-forwarded-proto': 'https' },
@@ -134,12 +144,33 @@ test('session cookies keep the original same-site behavior while adding Secure o
 
   assert.match(httpsCookie, /SameSite=Lax/);
   assert.match(httpsCookie, /Secure/);
+  assert.doesNotMatch(httpsCookie, /Domain=/);
   assert.match(forwardedCookie, /SameSite=Lax/);
   assert.match(forwardedCookie, /Secure/);
   assert.match(localCookie, /SameSite=Lax/);
   assert.doesNotMatch(localCookie, /Secure/);
   assert.match(expiredCookie, /SameSite=Lax/);
   assert.match(expiredCookie, /Max-Age=0/);
+
+  process.env.SITE_URL = 'https://ta-contracting.org';
+  const wwwCookie = createSessionCookie('session-token', new Request('https://www.ta-contracting.org/api/auth/verify'));
+  assert.match(wwwCookie, /Domain=\.ta-contracting\.org/);
+  assert.match(wwwCookie, /Secure/);
+
+  process.env.AUTH_COOKIE_DOMAIN = 'ta-contracting.org';
+  const apexCookie = createSessionCookie('session-token', new Request('https://ta-contracting.org/api/auth/verify'));
+  assert.match(apexCookie, /Domain=\.ta-contracting\.org/);
+
+  const netlifyCookie = createSessionCookie('session-token', new Request('https://tacontracting.netlify.app/api/auth/verify'));
+  assert.doesNotMatch(netlifyCookie, /Domain=/);
+
+  for (const [key, value] of Object.entries(original)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
 });
 
 test('magic-link URL uses the request host so session cookies stay on the dashboard host', () => {
@@ -308,7 +339,7 @@ test('verify endpoint redirects with a used-link status when a token was already
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
+test('verify endpoint can recover when the link token is the database magic-link id', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],

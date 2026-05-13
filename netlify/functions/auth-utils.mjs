@@ -148,7 +148,7 @@ export const getAllowedSiteUrls = () => [
     .map((url) => normalizeSiteUrl(url)),
 ].filter((url) => url && !url.includes('your-domain.example'));
 
-const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
+export const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
 
 const matchesConfiguredSiteHost = (requestOrigin, allowedSiteUrls) => {
   const requestUrl = new URL(requestOrigin);
@@ -247,8 +247,38 @@ const isSecureCookieRequest = (request) => {
   return new URL(request.url).protocol === 'https:' || forwardedProto.split(',').map((proto) => proto.trim()).includes('https');
 };
 
+const isCookieDomainSafe = (hostname) => (
+  hostname
+    && hostname.includes('.')
+    && !hostname.endsWith('.netlify.app')
+    && !['localhost', '127.0.0.1'].includes(hostname)
+);
+
+const normalizeCookieDomain = (domain) => hostnameWithoutWww(clean(domain, 253).toLowerCase().replace(/^\.+/, ''));
+
+const getConfiguredCookieDomain = (request) => {
+  const requestHostname = new URL(request.url).hostname.toLowerCase();
+  const explicitDomain = normalizeCookieDomain(process.env.AUTH_COOKIE_DOMAIN);
+
+  if (isCookieDomainSafe(explicitDomain)
+    && (requestHostname === explicitDomain || requestHostname.endsWith(`.${explicitDomain}`))) {
+    return explicitDomain;
+  }
+
+  return getAllowedSiteUrls()
+    .map((siteUrl) => normalizeCookieDomain(new URL(siteUrl).hostname))
+    .find((siteHostname) => isCookieDomainSafe(siteHostname)
+      && (requestHostname === siteHostname || requestHostname.endsWith(`.${siteHostname}`))) || '';
+};
+
+const getCookieDomainAttribute = (request) => {
+  const cookieDomain = getConfiguredCookieDomain(request);
+
+  return cookieDomain ? `; Domain=.${cookieDomain}` : '';
+};
+
 const getCookieSecurityAttributes = (request) => (
-  `; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
+  `${getCookieDomainAttribute(request)}; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
 );
 
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
