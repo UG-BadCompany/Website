@@ -494,7 +494,7 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -704,8 +704,8 @@
       </div>
     </section>
 
-    <section class="card admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
-      <strong>Admin invoices &amp; payments</strong>
+    <section class="card admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
+      <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
       <div class="admin-request-list" data-admin-invoice-list></div>
@@ -713,7 +713,7 @@
 
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -738,7 +738,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -763,7 +763,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -788,7 +788,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -813,7 +813,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -838,7 +838,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -863,7 +863,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -888,7 +888,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -913,7 +913,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -938,7 +938,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -963,7 +963,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -988,7 +988,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -1013,7 +1013,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -1038,7 +1038,7 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
@@ -1242,6 +1242,44 @@
       const status = document.querySelector('[data-session-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
+      const dashboardParams = new URLSearchParams(window.location.search);
+      const authDebugEnabled = dashboardParams.has('auth_debug') || dashboardParams.has('debug');
+
+      const ensureAuthDebugPanel = () => {
+        let panel = document.querySelector('[data-auth-debug-panel]');
+        if (panel) return panel;
+
+        panel = document.createElement('section');
+        panel.className = 'card';
+        panel.dataset.authDebugPanel = 'true';
+        panel.innerHTML = '<strong>Login debug</strong><p class="session-status" data-auth-debug-summary>Loading login debug…</p><pre data-auth-debug-output style="white-space:pre-wrap;overflow:auto;max-height:420px;margin-top:14px;padding:14px;border-radius:16px;background:#111827;color:#f8fafc;font-size:.85rem;line-height:1.5;"></pre><p><a class="btn btn-soft" href="/api/auth/debug" target="_blank" rel="noopener">Open raw debug JSON</a> <a class="btn btn-primary" href="/login/">Request a new magic link</a></p>';
+        status?.closest('main')?.insertBefore(panel, status.closest('section')?.nextSibling || null);
+        return panel;
+      };
+
+      const loadAuthDebug = async (reason = 'Dashboard could not confirm a signed-in session.') => {
+        const panel = ensureAuthDebugPanel();
+        const summary = panel.querySelector('[data-auth-debug-summary]');
+        const output = panel.querySelector('[data-auth-debug-output]');
+        if (summary) summary.textContent = `${reason} Checking cookie and database session state now…`;
+
+        try {
+          const { response, result } = await fetchJson('/api/auth/debug');
+          const hints = [];
+          if (!result.cookies?.hasSessionCookie) hints.push('No ta_session cookie reached /api/auth/debug. This usually means the browser did not save/send the login cookie.');
+          if (result.cookies?.hasSessionCookie && !result.session) hints.push('A ta_session cookie reached the server, but no matching auth_sessions row was found.');
+          if (result.session?.expired) hints.push('The matching auth_sessions row is expired.');
+          if (result.session?.revoked) hints.push('The matching auth_sessions row is revoked.');
+          if (result.session && result.session.userIsActive === false) hints.push('The matching user exists but is inactive.');
+          if (result.session && !result.roles?.length) hints.push('The session user has no roles; the dashboard may fall back to client access.');
+          if (!response.ok) hints.push(`Debug endpoint returned HTTP ${response.status}.`);
+          if (summary) summary.textContent = hints.length ? hints.join(' ') : 'Debug found a session cookie and active database session. If the dashboard still looks signed out, the issue is in /api/me or dashboard rendering.';
+          if (output) output.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          if (summary) summary.textContent = `Could not load login debug: ${error.message}`;
+          if (output) output.textContent = String(error.stack || error.message || error);
+        }
+      };
 
       const applyTheme = (theme) => {
         const normalizedTheme = theme === 'light' ? 'light' : 'dark';
@@ -1330,16 +1368,9 @@
         }
 
         logoutButton.dataset.bound = 'true';
-        logoutButton.addEventListener('click', async (event) => {
-          event.preventDefault();
+        logoutButton.addEventListener('click', () => {
           logoutButton.setAttribute('aria-disabled', 'true');
           status.textContent = 'Signing out…';
-
-          try {
-            await fetchJson('/api/auth/logout', { method: 'POST' }, 5000);
-          } finally {
-            window.location.href = logoutButton.getAttribute('href') || '/login/?signed-out=1';
-          }
         });
       };
       const bindRequestEstimateLink = () => {
@@ -1788,7 +1819,7 @@
 
       const scheduleAdminActivityReload = () => {
         window.clearTimeout(adminActivityFilterTimer);
-        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivity({ filtered: true }), 220);
+        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivityFeed({ filtered: true }), 220);
       };
 
       const bindAdminActivityFilters = () => {
@@ -2027,6 +2058,7 @@
           <div class="job-file-list" data-job-files="${escapeHtml(assignment.jobRequest?.id || '')}" aria-live="polite"></div>
         </article>
       `;
+      };
 
       const setClientProfileEditing = (isEditing) => {
         document.querySelectorAll('[data-client-profile-editable]').forEach((field) => {
@@ -3195,82 +3227,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const bindAdminInvoiceActions = () => {
-        const panel = document.querySelector('[data-admin-invoices]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
-        const invoiceFilter = panel.querySelector('[data-admin-invoice-status-filter]');
-        const invoiceSearch = panel.querySelector('[data-admin-invoice-search]');
-        invoiceFilter?.addEventListener('change', () => loadAdminInvoices());
-        invoiceSearch?.addEventListener('input', renderAdminInvoiceList);
-        panel.addEventListener('submit', async (event) => {
-          const form = event.target.closest('[data-admin-payment-form]');
-          if (!form) return;
-          event.preventDefault();
-          const button = form.querySelector('[data-admin-confirm-payment]');
-          const formData = new FormData(form);
-          const amountDollars = Number(formData.get('amountDollars') || 0);
-          const amountCents = Math.round(amountDollars * 100);
-          const status = document.querySelector('[data-admin-invoices-status]');
 
-          if (!Number.isFinite(amountDollars) || amountDollars < 0) {
-            if (status) status.textContent = 'Enter a valid non-negative payment amount.';
-            return;
-          }
-
-          if (button) button.disabled = true;
-          if (status) status.textContent = 'Confirming payment…';
-          try {
-            const response = await fetch('/api/admin/invoices', {
-              method: 'PATCH',
-              headers: { accept: 'application/json', 'content-type': 'application/json' },
-              body: JSON.stringify({
-                invoiceId: form.dataset.adminInvoiceId,
-                amountCents,
-                method: formData.get('method') || 'manual',
-                reference: formData.get('reference') || '',
-              }),
-            });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not confirm payment.');
-            await loadAdminInvoices();
-            await loadAdminRequests();
-            await loadAdminActivity();
-          } catch (error) {
-            if (status) status.textContent = error.message;
-          } finally {
-            if (button) button.disabled = false;
-          }
-        });
-      };
-
-      const loadAdminInvoices = async () => {
-        const panel = document.querySelector('[data-admin-invoices]');
-        const status = document.querySelector('[data-admin-invoices-status]');
-        const invoiceSummary = document.querySelector('[data-admin-invoice-summary]');
-        const invoiceList = document.querySelector('[data-admin-invoice-list]');
-        const invoiceFilter = document.querySelector('[data-admin-invoice-status-filter]');
-        if (!panel || !status || !invoiceList) return;
-        try {
-          const filter = invoiceFilter?.value || 'open';
-          const response = await fetch(`/api/admin/invoices?status=${encodeURIComponent(filter)}`, { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Invoices are not available.');
-          currentAdminInvoices = result.invoices || [];
-          const label = filter === 'paid' ? 'paid invoice history' : filter === 'all' ? 'active invoice records' : 'invoice payment confirmation';
-          status.dataset.state = 'ready';
-          status.textContent = currentAdminInvoices.length ? `${currentAdminInvoices.length} ${label} item${currentAdminInvoices.length === 1 ? '' : 's'} loaded.` : `No ${label} items found.`;
-          if (invoiceSummary) invoiceSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
-          renderAdminInvoiceList();
-          bindAdminInvoiceActions();
-        } catch (error) {
-          currentAdminInvoices = [];
-          status.dataset.state = 'error';
-          status.textContent = error.message;
-        }
-      };
-
-      const loadAdminActivity = async ({ filtered = false, append = false } = {}) => {
+      const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {
         const panel = document.querySelector('[data-admin-activity]');
         const status = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
@@ -3325,10 +3283,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           openButton.addEventListener('click', async () => {
             setModalOpen(panel, true);
             document.querySelector('[data-admin-activity-type-filter]')?.focus({ preventScroll: true });
-            if (!adminActivityLoaded) await loadAdminActivity();
+            if (!adminActivityLoaded) await loadAdminActivityFeed();
           });
         });
-        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivity({ append: true }));
+        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivityFeed({ append: true }));
         panel.querySelector('[data-admin-activity-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
           if (event.target === panel) setModalOpen(panel, false);
@@ -3552,8 +3510,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
         .then(({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
-            status.textContent = 'Redirecting to secure magic-link sign in…';
-            window.location.replace('/login/?next=dashboard');
+            status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
+            if (authDebugEnabled) {
+              loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.');
+            } else {
+              window.location.replace('/login/?next=dashboard');
+            }
             return;
           }
 
@@ -3598,71 +3560,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
 
           if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            window.taDashboardActions.loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
             window.taDashboardActions.bindAdminInvoiceActions();
             window.taDashboardActions.loadAdminInvoices();
           }
@@ -3679,9 +3576,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
         })
         .catch((error) => {
           status.dataset.state = 'error';
-          status.innerHTML = error?.name === 'AbortError'
-            ? 'Session check timed out. Refresh the dashboard or <a href="/login/">request a new magic link</a>.'
-            : 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
+          status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
+          if (authDebugEnabled) {
+            loadAuthDebug(error.message || 'The dashboard /api/me request failed.');
+          } else {
+            window.location.replace('/login/?next=dashboard');
+          }
         });
     })();
   </script>
