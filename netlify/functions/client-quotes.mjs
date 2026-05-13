@@ -87,7 +87,9 @@ const loadRoleKeys = async (db, userId) => {
     order by roles.key
   `;
 
-  return roles.map((role) => role.key);
+  const roleKeys = roles.map((role) => role.key);
+
+  return roleKeys.length ? roleKeys : ['client'];
 };
 
 const buildUser = (session, roleKeys) => ({
