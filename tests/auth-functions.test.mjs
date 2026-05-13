@@ -143,6 +143,13 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
 });
 
 
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
 test('email delivery stays disabled for missing or placeholder Resend settings', () => {
   const original = {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -262,6 +269,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [],
     [{ key: 'client' }],
+    [],
     [],
     [],
     [],

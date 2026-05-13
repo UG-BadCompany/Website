@@ -705,6 +705,13 @@
       </div>
     </section>
 
+    <section class="card admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Admin invoices &amp; payments</strong>
+      <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-list></div>
+    </section>
+
 
     <section class="admin-request-modal admin-access" id="admin-access" data-admin-access role="dialog" aria-modal="true" aria-labelledby="admin-access-title" hidden>
       <section class="admin-request-modal-panel admin-access-panel">
@@ -1773,6 +1780,31 @@
       <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -1920,6 +1952,13 @@
       <div class="client-quote-list" data-client-quote-list></div>
     </section>
 
+    <section class="card client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
+      <strong>My invoices &amp; payments</strong>
+      <p>Open invoices connected to your jobs appear here so you can track balances and payment status.</p>
+      <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
+      <div class="client-quote-list" data-client-invoice-list></div>
+    </section>
+
 
     <section class="card client-invoices" id="client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
       <strong>My invoices &amp; payments</strong>
@@ -1966,6 +2005,29 @@
       if (!status) {
         return;
       }
+
+      const fetchJson = async (url, options = {}, timeoutMs = 12000) => {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          const response = await fetch(url, {
+            cache: 'no-store',
+            credentials: 'same-origin',
+            ...options,
+            headers: {
+              accept: 'application/json',
+              ...(options.headers || {}),
+            },
+            signal: controller.signal,
+          });
+          const result = await response.json().catch(() => ({}));
+
+          return { response, result };
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      };
 
       const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
       const currentAdminRequests = new Map();
@@ -2545,6 +2607,32 @@
         </article>
       `;
 
+      const renderInvoiceCard = (invoice, { admin = false } = {}) => {
+        const className = admin ? 'admin-request' : 'client-quote';
+        const badgeClass = admin ? 'admin-request-badge' : 'client-quote-badge';
+        const metaClass = admin ? 'admin-request-meta' : 'client-quote-meta';
+        const clientMeta = admin && invoice.client
+          ? `<span>${escapeHtml(invoice.client.fullName || invoice.client.email || 'Client')}</span><span>${escapeHtml(invoice.client.phone || invoice.client.email || 'No contact')}</span>`
+          : '';
+        const dueMeta = invoice.dueAt ? `<span>Due ${escapeHtml(formatDate(invoice.dueAt))}</span>` : '<span>No due date</span>';
+        const job = invoice.jobRequest || {};
+
+        return `
+          <article class="${className}">
+            <span class="${badgeClass}">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
+            <strong>${escapeHtml(invoice.title || 'Invoice')} — ${formatMoney(invoice.amountCents)}</strong>
+            <div class="${metaClass}">
+              ${clientMeta}
+              <span>${escapeHtml(job.serviceType || 'No linked request')}</span>
+              <span>${escapeHtml(job.city || 'No city')}</span>
+              ${dueMeta}
+            </div>
+            ${job.streetAddress ? `<p>${escapeHtml(job.streetAddress)}</p>` : ''}
+            ${admin && invoice.status === 'open' ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${escapeHtml(invoice.amountCents || 0)}">Confirm payment</button></div>` : ''}
+          </article>
+        `;
+      };
+
       const renderAdminAssignmentCard = (assignment) => `
         <article class="admin-assignment">
           <span class="admin-assignment-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
@@ -2896,22 +2984,35 @@
       const renderClientInvoiceData = (result) => {
         const panelStatus = document.querySelector('[data-client-invoices-status]');
         const invoiceList = document.querySelector('[data-client-invoice-list]');
-        if (!panelStatus || !invoiceList) return;
         const invoices = result.invoices || [];
-        panelStatus.dataset.state = 'ready';
-        panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} waiting payment confirmation.` : 'No open invoices waiting for payment.';
-        invoiceList.innerHTML = invoices.map(renderClientInvoiceCard).join('');
+        const amountDue = result.summary?.amountDueCents || 0;
+
+        if (panelStatus) {
+          panelStatus.dataset.state = 'ready';
+          panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} loaded. Balance due: ${formatMoney(amountDue)}.` : 'No open invoices right now.';
+        }
+        if (invoiceList) {
+          invoiceList.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('') : '<p class="session-status">No open invoices yet.</p>';
+        }
       };
 
       const loadClientInvoices = async () => {
         const panel = document.querySelector('[data-client-invoices]');
         const panelStatus = document.querySelector('[data-client-invoices-status]');
         const invoiceList = document.querySelector('[data-client-invoice-list]');
-        if (!panel || !panelStatus || !invoiceList) return;
+
+        if (!panel || !panelStatus || !invoiceList) {
+          return;
+        }
+
         try {
           const response = await fetch('/api/client/invoices', { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Your invoices are not available.');
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Your invoices are not available.');
+          }
+
           renderClientInvoiceData(result);
         } catch (error) {
           panelStatus.dataset.state = 'error';
@@ -4047,6 +4148,81 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+
+
+      const renderAdminInvoiceData = (result) => {
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const list = document.querySelector('[data-admin-invoice-list]');
+        const invoices = result.invoices || [];
+        const amountDue = result.summary?.amountDueCents || 0;
+
+        if (status) {
+          status.dataset.state = 'ready';
+          status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} need follow-up. Open balance: ${formatMoney(amountDue)}.` : 'No open invoices need payment follow-up.';
+        }
+        if (list) {
+          list.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice, { admin: true })).join('') : '<p class="session-status">No unpaid invoices found.</p>';
+        }
+      };
+
+      const confirmAdminPayment = async (invoiceId, amountCents) => {
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const method = window.prompt('Payment method (cash, check, card, ACH, etc.)', 'cash');
+        if (method === null) return;
+        const reference = window.prompt('Payment reference or receipt number (optional)', '') || '';
+        if (status) status.textContent = 'Confirming payment…';
+
+        const response = await fetch('/api/admin/invoices', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ invoiceId, amountCents: Number(amountCents), method, reference }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Payment could not be confirmed.');
+        await loadAdminInvoices();
+        if (status) status.textContent = `Payment confirmed for ${formatMoney(result.payment?.amountCents || amountCents)}.`;
+      };
+
+      const bindAdminInvoiceActions = () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        if (!panel || panel.dataset.invoiceActionsBound) return;
+        panel.dataset.invoiceActionsBound = 'true';
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-admin-confirm-payment]');
+          if (!button) return;
+          button.disabled = true;
+          try {
+            await confirmAdminPayment(button.dataset.adminConfirmPayment, button.dataset.adminPaymentAmount);
+          } catch (error) {
+            const status = document.querySelector('[data-admin-invoices-status]');
+            if (status) {
+              status.dataset.state = 'error';
+              status.textContent = error.message;
+            }
+          } finally {
+            button.disabled = false;
+          }
+        });
+      };
+
+      const loadAdminInvoices = async () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const list = document.querySelector('[data-admin-invoice-list]');
+        if (!panel || !status || !list) return;
+
+        try {
+          const response = await fetch('/api/admin/invoices', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Admin invoices are not available.');
+          renderAdminInvoiceData(result);
+          bindAdminInvoiceActions();
+        } catch (error) {
+          status.dataset.state = 'error';
+          status.textContent = error.message;
+        }
+      };
+
       const loadAdminRequests = async (selectedRequestId = '') => {
         const inbox = document.querySelector('[data-admin-inbox]');
         const inboxStatus = document.querySelector('[data-admin-requests-status]');
@@ -4108,8 +4284,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      fetch('/api/me', { headers: { accept: 'application/json' } })
-        .then(async (response) => ({ response, result: await response.json().catch(() => ({})) }))
+      status.dataset.state = 'loading';
+      status.textContent = 'Checking secure session…';
+
+      fetchJson('/api/me')
         .then(({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
@@ -4140,7 +4318,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
             bindQuoteDecisionActions();
             loadClientRequests();
             loadClientQuotes();
-            loadClientInvoices();
+            if (result.user.permissions?.canViewInvoices) {
+              loadClientInvoices();
+            }
           }
 
           if (result.user.permissions?.canViewWorkerTools) {
@@ -4162,6 +4342,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminInvoices();
           }
 
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
 
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
             bindAdminAccessLauncher();
@@ -4173,9 +4357,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminActivity();
           }
         })
-        .catch(() => {
+        .catch((error) => {
           status.dataset.state = 'error';
-          status.textContent = 'Session check is unavailable in this local/static preview. Deploy Netlify Functions to verify portal access.';
+          status.innerHTML = error?.name === 'AbortError'
+            ? 'Session check timed out. Refresh the dashboard or <a href="/login/">request a new magic link</a>.'
+            : 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
   </script>

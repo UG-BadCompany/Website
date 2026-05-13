@@ -35,6 +35,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
   assert.match(html, /data-admin-activity/, 'admins should have an audit activity panel');
   assert.match(html, /data-admin-activity-filter-form/, 'admin audit activity should have filters');
+  assert.match(html, /data-client-invoices/, 'clients should have an invoice and payment panel');
+  assert.match(html, /data-admin-invoices/, 'admins should have an invoice and payment panel');
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-client-invoices/, 'clients should have an invoices and payments dashboard section');
   assert.match(html, /data-admin-invoices/, 'admins should have a payment confirmation dashboard section');
@@ -74,6 +76,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-role-select/, 'role manager should use a single role selector');
   assert.match(html, /data-admin-open-selected-role/, 'selected role edit button should be present');
   assert.doesNotMatch(html, /data-admin-role-list/, 'roles should not render as a separate card list');
+  assert.match(script, /const fetchJson =/, 'dashboard API calls should use the resilient JSON fetch helper');
+  assert.match(script, /credentials: 'same-origin'/, 'session checks should explicitly include same-origin credentials');
+  assert.match(script, /AbortController/, 'session checks should time out instead of leaving the dashboard stuck');
   assert.match(script, /const saveClientProfile =/, 'clients should be able to save profile changes');
   assert.match(script, /const bindClientProfileButton =/, 'profile command-center cards should open the profile modal');
   assert.match(script, /querySelectorAll\('\[data-client-profile-shortcut\]'\)/, 'profile command-center cards should open the same profile modal');
@@ -93,6 +98,10 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadAdminActivity =/, 'admins should load audit activity');
   assert.match(script, /const bindAdminActivityActions =/, 'admin audit activity controls should be bound');
   assert.match(script, /canViewAdminActivity/, 'admin activity loading should honor the activity permission');
+  assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
+  assert.match(script, /const loadAdminInvoices =/, 'admins should load invoice follow-up');
+  assert.match(script, /const confirmAdminPayment =/, 'admins should be able to confirm invoice payments');
+  assert.match(script, /canManageInvoices/, 'admin invoice loading should honor invoice management permission');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
   assert.match(script, /const saveClientProperty =/, 'clients should be able to save property changes');
