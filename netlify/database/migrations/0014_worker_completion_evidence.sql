@@ -1,8 +1,5 @@
--- Worker completion evidence fields for required closeout notes and photos.
-
-alter table worker_assignments
-  add column if not exists completion_notes text,
-  add column if not exists completion_photo_names jsonb not null default '[]'::jsonb,
-  add column if not exists completion_submitted_at timestamptz;
-
-create index if not exists idx_worker_assignments_completion_submitted_at on worker_assignments (completion_submitted_at);
+-- Compatibility placeholder for databases that applied the former
+-- 0014_worker_completion_evidence migration name.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys.

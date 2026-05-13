@@ -1,90 +1,54 @@
-import { readdir, unlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { readFile, readdir } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
-const LEGACY_MIGRATIONS = [
-  {
-    legacyMigration: '0004_custom_roles_permissions.sql',
-    currentMigration: '0005_custom_roles_permissions.sql',
-    label: 'custom role permissions',
-  },
-  {
-    legacyMigration: '0011_admin_activity_permission.sql',
-    currentMigration: '0015_admin_activity_permission.sql',
-    label: 'admin activity permission',
-  },
-  {
-    legacyMigration: '0011_completion_review_status.sql',
-    currentMigration: '0009_completion_review_status.sql',
-    label: 'completion review status',
-  },
-  {
-    legacyMigration: '0012_quote_payment_completion_controls.sql',
-    currentMigration: '0010_invoices_payments.sql',
-    label: 'quote payment completion controls',
-  },
-  {
-    legacyMigration: '0013_invoices_payments.sql',
-    currentMigration: '0010_invoices_payments.sql',
-    label: 'invoice and payment tables',
-  },
-  {
-    legacyMigration: '0014_worker_completion_evidence.sql',
-    currentMigration: '0009_completion_review_status.sql',
-    label: 'worker completion review status',
-  },
-];
 
-// Keep these named constants defined for older/conflicted deploy diffs that may
-// still reference the pre-table migration guard names during Netlify prebuild.
-const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
-const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
-const LEGACY_ADMIN_ACTIVITY_MIGRATION = '0011_admin_activity_permission.sql';
-const CURRENT_ADMIN_ACTIVITY_MIGRATION = '0015_admin_activity_permission.sql';
+// Netlify Database validates applied migrations by name. These files must stay
+// committed even when their schema changes were later moved, consolidated, or
+// reintroduced under another migration name.
+const APPLIED_COMPATIBILITY_MIGRATIONS = new Set([
+  '0004_custom_roles_permissions.sql',
+  '0009_completion_review_status.sql',
+  '0009_quote_payment_completion_controls.sql',
+  '0009_worker_completion_evidence.sql',
+  '0010_invoices_payments.sql',
+  '0010_worker_job_details.sql',
+  '0011_admin_activity_permission.sql',
+  '0011_completion_review_status.sql',
+  '0012_quote_payment_completion_controls.sql',
+  '0013_invoices_payments.sql',
+  '0014_worker_completion_evidence.sql',
+]);
 
-// Keep these compatibility guards defined so older/conflicted PR diffs that still
-// reference them cannot crash prebuild with a ReferenceError before validation runs.
-const REQUIRED_APPLIED_MIGRATIONS = new Set();
-const RENAMED_APPLIED_MIGRATIONS = new Set();
+const APPLIED_MIGRATION_LOCKS = new Map([
+  [
+    '0004_work_order_schedule.sql',
+    {
+      sha256: 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
+      reason: 'Netlify Database already applied this migration; edit only by pulling the applied file or adding a later migration.',
+    },
+  ],
+]);
 
-const listMigrationFiles = async (migrationsDir = MIGRATIONS_DIR) => (await readdir(migrationsDir))
+const listMigrationFiles = async () => (await readdir(MIGRATIONS_DIR))
   .filter((file) => file.endsWith('.sql'))
   .sort();
 
-const removeLegacyMigration = async ({ files, legacyMigration, currentMigration, label, migrationsDir = MIGRATIONS_DIR }) => {
-  if (!files.includes(legacyMigration)) {
-    return { files, warnings: [] };
-  }
+const sha256File = async (file) => createHash('sha256')
+  .update(await readFile(new URL(file, MIGRATIONS_DIR)))
+  .digest('hex');
 
-  await unlink(new URL(legacyMigration, migrationsDir));
-
-  return {
-    files: files.filter((file) => file !== legacyMigration),
-    warnings: [files.includes(currentMigration)
-      ? `Removed stale cached ${legacyMigration}; ${label} now lives in ${currentMigration}.`
-      : `Removed stale cached ${legacyMigration}; ${currentMigration} was not present in this deploy checkout, but ${legacyMigration} is an obsolete cached migration name.`],
-  };
-};
-
-export const validateMigrationFiles = async ({ repairLegacy = false, migrationsDir = MIGRATIONS_DIR } = {}) => {
-  let files = await listMigrationFiles(migrationsDir);
+export const validateMigrationFiles = async () => {
+  const files = await listMigrationFiles();
   const warnings = [];
-
-  if (repairLegacy) {
-    for (const legacy of LEGACY_MIGRATIONS) {
-      const repaired = await removeLegacyMigration({ files, migrationsDir, ...legacy });
-      files = repaired.files;
-      warnings.push(...repaired.warnings);
-    }
-  }
-
   const prefixes = new Map();
   const errors = [];
 
-  LEGACY_MIGRATIONS
-    .filter(({ legacyMigration }) => files.includes(legacyMigration))
-    .forEach(({ legacyMigration, currentMigration, label }) => {
-      errors.push(`${legacyMigration} must not exist; ${label} now lives in ${currentMigration}.`);
+  files
+    .filter((file) => APPLIED_COMPATIBILITY_MIGRATIONS.has(file))
+    .forEach((file) => {
+      warnings.push(`Kept applied compatibility migration ${file}; Netlify Database requires applied migration names to remain present.`);
     });
 
   files.forEach((file) => {
@@ -104,7 +68,11 @@ export const validateMigrationFiles = async ({ repairLegacy = false, migrationsD
   [...prefixes.entries()]
     .filter(([, names]) => names.length > 1)
     .forEach(([prefix, names]) => {
-      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
+      const nonCompatibilityNames = names.filter((name) => !APPLIED_COMPATIBILITY_MIGRATIONS.has(name));
+
+      if (nonCompatibilityNames.length > 1) {
+        errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
+      }
     });
 
   return { files, errors, warnings };
@@ -113,7 +81,7 @@ export const validateMigrationFiles = async ({ repairLegacy = false, migrationsD
 const isDirectRun = process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href;
 
 if (isDirectRun) {
-  const { files, errors, warnings } = await validateMigrationFiles({ repairLegacy: true });
+  const { files, errors, warnings } = await validateMigrationFiles();
 
   warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 
