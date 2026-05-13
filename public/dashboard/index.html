@@ -494,9 +494,8 @@
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#content">Skip to dashboard content</a>
-  <header class="nav" aria-label="Dashboard navigation"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><div class="dashboard-nav-row"><nav class="nav-links" aria-label="Dashboard links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button></div><span class="account-status" data-session-status role="status" aria-live="polite">Checking session…</span></div></div></header>
-  <main class="wrap" id="content">
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
         <div>
@@ -1649,11 +1648,20 @@
       </section>
     </section>
 
-    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
-      <strong>Invoice &amp; payment desk</strong>
-      <p>Review open invoices, confirm payments, and scan paid history without leaving the admin workspace.</p>
-      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading open invoices…</p>
-      <div class="client-request-form" data-admin-invoice-controls>
+    <section class="card admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Admin invoices &amp; payments</strong>
+      <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-list></div>
+    </section>
+
+
+    <section class="card admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
+      <strong>Admin roles & users</strong>
+      <p>Search users, update profile details, and manage roles from one selector. Choose an existing role to edit it, or create a new role from the same role manager.</p>
+      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
+      <form class="client-request-form" data-admin-role-picker-form>
+        <strong>Manage roles</strong>
         <div class="client-request-form-grid">
           <label>Invoice view
             <select data-admin-invoice-status-filter>
@@ -1753,6 +1761,31 @@
           <button class="btn btn-soft" type="button" data-admin-activity-more hidden>Load more activity</button>
         </div>
       </section>
+    </section>
+
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
@@ -1960,13 +1993,6 @@
     </section>
 
 
-    <section class="card client-invoices" id="client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
-      <strong>My invoices &amp; payments</strong>
-      <p>Invoices waiting for payment confirmation will appear here. Paid invoices are kept in the system but removed from this dashboard.</p>
-      <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
-      <div class="client-quote-list" data-client-invoice-list></div>
-    </section>
-
     <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
       <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
@@ -2007,25 +2033,29 @@
       }
 
       const fetchJson = async (url, options = {}, timeoutMs = 12000) => {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            if (controller) controller.abort();
+            reject(new DOMException('Request timed out', 'AbortError'));
+          }, timeoutMs);
+        });
+        const requestPromise = fetch(url, {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          ...options,
+          headers: {
+            accept: 'application/json',
+            ...(options.headers || {}),
+          },
+          ...(controller ? { signal: controller.signal } : {}),
+        }).then(async (response) => ({ response, result: await response.json().catch(() => ({})) }));
 
         try {
-          const response = await fetch(url, {
-            cache: 'no-store',
-            credentials: 'same-origin',
-            ...options,
-            headers: {
-              accept: 'application/json',
-              ...(options.headers || {}),
-            },
-            signal: controller.signal,
-          });
-          const result = await response.json().catch(() => ({}));
-
-          return { response, result };
+          return await Promise.race([requestPromise, timeoutPromise]);
         } finally {
-          window.clearTimeout(timeoutId);
+          clearTimeout(timeoutId);
         }
       };
 
@@ -2074,10 +2104,7 @@
           status.textContent = 'Signing out…';
 
           try {
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { accept: 'application/json' },
-            });
+            await fetchJson('/api/auth/logout', { method: 'POST' }, 5000);
           } finally {
             window.location.href = '/login/?signed-out=1';
           }
@@ -4284,6 +4311,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+      bindLogout();
       status.dataset.state = 'loading';
       status.textContent = 'Checking secure session…';
 
@@ -4305,7 +4333,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
 
 
-          bindLogout();
           bindClientProfileButton();
           bindClientProfileForm();
           bindRequestEstimateLink();
@@ -4335,6 +4362,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canViewAdminActivity) {
             bindAdminActivityLauncher();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            bindAdminInvoiceActions();
+            loadAdminInvoices();
           }
 
           if (result.user.permissions?.canManageInvoices) {

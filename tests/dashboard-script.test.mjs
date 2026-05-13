@@ -26,6 +26,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.ok(html.indexOf('data-session-status') > html.indexOf('dashboard-nav-row'), 'login status should sit below the dashboard nav actions');
   assert.match(html, /data-request-estimate-link/, 'dashboard request estimate link should target the in-dashboard request form');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'signed-in dashboard nav should not show the Client Portal link');
+  assert.doesNotMatch(html, /data-logout-button hidden/, 'sign out should stay available while the session check is pending');
   assert.match(html, /data-client-edit-property/, 'clients should have an edit action for saved properties');
   assert.match(html, /data-client-property-modal/, 'property edits should open in a dedicated popup instead of the request form');
   assert.match(html, /My profile &amp; properties|My profile & properties/, 'profile section should organize contact info and properties together');
@@ -79,6 +80,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const fetchJson =/, 'dashboard API calls should use the resilient JSON fetch helper');
   assert.match(script, /credentials: 'same-origin'/, 'session checks should explicitly include same-origin credentials');
   assert.match(script, /AbortController/, 'session checks should time out instead of leaving the dashboard stuck');
+  assert.match(script, /Promise\.race/, 'session checks should fail fast even if fetch does not abort');
+  assert.match(script, /bindLogout\(\);[\s\S]*fetchJson\('\/api\/me'\)/, 'sign out should bind before the session check finishes');
   assert.match(script, /const saveClientProfile =/, 'clients should be able to save profile changes');
   assert.match(script, /const bindClientProfileButton =/, 'profile command-center cards should open the profile modal');
   assert.match(script, /querySelectorAll\('\[data-client-profile-shortcut\]'\)/, 'profile command-center cards should open the same profile modal');
