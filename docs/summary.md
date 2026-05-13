@@ -63,7 +63,7 @@ _Last updated: 2026-05-13_
 ## Recent auth repair
 
 - Reverted the magic-link verification handoff page back to a direct `302` dashboard redirect with `Set-Cookie`, matching the login flow that previously worked reliably.
-- Added a regression check that the login page declares its query-status helpers only once, preventing duplicate inline script declarations around magic-link status messages.
+- Moved magic-link page behavior into `/assets/login.js` so helper code cannot render as visible text at the bottom of the login page; tests also ensure the status helpers are declared only once.
 - Moved the admin invoice action binder onto `window.taDashboardActions` instead of declaring a `bindAdminInvoiceActions` identifier, avoiding browser redeclaration errors when dashboard script fragments are merged or cached.
 - Dashboard URLs that accidentally include a `?token=` magic-link token now immediately route through `/api/auth/verify` before the normal `/api/me` session check.
 

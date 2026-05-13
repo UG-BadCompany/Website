@@ -362,116 +362,24 @@
         <a class="btn btn-primary" href="/#estimate">Request Estimate</a>
       </nav>
     </div>
-  </header>
-
-  <main class="wrap portal-shell">
-    <section class="portal-hero" aria-labelledby="login-title">
-      <div class="hero-copy">
-        <span class="eyebrow">Secure Client Portal</span>
-        <h1 id="login-title">Sign in with a secure magic link.</h1>
-        <p class="hero-lede">Enter the email you use with T&amp;A Contracting and we’ll send a one-time link that opens your project workspace without a password.</p>
-        <p class="notice">If the email does not arrive within a few minutes, check spam or contact T&amp;A Contracting so we can confirm the email on your account.</p>
-
-        <div class="portal-benefits" aria-label="Client portal highlights">
-          <article class="benefit"><strong>Requests</strong><p>Follow new, quoted, scheduled, in-progress, and completed work in one place.</p></article>
-          <article class="benefit"><strong>Quotes</strong><p>Review quote details and approve or decline work from your account.</p></article>
-          <article class="benefit"><strong>Properties</strong><p>Keep home, rental, business, and property-manager jobs organized.</p></article>
-        </div>
-      </div>
-
-      <div class="login-panel">
-        <div class="login-logo" aria-hidden="true">
-          <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="">
-        </div>
-        <article class="login-card">
-          <span class="eyebrow">Magic Link Login</span>
-          <h2>Open the portal</h2>
-          <p>For your privacy, each sign-in link expires automatically and can only be used once.</p>
-          <form class="form" data-auth-form data-endpoint="/api/auth/magic-link" aria-label="Magic link portal access request">
-            <input type="hidden" name="bot-field" value="">
-            <div class="field">
-              <label for="magic-email">Email address</label>
-              <input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required>
-            </div>
-            <button class="btn btn-primary" type="submit">Send Secure Link</button>
-            <p class="status" role="status" aria-live="polite"></p>
-          </form>
-        </article>
-      </div>
-    </section>
-
-
-      const queryMessages = {
-        'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
-        expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
-        error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
-      };
-
-      const applyInitialStatus = () => {
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('signed-out')) {
-          setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
-          return;
-        }
-
-        const authState = params.get('auth');
-        if (queryMessages[authState]) {
-          setStatus(...queryMessages[authState]);
-        }
-      };
-
-
-      const queryMessages = {
-        'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
-        expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
-        error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
-      };
-
-      const applyInitialStatus = () => {
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('signed-out')) {
-          setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
-          return;
-        }
-
-        const authState = params.get('auth');
-        if (queryMessages[authState]) {
-          setStatus(...queryMessages[authState]);
-        }
-      };
-
-      applyInitialStatus();
-
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-  <script>
-    (() => {
-      const redirectExistingSession = async () => {
-        if (new URLSearchParams(window.location.search).has('signed-out')) return;
-
-        try {
-          const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (response.ok && result.authenticated) {
-            window.location.replace('/dashboard/');
-          }
-        } catch {
-          // Stay on the magic-link request form if the session check is unavailable.
-        }
-      };
-
-      redirectExistingSession();
-
-      const forms = document.querySelectorAll('[data-auth-form]');
-
-      forms.forEach((form) => {
-        const status = form.querySelector('.status');
-        const button = form.querySelector('button[type="submit"]');
-        const setStatus = (message, state = '') => {
-          status.textContent = message;
-          status.dataset.state = state;
-        };
+    <div class="login-grid">
+      <article class="card">
+        <h2>Send magic link</h2>
+        <p>Enter your email to request a secure Client Portal link. For your privacy, links expire automatically and can only be used once.</p>
+        <form class="form" data-auth-form data-endpoint="/api/auth/magic-link" aria-label="Magic link portal access request">
+          <input type="hidden" name="bot-field" value="">
+          <div class="field"><label for="magic-email">Email</label><input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
+          <button class="btn btn-primary" type="submit">Request Magic Link</button>
+          <p class="status" role="status" aria-live="polite"></p>
+        </form>
+      </article>
+    </div>
+  </div>
+</section>
+<section class="card"><h2>How account access works</h2><ul class="list"><li>1. Request an estimate or contact T&A Contracting so we can connect your email to your client account.</li><li>2. Use this page to request a secure one-time sign-in link.</li><li>3. Open the link from your email to view requests, saved properties, quotes, and schedule updates.</li><li>4. Need help? Contact T&A Contracting and we can update your account details.</li></ul></section>
+</main>
+<footer class="wrap footer"><strong>T&A Contracting</strong> — Secure client portal access for requests, properties, quotes, and project updates.</footer>
+<script src="/assets/login.js" defer></script>
 
         form.addEventListener('submit', async (event) => {
           event.preventDefault();
