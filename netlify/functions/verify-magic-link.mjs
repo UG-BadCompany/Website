@@ -88,6 +88,10 @@ export const createVerifyMagicLinkHandler = ({
     return createContinueResponse(request, token);
   }
 
+  if (request.method === 'GET') {
+    return createContinueResponse(request, token);
+  }
+
   try {
     const db = await getDatabase();
     const [magicLink] = await db.sql`
