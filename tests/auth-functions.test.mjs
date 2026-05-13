@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   getAllowedSiteUrls,
+  getSessionTtlMinutesForRoles,
   getFromEmail,
   getSiteUrl,
   getSessionTtlMinutesForRoles,
@@ -49,6 +50,33 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(normalized.botField, '');
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
+});
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
 });
 
 
@@ -177,6 +205,10 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
     [],
     [],
+    [{ key: 'client' }],
+    [],
+    [],
+    [],
     [],
     [],
   ]);
@@ -246,6 +278,7 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
   assert.equal(response.body.user.permissions.canManageUsers, true);
   assert.equal(response.body.user.permissions.canManageRoles, true);
+  assert.equal(response.body.user.permissions.canViewAdminActivity, true);
   assert.equal(response.body.user.permissions.defaultView, 'admin');
   assert.deepEqual(response.body.user.permissions.availableViews, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.permissionKeys.includes('admin.roles.manage'), true);
