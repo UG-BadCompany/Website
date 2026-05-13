@@ -65,7 +65,7 @@ _Last updated: 2026-05-13_
 - Reverted the magic-link verification handoff page back to a direct `302` dashboard redirect with `Set-Cookie`, matching the login flow that previously worked reliably.
 - Moved magic-link page behavior into `/assets/login.js` so helper code cannot render as visible text at the bottom of the login page; tests also ensure the status helpers are declared only once.
 - Moved admin invoice dashboard handlers onto `window.taDashboardActions` instead of declaring `bindAdminInvoiceActions` or `loadAdminInvoices` identifiers, avoiding browser redeclaration errors when dashboard script fragments are merged or cached.
-- Dashboard URLs that accidentally include a `?token=` magic-link token now immediately route through `/api/auth/verify` before the normal `/api/me` session check.
+- Dashboard URLs that accidentally include a `?token=` magic-link token now route through `/api/auth/verify` at the Netlify redirect layer, with a client-side fallback before the normal `/api/me` session check.
 
 ## Next implementation candidates
 
