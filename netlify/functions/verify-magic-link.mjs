@@ -108,12 +108,6 @@ export const createVerifyMagicLinkHandler = ({
       email: magicLink.email,
     });
 
-    await db.sql`
-      update auth_magic_links
-      set consumed_at = now()
-      where id = ${magicLink.id}
-    `;
-
     const sessionToken = makeSessionToken();
 
     await db.sql`
@@ -121,7 +115,23 @@ export const createVerifyMagicLinkHandler = ({
       values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
     `;
 
-    return createDashboardOpenResponse(request, sessionToken);
+    try {
+      await db.sql`
+        update auth_magic_links
+        set consumed_at = now()
+        where id = ${magicLink.id}
+      `;
+    } catch (consumeError) {
+      console.error('Failed to mark magic link consumed after session creation', consumeError);
+    }
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location: `${getSiteUrl(request)}/dashboard/`,
+        'set-cookie': createSessionCookie(sessionToken, request),
+      },
+    });
   } catch (error) {
     console.error('Failed to verify magic link', error);
 

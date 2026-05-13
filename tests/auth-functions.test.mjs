@@ -251,8 +251,40 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.doesNotMatch(db.queries[0].text, /client_name|client_phone/);
   assert.match(db.queries[3].text, /insert into roles/);
   assert.match(db.queries[4].text, /insert into user_roles/);
-  assert.match(db.queries[6].text, /insert into auth_sessions/);
-  assert.equal(db.queries[6].values[1], hashToken('session-token'));
+  assert.match(db.queries[5].text, /insert into auth_sessions/);
+  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+  assert.match(db.queries[6].text, /update auth_magic_links/);
+});
+
+
+test('verify endpoint still redirects when marking the used magic link fails after session creation', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_magic_links/.test(text)) return [{ id: 'link-1', email: 'client@example.com' }];
+      if (/from app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/update app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/update auth_magic_links/.test(text)) throw new Error('consumed_at schema mismatch');
+      return [];
+    },
+  };
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify', {
+    method: 'POST',
+    body: new URLSearchParams({ token: 'magic-token' }),
+  }));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
+  assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
