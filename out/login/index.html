@@ -358,7 +358,7 @@
       </a>
       <nav class="nav-links" aria-label="Primary links">
         <a href="/">Home</a>
-        <a href="/dashboard/">Dashboard</a>
+        <a href="/login/?next=dashboard#portal-access">Dashboard</a>
         <a class="btn btn-primary" href="/#estimate">Request Estimate</a>
       </nav>
     </div>
@@ -381,14 +381,14 @@
         <div class="login-logo" aria-hidden="true">
           <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="">
         </div>
-        <article class="login-card">
+        <article class="login-card" id="portal-access">
           <h2>Send Secure Link</h2>
           <p>Enter your email to receive a secure Client Portal link. If email delivery is still being configured, the portal will show a temporary secure sign-in link after your request.</p>
           <form class="form" data-auth-form data-endpoint="/api/auth/magic-link" aria-label="Magic link portal access request">
             <input type="hidden" name="bot-field" value="">
             <div class="field"><label for="magic-email">Email</label><input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
             <button class="btn btn-primary" type="submit">Send Secure Link</button>
-            <p class="status" role="status" aria-live="polite">Enter your email to request a sign-in link. Status updates will appear here.</p>
+            <p class="status" role="status" aria-live="polite">You are not signed in yet. Enter your email to request a secure sign-in link.</p>
           </form>
           <p class="notice">Already signed in? Use the Dashboard link above and we’ll take you straight to your account.</p>
         </article>

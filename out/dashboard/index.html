@@ -1330,16 +1330,9 @@
         }
 
         logoutButton.dataset.bound = 'true';
-        logoutButton.addEventListener('click', async (event) => {
-          event.preventDefault();
+        logoutButton.addEventListener('click', () => {
           logoutButton.setAttribute('aria-disabled', 'true');
           status.textContent = 'Signing out…';
-
-          try {
-            await fetchJson('/api/auth/logout', { method: 'POST' }, 5000);
-          } finally {
-            window.location.href = logoutButton.getAttribute('href') || '/login/?signed-out=1';
-          }
         });
       };
       const bindRequestEstimateLink = () => {
@@ -3539,11 +3532,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminActivity();
           }
         })
-        .catch((error) => {
+        .catch(() => {
           status.dataset.state = 'error';
-          status.innerHTML = error?.name === 'AbortError'
-            ? 'Session check timed out. Refresh the dashboard or <a href="/login/">request a new magic link</a>.'
-            : 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
+          status.textContent = 'Redirecting to secure magic-link sign in…';
+          window.location.replace('/login/?next=dashboard');
         });
     })();
   </script>
