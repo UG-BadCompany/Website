@@ -83,8 +83,9 @@ const createConfirmResponse = (request, token) => new Response(`<!doctype html>
     <section class="card">
       <h1>Continue to your portal</h1>
       <p>Click the button below to finish signing in. This extra step protects your one-time link from email security scanners that may preview links automatically.</p>
-      <form method="POST" action="${escapeHtml(new URL(request.url).pathname)}">
+      <form method="GET" action="${escapeHtml(new URL(request.url).pathname)}">
         <input type="hidden" name="token" value="${escapeHtml(token)}">
+        <input type="hidden" name="confirm" value="1">
         <button class="btn" type="submit">Continue to dashboard</button>
       </form>
     </section>
@@ -97,6 +98,36 @@ const createConfirmResponse = (request, token) => new Response(`<!doctype html>
     'cache-control': 'no-store',
   },
 });
+
+
+const createDashboardOpenResponse = (request, sessionToken) => {
+  const dashboardUrl = `${getSiteUrl(request)}/dashboard/`;
+
+  return new Response(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="refresh" content="0; url=${escapeHtml(dashboardUrl)}">
+  <title>Opening your T&A Contracting dashboard</title>
+</head>
+<body>
+  <main>
+    <h1>Opening your dashboard…</h1>
+    <p>Your secure session is ready. If the dashboard does not open automatically, <a href="${escapeHtml(dashboardUrl)}">continue to your dashboard</a>.</p>
+  </main>
+  <script>window.location.replace(${JSON.stringify(dashboardUrl)});</script>
+</body>
+</html>`, {
+    status: 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+      'Set-Cookie': createSessionCookie(sessionToken, request),
+    },
+  });
+};
 
 const getTokenFromRequest = async (request) => {
   if (request.method === 'GET') {
@@ -141,7 +172,10 @@ export const createVerifyMagicLinkHandler = ({
       return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
     }
 
-    if (request.method === 'GET') {
+    const url = new URL(request.url);
+    const confirmed = request.method === 'POST' || url.searchParams.get('confirm') === '1';
+
+    if (!confirmed) {
       return createConfirmResponse(request, token);
     }
 
@@ -164,13 +198,7 @@ export const createVerifyMagicLinkHandler = ({
       values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
     `;
 
-    return new Response(null, {
-      status: 302,
-      headers: {
-        location: `${getSiteUrl(request)}/dashboard/`,
-        'set-cookie': createSessionCookie(sessionToken, request),
-      },
-    });
+    return createDashboardOpenResponse(request, sessionToken);
   } catch (error) {
     console.error('Failed to verify magic link', error);
 

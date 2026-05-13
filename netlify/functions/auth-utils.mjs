@@ -278,7 +278,7 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     limit 1
   `;
 
-  const [user] = existingUser ? await db.sql`
+  const [savedUser] = existingUser?.email ? [existingUser] : existingUser ? await db.sql`
     update app_users
     set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
         auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
@@ -300,6 +300,8 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
       updated_at = now()
     returning id, email, full_name, phone
   `;
+
+  const user = savedUser;
 
   await db.sql`
     insert into user_roles (user_id, role_id)
