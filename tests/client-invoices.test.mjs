@@ -16,6 +16,7 @@ test('client invoices endpoint returns only unpaid client invoices', async () =>
     [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
     [],
     [{ key: 'client', name: 'Client' }],
+    [{ permission_key: 'client.invoices.manage' }],
     [{
       id: 'invoice-1',
       job_request_id: 'job-1',
@@ -37,7 +38,7 @@ test('client invoices endpoint returns only unpaid client invoices', async () =>
   assert.equal(response.status, 200);
   assert.equal(response.body.invoices.length, 1);
   assert.equal(response.body.summary.amountDueCents, 42500);
-  assert.match(db.queries[3].text, /invoices.status <> 'paid'/);
-  assert.equal(db.queries[3].values[0], 'client-1');
-  assert.equal(db.queries[3].values[1], 'client-1');
+  assert.match(db.queries[4].text, /invoices.status <> 'paid'/);
+  assert.equal(db.queries[4].values[0], 'client-1');
+  assert.equal(db.queries[4].values[1], 'client-1');
 });
