@@ -6,6 +6,66 @@
   NODE_VERSION = "20"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
+[[redirects]]
+  from = "/api/auth/magic-link"
+  to = "/.netlify/functions/request-magic-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/verify"
+  to = "/.netlify/functions/verify-magic-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/logout"
+  to = "/.netlify/functions/logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/me"
+  to = "/.netlify/functions/me"
+  status = 200
+
+[[redirects]]
+  from = "/api/job-requests"
+  to = "/.netlify/functions/create-job-request"
+  status = 200
+
+[[redirects]]
+  from = "/api/client/job-requests"
+  to = "/.netlify/functions/client-job-requests"
+  status = 200
+
+[[redirects]]
+  from = "/api/client/quotes"
+  to = "/.netlify/functions/client-quotes"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/job-requests"
+  to = "/.netlify/functions/admin-job-requests"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/quotes"
+  to = "/.netlify/functions/admin-quotes"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/roles"
+  to = "/.netlify/functions/admin-roles"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/users"
+  to = "/.netlify/functions/admin-users"
+  status = 200
+
+[[redirects]]
+  from = "/api/worker/jobs"
+  to = "/.netlify/functions/worker-jobs"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
