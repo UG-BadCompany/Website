@@ -26,6 +26,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
+  assert.match(html, /data-admin-activity/, 'admins should have an audit activity panel');
+  assert.match(html, /data-admin-activity-filter-form/, 'admin audit activity should have filters');
   assert.match(html, /data-worker-jobs/, 'workers should have an assigned jobs dashboard section');
   assert.match(html, /data-worker-job-filter/, 'worker jobs should have a status filter dropdown');
   assert.match(html, /data-worker-completion-photos/, 'worker completion form should collect photo or attachment evidence');
@@ -39,6 +41,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const bindClientProfileButton =/, 'top My Profile button should open the profile modal');
   assert.match(script, /const bindClientProfileForm =/, 'client profile form should be bound');
   assert.match(script, /const saveClientRequestUpdate =/, 'clients should be able to update an open request');
+  assert.match(script, /const loadAdminActivity =/, 'admins should load audit activity');
+  assert.match(script, /const bindAdminActivityActions =/, 'admin audit activity controls should be bound');
+  assert.match(script, /canViewAdminActivity/, 'admin activity loading should honor the activity permission');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
   assert.match(script, /const renderWorkerJobs =/, 'worker job filter should rerender the jobs list');

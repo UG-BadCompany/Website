@@ -211,6 +211,31 @@
       </div>
     </section>
 
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -499,8 +524,13 @@
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
       const formatDate = (value) => {
         if (!value) return '';
-        const date = new Date(`${value}T00:00:00`);
+        const date = new Date(String(value).includes('T') ? value : `${value}T00:00:00`);
         return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+      };
+      const formatDateTime = (value) => {
+        if (!value) return '';
+        const date = new Date(value);
+        return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
       };
       const setDashboardView = (view) => {
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
@@ -598,6 +628,75 @@
           ${assignment.workerNotes ? `<p><strong>Worker notes</strong> ${escapeHtml(assignment.workerNotes)}</p>` : ''}
         </article>
       `;
+
+      const renderAdminActivityEvent = (event) => {
+        const actor = event.actor?.email || event.actor?.fullName || 'System event';
+        const metadata = event.metadata && Object.keys(event.metadata).length
+          ? `<p><strong>Details</strong> ${escapeHtml(JSON.stringify(event.metadata))}</p>`
+          : '';
+
+        return `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(event.eventType || 'activity')}</span>
+            <strong>${escapeHtml(event.entityType || 'event')}${event.entityId ? ` — ${escapeHtml(event.entityId)}` : ''}</strong>
+            <div class="admin-request-meta">
+              <span>${escapeHtml(actor)}</span>
+              <span>${escapeHtml(formatDateTime(event.createdAt) || 'No timestamp')}</span>
+            </div>
+            ${metadata}
+          </article>
+        `;
+      };
+
+      const loadAdminActivity = async () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const panelStatus = document.querySelector('[data-admin-activity-status]');
+        const activityList = document.querySelector('[data-admin-activity-list]');
+        const form = document.querySelector('[data-admin-activity-filter-form]');
+
+        if (!panel || !panelStatus || !activityList) {
+          return;
+        }
+
+        const params = new URLSearchParams();
+        const eventType = form?.querySelector('[data-admin-activity-event-type]')?.value.trim() || '';
+        const search = form?.querySelector('[data-admin-activity-search]')?.value.trim() || '';
+        const limit = form?.querySelector('[data-admin-activity-limit]')?.value || '25';
+        if (eventType) params.set('eventType', eventType);
+        if (search) params.set('search', search);
+        if (limit) params.set('limit', limit);
+
+        try {
+          panelStatus.dataset.state = 'loading';
+          panelStatus.textContent = 'Loading admin activity…';
+          const response = await fetch(`/api/admin/activity?${params.toString()}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Admin activity is not available.');
+          }
+
+          const events = result.events || [];
+          panelStatus.dataset.state = 'ready';
+          panelStatus.textContent = events.length ? `${events.length} audit event${events.length === 1 ? '' : 's'} loaded.` : 'No audit activity matches those filters.';
+          activityList.innerHTML = events.length ? events.map(renderAdminActivityEvent).join('') : '<p class="session-status">No audit events found.</p>';
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const bindAdminActivityActions = () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const form = document.querySelector('[data-admin-activity-filter-form]');
+        if (!panel || !form || panel.dataset.activityActionsBound) return;
+        panel.dataset.activityActionsBound = 'true';
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          loadAdminActivity();
+        });
+        panel.querySelector('[data-admin-activity-refresh]')?.addEventListener('click', () => loadAdminActivity());
+      };
 
       const renderWorkerJobCard = (assignment) => {
         const completionPhotoNames = assignment.completionPhotoNames || [];
@@ -1776,6 +1875,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
             loadAdminAccess();
+          }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityActions();
+            loadAdminActivity();
           }
         })
         .catch(() => {
