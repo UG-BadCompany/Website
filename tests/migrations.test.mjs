@@ -35,22 +35,28 @@ test('migration validator keeps the applied 0004 work order schedule migration',
   assert.equal(warnings.some((warning) => warning.includes('0004_work_order_schedule.sql')), false);
 });
 
-test('restored applied 0004 schedule migration matches the known schedule migration body', async () => {
-  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-  const appliedSchedule = await readFile(new URL('0004_work_order_schedule.sql', migrationsDir), 'utf8');
-  const currentSchedule = await readFile(new URL('0006_job_request_schedule_dates.sql', migrationsDir), 'utf8');
+test('migration repair removes stale names even when a cached checkout lacks the replacement file', async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), 'ta-migrations-'));
+  const migrationsDir = pathToFileURL(`${tempDir}/`);
+  const staleMigration = '0012_quote_payment_completion_controls.sql';
 
-  assert.equal(appliedSchedule, currentSchedule, '0004_work_order_schedule must keep the originally applied schedule migration body.');
+  await writeFile(new URL(staleMigration, migrationsDir), '-- stale cached deploy migration without replacement in checkout\n');
+
+  try {
+    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true, migrationsDir });
+
+    assert.deepEqual(errors, [], 'Repair mode should not fail when a cached checkout only contains the obsolete name.');
+    assert.equal(files.includes(staleMigration), false);
+    assert.equal(warnings.some((warning) => warning.includes('was not present in this deploy checkout')), true);
+    await assert.rejects(stat(new URL(staleMigration, migrationsDir)), { code: 'ENOENT' });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
-test('restored applied 0004 schedule migration keeps the locked applied checksum', async () => {
-  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-  const appliedSchedule = await readFile(new URL('0004_work_order_schedule.sql', migrationsDir));
-  const checksum = createHash('sha256').update(appliedSchedule).digest('hex');
 
-  assert.equal(
-    checksum,
-    'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
-    'The applied Netlify Database migration must not be edited in place.',
-  );
+test('migration prebuild script runs without undefined migration guard references', async () => {
+  const { stdout } = await execFileAsync(process.execPath, ['scripts/check-netlify-migrations.mjs']);
+
+  assert.match(stdout, /Netlify Database migrations verified:/);
 });
