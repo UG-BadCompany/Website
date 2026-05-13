@@ -104,3 +104,7 @@ node scripts/check-netlify-migrations.mjs
 ```
 
 If Netlify logs still show the deleted `0004_custom_roles_permissions.sql`, the prebuild migration check removes that stale cached file when `0005_custom_roles_permissions.sql` is present. If Netlify Database still reports the duplicate before the prebuild can run, trigger **Clear cache and deploy site** in Netlify so the old migration file is removed from the cached checkout before Netlify Database validates migrations.
+
+## Replacement PR workflow
+
+If an earlier pull request becomes hard to review or is pointed at the wrong branch, create a fresh replacement branch from the repository base and commit this Netlify-ready site as a new single commit. The replacement PR should still use the same Netlify settings above: `npm run build`, publish directory `out`, and Node `20`.
