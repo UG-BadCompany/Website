@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   getAllowedSiteUrls,
+  getSessionTtlMinutesForRoles,
   getFromEmail,
   getSiteUrl,
   getSessionTtlMinutesForRoles,
@@ -50,6 +51,124 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(normalized.botField, '');
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
+});
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
 });
 
 
@@ -199,6 +318,23 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
     [],
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+    [],
+    [{ key: 'client' }],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
     [],
     [],
     [],
