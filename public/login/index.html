@@ -388,7 +388,7 @@
             <input type="hidden" name="bot-field" value="">
             <div class="field"><label for="magic-email">Email</label><input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
             <button class="btn btn-primary" type="submit">Send Secure Link</button>
-            <p class="status" role="status" aria-live="polite"></p>
+            <p class="status" role="status" aria-live="polite">Enter your email to request a sign-in link. Status updates will appear here.</p>
           </form>
           <p class="notice">Already signed in? Use the Dashboard link above and we’ll take you straight to your account.</p>
         </article>
@@ -407,107 +407,6 @@
   </main>
 
   <footer class="wrap footer"><strong>T&amp;A Contracting</strong> — Secure portal access for clients, workers, and admins.</footer>
-  <script>
-(() => {
-  const queryMessages = {
-    'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
-    expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
-    error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
-  };
-
-  const getParams = () => new URLSearchParams(window.location.search);
-
-  const isSignedOutReturn = () => getParams().has('signed-out');
-
-  const applyInitialStatus = (setStatus) => {
-    const params = getParams();
-
-    if (params.has('signed-out')) {
-      setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
-      return;
-    }
-
-    const authState = params.get('auth');
-    if (queryMessages[authState]) {
-      setStatus(...queryMessages[authState]);
-    }
-  };
-
-  const appendMagicLink = (status, magicLinkUrl) => {
-    if (!magicLinkUrl) return;
-
-    const link = document.createElement('a');
-    link.href = magicLinkUrl;
-    link.textContent = 'Open secure sign-in link';
-    link.style.display = 'block';
-    link.style.marginTop = '8px';
-    link.rel = 'nofollow noopener';
-    status.appendChild(link);
-  };
-
-  const redirectExistingSession = async () => {
-    if (isSignedOutReturn()) return;
-
-    try {
-      const response = await fetch('/api/me', {
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { accept: 'application/json' },
-      });
-      const result = await response.json().catch(() => ({}));
-
-      if (response.ok && result.authenticated) {
-        window.location.replace('/dashboard/');
-      }
-    } catch {
-      // Stay on the login form when the session check is unavailable.
-    }
-  };
-
-  const bindMagicLinkForm = (form) => {
-    const status = form.querySelector('.status');
-    const button = form.querySelector('button[type="submit"]');
-
-    if (!status || !button || form.dataset.bound) {
-      return;
-    }
-
-    form.dataset.bound = 'true';
-
-    const setStatus = (message, state = '') => {
-      status.textContent = message;
-      status.dataset.state = state;
-    };
-
-    applyInitialStatus(setStatus);
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const payload = Object.fromEntries(new FormData(form).entries());
-      button.disabled = true;
-      setStatus('Sending secure sign-in link…');
-
-      try {
-        const response = await fetch(form.dataset.endpoint, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const result = await response.json().catch(() => ({}));
-        setStatus(result.message || 'If that email is on file, a secure sign-in link will be sent shortly.', response.ok && result.ok ? 'success' : 'error');
-        appendMagicLink(status, result.devMagicLink);
-      } catch {
-        setStatus('We could not request a sign-in link right now. Please try again or contact T&A Contracting.', 'error');
-      } finally {
-        button.disabled = false;
-      }
-    });
-  };
-
-  redirectExistingSession();
-  document.querySelectorAll('[data-auth-form]').forEach(bindMagicLinkForm);
-})();
-  </script>
+  <script src="/assets/login.js" defer></script>
 </body>
 </html>
