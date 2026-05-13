@@ -270,7 +270,7 @@ export const getSessionToken = (request) => parseCookies(request.headers.get('co
 
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
-  const [user] = await db.sql`
+  const [savedUser] = await db.sql`
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
     values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
@@ -285,12 +285,12 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
 
   await db.sql`
     insert into user_roles (user_id, role_id)
-    select ${user.id}, roles.id
+    select ${savedUser.id}, roles.id
     from roles
     where roles.key = 'client'
-      and not exists (select 1 from user_roles where user_roles.user_id = ${user.id})
+      and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
     on conflict do nothing
   `;
 
-  return user;
+  return savedUser;
 };
