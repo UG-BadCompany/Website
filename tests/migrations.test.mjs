@@ -29,6 +29,21 @@ test('invoice title backfill migration removes dashboard heading copy', async ()
 });
 
 
+test('Square payment metadata migration prepares invoices and payments for provider checkout', async () => {
+  const migration = await readFile(new URL('../netlify/database/migrations/0018_square_payment_metadata.sql', import.meta.url), 'utf8');
+
+  assert.match(migration, /alter table invoices/);
+  assert.match(migration, /add column if not exists payment_provider text not null default 'manual'/);
+  assert.match(migration, /add column if not exists provider_checkout_url text/);
+  assert.match(migration, /add column if not exists provider_metadata jsonb not null default '\{\}'::jsonb/);
+  assert.match(migration, /alter table payments/);
+  assert.match(migration, /add column if not exists provider_payment_id text/);
+  assert.match(migration, /add column if not exists provider_receipt_url text/);
+  assert.match(migration, /idx_invoices_provider_checkout_id/);
+  assert.match(migration, /idx_payments_provider_payment_id/);
+});
+
+
 test('migration validator removes the stale cached custom role migration before build validation', async () => {
   const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
   const staleMigration = new URL('0004_custom_roles_permissions.sql', migrationsDir);

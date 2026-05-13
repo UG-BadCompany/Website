@@ -19,6 +19,7 @@ Current migration work includes:
 - `0015_admin_activity_permission.sql` adds the admin activity permission required by the audit/activity feed.
 - `0016_inventory_items.sql` adds inventory items and adjustment tracking for admin inventory workflows.
 - `0017_normalize_invoice_titles.sql` backfills invoices that accidentally stored dashboard UI copy (`Invoice & payment desk`) as invoice titles.
+- `0018_square_payment_metadata.sql` adds provider metadata columns and indexes needed for Square-hosted checkout links and future embedded payments.
 - Several obsolete/renamed migration files were removed from the repo and are now also cleaned when they appear from Netlify cache.
 
 ## Authentication and Session Handling
@@ -56,6 +57,7 @@ Current migration work includes:
 ## Invoices and Payments
 
 - A Square-first payment integration plan now lives in `docs/PAYMENTS_PLAN.md`, recommending hosted Square Checkout payment links first, then webhooks, then embedded Web Payments SDK.
+- Square environment placeholders were added to `.env.example`, and `0018_square_payment_metadata.sql` prepares invoices/payments for hosted checkout and provider payment records.
 - Added/expanded admin invoice APIs for listing open invoices, paid history, and all active records.
 - Admin invoice summaries show open invoice count, amount due, paid invoice count, and collected totals.
 - Admins can confirm payment, which records a payment, marks the invoice paid, and completes the linked job request.

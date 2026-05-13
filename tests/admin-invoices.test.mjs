@@ -43,6 +43,11 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
       service_type: 'Drywall repair',
       city: 'Mesa',
       street_address: '123 Main St',
+      payment_provider: 'square',
+      provider_checkout_id: 'checkout-1',
+      provider_checkout_url: 'https://square.link/pay/checkout-1',
+      provider_status: 'created',
+      provider_metadata: { orderId: 'order-1' },
     }],
   ]);
   const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
@@ -51,6 +56,8 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
   assert.equal(response.body.invoices.length, 1);
   assert.equal(response.body.summary.amountDueCents, 42500);
   assert.equal(response.body.invoices[0].title, 'Drywall repair — Client invoice');
+  assert.equal(response.body.invoices[0].provider.name, 'square');
+  assert.equal(response.body.invoices[0].provider.checkoutUrl, 'https://square.link/pay/checkout-1');
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 

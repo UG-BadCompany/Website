@@ -53,11 +53,26 @@ const mapInvoice = (invoice) => ({
     city: invoice.city,
     streetAddress: invoice.street_address,
   } : null,
+  provider: {
+    name: invoice.payment_provider || 'manual',
+    invoiceId: invoice.provider_invoice_id,
+    checkoutId: invoice.provider_checkout_id,
+    checkoutUrl: invoice.provider_checkout_url,
+    status: invoice.provider_status,
+    metadata: invoice.provider_metadata || {},
+  },
   payment: invoice.payment_confirmed_at ? {
     amountCents: invoice.payment_amount_cents,
     method: invoice.payment_method,
     reference: invoice.payment_reference,
     confirmedAt: invoice.payment_confirmed_at,
+    provider: {
+      name: invoice.payment_payment_provider || 'manual',
+      paymentId: invoice.payment_provider_payment_id,
+      status: invoice.payment_provider_status,
+      receiptUrl: invoice.payment_provider_receipt_url,
+      metadata: invoice.payment_provider_metadata || {},
+    },
   } : null,
 });
 
@@ -109,6 +124,12 @@ const selectAdminInvoiceRows = async (db, filter) => {
         invoices.paid_at,
         invoices.created_at,
         invoices.updated_at,
+        invoices.payment_provider,
+        invoices.provider_invoice_id,
+        invoices.provider_checkout_id,
+        invoices.provider_checkout_url,
+        invoices.provider_status,
+        invoices.provider_metadata,
         clients.full_name as client_full_name,
         clients.email as client_email,
         clients.phone as client_phone,
@@ -119,12 +140,17 @@ const selectAdminInvoiceRows = async (db, filter) => {
         latest_payment.amount_cents as payment_amount_cents,
         latest_payment.method as payment_method,
         latest_payment.reference as payment_reference,
-        latest_payment.confirmed_at as payment_confirmed_at
+        latest_payment.confirmed_at as payment_confirmed_at,
+        latest_payment.payment_provider as payment_payment_provider,
+        latest_payment.provider_payment_id as payment_provider_payment_id,
+        latest_payment.provider_status as payment_provider_status,
+        latest_payment.provider_receipt_url as payment_provider_receipt_url,
+        latest_payment.provider_metadata as payment_provider_metadata
       from invoices
       left join app_users clients on clients.id = invoices.client_id
       left join job_requests on job_requests.id = invoices.job_request_id
       left join lateral (
-        select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at
+        select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at, payments.payment_provider, payments.provider_payment_id, payments.provider_status, payments.provider_receipt_url, payments.provider_metadata
         from payments
         where payments.invoice_id = invoices.id
         order by payments.confirmed_at desc
@@ -148,6 +174,12 @@ const selectAdminInvoiceRows = async (db, filter) => {
         invoices.paid_at,
         invoices.created_at,
         invoices.updated_at,
+        invoices.payment_provider,
+        invoices.provider_invoice_id,
+        invoices.provider_checkout_id,
+        invoices.provider_checkout_url,
+        invoices.provider_status,
+        invoices.provider_metadata,
         clients.full_name as client_full_name,
         clients.email as client_email,
         clients.phone as client_phone,
@@ -158,12 +190,17 @@ const selectAdminInvoiceRows = async (db, filter) => {
         latest_payment.amount_cents as payment_amount_cents,
         latest_payment.method as payment_method,
         latest_payment.reference as payment_reference,
-        latest_payment.confirmed_at as payment_confirmed_at
+        latest_payment.confirmed_at as payment_confirmed_at,
+        latest_payment.payment_provider as payment_payment_provider,
+        latest_payment.provider_payment_id as payment_provider_payment_id,
+        latest_payment.provider_status as payment_provider_status,
+        latest_payment.provider_receipt_url as payment_provider_receipt_url,
+        latest_payment.provider_metadata as payment_provider_metadata
       from invoices
       left join app_users clients on clients.id = invoices.client_id
       left join job_requests on job_requests.id = invoices.job_request_id
       left join lateral (
-        select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at
+        select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at, payments.payment_provider, payments.provider_payment_id, payments.provider_status, payments.provider_receipt_url, payments.provider_metadata
         from payments
         where payments.invoice_id = invoices.id
         order by payments.confirmed_at desc
@@ -186,6 +223,12 @@ const selectAdminInvoiceRows = async (db, filter) => {
       invoices.paid_at,
       invoices.created_at,
       invoices.updated_at,
+      invoices.payment_provider,
+      invoices.provider_invoice_id,
+      invoices.provider_checkout_id,
+      invoices.provider_checkout_url,
+      invoices.provider_status,
+      invoices.provider_metadata,
       clients.full_name as client_full_name,
       clients.email as client_email,
       clients.phone as client_phone,
@@ -196,12 +239,17 @@ const selectAdminInvoiceRows = async (db, filter) => {
       latest_payment.amount_cents as payment_amount_cents,
       latest_payment.method as payment_method,
       latest_payment.reference as payment_reference,
-      latest_payment.confirmed_at as payment_confirmed_at
+      latest_payment.confirmed_at as payment_confirmed_at,
+      latest_payment.payment_provider as payment_payment_provider,
+      latest_payment.provider_payment_id as payment_provider_payment_id,
+      latest_payment.provider_status as payment_provider_status,
+      latest_payment.provider_receipt_url as payment_provider_receipt_url,
+      latest_payment.provider_metadata as payment_provider_metadata
     from invoices
     left join app_users clients on clients.id = invoices.client_id
     left join job_requests on job_requests.id = invoices.job_request_id
     left join lateral (
-      select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at
+      select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at, payments.payment_provider, payments.provider_payment_id, payments.provider_status, payments.provider_receipt_url, payments.provider_metadata
       from payments
       where payments.invoice_id = invoices.id
       order by payments.confirmed_at desc

@@ -91,7 +91,7 @@ Embedded flow:
 
 ## Data Model Additions
 
-Recommended migration after choosing Square credentials:
+Implemented in `netlify/database/migrations/0018_square_payment_metadata.sql`:
 
 ### `invoices`
 
@@ -121,7 +121,7 @@ Add nullable fields:
 
 ## Environment Variables
 
-Add these before implementing Square API calls:
+Added to `.env.example`; configure real values in Netlify before implementing Square API calls:
 
 - `SQUARE_ENVIRONMENT=sandbox` or `production`
 - `SQUARE_ACCESS_TOKEN=...`
@@ -194,8 +194,8 @@ Responsibilities:
 
 Implement Phase 1 in this order:
 
-1. Add Square env vars to `.env.example` and docs.
-2. Add invoice/payment provider metadata migration.
+1. ✅ Add Square env vars to `.env.example` and docs.
+2. ✅ Add invoice/payment provider metadata migration.
 3. Add admin-only payment link function.
 4. Add admin invoice desk action and client pay button.
 5. Add webhook handler with signature verification.
