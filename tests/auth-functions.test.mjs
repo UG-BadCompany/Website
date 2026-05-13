@@ -166,7 +166,8 @@ test('magic-link endpoint still returns a usable development link when email del
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
-    [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: 'Client', phone: '555-0100' }],
     [],
     [],
     [],
@@ -184,18 +185,24 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.match(body, /Opening your dashboard/);
   assert.match(body, /https:\/\/site.test\/dashboard\//);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 5);
+  assert.equal(db.queries.length, 6);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
-  assert.match(db.queries[4].text, /insert into auth_sessions/);
-  assert.equal(db.queries[4].values[1], hashToken('session-token'));
+  assert.match(db.queries[1].text, /from app_users/);
+  assert.equal(db.queries[1].values[0], 'client@example.com');
+  assert.match(db.queries[2].text, /update app_users/);
+  assert.equal(db.queries[2].values[0], 'client@example.com');
+  assert.equal(db.queries[2].values[1], 'Client');
+  assert.equal(db.queries[2].values[2], '555-0100');
+  assert.match(db.queries[5].text, /insert into auth_sessions/);
+  assert.equal(db.queries[5].values[1], hashToken('session-token'));
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: '555-0101', company_name: 'T&A', mailing_address: '123 Main St' }],
-    [],
     [{ key: 'client', name: 'Client' }, { key: 'admin', name: 'Admin' }],
+    [],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
@@ -226,8 +233,8 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
-    [],
     [{ key: 'client', name: 'Client' }],
+    [],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
@@ -244,7 +251,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
-  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.quotes.manage', 'client.requests.manage', 'client.tools']);
+  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
 });
 
 test('logout endpoint revokes the current session and clears the session cookie', async () => {
