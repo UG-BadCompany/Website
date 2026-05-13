@@ -235,8 +235,9 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     body: new URLSearchParams({ token: 'magic-token' }),
   }));
 
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.equal(response.status, 200);
+  assert.match(body, /Opening your dashboard/);
+  assert.match(body, /https:\/\/site.test\/dashboard\//);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
