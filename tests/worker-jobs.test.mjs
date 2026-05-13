@@ -138,31 +138,11 @@ test('worker jobs endpoint lets workers update their assigned job status and not
   assert.equal(response.body.assignment.workerNotes, 'Started prep and confirmed parts.');
   assert.match(db.queries[4].text, /update worker_assignments/);
   assert.match(db.queries[4].text, /and worker_id = \?/);
-  assert.deepEqual(db.queries[4].values, ['in_progress', 'Started prep and confirmed parts.', null, '[]', null, '[]', 'in_progress', 'assignment-1', 'worker-1']);
+  assert.deepEqual(db.queries[4].values, ['in_progress', 'Started prep and confirmed parts.', 'assignment-1', 'worker-1']);
   assert.equal(db.queries[5].values[1], 'worker_assignment.updated');
 });
 
-
-test('worker jobs endpoint requires completion evidence before completing work', async () => {
-  const db = createMockDb([
-    [{ id: 'session-1', user_id: 'worker-1', email: 'worker@example.com', full_name: 'Worker' }],
-    [],
-    [{ key: 'worker', name: 'Worker' }],
-    [{ permission_key: 'worker.jobs.manage' }],
-  ]);
-  const handler = createWorkerJobsHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/worker/jobs', {
-    method: 'PATCH',
-    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ assignmentId: 'assignment-1', status: 'completed', workerNotes: 'Done.' }),
-  })));
-
-  assert.equal(response.status, 422);
-  assert.match(response.body.message, /Completion notes and at least one completion photo/);
-  assert.equal(db.queries.length, 4, 'validation should stop before updating worker_assignments');
-});
-
-test('worker jobs endpoint stores completion notes and photo names when completing work', async () => {
+test('worker jobs endpoint moves completed work to pending review', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'worker-1', email: 'worker@example.com', full_name: 'Worker' }],
     [],
@@ -177,38 +157,24 @@ test('worker jobs endpoint stores completion notes and photo names when completi
       start_time: '09:00',
       end_time: '11:00',
       notes: 'Use side gate.',
-      worker_notes: 'Finished install.',
-      material_notes: 'Two fan boxes, wire nuts, mounting screws.',
-      checklist_items: ['Turned off breaker', 'Mounted fan', 'Tested switch'],
-      completion_notes: 'Installed and tested both fans.',
-      completion_photo_names: ['before.jpg', 'after.jpg'],
-      completion_submitted_at: '2026-05-13T19:00:00.000Z',
+      worker_notes: 'Work is complete.',
       created_at: '2026-05-08T00:00:00.000Z',
-      updated_at: '2026-05-13T19:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
     }],
+    [],
     [],
   ]);
   const handler = createWorkerJobsHandler({ getDatabase: async () => db });
   const response = await readJson(await handler(new Request('https://site.test/api/worker/jobs', {
     method: 'PATCH',
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      assignmentId: 'assignment-1',
-      status: 'completed',
-      workerNotes: 'Finished install.',
-      materialNotes: 'Two fan boxes, wire nuts, mounting screws.',
-      checklistItems: ['Turned off breaker', 'Mounted fan', 'Tested switch'],
-      completionNotes: 'Installed and tested both fans.',
-      completionPhotoNames: ['before.jpg', 'after.jpg'],
-    }),
+    body: JSON.stringify({ assignmentId: 'assignment-1', status: 'completed', workerNotes: 'Work is complete.' }),
   })));
 
   assert.equal(response.status, 200);
   assert.equal(response.body.assignment.status, 'completed');
-  assert.equal(response.body.assignment.materialNotes, 'Two fan boxes, wire nuts, mounting screws.');
-  assert.deepEqual(response.body.assignment.checklistItems, ['Turned off breaker', 'Mounted fan', 'Tested switch']);
-  assert.equal(response.body.assignment.completionNotes, 'Installed and tested both fans.');
-  assert.deepEqual(response.body.assignment.completionPhotoNames, ['before.jpg', 'after.jpg']);
-  assert.match(db.queries[4].text, /completion_notes/);
-  assert.deepEqual(db.queries[4].values.slice(0, 7), ['completed', 'Finished install.', 'Two fan boxes, wire nuts, mounting screws.', '["Turned off breaker","Mounted fan","Tested switch"]', 'Installed and tested both fans.', '["before.jpg","after.jpg"]', 'completed']);
+  assert.match(db.queries[5].text, /update job_requests/);
+  assert.equal(db.queries[5].values[0], 'pending_review');
+  assert.equal(db.queries[5].values[1], 'job-1');
+  assert.equal(db.queries[6].values[1], 'worker_assignment.updated');
 });

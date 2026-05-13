@@ -23,13 +23,15 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | View own invoices | Yes | No | Yes |
 | Manage invoices | No | No | Yes |
 | Pay invoices | Own invoices only | No | Admin override |
+| Manage inventory | No | No | Yes |
+| View admin activity/audit trail | No | No | Yes |
 | View reports/settings | No | No | Yes |
 
 ## Dashboard behavior
 
 - Clients see only their own properties, requests, quotes, invoices, payments, files, and messages.
-- Workers see assigned jobs, status filters, pop-out work orders, job notes, checklists, access details, material/parts notes, and completion photo/attachment evidence tools.
-- Admins see every operational tool.
+- Workers see assigned jobs, job notes, checklists, access details, materials, and photo upload tools.
+- Admins see every operational tool, including work orders, invoices, access management, and recent audit activity.
 - Multi-role users can either see combined tools or a role switcher, depending on final UX preference.
 
 ## Permission implementation notes
@@ -48,13 +50,22 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `POST /api/auth/logout` | Optional | Any signed-in user | Revokes the current session when present and clears the session cookie. |
 | `GET /api/client/job-requests` | Yes | `client` or `admin` | Returns job requests and property summaries scoped to the signed-in client account. |
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
+| `PATCH /api/client/job-requests` | Yes | `client` or `admin` | Updates owned property/request details and lets clients approve work in `pending_review`. |
+| `GET /api/client/invoices` | Yes | `client` or `admin` | Returns unpaid invoices scoped to the signed-in client account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
 | `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
-| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status, worker notes, checklist items, material notes, and required completion notes/photo evidence for an assigned job; workers are scoped to their own assignments. |
-| `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
-| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
-| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
+| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status and worker notes for an assigned job; workers are scoped to their own assignments, and completed work moves to admin/client pending review. |
+| `GET /api/admin/job-requests` | Yes | `admin.requests.manage` or `admin` | Returns scoped public job requests, worker assignments, quote context, and status counts for active/completed/all admin work-order views. |
+| `PATCH /api/admin/job-requests` | Yes | `admin.requests.manage` or `admin` | Updates a request status/internal admin notes, can create/update worker assignments, and opens invoices when verified work moves to `waiting_payment`. |
+| `POST /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Creates the first draft/sent quote for an existing client-linked job request. |
+| `PATCH /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Edits an existing saved quote from the open work request. |
+| `GET /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Lists open, paid, or all active invoices with payment summary data. |
+| `GET /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Lists active inventory items and low-stock summary data. |
+| `POST /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Creates a tracked inventory item for materials, tools, or supplies. |
+| `PATCH /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Records quantity adjustments, updates item details, archives inactive items, and updates stock on hand. |
+| `PATCH /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
+| `GET /api/admin/activity` | Yes | `admin.activity.view` or `admin` | Lists paginated recent audit events for the admin activity feed. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |
@@ -66,5 +77,5 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 
 - A user with only `client` sees only client sections, including the requests and properties attached to their account; worker and admin sections stay hidden in the browser and remain blocked by server-side API checks.
 - A user with only `worker` sees worker sections only.
-- A user with `admin` defaults into the admin dashboard and can switch between admin, client, and worker views for support/troubleshooting.
+- A user with `admin` defaults into the admin dashboard and can switch between admin, client, and worker views for support/troubleshooting. Admin activity is controlled separately by `admin.activity.view` so audit access can be delegated or removed independently.
 - Multi-role non-admin users can see the tools for their assigned roles, but they cannot access admin APIs unless they have the `admin` role.

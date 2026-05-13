@@ -62,6 +62,16 @@ export const createVerifyMagicLinkHandler = ({
     `;
     const sessionTtlMinutes = getSessionTtlMinutesForRoles(roles.map((role) => role.key));
 
+    const roles = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const roleKeys = roles.map((role) => role.key);
+    const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
+
     await db.sql`
       insert into auth_sessions (user_id, session_hash, expires_at)
       values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(sessionTtlMinutes)}::timestamptz)
