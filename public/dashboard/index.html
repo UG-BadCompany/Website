@@ -3582,7 +3582,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminActivity();
           }
         })
-        .catch((error) => {
+        .catch(() => {
           status.dataset.state = 'error';
           status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
           if (authDebugEnabled) {
