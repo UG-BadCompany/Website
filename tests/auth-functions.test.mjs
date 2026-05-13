@@ -243,7 +243,7 @@ test('magic-link user helper does not fail sign-in when role assignment has a st
 
 test('verify endpoint signs in directly from a magic-link GET and redirects to the dashboard', async () => {
   const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com' }],
+    [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
     [],
@@ -269,9 +269,48 @@ test('verify endpoint signs in directly from a magic-link GET and redirects to t
   assert.match(db.queries[6].text, /update auth_magic_links/);
 });
 
+test('verify endpoint can recover when the link token is the database magic-link id', async () => {
+  const db = createMockDb([
+    [{ id: '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null, matched_by: 'id' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [],
+    [],
+    [],
+    [],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=6f6c428d-286f-41d3-b1a0-ec2e12c4c2be'));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries[0].values[2], '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be');
+});
+
+test('verify endpoint redirects with a used-link status when a token was already consumed', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/login/?auth=used');
+  assert.equal(db.queries.length, 1);
+});
+
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com' }],
+    [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
     [],
@@ -316,7 +355,7 @@ test('verify endpoint still redirects when marking the used magic link fails aft
     sql(strings, ...values) {
       const text = strings.join('?');
       this.queries.push({ text, values });
-      if (/from auth_magic_links/.test(text)) return [{ id: 'link-1', email: 'client@example.com' }];
+      if (/from auth_magic_links/.test(text)) return [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }];
       if (/from app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
       if (/update app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
       if (/update auth_magic_links/.test(text)) throw new Error('consumed_at schema mismatch');

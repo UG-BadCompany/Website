@@ -1,7 +1,8 @@
 (() => {
   const queryMessages = {
     'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
-    expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
+    expired: ['That magic link is expired. Request a fresh sign-in link.', 'error'],
+    used: ['That magic link was already used. Request a fresh link, then open the newest email only once.', 'error'],
     error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
   };
 

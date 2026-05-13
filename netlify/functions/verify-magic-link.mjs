@@ -12,6 +12,23 @@ const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
 const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
 
+
+const getMagicLinkStatus = (magicLink) => {
+  if (!magicLink) return 'not-found';
+  if (magicLink.consumed_at) return 'used';
+
+  const expiresAt = new Date(magicLink.expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return 'expired';
+
+  return 'active';
+};
+
+const getInactiveRedirect = (status) => {
+  const authState = status === 'used' ? 'used' : 'expired';
+
+  return new Response(null, { status: 302, headers: { location: `/login/?auth=${authState}` } });
+};
+
 const getTokenFromRequest = async (request) => {
   if (request.method === 'GET') {
     const url = new URL(request.url);
@@ -42,17 +59,28 @@ export const createVerifyMagicLinkHandler = ({
 
   try {
     const db = await getDatabase();
+    const tokenHash = hashToken(token);
     const [magicLink] = await db.sql`
-      select id, email
+      select id, email, expires_at, consumed_at,
+        case when token_hash = ${tokenHash} then 'token' else 'id' end as matched_by
       from auth_magic_links
-      where token_hash = ${hashToken(token)}
-        and consumed_at is null
-        and expires_at > now()
+      where token_hash = ${tokenHash}
+        or id::text = ${token}
+      order by created_at desc
       limit 1
     `;
+    const magicLinkStatus = getMagicLinkStatus(magicLink);
 
-    if (!magicLink) {
-      return new Response(null, { status: 302, headers: { location: '/login/?auth=expired' } });
+    if (magicLinkStatus !== 'active') {
+      console.error('Magic link verification did not find an active link', {
+        status: magicLinkStatus,
+        matchedBy: magicLink?.matched_by || null,
+        magicLinkId: magicLink?.id || null,
+        hasConsumedAt: Boolean(magicLink?.consumed_at),
+        expiresAt: magicLink?.expires_at || null,
+      });
+
+      return getInactiveRedirect(magicLinkStatus);
     }
 
     const user = await createOrUpdateMagicLinkUser(db, {
