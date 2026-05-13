@@ -271,14 +271,14 @@ export const getSessionToken = (request) => parseCookies(request.headers.get('co
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
   const [existingUser] = await db.sql`
-    select id
+    select id, email, full_name, phone
     from app_users
     where lower(email) = lower(${normalizedEmail})
     order by created_at asc
     limit 1
   `;
 
-  const [user] = existingUser ? await db.sql`
+  const [savedUser] = existingUser ? await db.sql`
     update app_users
     set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
         auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
@@ -301,14 +301,18 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     returning id, email, full_name, phone
   `;
 
+  if (!savedUser) {
+    throw new Error(`Unable to create or update magic-link user for ${normalizedEmail}`);
+  }
+
   await db.sql`
     insert into user_roles (user_id, role_id)
-    select ${user.id}, roles.id
+    select ${savedUser.id}, roles.id
     from roles
     where roles.key = 'client'
-      and not exists (select 1 from user_roles where user_roles.user_id = ${user.id})
+      and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
     on conflict do nothing
   `;
 
-  return user;
+  return savedUser;
 };
