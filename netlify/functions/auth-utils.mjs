@@ -271,18 +271,16 @@ export const getSessionToken = (request) => parseCookies(request.headers.get('co
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
   const [existingUser] = await db.sql`
-    select id
+    select id, email, full_name, phone
     from app_users
     where lower(email) = lower(${normalizedEmail})
     order by created_at asc
     limit 1
   `;
 
-  const [user] = existingUser ? await db.sql`
+  const [savedUser] = existingUser ? await db.sql`
     update app_users
-    set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
-        auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
-        full_name = coalesce(nullif(full_name, ''), ${name || null}),
+    set full_name = coalesce(nullif(full_name, ''), ${name || null}),
         phone = coalesce(nullif(phone, ''), ${phone || null}),
         is_active = true,
         updated_at = now()
@@ -292,8 +290,6 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
     values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
-      auth_provider = case when app_users.auth_provider = 'pending' then 'magic_link' else app_users.auth_provider end,
-      auth_subject = case when app_users.auth_provider = 'pending' or app_users.auth_subject is null then excluded.auth_subject else app_users.auth_subject end,
       full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
       phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
       is_active = true,
@@ -301,14 +297,28 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     returning id, email, full_name, phone
   `;
 
-  await db.sql`
-    insert into user_roles (user_id, role_id)
-    select ${user.id}, roles.id
-    from roles
-    where roles.key = 'client'
-      and not exists (select 1 from user_roles where user_roles.user_id = ${user.id})
-    on conflict do nothing
-  `;
+  if (!savedUser) {
+    throw new Error(`Unable to create or update magic-link user for ${normalizedEmail}`);
+  }
 
-  return user;
+  try {
+    await db.sql`
+      insert into roles (key, name, description)
+      values ('client', 'Client', 'Can manage their own properties, requests, quotes, invoices, files, and messages.')
+      on conflict (key) do nothing
+    `;
+
+    await db.sql`
+      insert into user_roles (user_id, role_id)
+      select ${savedUser.id}, roles.id
+      from roles
+      where roles.key = 'client'
+        and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
+      on conflict do nothing
+    `;
+  } catch (error) {
+    console.error('Failed to assign default client role during magic-link sign-in', error);
+  }
+
+  return savedUser;
 };
