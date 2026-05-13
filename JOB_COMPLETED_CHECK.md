@@ -20,4 +20,4 @@
 - [ ] Add real project photos, testimonials, Google review links, and any verified trust claims.
 - [ ] Phase 2: add authentication and persistent portal accounts.
 - [ ] Phase 3: connect job request form to storage/email notifications.
-- [ ] Later phases: quotes, PDFs, Stripe payments, scheduling, worker tools, and admin reporting.
+- [ ] Later phases: quotes, PDFs, Stripe payments, scheduling, worker tools, inventory tracking, and admin reporting.
