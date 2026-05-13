@@ -1,16 +1,25 @@
 import { createHash } from 'node:crypto';
-import { readFile, readdir, unlink } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
-const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
-const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
-const STALE_CACHED_MIGRATIONS = new Set([
-  LEGACY_CUSTOM_ROLE_MIGRATION,
+
+// Netlify Database validates applied migrations by name. These files must stay
+// committed even when their schema changes were later moved, consolidated, or
+// reintroduced under another migration name.
+const APPLIED_COMPATIBILITY_MIGRATIONS = new Set([
+  '0004_custom_roles_permissions.sql',
   '0009_completion_review_status.sql',
   '0009_quote_payment_completion_controls.sql',
+  '0009_worker_completion_evidence.sql',
   '0010_invoices_payments.sql',
+  '0010_worker_job_details.sql',
+  '0011_completion_review_status.sql',
+  '0012_quote_payment_completion_controls.sql',
+  '0013_invoices_payments.sql',
+  '0014_worker_completion_evidence.sql',
 ]);
+
 const APPLIED_MIGRATION_LOCKS = new Map([
   [
     '0004_work_order_schedule.sql',
@@ -29,44 +38,17 @@ const sha256File = async (file) => createHash('sha256')
   .update(await readFile(new URL(file, MIGRATIONS_DIR)))
   .digest('hex');
 
-const removeStaleCachedMigrations = async (files) => {
+export const validateMigrationFiles = async () => {
+  const files = await listMigrationFiles();
   const warnings = [];
-  let repairedFiles = [...files];
-
-  for (const staleMigration of STALE_CACHED_MIGRATIONS) {
-    if (!repairedFiles.includes(staleMigration)) {
-      continue;
-    }
-
-    if (staleMigration === LEGACY_CUSTOM_ROLE_MIGRATION && !repairedFiles.includes(CURRENT_CUSTOM_ROLE_MIGRATION)) {
-      warnings.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} exists but ${CURRENT_CUSTOM_ROLE_MIGRATION} is missing; not removing the only custom role migration.`);
-      continue;
-    }
-
-    await unlink(new URL(staleMigration, MIGRATIONS_DIR));
-    repairedFiles = repairedFiles.filter((file) => file !== staleMigration);
-    warnings.push(`Removed stale cached ${staleMigration}.`);
-  }
-
-  return { files: repairedFiles, warnings };
-};
-
-export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
-  let files = await listMigrationFiles();
-  const warnings = [];
-
-  if (repairLegacy) {
-    const repaired = await removeStaleCachedMigrations(files);
-    files = repaired.files;
-    warnings.push(...repaired.warnings);
-  }
-
   const prefixes = new Map();
   const errors = [];
 
-  if (files.includes(LEGACY_CUSTOM_ROLE_MIGRATION)) {
-    errors.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} must not exist; custom role permissions now live in ${CURRENT_CUSTOM_ROLE_MIGRATION}.`);
-  }
+  files
+    .filter((file) => APPLIED_COMPATIBILITY_MIGRATIONS.has(file))
+    .forEach((file) => {
+      warnings.push(`Kept applied compatibility migration ${file}; Netlify Database requires applied migration names to remain present.`);
+    });
 
   files.forEach((file) => {
     const match = file.match(MIGRATION_PREFIX_PATTERN);
@@ -82,11 +64,17 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
     prefixes.set(prefix, existing);
   });
 
-  [...prefixes.entries()]
-    .filter(([, names]) => names.length > 1)
-    .forEach(([prefix, names]) => {
+  for (const [prefix, names] of prefixes.entries()) {
+    if (names.length <= 1) {
+      continue;
+    }
+
+    const nonCompatibilityNames = names.filter((name) => !APPLIED_COMPATIBILITY_MIGRATIONS.has(name));
+
+    if (nonCompatibilityNames.length > 1) {
       errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-    });
+    }
+  }
 
   for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
     if (!files.includes(file)) {
@@ -107,7 +95,7 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
 const isDirectRun = process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href;
 
 if (isDirectRun) {
-  const { files, errors, warnings } = await validateMigrationFiles({ repairLegacy: true });
+  const { files, errors, warnings } = await validateMigrationFiles();
 
   warnings.forEach((warning) => console.warn(`Warning: ${warning}`));
 
