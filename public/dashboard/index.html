@@ -1788,7 +1788,7 @@
 
       const scheduleAdminActivityReload = () => {
         window.clearTimeout(adminActivityFilterTimer);
-        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivity({ filtered: true }), 220);
+        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivityFeed({ filtered: true }), 220);
       };
 
       const bindAdminActivityFilters = () => {
@@ -2027,6 +2027,7 @@
           <div class="job-file-list" data-job-files="${escapeHtml(assignment.jobRequest?.id || '')}" aria-live="polite"></div>
         </article>
       `;
+      };
 
       const setClientProfileEditing = (isEditing) => {
         document.querySelectorAll('[data-client-profile-editable]').forEach((field) => {
@@ -3195,82 +3196,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const bindAdminInvoiceActions = () => {
-        const panel = document.querySelector('[data-admin-invoices]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
-        const invoiceFilter = panel.querySelector('[data-admin-invoice-status-filter]');
-        const invoiceSearch = panel.querySelector('[data-admin-invoice-search]');
-        invoiceFilter?.addEventListener('change', () => loadAdminInvoices());
-        invoiceSearch?.addEventListener('input', renderAdminInvoiceList);
-        panel.addEventListener('submit', async (event) => {
-          const form = event.target.closest('[data-admin-payment-form]');
-          if (!form) return;
-          event.preventDefault();
-          const button = form.querySelector('[data-admin-confirm-payment]');
-          const formData = new FormData(form);
-          const amountDollars = Number(formData.get('amountDollars') || 0);
-          const amountCents = Math.round(amountDollars * 100);
-          const status = document.querySelector('[data-admin-invoices-status]');
 
-          if (!Number.isFinite(amountDollars) || amountDollars < 0) {
-            if (status) status.textContent = 'Enter a valid non-negative payment amount.';
-            return;
-          }
-
-          if (button) button.disabled = true;
-          if (status) status.textContent = 'Confirming payment…';
-          try {
-            const response = await fetch('/api/admin/invoices', {
-              method: 'PATCH',
-              headers: { accept: 'application/json', 'content-type': 'application/json' },
-              body: JSON.stringify({
-                invoiceId: form.dataset.adminInvoiceId,
-                amountCents,
-                method: formData.get('method') || 'manual',
-                reference: formData.get('reference') || '',
-              }),
-            });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not confirm payment.');
-            await loadAdminInvoices();
-            await loadAdminRequests();
-            await loadAdminActivity();
-          } catch (error) {
-            if (status) status.textContent = error.message;
-          } finally {
-            if (button) button.disabled = false;
-          }
-        });
-      };
-
-      const loadAdminInvoices = async () => {
-        const panel = document.querySelector('[data-admin-invoices]');
-        const status = document.querySelector('[data-admin-invoices-status]');
-        const invoiceSummary = document.querySelector('[data-admin-invoice-summary]');
-        const invoiceList = document.querySelector('[data-admin-invoice-list]');
-        const invoiceFilter = document.querySelector('[data-admin-invoice-status-filter]');
-        if (!panel || !status || !invoiceList) return;
-        try {
-          const filter = invoiceFilter?.value || 'open';
-          const response = await fetch(`/api/admin/invoices?status=${encodeURIComponent(filter)}`, { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Invoices are not available.');
-          currentAdminInvoices = result.invoices || [];
-          const label = filter === 'paid' ? 'paid invoice history' : filter === 'all' ? 'active invoice records' : 'invoice payment confirmation';
-          status.dataset.state = 'ready';
-          status.textContent = currentAdminInvoices.length ? `${currentAdminInvoices.length} ${label} item${currentAdminInvoices.length === 1 ? '' : 's'} loaded.` : `No ${label} items found.`;
-          if (invoiceSummary) invoiceSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
-          renderAdminInvoiceList();
-          bindAdminInvoiceActions();
-        } catch (error) {
-          currentAdminInvoices = [];
-          status.dataset.state = 'error';
-          status.textContent = error.message;
-        }
-      };
-
-      const loadAdminActivity = async ({ filtered = false, append = false } = {}) => {
+      const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {
         const panel = document.querySelector('[data-admin-activity]');
         const status = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
@@ -3325,10 +3252,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           openButton.addEventListener('click', async () => {
             setModalOpen(panel, true);
             document.querySelector('[data-admin-activity-type-filter]')?.focus({ preventScroll: true });
-            if (!adminActivityLoaded) await loadAdminActivity();
+            if (!adminActivityLoaded) await loadAdminActivityFeed();
           });
         });
-        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivity({ append: true }));
+        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivityFeed({ append: true }));
         panel.querySelector('[data-admin-activity-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
           if (event.target === panel) setModalOpen(panel, false);
@@ -3595,71 +3522,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canViewAdminActivity) {
             bindAdminActivityLauncher();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            window.taDashboardActions.loadAdminInvoices();
           }
 
           if (result.user.permissions?.canManageInvoices) {
