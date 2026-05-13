@@ -510,6 +510,38 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 
 
 
+
+test('me endpoint recovers with role defaults when the primary user load fails after finding the session', async () => {
+  let roleQueryAttempts = 0;
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{ id: 'session-1', user_id: 'user-1', email: 'admin@example.com', full_name: 'Admin User', phone: '555-0100' }];
+      if (text.includes('from user_roles') && text.includes('join roles')) {
+        roleQueryAttempts += 1;
+        if (roleQueryAttempts === 1) throw new Error('temporary role load failure');
+        return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
+      }
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.equal(response.body.recovered, true);
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
+  assert.equal(response.body.user.permissions.canManageUsers, true);
+  assert.equal(response.body.user.permissions.canManageInventory, true);
+});
+
 test('me endpoint uses role defaults when role permission table is unavailable', async () => {
   const db = {
     queries: [],

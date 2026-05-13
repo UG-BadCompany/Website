@@ -62,6 +62,42 @@ const unauthenticatedSessionResponse = (message, status = 401, headers = {}) => 
   message,
 }, headers);
 
+
+const loadCurrentUserFallback = async (db, sessionToken) => {
+  const [session] = await db.sql`
+    select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone
+    from auth_sessions
+    join app_users on app_users.id = auth_sessions.user_id
+    where auth_sessions.session_hash = ${hashToken(sessionToken)}
+      and auth_sessions.revoked_at is null
+      and auth_sessions.expires_at > now()
+      and app_users.is_active = true
+    limit 1
+  `;
+
+  if (!session) return null;
+
+  let roles = [];
+  try {
+    roles = await db.sql`
+      select roles.key, roles.name
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${session.user_id}
+      order by roles.key
+    `;
+  } catch (roleError) {
+    console.error('Failed to load current user roles during /api/me fallback; using client role', roleError);
+  }
+
+  const roleKeys = roles.map((role) => role.key);
+
+  return {
+    session,
+    roleKeys: roleKeys.length ? roleKeys : ['client'],
+  };
+};
+
 const mapUser = (session, roleKeys, permissionKeys) => ({
   id: session.user_id,
   email: session.email,
@@ -89,8 +125,10 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     );
   }
 
+  let db;
+
   try {
-    const db = await getDatabase();
+    db = await getDatabase();
     const [session] = await db.sql`
       select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone
       from auth_sessions
@@ -139,12 +177,16 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
     const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
 
-    await db.sql`
-      update auth_sessions
-      set last_seen_at = now(),
-          expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
-      where id = ${session.id}
-    `;
+    try {
+      await db.sql`
+        update auth_sessions
+        set last_seen_at = now(),
+            expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
+        where id = ${session.id}
+      `;
+    } catch (touchError) {
+      console.error('Failed to refresh current session expiry; continuing with authenticated response', touchError);
+    }
 
     if (request.method === 'PATCH') {
       const body = await parseJsonBody(request);
@@ -191,6 +233,24 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     }, { 'set-cookie': sessionCookie });
   } catch (error) {
     console.error('Failed to load current user', error);
+
+    if (request.method === 'GET' && db) {
+      try {
+        const fallback = await loadCurrentUserFallback(db, sessionToken);
+
+        if (fallback) {
+          const sessionTtlMinutes = getSessionTtlMinutesForRoles(fallback.roleKeys);
+          return json(200, {
+            ok: true,
+            authenticated: true,
+            recovered: true,
+            user: mapUser(fallback.session, fallback.roleKeys, []),
+          }, { 'set-cookie': createSessionCookie(sessionToken, request, sessionTtlMinutes) });
+        }
+      } catch (fallbackError) {
+        console.error('Failed to recover current user after /api/me error', fallbackError);
+      }
+    }
 
     return json(500, { ok: false, authenticated: false, message: 'We could not load your session right now.' });
   }
