@@ -1,5 +1,6 @@
 import {
   clean,
+  getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
@@ -16,7 +17,7 @@ const normalizeInvoiceFilter = (value) => {
 
 const normalizePaymentPayload = (body = {}) => ({
   invoiceId: clean(body.invoiceId, 80),
-  amountCents: Number(body.amountCents),
+  amountCents: body.amountCents === undefined || body.amountCents === '' ? null : Number(body.amountCents),
   method: clean(body.method, 80),
   reference: clean(body.reference, 160),
 });
@@ -38,6 +39,7 @@ const mapInvoice = (invoice) => ({
   status: invoice.status,
   title: getInvoiceTitle(invoice),
   amountCents: invoice.amount_cents,
+  dueAt: invoice.due_at,
   paidAt: invoice.paid_at,
   createdAt: invoice.created_at,
   updatedAt: invoice.updated_at,
@@ -99,7 +101,7 @@ const loadSession = async (db, sessionToken) => {
   return session;
 };
 
-const loadRoleKeys = async (db, userId) => {
+const loadAccess = async (db, userId) => {
   const roles = await db.sql`
     select roles.key, roles.name
     from user_roles
@@ -107,8 +109,21 @@ const loadRoleKeys = async (db, userId) => {
     where user_roles.user_id = ${userId}
     order by roles.key
   `;
+  const roleKeys = roles.map((role) => role.key);
 
-  return roles.map((role) => role.key);
+  const rolePermissions = await db.sql`
+    select distinct role_permissions.permission_key
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+    where user_roles.user_id = ${userId}
+    order by role_permissions.permission_key
+  `;
+
+  return {
+    roleKeys,
+    permissionKeys: getPermissionKeysForRoles(roleKeys, rolePermissions.map((permission) => permission.permission_key)),
+  };
 };
 
 const selectAdminInvoiceRows = async (db, filter) => {
@@ -220,6 +235,7 @@ const selectAdminInvoiceRows = async (db, filter) => {
       invoices.status,
       invoices.title,
       invoices.amount_cents,
+      invoices.due_at,
       invoices.paid_at,
       invoices.created_at,
       invoices.updated_at,
@@ -291,8 +307,26 @@ const handlePatch = async ({ request, db, session }) => {
     return json(422, { ok: false, message: 'Invoice is required.' });
   }
 
-  if (!Number.isInteger(payload.amountCents) || payload.amountCents < 0) {
-    return json(422, { ok: false, message: 'Payment amount must be a non-negative amount in cents.' });
+  if (payload.amountCents !== null && (!Number.isInteger(payload.amountCents) || payload.amountCents <= 0)) {
+    return json(422, { ok: false, message: 'Payment amount must be a positive amount in cents.' });
+  }
+
+  const [openInvoice] = await db.sql`
+    select id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
+    from invoices
+    where id = ${payload.invoiceId}
+      and status = ${'open'}
+    limit 1
+  `;
+
+  if (!openInvoice) {
+    return json(404, { ok: false, authenticated: true, authorized: true, message: 'Open invoice not found.' });
+  }
+
+  const paymentAmountCents = payload.amountCents ?? openInvoice.amount_cents ?? 0;
+
+  if (paymentAmountCents !== openInvoice.amount_cents) {
+    return json(422, { ok: false, message: 'Payment amount must match the open invoice balance.' });
   }
 
   const [invoice] = await db.sql`
@@ -300,18 +334,14 @@ const handlePatch = async ({ request, db, session }) => {
     set status = ${'paid'},
         paid_at = now(),
         updated_at = now()
-    where id = ${payload.invoiceId}
+    where id = ${openInvoice.id}
       and status = ${'open'}
-    returning id, job_request_id, client_id, status, title, amount_cents, paid_at, created_at, updated_at
+    returning id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
   `;
-
-  if (!invoice) {
-    return json(404, { ok: false, authenticated: true, authorized: true, message: 'Open invoice not found.' });
-  }
 
   const [payment] = await db.sql`
     insert into payments (invoice_id, job_request_id, client_id, amount_cents, method, reference, confirmed_by)
-    values (${invoice.id}, ${invoice.job_request_id}, ${invoice.client_id}, ${payload.amountCents || invoice.amount_cents || 0}, ${payload.method || null}, ${payload.reference || null}, ${session.user_id})
+    values (${invoice.id}, ${invoice.job_request_id}, ${invoice.client_id}, ${paymentAmountCents}, ${payload.method || null}, ${payload.reference || null}, ${session.user_id})
     returning id, invoice_id, amount_cents, method, reference, confirmed_at
   `;
 
@@ -330,7 +360,7 @@ const handlePatch = async ({ request, db, session }) => {
       ${'payment.confirmed'},
       ${'invoice'},
       ${invoice.id},
-      ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: invoice.job_request_id, paymentId: payment.id, amountCents: payload.amountCents || invoice.amount_cents || 0 })}::jsonb
+      ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: invoice.job_request_id, paymentId: payment.id, amountCents: paymentAmountCents })}::jsonb
     )
   `;
 
@@ -369,10 +399,10 @@ export const createAdminInvoicesHandler = ({ getDatabase = loadDatabase } = {}) 
       return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
     }
 
-    const roleKeys = await loadRoleKeys(db, session.user_id);
+    const { roleKeys, permissionKeys } = await loadAccess(db, session.user_id);
 
-    if (!roleKeys.includes('admin')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to manage invoices.' });
+    if (!permissionKeys.includes('admin.invoices.manage')) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin invoice management permission is required.' });
     }
 
     if (request.method === 'PATCH') {

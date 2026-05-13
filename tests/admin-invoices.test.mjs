@@ -26,6 +26,7 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
+    [{ permission_key: 'admin.invoices.manage' }],
     [{
       id: 'invoice-1',
       job_request_id: 'job-1',
@@ -106,6 +107,19 @@ test('admin invoices endpoint confirms payment and completes the job request', a
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
+    [{ permission_key: 'admin.invoices.manage' }],
+    [{
+      id: 'invoice-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      status: 'open',
+      title: 'Repair invoice',
+      amount_cents: 42500,
+      due_at: null,
+      paid_at: null,
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+    }],
     [{
       id: 'invoice-1',
       job_request_id: 'job-1',
@@ -113,6 +127,7 @@ test('admin invoices endpoint confirms payment and completes the job request', a
       status: 'paid',
       title: 'Repair invoice',
       amount_cents: 42500,
+      due_at: null,
       paid_at: '2026-05-10T00:00:00.000Z',
       created_at: '2026-05-09T00:00:00.000Z',
       updated_at: '2026-05-10T00:00:00.000Z',
@@ -130,9 +145,41 @@ test('admin invoices endpoint confirms payment and completes the job request', a
   assert.equal(response.status, 200);
   assert.equal(response.body.invoice.status, 'paid');
   assert.equal(response.body.payment.id, 'payment-1');
-  assert.match(db.queries[3].text, /update invoices/);
-  assert.match(db.queries[5].text, /update job_requests/);
-  assert.equal(db.queries[5].values[0], 'completed');
-  assert.equal(db.queries[5].values[1], 'job-1');
-  assert.equal(db.queries[6].values[1], 'payment.confirmed');
+  assert.match(db.queries[5].text, /update invoices/);
+  assert.match(db.queries[7].text, /update job_requests/);
+  assert.equal(db.queries[7].values[0], 'completed');
+  assert.equal(db.queries[7].values[1], 'job-1');
+  assert.equal(db.queries[8].values[1], 'payment.confirmed');
+});
+
+
+test('admin invoices endpoint rejects mismatched payment amounts', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{ permission_key: 'admin.invoices.manage' }],
+    [{
+      id: 'invoice-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      status: 'open',
+      title: 'Repair invoice',
+      amount_cents: 42500,
+      due_at: null,
+      paid_at: null,
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+    }],
+  ]);
+  const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/invoices', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ invoiceId: 'invoice-1', amountCents: 1000, method: 'cash' }),
+  })));
+
+  assert.equal(response.status, 422);
+  assert.match(response.body.message, /must match/);
+  assert.equal(db.queries.some((query) => /insert into payments/.test(query.text)), false);
 });
