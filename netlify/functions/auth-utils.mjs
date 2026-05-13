@@ -280,9 +280,7 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
 
   const [savedUser] = existingUser ? await db.sql`
     update app_users
-    set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
-        auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
-        full_name = coalesce(nullif(full_name, ''), ${name || null}),
+    set full_name = coalesce(nullif(full_name, ''), ${name || null}),
         phone = coalesce(nullif(phone, ''), ${phone || null}),
         is_active = true,
         updated_at = now()
@@ -303,14 +301,24 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     throw new Error(`Unable to create or update magic-link user for ${normalizedEmail}`);
   }
 
-  await db.sql`
-    insert into user_roles (user_id, role_id)
-    select ${savedUser.id}, roles.id
-    from roles
-    where roles.key = 'client'
-      and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
-    on conflict do nothing
-  `;
+  try {
+    await db.sql`
+      insert into roles (key, name, description)
+      values ('client', 'Client', 'Can manage their own properties, requests, quotes, invoices, files, and messages.')
+      on conflict (key) do nothing
+    `;
+
+    await db.sql`
+      insert into user_roles (user_id, role_id)
+      select ${savedUser.id}, roles.id
+      from roles
+      where roles.key = 'client'
+        and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
+      on conflict do nothing
+    `;
+  } catch (error) {
+    console.error('Failed to assign default client role during magic-link sign-in', error);
+  }
 
   return savedUser;
 };

@@ -10,6 +10,7 @@ import {
   normalizeClientAccountPayload,
   validateClientAccount,
   validateEmail,
+  createOrUpdateMagicLinkUser,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
@@ -174,6 +175,26 @@ test('latest magic-link migration restores profile metadata columns for existing
 });
 
 
+
+test('magic-link user helper does not fail sign-in when role assignment has a stale schema problem', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/update app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/insert into roles/.test(text)) throw new Error('roles schema mismatch');
+      return [];
+    },
+  };
+
+  const user = await createOrUpdateMagicLinkUser(db, { email: 'client@example.com' });
+
+  assert.equal(user.id, 'user-1');
+  assert.equal(db.queries.some((query) => /insert into roles/.test(query.text)), true);
+});
+
 test('verify endpoint shows an auto-submit continue page on GET without consuming scanner visits', async () => {
   let openedDatabase = false;
   const handler = createVerifyMagicLinkHandler({
@@ -202,6 +223,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [],
     [],
+    [],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,
@@ -217,18 +239,20 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.match(body, /Opening your dashboard/);
   assert.match(body, /https:\/\/site.test\/dashboard\//);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 6);
+  assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
   assert.match(db.queries[1].text, /from app_users/);
   assert.equal(db.queries[1].values[0], 'client@example.com');
   assert.match(db.queries[2].text, /update app_users/);
-  assert.equal(db.queries[2].values[0], 'client@example.com');
+  assert.equal(db.queries[2].values[0], null);
   assert.equal(db.queries[2].values[1], null);
-  assert.equal(db.queries[2].values[2], null);
+  assert.equal(db.queries[2].values[2], 'user-1');
   assert.doesNotMatch(db.queries[0].text, /client_name|client_phone/);
-  assert.match(db.queries[5].text, /insert into auth_sessions/);
-  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+  assert.match(db.queries[3].text, /insert into roles/);
+  assert.match(db.queries[4].text, /insert into user_roles/);
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
+  assert.equal(db.queries[6].values[1], hashToken('session-token'));
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
