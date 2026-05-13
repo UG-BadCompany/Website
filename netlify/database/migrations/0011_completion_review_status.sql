@@ -1,0 +1,7 @@
+-- Compatibility placeholder for databases that applied the former
+-- 0011_completion_review_status migration name before the completion-review
+-- status migration was restored to 0009_completion_review_status.sql.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys. The real, idempotent
+-- status constraint update lives in 0009_completion_review_status.sql for fresh databases.

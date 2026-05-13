@@ -10,6 +10,11 @@ publish: /opt/build/repo/out
 
 Because the Netlify dashboard is still forcing `out`, this repo now matches that setting instead of fighting it.
 
+
+## Deployment health checklist
+
+For day-to-day deploy verification, use the shorter checklist in [`docs/DEPLOYMENT_HEALTH_CHECKLIST.md`](docs/DEPLOYMENT_HEALTH_CHECKLIST.md). It covers branch verification, migration safety, expected Netlify log lines, and post-deploy smoke checks.
+
 ## Current Netlify settings
 
 Use these settings in Netlify:

@@ -1,0 +1,7 @@
+-- Compatibility placeholder for databases that applied the former
+-- 0011_admin_activity_permission migration name before this permission grant
+-- moved to 0015_admin_activity_permission.sql.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys. The real, idempotent
+-- permission grant lives in 0015_admin_activity_permission.sql for fresh databases.

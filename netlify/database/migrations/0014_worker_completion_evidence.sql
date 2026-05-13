@@ -1,0 +1,8 @@
+-- Compatibility placeholder for databases that applied the former
+-- 0014_worker_completion_evidence migration name before completion evidence
+-- support was covered by the restored completion/invoice migrations.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys. The real, idempotent
+-- completion workflow changes live in 0009_completion_review_status.sql and
+-- 0010_invoices_payments.sql for fresh databases.

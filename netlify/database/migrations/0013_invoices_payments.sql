@@ -1,0 +1,7 @@
+-- Compatibility placeholder for databases that applied the former
+-- 0013_invoices_payments migration name before invoice/payment tables were
+-- restored to 0010_invoices_payments.sql.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys. The real, idempotent
+-- invoice/payment schema changes live in 0010_invoices_payments.sql for fresh databases.

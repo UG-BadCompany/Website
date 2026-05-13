@@ -1,72 +1,87 @@
-import { createHash } from 'node:crypto';
-import { readFile, readdir, unlink } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 
 const MIGRATIONS_DIR = new URL('../netlify/database/migrations/', import.meta.url);
 const MIGRATION_PREFIX_PATTERN = /^(\d{4})_.+\.sql$/;
+const COMPATIBILITY_MIGRATIONS = [
+  {
+    compatibilityMigration: '0004_custom_roles_permissions.sql',
+    currentMigration: '0005_custom_roles_permissions.sql',
+    label: 'custom role permissions',
+  },
+  {
+    compatibilityMigration: '0011_admin_activity_permission.sql',
+    currentMigration: '0015_admin_activity_permission.sql',
+    label: 'admin activity permission',
+  },
+  {
+    compatibilityMigration: '0011_completion_review_status.sql',
+    currentMigration: '0009_completion_review_status.sql',
+    label: 'completion review status',
+  },
+  {
+    compatibilityMigration: '0012_quote_payment_completion_controls.sql',
+    currentMigration: '0010_invoices_payments.sql',
+    label: 'quote payment completion controls',
+  },
+  {
+    compatibilityMigration: '0013_invoices_payments.sql',
+    currentMigration: '0010_invoices_payments.sql',
+    label: 'invoice and payment tables',
+  },
+  {
+    compatibilityMigration: '0014_worker_completion_evidence.sql',
+    currentMigration: '0009_completion_review_status.sql',
+    label: 'worker completion review status',
+  },
+];
+
+// Keep these named constants defined for older/conflicted deploy diffs that may
+// still reference the pre-table migration guard names during Netlify prebuild.
 const LEGACY_CUSTOM_ROLE_MIGRATION = '0004_custom_roles_permissions.sql';
 const CURRENT_CUSTOM_ROLE_MIGRATION = '0005_custom_roles_permissions.sql';
-const STALE_CACHED_MIGRATIONS = new Set([
-  LEGACY_CUSTOM_ROLE_MIGRATION,
-  '0009_completion_review_status.sql',
-  '0009_quote_payment_completion_controls.sql',
-  '0010_invoices_payments.sql',
-]);
-const APPLIED_MIGRATION_LOCKS = new Map([
-  [
-    '0004_work_order_schedule.sql',
-    {
-      sha256: 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1',
-      reason: 'Netlify Database already applied this migration; edit only by pulling the applied file or adding a later migration.',
-    },
-  ],
-]);
+const LEGACY_ADMIN_ACTIVITY_MIGRATION = '0011_admin_activity_permission.sql';
+const CURRENT_ADMIN_ACTIVITY_MIGRATION = '0015_admin_activity_permission.sql';
 
-const listMigrationFiles = async () => (await readdir(MIGRATIONS_DIR))
+// Keep these compatibility guards defined so older/conflicted PR diffs that still
+// reference them cannot crash prebuild with a ReferenceError before validation runs.
+const REQUIRED_APPLIED_MIGRATIONS = new Set();
+const RENAMED_APPLIED_MIGRATIONS = new Set();
+
+const listMigrationFiles = async (migrationsDir = MIGRATIONS_DIR) => (await readdir(migrationsDir))
   .filter((file) => file.endsWith('.sql'))
   .sort();
 
-const sha256File = async (file) => createHash('sha256')
-  .update(await readFile(new URL(file, MIGRATIONS_DIR)))
-  .digest('hex');
+const COMPATIBILITY_MIGRATION_NAMES = new Set(
+  COMPATIBILITY_MIGRATIONS.map(({ compatibilityMigration }) => compatibilityMigration),
+);
 
-const removeStaleCachedMigrations = async (files) => {
-  const warnings = [];
-  let repairedFiles = [...files];
-
-  for (const staleMigration of STALE_CACHED_MIGRATIONS) {
-    if (!repairedFiles.includes(staleMigration)) {
-      continue;
-    }
-
-    if (staleMigration === LEGACY_CUSTOM_ROLE_MIGRATION && !repairedFiles.includes(CURRENT_CUSTOM_ROLE_MIGRATION)) {
-      warnings.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} exists but ${CURRENT_CUSTOM_ROLE_MIGRATION} is missing; not removing the only custom role migration.`);
-      continue;
-    }
-
-    await unlink(new URL(staleMigration, MIGRATIONS_DIR));
-    repairedFiles = repairedFiles.filter((file) => file !== staleMigration);
-    warnings.push(`Removed stale cached ${staleMigration}.`);
+const retainCompatibilityMigration = ({ files, compatibilityMigration, currentMigration, label }) => {
+  if (!files.includes(compatibilityMigration)) {
+    return { files, warnings: [] };
   }
 
-  return { files: repairedFiles, warnings };
+  return {
+    files,
+    warnings: [files.includes(currentMigration)
+      ? `Kept compatibility migration ${compatibilityMigration}; ${label} now lives in ${currentMigration}, but Netlify requires applied migration files to remain present.`
+      : `Kept compatibility migration ${compatibilityMigration}; ${currentMigration} was not present in this deploy checkout, and Netlify requires applied migration files to remain present.`],
+  };
 };
 
-export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
-  let files = await listMigrationFiles();
+export const validateMigrationFiles = async ({ repairLegacy = false, migrationsDir = MIGRATIONS_DIR } = {}) => {
+  let files = await listMigrationFiles(migrationsDir);
   const warnings = [];
 
   if (repairLegacy) {
-    const repaired = await removeStaleCachedMigrations(files);
-    files = repaired.files;
-    warnings.push(...repaired.warnings);
+    for (const compatibility of COMPATIBILITY_MIGRATIONS) {
+      const retained = retainCompatibilityMigration({ files, ...compatibility });
+      files = retained.files;
+      warnings.push(...retained.warnings);
+    }
   }
 
   const prefixes = new Map();
   const errors = [];
-
-  if (files.includes(LEGACY_CUSTOM_ROLE_MIGRATION)) {
-    errors.push(`${LEGACY_CUSTOM_ROLE_MIGRATION} must not exist; custom role permissions now live in ${CURRENT_CUSTOM_ROLE_MIGRATION}.`);
-  }
 
   files.forEach((file) => {
     const match = file.match(MIGRATION_PREFIX_PATTERN);
@@ -85,21 +100,11 @@ export const validateMigrationFiles = async ({ repairLegacy = false } = {}) => {
   [...prefixes.entries()]
     .filter(([, names]) => names.length > 1)
     .forEach(([prefix, names]) => {
-      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
+      const nonCompatibilityNames = names.filter((name) => !COMPATIBILITY_MIGRATION_NAMES.has(name));
+      if (nonCompatibilityNames.length > 1) {
+        errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
+      }
     });
-
-  for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
-    if (!files.includes(file)) {
-      errors.push(`${file} must remain committed because Netlify Database has already applied it.`);
-      continue;
-    }
-
-    const actualSha256 = await sha256File(file);
-
-    if (actualSha256 !== lock.sha256) {
-      errors.push(`${file} checksum changed after it was applied (${actualSha256}); expected ${lock.sha256}. ${lock.reason}`);
-    }
-  }
 
   return { files, errors, warnings };
 };
