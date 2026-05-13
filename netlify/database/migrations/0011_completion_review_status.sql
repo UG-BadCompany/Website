@@ -1,0 +1,5 @@
+-- Compatibility placeholder for databases that applied the former
+-- 0011_completion_review_status migration name.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys.
