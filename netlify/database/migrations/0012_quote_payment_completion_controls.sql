@@ -1,0 +1,5 @@
+-- Compatibility placeholder for databases that applied the former
+-- 0012_quote_payment_completion_controls migration name.
+--
+-- Do not remove this file. Netlify Database validates that every applied
+-- migration name is still present in later deploys.
