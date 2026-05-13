@@ -164,6 +164,13 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
 });
 
 
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
 test('email delivery stays disabled for missing or placeholder Resend settings', () => {
   const original = {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -276,13 +283,14 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
+test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and opens the dashboard', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
     [],
     [],
     [{ key: 'client' }],
+    [],
     [],
     [],
     [],
@@ -307,8 +315,9 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /text\/html/);
+  assert.match(await response.text(), /https:\/\/site\.test\/dashboard\//);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.match(response.headers.get('set-cookie'), /Max-Age=1800/);
   assert.equal(db.queries.length, 6);
@@ -335,7 +344,7 @@ test('verify endpoint gives admin and worker sessions a two-hour cookie', async 
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
-  assert.equal(response.status, 302);
+  assert.equal(response.status, 200);
   assert.match(response.headers.get('set-cookie'), /Max-Age=7200/);
   assert.match(db.queries[5].text, /insert into auth_sessions/);
 });

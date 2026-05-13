@@ -420,6 +420,26 @@
         }
       };
 
+
+      const queryMessages = {
+        'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
+        expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
+        error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
+      };
+
+      const applyInitialStatus = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('signed-out')) {
+          setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
+          return;
+        }
+
+        const authState = params.get('auth');
+        if (queryMessages[authState]) {
+          setStatus(...queryMessages[authState]);
+        }
+      };
+
       applyInitialStatus();
 
       form.addEventListener('submit', async (event) => {
