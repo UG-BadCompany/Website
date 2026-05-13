@@ -175,9 +175,9 @@ test('latest magic-link migration restores profile metadata columns for existing
 
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
+    [{ id: 'link-1', email: 'client@example.com' }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
-    [{ id: 'user-1', email: 'Client@Example.com', full_name: 'Client', phone: '555-0100' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
     [],
     [],
     [],
@@ -200,8 +200,9 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.equal(db.queries[1].values[0], 'client@example.com');
   assert.match(db.queries[2].text, /update app_users/);
   assert.equal(db.queries[2].values[0], 'client@example.com');
-  assert.equal(db.queries[2].values[1], 'Client');
-  assert.equal(db.queries[2].values[2], '555-0100');
+  assert.equal(db.queries[2].values[1], null);
+  assert.equal(db.queries[2].values[2], null);
+  assert.doesNotMatch(db.queries[0].text, /client_name|client_phone/);
   assert.match(db.queries[5].text, /insert into auth_sessions/);
   assert.equal(db.queries[5].values[1], hashToken('session-token'));
 });
