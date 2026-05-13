@@ -64,10 +64,17 @@ export const validateMigrationFiles = async () => {
     prefixes.set(prefix, existing);
   });
 
-  [...prefixes.entries()]
-    .filter(([, names]) => names.length > 1)
-    .forEach(([prefix, names]) => {
-      const nonCompatibilityNames = names.filter((name) => !APPLIED_COMPATIBILITY_MIGRATIONS.has(name));
+  for (const [prefix, names] of prefixes.entries()) {
+    if (names.length <= 1) {
+      continue;
+    }
+
+    const nonCompatibilityNames = names.filter((name) => !APPLIED_COMPATIBILITY_MIGRATIONS.has(name));
+
+    if (nonCompatibilityNames.length > 1) {
+      errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
+    }
+  }
 
       if (nonCompatibilityNames.length > 1) {
         errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);

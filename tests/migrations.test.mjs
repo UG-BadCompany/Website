@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs';
+
+const execFileAsync = promisify(execFile);
 
 test('Netlify Database migrations allow applied compatibility names to remain committed', async () => {
   const { errors, files } = await validateMigrationFiles();
@@ -51,3 +55,8 @@ test('restored applied 0004 schedule migration keeps the locked applied checksum
 
   assert.match(stdout, /Netlify Database migrations verified:/);
 });
+
+test('migration validator script parses before Netlify prebuild runs it', async () => {
+  await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/check-netlify-migrations.mjs']));
+});
+
