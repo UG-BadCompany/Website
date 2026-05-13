@@ -148,11 +148,25 @@ export const getAllowedSiteUrls = () => [
     .map((url) => normalizeSiteUrl(url)),
 ].filter((url) => url && !url.includes('your-domain.example'));
 
+const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
+
+const matchesConfiguredSiteHost = (requestOrigin, allowedSiteUrls) => {
+  const requestUrl = new URL(requestOrigin);
+
+  return allowedSiteUrls.some((allowedUrl) => {
+    const parsedAllowedUrl = new URL(allowedUrl);
+
+    return requestUrl.protocol === parsedAllowedUrl.protocol
+      && hostnameWithoutWww(requestUrl.hostname) === hostnameWithoutWww(parsedAllowedUrl.hostname)
+      && requestUrl.port === parsedAllowedUrl.port;
+  });
+};
+
 export const getSiteUrl = (request) => {
   const requestOrigin = new URL(request.url).origin;
   const allowedSiteUrls = getAllowedSiteUrls();
 
-  if (allowedSiteUrls.includes(requestOrigin)) {
+  if (allowedSiteUrls.includes(requestOrigin) || matchesConfiguredSiteHost(requestOrigin, allowedSiteUrls)) {
     return requestOrigin;
   }
 

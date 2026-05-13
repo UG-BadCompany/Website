@@ -179,6 +179,13 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
 });
 
 
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
 test('email delivery stays disabled for missing or placeholder Resend settings', () => {
   const original = {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -230,6 +237,10 @@ test('site URL helper supports the production domain and Netlify subdomain alias
   assert.equal(
     getSiteUrl(new Request('https://ta-contracting.org/login/')),
     'https://ta-contracting.org',
+  );
+  assert.equal(
+    getSiteUrl(new Request('https://www.ta-contracting.org/login/')),
+    'https://www.ta-contracting.org',
   );
   assert.equal(
     getSiteUrl(new Request('https://unexpected.example/login/')),
@@ -321,6 +332,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [],
     [{ key: 'client' }],
+    [],
     [],
     [],
     [],
