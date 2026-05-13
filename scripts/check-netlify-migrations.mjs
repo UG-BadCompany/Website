@@ -14,7 +14,6 @@ const APPLIED_COMPATIBILITY_MIGRATIONS = new Set([
   '0009_worker_completion_evidence.sql',
   '0010_invoices_payments.sql',
   '0010_worker_job_details.sql',
-  '0011_admin_activity_permission.sql',
   '0011_completion_review_status.sql',
   '0012_quote_payment_completion_controls.sql',
   '0013_invoices_payments.sql',
@@ -69,6 +68,11 @@ export const validateMigrationFiles = async () => {
     .filter(([, names]) => names.length > 1)
     .forEach(([prefix, names]) => {
       const nonCompatibilityNames = names.filter((name) => !APPLIED_COMPATIBILITY_MIGRATIONS.has(name));
+
+      if (nonCompatibilityNames.length > 1) {
+        errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
+      }
+    });
 
       if (nonCompatibilityNames.length > 1) {
         errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
