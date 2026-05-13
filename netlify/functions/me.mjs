@@ -1,5 +1,6 @@
 import {
   clean,
+  createExpiredSessionCookie,
   createSessionCookie,
   getPermissionKeysForRoles,
   getSessionToken,
@@ -35,6 +36,7 @@ const buildPermissions = (roles, assignedPermissionKeys = []) => {
     canViewInvoices: permissionSet.has('client.invoices.manage'),
     canManageInvoices: permissionSet.has('admin.invoices.manage'),
     canViewAdminActivity: permissionSet.has('admin.activity.view'),
+    canManageInventory: permissionSet.has('admin.inventory.manage'),
     defaultView: canViewAdminTools ? 'admin' : (canViewWorkerTools ? 'worker' : 'client'),
     availableViews: availableViews.length ? availableViews : roles,
     permissionKeys,
@@ -49,6 +51,16 @@ const normalizeProfilePayload = (body = {}) => ({
   companyName: clean(body.companyName, 160),
   mailingAddress: clean(body.mailingAddress, 500),
 });
+
+const isOptionalSessionCheck = (request) => (
+  request.method === 'GET' && new URL(request.url).searchParams.get('optional') === '1'
+);
+
+const unauthenticatedSessionResponse = (message, status = 401, headers = {}) => json(status, {
+  ok: status === 200,
+  authenticated: false,
+  message,
+}, headers);
 
 const mapUser = (session, roleKeys, permissionKeys) => ({
   id: session.user_id,
@@ -67,16 +79,20 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
+  const optionalSessionCheck = isOptionalSessionCheck(request);
   const sessionToken = getSessionToken(request);
 
   if (!sessionToken) {
-    return json(401, { ok: false, authenticated: false, message: 'Sign in with a magic link to access the dashboard.' });
+    return unauthenticatedSessionResponse(
+      'Sign in with a magic link to access the dashboard.',
+      optionalSessionCheck ? 200 : 401,
+    );
   }
 
   try {
     const db = await getDatabase();
     const [session] = await db.sql`
-      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone, app_users.secondary_phone, app_users.company_name, app_users.mailing_address
+      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone
       from auth_sessions
       join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
@@ -87,7 +103,11 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     `;
 
     if (!session) {
-      return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
+      return unauthenticatedSessionResponse(
+        'Your session expired. Request a new magic link.',
+        optionalSessionCheck ? 200 : 401,
+        optionalSessionCheck ? { 'set-cookie': createExpiredSessionCookie(request) } : {},
+      );
     }
 
     const roles = await db.sql`
@@ -98,15 +118,23 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       order by roles.key
     `;
 
-    const roleKeys = roles.map((role) => role.key);
-    const rolePermissions = await db.sql`
-      select distinct role_permissions.permission_key
-      from user_roles
-      join roles on roles.id = user_roles.role_id
-      join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
-      where user_roles.user_id = ${session.user_id}
-      order by role_permissions.permission_key
-    `;
+    const assignedRoleKeys = roles.map((role) => role.key);
+    const roleKeys = assignedRoleKeys.length ? assignedRoleKeys : ['client'];
+    let rolePermissions = [];
+
+    try {
+      rolePermissions = await db.sql`
+        select distinct role_permissions.permission_key
+        from user_roles
+        join roles on roles.id = user_roles.role_id
+        join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+        where user_roles.user_id = ${session.user_id}
+        order by role_permissions.permission_key
+      `;
+    } catch (permissionError) {
+      console.error('Failed to load role permissions for current user; using role defaults', permissionError);
+    }
+
     const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
     const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
     const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);

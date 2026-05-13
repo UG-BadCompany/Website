@@ -20,6 +20,7 @@ export const PORTAL_PERMISSIONS = [
   { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
   { key: 'admin.invoices.manage', label: 'Admin invoice and payment management', description: 'Create invoices and confirm payments.' },
   { key: 'admin.activity.view', label: 'Admin audit activity', description: 'View recent admin activity and audit events.' },
+  { key: 'admin.inventory.manage', label: 'Admin inventory management', description: 'Manage inventory items, stock changes, and work order material usage.' },
   { key: 'admin.users.manage', label: 'Admin user management', description: 'Create users and assign roles.' },
   { key: 'admin.roles.manage', label: 'Admin role management', description: 'Create roles and manage permissions.' },
   { key: 'dashboard.switch_views', label: 'Dashboard view switching', description: 'Switch between role views for support.' },
@@ -148,7 +149,7 @@ export const getAllowedSiteUrls = () => [
     .map((url) => normalizeSiteUrl(url)),
 ].filter((url) => url && !url.includes('your-domain.example'));
 
-const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
+export const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
 
 const matchesConfiguredSiteHost = (requestOrigin, allowedSiteUrls) => {
   const requestUrl = new URL(requestOrigin);
@@ -173,7 +174,7 @@ export const getSiteUrl = (request) => {
   return allowedSiteUrls[0] || requestOrigin;
 };
 
-export const createMagicLinkUrl = (request, token) => `${getSiteUrl(request)}/api/auth/verify?token=${encodeURIComponent(token)}`;
+export const createMagicLinkUrl = (request, token) => new URL(`/api/auth/verify?token=${encodeURIComponent(token)}`, request.url).toString();
 
 export const isConfiguredSecret = (value, placeholderFragments = []) => {
   const cleaned = clean(value);
@@ -241,19 +242,56 @@ export const getSessionTtlMinutesForRoles = (roleKeys = []) => (
     : CLIENT_SESSION_TTL_MINUTES
 );
 
+const isSecureCookieRequest = (request) => {
+  const forwardedProto = clean(request.headers.get('x-forwarded-proto')).toLowerCase();
+
+  return new URL(request.url).protocol === 'https:' || forwardedProto.split(',').map((proto) => proto.trim()).includes('https');
+};
+
+const isCookieDomainSafe = (hostname) => (
+  hostname
+    && hostname.includes('.')
+    && !hostname.endsWith('.netlify.app')
+    && !['localhost', '127.0.0.1'].includes(hostname)
+);
+
+const normalizeCookieDomain = (domain) => hostnameWithoutWww(clean(domain, 253).toLowerCase().replace(/^\.+/, ''));
+
+const getConfiguredCookieDomain = (request) => {
+  const requestHostname = new URL(request.url).hostname.toLowerCase();
+  const explicitDomain = normalizeCookieDomain(process.env.AUTH_COOKIE_DOMAIN);
+
+  if (isCookieDomainSafe(explicitDomain)
+    && (requestHostname === explicitDomain || requestHostname.endsWith(`.${explicitDomain}`))) {
+    return explicitDomain;
+  }
+
+  return getAllowedSiteUrls()
+    .map((siteUrl) => normalizeCookieDomain(new URL(siteUrl).hostname))
+    .find((siteHostname) => isCookieDomainSafe(siteHostname)
+      && (requestHostname === siteHostname || requestHostname.endsWith(`.${siteHostname}`))) || '';
+};
+
+const getCookieDomainAttribute = (request) => {
+  const cookieDomain = getConfiguredCookieDomain(request);
+
+  return cookieDomain ? `; Domain=.${cookieDomain}` : '';
+};
+
+const getCookieSecurityAttributes = (request) => (
+  `${getCookieDomainAttribute(request)}; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
+);
+
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
   const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
   const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
 
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${secure}`;
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=${maxAgeSeconds}; Expires=${expires}`;
 };
 
-export const createExpiredSessionCookie = (request) => {
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
-
-  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
-};
+export const createExpiredSessionCookie = (request) => (
+  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+);
 
 export const parseCookies = (cookieHeader = '') => Object.fromEntries(
   cookieHeader
@@ -271,18 +309,16 @@ export const getSessionToken = (request) => parseCookies(request.headers.get('co
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
   const [existingUser] = await db.sql`
-    select id
+    select id, email, full_name, phone
     from app_users
     where lower(email) = lower(${normalizedEmail})
     order by created_at asc
     limit 1
   `;
 
-  const [user] = existingUser ? await db.sql`
+  const [savedUser] = existingUser ? await db.sql`
     update app_users
-    set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
-        auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
-        full_name = coalesce(nullif(full_name, ''), ${name || null}),
+    set full_name = coalesce(nullif(full_name, ''), ${name || null}),
         phone = coalesce(nullif(phone, ''), ${phone || null}),
         is_active = true,
         updated_at = now()
@@ -292,8 +328,6 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
     values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
-      auth_provider = case when app_users.auth_provider = 'pending' then 'magic_link' else app_users.auth_provider end,
-      auth_subject = case when app_users.auth_provider = 'pending' or app_users.auth_subject is null then excluded.auth_subject else app_users.auth_subject end,
       full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
       phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
       is_active = true,
@@ -301,14 +335,28 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     returning id, email, full_name, phone
   `;
 
-  await db.sql`
-    insert into user_roles (user_id, role_id)
-    select ${user.id}, roles.id
-    from roles
-    where roles.key = 'client'
-      and not exists (select 1 from user_roles where user_roles.user_id = ${user.id})
-    on conflict do nothing
-  `;
+  if (!savedUser) {
+    throw new Error(`Unable to create or update magic-link user for ${normalizedEmail}`);
+  }
 
-  return user;
+  try {
+    await db.sql`
+      insert into roles (key, name, description)
+      values ('client', 'Client', 'Can manage their own properties, requests, quotes, invoices, files, and messages.')
+      on conflict (key) do nothing
+    `;
+
+    await db.sql`
+      insert into user_roles (user_id, role_id)
+      select ${savedUser.id}, roles.id
+      from roles
+      where roles.key = 'client'
+        and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
+      on conflict do nothing
+    `;
+  } catch (error) {
+    console.error('Failed to assign default client role during magic-link sign-in', error);
+  }
+
+  return savedUser;
 };
