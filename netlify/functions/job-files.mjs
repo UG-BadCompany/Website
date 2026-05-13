@@ -59,7 +59,8 @@ const loadSessionContext = async (db, sessionToken) => {
     where user_roles.user_id = ${session.user_id}
     order by roles.key
   `;
-  const roleKeys = roles.map((role) => role.key);
+  const assignedRoleKeys = roles.map((role) => role.key);
+  const roleKeys = assignedRoleKeys.length ? assignedRoleKeys : ['client'];
 
   const rolePermissions = await db.sql`
     select distinct role_permissions.permission_key
