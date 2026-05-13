@@ -43,7 +43,7 @@ export const createVerifyMagicLinkHandler = ({
   try {
     const db = await getDatabase();
     const [magicLink] = await db.sql`
-      select id, email, purpose, client_name, client_phone
+      select id, email
       from auth_magic_links
       where token_hash = ${hashToken(token)}
         and consumed_at is null
@@ -57,8 +57,6 @@ export const createVerifyMagicLinkHandler = ({
 
     const user = await createOrUpdateMagicLinkUser(db, {
       email: magicLink.email,
-      name: magicLink.client_name,
-      phone: magicLink.client_phone,
     });
 
     await db.sql`
