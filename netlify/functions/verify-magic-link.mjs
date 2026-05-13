@@ -2,13 +2,15 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
-  daysFromNow,
   getSiteUrl,
   hashToken,
   json,
   loadDatabase,
-  SESSION_TTL_DAYS,
 } from './auth-utils.mjs';
+
+const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
+
+const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
 const escapeHtml = (value) => String(value)
   .replace(/&/g, '&amp;')
