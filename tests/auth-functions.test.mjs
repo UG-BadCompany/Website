@@ -186,6 +186,13 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
 });
 
 
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
 test('email delivery stays disabled for missing or placeholder Resend settings', () => {
   const original = {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -351,6 +358,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [],
     [],
+    [],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,
@@ -389,7 +397,8 @@ test('verify endpoint gives admin and worker sessions a two-hour cookie', async 
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
   assert.match(response.headers.get('set-cookie'), /Max-Age=7200/);
   assert.match(db.queries[6].text, /insert into auth_sessions/);
 });

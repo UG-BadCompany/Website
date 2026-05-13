@@ -18,6 +18,7 @@ _Last updated: 2026-05-13_
 - Session cookies include `Max-Age` and `Expires`.
 - `/api/me` refreshes `auth_sessions.last_seen_at`, extends `auth_sessions.expires_at`, and returns a refreshed session cookie.
 - Magic-link verification computes the session TTL after loading the user's assigned roles.
+- Magic-link verification now uses the original redirect-with-Set-Cookie flow so the browser lands on `/dashboard/` with the session cookie set directly on the verification response.
 
 ## Roles and permissions
 
@@ -58,6 +59,11 @@ _Last updated: 2026-05-13_
 - Clients can view their unpaid invoices through `/api/client/invoices`.
 - Admins can list unpaid invoices and confirm payments through `/api/admin/invoices`; payment confirmation records a payment, marks the invoice paid, completes the linked job request, and writes an audit event.
 - Square/hosted checkout integration is not yet implemented in the current codebase.
+
+## Recent auth repair
+
+- Reverted the magic-link verification handoff page back to a direct `302` dashboard redirect with `Set-Cookie`, matching the login flow that previously worked reliably.
+- Added a regression check that the login page declares its query-status helpers only once, preventing duplicate inline script declarations around magic-link status messages.
 
 ## Next implementation candidates
 

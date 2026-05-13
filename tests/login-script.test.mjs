@@ -13,4 +13,7 @@ test('login page shows magic-link and sign-out status messages', async () => {
   assert.match(script, /signed-out/, 'login should acknowledge a completed sign out');
   assert.match(script, /expired/, 'login should explain expired or consumed magic links');
   assert.match(script, /applyInitialStatus\(\)/, 'login should apply query status when the page loads');
+
+  assert.equal((script.match(/const queryMessages =/g) || []).length, 1, 'login status mapping should only be declared once');
+  assert.equal((script.match(/const applyInitialStatus =/g) || []).length, 1, 'login status initializer should only be declared once');
 });
