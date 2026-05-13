@@ -104,7 +104,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const bindAdminActivityActions =/, 'admin audit activity controls should be bound');
   assert.match(script, /canViewAdminActivity/, 'admin activity loading should honor the activity permission');
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
-  assert.match(script, /const loadAdminInvoices =/, 'admins should load invoice follow-up');
+  assert.match(script, /window\.taDashboardActions\.loadAdminInvoices =/, 'admin invoice loading should live on a dashboard action namespace');
+  assert.doesNotMatch(script, /const loadAdminInvoices =|function loadAdminInvoices\(\)/, 'admin invoice loading must not declare a top-level identifier that can collide after deploy merges');
   assert.match(script, /const confirmAdminPayment =/, 'admins should be able to confirm invoice payments');
   assert.match(script, /window\.taDashboardActions\.bindAdminInvoiceActions =/, 'admin invoice action binding should live on a dashboard action namespace');
   assert.doesNotMatch(script, /const bindAdminInvoiceActions =|function bindAdminInvoiceActions\(\)/, 'admin invoice action binding must not declare a top-level identifier that can collide after deploy merges');

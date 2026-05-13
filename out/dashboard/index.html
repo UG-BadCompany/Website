@@ -712,6 +712,32 @@
     </section>
 
 
+
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Admin audit activity</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
@@ -1165,6 +1191,7 @@
       <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
       <div class="client-quote-list" data-client-invoice-list></div>
     </section>
+
 
 
     <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
@@ -3387,7 +3414,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.ok) throw new Error(result.message || 'Payment could not be confirmed.');
-        await loadAdminInvoices();
+        await window.taDashboardActions.loadAdminInvoices();
         if (status) status.textContent = `Payment confirmed for ${formatMoney(result.payment?.amountCents || amountCents)}.`;
       };
 
@@ -3414,7 +3441,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
       };
 
-      const loadAdminInvoices = async () => {
+      window.taDashboardActions.loadAdminInvoices = async () => {
         const panel = document.querySelector('[data-admin-invoices]');
         const status = document.querySelector('[data-admin-invoices-status]');
         const list = document.querySelector('[data-admin-invoice-list]');
@@ -3604,6 +3631,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (result.user.permissions?.canManageInvoices) {
             window.taDashboardActions.bindAdminInvoiceActions();
             loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            window.taDashboardActions.bindAdminInvoiceActions();
+            window.taDashboardActions.loadAdminInvoices();
           }
 
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
