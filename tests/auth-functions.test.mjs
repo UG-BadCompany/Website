@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import {
   getAllowedSiteUrls,
   getFromEmail,
@@ -9,6 +10,7 @@ import {
   normalizeClientAccountPayload,
   validateClientAccount,
   validateEmail,
+  createOrUpdateMagicLinkUser,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
@@ -163,29 +165,62 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint shows a confirmation page before consuming a fresh magic link', async () => {
-  const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
-  ]);
-  const handler = createVerifyMagicLinkHandler({ getDatabase: async () => db });
+
+test('latest magic-link migration restores profile metadata columns for existing databases', async () => {
+  const migration = await readFile(new URL('../netlify/database/migrations/0019_magic_link_profile_columns.sql', import.meta.url), 'utf8');
+
+  assert.match(migration, /alter table auth_magic_links/);
+  assert.match(migration, /add column if not exists client_name text/);
+  assert.match(migration, /add column if not exists client_phone text/);
+});
+
+
+
+test('magic-link user helper does not fail sign-in when role assignment has a stale schema problem', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/update app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/insert into roles/.test(text)) throw new Error('roles schema mismatch');
+      return [];
+    },
+  };
+
+  const user = await createOrUpdateMagicLinkUser(db, { email: 'client@example.com' });
+
+  assert.equal(user.id, 'user-1');
+  assert.equal(db.queries.some((query) => /insert into roles/.test(query.text)), true);
+});
+
+test('verify endpoint shows an auto-submit continue page on GET without consuming scanner visits', async () => {
+  let openedDatabase = false;
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
-  const body = await response.text();
+  const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
-  assert.match(response.headers.get('cache-control'), /no-store/);
-  assert.match(body, /Continue to your portal/);
-  assert.match(body, /name="confirm" value="1"/);
-  assert.match(body, /name="token" value="magic-token"/);
-  assert.equal(db.queries.length, 1);
-  assert.match(db.queries[0].text, /from auth_magic_links/);
+  assert.match(response.headers.get('content-type'), /text\/html/);
+  assert.match(html, /method="POST"/);
+  assert.match(html, /name="token" value="magic-token"/);
+  assert.match(html, /requestSubmit/);
+  assert.equal(openedDatabase, false);
 });
 
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
-    [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [{ id: 'link-1', email: 'client@example.com' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [],
     [],
     [],
     [],
@@ -195,23 +230,67 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     makeSessionToken: () => 'session-token',
   });
 
-  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token&confirm=1'));
+  const response = await handler(new Request('https://site.test/api/auth/verify', {
+    method: 'POST',
+    body: new URLSearchParams({ token: 'magic-token' }),
+  }));
 
   assert.equal(response.status, 302);
   assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 5);
+  assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
-  assert.match(db.queries[4].text, /insert into auth_sessions/);
-  assert.equal(db.queries[4].values[1], hashToken('session-token'));
+  assert.match(db.queries[1].text, /from app_users/);
+  assert.equal(db.queries[1].values[0], 'client@example.com');
+  assert.match(db.queries[2].text, /update app_users/);
+  assert.equal(db.queries[2].values[0], null);
+  assert.equal(db.queries[2].values[1], null);
+  assert.equal(db.queries[2].values[2], 'user-1');
+  assert.doesNotMatch(db.queries[0].text, /client_name|client_phone/);
+  assert.match(db.queries[3].text, /insert into roles/);
+  assert.match(db.queries[4].text, /insert into user_roles/);
+  assert.match(db.queries[5].text, /insert into auth_sessions/);
+  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+  assert.match(db.queries[6].text, /update auth_magic_links/);
+});
+
+
+test('verify endpoint still redirects when marking the used magic link fails after session creation', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_magic_links/.test(text)) return [{ id: 'link-1', email: 'client@example.com' }];
+      if (/from app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/update app_users/.test(text)) return [{ id: 'user-1', email: 'client@example.com', full_name: '', phone: '' }];
+      if (/update auth_magic_links/.test(text)) throw new Error('consumed_at schema mismatch');
+      return [];
+    },
+  };
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify', {
+    method: 'POST',
+    body: new URLSearchParams({ token: 'magic-token' }),
+  }));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
+  assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: '555-0101', company_name: 'T&A', mailing_address: '123 Main St' }],
-    [],
     [{ key: 'client', name: 'Client' }, { key: 'admin', name: 'Admin' }],
+    [],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
@@ -242,8 +321,8 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
-    [],
     [{ key: 'client', name: 'Client' }],
+    [],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
@@ -260,7 +339,42 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
-  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.quotes.manage', 'client.requests.manage', 'client.tools']);
+  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
+});
+
+
+test('me endpoint optional session check returns signed-out state without a 401', async () => {
+  let openedDatabase = false;
+  const handler = createMeHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/me?optional=1')));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, false);
+  assert.equal(response.body.ok, true);
+  assert.equal(openedDatabase, false);
+});
+
+test('me endpoint optional session check clears an expired cookie without a 401', async () => {
+  const db = createMockDb([[]]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await handler(new Request('https://site.test/api/me?optional=1', {
+    headers: { cookie: 'ta_session=expired-token' },
+  }));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.authenticated, false);
+  assert.match(body.message, /session expired/i);
+  assert.match(response.headers.get('set-cookie'), /ta_session=;/);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(db.queries.length, 1);
+  assert.equal(db.queries[0].values[0], hashToken('expired-token'));
 });
 
 test('logout endpoint revokes the current session and clears the session cookie', async () => {
