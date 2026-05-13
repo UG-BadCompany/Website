@@ -1,5 +1,6 @@
 import {
   clean,
+  createExpiredSessionCookie,
   createSessionCookie,
   getPermissionKeysForRoles,
   getSessionToken,
@@ -50,6 +51,16 @@ const normalizeProfilePayload = (body = {}) => ({
   mailingAddress: clean(body.mailingAddress, 500),
 });
 
+const isOptionalSessionCheck = (request) => (
+  request.method === 'GET' && new URL(request.url).searchParams.get('optional') === '1'
+);
+
+const unauthenticatedSessionResponse = (message, status = 401, headers = {}) => json(status, {
+  ok: status === 200,
+  authenticated: false,
+  message,
+}, headers);
+
 const mapUser = (session, roleKeys, permissionKeys) => ({
   id: session.user_id,
   email: session.email,
@@ -67,10 +78,14 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
+  const optionalSessionCheck = isOptionalSessionCheck(request);
   const sessionToken = getSessionToken(request);
 
   if (!sessionToken) {
-    return json(401, { ok: false, authenticated: false, message: 'Sign in with a magic link to access the dashboard.' });
+    return unauthenticatedSessionResponse(
+      'Sign in with a magic link to access the dashboard.',
+      optionalSessionCheck ? 200 : 401,
+    );
   }
 
   try {
@@ -87,7 +102,11 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     `;
 
     if (!session) {
-      return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
+      return unauthenticatedSessionResponse(
+        'Your session expired. Request a new magic link.',
+        optionalSessionCheck ? 200 : 401,
+        optionalSessionCheck ? { 'set-cookie': createExpiredSessionCookie(request) } : {},
+      );
     }
 
     const roles = await db.sql`
