@@ -11,14 +11,31 @@ const mapDate = (value) => {
   return String(value);
 };
 
+const RESERVED_INVOICE_TITLES = new Set(['invoice & payment desk']);
+
+const getInvoiceTitle = (invoice = {}) => {
+  const rawTitle = String(invoice.title || '').trim();
+  if (rawTitle && !RESERVED_INVOICE_TITLES.has(rawTitle.toLowerCase())) return rawTitle;
+  const service = String(invoice.service_type || '').trim() || 'Completed work';
+  return `${service} invoice`;
+};
+
 const mapInvoice = (invoice) => ({
   id: invoice.id,
   jobRequestId: invoice.job_request_id,
   status: invoice.status,
-  title: invoice.title,
+  title: getInvoiceTitle(invoice),
   amountCents: invoice.amount_cents,
   dueAt: mapDate(invoice.due_at),
   paidAt: mapDate(invoice.paid_at),
+  provider: {
+    name: invoice.payment_provider || 'manual',
+    invoiceId: invoice.provider_invoice_id,
+    checkoutId: invoice.provider_checkout_id,
+    checkoutUrl: invoice.provider_checkout_url,
+    status: invoice.provider_status,
+    metadata: invoice.provider_metadata || {},
+  },
   createdAt: invoice.created_at,
   updatedAt: invoice.updated_at,
   jobRequest: invoice.job_request_id ? {
@@ -75,6 +92,12 @@ const listClientInvoices = async (db, userId) => {
       invoices.amount_cents,
       invoices.due_at,
       invoices.paid_at,
+      invoices.payment_provider,
+      invoices.provider_invoice_id,
+      invoices.provider_checkout_id,
+      invoices.provider_checkout_url,
+      invoices.provider_status,
+      invoices.provider_metadata,
       invoices.created_at,
       invoices.updated_at,
       job_requests.status as job_request_status,
