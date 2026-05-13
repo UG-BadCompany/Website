@@ -2,11 +2,11 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
+  getSessionTtlMinutesForRoles,
   getSiteUrl,
   hashToken,
   json,
   loadDatabase,
-  getSessionTtlMinutesForRoles,
   minutesFromNow,
 } from './auth-utils.mjs';
 
@@ -53,6 +53,14 @@ export const createVerifyMagicLinkHandler = ({
     `;
 
     const sessionToken = makeSessionToken();
+    const roles = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const sessionTtlMinutes = getSessionTtlMinutesForRoles(roles.map((role) => role.key));
 
     const roles = await db.sql`
       select roles.key

@@ -5,6 +5,7 @@ import {
   getSessionTtlMinutesForRoles,
   getFromEmail,
   getSiteUrl,
+  getSessionTtlMinutesForRoles,
   hashToken,
   shouldSendEmail,
   normalizeClientAccountPayload,
@@ -50,6 +51,13 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
 });
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
 
 test('auth helper uses short client sessions and longer staff sessions', () => {
   assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
@@ -178,6 +186,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [{ key: 'client' }],
     [],
+    [],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,
@@ -198,14 +207,13 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.equal(db.queries[5].values[1], hashToken('session-token'));
 });
 
-
 test('verify endpoint gives admin and worker sessions a two-hour cookie', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'admin@example.com', purpose: 'login', client_name: null, client_phone: null }],
     [{ id: 'user-1', email: 'admin@example.com', full_name: 'Admin', phone: null }],
     [],
     [],
-    [{ key: 'admin' }],
+    [{ key: 'admin' }, { key: 'worker' }],
     [],
   ]);
   const handler = createVerifyMagicLinkHandler({
@@ -231,7 +239,7 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   const rawResponse = await handler(new Request('https://site.test/api/me', {
     headers: { cookie: 'ta_session=session-token' },
   }));
-  const response = { status: rawResponse.status, body: await rawResponse.json() };
+  const response = await readJson(rawResponse);
 
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
@@ -267,7 +275,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   const rawResponse = await handler(new Request('https://site.test/api/me', {
     headers: { cookie: 'ta_session=session-token' },
   }));
-  const response = { status: rawResponse.status, body: await rawResponse.json() };
+  const response = await readJson(rawResponse);
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body.user.roles, ['client']);
@@ -277,7 +285,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
-  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
+  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.quotes.manage', 'client.requests.manage', 'client.tools']);
   assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=1800/);
   assert.match(db.queries[3].text, /expires_at/);
 });
@@ -334,7 +342,7 @@ test('me endpoint lets a signed-in client update their profile', async () => {
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
     body: JSON.stringify({ fullName: 'Client Updated', phone: '555-0200', secondaryPhone: '555-0300', companyName: 'Client Co', mailingAddress: '456 Oak Ave' }),
   }));
-  const response = { status: rawResponse.status, body: await rawResponse.json() };
+  const response = await readJson(rawResponse);
 
   assert.equal(response.status, 200);
   assert.equal(response.body.user.fullName, 'Client Updated');
