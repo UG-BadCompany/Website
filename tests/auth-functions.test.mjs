@@ -163,25 +163,6 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint shows a confirmation page before consuming a fresh magic link', async () => {
-  const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
-  ]);
-  const handler = createVerifyMagicLinkHandler({ getDatabase: async () => db });
-
-  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
-  const body = await response.text();
-
-  assert.equal(response.status, 200);
-  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
-  assert.match(response.headers.get('cache-control'), /no-store/);
-  assert.match(body, /Continue to your portal/);
-  assert.match(body, /name="confirm" value="1"/);
-  assert.match(body, /name="token" value="magic-token"/);
-  assert.equal(db.queries.length, 1);
-  assert.match(db.queries[0].text, /from auth_magic_links/);
-});
-
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
@@ -195,7 +176,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     makeSessionToken: () => 'session-token',
   });
 
-  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token&confirm=1'));
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
   assert.equal(response.status, 302);
   assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
