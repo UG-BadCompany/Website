@@ -11,6 +11,7 @@ import {
   normalizeClientAccountPayload,
   validateClientAccount,
   validateEmail,
+  createOrUpdateMagicLinkUser,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
@@ -51,6 +52,13 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
 });
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
 
 test('auth helper uses short client sessions and longer staff sessions', () => {
   assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
@@ -283,13 +291,37 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.equal(db.queries.length, 1);
 });
 
+
+
+test('magic-link user lookup reuses existing account case-insensitively', async () => {
+  const db = createMockDb([
+    [{ id: 'user-1' }],
+    [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+  ]);
+
+  const user = await createOrUpdateMagicLinkUser(db, {
+    email: 'CLIENT@example.com',
+    name: 'Client',
+    phone: '555-0100',
+  });
+
+  assert.equal(user.id, 'user-1');
+  assert.match(db.queries[0].text, /where lower\(email\) = lower/);
+  assert.equal(db.queries[0].values[0], 'client@example.com');
+  assert.match(db.queries[1].text, /update app_users/);
+  assert.equal(db.queries[2].values[0], 'user-1');
+});
+
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and opens the dashboard', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
+    [],
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
     [],
     [],
     [{ key: 'client' }],
+    [],
     [],
     [],
     [],
@@ -320,17 +352,18 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.match(await response.text(), /https:\/\/site\.test\/dashboard\//);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.match(response.headers.get('set-cookie'), /Max-Age=1800/);
-  assert.equal(db.queries.length, 6);
+  assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
-  assert.match(db.queries[4].text, /from user_roles/);
-  assert.match(db.queries[5].text, /insert into auth_sessions/);
-  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+  assert.match(db.queries[5].text, /from user_roles/);
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
+  assert.equal(db.queries[6].values[1], hashToken('session-token'));
 });
 
 test('verify endpoint gives admin and worker sessions a two-hour cookie', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'admin@example.com', purpose: 'login', client_name: null, client_phone: null }],
+    [],
     [{ id: 'user-1', email: 'admin@example.com', full_name: 'Admin', phone: null }],
     [],
     [],
@@ -346,7 +379,7 @@ test('verify endpoint gives admin and worker sessions a two-hour cookie', async 
 
   assert.equal(response.status, 200);
   assert.match(response.headers.get('set-cookie'), /Max-Age=7200/);
-  assert.match(db.queries[5].text, /insert into auth_sessions/);
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {

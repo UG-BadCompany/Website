@@ -255,9 +255,28 @@ export const parseCookies = (cookieHeader = '') => Object.fromEntries(
 export const getSessionToken = (request) => parseCookies(request.headers.get('cookie') || '')[SESSION_COOKIE_NAME] || '';
 
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
-  const [user] = await db.sql`
+  const normalizedEmail = clean(email).toLowerCase();
+  const [existingUser] = await db.sql`
+    select id
+    from app_users
+    where lower(email) = lower(${normalizedEmail})
+    order by created_at asc
+    limit 1
+  `;
+
+  const [user] = existingUser ? await db.sql`
+    update app_users
+    set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
+        auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
+        full_name = coalesce(nullif(full_name, ''), ${name || null}),
+        phone = coalesce(nullif(phone, ''), ${phone || null}),
+        is_active = true,
+        updated_at = now()
+    where id = ${existingUser.id}
+    returning id, email, full_name, phone
+  ` : await db.sql`
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
-    values ('magic_link', ${email}, ${email}, ${name || null}, ${phone || null})
+    values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
       auth_provider = case when app_users.auth_provider = 'pending' then 'magic_link' else app_users.auth_provider end,
       auth_subject = case when app_users.auth_provider = 'pending' or app_users.auth_subject is null then excluded.auth_subject else app_users.auth_subject end,
