@@ -412,6 +412,16 @@ test('verify endpoint still redirects when marking the used magic link fails aft
 });
 
 
+
+test('dashboard page renders a visible session status and login debug panel hook', async () => {
+  const dashboard = await readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
+
+  assert.match(dashboard, /data-session-status/);
+  assert.match(dashboard, /Session check/);
+  assert.match(dashboard, /data-auth-debug-panel/);
+  assert.match(dashboard, /\/api\/auth\/debug/);
+});
+
 test('auth debug endpoint shows whether the session cookie reached the server without opening the database', async () => {
   let openedDatabase = false;
   const handler = createAuthDebugHandler({

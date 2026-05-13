@@ -512,6 +512,11 @@
       </div>
     </section>
 
+    <section class="card session-check" data-session-card>
+      <strong>Session check</strong>
+      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
+    </section>
+
     <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
       <div class="admin-command-header">
         <span class="eyebrow">Admin operations</span>
@@ -3521,6 +3526,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           status.dataset.state = 'ready';
           status.textContent = `Signed in as ${getUserDisplayName(result.user)}`;
+          if (authDebugEnabled) {
+            loadAuthDebug('/api/me says this browser is authenticated. Showing the cookie/database details for confirmation.');
+          }
           renderClientProfile(result.user);
 
           if (logoutButton) {
