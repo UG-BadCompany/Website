@@ -4,7 +4,8 @@ const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 const PHONE_PATTERN = /^[+()\-\s.\d]{7,30}$/;
 export const SESSION_COOKIE_NAME = process.env.AUTH_SESSION_COOKIE_NAME || 'ta_session';
 export const MAGIC_LINK_TTL_MINUTES = Number(process.env.MAGIC_LINK_TTL_MINUTES || 20);
-export const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
+export const CLIENT_SESSION_TTL_MINUTES = Number(process.env.CLIENT_SESSION_TTL_MINUTES || 30);
+export const STAFF_SESSION_TTL_MINUTES = Number(process.env.STAFF_SESSION_TTL_MINUTES || 120);
 
 
 export const PORTAL_PERMISSIONS = [
@@ -134,7 +135,6 @@ export const hashToken = (token) => createHash('sha256').update(token).digest('h
 
 export const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 1000).toISOString();
 
-export const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
 export const normalizeSiteUrl = (url) => clean(url).replace(/\/$/, '');
 
@@ -218,11 +218,18 @@ export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, 
   return { sent: true };
 };
 
-export const createSessionCookie = (sessionToken, request) => {
-  const expires = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000).toUTCString();
+export const getSessionTtlMinutesForRoles = (roleKeys = []) => (
+  roleKeys.some((roleKey) => ['admin', 'worker'].includes(roleKey))
+    ? STAFF_SESSION_TTL_MINUTES
+    : CLIENT_SESSION_TTL_MINUTES
+);
+
+export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
+  const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
+  const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
 
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Expires=${expires}${secure}`;
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${secure}`;
 };
 
 export const createExpiredSessionCookie = (request) => {

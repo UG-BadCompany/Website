@@ -1,70 +1,41 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
-import { readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs';
 
-test('Netlify Database migrations use unique numeric prefixes', async () => {
+const execFileAsync = promisify(execFile);
+
+test('Netlify Database migrations allow applied compatibility names to remain committed', async () => {
   const { errors, files } = await validateMigrationFiles();
 
   assert.deepEqual(errors, [], 'Migration files must pass Netlify Database validation.');
   assert.equal(files.includes('0004_work_order_schedule.sql'), true, 'Previously applied Netlify migration 0004_work_order_schedule must remain present.');
+  assert.equal(files.includes('0011_completion_review_status.sql'), true, 'Previously applied Netlify migration 0011_completion_review_status must remain present.');
+  assert.equal(files.includes('0012_quote_payment_completion_controls.sql'), true, 'Previously applied Netlify migration 0012_quote_payment_completion_controls must remain present.');
+  assert.equal(files.includes('0013_invoices_payments.sql'), true, 'Previously applied Netlify migration 0013_invoices_payments must remain present.');
+  assert.equal(files.includes('0014_worker_completion_evidence.sql'), true, 'Previously applied Netlify migration 0014_worker_completion_evidence must remain present.');
 });
 
 
-test('migration validator removes the stale cached custom role migration before build validation', async () => {
-  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-  const staleMigration = new URL('0004_custom_roles_permissions.sql', migrationsDir);
+test('migration validator warns instead of removing applied compatibility migrations', async () => {
+  const { errors, files, warnings } = await validateMigrationFiles();
 
-  await writeFile(staleMigration, `-- stale cached duplicate migration created by test\n`);
-
-  try {
-    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
-
-    assert.deepEqual(errors, [], 'Repair mode should remove the stale legacy custom role migration.');
-    assert.equal(files.includes('0004_custom_roles_permissions.sql'), false);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0004_custom_roles_permissions.sql')), true);
-    await assert.rejects(stat(staleMigration), { code: 'ENOENT' });
-  } finally {
-    await rm(staleMigration, { force: true });
-  }
-});
-
-test('migration validator removes stale cached duplicate 0009 migrations before build validation', async () => {
-  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-  const staleCompletion = new URL('0009_completion_review_status.sql', migrationsDir);
-  const staleQuoteControls = new URL('0009_quote_payment_completion_controls.sql', migrationsDir);
-  const staleInvoices = new URL('0010_invoices_payments.sql', migrationsDir);
-
-  await writeFile(staleCompletion, `-- stale cached duplicate migration created by test\n`);
-  await writeFile(staleQuoteControls, `-- stale cached duplicate migration created by test\n`);
-  await writeFile(staleInvoices, `-- stale cached future migration created by test\n`);
-
-  try {
-    const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
-
-    assert.deepEqual(errors, [], 'Repair mode should remove stale cached duplicate 0009 migrations.');
-    assert.equal(files.includes('0009_completion_review_status.sql'), false);
-    assert.equal(files.includes('0009_quote_payment_completion_controls.sql'), false);
-    assert.equal(files.includes('0010_invoices_payments.sql'), false);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_completion_review_status.sql')), true);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0009_quote_payment_completion_controls.sql')), true);
-    assert.equal(warnings.some((warning) => warning.includes('Removed stale cached 0010_invoices_payments.sql')), true);
-    await assert.rejects(stat(staleCompletion), { code: 'ENOENT' });
-    await assert.rejects(stat(staleQuoteControls), { code: 'ENOENT' });
-    await assert.rejects(stat(staleInvoices), { code: 'ENOENT' });
-  } finally {
-    await rm(staleCompletion, { force: true });
-    await rm(staleQuoteControls, { force: true });
-    await rm(staleInvoices, { force: true });
-  }
+  assert.deepEqual(errors, [], 'Applied compatibility migrations should not fail validation.');
+  assert.equal(files.includes('0011_admin_activity_permission.sql'), false, 'Do not commit two 0011 migrations; admin activity permission lives in 0015.');
+  assert.equal(files.includes('0011_completion_review_status.sql'), true);
+  assert.equal(warnings.some((warning) => warning.includes('Kept applied compatibility migration 0011_completion_review_status.sql')), true);
+  assert.equal(files.filter((file) => file.startsWith('0011_')).length, 1, 'Netlify Database rejects duplicate migration number 0011.');
+  assert.equal(warnings.every((warning) => !warning.includes('Removed stale cached')), true);
 });
 
 
-test('migration validator keeps the applied 0004 work order schedule migration during repair', async () => {
-  const { errors, files, warnings } = await validateMigrationFiles({ repairLegacy: true });
+test('migration validator keeps the applied 0004 work order schedule migration', async () => {
+  const { errors, files, warnings } = await validateMigrationFiles();
 
-  assert.deepEqual(errors, [], 'Repair mode should keep the applied work-order schedule migration valid.');
+  assert.deepEqual(errors, [], 'Validation should keep the applied work-order schedule migration valid.');
   assert.equal(files.includes('0004_work_order_schedule.sql'), true);
   assert.equal(warnings.some((warning) => warning.includes('0004_work_order_schedule.sql')), false);
 });
@@ -88,3 +59,8 @@ test('restored applied 0004 schedule migration keeps the locked applied checksum
     'The applied Netlify Database migration must not be edited in place.',
   );
 });
+
+test('migration validator script parses before Netlify prebuild runs it', async () => {
+  await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/check-netlify-migrations.mjs']));
+});
+
