@@ -7,7 +7,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const ACTIVE_REQUEST_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress']);
+const ACTIVE_REQUEST_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment']);
 const MAX_FIELD_LENGTHS = {
   propertyId: 80,
   label: 120,
@@ -18,10 +18,12 @@ const MAX_FIELD_LENGTHS = {
   service: 120,
   timeframe: 80,
   description: 4000,
+  attachmentNames: 1200,
   jobRequestId: 80,
   requestedDate: 80,
   additionalInfo: 4000,
   updateType: 40,
+  completionAction: 40,
 };
 
 const mapProperty = (property) => ({
@@ -78,6 +80,14 @@ const countActiveRequests = (requests) => requests.filter((request) => ACTIVE_RE
 const normalizePayload = (body = {}) => Object.fromEntries(
   Object.entries(MAX_FIELD_LENGTHS).map(([field, maxLength]) => [field, clean(body[field], maxLength)]),
 );
+
+const getDescriptionWithAttachmentSummary = (payload) => [
+  payload.description,
+  payload.attachmentNames ? `
+
+Client attachments to review:
+${payload.attachmentNames}` : '',
+].filter(Boolean).join('');
 
 const validateJobRequestPayload = (payload, session) => {
   if (!payload.service) {
@@ -167,6 +177,22 @@ const validatePropertyPayload = (payload) => {
 };
 
 
+
+const approveClientCompletedRequest = async (db, userId, payload) => {
+  const [jobRequest] = await db.sql`
+    update job_requests
+    set status = ${'completed'},
+        completion_date = coalesce(completion_date, now()::date),
+        updated_at = now()
+    where id = ${payload.jobRequestId}
+      and client_id = ${userId}
+      and status = ${'pending_review'}
+    returning id, status, service_type, preferred_timeframe, description, completion_date, updated_at
+  `;
+
+  return jobRequest || null;
+};
+
 const updateClientJobRequest = async (db, userId, payload) => {
   const [jobRequest] = await db.sql`
     update job_requests
@@ -176,7 +202,7 @@ const updateClientJobRequest = async (db, userId, payload) => {
         updated_at = now()
     where id = ${payload.jobRequestId}
       and client_id = ${userId}
-      and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress')
+      and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment')
     returning id, status, service_type, preferred_timeframe, description, updated_at
   `;
 
@@ -260,6 +286,7 @@ const listClientData = async (db, userId) => {
     left join properties on properties.id = job_requests.property_id
       and properties.client_id = ${userId}
     where job_requests.client_id = ${userId}
+      and job_requests.status <> 'completed'
     order by job_requests.created_at desc
     limit 25
   `;
@@ -358,7 +385,7 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
       ${property.street || payload.streetAddress},
       ${payload.service},
       ${payload.timeframe || null},
-      ${payload.description}
+      ${getDescriptionWithAttachmentSummary(payload)}
     )
     returning id, created_at
   `;
@@ -370,7 +397,7 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
       ${'client_job_request.created'},
       ${'job_request'},
       ${jobRequest.id},
-      ${JSON.stringify({ source: 'client_dashboard', propertyId: property.id, service: payload.service })}::jsonb
+      ${JSON.stringify({ source: 'client_dashboard', propertyId: property.id, service: payload.service, attachments: payload.attachmentNames || null })}::jsonb
     )
   `;
 
@@ -399,6 +426,40 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
   }
 
   const payload = normalizePayload(body);
+
+  if (payload.jobRequestId && payload.completionAction === 'approve_completed') {
+    const jobRequest = await approveClientCompletedRequest(db, session.user_id, payload);
+
+    if (!jobRequest) {
+      return json(404, { ok: false, authenticated: true, authorized: false, message: 'Pending completion request not found for this account.' });
+    }
+
+    await db.sql`
+      insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+      values (
+        ${session.user_id},
+        ${'client_job_request.completed_approved'},
+        ${'job_request'},
+        ${jobRequest.id},
+        ${JSON.stringify({ source: 'client_dashboard' })}::jsonb
+      )
+    `;
+
+    return json(200, {
+      ok: true,
+      authenticated: true,
+      authorized: true,
+      request: {
+        id: jobRequest.id,
+        status: jobRequest.status,
+        serviceType: jobRequest.service_type,
+        preferredTimeframe: jobRequest.preferred_timeframe,
+        description: jobRequest.description,
+        completionDate: mapDate(jobRequest.completion_date),
+        updatedAt: jobRequest.updated_at,
+      },
+    });
+  }
 
   if (payload.jobRequestId) {
     const validationError = validateClientRequestUpdatePayload(payload);
