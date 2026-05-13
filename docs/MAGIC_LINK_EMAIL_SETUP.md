@@ -16,14 +16,15 @@ Add these in Netlify, not in the committed repo:
 RESEND_API_KEY=re_your_real_resend_key
 MAGIC_LINK_FROM_EMAIL=portal@ta-contracting.org
 SITE_URL=https://ta-contracting.org
-SITE_URL_ALIASES=https://tacontracting.netlify.app
+SITE_URL_ALIASES=https://www.ta-contracting.org,https://tacontracting.netlify.app
 ```
 
 Recommended session settings are already shown in `.env.example`:
 
 ```text
 AUTH_SESSION_COOKIE_NAME=ta_session
-AUTH_SESSION_TTL_DAYS=14
+CLIENT_SESSION_TTL_MINUTES=30
+STAFF_SESSION_TTL_MINUTES=120
 MAGIC_LINK_TTL_MINUTES=20
 ```
 
@@ -35,7 +36,7 @@ Fully working DNS for `ta-contracting.org` should not break magic links by itsel
 If the main domain just became active and links are not arriving or not opening, check these items first:
 
 1. Keep `SITE_URL=https://ta-contracting.org` in Netlify and redeploy after changing it.
-2. Keep `SITE_URL_ALIASES=https://tacontracting.netlify.app` only if you still want the Netlify subdomain to work too. Add `https://www.ta-contracting.org` as another alias if visitors use the `www` host.
+2. Keep `SITE_URL_ALIASES=https://www.ta-contracting.org,https://tacontracting.netlify.app` only if you still want the Netlify subdomain to work too. Keep `https://www.ta-contracting.org` in the alias list if visitors use the `www` host.
 3. Confirm the magic-link email was requested from the same host you expect to open. Requests from `https://ta-contracting.org/login/` generate `https://ta-contracting.org/api/auth/verify?...` links.
 4. Confirm the Resend sender DNS records for `ta-contracting.org` are still verified. Website DNS working does not automatically mean Resend SPF/DKIM/domain verification is healthy.
 5. Confirm `MAGIC_LINK_FROM_EMAIL=portal@ta-contracting.org` is present. Email sending intentionally remains disabled when the sender is missing, even if `RESEND_API_KEY` is set.
@@ -55,7 +56,7 @@ Do not share development magic links with customers. They are intended only for 
 1. Enable Netlify Database and apply migrations.
 2. Add `RESEND_API_KEY` in Netlify environment variables.
 3. Add `MAGIC_LINK_FROM_EMAIL=portal@ta-contracting.org` using the Resend-verified domain. Email sending intentionally stays off until this sender variable is configured.
-4. Set `SITE_URL=https://ta-contracting.org`; keep `SITE_URL_ALIASES=https://tacontracting.netlify.app` if the Netlify subdomain should continue to work.
+4. Set `SITE_URL=https://ta-contracting.org`; keep `SITE_URL_ALIASES=https://www.ta-contracting.org,https://tacontracting.netlify.app` if the Netlify subdomain should continue to work.
 5. Redeploy the site.
 6. Test `/login/` with your own email and confirm an email arrives.
 
@@ -65,7 +66,7 @@ Because the production domain is now `ta-contracting.org`, use these Netlify val
 
 ```text
 SITE_URL=https://ta-contracting.org
-SITE_URL_ALIASES=https://tacontracting.netlify.app
+SITE_URL_ALIASES=https://www.ta-contracting.org,https://tacontracting.netlify.app
 MAGIC_LINK_FROM_EMAIL=portal@ta-contracting.org
 QUOTE_FROM_EMAIL=quotes@ta-contracting.org
 ```
@@ -78,7 +79,7 @@ QUOTE_FROM_EMAIL=quotes@ta-contracting.org
 Keep `SITE_URL=https://ta-contracting.org` as the canonical production domain. Add this alias in Netlify only if the Netlify subdomain should continue to work:
 
 ```text
-SITE_URL_ALIASES=https://tacontracting.netlify.app
+SITE_URL_ALIASES=https://www.ta-contracting.org,https://tacontracting.netlify.app
 ```
 
 When a magic link is requested from `https://tacontracting.netlify.app`, the API will generate a verification link on that same Netlify subdomain. When the request comes from `https://ta-contracting.org`, the API will generate the link on the main domain. This lets both domains keep working after the main-domain DNS is active.
