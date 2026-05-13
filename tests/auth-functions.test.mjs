@@ -19,6 +19,7 @@ import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
 import { createMagicLinkHandler } from '../netlify/functions/request-magic-link.mjs';
 import { createVerifyMagicLinkHandler } from '../netlify/functions/verify-magic-link.mjs';
+import { createAuthDebugHandler } from '../netlify/functions/auth-debug.mjs';
 
 const request = (body, method = 'POST', url = 'https://example.test/api/auth') => new Request(url, {
   method,
@@ -290,7 +291,7 @@ test('verify endpoint signs in directly from a magic-link GET and redirects to t
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
   assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
@@ -318,7 +319,7 @@ test('verify endpoint can recover when the link token is the database magic-link
   const response = await handler(new Request('https://site.test/api/auth/verify?token=6f6c428d-286f-41d3-b1a0-ec2e12c4c2be'));
 
   assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries[0].values[2], '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be');
 });
@@ -360,7 +361,7 @@ test('verify endpoint can recover when the link token is the database magic-link
   }));
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
@@ -404,10 +405,61 @@ test('verify endpoint still redirects when marking the used magic link fails aft
   }));
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
   assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);
+});
+
+
+test('auth debug endpoint shows whether the session cookie reached the server without opening the database', async () => {
+  let openedDatabase = false;
+  const handler = createAuthDebugHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/auth/debug')));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.cookies.expectedSessionCookieName, 'ta_session');
+  assert.equal(response.body.cookies.hasSessionCookie, false);
+  assert.equal(response.body.database.checked, false);
+  assert.equal(openedDatabase, false);
+});
+
+test('auth debug endpoint reports the matching database session and roles for a session cookie', async () => {
+  const db = createMockDb([
+    [{
+      id: 'session-1',
+      user_id: 'user-1',
+      email: 'client@example.com',
+      is_active: true,
+      revoked_at: null,
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      created_at: '2026-05-13T00:00:00.000Z',
+      last_seen_at: '2026-05-13T00:00:00.000Z',
+    }],
+    [{ key: 'client' }],
+  ]);
+  const handler = createAuthDebugHandler({ getDatabase: async () => db });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/auth/debug', {
+    headers: { cookie: 'ta_session=session-token; other=value' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.cookies.hasSessionCookie, true);
+  assert.deepEqual(response.body.cookies.cookieNames, ['ta_session', 'other']);
+  assert.equal(response.body.database.available, true);
+  assert.equal(response.body.session.id, 'session-1');
+  assert.equal(response.body.session.email, 'cl***@example.com');
+  assert.equal(response.body.session.expired, false);
+  assert.deepEqual(response.body.roles, ['client']);
+  assert.match(db.queries[0].text, /from auth_sessions/);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {

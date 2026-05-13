@@ -107,7 +107,7 @@ export const createVerifyMagicLinkHandler = ({
     return new Response(null, {
       status: request.method === 'POST' ? 303 : 302,
       headers: {
-        location: '/dashboard/',
+        location: '/dashboard/?auth_debug=1',
         'set-cookie': createSessionCookie(sessionToken, request),
       },
     });
