@@ -124,7 +124,7 @@ test('site URL helper supports the production domain and Netlify subdomain alias
 
 
 
-test('session cookies use cross-site-safe secure attributes on HTTPS and forwarded HTTPS requests', () => {
+test('session cookies keep the original same-site behavior while adding Secure on HTTPS and forwarded HTTPS requests', () => {
   const httpsCookie = createSessionCookie('session-token', new Request('https://site.test/api/auth/verify'));
   const forwardedCookie = createSessionCookie('session-token', new Request('http://site.test/api/auth/verify', {
     headers: { 'x-forwarded-proto': 'https' },
@@ -132,13 +132,13 @@ test('session cookies use cross-site-safe secure attributes on HTTPS and forward
   const localCookie = createSessionCookie('session-token', new Request('http://localhost:8888/api/auth/verify'));
   const expiredCookie = createExpiredSessionCookie(new Request('https://site.test/api/auth/logout'));
 
-  assert.match(httpsCookie, /SameSite=None/);
+  assert.match(httpsCookie, /SameSite=Lax/);
   assert.match(httpsCookie, /Secure/);
-  assert.match(forwardedCookie, /SameSite=None/);
+  assert.match(forwardedCookie, /SameSite=Lax/);
   assert.match(forwardedCookie, /Secure/);
   assert.match(localCookie, /SameSite=Lax/);
   assert.doesNotMatch(localCookie, /Secure/);
-  assert.match(expiredCookie, /SameSite=None/);
+  assert.match(expiredCookie, /SameSite=Lax/);
   assert.match(expiredCookie, /Max-Age=0/);
 });
 
@@ -241,24 +241,32 @@ test('magic-link user helper does not fail sign-in when role assignment has a st
   assert.equal(db.queries.some((query) => /insert into roles/.test(query.text)), true);
 });
 
-test('verify endpoint shows an auto-submit continue page on GET without consuming scanner visits', async () => {
-  let openedDatabase = false;
+test('verify endpoint signs in directly from a magic-link GET and redirects to the dashboard', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'client@example.com' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
+    [],
+    [],
+    [],
+    [],
+  ]);
   const handler = createVerifyMagicLinkHandler({
-    getDatabase: async () => {
-      openedDatabase = true;
-      return createMockDb();
-    },
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
   });
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
-  const html = await response.text();
 
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get('content-type'), /text\/html/);
-  assert.match(html, /method="POST"/);
-  assert.match(html, /name="token" value="magic-token"/);
-  assert.match(html, /requestSubmit/);
-  assert.equal(openedDatabase, false);
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries.length, 7);
+  assert.match(db.queries[0].text, /from auth_magic_links/);
+  assert.equal(db.queries[0].values[0], hashToken('magic-token'));
+  assert.match(db.queries[5].text, /insert into auth_sessions/);
+  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+  assert.match(db.queries[6].text, /update auth_magic_links/);
 });
 
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
