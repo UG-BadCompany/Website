@@ -11,6 +11,7 @@ import {
   validateClientAccount,
   validateEmail,
   createOrUpdateMagicLinkUser,
+  createMagicLinkUrl,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
@@ -108,6 +109,30 @@ test('site URL helper supports the production domain and Netlify subdomain alias
   assert.equal(
     getSiteUrl(new Request('https://unexpected.example/login/')),
     'https://ta-contracting.org',
+  );
+
+  for (const [key, value] of Object.entries(original)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
+
+test('magic-link URL uses the request host so session cookies stay on the dashboard host', () => {
+  const original = {
+    SITE_URL: process.env.SITE_URL,
+    SITE_URL_ALIASES: process.env.SITE_URL_ALIASES,
+  };
+
+  process.env.SITE_URL = 'https://ta-contracting.org';
+  delete process.env.SITE_URL_ALIASES;
+
+  assert.equal(
+    createMagicLinkUrl(new Request('https://tacontracting.netlify.app/login/'), 'magic-token'),
+    'https://tacontracting.netlify.app/api/auth/verify?token=magic-token',
   );
 
   for (const [key, value] of Object.entries(original)) {
@@ -235,9 +260,8 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     body: new URLSearchParams({ token: 'magic-token' }),
   }));
 
-  assert.equal(response.status, 200);
-  assert.match(body, /Opening your dashboard/);
-  assert.match(body, /https:\/\/site.test\/dashboard\//);
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
@@ -281,7 +305,7 @@ test('verify endpoint still redirects when marking the used magic link fails aft
   }));
 
   assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
   assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);

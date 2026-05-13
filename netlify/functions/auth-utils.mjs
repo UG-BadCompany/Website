@@ -173,7 +173,7 @@ export const getSiteUrl = (request) => {
   return allowedSiteUrls[0] || requestOrigin;
 };
 
-export const createMagicLinkUrl = (request, token) => `${getSiteUrl(request)}/api/auth/verify?token=${encodeURIComponent(token)}`;
+export const createMagicLinkUrl = (request, token) => new URL(`/api/auth/verify?token=${encodeURIComponent(token)}`, request.url).toString();
 
 export const isConfiguredSecret = (value, placeholderFragments = []) => {
   const cleaned = clean(value);

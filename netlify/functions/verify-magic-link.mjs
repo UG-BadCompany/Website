@@ -2,7 +2,6 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
-  getSiteUrl,
   hashToken,
   json,
   loadDatabase,
@@ -82,7 +81,11 @@ export const createVerifyMagicLinkHandler = ({
   const token = await getTokenFromRequest(request);
 
   if (!token) {
-    return Response.redirect(`${getSiteUrl(request)}/login/?auth=missing-token`, 302);
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
+  }
+
+  if (request.method === 'GET') {
+    return createContinueResponse(request, token);
   }
 
   if (request.method === 'GET') {
@@ -101,7 +104,7 @@ export const createVerifyMagicLinkHandler = ({
     `;
 
     if (!magicLink) {
-      return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
+      return new Response(null, { status: 302, headers: { location: '/login/?auth=expired' } });
     }
 
     const user = await createOrUpdateMagicLinkUser(db, {
@@ -128,14 +131,14 @@ export const createVerifyMagicLinkHandler = ({
     return new Response(null, {
       status: 302,
       headers: {
-        location: `${getSiteUrl(request)}/dashboard/`,
+        location: '/dashboard/',
         'set-cookie': createSessionCookie(sessionToken, request),
       },
     });
   } catch (error) {
     console.error('Failed to verify magic link', error);
 
-    return Response.redirect(`${getSiteUrl(request)}/login/?auth=error`, 302);
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=error' } });
   }
 };
 
