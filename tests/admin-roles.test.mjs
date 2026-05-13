@@ -36,6 +36,8 @@ test('admin roles endpoint lists roles and available permissions', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(response.body.permissions.length > 0, true);
+  assert.equal(response.body.permissions.some((permission) => permission.key === 'client.invoices.manage'), true);
+  assert.equal(response.body.permissions.some((permission) => permission.key === 'admin.invoices.manage'), true);
   assert.deepEqual(response.body.roles[0].permissions, ['worker.tools']);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
@@ -84,5 +86,6 @@ test('admin role always keeps all permissions when updated', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(response.body.role.permissions.includes('admin.roles.manage'), true);
+  assert.equal(response.body.role.permissions.includes('admin.invoices.manage'), true);
   assert.equal(response.body.role.permissions.includes('dashboard.switch_views'), true);
 });
