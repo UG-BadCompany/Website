@@ -296,7 +296,10 @@ test('verify endpoint redirects with a used-link status when a token was already
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
   ]);
-  const handler = createVerifyMagicLinkHandler({ getDatabase: async () => db });
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
