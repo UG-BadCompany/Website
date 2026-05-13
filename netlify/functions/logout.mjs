@@ -36,8 +36,7 @@ export const createLogoutHandler = ({ getDatabase = loadDatabase } = {}) => asyn
       `;
     } catch (error) {
       console.error('Failed to revoke session', error);
-
-      return json(500, { ok: false, message: 'We could not sign you out right now.' });
+      // Still clear the browser cookie below so users can leave a stale session immediately.
     }
   }
 
