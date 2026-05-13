@@ -400,18 +400,30 @@
       </div>
     </section>
 
-    <section class="card access-card" aria-labelledby="access-title">
-      <h2 id="access-title">How account access works</h2>
-      <ul class="steps">
-        <li>Request an estimate or contact T&amp;A Contracting so we can connect your email to your client account.</li>
-        <li>Use this page to request a secure one-time sign-in link.</li>
-        <li>Open the link from your email to view requests, saved properties, quotes, invoices, and schedule updates.</li>
-        <li>Need help? Contact T&amp;A Contracting and we can update your account details.</li>
-      </ul>
-    </section>
-  </main>
 
-  <footer class="wrap footer"><strong>T&amp;A Contracting</strong> — Secure portal access for requests, properties, quotes, invoices, and project updates.</footer>
+      const queryMessages = {
+        'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
+        expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
+        error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
+      };
+
+      const applyInitialStatus = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('signed-out')) {
+          setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
+          return;
+        }
+
+        const authState = params.get('auth');
+        if (queryMessages[authState]) {
+          setStatus(...queryMessages[authState]);
+        }
+      };
+
+      applyInitialStatus();
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
 
   <script>
     (() => {

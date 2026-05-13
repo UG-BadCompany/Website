@@ -157,6 +157,13 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
 });
 
 
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
 test('email delivery stays disabled for missing or placeholder Resend settings', () => {
   const original = {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -276,6 +283,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [],
     [{ key: 'client' }],
+    [],
     [],
     [],
     [],
@@ -415,6 +423,25 @@ test('logout endpoint revokes the current session and clears the session cookie'
   assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
   assert.equal(db.queries.length, 1);
   assert.match(db.queries[0].text, /update auth_sessions/);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+
+
+test('logout endpoint supports link-based sign out and clears the session cookie', async () => {
+  const db = createMockDb();
+  const handler = createLogoutHandler({ getDatabase: async () => db });
+
+  const response = await handler(new Request('https://site.test/api/auth/logout?redirect=/login/?signed-out=1', {
+    method: 'GET',
+    headers: { cookie: 'ta_session=session-token' },
+  }));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/login/?signed-out=1');
+  assert.match(response.headers.get('set-cookie'), /ta_session=;/);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(db.queries.length, 1);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
