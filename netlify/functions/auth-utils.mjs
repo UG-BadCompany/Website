@@ -4,18 +4,22 @@ const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 const PHONE_PATTERN = /^[+()\-\s.\d]{7,30}$/;
 export const SESSION_COOKIE_NAME = process.env.AUTH_SESSION_COOKIE_NAME || 'ta_session';
 export const MAGIC_LINK_TTL_MINUTES = Number(process.env.MAGIC_LINK_TTL_MINUTES || 20);
-export const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
+export const CLIENT_SESSION_TTL_MINUTES = Number(process.env.CLIENT_SESSION_TTL_MINUTES || 30);
+export const STAFF_SESSION_TTL_MINUTES = Number(process.env.STAFF_SESSION_TTL_MINUTES || 120);
 
 
 export const PORTAL_PERMISSIONS = [
   { key: 'client.tools', label: 'Client dashboard tools', description: 'View client dashboard sections.' },
   { key: 'client.requests.manage', label: 'Client request management', description: 'Create and view own client job requests.' },
   { key: 'client.quotes.manage', label: 'Client quote decisions', description: 'View, accept, and decline own quotes.' },
+  { key: 'client.invoices.manage', label: 'Client invoices and payments', description: 'View own invoices and payment status.' },
   { key: 'worker.tools', label: 'Worker dashboard tools', description: 'View worker dashboard sections and assigned job tools.' },
   { key: 'worker.jobs.manage', label: 'Worker assigned jobs', description: 'View and update assigned worker jobs.' },
   { key: 'admin.tools', label: 'Admin dashboard tools', description: 'View admin dashboard sections.' },
   { key: 'admin.requests.manage', label: 'Admin request management', description: 'View and update all job requests.' },
   { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
+  { key: 'admin.invoices.manage', label: 'Admin invoice and payment management', description: 'Create invoices and confirm payments.' },
+  { key: 'admin.activity.view', label: 'Admin audit activity', description: 'View recent admin activity and audit events.' },
   { key: 'admin.users.manage', label: 'Admin user management', description: 'Create users and assign roles.' },
   { key: 'admin.roles.manage', label: 'Admin role management', description: 'Create roles and manage permissions.' },
   { key: 'dashboard.switch_views', label: 'Dashboard view switching', description: 'Switch between role views for support.' },
@@ -24,7 +28,7 @@ export const PORTAL_PERMISSIONS = [
 export const ALL_PERMISSION_KEYS = PORTAL_PERMISSIONS.map((permission) => permission.key);
 
 export const DEFAULT_ROLE_PERMISSIONS = {
-  client: ['client.tools', 'client.requests.manage', 'client.quotes.manage'],
+  client: ['client.tools', 'client.requests.manage', 'client.quotes.manage', 'client.invoices.manage'],
   worker: ['worker.tools', 'worker.jobs.manage'],
   admin: ALL_PERMISSION_KEYS,
 };
@@ -134,7 +138,6 @@ export const hashToken = (token) => createHash('sha256').update(token).digest('h
 
 export const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 1000).toISOString();
 
-export const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
 export const normalizeSiteUrl = (url) => clean(url).replace(/\/$/, '');
 
@@ -145,11 +148,25 @@ export const getAllowedSiteUrls = () => [
     .map((url) => normalizeSiteUrl(url)),
 ].filter((url) => url && !url.includes('your-domain.example'));
 
+const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
+
+const matchesConfiguredSiteHost = (requestOrigin, allowedSiteUrls) => {
+  const requestUrl = new URL(requestOrigin);
+
+  return allowedSiteUrls.some((allowedUrl) => {
+    const parsedAllowedUrl = new URL(allowedUrl);
+
+    return requestUrl.protocol === parsedAllowedUrl.protocol
+      && hostnameWithoutWww(requestUrl.hostname) === hostnameWithoutWww(parsedAllowedUrl.hostname)
+      && requestUrl.port === parsedAllowedUrl.port;
+  });
+};
+
 export const getSiteUrl = (request) => {
   const requestOrigin = new URL(request.url).origin;
   const allowedSiteUrls = getAllowedSiteUrls();
 
-  if (allowedSiteUrls.includes(requestOrigin)) {
+  if (allowedSiteUrls.includes(requestOrigin) || matchesConfiguredSiteHost(requestOrigin, allowedSiteUrls)) {
     return requestOrigin;
   }
 
@@ -218,11 +235,18 @@ export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, 
   return { sent: true };
 };
 
-export const createSessionCookie = (sessionToken, request) => {
-  const expires = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000).toUTCString();
+export const getSessionTtlMinutesForRoles = (roleKeys = []) => (
+  roleKeys.some((roleKey) => ['admin', 'worker'].includes(roleKey))
+    ? STAFF_SESSION_TTL_MINUTES
+    : CLIENT_SESSION_TTL_MINUTES
+);
+
+export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
+  const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
+  const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
 
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Expires=${expires}${secure}`;
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${secure}`;
 };
 
 export const createExpiredSessionCookie = (request) => {
@@ -245,9 +269,28 @@ export const parseCookies = (cookieHeader = '') => Object.fromEntries(
 export const getSessionToken = (request) => parseCookies(request.headers.get('cookie') || '')[SESSION_COOKIE_NAME] || '';
 
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
-  const [user] = await db.sql`
+  const normalizedEmail = clean(email).toLowerCase();
+  const [existingUser] = await db.sql`
+    select id
+    from app_users
+    where lower(email) = lower(${normalizedEmail})
+    order by created_at asc
+    limit 1
+  `;
+
+  const [user] = existingUser ? await db.sql`
+    update app_users
+    set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
+        auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
+        full_name = coalesce(nullif(full_name, ''), ${name || null}),
+        phone = coalesce(nullif(phone, ''), ${phone || null}),
+        is_active = true,
+        updated_at = now()
+    where id = ${existingUser.id}
+    returning id, email, full_name, phone
+  ` : await db.sql`
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
-    values ('magic_link', ${email}, ${email}, ${name || null}, ${phone || null})
+    values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
       auth_provider = case when app_users.auth_provider = 'pending' then 'magic_link' else app_users.auth_provider end,
       auth_subject = case when app_users.auth_provider = 'pending' or app_users.auth_subject is null then excluded.auth_subject else app_users.auth_subject end,
