@@ -121,13 +121,7 @@ export const createVerifyMagicLinkHandler = ({
       values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
     `;
 
-    return new Response(null, {
-      status: 302,
-      headers: {
-        location: `${getSiteUrl(request)}/dashboard/`,
-        'set-cookie': createSessionCookie(sessionToken, request),
-      },
-    });
+    return createDashboardOpenResponse(request, sessionToken);
   } catch (error) {
     console.error('Failed to verify magic link', error);
 
