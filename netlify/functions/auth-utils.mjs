@@ -20,6 +20,7 @@ export const PORTAL_PERMISSIONS = [
   { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
   { key: 'admin.invoices.manage', label: 'Admin invoice and payment management', description: 'Create invoices and confirm payments.' },
   { key: 'admin.activity.view', label: 'Admin audit activity', description: 'View recent admin activity and audit events.' },
+  { key: 'admin.inventory.manage', label: 'Admin inventory management', description: 'Manage inventory items, stock changes, and work order material usage.' },
   { key: 'admin.users.manage', label: 'Admin user management', description: 'Create users and assign roles.' },
   { key: 'admin.roles.manage', label: 'Admin role management', description: 'Create roles and manage permissions.' },
   { key: 'dashboard.switch_views', label: 'Dashboard view switching', description: 'Switch between role views for support.' },

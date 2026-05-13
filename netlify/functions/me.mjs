@@ -36,6 +36,7 @@ const buildPermissions = (roles, assignedPermissionKeys = []) => {
     canViewInvoices: permissionSet.has('client.invoices.manage'),
     canManageInvoices: permissionSet.has('admin.invoices.manage'),
     canViewAdminActivity: permissionSet.has('admin.activity.view'),
+    canManageInventory: permissionSet.has('admin.inventory.manage'),
     defaultView: canViewAdminTools ? 'admin' : (canViewWorkerTools ? 'worker' : 'client'),
     availableViews: availableViews.length ? availableViews : roles,
     permissionKeys,

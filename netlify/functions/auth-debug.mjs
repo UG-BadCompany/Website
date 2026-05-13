@@ -28,6 +28,7 @@ const mapSessionDebug = (session) => {
     id: session.id,
     userId: session.user_id,
     email: maskEmail(session.email),
+    fullName: session.full_name || '',
     userIsActive: session.is_active ?? null,
     revoked: Boolean(session.revoked_at),
     expired,
@@ -81,7 +82,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     const [session] = await db.sql`
       select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at,
         auth_sessions.revoked_at, auth_sessions.created_at, auth_sessions.last_seen_at,
-        app_users.email, app_users.is_active
+        app_users.email, app_users.full_name, app_users.is_active
       from auth_sessions
       left join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}

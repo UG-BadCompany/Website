@@ -1292,6 +1292,49 @@
         };
       };
 
+      const loadAuthorizedDashboardTools = (user) => {
+        if (user.permissions?.canViewClientTools) {
+          bindClientRequestForm();
+          bindClientRequestEditActions();
+          bindClientPropertyActions();
+          bindQuoteDecisionActions();
+          loadClientRequests();
+          loadClientQuotes();
+          if (user.permissions?.canViewInvoices) {
+            loadClientInvoices();
+          }
+        }
+
+        if (user.permissions?.canViewWorkerTools) {
+          bindWorkerJobActions();
+          loadWorkerJobs();
+        }
+
+        if (user.permissions?.canManageRequests) {
+          loadAdminRequests();
+          loadAdminActivity();
+        }
+
+        if (user.permissions?.canViewAdminActivity) {
+          bindAdminActivityLauncher();
+        }
+
+        if (user.permissions?.canManageInvoices) {
+          window.taDashboardActions.bindAdminInvoiceActions();
+          window.taDashboardActions.loadAdminInvoices();
+        }
+
+        if (user.permissions?.canManageUsers || user.permissions?.canManageRoles) {
+          bindAdminAccessLauncher();
+          loadAdminAccess();
+        }
+
+        if (user.permissions?.canViewAdminActivity) {
+          bindAdminActivityActions();
+          loadAdminActivity();
+        }
+      };
+
       const applyAuthDebugFallback = (debugResult, reason = 'Using debug session fallback.') => {
         if (!debugResult?.canUseSession || !debugResult.session) return false;
 
@@ -1299,18 +1342,20 @@
         const fallbackUser = {
           id: debugResult.session.userId,
           email: debugResult.session.email || 'signed-in account',
-          fullName: '',
+          fullName: debugResult.session.fullName || '',
           roles,
           permissions: buildDebugFallbackPermissions(roles),
         };
 
         status.dataset.state = 'ready';
         status.textContent = `Signed in as ${getUserDisplayName(fallbackUser)} (${reason})`;
+        renderClientProfile(fallbackUser);
         if (logoutButton) logoutButton.hidden = false;
         bindClientProfileButton();
         bindClientProfileForm();
         bindRequestEstimateLink();
         configureDashboardForUser(fallbackUser);
+        loadAuthorizedDashboardTools(fallbackUser);
         return true;
       };
 
@@ -3602,46 +3647,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           bindRequestEstimateLink();
           configureDashboardForUser(result.user);
 
-          if (result.user.permissions?.canViewClientTools) {
-            bindClientRequestForm();
-            bindClientRequestEditActions();
-            bindClientPropertyActions();
-            bindQuoteDecisionActions();
-            loadClientRequests();
-            loadClientQuotes();
-            if (result.user.permissions?.canViewInvoices) {
-              loadClientInvoices();
-            }
-          }
-
-          if (result.user.permissions?.canViewWorkerTools) {
-            bindWorkerJobActions();
-            loadWorkerJobs();
-          }
-
-          if (result.user.permissions?.canManageRequests) {
-            loadAdminRequests();
-            loadAdminActivity();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityLauncher();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            window.taDashboardActions.loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
-            bindAdminAccessLauncher();
-            loadAdminAccess();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityActions();
-            loadAdminActivity();
-          }
+          loadAuthorizedDashboardTools(result.user);
         })
         .catch(async (error) => {
           status.dataset.state = 'error';
