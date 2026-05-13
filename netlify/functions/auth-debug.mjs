@@ -66,6 +66,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     },
     session: null,
     roles: [],
+    canUseSession: false,
   };
 
   if (!sessionToken) {
@@ -89,6 +90,10 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     `;
 
     debug.session = mapSessionDebug(session);
+
+    if (session) {
+      debug.canUseSession = Boolean(session.is_active && !session.revoked_at && debug.session && !debug.session.expired);
+    }
 
     if (session?.user_id) {
       const roles = await db.sql`

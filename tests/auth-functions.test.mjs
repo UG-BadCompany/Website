@@ -420,6 +420,9 @@ test('dashboard page renders a visible session status and login debug panel hook
   assert.match(dashboard, /Session check/);
   assert.match(dashboard, /data-auth-debug-panel/);
   assert.match(dashboard, /\/api\/auth\/debug/);
+
+  const script = dashboard.slice(dashboard.lastIndexOf('<script>') + '<script>'.length, dashboard.lastIndexOf('</script>'));
+  assert.doesNotThrow(() => new Function(script));
 });
 
 test('auth debug endpoint shows whether the session cookie reached the server without opening the database', async () => {
@@ -464,6 +467,7 @@ test('auth debug endpoint reports the matching database session and roles for a 
   assert.equal(response.body.cookies.hasSessionCookie, true);
   assert.deepEqual(response.body.cookies.cookieNames, ['ta_session', 'other']);
   assert.equal(response.body.database.available, true);
+  assert.equal(response.body.canUseSession, true);
   assert.equal(response.body.session.id, 'session-1');
   assert.equal(response.body.session.email, 'cl***@example.com');
   assert.equal(response.body.session.expired, false);

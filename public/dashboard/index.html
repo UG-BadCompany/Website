@@ -1262,6 +1262,60 @@
         return panel;
       };
 
+      const buildDebugFallbackPermissions = (roles = []) => {
+        const roleSet = new Set(roles.length ? roles : ['client']);
+        const admin = roleSet.has('admin');
+        const worker = roleSet.has('worker') || admin;
+        const client = roleSet.has('client') || admin;
+        const availableViews = [
+          ...(admin ? ['admin'] : []),
+          ...(client ? ['client'] : []),
+          ...(worker ? ['worker'] : []),
+        ];
+
+        return {
+          canViewClientTools: client,
+          canViewWorkerTools: worker,
+          canViewAdminTools: admin,
+          canSwitchDashboardView: admin,
+          canManageUsers: admin,
+          canManageRoles: admin,
+          canManageRequests: admin,
+          canManageQuotes: admin,
+          canViewInvoices: client,
+          canManageInvoices: admin,
+          canViewAdminActivity: admin,
+          canManageInventory: admin,
+          defaultView: admin ? 'admin' : (worker ? 'worker' : 'client'),
+          availableViews: availableViews.length ? availableViews : ['client'],
+          permissionKeys: [],
+        };
+      };
+
+      const applyAuthDebugFallback = (debugResult, reason = 'Using debug session fallback.') => {
+        if (!debugResult?.canUseSession || !debugResult.session) return false;
+
+        const roles = debugResult.roles?.length ? debugResult.roles : ['client'];
+        const fallbackUser = {
+          id: debugResult.session.userId,
+          email: debugResult.session.email || 'signed-in account',
+          fullName: '',
+          roles,
+          permissions: buildDebugFallbackPermissions(roles),
+        };
+
+        status.dataset.state = 'ready';
+        status.textContent = `Signed in as ${getUserDisplayName(fallbackUser)} (${reason})`;
+        if (logoutButton) logoutButton.hidden = false;
+        bindClientProfileButton();
+        bindClientProfileForm();
+        bindRequestEstimateLink();
+        configureDashboardForUser(fallbackUser);
+        return true;
+      };
+
+      const fetchAuthDebug = () => fetchJson('/api/auth/debug');
+
       const loadAuthDebug = async (reason = 'Dashboard could not confirm a signed-in session.') => {
         const panel = ensureAuthDebugPanel();
         const summary = panel.querySelector('[data-auth-debug-summary]');
@@ -1269,7 +1323,7 @@
         if (summary) summary.textContent = `${reason} Checking cookie and database session state now…`;
 
         try {
-          const { response, result } = await fetchJson('/api/auth/debug');
+          const { response, result } = await fetchAuthDebug();
           const hints = [];
           if (!result.cookies?.hasSessionCookie) hints.push('No ta_session cookie reached /api/auth/debug. This usually means the browser did not save/send the login cookie.');
           if (result.cookies?.hasSessionCookie && !result.session) hints.push('A ta_session cookie reached the server, but no matching auth_sessions row was found.');
@@ -1277,12 +1331,15 @@
           if (result.session?.revoked) hints.push('The matching auth_sessions row is revoked.');
           if (result.session && result.session.userIsActive === false) hints.push('The matching user exists but is inactive.');
           if (result.session && !result.roles?.length) hints.push('The session user has no roles; the dashboard may fall back to client access.');
+          if (result.canUseSession) hints.push('/api/auth/debug found a usable session. If /api/me fails, the dashboard can use this as a temporary fallback.');
           if (!response.ok) hints.push(`Debug endpoint returned HTTP ${response.status}.`);
           if (summary) summary.textContent = hints.length ? hints.join(' ') : 'Debug found a session cookie and active database session. If the dashboard still looks signed out, the issue is in /api/me or dashboard rendering.';
           if (output) output.textContent = JSON.stringify(result, null, 2);
+          return result;
         } catch (error) {
           if (summary) summary.textContent = `Could not load login debug: ${error.message}`;
           if (output) output.textContent = String(error.stack || error.message || error);
+          return null;
         }
       };
 
@@ -3512,13 +3569,17 @@ Additional info from client: ${payload.additionalInfo}` : '';
       status.textContent = 'Checking secure session…';
 
       fetchJson('/api/me')
-        .then(({ response, result }) => {
+        .then(async ({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
-            status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
-            if (authDebugEnabled) {
-              loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.');
-            } else {
+            status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Checking fallback session debug…';
+            const debugResult = authDebugEnabled
+              ? await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.')
+              : await fetchAuthDebug().then(({ result: fallbackResult }) => fallbackResult).catch(() => null);
+            if (applyAuthDebugFallback(debugResult, '/api/me did not authenticate, but /api/auth/debug found a valid session')) {
+              return;
+            }
+            if (!authDebugEnabled) {
               window.location.replace('/login/?next=dashboard');
             }
             return;
@@ -3582,12 +3643,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminActivity();
           }
         })
-        .catch(() => {
+        .catch(async (error) => {
           status.dataset.state = 'error';
-          status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
-          if (authDebugEnabled) {
-            loadAuthDebug(error.message || 'The dashboard /api/me request failed.');
-          } else {
+          status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Checking fallback session debug…';
+          const debugResult = authDebugEnabled
+            ? await loadAuthDebug(error.message || 'The dashboard /api/me request failed.')
+            : await fetchAuthDebug().then(({ result }) => result).catch(() => null);
+          if (applyAuthDebugFallback(debugResult, '/api/me failed, but /api/auth/debug found a valid session')) {
+            return;
+          }
+          if (!authDebugEnabled) {
             window.location.replace('/login/?next=dashboard');
           }
         });
