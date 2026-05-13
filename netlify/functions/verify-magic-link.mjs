@@ -44,6 +44,7 @@ const createContinueResponse = (request, token) => new Response(`<!doctype html>
         <input type="hidden" name="token" value="${escapeHtml(token)}">
         <button class="btn" type="submit">Continue to dashboard</button>
       </form>
+      <script>document.querySelector('[data-continue-form]').requestSubmit();</script>
     </section>
   </main>
 </body>
