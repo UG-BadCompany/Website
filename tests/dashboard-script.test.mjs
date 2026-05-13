@@ -106,6 +106,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoice follow-up');
   assert.match(script, /const confirmAdminPayment =/, 'admins should be able to confirm invoice payments');
+  assert.match(script, /function bindAdminInvoiceActions\(\)/, 'admin invoice action binding should use a redeclaration-safe function declaration');
+  assert.doesNotMatch(script, /const bindAdminInvoiceActions =/, 'admin invoice action binding must not use a top-level const that can collide after deploy merges');
   assert.match(script, /canManageInvoices/, 'admin invoice loading should honor invoice management permission');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
