@@ -1,0 +1,124 @@
+import {
+  createOrUpdateMagicLinkUser,
+  createSessionCookie,
+  createToken,
+  daysFromNow,
+  getSiteUrl,
+  hashToken,
+  json,
+  loadDatabase,
+  SESSION_TTL_DAYS,
+} from './auth-utils.mjs';
+
+const escapeHtml = (value) => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const createConfirmResponse = (request, token) => new Response(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Continue to T&A Contracting portal</title>
+  <style>body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff7ec;color:#1e1915}.wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.card{max-width:520px;padding:32px;border:1px solid rgba(17,17,17,.1);border-radius:28px;background:#fff;box-shadow:0 24px 80px rgba(45,27,13,.12)}h1{margin:0 0 12px;font-size:clamp(2rem,5vw,3rem);line-height:1}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin-top:14px;padding:0 20px;border:0;border-radius:999px;background:#ad3f18;color:#fff;font-weight:900;font:inherit;cursor:pointer}p{color:#67594d;line-height:1.6}</style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Continue to your portal</h1>
+      <p>Click the button below to finish signing in. This extra step protects your one-time link from email security scanners that may preview links automatically.</p>
+      <form method="GET" action="${escapeHtml(new URL(request.url).pathname)}">
+        <input type="hidden" name="token" value="${escapeHtml(token)}">
+        <input type="hidden" name="confirm" value="1">
+        <button class="btn" type="submit">Continue to dashboard</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>`, {
+  status: 200,
+  headers: {
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store',
+  },
+});
+
+
+
+export const createVerifyMagicLinkHandler = ({
+  getDatabase = loadDatabase,
+  makeSessionToken = createToken,
+} = {}) => async (request) => {
+  if (request.method !== 'GET') {
+    return json(405, { ok: false, message: 'Method not allowed.' });
+  }
+
+  const url = new URL(request.url);
+  const token = url.searchParams.get('token') || '';
+  const confirmed = url.searchParams.get('confirm') === '1';
+
+  if (!token) {
+    return Response.redirect(`${getSiteUrl(request)}/login/?auth=missing-token`, 302);
+  }
+
+  try {
+    const db = await getDatabase();
+    const [magicLink] = await db.sql`
+      select id, email, purpose, client_name, client_phone
+      from auth_magic_links
+      where token_hash = ${hashToken(token)}
+        and consumed_at is null
+        and expires_at > now()
+      limit 1
+    `;
+
+    if (!magicLink) {
+      return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
+    }
+
+    if (!confirmed) {
+      return createConfirmResponse(request, token);
+    }
+
+    const user = await createOrUpdateMagicLinkUser(db, {
+      email: magicLink.email,
+      name: magicLink.client_name,
+      phone: magicLink.client_phone,
+    });
+
+    await db.sql`
+      update auth_magic_links
+      set consumed_at = now()
+      where id = ${magicLink.id}
+    `;
+
+    const sessionToken = makeSessionToken();
+
+    await db.sql`
+      insert into auth_sessions (user_id, session_hash, expires_at)
+      values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
+    `;
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location: `${getSiteUrl(request)}/dashboard/`,
+        'set-cookie': createSessionCookie(sessionToken, request),
+      },
+    });
+  } catch (error) {
+    console.error('Failed to verify magic link', error);
+
+    return Response.redirect(`${getSiteUrl(request)}/login/?auth=error`, 302);
+  }
+};
+
+export default createVerifyMagicLinkHandler();
+
+export const config = {
+  path: '/api/auth/verify',
+};
