@@ -56,6 +56,24 @@ test('restored applied 0004 schedule migration keeps the locked applied checksum
   assert.match(stdout, /Netlify Database migrations verified:/);
 });
 
+
+test('applied compatibility migrations keep their original SQL bodies', async () => {
+  const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
+  const mirroredMigrations = [
+    ['0009_completion_review_status.sql', '0011_completion_review_status.sql'],
+    ['0009_quote_payment_completion_controls.sql', '0012_quote_payment_completion_controls.sql'],
+    ['0010_invoices_payments.sql', '0013_invoices_payments.sql'],
+    ['0009_worker_completion_evidence.sql', '0014_worker_completion_evidence.sql'],
+  ];
+
+  for (const [source, compatibility] of mirroredMigrations) {
+    const sourceSql = await readFile(new URL(source, migrationsDir), 'utf8');
+    const compatibilitySql = await readFile(new URL(compatibility, migrationsDir), 'utf8');
+
+    assert.equal(compatibilitySql, sourceSql, `${compatibility} must match the SQL that Netlify already applied.`);
+  }
+});
+
 test('migration validator script parses before Netlify prebuild runs it', async () => {
   await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/check-netlify-migrations.mjs']));
 });
