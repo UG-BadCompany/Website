@@ -1,43 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 620" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
   <title id="title">T&amp;A Contracting</title>
-  <desc id="desc">Modern T&amp;A Contracting Arizona Native logo with roofline, desert sun, state outline, and contracting wordmark.</desc>
+  <desc id="desc">T&amp;A Contracting logo with Arizona desert artwork, house roofline, tools, and maintenance tagline.</desc>
   <defs>
-    <linearGradient id="sunset" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#f7b34a"/>
-      <stop offset="1" stop-color="#b64018"/>
-    </linearGradient>
-    <linearGradient id="rust" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#c84e1d"/>
-      <stop offset="1" stop-color="#8e2f14"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000000" flood-opacity="0.16"/>
-    </filter>
+    <linearGradient id="sun" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f8b351"/><stop offset="1" stop-color="#b64318"/></linearGradient>
+    <linearGradient id="rust" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#c94b1e"/><stop offset="1" stop-color="#8f2f15"/></linearGradient>
+    <linearGradient id="mountain" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#8a552c"/><stop offset="1" stop-color="#4d2f1a"/></linearGradient>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".18"/></filter>
   </defs>
-
-  <rect width="920" height="620" rx="34" fill="#ffffff"/>
+  <rect width="1254" height="1254" rx="28" fill="#fff"/>
 
   <g filter="url(#shadow)">
-    <g transform="translate(98 48)">
-      <path d="M96 208 78 121l58-8 61 52 37-31V26h335v128l74-48 196 142h-72L641 158 476 267H90l38-59H96Z" fill="#fff"/>
-      <path d="M94 208 76 121l60-8 61 52 37-31V26h335v128" fill="none" stroke="url(#rust)" stroke-width="15" stroke-linejoin="round"/>
-      <path d="M267 50h278v168H267z" fill="#ead2ba" opacity="0.72"/>
-      <circle cx="409" cy="193" r="73" fill="url(#sunset)"/>
-      <g stroke="#fff" stroke-width="14" opacity="0.9">
-        <path d="M409 76v54"/><path d="M353 91l30 49"/><path d="M304 125l49 38"/><path d="M465 91l-28 52"/><path d="M516 125l-51 39"/>
-      </g>
-      <path d="M265 259c35-30 64-50 88-58 19-6 40 17 59 12 25-6 37-33 63-22 22 10 40 34 64 25 20-7 43 9 68 43H265Z" fill="#6d421f"/>
-      <path d="M90 267h351l-46 83H242l-38 224H102l38-224H28l49-83h13Z" fill="#171717"/>
-      <path d="M439 574 594 299 837 472h-77L597 360 481 574h-42Z" fill="#171717"/>
-      <path d="M534 574 662 356 785 574h-88l-18-45H566l-24 45h-8Zm62-106h54l-25-68-29 68Z" fill="#171717"/>
-      <path d="M334 405h91c36 0 51 15 45 45l-5 33h-55l2-15c2-12-4-18-18-18h-38c-15 0-23 6-25 19l-3 20 55 48 19-26h63l-46 62h-78l-9-9c-19 10-41 15-66 15h-34c-45 0-65-20-59-61l6-33c4-26 22-43 54-50-13-13-17-28-13-45 5-24 27-36 68-36Zm-32 117c-2 12 4 18 19 18h34l-57-51c-12 4-18 10-20 19l-2 12Z" fill="url(#rust)"/>
-    </g>
+    <path d="M265 446 212 520 157 520 185 470 165 420 183 375 173 318 205 302 249 339 282 295 282 140 718 140 718 304 836 233 1108 427 1070 441 812 258 622 446Z" fill="#fff"/>
+    <path d="M262 446 211 520 157 520 185 470 165 420 183 375 173 318 205 302 249 339 282 295 282 140 718 140" fill="none" stroke="url(#rust)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M310 168h378v250H310z" fill="#ead3bb" opacity=".65"/>
+    <circle cx="505" cy="323" r="95" fill="url(#sun)"/>
+    <g stroke="#fff" stroke-width="16" opacity=".92"><path d="M505 189v72"/><path d="M430 205l42 68"/><path d="M360 252l70 50"/><path d="M580 205l-40 70"/><path d="M650 252l-72 51"/></g>
+    <path d="M318 438c50-45 91-73 123-83 27-8 55 25 82 18 34-8 53-48 91-30 31 15 57 52 91 39 30-11 62 13 97 56Z" fill="url(#mountain)"/>
+    <path d="M238 448c21-58 54-86 99-82 17 1 34 8 51 21l-34 61Z" fill="#5f351e" opacity=".9"/>
+    <g stroke="#171717" stroke-width="18" stroke-linecap="round"><path d="M327 226v225"/><path d="M296 319c0 42 12 64 31 66"/><path d="M358 319c0 42-12 64-31 66"/></g>
+    <path d="M485 449 803 246 1119 467 1058 476 807 302 626 449Z" fill="#171717"/>
+    <path d="M748 357h35v35h-35zm52 0h35v35h-35zm-52 52h35v35h-35zm52 0h35v35h-35z" fill="#171717"/>
+    <path d="M993 358h56l15 14v28h-38v-15h-33z" fill="#171717"/>
   </g>
 
-  <text x="460" y="510" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="52" letter-spacing="18" fill="#171717">CONTRACTING</text>
-  <g fill="#a83a18">
-    <circle cx="310" cy="558" r="4"/><circle cx="460" cy="558" r="4"/><circle cx="610" cy="558" r="4"/>
+  <g fill="#171717">
+    <path d="M154 471h492l-50 80H454L397 779H285l57-228H103z"/>
+    <path d="M706 779 864 468h99l161 311H988l-28-64H823l-30 64zm154-150h65l-31-75z"/>
   </g>
-  <text x="460" y="570" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="24" letter-spacing="8" fill="#171717">MAINTENANCE • ANYTHING • EVERYTHING</text>
-  <text x="460" y="604" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="18" letter-spacing="10" fill="#a83a18">ARIZONA NATIVE</text>
+  <path d="M507 570h90c42 0 60 18 53 54l-5 34h-66l2-14c2-12-4-18-19-18h-34c-16 0-25 6-27 20l-2 15 64 59 24-33h75l-59 80h-88l-11-10c-22 14-48 21-78 21h-36c-54 0-78-24-70-72l6-33c5-32 27-53 65-62-15-16-20-34-16-55 7-31 34-46 82-46zm-47 139c-2 13 5 20 22 20h39l-67-61c-14 5-22 13-24 24l-2 13z" fill="url(#rust)"/>
+
+  <text x="627" y="872" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="72" letter-spacing="28" fill="#171717">CONTRACTING</text>
+  <g fill="#171717" transform="translate(0 0)">
+    <path d="M285 936l-42 42-25-25 42-42c-2-21 5-43 22-60 19-19 45-25 69-19l-43 43 22 22 43-43c6 24 0 50-19 69-17 17-39 24-69 13z"/>
+    <path d="M448 925l28-64 32 14-28 64zm-35 66 61-55 25 11-18 80z"/>
+    <path d="M615 880h72c19 0 34 15 34 34v54c0 19-15 34-34 34h-72c-19 0-34-15-34-34v-54c0-19 15-34 34-34zm20 35h34v52h-34z"/>
+    <path d="M865 850h42l-36 80h52l-91 113 33-86h-48z"/>
+    <path d="M1016 884h73v36h-18v59h-37v-59h-18zm-22 95h118v34H994z"/>
+  </g>
+  <g fill="#a83a18"><rect x="54" y="844" width="108" height="7" rx="4"/><rect x="1092" y="844" width="108" height="7" rx="4"/><rect x="172" y="1028" width="82" height="6" rx="3"/><rect x="1000" y="1028" width="82" height="6" rx="3"/></g>
+  <text x="627" y="1036" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="36" letter-spacing="10" fill="#171717">MAINTENANCE. · ANYTHING. · EVERYTHING.</text>
+  <path d="M250 1078c210-12 535-12 748 0" fill="none" stroke="#171717" stroke-width="5"/>
+  <text x="627" y="1135" text-anchor="middle" font-family="Arial Black, Montserrat, system-ui, sans-serif" font-size="34" letter-spacing="20" fill="#a83a18">ARIZONA NATIVE.</text>
 </svg>
