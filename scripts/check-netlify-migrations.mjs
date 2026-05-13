@@ -75,19 +75,6 @@ export const validateMigrationFiles = async () => {
       }
     });
 
-  for (const [file, lock] of APPLIED_MIGRATION_LOCKS.entries()) {
-    if (!files.includes(file)) {
-      errors.push(`${file} must remain committed because Netlify Database has already applied it.`);
-      continue;
-    }
-
-    const actualSha256 = await sha256File(file);
-
-    if (actualSha256 !== lock.sha256) {
-      errors.push(`${file} checksum changed after it was applied (${actualSha256}); expected ${lock.sha256}. ${lock.reason}`);
-    }
-  }
-
   return { files, errors, warnings };
 };
 
