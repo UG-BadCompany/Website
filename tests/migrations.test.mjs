@@ -60,3 +60,10 @@ test('migration validator script parses before Netlify prebuild runs it', async 
   await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/check-netlify-migrations.mjs']));
 });
 
+test('npm prebuild uses the CommonJS Netlify migration guard', async () => {
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+
+  assert.equal(packageJson.scripts.prebuild, 'node scripts/prebuild-netlify-migrations.cjs');
+  await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/prebuild-netlify-migrations.cjs']));
+});
+

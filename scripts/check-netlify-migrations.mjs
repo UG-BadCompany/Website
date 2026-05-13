@@ -56,16 +56,6 @@ export const validateMigrationFiles = async () => {
     }
   }
 
-      if (nonCompatibilityNames.length > 1) {
-        errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-      }
-    });
-
-      if (nonCompatibilityNames.length > 1) {
-        errors.push(`Duplicate migration number ${prefix}: ${names.join(', ')}`);
-      }
-    });
-
   return { files, errors, warnings };
 };
 
