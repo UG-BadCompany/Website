@@ -281,6 +281,8 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     returning id, email, full_name, phone
   `;
 
+  const user = savedUser;
+
   await db.sql`
     insert into user_roles (user_id, role_id)
     select ${user.id}, roles.id
