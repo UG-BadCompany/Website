@@ -21,7 +21,7 @@ test('client invoices endpoint returns only unpaid client invoices', async () =>
       id: 'invoice-1',
       job_request_id: 'job-1',
       status: 'open',
-      title: 'Repair invoice',
+      title: 'Invoice & payment desk',
       amount_cents: 42500,
       due_at: null,
       paid_at: null,
@@ -31,6 +31,11 @@ test('client invoices endpoint returns only unpaid client invoices', async () =>
       service_type: 'Drywall repair',
       city: 'Mesa',
       street_address: '123 Main St',
+      payment_provider: 'square',
+      provider_checkout_id: 'checkout-1',
+      provider_checkout_url: 'https://square.link/pay/checkout-1',
+      provider_status: 'created',
+      provider_metadata: { orderId: 'order-1' },
     }],
   ]);
   const handler = createClientInvoicesHandler({ getDatabase: async () => db });
