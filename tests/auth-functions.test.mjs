@@ -129,6 +129,13 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
 });
 
 
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+});
+
+
 test('email delivery stays disabled for missing or placeholder Resend settings', () => {
   const original = {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
@@ -259,6 +266,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     [],
     [],
     [],
+    [],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,
@@ -328,6 +336,7 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.body.user.permissions.canManageRoles, true);
   assert.equal(response.body.user.permissions.canViewInvoices, true);
   assert.equal(response.body.user.permissions.canManageInvoices, true);
+  assert.equal(response.body.user.permissions.canViewAdminActivity, true);
   assert.equal(response.body.user.permissions.defaultView, 'admin');
   assert.deepEqual(response.body.user.permissions.availableViews, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.permissionKeys.includes('admin.roles.manage'), true);
@@ -360,6 +369,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
   assert.equal(response.body.user.permissions.canViewInvoices, true);
   assert.equal(response.body.user.permissions.canManageInvoices, false);
+  assert.equal(response.body.user.permissions.canViewAdminActivity, false);
   assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
   assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=1800/);
   assert.match(db.queries[3].text, /expires_at/);

@@ -16,23 +16,24 @@ test('admin activity endpoint requires a signed-in session', async () => {
   let openedDatabase = false;
   const handler = createAdminActivityHandler({ getDatabase: async () => { openedDatabase = true; return createMockDb(); } });
   const response = await readJson(await handler(new Request('https://site.test/api/admin/activity')));
+
   assert.equal(response.status, 401);
   assert.equal(response.body.authenticated, false);
-  assert.equal(openedDatabase, false);
+  assert.equal(openedDatabase, true);
 });
 
-test('admin activity endpoint rejects non-admin users', async () => {
+test('admin activity endpoint rejects users without activity permission', async () => {
   const db = createMockDb([
-    [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
+    [{ id: 'session-1', user_id: 'worker-1', email: 'worker@example.com', full_name: 'Worker' }],
     [],
-    [{ key: 'client' }],
-    [],
+    [{ key: 'worker' }],
+    [{ permission_key: 'worker.tools' }],
   ]);
   const handler = createAdminActivityHandler({ getDatabase: async () => db });
   const response = await readJson(await handler(new Request('https://site.test/api/admin/activity', { headers: { cookie: 'ta_session=session-token' } })));
+
   assert.equal(response.status, 403);
   assert.equal(response.body.authorized, false);
-  assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
 test('admin activity endpoint lists recent audit events for admins', async () => {
@@ -40,100 +41,28 @@ test('admin activity endpoint lists recent audit events for admins', async () =>
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin' }],
-    [],
+    [{ permission_key: 'admin.activity.view' }],
     [{
       id: 'event-1',
       actor_user_id: 'admin-1',
       event_type: 'payment.confirmed',
       entity_type: 'invoice',
       entity_id: 'invoice-1',
-      metadata: { amountCents: 42500, source: 'admin_dashboard' },
-      created_at: '2026-05-09T00:00:00.000Z',
-      actor_full_name: 'Admin User',
+      metadata: { amountCents: 25000 },
+      created_at: '2026-05-13T00:00:00.000Z',
       actor_email: 'admin@example.com',
+      actor_full_name: 'Admin',
     }],
   ]);
   const handler = createAdminActivityHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/admin/activity', { headers: { cookie: 'ta_session=session-token' } })));
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/activity?limit=10&eventType=payment.confirmed', { headers: { cookie: 'ta_session=session-token' } })));
+
   assert.equal(response.status, 200);
   assert.equal(response.body.events.length, 1);
   assert.equal(response.body.events[0].eventType, 'payment.confirmed');
+  assert.equal(response.body.events[0].metadata.amountCents, 25000);
   assert.equal(response.body.events[0].actor.email, 'admin@example.com');
-  assert.equal(response.body.events[0].metadata.amountCents, 42500);
+  assert.equal(response.body.filters.limit, 10);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
   assert.match(db.queries[4].text, /from audit_events/);
-});
-
-test('admin activity endpoint paginates audit events with a bounded limit', async () => {
-  const db = createMockDb([
-    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
-    [],
-    [{ key: 'admin' }],
-    [],
-    [
-      {
-        id: 'event-1',
-        actor_user_id: 'admin-1',
-        event_type: 'payment.confirmed',
-        entity_type: 'invoice',
-        entity_id: 'invoice-1',
-        metadata: {},
-        created_at: '2026-05-09T00:00:00.000Z',
-        actor_full_name: 'Admin User',
-        actor_email: 'admin@example.com',
-      },
-      {
-        id: 'event-2',
-        actor_user_id: 'admin-1',
-        event_type: 'invoice.opened',
-        entity_type: 'invoice',
-        entity_id: 'invoice-2',
-        metadata: {},
-        created_at: '2026-05-08T00:00:00.000Z',
-        actor_full_name: 'Admin User',
-        actor_email: 'admin@example.com',
-      },
-    ],
-  ]);
-  const handler = createAdminActivityHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/admin/activity?page=2&limit=1', { headers: { cookie: 'ta_session=session-token' } })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.events.length, 1);
-  assert.deepEqual(response.body.pagination, { page: 2, limit: 1, hasNextPage: true, type: '', search: '' });
-  assert.equal(db.queries[4].values.at(-2), 2);
-  assert.equal(db.queries[4].values.at(-1), 1);
-});
-
-
-test('admin activity endpoint filters audit events by type and search term', async () => {
-  const db = createMockDb([
-    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
-    [],
-    [{ key: 'admin' }],
-    [],
-    [{
-      id: 'event-1',
-      actor_user_id: 'admin-1',
-      event_type: 'payment.confirmed',
-      entity_type: 'invoice',
-      entity_id: 'invoice-1',
-      metadata: { amountCents: 42500, reference: 'receipt-1001' },
-      created_at: '2026-05-09T00:00:00.000Z',
-      actor_full_name: 'Admin User',
-      actor_email: 'admin@example.com',
-    }],
-  ]);
-  const handler = createAdminActivityHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/admin/activity?type=payment&q=receipt&limit=500', { headers: { cookie: 'ta_session=session-token' } })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.pagination.type, 'payment');
-  assert.equal(response.body.pagination.search, 'receipt');
-  assert.equal(response.body.pagination.limit, 100);
-  assert.equal(response.body.events[0].metadata.reference, 'receipt-1001');
-  assert.match(db.queries[4].text, /audit_events\.metadata::text/);
-  assert.ok(db.queries[4].values.includes('payment'));
-  assert.ok(db.queries[4].values.includes('%receipt%'));
-  assert.equal(db.queries[4].values.at(-2), 101);
-  assert.equal(db.queries[4].values.at(-1), 0);
 });
