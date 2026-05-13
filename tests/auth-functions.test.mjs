@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import {
   getAllowedSiteUrls,
   getFromEmail,
@@ -161,6 +162,15 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.match(response.body.message, /Email delivery failed/);
   assert.equal(response.body.devMagicLink, 'https://site.test/api/auth/verify?token=magic-token');
   assert.equal(db.queries.length, 1);
+});
+
+
+test('latest magic-link migration restores profile metadata columns for existing databases', async () => {
+  const migration = await readFile(new URL('../netlify/database/migrations/0019_magic_link_profile_columns.sql', import.meta.url), 'utf8');
+
+  assert.match(migration, /alter table auth_magic_links/);
+  assert.match(migration, /add column if not exists client_name text/);
+  assert.match(migration, /add column if not exists client_phone text/);
 });
 
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
