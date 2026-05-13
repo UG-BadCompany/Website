@@ -54,18 +54,14 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `GET /api/client/invoices` | Yes | `client` or `admin` | Returns unpaid invoices scoped to the signed-in client account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
+| `GET /api/client/invoices` | Yes | `client` or `admin` | Returns unpaid invoices scoped to the signed-in client account. |
 | `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
-| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status and worker notes for an assigned job; workers are scoped to their own assignments, and completed work moves to admin/client pending review. |
-| `GET /api/admin/job-requests` | Yes | `admin.requests.manage` or `admin` | Returns scoped public job requests, worker assignments, quote context, and status counts for active/completed/all admin work-order views. |
-| `PATCH /api/admin/job-requests` | Yes | `admin.requests.manage` or `admin` | Updates a request status/internal admin notes, can create/update worker assignments, and opens invoices when verified work moves to `waiting_payment`. |
-| `POST /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Creates the first draft/sent quote for an existing client-linked job request. |
-| `PATCH /api/admin/quotes` | Yes | `admin.quotes.manage` or `admin` | Edits an existing saved quote from the open work request. |
-| `GET /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Lists open, paid, or all active invoices with payment summary data. |
-| `GET /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Lists active inventory items and low-stock summary data. |
-| `POST /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Creates a tracked inventory item for materials, tools, or supplies. |
-| `PATCH /api/admin/inventory` | Yes | `admin.inventory.manage` or `admin` | Records quantity adjustments, updates item details, archives inactive items, and updates stock on hand. |
-| `PATCH /api/admin/invoices` | Yes | `admin.invoices.manage` or `admin` | Confirms payment, writes a payment row, and moves the job request to completed. |
-| `GET /api/admin/activity` | Yes | `admin.activity.view` or `admin` | Lists paginated recent audit events for the admin activity feed. |
+| `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status, worker notes, checklist items, material notes, and required completion notes/photo evidence for an assigned job; workers are scoped to their own assignments. |
+| `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
+| `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
+| `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
+| `GET /api/admin/invoices` | Yes | `admin` | Lists unpaid invoices and amount-due summary for admin payment follow-up. |
+| `PATCH /api/admin/invoices` | Yes | `admin` | Confirms payment, records a payment row, completes the linked job request, and writes an audit event. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |
