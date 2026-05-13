@@ -179,8 +179,6 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
-  const body = await response.text();
-
   assert.equal(response.status, 200);
   assert.match(body, /Opening your dashboard/);
   assert.match(body, /https:\/\/site.test\/dashboard\//);
@@ -252,6 +250,41 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
   assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
+});
+
+
+test('me endpoint optional session check returns signed-out state without a 401', async () => {
+  let openedDatabase = false;
+  const handler = createMeHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/me?optional=1')));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, false);
+  assert.equal(response.body.ok, true);
+  assert.equal(openedDatabase, false);
+});
+
+test('me endpoint optional session check clears an expired cookie without a 401', async () => {
+  const db = createMockDb([[]]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await handler(new Request('https://site.test/api/me?optional=1', {
+    headers: { cookie: 'ta_session=expired-token' },
+  }));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.authenticated, false);
+  assert.match(body.message, /session expired/i);
+  assert.match(response.headers.get('set-cookie'), /ta_session=;/);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(db.queries.length, 1);
+  assert.equal(db.queries[0].values[0], hashToken('expired-token'));
 });
 
 test('logout endpoint revokes the current session and clears the session cookie', async () => {

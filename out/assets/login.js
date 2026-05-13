@@ -39,7 +39,7 @@
     if (isSignedOutReturn()) return;
 
     try {
-      const response = await fetch('/api/me', {
+      const response = await fetch('/api/me?optional=1', {
         cache: 'no-store',
         credentials: 'same-origin',
         headers: { accept: 'application/json' },
