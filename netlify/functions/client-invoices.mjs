@@ -1,4 +1,5 @@
 import {
+  getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
@@ -53,7 +54,7 @@ const loadSession = async (db, sessionToken) => {
   return session;
 };
 
-const loadRoleKeys = async (db, userId) => {
+const loadAccess = async (db, userId) => {
   const roles = await db.sql`
     select roles.key, roles.name
     from user_roles
@@ -61,8 +62,21 @@ const loadRoleKeys = async (db, userId) => {
     where user_roles.user_id = ${userId}
     order by roles.key
   `;
+  const roleKeys = roles.map((role) => role.key);
 
-  return roles.map((role) => role.key);
+  const rolePermissions = await db.sql`
+    select distinct role_permissions.permission_key
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+    where user_roles.user_id = ${userId}
+    order by role_permissions.permission_key
+  `;
+
+  return {
+    roleKeys,
+    permissionKeys: getPermissionKeysForRoles(roleKeys, rolePermissions.map((permission) => permission.permission_key)),
+  };
 };
 
 const listClientInvoices = async (db, userId) => {
@@ -121,10 +135,10 @@ export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {})
       return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
     }
 
-    const roleKeys = await loadRoleKeys(db, session.user_id);
+    const { roleKeys, permissionKeys } = await loadAccess(db, session.user_id);
 
-    if (!roleKeys.includes('client') && !roleKeys.includes('admin')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client role required to view invoices.' });
+    if (!permissionKeys.includes('client.invoices.manage')) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client invoice permission is required.' });
     }
 
     return json(200, {
