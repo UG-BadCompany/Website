@@ -320,6 +320,31 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 
 
 
+
+test('me endpoint uses role defaults when role permission table is unavailable', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }];
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'client', name: 'Client' }];
+      if (/role_permissions/.test(text)) throw new Error('role_permissions missing');
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['client']);
+  assert.equal(response.body.user.permissions.canViewClientTools, true);
+  assert.equal(response.body.user.permissions.canViewInvoices, true);
+});
+
 test('me endpoint falls back to client access when a magic-link account has no assigned roles', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
