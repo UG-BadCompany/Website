@@ -241,19 +241,26 @@ export const getSessionTtlMinutesForRoles = (roleKeys = []) => (
     : CLIENT_SESSION_TTL_MINUTES
 );
 
+const isSecureCookieRequest = (request) => {
+  const forwardedProto = clean(request.headers.get('x-forwarded-proto')).toLowerCase();
+
+  return new URL(request.url).protocol === 'https:' || forwardedProto.split(',').map((proto) => proto.trim()).includes('https');
+};
+
+const getCookieSecurityAttributes = (request) => (
+  isSecureCookieRequest(request) ? '; SameSite=None; Secure' : '; SameSite=Lax'
+);
+
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
   const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
   const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
 
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${secure}`;
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=${maxAgeSeconds}; Expires=${expires}`;
 };
 
-export const createExpiredSessionCookie = (request) => {
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
-
-  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
-};
+export const createExpiredSessionCookie = (request) => (
+  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+);
 
 export const parseCookies = (cookieHeader = '') => Object.fromEntries(
   cookieHeader

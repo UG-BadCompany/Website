@@ -12,6 +12,8 @@ import {
   validateEmail,
   createOrUpdateMagicLinkUser,
   createMagicLinkUrl,
+  createSessionCookie,
+  createExpiredSessionCookie,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
@@ -120,6 +122,25 @@ test('site URL helper supports the production domain and Netlify subdomain alias
   }
 });
 
+
+
+test('session cookies use cross-site-safe secure attributes on HTTPS and forwarded HTTPS requests', () => {
+  const httpsCookie = createSessionCookie('session-token', new Request('https://site.test/api/auth/verify'));
+  const forwardedCookie = createSessionCookie('session-token', new Request('http://site.test/api/auth/verify', {
+    headers: { 'x-forwarded-proto': 'https' },
+  }));
+  const localCookie = createSessionCookie('session-token', new Request('http://localhost:8888/api/auth/verify'));
+  const expiredCookie = createExpiredSessionCookie(new Request('https://site.test/api/auth/logout'));
+
+  assert.match(httpsCookie, /SameSite=None/);
+  assert.match(httpsCookie, /Secure/);
+  assert.match(forwardedCookie, /SameSite=None/);
+  assert.match(forwardedCookie, /Secure/);
+  assert.match(localCookie, /SameSite=Lax/);
+  assert.doesNotMatch(localCookie, /Secure/);
+  assert.match(expiredCookie, /SameSite=None/);
+  assert.match(expiredCookie, /Max-Age=0/);
+});
 
 test('magic-link URL uses the request host so session cookies stay on the dashboard host', () => {
   const original = {
@@ -260,7 +281,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     body: new URLSearchParams({ token: 'magic-token' }),
   }));
 
-  assert.equal(response.status, 302);
+  assert.equal(response.status, 303);
   assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
@@ -304,7 +325,7 @@ test('verify endpoint still redirects when marking the used magic link fails aft
     body: new URLSearchParams({ token: 'magic-token' }),
   }));
 
-  assert.equal(response.status, 302);
+  assert.equal(response.status, 303);
   assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);

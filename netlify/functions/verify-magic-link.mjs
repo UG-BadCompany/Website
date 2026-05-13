@@ -88,10 +88,6 @@ export const createVerifyMagicLinkHandler = ({
     return createContinueResponse(request, token);
   }
 
-  if (request.method === 'GET') {
-    return createContinueResponse(request, token);
-  }
-
   try {
     const db = await getDatabase();
     const [magicLink] = await db.sql`
@@ -129,7 +125,7 @@ export const createVerifyMagicLinkHandler = ({
     }
 
     return new Response(null, {
-      status: 302,
+      status: 303,
       headers: {
         location: '/dashboard/',
         'set-cookie': createSessionCookie(sessionToken, request),
