@@ -248,7 +248,7 @@ const isSecureCookieRequest = (request) => {
 };
 
 const getCookieSecurityAttributes = (request) => (
-  isSecureCookieRequest(request) ? '; SameSite=None; Secure' : '; SameSite=Lax'
+  `; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
 );
 
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {

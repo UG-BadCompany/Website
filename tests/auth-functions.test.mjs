@@ -124,7 +124,7 @@ test('site URL helper supports the production domain and Netlify subdomain alias
 
 
 
-test('session cookies use cross-site-safe secure attributes on HTTPS and forwarded HTTPS requests', () => {
+test('session cookies keep the original same-site behavior while adding Secure on HTTPS and forwarded HTTPS requests', () => {
   const httpsCookie = createSessionCookie('session-token', new Request('https://site.test/api/auth/verify'));
   const forwardedCookie = createSessionCookie('session-token', new Request('http://site.test/api/auth/verify', {
     headers: { 'x-forwarded-proto': 'https' },
@@ -132,13 +132,13 @@ test('session cookies use cross-site-safe secure attributes on HTTPS and forward
   const localCookie = createSessionCookie('session-token', new Request('http://localhost:8888/api/auth/verify'));
   const expiredCookie = createExpiredSessionCookie(new Request('https://site.test/api/auth/logout'));
 
-  assert.match(httpsCookie, /SameSite=None/);
+  assert.match(httpsCookie, /SameSite=Lax/);
   assert.match(httpsCookie, /Secure/);
-  assert.match(forwardedCookie, /SameSite=None/);
+  assert.match(forwardedCookie, /SameSite=Lax/);
   assert.match(forwardedCookie, /Secure/);
   assert.match(localCookie, /SameSite=Lax/);
   assert.doesNotMatch(localCookie, /Secure/);
-  assert.match(expiredCookie, /SameSite=None/);
+  assert.match(expiredCookie, /SameSite=Lax/);
   assert.match(expiredCookie, /Max-Age=0/);
 });
 
@@ -241,7 +241,7 @@ test('magic-link user helper does not fail sign-in when role assignment has a st
   assert.equal(db.queries.some((query) => /insert into roles/.test(query.text)), true);
 });
 
-test('verify endpoint shows an auto-submit continue page on GET without consuming scanner visits', async () => {
+test('verify endpoint shows a manual continue page on GET without consuming scanner visits', async () => {
   let openedDatabase = false;
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => {
@@ -257,7 +257,7 @@ test('verify endpoint shows an auto-submit continue page on GET without consumin
   assert.match(response.headers.get('content-type'), /text\/html/);
   assert.match(html, /method="POST"/);
   assert.match(html, /name="token" value="magic-token"/);
-  assert.match(html, /requestSubmit/);
+  assert.doesNotMatch(html, /requestSubmit|window\.location/);
   assert.equal(openedDatabase, false);
 });
 
@@ -281,9 +281,13 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     body: new URLSearchParams({ token: 'magic-token' }),
   }));
 
-  assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), '/dashboard/');
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /text\/html/);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.match(html, /You are signed in/);
+  assert.match(html, /window\.location\.replace\('\/dashboard\/'\)/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
@@ -325,9 +329,12 @@ test('verify endpoint still redirects when marking the used magic link fails aft
     body: new URLSearchParams({ token: 'magic-token' }),
   }));
 
-  assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), '/dashboard/');
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /text\/html/);
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.match(html, /Open dashboard/);
   assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
   assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);
 });
