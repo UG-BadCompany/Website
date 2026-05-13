@@ -173,6 +173,27 @@ test('latest magic-link migration restores profile metadata columns for existing
   assert.match(migration, /add column if not exists client_phone text/);
 });
 
+
+test('verify endpoint shows an auto-submit continue page on GET without consuming scanner visits', async () => {
+  let openedDatabase = false;
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /text\/html/);
+  assert.match(html, /method="POST"/);
+  assert.match(html, /name="token" value="magic-token"/);
+  assert.match(html, /requestSubmit/);
+  assert.equal(openedDatabase, false);
+});
+
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com' }],
@@ -187,7 +208,10 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
     makeSessionToken: () => 'session-token',
   });
 
-  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
+  const response = await handler(new Request('https://site.test/api/auth/verify', {
+    method: 'POST',
+    body: new URLSearchParams({ token: 'magic-token' }),
+  }));
 
   assert.equal(response.status, 200);
   assert.match(body, /Opening your dashboard/);
