@@ -26,16 +26,65 @@ const createConfirmResponse = (request, token) => new Response(`<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>Continue to T&A Contracting portal</title>
-  <style>body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff7ec;color:#1e1915}.wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.card{max-width:520px;padding:32px;border:1px solid rgba(17,17,17,.1);border-radius:28px;background:#fff;box-shadow:0 24px 80px rgba(45,27,13,.12)}h1{margin:0 0 12px;font-size:clamp(2rem,5vw,3rem);line-height:1}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin-top:14px;padding:0 20px;border:0;border-radius:999px;background:#ad3f18;color:#fff;font-weight:900;font:inherit;cursor:pointer}p{color:#67594d;line-height:1.6}</style>
+  <style>
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #fff7ec;
+      color: #1e1915;
+    }
+
+    .wrap {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      max-width: 520px;
+      padding: 32px;
+      border: 1px solid rgba(17, 17, 17, .1);
+      border-radius: 28px;
+      background: #fff;
+      box-shadow: 0 24px 80px rgba(45, 27, 13, .12);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1;
+    }
+
+    p {
+      color: #67594d;
+      line-height: 1.6;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      margin-top: 14px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 999px;
+      background: #ad3f18;
+      color: #fff;
+      font-weight: 900;
+      font: inherit;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
       <h1>Continue to your portal</h1>
       <p>Click the button below to finish signing in. This extra step protects your one-time link from email security scanners that may preview links automatically.</p>
-      <form method="GET" action="${escapeHtml(new URL(request.url).pathname)}">
+      <form method="POST" action="${escapeHtml(new URL(request.url).pathname)}">
         <input type="hidden" name="token" value="${escapeHtml(token)}">
-        <input type="hidden" name="confirm" value="1">
         <button class="btn" type="submit">Continue to dashboard</button>
       </form>
     </section>
@@ -49,17 +98,29 @@ const createConfirmResponse = (request, token) => new Response(`<!doctype html>
   },
 });
 
+const getTokenFromRequest = async (request) => {
+  if (request.method === 'GET') {
+    const url = new URL(request.url);
+    return url.searchParams.get('token') || '';
+  }
+
+  if (request.method === 'POST') {
+    const formData = await request.formData();
+    return String(formData.get('token') || '');
+  }
+
+  return '';
+};
+
 export const createVerifyMagicLinkHandler = ({
   getDatabase = loadDatabase,
   makeSessionToken = createToken,
 } = {}) => async (request) => {
-  if (request.method !== 'GET') {
+  if (!['GET', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token') || '';
-  const confirmed = url.searchParams.get('confirm') === '1';
+  const token = await getTokenFromRequest(request);
 
   if (!token) {
     return Response.redirect(`${getSiteUrl(request)}/login/?auth=missing-token`, 302);
@@ -80,7 +141,7 @@ export const createVerifyMagicLinkHandler = ({
       return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
     }
 
-    if (!confirmed) {
+    if (request.method === 'GET') {
       return createConfirmResponse(request, token);
     }
 
