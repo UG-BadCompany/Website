@@ -83,8 +83,9 @@ const createConfirmResponse = (request, token) => new Response(`<!doctype html>
     <section class="card">
       <h1>Continue to your portal</h1>
       <p>Click the button below to finish signing in. This extra step protects your one-time link from email security scanners that may preview links automatically.</p>
-      <form method="POST" action="${escapeHtml(new URL(request.url).pathname)}">
+      <form method="GET" action="${escapeHtml(new URL(request.url).pathname)}">
         <input type="hidden" name="token" value="${escapeHtml(token)}">
+        <input type="hidden" name="confirm" value="1">
         <button class="btn" type="submit">Continue to dashboard</button>
       </form>
     </section>
@@ -141,7 +142,10 @@ export const createVerifyMagicLinkHandler = ({
       return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
     }
 
-    if (request.method === 'GET') {
+    const url = new URL(request.url);
+    const confirmed = request.method === 'POST' || url.searchParams.get('confirm') === '1';
+
+    if (!confirmed) {
       return createConfirmResponse(request, token);
     }
 
