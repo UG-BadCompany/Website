@@ -106,8 +106,9 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const loadClientInvoices =/, 'clients should load open invoices');
   assert.match(script, /const loadAdminInvoices =/, 'admins should load invoice follow-up');
   assert.match(script, /const confirmAdminPayment =/, 'admins should be able to confirm invoice payments');
-  assert.match(script, /function bindAdminInvoiceActions\(\)/, 'admin invoice action binding should use a redeclaration-safe function declaration');
-  assert.doesNotMatch(script, /const bindAdminInvoiceActions =/, 'admin invoice action binding must not use a top-level const that can collide after deploy merges');
+  assert.match(script, /window\.taDashboardActions\.bindAdminInvoiceActions =/, 'admin invoice action binding should live on a dashboard action namespace');
+  assert.doesNotMatch(script, /const bindAdminInvoiceActions =|function bindAdminInvoiceActions\(\)/, 'admin invoice action binding must not declare a top-level identifier that can collide after deploy merges');
+  assert.match(script, /tokenFromDashboardUrl[\s\S]*\/api\/auth\/verify\?token=/, 'dashboard token links should be routed through the magic-link verifier before session checks');
   assert.match(script, /canManageInvoices/, 'admin invoice loading should honor invoice management permission');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');

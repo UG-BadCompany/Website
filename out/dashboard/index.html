@@ -712,6 +712,30 @@
     </section>
 
 
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Admin audit activity</strong>
@@ -1109,6 +1133,12 @@
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
     (() => {
+      const tokenFromDashboardUrl = new URLSearchParams(window.location.search).get('token');
+      if (tokenFromDashboardUrl) {
+        window.location.replace(`/api/auth/verify?token=${encodeURIComponent(tokenFromDashboardUrl)}`);
+        return;
+      }
+
       const status = document.querySelector('[data-session-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
@@ -3312,7 +3342,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (status) status.textContent = `Payment confirmed for ${formatMoney(result.payment?.amountCents || amountCents)}.`;
       };
 
-      function bindAdminInvoiceActions() {
+      window.taDashboardActions = window.taDashboardActions || {};
+      window.taDashboardActions.bindAdminInvoiceActions = () => {
         const panel = document.querySelector('[data-admin-invoices]');
         if (!panel || panel.dataset.invoiceActionsBound) return;
         panel.dataset.invoiceActionsBound = 'true';
@@ -3332,7 +3363,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             button.disabled = false;
           }
         });
-      }
+      };
 
       const loadAdminInvoices = async () => {
         const panel = document.querySelector('[data-admin-invoices]');
@@ -3345,7 +3376,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Admin invoices are not available.');
           renderAdminInvoiceData(result);
-          bindAdminInvoiceActions();
+          window.taDashboardActions.bindAdminInvoiceActions();
         } catch (error) {
           status.dataset.state = 'error';
           status.textContent = error.message;
@@ -3508,6 +3539,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           if (result.user.permissions?.canManageInvoices) {
             bindAdminInvoiceActions();
+            loadAdminInvoices();
+          }
+
+          if (result.user.permissions?.canManageInvoices) {
+            window.taDashboardActions.bindAdminInvoiceActions();
             loadAdminInvoices();
           }
 
