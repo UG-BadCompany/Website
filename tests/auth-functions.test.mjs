@@ -456,6 +456,7 @@ test('auth debug endpoint reports the matching database session and roles for a 
       last_seen_at: '2026-05-13T00:00:00.000Z',
     }],
     [{ key: 'client' }],
+    [{ permission_key: 'client.requests.manage' }],
   ]);
   const handler = createAuthDebugHandler({ getDatabase: async () => db });
 
@@ -472,6 +473,8 @@ test('auth debug endpoint reports the matching database session and roles for a 
   assert.equal(response.body.session.email, 'cl***@example.com');
   assert.equal(response.body.session.expired, false);
   assert.deepEqual(response.body.roles, ['client']);
+  assert.equal(response.body.permissionKeys.includes('client.tools'), true);
+  assert.equal(response.body.permissionKeys.includes('client.requests.manage'), true);
   assert.match(db.queries[0].text, /from auth_sessions/);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });

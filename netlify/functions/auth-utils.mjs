@@ -61,6 +61,25 @@ export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = [])
   return [...permissionKeys].sort();
 };
 
+
+export const loadRolePermissionKeys = async (db, userId, { logPrefix = 'Failed to load role permissions; using role defaults' } = {}) => {
+  try {
+    const rolePermissions = await db.sql`
+      select distinct role_permissions.permission_key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+      where user_roles.user_id = ${userId}
+      order by role_permissions.permission_key
+    `;
+
+    return rolePermissions.map((permission) => permission.permission_key);
+  } catch (error) {
+    console.error(logPrefix, error);
+    return [];
+  }
+};
+
 export const clean = (value, maxLength = 254) => (
   typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
 );

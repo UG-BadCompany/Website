@@ -8,6 +8,7 @@ import {
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
   minutesFromNow,
   parseJsonBody,
 } from './auth-utils.mjs';
@@ -64,16 +65,33 @@ const unauthenticatedSessionResponse = (message, status = 401, headers = {}) => 
 
 
 const loadCurrentUserFallback = async (db, sessionToken) => {
-  const [session] = await db.sql`
-    select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone
-    from auth_sessions
-    join app_users on app_users.id = auth_sessions.user_id
-    where auth_sessions.session_hash = ${hashToken(sessionToken)}
-      and auth_sessions.revoked_at is null
-      and auth_sessions.expires_at > now()
-      and app_users.is_active = true
-    limit 1
-  `;
+  let session;
+
+  try {
+    [session] = await db.sql`
+      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone,
+        app_users.secondary_phone, app_users.company_name, app_users.mailing_address
+      from auth_sessions
+      join app_users on app_users.id = auth_sessions.user_id
+      where auth_sessions.session_hash = ${hashToken(sessionToken)}
+        and auth_sessions.revoked_at is null
+        and auth_sessions.expires_at > now()
+        and app_users.is_active = true
+      limit 1
+    `;
+  } catch (profileColumnError) {
+    console.error('Failed to load optional profile columns during /api/me fallback; retrying with base user fields', profileColumnError);
+    [session] = await db.sql`
+      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name
+      from auth_sessions
+      join app_users on app_users.id = auth_sessions.user_id
+      where auth_sessions.session_hash = ${hashToken(sessionToken)}
+        and auth_sessions.revoked_at is null
+        and auth_sessions.expires_at > now()
+        and app_users.is_active = true
+      limit 1
+    `;
+  }
 
   if (!session) return null;
 
@@ -158,22 +176,9 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
 
     const assignedRoleKeys = roles.map((role) => role.key);
     const roleKeys = assignedRoleKeys.length ? assignedRoleKeys : ['client'];
-    let rolePermissions = [];
-
-    try {
-      rolePermissions = await db.sql`
-        select distinct role_permissions.permission_key
-        from user_roles
-        join roles on roles.id = user_roles.role_id
-        join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
-        where user_roles.user_id = ${session.user_id}
-        order by role_permissions.permission_key
-      `;
-    } catch (permissionError) {
-      console.error('Failed to load role permissions for current user; using role defaults', permissionError);
-    }
-
-    const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
+    const permissionKeys = await loadRolePermissionKeys(db, session.user_id, {
+      logPrefix: 'Failed to load role permissions for current user; using role defaults',
+    });
     const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
     const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
 

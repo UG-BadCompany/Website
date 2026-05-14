@@ -1,9 +1,11 @@
 import {
   SESSION_COOKIE_NAME,
+  getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
 } from './auth-utils.mjs';
 
 const maskEmail = (email = '') => {
@@ -67,6 +69,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     },
     session: null,
     roles: [],
+    permissionKeys: [],
     canUseSession: false,
   };
 
@@ -105,6 +108,10 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
         order by roles.key
       `;
       debug.roles = roles.map((role) => role.key);
+      const assignedPermissionKeys = await loadRolePermissionKeys(db, session.user_id, {
+        logPrefix: 'Failed to load auth debug permissions; using role defaults',
+      });
+      debug.permissionKeys = getPermissionKeysForRoles(debug.roles, assignedPermissionKeys);
     }
   } catch (error) {
     debug.database.checked = true;

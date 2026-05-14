@@ -1262,11 +1262,13 @@
         return panel;
       };
 
-      const buildDebugFallbackPermissions = (roles = []) => {
+      const buildDebugFallbackPermissions = (roles = [], permissionKeys = []) => {
         const roleSet = new Set(roles.length ? roles : ['client']);
-        const admin = roleSet.has('admin');
-        const worker = roleSet.has('worker') || admin;
-        const client = roleSet.has('client') || admin;
+        const permissionSet = new Set(permissionKeys || []);
+        const hasPermissionPrefix = (prefix) => [...permissionSet].some((permission) => permission.startsWith(prefix));
+        const admin = roleSet.has('admin') || permissionSet.has('admin.tools') || hasPermissionPrefix('admin.');
+        const worker = roleSet.has('worker') || admin || permissionSet.has('worker.tools') || hasPermissionPrefix('worker.');
+        const client = roleSet.has('client') || admin || permissionSet.has('client.tools') || hasPermissionPrefix('client.');
         const availableViews = [
           ...(admin ? ['admin'] : []),
           ...(client ? ['client'] : []),
@@ -1277,18 +1279,18 @@
           canViewClientTools: client,
           canViewWorkerTools: worker,
           canViewAdminTools: admin,
-          canSwitchDashboardView: admin,
-          canManageUsers: admin,
-          canManageRoles: admin,
-          canManageRequests: admin,
-          canManageQuotes: admin,
-          canViewInvoices: client,
-          canManageInvoices: admin,
-          canViewAdminActivity: admin,
-          canManageInventory: admin,
+          canSwitchDashboardView: admin || permissionSet.has('dashboard.switch_views'),
+          canManageUsers: admin || permissionSet.has('admin.users.manage'),
+          canManageRoles: admin || permissionSet.has('admin.roles.manage'),
+          canManageRequests: admin || permissionSet.has('admin.requests.manage'),
+          canManageQuotes: admin || permissionSet.has('admin.quotes.manage'),
+          canViewInvoices: client || permissionSet.has('client.invoices.manage'),
+          canManageInvoices: admin || permissionSet.has('admin.invoices.manage'),
+          canViewAdminActivity: admin || permissionSet.has('admin.activity.view'),
+          canManageInventory: admin || permissionSet.has('admin.inventory.manage'),
           defaultView: admin ? 'admin' : (worker ? 'worker' : 'client'),
           availableViews: availableViews.length ? availableViews : ['client'],
-          permissionKeys: [],
+          permissionKeys: [...permissionSet],
         };
       };
 
@@ -1344,7 +1346,7 @@
           email: debugResult.session.email || 'signed-in account',
           fullName: debugResult.session.fullName || '',
           roles,
-          permissions: buildDebugFallbackPermissions(roles),
+          permissions: buildDebugFallbackPermissions(roles, debugResult.permissionKeys || []),
         };
 
         status.dataset.state = 'ready';
