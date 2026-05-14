@@ -286,14 +286,25 @@
 
     .command-center-section {
       position: relative;
-      margin: clamp(56px, 8vw, 84px) 0 44px;
-      padding-top: clamp(28px, 4vw, 42px);
+      width: 100vw;
+      margin: clamp(64px, 9vw, 96px) 0 52px;
+      margin-left: calc(50% - 50vw);
+      padding: clamp(42px, 6vw, 72px) 0;
       border-top: 1px solid rgba(255,255,255,.14);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(249,115,22,.18), transparent 28rem),
+        linear-gradient(180deg, rgba(7,10,15,.28), rgba(7,10,15,.58));
+    }
+
+    .command-center-inner {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
     }
 
     .command-center-section-header {
       max-width: 760px;
-      margin-bottom: 18px;
+      margin-bottom: 22px;
     }
 
     .command-center-section-header h2 {
@@ -656,7 +667,13 @@
     }
     html[data-theme="light"] .admin-command-card,
     html[data-theme="light"] .command-center-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.78); }
-    html[data-theme="light"] .command-center-section { border-top-color: rgba(17,17,17,.10); }
+    html[data-theme="light"] .command-center-section {
+      border-top-color: rgba(17,17,17,.10);
+      border-bottom-color: rgba(17,17,17,.08);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(249,115,22,.12), transparent 28rem),
+        linear-gradient(180deg, rgba(255,250,244,.42), rgba(247,234,220,.72));
+    }
     html[data-theme="light"] .command-center-shell { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.90); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
     html[data-theme="light"] .command-center-heading { border-bottom-color: rgba(17,17,17,.10); }
     html[data-theme="light"] .command-center-heading span:not(.command-center-status) { color: #5f5148; }
@@ -758,6 +775,67 @@
               <a class="command-center-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
             </div>
           </section>
+        </div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+      </div>
+    </section>
+
+    <section class="card session-check" data-session-card>
+      <strong>Session check</strong>
+      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
+    </section>
+
+    <section class="command-center-section" aria-labelledby="command-center-title" data-main-dashboard-actions hidden>
+      <div class="command-center-inner">
+        <div class="command-center-section-header">
+          <span class="eyebrow">Dashboard tools</span>
+          <h2 id="command-center-title">Command center</h2>
+          <p>A standalone tools area below the welcome panel. Pick the role-based shortcuts you need without digging through the rest of the dashboard.</p>
+        </div>
+        <div class="command-center-shell">
+          <div class="command-center-heading">
+          <div>
+            <strong>Role shortcuts</strong>
+            <span>Only tools available to your account are shown.</span>
+          </div>
+          <span class="command-center-status">Live workspace</span>
+        </div>
+        <div class="command-center-grid" aria-label="Main dashboard shortcuts">
+          <section class="command-center-group" aria-label="Admin command center tools">
+            <div class="command-center-group-header">
+              <h3>Admin operations</h3>
+              <p>Run work orders, billing, inventory, users, and activity.</p>
+            </div>
+            <div class="command-center-actions">
+              <a class="command-center-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+              <a class="command-center-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+              <a class="command-center-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+              <button class="command-center-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
+              <button class="command-center-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+            </div>
+          </section>
+          <section class="command-center-group" aria-label="Client command center tools">
+            <div class="command-center-group-header">
+              <h3>Client tools</h3>
+              <p>Manage requests, quotes, invoices, and account details.</p>
+            </div>
+            <div class="command-center-actions">
+              <a class="command-center-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+              <a class="command-center-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+              <a class="command-center-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+              <button class="command-center-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
+            </div>
+          </section>
+          <section class="command-center-group" aria-label="Worker command center tools">
+            <div class="command-center-group-header">
+              <h3>Worker tools</h3>
+              <p>Open assigned jobs, notes, schedule details, and completion tools.</p>
+            </div>
+            <div class="command-center-actions">
+              <a class="command-center-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+            </div>
+          </section>
+          </div>
         </div>
       </div>
     </section>
