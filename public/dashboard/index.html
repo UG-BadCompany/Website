@@ -7,7 +7,7 @@
   <meta name="description" content="Modern secure dashboard for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.dashboard-hero-actions{margin-top:16px;grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-hero-actions[hidden]{display:none}.dashboard-hero-actions .admin-command-card{min-height:118px;box-shadow:0 14px 28px rgba(45,27,13,.10)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
 
 
     /* Modern dashboard refresh, ADA helpers, and stable scrolling */
@@ -125,6 +125,7 @@
       mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 82%);
     }
 
+    [hidden] { display: none !important; }
     p { color: var(--dash-muted); }
     .nav { background: rgba(7,10,15,.80); border-bottom-color: var(--dash-line); }
     .brand, .nav-links { color: var(--dash-text); }
@@ -282,6 +283,175 @@
 
     .admin-command-card strong { color: var(--dash-text); font-size: 1rem; }
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
+
+    .command-center-section {
+      position: relative;
+      margin: clamp(56px, 8vw, 84px) 0 44px;
+      padding-top: clamp(28px, 4vw, 42px);
+      border-top: 1px solid rgba(255,255,255,.14);
+    }
+
+    .command-center-section-header {
+      max-width: 760px;
+      margin-bottom: 18px;
+    }
+
+    .command-center-section-header h2 {
+      margin: 0;
+      color: var(--dash-text);
+      font-size: clamp(2.25rem, 4vw, 3.8rem);
+      line-height: .96;
+      letter-spacing: -.065em;
+    }
+
+    .command-center-section-header p {
+      max-width: 68ch;
+      margin: 12px 0 0;
+    }
+
+    .command-center-shell {
+      display: grid;
+      gap: 20px;
+      padding: clamp(18px, 3vw, 28px);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 28px;
+      background: rgba(7,10,15,.72);
+      box-shadow: 0 24px 70px rgba(0,0,0,.22);
+      backdrop-filter: blur(18px);
+    }
+
+    .command-center-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+
+    .command-center-heading strong {
+      color: var(--dash-text);
+      font-size: 1rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .command-center-heading span:not(.command-center-status) {
+      display: block;
+      margin-top: 4px;
+      color: var(--dash-muted);
+      font-size: .9rem;
+      font-weight: 720;
+    }
+
+    .command-center-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      padding: 10px 13px;
+      border: 1px solid rgba(34,197,94,.28);
+      border-radius: 999px;
+      color: #bbf7d0;
+      background: rgba(34,197,94,.10);
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .command-center-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, .85fr);
+      gap: 14px;
+    }
+
+    .command-center-group {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 22px;
+      background: rgba(255,255,255,.055);
+    }
+
+    .command-center-group-header {
+      display: grid;
+      gap: 6px;
+    }
+
+    .command-center-group h3 {
+      margin: 0;
+      color: var(--dash-text);
+      font-size: .95rem;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .command-center-group p {
+      margin: 0;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+
+    .command-center-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .command-center-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 11px;
+      align-items: start;
+      min-height: 0;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      color: var(--dash-text);
+      background: rgba(255,255,255,.075);
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .command-center-card::before {
+      content: "↗";
+      display: inline-grid;
+      grid-row: 1 / span 2;
+      width: 26px;
+      height: 26px;
+      place-items: center;
+      border-radius: 999px;
+      color: #fed7aa;
+      background: rgba(249,115,22,.16);
+      font-size: .78rem;
+      font-weight: 950;
+    }
+
+    .command-center-card:hover,
+    .command-center-card:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(249,115,22,.42);
+      background: rgba(255,255,255,.12);
+    }
+
+    .command-center-card strong {
+      color: var(--dash-text);
+      font-size: .98rem;
+    }
+
+    .command-center-card span {
+      color: var(--dash-muted);
+      font-size: .88rem;
+      font-weight: 720;
+      line-height: 1.4;
+    }
+
+    @media(max-width:980px) {
+      .command-center-heading { align-items: flex-start; flex-direction: column; }
+      .command-center-grid { grid-template-columns: 1fr; }
+    }
 
     .client-command {
       background:
@@ -484,9 +654,19 @@
         radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
       box-shadow: 0 22px 60px rgba(45,27,13,.12);
     }
-    html[data-theme="light"] .admin-command-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.70); }
-    html[data-theme="light"] .admin-command-card strong { color: #111827; }
-    html[data-theme="light"] .admin-command-card span { color: #5f5148; }
+    html[data-theme="light"] .admin-command-card,
+    html[data-theme="light"] .command-center-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.78); }
+    html[data-theme="light"] .command-center-section { border-top-color: rgba(17,17,17,.10); }
+    html[data-theme="light"] .command-center-shell { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.90); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="light"] .command-center-heading { border-bottom-color: rgba(17,17,17,.10); }
+    html[data-theme="light"] .command-center-heading span:not(.command-center-status) { color: #5f5148; }
+    html[data-theme="light"] .command-center-group { border-color: rgba(17,17,17,.10); background: rgba(255,250,244,.72); }
+    html[data-theme="light"] .admin-command-card strong,
+    html[data-theme="light"] .command-center-card strong,
+    html[data-theme="light"] .command-center-group h3,
+    html[data-theme="light"] .command-center-heading h2 { color: #111827; }
+    html[data-theme="light"] .admin-command-card span,
+    html[data-theme="light"] .command-center-card span { color: #5f5148; }
     html[data-theme="light"] .client-request-attachments { border-color: rgba(38,94,157,.24); background: rgba(38,94,157,.07); }
     html[data-theme="light"] .client-request-attachments small,
     html[data-theme="light"] .client-request-attachment-list { color: #5f5148; }
@@ -494,7 +674,7 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div></div></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -509,6 +689,64 @@
           </div>
         </div>
         <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+      </div>
+    </section>
+
+    <section class="card session-check" data-session-card>
+      <strong>Session check</strong>
+      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
+    </section>
+
+    <section class="command-center-section" aria-labelledby="command-center-title" data-main-dashboard-actions hidden>
+      <div class="command-center-section-header">
+        <span class="eyebrow">Dashboard tools</span>
+        <h2 id="command-center-title">Command center</h2>
+        <p>This is a dedicated shortcut area separate from the welcome panel. Pick the role-based tools you need without digging through the rest of the dashboard.</p>
+      </div>
+      <div class="command-center-shell">
+        <div class="command-center-heading">
+          <div>
+            <strong>Role shortcuts</strong>
+            <span>Only tools available to your account are shown.</span>
+          </div>
+          <span class="command-center-status">Live workspace</span>
+        </div>
+        <div class="command-center-grid" aria-label="Main dashboard shortcuts">
+          <section class="command-center-group" aria-label="Admin command center tools">
+            <div class="command-center-group-header">
+              <h3>Admin operations</h3>
+              <p>Run work orders, billing, inventory, users, and activity.</p>
+            </div>
+            <div class="command-center-actions">
+              <a class="command-center-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+              <a class="command-center-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+              <a class="command-center-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+              <button class="command-center-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
+              <button class="command-center-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+            </div>
+          </section>
+          <section class="command-center-group" aria-label="Client command center tools">
+            <div class="command-center-group-header">
+              <h3>Client tools</h3>
+              <p>Manage requests, quotes, invoices, and account details.</p>
+            </div>
+            <div class="command-center-actions">
+              <a class="command-center-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+              <a class="command-center-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+              <a class="command-center-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+              <button class="command-center-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
+            </div>
+          </section>
+          <section class="command-center-group" aria-label="Worker command center tools">
+            <div class="command-center-group-header">
+              <h3>Worker tools</h3>
+              <p>Open assigned jobs, notes, schedule details, and completion tools.</p>
+            </div>
+            <div class="command-center-actions">
+              <a class="command-center-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
 
@@ -704,8 +942,8 @@
       </div>
     </section>
 
-    <section class="card admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
-      <strong>Admin invoices &amp; payments</strong>
+    <section class="card admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
+      <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
       <div class="admin-request-list" data-admin-invoice-list></div>
@@ -713,12 +951,20 @@
 
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -738,12 +984,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -763,12 +1017,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -788,12 +1050,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -813,12 +1083,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -838,12 +1116,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -863,12 +1149,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -888,12 +1182,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -913,12 +1215,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -938,12 +1248,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -963,12 +1281,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -988,12 +1314,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1013,12 +1347,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1038,12 +1380,20 @@
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Admin audit activity</strong>
+      <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1239,9 +1589,341 @@
         return;
       }
 
+      const sessionCard = document.querySelector('[data-session-card]');
       const status = document.querySelector('[data-session-status]');
+      const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
+      const debugDashboardLink = document.querySelector('[data-debug-dashboard-link]');
+      const DEBUG_DASHBOARD_EMAIL = 'thomas.debacker.ii@gmail.com';
+      const dashboardParams = new URLSearchParams(window.location.search);
+      const authDebugEnabled = dashboardParams.has('auth_debug') || dashboardParams.has('debug');
+      if (sessionCard) sessionCard.hidden = !authDebugEnabled;
+      if (authDebugEnabled && debugDashboardLink) {
+        debugDashboardLink.hidden = false;
+        debugDashboardLink.href = '/dashboard/';
+        debugDashboardLink.textContent = 'Dashboard';
+      }
+
+      const ensureAuthDebugPanel = () => {
+        let panel = document.querySelector('[data-auth-debug-panel]');
+        if (panel) return panel;
+
+        panel = document.createElement('section');
+        panel.className = 'card';
+        panel.dataset.authDebugPanel = 'true';
+        panel.innerHTML = '<strong>Login debug</strong><p class="session-status" data-auth-debug-summary>Loading login debug…</p><pre data-auth-debug-output style="white-space:pre-wrap;overflow:auto;max-height:420px;margin-top:14px;padding:14px;border-radius:16px;background:#111827;color:#f8fafc;font-size:.85rem;line-height:1.5;"></pre><p><a class="btn btn-soft" href="/api/auth/debug" target="_blank" rel="noopener">Open raw debug JSON</a> <a class="btn btn-primary" href="/login/">Request a new magic link</a></p>';
+        status?.closest('main')?.insertBefore(panel, status.closest('section')?.nextSibling || null);
+        return panel;
+      };
+
+      const buildDebugFallbackPermissions = (roles = [], permissionKeys = []) => {
+        const roleSet = new Set(roles.length ? roles : ['client']);
+        const permissionSet = new Set(permissionKeys || []);
+        const hasPermissionPrefix = (prefix) => [...permissionSet].some((permission) => permission.startsWith(prefix));
+        const admin = roleSet.has('admin') || permissionSet.has('admin.tools') || hasPermissionPrefix('admin.');
+        const worker = roleSet.has('worker') || admin || permissionSet.has('worker.tools') || hasPermissionPrefix('worker.');
+        const client = roleSet.has('client') || admin || permissionSet.has('client.tools') || hasPermissionPrefix('client.');
+        const availableViews = [
+          ...(admin ? ['admin'] : []),
+          ...(client ? ['client'] : []),
+          ...(worker ? ['worker'] : []),
+        ];
+
+        return {
+          canViewClientTools: client,
+          canViewWorkerTools: worker,
+          canViewAdminTools: admin,
+          canSwitchDashboardView: admin || permissionSet.has('dashboard.switch_views'),
+          canManageUsers: admin || permissionSet.has('admin.users.manage'),
+          canManageRoles: admin || permissionSet.has('admin.roles.manage'),
+          canManageRequests: admin || permissionSet.has('admin.requests.manage'),
+          canManageQuotes: admin || permissionSet.has('admin.quotes.manage'),
+          canViewInvoices: client || permissionSet.has('client.invoices.manage'),
+          canManageInvoices: admin || permissionSet.has('admin.invoices.manage'),
+          canViewAdminActivity: admin || permissionSet.has('admin.activity.view'),
+          canManageInventory: admin || permissionSet.has('admin.inventory.manage'),
+          defaultView: admin ? 'admin' : (worker ? 'worker' : 'client'),
+          availableViews: availableViews.length ? availableViews : ['client'],
+          permissionKeys: [...permissionSet],
+        };
+      };
+
+      const getDashboardPermissions = (user = {}) => {
+        const provided = user.permissions || {};
+        const fallback = buildDebugFallbackPermissions(user.roles || [], provided.permissionKeys || []);
+        const mergeBool = (key) => Boolean(provided[key] || fallback[key]);
+        const availableViews = [...new Set([...(provided.availableViews || []), ...(fallback.availableViews || [])])];
+
+        return {
+          ...provided,
+          canViewClientTools: mergeBool('canViewClientTools'),
+          canViewWorkerTools: mergeBool('canViewWorkerTools'),
+          canViewAdminTools: mergeBool('canViewAdminTools'),
+          canSwitchDashboardView: mergeBool('canSwitchDashboardView'),
+          canManageUsers: mergeBool('canManageUsers'),
+          canManageRoles: mergeBool('canManageRoles'),
+          canManageRequests: mergeBool('canManageRequests'),
+          canManageQuotes: mergeBool('canManageQuotes'),
+          canViewInvoices: mergeBool('canViewInvoices'),
+          canManageInvoices: mergeBool('canManageInvoices'),
+          canViewAdminActivity: mergeBool('canViewAdminActivity'),
+          canManageInventory: mergeBool('canManageInventory'),
+          defaultView: provided.defaultView || fallback.defaultView,
+          availableViews: availableViews.length ? availableViews : fallback.availableViews,
+          permissionKeys: [...new Set([...(provided.permissionKeys || []), ...(fallback.permissionKeys || [])])],
+        };
+      };
+
+      const normalizeDashboardEmail = (email = '') => String(email || '').trim().toLowerCase();
+      const canOpenDebugDashboard = (user = {}, debugResult = null) => (
+        normalizeDashboardEmail(user.email) === DEBUG_DASHBOARD_EMAIL
+        || Boolean(debugResult?.canOpenDebugDashboard)
+      );
+
+      const updateDebugDashboardLink = (user = {}, debugResult = null) => {
+        if (!debugDashboardLink) return;
+        if (authDebugEnabled) {
+          debugDashboardLink.hidden = false;
+          debugDashboardLink.href = '/dashboard/';
+          debugDashboardLink.textContent = 'Dashboard';
+          return;
+        }
+        const allowed = canOpenDebugDashboard(user, debugResult);
+        debugDashboardLink.hidden = !allowed;
+        debugDashboardLink.href = allowed ? '/dashboard/?auth_debug=1' : '/dashboard/';
+        debugDashboardLink.textContent = allowed ? 'Debug dashboard' : 'Dashboard';
+      };
+
+      const revealAuthorizedFallbackSections = (user) => {
+        const permissions = user.permissions || {};
+        const availableViews = new Set(permissions.availableViews || user.roles || []);
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          const views = (section.dataset.views || '').split(' ').map((view) => view.trim()).filter(Boolean);
+          const requiredPermission = section.dataset.permission;
+          const hasView = views.some((view) => availableViews.has(view));
+          const hasRequiredPermission = !requiredPermission || Boolean(permissions[requiredPermission]);
+          if (hasView && hasRequiredPermission) section.hidden = false;
+        });
+      };
+
+      const ensureFallbackActionPanel = (user) => {
+        let panel = document.querySelector('[data-debug-fallback-actions]');
+        if (!panel) {
+          panel = document.createElement('section');
+          panel.className = 'card';
+          panel.dataset.debugFallbackActions = 'true';
+          status?.closest('main')?.insertBefore(panel, document.querySelector('[data-auth-debug-panel]') || status.closest('section')?.nextSibling || null);
+        }
+
+        const permissions = user.permissions || {};
+        const actions = [];
+        if (permissions.canViewAdminTools) actions.push('<a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Open the admin work-order command center.</span></a>');
+        if (permissions.canManageInvoices) actions.push('<a class="admin-command-card" href="#admin-invoices"><strong>Invoices</strong><span>Confirm payments and review billing.</span></a>');
+        if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles & users</strong><span>Manage dashboard users and access.</span></button>');
+        if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
+        if (permissions.canManageInventory) actions.push('<a class="admin-command-card" href="/inventory/"><strong>Inventory</strong><span>Open stock, tools, and usage controls.</span></a>');
+        if (permissions.canViewClientTools) actions.push('<a class="admin-command-card" href="#submit-request"><strong>Client requests</strong><span>Submit or review work requests.</span></a>');
+        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="#worker-jobs"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
+
+        panel.innerHTML = `<strong>Debug session found</strong><p class="session-status">/api/auth/debug confirmed a usable session. Loading the main dashboard with these same permissions now.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
+        const debugPanel = document.querySelector('[data-auth-debug-panel]');
+        const debugOutput = debugPanel?.querySelector('[data-auth-debug-output]');
+        if (debugPanel) debugPanel.dataset.recovered = 'true';
+        if (debugOutput) debugOutput.hidden = true;
+        bindAdminAccessLauncher();
+        bindAdminActivityLauncher();
+        return panel;
+      };
+
+      const buildDebugDashboardUser = (debugResult) => {
+        if (!debugResult?.canUseSession || !debugResult.session) return null;
+        const roles = debugResult.roles?.length ? debugResult.roles : ['client'];
+        return {
+          id: debugResult.session.userId,
+          email: debugResult.session.email || 'signed-in account',
+          fullName: debugResult.session.fullName || '',
+          roles,
+          permissions: buildDebugFallbackPermissions(roles, debugResult.permissionKeys || []),
+        };
+      };
+
+      const recoverMainDashboardFromDebug = (debugResult, reason = '/api/me is unavailable, but /api/auth/debug confirmed this session.', { showDebugPanel = false } = {}) => {
+        const debugUser = buildDebugDashboardUser(debugResult);
+        if (!debugUser) return null;
+
+        status.dataset.state = 'ready';
+        status.textContent = `Signed in as ${getUserDisplayName(debugUser)}`;
+        if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(debugUser)}`;
+        if (logoutButton) logoutButton.hidden = false;
+
+        debugUser.permissions = getDashboardPermissions(debugUser);
+        updateDebugDashboardLink(debugUser, debugResult);
+
+        configureSignedInDashboard(debugUser);
+
+        try {
+          renderClientProfile(debugUser);
+          bindClientProfileButton();
+          bindClientProfileForm();
+          bindRequestEstimateLink();
+          revealAuthorizedFallbackSections(debugUser);
+        } catch (setupError) {
+          console.error('Dashboard setup failed after debug-confirmed session recovery', setupError);
+        }
+
+        try {
+          loadAuthorizedDashboardTools(debugUser);
+        } catch (toolError) {
+          console.error('Dashboard tool loading failed after debug-confirmed session recovery', toolError);
+        }
+
+        if (showDebugPanel) {
+          const panel = ensureFallbackActionPanel(debugUser);
+          const panelStatus = panel?.querySelector('.session-status');
+          if (panelStatus) panelStatus.textContent = `${reason} The main dashboard has been loaded from the confirmed session and permissions.`;
+        }
+        return debugUser;
+      };
+
+      const recoverMainDashboardSilently = async (reason = '/api/me is unavailable, but /api/auth/debug confirmed this session.') => {
+        try {
+          const { response, result } = await fetchAuthDebug();
+          if (!response.ok || !result?.canUseSession) return null;
+          return recoverMainDashboardFromDebug(result, reason, { showDebugPanel: false });
+        } catch (error) {
+          console.error('Silent dashboard session recovery failed', error);
+          return null;
+        }
+      };
+
+      const enrichDashboardUserFromDebug = async (user = {}) => {
+        try {
+          const { response, result } = await fetchAuthDebug();
+          if (!response.ok || !result?.canUseSession) return user;
+          const roles = [...new Set([...(user.roles || []), ...(result.roles || [])])];
+          const permissionKeys = [...new Set([...(user.permissions?.permissionKeys || []), ...(result.permissionKeys || [])])];
+          const enrichedUser = {
+            ...user,
+            fullName: user.fullName || result.session?.fullName || '',
+            roles: roles.length ? roles : (user.roles || []),
+            permissions: {
+              ...(user.permissions || {}),
+              permissionKeys,
+            },
+          };
+          updateDebugDashboardLink(enrichedUser, result);
+          return enrichedUser;
+        } catch (error) {
+          console.error('Dashboard permission enrichment from auth debug failed', error);
+          return user;
+        }
+      };
+
+      const configureMainDashboardActions = (user) => {
+        const permissions = getDashboardPermissions(user);
+        user.permissions = permissions;
+        const actionBar = document.querySelector('[data-main-dashboard-actions]');
+        if (!actionBar) return;
+        let visibleCount = 0;
+        actionBar.querySelectorAll('[data-main-action-permission]').forEach((action) => {
+          const permissionKey = action.dataset.mainActionPermission;
+          const visible = Boolean(permissions[permissionKey]);
+          action.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+        if (!visibleCount && (permissions.canViewAdminTools || permissions.canViewClientTools || permissions.canViewWorkerTools)) {
+          actionBar.querySelectorAll('[data-main-action-permission]').forEach((action) => {
+            action.hidden = false;
+            visibleCount += 1;
+          });
+        }
+        actionBar.hidden = visibleCount === 0;
+        bindAdminAccessLauncher();
+        bindAdminActivityLauncher();
+        bindClientProfileButton();
+        bindRequestEstimateLink();
+      };
+
+      const loadAuthorizedDashboardTools = (user) => {
+        if (user.permissions?.canViewClientTools) {
+          bindClientRequestForm();
+          bindClientRequestEditActions();
+          bindClientPropertyActions();
+          bindQuoteDecisionActions();
+          loadClientRequests();
+          loadClientQuotes();
+          if (user.permissions?.canViewInvoices) {
+            loadClientInvoices();
+          }
+        }
+
+        if (user.permissions?.canViewWorkerTools) {
+          bindWorkerJobActions();
+          loadWorkerJobs();
+        }
+
+        if (user.permissions?.canManageRequests) {
+          loadAdminRequests();
+          loadAdminActivity();
+        }
+
+        if (user.permissions?.canViewAdminActivity) {
+          bindAdminActivityLauncher();
+        }
+
+        if (user.permissions?.canManageInvoices) {
+          window.taDashboardActions.bindAdminInvoiceActions();
+          window.taDashboardActions.loadAdminInvoices();
+        }
+
+        if (user.permissions?.canManageUsers || user.permissions?.canManageRoles) {
+          bindAdminAccessLauncher();
+          loadAdminAccess();
+        }
+
+        if (user.permissions?.canViewAdminActivity) {
+          bindAdminActivityActions();
+          loadAdminActivity();
+        }
+      };
+
+      const fetchAuthDebug = () => fetchJson('/api/auth/debug');
+
+      const loadAuthDebug = async (reason = 'Dashboard could not confirm a signed-in session.', { recoverMainDashboard = false } = {}) => {
+        const panel = ensureAuthDebugPanel();
+        const summary = panel.querySelector('[data-auth-debug-summary]');
+        const output = panel.querySelector('[data-auth-debug-output]');
+        if (summary) summary.textContent = `${reason} Checking cookie and database session state now…`;
+
+        try {
+          const { response, result } = await fetchAuthDebug();
+          const hints = [];
+          if (!result.cookies?.hasSessionCookie) hints.push('No ta_session cookie reached /api/auth/debug. This usually means the browser did not save/send the login cookie.');
+          if (result.cookies?.hasSessionCookie && !result.session) hints.push('A ta_session cookie reached the server, but no matching auth_sessions row was found.');
+          if (result.session?.expired) hints.push('The matching auth_sessions row is expired.');
+          if (result.session?.revoked) hints.push('The matching auth_sessions row is revoked.');
+          if (result.session && result.session.userIsActive === false) hints.push('The matching user exists but is inactive.');
+          if (result.session && !result.roles?.length) hints.push('The session user has no roles; the dashboard may fall back to client access.');
+          if (result.canUseSession) hints.push('/api/auth/debug found a usable session. /api/me should now load that same session; if it does not, keep this debug output for support.');
+          if (!response.ok) hints.push(`Debug endpoint returned HTTP ${response.status}.`);
+          if (summary) summary.textContent = hints.length ? hints.join(' ') : 'Debug found a session cookie and active database session. If the dashboard still looks signed out, the issue is in /api/me or dashboard rendering.';
+          if (output) output.textContent = JSON.stringify(result, null, 2);
+          if (result.canUseSession && result.session) {
+            if (recoverMainDashboard) {
+              recoverMainDashboardFromDebug(result, reason, { showDebugPanel: true });
+            } else {
+              const debugUser = buildDebugDashboardUser(result);
+              if (debugUser) ensureFallbackActionPanel(debugUser);
+            }
+          }
+          return result;
+        } catch (error) {
+          if (summary) summary.textContent = `Could not load login debug: ${error.message}`;
+          if (output) output.textContent = String(error.stack || error.message || error);
+          return null;
+        }
+      };
 
       const applyTheme = (theme) => {
         const normalizedTheme = theme === 'light' ? 'light' : 'dark';
@@ -1330,16 +2012,9 @@
         }
 
         logoutButton.dataset.bound = 'true';
-        logoutButton.addEventListener('click', async (event) => {
-          event.preventDefault();
+        logoutButton.addEventListener('click', () => {
           logoutButton.setAttribute('aria-disabled', 'true');
           status.textContent = 'Signing out…';
-
-          try {
-            await fetchJson('/api/auth/logout', { method: 'POST' }, 5000);
-          } finally {
-            window.location.href = logoutButton.getAttribute('href') || '/login/?signed-out=1';
-          }
         });
       };
       const bindRequestEstimateLink = () => {
@@ -1407,22 +2082,55 @@
           button.dataset.active = String(button.dataset.viewButton === view);
         });
       };
+      const getAvailableDashboardViews = (user = {}) => {
+        const permissions = user.permissions || {};
+        const views = new Set(permissions.availableViews || user.roles || []);
+        if (permissions.canViewAdminTools) views.add('admin');
+        if (permissions.canViewClientTools) views.add('client');
+        if (permissions.canViewWorkerTools) views.add('worker');
+        if (!views.size) views.add('client');
+        return ['admin', 'client', 'worker'].filter((view) => views.has(view));
+      };
+
       const configureDashboardForUser = (user) => {
         currentProfileUser = user;
         dedupeDashboardSingletons();
         const permissions = user.permissions || {};
-        const availableViews = permissions.availableViews || user.roles || [];
+        const availableViews = getAvailableDashboardViews(user);
         const switcher = document.querySelector('[data-view-switcher]');
+        configureMainDashboardActions(user);
 
-        if (switcher && permissions.canSwitchDashboardView && (user.roles || []).includes('admin')) {
-          switcher.hidden = false;
+        if (switcher) {
+          switcher.hidden = availableViews.length <= 1;
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
-            button.hidden = !availableViews.includes(button.dataset.viewButton);
-            button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+            const canView = availableViews.includes(button.dataset.viewButton);
+            button.hidden = !canView;
+            if (canView && !button.dataset.boundViewSwitch) {
+              button.dataset.boundViewSwitch = 'true';
+              button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+            }
           });
         }
 
-        setDashboardView(permissions.defaultView || availableViews[0] || 'client');
+        const preferredView = availableViews.includes(permissions.defaultView) ? permissions.defaultView : availableViews[0];
+        setDashboardView(preferredView || 'client');
+      };
+      const configureSignedInDashboard = (user) => {
+        try {
+          configureDashboardForUser(user);
+        } catch (configureError) {
+          console.error('Dashboard command center setup failed; forcing main dashboard controls visible', configureError);
+          const actionBar = document.querySelector('[data-main-dashboard-actions]');
+          if (actionBar) {
+            actionBar.hidden = false;
+            actionBar.querySelectorAll('[data-main-action-permission]').forEach((action) => { action.hidden = false; });
+          }
+          const switcher = document.querySelector('[data-view-switcher]');
+          if (switcher) {
+            switcher.hidden = false;
+            switcher.querySelectorAll('[data-view-button]').forEach((button) => { button.hidden = false; });
+          }
+        }
       };
       const renderRequestCard = (request, { admin = false } = {}) => {
         const className = admin ? 'admin-request' : 'client-request';
@@ -1788,7 +2496,7 @@
 
       const scheduleAdminActivityReload = () => {
         window.clearTimeout(adminActivityFilterTimer);
-        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivity({ filtered: true }), 220);
+        adminActivityFilterTimer = window.setTimeout(() => loadAdminActivityFeed({ filtered: true }), 220);
       };
 
       const bindAdminActivityFilters = () => {
@@ -2027,6 +2735,7 @@
           <div class="job-file-list" data-job-files="${escapeHtml(assignment.jobRequest?.id || '')}" aria-live="polite"></div>
         </article>
       `;
+      };
 
       const setClientProfileEditing = (isEditing) => {
         document.querySelectorAll('[data-client-profile-editable]').forEach((field) => {
@@ -3195,82 +3904,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const bindAdminInvoiceActions = () => {
-        const panel = document.querySelector('[data-admin-invoices]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
-        const invoiceFilter = panel.querySelector('[data-admin-invoice-status-filter]');
-        const invoiceSearch = panel.querySelector('[data-admin-invoice-search]');
-        invoiceFilter?.addEventListener('change', () => loadAdminInvoices());
-        invoiceSearch?.addEventListener('input', renderAdminInvoiceList);
-        panel.addEventListener('submit', async (event) => {
-          const form = event.target.closest('[data-admin-payment-form]');
-          if (!form) return;
-          event.preventDefault();
-          const button = form.querySelector('[data-admin-confirm-payment]');
-          const formData = new FormData(form);
-          const amountDollars = Number(formData.get('amountDollars') || 0);
-          const amountCents = Math.round(amountDollars * 100);
-          const status = document.querySelector('[data-admin-invoices-status]');
 
-          if (!Number.isFinite(amountDollars) || amountDollars < 0) {
-            if (status) status.textContent = 'Enter a valid non-negative payment amount.';
-            return;
-          }
-
-          if (button) button.disabled = true;
-          if (status) status.textContent = 'Confirming payment…';
-          try {
-            const response = await fetch('/api/admin/invoices', {
-              method: 'PATCH',
-              headers: { accept: 'application/json', 'content-type': 'application/json' },
-              body: JSON.stringify({
-                invoiceId: form.dataset.adminInvoiceId,
-                amountCents,
-                method: formData.get('method') || 'manual',
-                reference: formData.get('reference') || '',
-              }),
-            });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not confirm payment.');
-            await loadAdminInvoices();
-            await loadAdminRequests();
-            await loadAdminActivity();
-          } catch (error) {
-            if (status) status.textContent = error.message;
-          } finally {
-            if (button) button.disabled = false;
-          }
-        });
-      };
-
-      const loadAdminInvoices = async () => {
-        const panel = document.querySelector('[data-admin-invoices]');
-        const status = document.querySelector('[data-admin-invoices-status]');
-        const invoiceSummary = document.querySelector('[data-admin-invoice-summary]');
-        const invoiceList = document.querySelector('[data-admin-invoice-list]');
-        const invoiceFilter = document.querySelector('[data-admin-invoice-status-filter]');
-        if (!panel || !status || !invoiceList) return;
-        try {
-          const filter = invoiceFilter?.value || 'open';
-          const response = await fetch(`/api/admin/invoices?status=${encodeURIComponent(filter)}`, { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Invoices are not available.');
-          currentAdminInvoices = result.invoices || [];
-          const label = filter === 'paid' ? 'paid invoice history' : filter === 'all' ? 'active invoice records' : 'invoice payment confirmation';
-          status.dataset.state = 'ready';
-          status.textContent = currentAdminInvoices.length ? `${currentAdminInvoices.length} ${label} item${currentAdminInvoices.length === 1 ? '' : 's'} loaded.` : `No ${label} items found.`;
-          if (invoiceSummary) invoiceSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
-          renderAdminInvoiceList();
-          bindAdminInvoiceActions();
-        } catch (error) {
-          currentAdminInvoices = [];
-          status.dataset.state = 'error';
-          status.textContent = error.message;
-        }
-      };
-
-      const loadAdminActivity = async ({ filtered = false, append = false } = {}) => {
+      const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {
         const panel = document.querySelector('[data-admin-activity]');
         const status = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
@@ -3325,10 +3960,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           openButton.addEventListener('click', async () => {
             setModalOpen(panel, true);
             document.querySelector('[data-admin-activity-type-filter]')?.focus({ preventScroll: true });
-            if (!adminActivityLoaded) await loadAdminActivity();
+            if (!adminActivityLoaded) await loadAdminActivityFeed();
           });
         });
-        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivity({ append: true }));
+        panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivityFeed({ append: true }));
         panel.querySelector('[data-admin-activity-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
           if (event.target === panel) setModalOpen(panel, false);
@@ -3547,141 +4182,72 @@ Additional info from client: ${payload.additionalInfo}` : '';
       bindLogout();
       status.dataset.state = 'loading';
       status.textContent = 'Checking secure session…';
+      if (accountStatus) accountStatus.textContent = 'Checking secure session…';
 
       fetchJson('/api/me')
-        .then(({ response, result }) => {
+        .then(async ({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
-            status.textContent = 'Redirecting to secure magic-link sign in…';
-            window.location.replace('/login/?next=dashboard');
+            status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
+            if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Not signed in — review login debug below.' : 'Not signed in — opening secure login…';
+            if (authDebugEnabled) {
+              const debugResult = await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.', { recoverMainDashboard: true });
+              if (debugResult?.canUseSession) return;
+            } else {
+              const recoveredUser = await recoverMainDashboardSilently(result.message || 'The dashboard /api/me check says you are not authenticated.');
+              if (recoveredUser) return;
+              window.location.replace('/login/?next=dashboard');
+            }
             return;
           }
 
+          let dashboardUser = result.user;
+          if (!authDebugEnabled) {
+            dashboardUser = await enrichDashboardUserFromDebug(dashboardUser);
+          }
+          dashboardUser.permissions = getDashboardPermissions(dashboardUser);
+          updateDebugDashboardLink(dashboardUser);
+
           status.dataset.state = 'ready';
-          status.textContent = `Signed in as ${getUserDisplayName(result.user)}`;
-          renderClientProfile(result.user);
+          status.textContent = `Signed in as ${getUserDisplayName(dashboardUser)}`;
+          if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(dashboardUser)}`;
+          if (authDebugEnabled) {
+            loadAuthDebug('/api/me says this browser is authenticated. Showing the cookie/database details for confirmation.');
+          }
 
           if (logoutButton) {
             logoutButton.hidden = false;
           }
 
+          configureSignedInDashboard(dashboardUser);
 
-          bindClientProfileButton();
-          bindClientProfileForm();
-          bindRequestEstimateLink();
-          configureDashboardForUser(result.user);
-
-          if (result.user.permissions?.canViewClientTools) {
-            bindClientRequestForm();
-            bindClientRequestEditActions();
-            bindClientPropertyActions();
-            bindQuoteDecisionActions();
-            loadClientRequests();
-            loadClientQuotes();
-            if (result.user.permissions?.canViewInvoices) {
-              loadClientInvoices();
-            }
+          try {
+            renderClientProfile(dashboardUser);
+            bindClientProfileButton();
+            bindClientProfileForm();
+            bindRequestEstimateLink();
+          } catch (setupError) {
+            console.error('Dashboard setup failed after successful session check', setupError);
           }
 
-          if (result.user.permissions?.canViewWorkerTools) {
-            bindWorkerJobActions();
-            loadWorkerJobs();
-          }
-
-          if (result.user.permissions?.canManageRequests) {
-            loadAdminRequests();
-            loadAdminActivity();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityLauncher();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            window.taDashboardActions.loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageInvoices) {
-            window.taDashboardActions.bindAdminInvoiceActions();
-            window.taDashboardActions.loadAdminInvoices();
-          }
-
-          if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
-            bindAdminAccessLauncher();
-            loadAdminAccess();
-          }
-
-          if (result.user.permissions?.canViewAdminActivity) {
-            bindAdminActivityActions();
-            loadAdminActivity();
+          try {
+            loadAuthorizedDashboardTools(dashboardUser);
+          } catch (toolError) {
+            console.error('Dashboard tool loading failed after successful session check', toolError);
           }
         })
-        .catch((error) => {
+        .catch(async (error) => {
           status.dataset.state = 'error';
-          status.innerHTML = error?.name === 'AbortError'
-            ? 'Session check timed out. Refresh the dashboard or <a href="/login/">request a new magic link</a>.'
-            : 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
+          status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Session check is unavailable. Refresh the page or request a new magic link.';
+          if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Session check failed — review login debug below.' : 'Session check unavailable.';
+          if (authDebugEnabled) {
+            const debugResult = await loadAuthDebug(error.message || 'The dashboard /api/me request failed.', { recoverMainDashboard: true });
+            if (debugResult?.canUseSession) return;
+          } else {
+            const recoveredUser = await recoverMainDashboardSilently(error.message || 'The dashboard /api/me request failed.');
+            if (recoveredUser) return;
+          }
+          status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
   </script>
