@@ -349,6 +349,24 @@ test('verify endpoint can recover when the link token is the database magic-link
     [],
     [],
     [],
+    [],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=6f6c428d-286f-41d3-b1a0-ec2e12c4c2be'));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries[0].values[2], '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be');
+});
+
+test('verify endpoint redirects with a used-link status when a token was already consumed', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,
@@ -418,6 +436,8 @@ test('dashboard page renders a visible session status and login debug panel hook
 
   assert.match(dashboard, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3\.png\?raw=true/);
   assert.match(dashboard, /data-debug-dashboard-link/);
+  assert.match(dashboard, /sessionCard\.hidden = !authDebugEnabled/);
+  assert.match(dashboard, /debugDashboardLink\.textContent = 'Dashboard'/);
   assert.match(dashboard, /thomas\.debacker\.ii@gmail\.com/);
   assert.match(dashboard, /\[hidden\] \{ display: none !important; \}/);
   assert.match(dashboard, /data-session-status/);
@@ -428,6 +448,7 @@ test('dashboard page renders a visible session status and login debug panel hook
   assert.match(dashboard, /Open the admin work-order command center/);
   assert.match(dashboard, /data-main-dashboard-actions/);
   assert.match(dashboard, /configureMainDashboardActions/);
+  assert.match(dashboard, /visibleCount && \(permissions\.canViewAdminTools/);
   assert.match(dashboard, /getAvailableDashboardViews/);
   assert.match(dashboard, /Your live dashboard command center/);
   assert.match(dashboard, /Worker jobs/);
