@@ -494,7 +494,7 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div></div></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -735,7 +735,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -760,7 +768,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -785,7 +801,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -810,7 +834,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -835,7 +867,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -860,7 +900,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -885,7 +933,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -910,7 +966,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -935,7 +999,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -960,7 +1032,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -985,7 +1065,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1010,7 +1098,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1035,7 +1131,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1060,7 +1164,15 @@
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
-            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
@@ -1257,6 +1369,7 @@
       }
 
       const status = document.querySelector('[data-session-status]');
+      const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
       const dashboardParams = new URLSearchParams(window.location.search);
@@ -1422,6 +1535,7 @@
 
         status.dataset.state = 'ready';
         status.textContent = `Signed in as ${getUserDisplayName(fallbackUser)} (${reason})`;
+        if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(fallbackUser)}`;
         renderClientProfile(fallbackUser);
         if (logoutButton) logoutButton.hidden = false;
         bindClientProfileButton();
@@ -3698,12 +3812,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
       bindLogout();
       status.dataset.state = 'loading';
       status.textContent = 'Checking secure session…';
+      if (accountStatus) accountStatus.textContent = 'Checking secure session…';
 
       fetchJson('/api/me')
         .then(async ({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
             status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Checking fallback session debug…';
+            if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Not signed in — review login debug below.' : 'Checking secure session fallback…';
             const debugResult = authDebugEnabled
               ? await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.')
               : await fetchAuthDebug().then(({ result: fallbackResult }) => fallbackResult).catch(() => null);
@@ -3718,6 +3834,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           status.dataset.state = 'ready';
           status.textContent = `Signed in as ${getUserDisplayName(result.user)}`;
+          if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(result.user)}`;
           if (authDebugEnabled) {
             loadAuthDebug('/api/me says this browser is authenticated. Showing the cookie/database details for confirmation.');
           }
@@ -3738,6 +3855,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         .catch(async (error) => {
           status.dataset.state = 'error';
           status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Checking fallback session debug…';
+          if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Session check failed — review login debug below.' : 'Checking secure session fallback…';
           const debugResult = authDebugEnabled
             ? await loadAuthDebug(error.message || 'The dashboard /api/me request failed.')
             : await fetchAuthDebug().then(({ result }) => result).catch(() => null);
