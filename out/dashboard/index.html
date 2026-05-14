@@ -285,42 +285,63 @@
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
 
     .command-center-section {
-      margin: 30px 0 34px;
+      position: relative;
+      margin: clamp(56px, 8vw, 84px) 0 44px;
+      padding-top: clamp(28px, 4vw, 42px);
+      border-top: 1px solid rgba(255,255,255,.14);
+    }
+
+    .command-center-section-header {
+      max-width: 760px;
+      margin-bottom: 18px;
+    }
+
+    .command-center-section-header h2 {
+      margin: 0;
+      color: var(--dash-text);
+      font-size: clamp(2.25rem, 4vw, 3.8rem);
+      line-height: .96;
+      letter-spacing: -.065em;
+    }
+
+    .command-center-section-header p {
+      max-width: 68ch;
+      margin: 12px 0 0;
     }
 
     .command-center-shell {
       display: grid;
-      gap: 22px;
-      padding: clamp(20px, 4vw, 32px);
+      gap: 20px;
+      padding: clamp(18px, 3vw, 28px);
       border: 1px solid rgba(255,255,255,.14);
-      border-radius: 30px;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.055)),
-        rgba(7,10,15,.58);
-      box-shadow: 0 28px 80px rgba(0,0,0,.24);
+      border-radius: 28px;
+      background: rgba(7,10,15,.72);
+      box-shadow: 0 24px 70px rgba(0,0,0,.22);
       backdrop-filter: blur(18px);
     }
 
     .command-center-heading {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
       gap: 18px;
-      padding-bottom: 18px;
+      padding-bottom: 16px;
       border-bottom: 1px solid rgba(255,255,255,.12);
     }
 
-    .command-center-heading h2 {
-      margin: 0;
+    .command-center-heading strong {
       color: var(--dash-text);
-      font-size: clamp(2rem, 3.6vw, 3.4rem);
-      line-height: .98;
-      letter-spacing: -.06em;
+      font-size: 1rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
-    .command-center-heading p {
-      max-width: 68ch;
-      margin: 10px 0 0;
+    .command-center-heading span:not(.command-center-status) {
+      display: block;
+      margin-top: 4px;
+      color: var(--dash-muted);
+      font-size: .9rem;
+      font-weight: 720;
     }
 
     .command-center-status {
@@ -635,8 +656,10 @@
     }
     html[data-theme="light"] .admin-command-card,
     html[data-theme="light"] .command-center-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.78); }
-    html[data-theme="light"] .command-center-shell { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.86); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="light"] .command-center-section { border-top-color: rgba(17,17,17,.10); }
+    html[data-theme="light"] .command-center-shell { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.90); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
     html[data-theme="light"] .command-center-heading { border-bottom-color: rgba(17,17,17,.10); }
+    html[data-theme="light"] .command-center-heading span:not(.command-center-status) { color: #5f5148; }
     html[data-theme="light"] .command-center-group { border-color: rgba(17,17,17,.10); background: rgba(255,250,244,.72); }
     html[data-theme="light"] .admin-command-card strong,
     html[data-theme="light"] .command-center-card strong,
@@ -686,29 +709,17 @@
       <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
-    <section class="admin-command main-dashboard-command" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
-      <div class="admin-command-header">
-        <div>
-          <span class="eyebrow">Main dashboard</span>
-          <h2>Command center</h2>
-          <p>Your primary workspace is organized by role. Use the Admin, Client, and Worker view buttons above, or jump straight into the tools below.</p>
-        </div>
-        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+    <section class="command-center-section" aria-labelledby="command-center-title" data-main-dashboard-actions hidden>
+      <div class="command-center-section-header">
+        <span class="eyebrow">Dashboard tools</span>
+        <h2 id="command-center-title">Command center</h2>
+        <p>This is a dedicated shortcut area separate from the welcome panel. Pick the role-based tools you need without digging through the rest of the dashboard.</p>
       </div>
-    </section>
-
-    <section class="card session-check" data-session-card>
-      <strong>Session check</strong>
-      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
-    </section>
-
-    <section class="command-center-section" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
       <div class="command-center-shell">
         <div class="command-center-heading">
           <div>
-            <span class="eyebrow">Main dashboard</span>
-            <h2>Command center</h2>
-            <p>Choose the work area you need. Each section is separated by role so the main dashboard stays clean and easy to scan.</p>
+            <strong>Role shortcuts</strong>
+            <span>Only tools available to your account are shown.</span>
           </div>
           <span class="command-center-status">Live workspace</span>
         </div>
