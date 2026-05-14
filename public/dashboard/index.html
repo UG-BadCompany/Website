@@ -285,186 +285,6 @@
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
     .main-command-shortcuts .admin-command-actions { margin-top: 0; }
 
-    .command-center-section {
-      position: relative;
-      width: 100vw;
-      margin: clamp(64px, 9vw, 96px) 0 52px;
-      margin-left: calc(50% - 50vw);
-      padding: clamp(42px, 6vw, 72px) 0;
-      border-top: 1px solid rgba(255,255,255,.14);
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      background:
-        radial-gradient(circle at 12% 0%, rgba(249,115,22,.18), transparent 28rem),
-        linear-gradient(180deg, rgba(7,10,15,.28), rgba(7,10,15,.58));
-    }
-
-    .command-center-inner {
-      width: min(1180px, calc(100% - 36px));
-      margin: 0 auto;
-    }
-
-    .command-center-section-header {
-      max-width: 760px;
-      margin-bottom: 22px;
-    }
-
-    .command-center-section-header h2 {
-      margin: 0;
-      color: var(--dash-text);
-      font-size: clamp(2.25rem, 4vw, 3.8rem);
-      line-height: .96;
-      letter-spacing: -.065em;
-    }
-
-    .command-center-section-header p {
-      max-width: 68ch;
-      margin: 12px 0 0;
-    }
-
-    .command-center-shell {
-      display: grid;
-      gap: 20px;
-      padding: clamp(18px, 3vw, 28px);
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 28px;
-      background: rgba(7,10,15,.72);
-      box-shadow: 0 24px 70px rgba(0,0,0,.22);
-      backdrop-filter: blur(18px);
-    }
-
-    .command-center-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(255,255,255,.12);
-    }
-
-    .command-center-heading strong {
-      color: var(--dash-text);
-      font-size: 1rem;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .command-center-heading span:not(.command-center-status) {
-      display: block;
-      margin-top: 4px;
-      color: var(--dash-muted);
-      font-size: .9rem;
-      font-weight: 720;
-    }
-
-    .command-center-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex: 0 0 auto;
-      padding: 10px 13px;
-      border: 1px solid rgba(34,197,94,.28);
-      border-radius: 999px;
-      color: #bbf7d0;
-      background: rgba(34,197,94,.10);
-      font-weight: 950;
-      white-space: nowrap;
-    }
-
-    .command-center-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, .85fr);
-      gap: 14px;
-    }
-
-    .command-center-group {
-      display: grid;
-      align-content: start;
-      gap: 12px;
-      padding: 16px;
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 22px;
-      background: rgba(255,255,255,.055);
-    }
-
-    .command-center-group-header {
-      display: grid;
-      gap: 6px;
-    }
-
-    .command-center-group h3 {
-      margin: 0;
-      color: var(--dash-text);
-      font-size: .95rem;
-      letter-spacing: .07em;
-      text-transform: uppercase;
-    }
-
-    .command-center-group p {
-      margin: 0;
-      font-size: .9rem;
-      line-height: 1.5;
-    }
-
-    .command-center-actions {
-      display: grid;
-      gap: 10px;
-    }
-
-    .command-center-card {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 4px 11px;
-      align-items: start;
-      min-height: 0;
-      padding: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 16px;
-      color: var(--dash-text);
-      background: rgba(255,255,255,.075);
-      text-align: left;
-      font: inherit;
-      cursor: pointer;
-      transition: transform .18s ease, border-color .18s ease, background .18s ease;
-    }
-
-    .command-center-card::before {
-      content: "↗";
-      display: inline-grid;
-      grid-row: 1 / span 2;
-      width: 26px;
-      height: 26px;
-      place-items: center;
-      border-radius: 999px;
-      color: #fed7aa;
-      background: rgba(249,115,22,.16);
-      font-size: .78rem;
-      font-weight: 950;
-    }
-
-    .command-center-card:hover,
-    .command-center-card:focus-visible {
-      transform: translateY(-1px);
-      border-color: rgba(249,115,22,.42);
-      background: rgba(255,255,255,.12);
-    }
-
-    .command-center-card strong {
-      color: var(--dash-text);
-      font-size: .98rem;
-    }
-
-    .command-center-card span {
-      color: var(--dash-muted);
-      font-size: .88rem;
-      font-weight: 720;
-      line-height: 1.4;
-    }
-
-    @media(max-width:980px) {
-      .command-center-heading { align-items: flex-start; flex-direction: column; }
-      .command-center-grid { grid-template-columns: 1fr; }
-    }
-
     .client-command {
       background:
         linear-gradient(135deg, rgba(96,165,250,.16), rgba(255,255,255,.06)),
@@ -722,11 +542,6 @@
       </div>
     </section>
 
-    <section class="card session-check" data-session-card>
-      <strong>Session check</strong>
-      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
-    </section>
-
     <section class="admin-command main-command-shortcuts" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
@@ -740,6 +555,11 @@
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
         <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
       </div>
+    </section>
+
+    <section class="card session-check" data-session-card>
+      <strong>Session check</strong>
+      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
     <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
