@@ -1425,6 +1425,16 @@
           if (!response.ok) hints.push(`Debug endpoint returned HTTP ${response.status}.`);
           if (summary) summary.textContent = hints.length ? hints.join(' ') : 'Debug found a session cookie and active database session. If the dashboard still looks signed out, the issue is in /api/me or dashboard rendering.';
           if (output) output.textContent = JSON.stringify(result, null, 2);
+          if (result.canUseSession && result.session) {
+            const roles = result.roles?.length ? result.roles : ['client'];
+            ensureFallbackActionPanel({
+              id: result.session.userId,
+              email: result.session.email || 'signed-in account',
+              fullName: result.session.fullName || '',
+              roles,
+              permissions: buildDebugFallbackPermissions(roles, result.permissionKeys || []),
+            });
+          }
           return result;
         } catch (error) {
           if (summary) summary.textContent = `Could not load login debug: ${error.message}`;
