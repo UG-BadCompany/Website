@@ -420,6 +420,8 @@ test('dashboard page renders a visible session status and login debug panel hook
   assert.match(dashboard, /Session check/);
   assert.match(dashboard, /data-auth-debug-panel/);
   assert.match(dashboard, /\/api\/auth\/debug/);
+  assert.match(dashboard, /data-debug-fallback-actions/);
+  assert.match(dashboard, /Open admin work orders/);
 
   const script = dashboard.slice(dashboard.lastIndexOf('<script>') + '<script>'.length, dashboard.lastIndexOf('</script>'));
   assert.doesNotThrow(() => new Function(script));

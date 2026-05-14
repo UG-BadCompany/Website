@@ -1294,6 +1294,43 @@
         };
       };
 
+      const revealAuthorizedFallbackSections = (user) => {
+        const permissions = user.permissions || {};
+        const availableViews = new Set(permissions.availableViews || user.roles || []);
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          const views = (section.dataset.views || '').split(' ').map((view) => view.trim()).filter(Boolean);
+          const requiredPermission = section.dataset.permission;
+          const hasView = views.some((view) => availableViews.has(view));
+          const hasRequiredPermission = !requiredPermission || Boolean(permissions[requiredPermission]);
+          if (hasView && hasRequiredPermission) section.hidden = false;
+        });
+      };
+
+      const ensureFallbackActionPanel = (user) => {
+        let panel = document.querySelector('[data-debug-fallback-actions]');
+        if (!panel) {
+          panel = document.createElement('section');
+          panel.className = 'card';
+          panel.dataset.debugFallbackActions = 'true';
+          status?.closest('main')?.insertBefore(panel, document.querySelector('[data-auth-debug-panel]')?.nextSibling || status.closest('section')?.nextSibling || null);
+        }
+
+        const permissions = user.permissions || {};
+        const actions = [];
+        if (permissions.canViewAdminTools) actions.push('<a class="btn btn-primary" href="#admin-work-orders">Open admin work orders</a>');
+        if (permissions.canManageInvoices) actions.push('<a class="btn btn-soft" href="#admin-invoices">Open admin invoices</a>');
+        if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="btn btn-soft" type="button" data-admin-access-shortcut>Open roles & users</button>');
+        if (permissions.canViewAdminActivity) actions.push('<button class="btn btn-soft" type="button" data-admin-activity-shortcut>Open audit activity</button>');
+        if (permissions.canManageInventory) actions.push('<a class="btn btn-soft" href="/inventory/">Open inventory</a>');
+        if (permissions.canViewClientTools) actions.push('<a class="btn btn-soft" href="#submit-request">Open client requests</a>');
+        if (permissions.canViewWorkerTools) actions.push('<a class="btn btn-soft" href="#worker-jobs">Open worker jobs</a>');
+
+        panel.innerHTML = `<strong>Dashboard access recovered</strong><p class="session-status">/api/me failed, but /api/auth/debug confirmed this session and permissions. Use these shortcuts while the recovered dashboard sections load.</p><div class="client-quote-actions">${actions.join('') || '<a class="btn btn-primary" href="/login/">Request a new magic link</a>'}</div>`;
+        bindAdminAccessLauncher();
+        bindAdminActivityLauncher();
+        return panel;
+      };
+
       const loadAuthorizedDashboardTools = (user) => {
         if (user.permissions?.canViewClientTools) {
           bindClientRequestForm();
@@ -1357,6 +1394,8 @@
         bindClientProfileForm();
         bindRequestEstimateLink();
         configureDashboardForUser(fallbackUser);
+        revealAuthorizedFallbackSections(fallbackUser);
+        ensureFallbackActionPanel(fallbackUser);
         loadAuthorizedDashboardTools(fallbackUser);
         return true;
       };
@@ -1554,7 +1593,7 @@
         const availableViews = permissions.availableViews || user.roles || [];
         const switcher = document.querySelector('[data-view-switcher]');
 
-        if (switcher && permissions.canSwitchDashboardView && (user.roles || []).includes('admin')) {
+        if (switcher && availableViews.length > 1) {
           switcher.hidden = false;
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             button.hidden = !availableViews.includes(button.dataset.viewButton);
