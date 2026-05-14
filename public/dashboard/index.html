@@ -532,8 +532,8 @@
     <section class="admin-command main-dashboard-command" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
       <div class="admin-command-header">
         <span class="eyebrow">Main dashboard</span>
-        <h2>Main dashboard command center</h2>
-        <p>Your signed-in permissions load these primary action cards directly on the main dashboard after /api/me confirms your session.</p>
+        <h2>Your live dashboard command center</h2>
+        <p>This is the primary dashboard workspace. Use the view buttons above to switch between Admin, Client, and Worker tools when your account has those permissions.</p>
       </div>
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
@@ -1770,23 +1770,38 @@
           button.dataset.active = String(button.dataset.viewButton === view);
         });
       };
+      const getAvailableDashboardViews = (user = {}) => {
+        const permissions = user.permissions || {};
+        const views = new Set(permissions.availableViews || user.roles || []);
+        if (permissions.canViewAdminTools) views.add('admin');
+        if (permissions.canViewClientTools) views.add('client');
+        if (permissions.canViewWorkerTools) views.add('worker');
+        if (!views.size) views.add('client');
+        return ['admin', 'client', 'worker'].filter((view) => views.has(view));
+      };
+
       const configureDashboardForUser = (user) => {
         currentProfileUser = user;
         dedupeDashboardSingletons();
         const permissions = user.permissions || {};
-        const availableViews = permissions.availableViews || user.roles || [];
+        const availableViews = getAvailableDashboardViews(user);
         const switcher = document.querySelector('[data-view-switcher]');
         configureMainDashboardActions(user);
 
-        if (switcher && availableViews.length > 1) {
-          switcher.hidden = false;
+        if (switcher) {
+          switcher.hidden = availableViews.length <= 1;
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
-            button.hidden = !availableViews.includes(button.dataset.viewButton);
-            button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+            const canView = availableViews.includes(button.dataset.viewButton);
+            button.hidden = !canView;
+            if (canView && !button.dataset.boundViewSwitch) {
+              button.dataset.boundViewSwitch = 'true';
+              button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
+            }
           });
         }
 
-        setDashboardView(permissions.defaultView || availableViews[0] || 'client');
+        const preferredView = availableViews.includes(permissions.defaultView) ? permissions.defaultView : availableViews[0];
+        setDashboardView(preferredView || 'client');
       };
       const renderRequestCard = (request, { admin = false } = {}) => {
         const className = admin ? 'admin-request' : 'client-request';
@@ -3846,9 +3861,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
             status.dataset.state = 'error';
             status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
             if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Not signed in — review login debug below.' : 'Not signed in — opening secure login…';
-            const debugResult = await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.', { recoverMainDashboard: true });
-            if (debugResult?.canUseSession) return;
-            if (!authDebugEnabled) {
+            if (authDebugEnabled) {
+              const debugResult = await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.', { recoverMainDashboard: true });
+              if (debugResult?.canUseSession) return;
+            } else {
               window.location.replace('/login/?next=dashboard');
             }
             return;
@@ -3878,10 +3894,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
           status.dataset.state = 'error';
           status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Session check is unavailable. Refresh the page or request a new magic link.';
           if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Session check failed — review login debug below.' : 'Session check unavailable.';
-          const debugResult = await loadAuthDebug(error.message || 'The dashboard /api/me request failed.', { recoverMainDashboard: true });
-          if (!debugResult?.canUseSession && !authDebugEnabled) {
-            status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
+          if (authDebugEnabled) {
+            const debugResult = await loadAuthDebug(error.message || 'The dashboard /api/me request failed.', { recoverMainDashboard: true });
+            if (debugResult?.canUseSession) return;
           }
+          status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
   </script>
