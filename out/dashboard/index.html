@@ -1492,12 +1492,12 @@
         };
       };
 
-      const recoverMainDashboardFromDebug = (debugResult, reason = '/api/me is unavailable, but /api/auth/debug confirmed this session.') => {
+      const recoverMainDashboardFromDebug = (debugResult, reason = '/api/me is unavailable, but /api/auth/debug confirmed this session.', { showDebugPanel = false } = {}) => {
         const debugUser = buildDebugDashboardUser(debugResult);
         if (!debugUser) return null;
 
         status.dataset.state = 'ready';
-        status.textContent = `Signed in as ${getUserDisplayName(debugUser)} (${reason} Main dashboard loaded.)`;
+        status.textContent = `Signed in as ${getUserDisplayName(debugUser)}`;
         if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(debugUser)}`;
         if (logoutButton) logoutButton.hidden = false;
 
@@ -1509,10 +1509,23 @@
         revealAuthorizedFallbackSections(debugUser);
         loadAuthorizedDashboardTools(debugUser);
 
-        const panel = ensureFallbackActionPanel(debugUser);
-        const panelStatus = panel?.querySelector('.session-status');
-        if (panelStatus) panelStatus.textContent = `${reason} The main dashboard has been loaded from the confirmed session and permissions.`;
+        if (showDebugPanel) {
+          const panel = ensureFallbackActionPanel(debugUser);
+          const panelStatus = panel?.querySelector('.session-status');
+          if (panelStatus) panelStatus.textContent = `${reason} The main dashboard has been loaded from the confirmed session and permissions.`;
+        }
         return debugUser;
+      };
+
+      const recoverMainDashboardSilently = async (reason = '/api/me is unavailable, but /api/auth/debug confirmed this session.') => {
+        try {
+          const { response, result } = await fetchAuthDebug();
+          if (!response.ok || !result?.canUseSession) return null;
+          return recoverMainDashboardFromDebug(result, reason, { showDebugPanel: false });
+        } catch (error) {
+          console.error('Silent dashboard session recovery failed', error);
+          return null;
+        }
       };
 
       const configureMainDashboardActions = (user) => {
@@ -1599,7 +1612,7 @@
           if (output) output.textContent = JSON.stringify(result, null, 2);
           if (result.canUseSession && result.session) {
             if (recoverMainDashboard) {
-              recoverMainDashboardFromDebug(result, reason);
+              recoverMainDashboardFromDebug(result, reason, { showDebugPanel: true });
             } else {
               const debugUser = buildDebugDashboardUser(result);
               if (debugUser) ensureFallbackActionPanel(debugUser);
@@ -3865,6 +3878,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
               const debugResult = await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.', { recoverMainDashboard: true });
               if (debugResult?.canUseSession) return;
             } else {
+              const recoveredUser = await recoverMainDashboardSilently(result.message || 'The dashboard /api/me check says you are not authenticated.');
+              if (recoveredUser) return;
               window.location.replace('/login/?next=dashboard');
             }
             return;
@@ -3897,6 +3912,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (authDebugEnabled) {
             const debugResult = await loadAuthDebug(error.message || 'The dashboard /api/me request failed.', { recoverMainDashboard: true });
             if (debugResult?.canUseSession) return;
+          } else {
+            const recoveredUser = await recoverMainDashboardSilently(error.message || 'The dashboard /api/me request failed.');
+            if (recoveredUser) return;
           }
           status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });

@@ -432,6 +432,9 @@ test('dashboard page renders a visible session status and login debug panel hook
   assert.match(dashboard, /result\.canUseSession && result\.session/);
   assert.match(dashboard, /ensureFallbackActionPanel\(debugUser\)/);
   assert.match(dashboard, /recoverMainDashboardFromDebug/);
+  assert.match(dashboard, /recoverMainDashboardSilently/);
+  assert.match(dashboard, /showDebugPanel: false/);
+  assert.match(dashboard, /showDebugPanel: true/);
   assert.match(dashboard, /recoverMainDashboard: true/);
   assert.match(dashboard, new RegExp("if \\(authDebugEnabled\\) \\{\\n\\s+const debugResult = await loadAuthDebug"));
   assert.match(dashboard, /The main dashboard has been loaded from the confirmed session and permissions/);
