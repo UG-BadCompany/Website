@@ -349,6 +349,24 @@ test('verify endpoint can recover when the link token is the database magic-link
     [],
     [],
     [],
+    [],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=6f6c428d-286f-41d3-b1a0-ec2e12c4c2be'));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
+  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
+  assert.equal(db.queries[0].values[2], '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be');
+});
+
+test('verify endpoint redirects with a used-link status when a token was already consumed', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,
@@ -428,7 +446,10 @@ test('dashboard page renders a visible session status and login debug panel hook
   assert.match(dashboard, /debugOutput\.hidden = true/);
   assert.match(dashboard, /insertBefore\(panel, document\.querySelector\('\[data-auth-debug-panel\]'\)/);
   assert.match(dashboard, /result\.canUseSession && result\.session/);
-  assert.match(dashboard, /ensureFallbackActionPanel\(\{/);
+  assert.match(dashboard, /ensureFallbackActionPanel\(debugUser\)/);
+  assert.match(dashboard, /recoverMainDashboardFromDebug/);
+  assert.match(dashboard, /recoverMainDashboard: true/);
+  assert.match(dashboard, /The main dashboard has been loaded from the confirmed session and permissions/);
 
   const script = dashboard.slice(dashboard.lastIndexOf('<script>') + '<script>'.length, dashboard.lastIndexOf('</script>'));
   assert.doesNotThrow(() => new Function(script));
