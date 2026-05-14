@@ -1,12 +1,17 @@
 (() => {
   const queryMessages = {
     'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
-    expired: ['That magic link is expired or was already used. Request a fresh sign-in link.', 'error'],
+    expired: ['That magic link is expired. Request a fresh sign-in link.', 'error'],
+    used: ['That magic link was already used. Request a fresh link, then open the newest email only once.', 'error'],
     error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
   };
 
+  const getParams = () => new URLSearchParams(window.location.search);
+
+  const isSignedOutReturn = () => getParams().has('signed-out');
+
   const applyInitialStatus = (setStatus) => {
-    const params = new URLSearchParams(window.location.search);
+    const params = getParams();
 
     if (params.has('signed-out')) {
       setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
@@ -16,6 +21,37 @@
     const authState = params.get('auth');
     if (queryMessages[authState]) {
       setStatus(...queryMessages[authState]);
+    }
+  };
+
+  const appendMagicLink = (status, magicLinkUrl) => {
+    if (!magicLinkUrl) return;
+
+    const link = document.createElement('a');
+    link.href = magicLinkUrl;
+    link.textContent = 'Open secure sign-in link';
+    link.style.display = 'block';
+    link.style.marginTop = '8px';
+    link.rel = 'nofollow noopener';
+    status.appendChild(link);
+  };
+
+  const redirectExistingSession = async () => {
+    if (isSignedOutReturn()) return;
+
+    try {
+      const response = await fetch('/api/me?optional=1', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' },
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (response.ok && result.authenticated) {
+        window.location.replace('/dashboard/');
+      }
+    } catch {
+      // Stay on the login form when the session check is unavailable.
     }
   };
 
@@ -51,15 +87,7 @@
         });
         const result = await response.json().catch(() => ({}));
         setStatus(result.message || 'If that email is on file, a secure sign-in link will be sent shortly.', response.ok && result.ok ? 'success' : 'error');
-
-        if (result.devMagicLink && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-          const link = document.createElement('a');
-          link.href = result.devMagicLink;
-          link.textContent = 'Open development magic link';
-          link.style.display = 'block';
-          link.style.marginTop = '8px';
-          status.appendChild(link);
-        }
+        appendMagicLink(status, result.devMagicLink);
       } catch {
         setStatus('We could not request a sign-in link right now. Please try again or contact T&A Contracting.', 'error');
       } finally {
@@ -68,5 +96,6 @@
     });
   };
 
+  redirectExistingSession();
   document.querySelectorAll('[data-auth-form]').forEach(bindMagicLinkForm);
 })();
