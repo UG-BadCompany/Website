@@ -514,7 +514,7 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 
 
 
-test('me endpoint recovers with role defaults when the primary user load fails after finding the session', async () => {
+test('me endpoint retries role loading and still returns role defaults when the first role query fails', async () => {
   let roleQueryAttempts = 0;
   const db = {
     queries: [],
@@ -537,12 +537,47 @@ test('me endpoint recovers with role defaults when the primary user load fails a
 
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
-  assert.equal(response.body.recovered, true);
   assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.canViewAdminTools, true);
   assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
   assert.equal(response.body.user.permissions.canManageUsers, true);
   assert.equal(response.body.user.permissions.canManageInventory, true);
+});
+
+i
+test('me endpoint uses the debug-compatible session lookup when SQL now filters would fail', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/expires_at > now\(\)/.test(text)) throw new Error('database now filter should not be used for session lookup');
+      if (/from auth_sessions/.test(text)) return [{
+        id: 'session-1',
+        user_id: 'user-1',
+        email: 'admin@example.com',
+        full_name: 'Admin User',
+        phone: '555-0100',
+        is_active: true,
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      }];
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
+      if (/role_permissions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canManageInventory, true);
+  assert.equal(db.queries.some((query) => /expires_at > now\(\)/.test(query.text)), false);
 });
 
 test('me endpoint uses role defaults when role permission table is unavailable', async () => {

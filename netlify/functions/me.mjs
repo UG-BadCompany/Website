@@ -64,55 +64,83 @@ const unauthenticatedSessionResponse = (message, status = 401, headers = {}) => 
 }, headers);
 
 
-const loadCurrentUserFallback = async (db, sessionToken) => {
-  let session;
+const isSessionUsable = (session) => {
+  if (!session) return false;
+  if (session.revoked_at) return false;
+  if (session.is_active === false || session.is_active === null) return false;
+  if (session.expires_at === null) return false;
+  if (session.expires_at === undefined) return true;
 
+  const expiresAt = new Date(session.expires_at).getTime();
+  return Number.isFinite(expiresAt) && expiresAt > Date.now();
+};
+
+const loadCurrentUserSession = async (db, sessionToken) => {
   try {
-    [session] = await db.sql`
-      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone,
-        app_users.secondary_phone, app_users.company_name, app_users.mailing_address
+    const [session] = await db.sql`
+      select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
+        app_users.email, app_users.full_name, app_users.phone,
+        app_users.secondary_phone, app_users.company_name, app_users.mailing_address,
+        app_users.is_active
       from auth_sessions
-      join app_users on app_users.id = auth_sessions.user_id
+      left join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
-        and auth_sessions.revoked_at is null
-        and auth_sessions.expires_at > now()
-        and app_users.is_active = true
+      order by auth_sessions.created_at desc
       limit 1
     `;
+    return session || null;
   } catch (profileColumnError) {
-    console.error('Failed to load optional profile columns during /api/me fallback; retrying with base user fields', profileColumnError);
-    [session] = await db.sql`
-      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name
+    console.error('Failed to load optional profile columns during /api/me; retrying with base session fields', profileColumnError);
+    const [session] = await db.sql`
+      select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
+        app_users.email, app_users.full_name, app_users.phone, app_users.is_active
       from auth_sessions
-      join app_users on app_users.id = auth_sessions.user_id
+      left join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
-        and auth_sessions.revoked_at is null
-        and auth_sessions.expires_at > now()
-        and app_users.is_active = true
+      order by auth_sessions.created_at desc
       limit 1
     `;
+    return session || null;
   }
+};
 
-  if (!session) return null;
-
-  let roles = [];
-  try {
-    roles = await db.sql`
-      select roles.key, roles.name
-      from user_roles
-      join roles on roles.id = user_roles.role_id
-      where user_roles.user_id = ${session.user_id}
-      order by roles.key
-    `;
-  } catch (roleError) {
-    console.error('Failed to load current user roles during /api/me fallback; using client role', roleError);
-  }
-
+const queryCurrentUserRoles = async (db, userId) => {
+  const roles = await db.sql`
+    select roles.key, roles.name
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    where user_roles.user_id = ${userId}
+    order by roles.key
+  `;
   const roleKeys = roles.map((role) => role.key);
+  return roleKeys.length ? roleKeys : ['client'];
+};
+
+const loadCurrentUserRoles = async (db, userId, { logPrefix = 'Failed to load current user roles; retrying once before using client role' } = {}) => {
+  try {
+    return await queryCurrentUserRoles(db, userId);
+  } catch (roleError) {
+    console.error(logPrefix, roleError);
+  }
+
+  try {
+    return await queryCurrentUserRoles(db, userId);
+  } catch (retryError) {
+    console.error('Failed to load current user roles after retry; using client role', retryError);
+    return ['client'];
+  }
+};
+
+const loadCurrentUserFallback = async (db, sessionToken) => {
+  const session = await loadCurrentUserSession(db, sessionToken);
+
+  if (!isSessionUsable(session)) return null;
 
   return {
     session,
-    roleKeys: roleKeys.length ? roleKeys : ['client'],
+    roleKeys: await loadCurrentUserRoles(db, session.user_id, {
+      logPrefix: 'Failed to load current user roles during /api/me fallback; using client role',
+    }),
   };
 };
 
@@ -147,18 +175,9 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
 
   try {
     db = await getDatabase();
-    const [session] = await db.sql`
-      select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone
-      from auth_sessions
-      join app_users on app_users.id = auth_sessions.user_id
-      where auth_sessions.session_hash = ${hashToken(sessionToken)}
-        and auth_sessions.revoked_at is null
-        and auth_sessions.expires_at > now()
-        and app_users.is_active = true
-      limit 1
-    `;
+    const session = await loadCurrentUserSession(db, sessionToken);
 
-    if (!session) {
+    if (!isSessionUsable(session)) {
       return unauthenticatedSessionResponse(
         'Your session expired. Request a new magic link.',
         optionalSessionCheck ? 200 : 401,
@@ -166,16 +185,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       );
     }
 
-    const roles = await db.sql`
-      select roles.key, roles.name
-      from user_roles
-      join roles on roles.id = user_roles.role_id
-      where user_roles.user_id = ${session.user_id}
-      order by roles.key
-    `;
-
-    const assignedRoleKeys = roles.map((role) => role.key);
-    const roleKeys = assignedRoleKeys.length ? assignedRoleKeys : ['client'];
+    const roleKeys = await loadCurrentUserRoles(db, session.user_id);
     const permissionKeys = await loadRolePermissionKeys(db, session.user_id, {
       logPrefix: 'Failed to load role permissions for current user; using role defaults',
     });
