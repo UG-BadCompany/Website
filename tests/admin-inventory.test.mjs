@@ -55,6 +55,29 @@ test('admin inventory endpoint lists active items and low-stock summary', async 
   assert.match(db.queries[4].text, /from inventory_items/);
 });
 
+
+test('admin inventory endpoint keeps admin role defaults when role permission rows cannot load', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }];
+      if (/update auth_sessions/.test(text)) return [];
+      if (/from user_roles/.test(text) && !/role_permissions/.test(text)) return [{ key: 'admin' }];
+      if (/role_permissions/.test(text)) throw new Error('role_permissions unavailable');
+      if (/from inventory_items/.test(text)) return [{ id: 'item-1', name: 'Paint', sku: '', category: '', unit: 'each', quantity_on_hand: 3, reorder_point: 1, supplier: '', storage_location: '', notes: '', is_active: true, created_at: '2026-05-09T00:00:00.000Z', updated_at: '2026-05-09T00:00:00.000Z' }];
+      return [];
+    },
+  };
+  const handler = createAdminInventoryHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/inventory', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authorized, true);
+  assert.equal(response.body.items.length, 1);
+});
+
 test('admin inventory endpoint creates an item and writes audit event', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
