@@ -421,7 +421,7 @@ test('dashboard page renders a visible session status and login debug panel hook
   assert.match(dashboard, /data-auth-debug-panel/);
   assert.match(dashboard, /\/api\/auth\/debug/);
   assert.match(dashboard, /data-debug-fallback-actions/);
-  assert.match(dashboard, /Open admin work orders/);
+  assert.match(dashboard, /Open the admin work-order command center/);
   assert.match(dashboard, /data-main-dashboard-actions/);
   assert.match(dashboard, /configureMainDashboardActions/);
   assert.match(dashboard, /Worker jobs/);
