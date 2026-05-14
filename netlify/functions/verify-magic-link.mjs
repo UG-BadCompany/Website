@@ -2,7 +2,6 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
-  getSiteUrl,
   hashToken,
   json,
   loadDatabase,
@@ -12,91 +11,23 @@ const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
 
 const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-const escapeHtml = (value) => String(value)
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
 
-const createConfirmResponse = (request, token) => new Response(`<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>Continue to T&A Contracting portal</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #fff7ec;
-      color: #1e1915;
-    }
 
-    .wrap {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
+const getMagicLinkStatus = (magicLink) => {
+  if (!magicLink) return 'not-found';
+  if (magicLink.consumed_at) return 'used';
 
-    .card {
-      max-width: 520px;
-      padding: 32px;
-      border: 1px solid rgba(17, 17, 17, .1);
-      border-radius: 28px;
-      background: #fff;
-      box-shadow: 0 24px 80px rgba(45, 27, 13, .12);
-    }
+  const expiresAt = new Date(magicLink.expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return 'expired';
 
-    h1 {
-      margin: 0 0 12px;
-      font-size: clamp(2rem, 5vw, 3rem);
-      line-height: 1;
-    }
+  return 'active';
+};
 
-    p {
-      color: #67594d;
-      line-height: 1.6;
-    }
+const getInactiveRedirect = (status) => {
+  const authState = status === 'used' ? 'used' : 'expired';
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 48px;
-      margin-top: 14px;
-      padding: 0 20px;
-      border: 0;
-      border-radius: 999px;
-      background: #ad3f18;
-      color: #fff;
-      font-weight: 900;
-      font: inherit;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <main class="wrap">
-    <section class="card">
-      <h1>Continue to your portal</h1>
-      <p>Click the button below to finish signing in. This extra step protects your one-time link from email security scanners that may preview links automatically.</p>
-      <form method="POST" action="${escapeHtml(new URL(request.url).pathname)}">
-        <input type="hidden" name="token" value="${escapeHtml(token)}">
-        <button class="btn" type="submit">Continue to dashboard</button>
-      </form>
-    </section>
-  </main>
-</body>
-</html>`, {
-  status: 200,
-  headers: {
-    'content-type': 'text/html; charset=utf-8',
-    'cache-control': 'no-store',
-  },
-});
+  return new Response(null, { status: 302, headers: { location: `/login/?auth=${authState}` } });
+};
 
 const getTokenFromRequest = async (request) => {
   if (request.method === 'GET') {
@@ -123,39 +54,38 @@ export const createVerifyMagicLinkHandler = ({
   const token = await getTokenFromRequest(request);
 
   if (!token) {
-    return Response.redirect(`${getSiteUrl(request)}/login/?auth=missing-token`, 302);
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
   }
 
   try {
     const db = await getDatabase();
+    const tokenHash = hashToken(token);
     const [magicLink] = await db.sql`
-      select id, email, purpose, client_name, client_phone
+      select id, email, expires_at, consumed_at,
+        case when token_hash = ${tokenHash} then 'token' else 'id' end as matched_by
       from auth_magic_links
-      where token_hash = ${hashToken(token)}
-        and consumed_at is null
-        and expires_at > now()
+      where token_hash = ${tokenHash}
+        or id::text = ${token}
+      order by created_at desc
       limit 1
     `;
+    const magicLinkStatus = getMagicLinkStatus(magicLink);
 
-    if (!magicLink) {
-      return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
-    }
+    if (magicLinkStatus !== 'active') {
+      console.error('Magic link verification did not find an active link', {
+        status: magicLinkStatus,
+        matchedBy: magicLink?.matched_by || null,
+        magicLinkId: magicLink?.id || null,
+        hasConsumedAt: Boolean(magicLink?.consumed_at),
+        expiresAt: magicLink?.expires_at || null,
+      });
 
-    if (request.method === 'GET') {
-      return createConfirmResponse(request, token);
+      return getInactiveRedirect(magicLinkStatus);
     }
 
     const user = await createOrUpdateMagicLinkUser(db, {
       email: magicLink.email,
-      name: magicLink.client_name,
-      phone: magicLink.client_phone,
     });
-
-    await db.sql`
-      update auth_magic_links
-      set consumed_at = now()
-      where id = ${magicLink.id}
-    `;
 
     const sessionToken = makeSessionToken();
 
@@ -164,17 +94,27 @@ export const createVerifyMagicLinkHandler = ({
       values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
     `;
 
+    try {
+      await db.sql`
+        update auth_magic_links
+        set consumed_at = now()
+        where id = ${magicLink.id}
+      `;
+    } catch (consumeError) {
+      console.error('Failed to mark magic link consumed after session creation', consumeError);
+    }
+
     return new Response(null, {
-      status: 302,
+      status: request.method === 'POST' ? 303 : 302,
       headers: {
-        location: `${getSiteUrl(request)}/dashboard/`,
+        location: '/dashboard/?auth_debug=1',
         'set-cookie': createSessionCookie(sessionToken, request),
       },
     });
   } catch (error) {
     console.error('Failed to verify magic link', error);
 
-    return Response.redirect(`${getSiteUrl(request)}/login/?auth=error`, 302);
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=error' } });
   }
 };
 

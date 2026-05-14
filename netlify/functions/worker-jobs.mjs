@@ -5,6 +5,7 @@ import {
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
 
@@ -92,15 +93,10 @@ const loadSessionContext = async (db, sessionToken) => {
     order by roles.key
   `;
   const roleKeys = roles.map((role) => role.key);
-  const rolePermissions = await db.sql`
-    select distinct role_permissions.permission_key
-    from user_roles
-    join roles on roles.id = user_roles.role_id
-    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
-    where user_roles.user_id = ${session.user_id}
-    order by role_permissions.permission_key
-  `;
-  const permissionKeys = getPermissionKeysForRoles(roleKeys, rolePermissions.map((permission) => permission.permission_key));
+  const assignedPermissionKeys = await loadRolePermissionKeys(db, session.user_id, {
+    logPrefix: 'Failed to load worker job permissions; using role defaults',
+  });
+  const permissionKeys = getPermissionKeysForRoles(roleKeys, assignedPermissionKeys);
 
   return { session, roleKeys, permissionKeys };
 };
