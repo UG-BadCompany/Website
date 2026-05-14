@@ -75,8 +75,21 @@ const isSessionUsable = (session) => {
   return Number.isFinite(expiresAt) && expiresAt > Date.now();
 };
 
-const queryCurrentUserSession = async (db, sessionToken, { includeOptionalProfileFields = true } = {}) => {
-  if (!includeOptionalProfileFields) {
+const queryCurrentUserSession = async (db, sessionToken, { profileFieldSet = 'full' } = {}) => {
+  if (profileFieldSet === 'minimal') {
+    const [session] = await db.sql`
+      select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
+        app_users.email, app_users.full_name, app_users.is_active
+      from auth_sessions
+      left join app_users on app_users.id = auth_sessions.user_id
+      where auth_sessions.session_hash = ${hashToken(sessionToken)}
+      order by auth_sessions.created_at desc
+      limit 1
+    `;
+    return session || null;
+  }
+
+  if (profileFieldSet === 'base') {
     const [session] = await db.sql`
       select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
         app_users.email, app_users.full_name, app_users.phone, app_users.is_active
@@ -115,7 +128,12 @@ const loadCurrentUserSession = async (db, sessionTokens) => {
       session = await queryCurrentUserSession(db, sessionToken);
     } catch (profileColumnError) {
       console.error('Failed to load optional profile columns during /api/me; retrying with base session fields', profileColumnError);
-      session = await queryCurrentUserSession(db, sessionToken, { includeOptionalProfileFields: false });
+      try {
+        session = await queryCurrentUserSession(db, sessionToken, { profileFieldSet: 'base' });
+      } catch (baseProfileError) {
+        console.error('Failed to load base profile columns during /api/me; retrying with debug-compatible session fields', baseProfileError);
+        session = await queryCurrentUserSession(db, sessionToken, { profileFieldSet: 'minimal' });
+      }
     }
 
     if (!session) continue;
