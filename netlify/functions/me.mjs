@@ -135,7 +135,7 @@ const loadCurrentUserSession = async (db, sessionTokens) => {
 
 const queryCurrentUserRoles = async (db, userId) => {
   const roles = await db.sql`
-    select roles.key, roles.name
+    select roles.key
     from user_roles
     join roles on roles.id = user_roles.role_id
     where user_roles.user_id = ${userId}

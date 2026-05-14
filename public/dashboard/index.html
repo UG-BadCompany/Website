@@ -529,6 +529,26 @@
       <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
+    <section class="admin-command main-dashboard-command" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
+      <div class="admin-command-header">
+        <span class="eyebrow">Main dashboard</span>
+        <h2>Main dashboard command center</h2>
+        <p>Your signed-in permissions load these primary action cards directly on the main dashboard after /api/me confirms your session.</p>
+      </div>
+      <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
+        <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+        <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+        <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+        <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
+        <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+        <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+        <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+        <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
+        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+      </div>
+    </section>
+
     <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
       <div class="admin-command-header">
         <span class="eyebrow">Admin operations</span>
@@ -1450,7 +1470,7 @@
         if (permissions.canViewClientTools) actions.push('<a class="admin-command-card" href="#submit-request"><strong>Client requests</strong><span>Submit or review work requests.</span></a>');
         if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="#worker-jobs"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
 
-        panel.innerHTML = `<strong>Dashboard access recovered</strong><p class="session-status">/api/me failed, but /api/auth/debug confirmed this session and permissions. Use these command-center cards while the recovered dashboard sections load.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
+        panel.innerHTML = `<strong>Debug session found</strong><p class="session-status">/api/auth/debug confirmed a usable session. /api/me should load the main dashboard with these same permissions; this panel is debug-only backup information.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
         const debugPanel = document.querySelector('[data-auth-debug-panel]');
         const debugOutput = debugPanel?.querySelector('[data-auth-debug-output]');
         if (debugPanel) debugPanel.dataset.recovered = 'true';
@@ -1521,33 +1541,6 @@
         }
       };
 
-      const applyAuthDebugFallback = (debugResult, reason = 'Using debug session fallback.') => {
-        if (!debugResult?.canUseSession || !debugResult.session) return false;
-
-        const roles = debugResult.roles?.length ? debugResult.roles : ['client'];
-        const fallbackUser = {
-          id: debugResult.session.userId,
-          email: debugResult.session.email || 'signed-in account',
-          fullName: debugResult.session.fullName || '',
-          roles,
-          permissions: buildDebugFallbackPermissions(roles, debugResult.permissionKeys || []),
-        };
-
-        status.dataset.state = 'ready';
-        status.textContent = `Signed in as ${getUserDisplayName(fallbackUser)} (${reason})`;
-        if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(fallbackUser)}`;
-        renderClientProfile(fallbackUser);
-        if (logoutButton) logoutButton.hidden = false;
-        bindClientProfileButton();
-        bindClientProfileForm();
-        bindRequestEstimateLink();
-        configureDashboardForUser(fallbackUser);
-        revealAuthorizedFallbackSections(fallbackUser);
-        ensureFallbackActionPanel(fallbackUser);
-        loadAuthorizedDashboardTools(fallbackUser);
-        return true;
-      };
-
       const fetchAuthDebug = () => fetchJson('/api/auth/debug');
 
       const loadAuthDebug = async (reason = 'Dashboard could not confirm a signed-in session.') => {
@@ -1565,7 +1558,7 @@
           if (result.session?.revoked) hints.push('The matching auth_sessions row is revoked.');
           if (result.session && result.session.userIsActive === false) hints.push('The matching user exists but is inactive.');
           if (result.session && !result.roles?.length) hints.push('The session user has no roles; the dashboard may fall back to client access.');
-          if (result.canUseSession) hints.push('/api/auth/debug found a usable session. If /api/me fails, the dashboard can use this as a temporary fallback.');
+          if (result.canUseSession) hints.push('/api/auth/debug found a usable session. /api/me should now load that same session; if it does not, keep this debug output for support.');
           if (!response.ok) hints.push(`Debug endpoint returned HTTP ${response.status}.`);
           if (summary) summary.textContent = hints.length ? hints.join(' ') : 'Debug found a session cookie and active database session. If the dashboard still looks signed out, the issue is in /api/me or dashboard rendering.';
           if (output) output.textContent = JSON.stringify(result, null, 2);
@@ -3818,17 +3811,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
         .then(async ({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
-            status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Checking fallback session debug…';
-            if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Not signed in — review login debug below.' : 'Checking secure session fallback…';
-            const debugResult = authDebugEnabled
-              ? await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.')
-              : await fetchAuthDebug().then(({ result: fallbackResult }) => fallbackResult).catch(() => null);
-            if (applyAuthDebugFallback(debugResult, '/api/me did not authenticate, but /api/auth/debug found a valid session')) {
+            status.textContent = authDebugEnabled ? 'Not signed in. Login debug is shown below.' : 'Redirecting to secure magic-link sign in…';
+            if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Not signed in — review login debug below.' : 'Not signed in — opening secure login…';
+            if (authDebugEnabled) {
+              await loadAuthDebug(result.message || 'The dashboard /api/me check says you are not authenticated.');
               return;
             }
-            if (!authDebugEnabled) {
-              window.location.replace('/login/?next=dashboard');
-            }
+            window.location.replace('/login/?next=dashboard');
             return;
           }
 
@@ -3854,16 +3843,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
         })
         .catch(async (error) => {
           status.dataset.state = 'error';
-          status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Checking fallback session debug…';
-          if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Session check failed — review login debug below.' : 'Checking secure session fallback…';
-          const debugResult = authDebugEnabled
-            ? await loadAuthDebug(error.message || 'The dashboard /api/me request failed.')
-            : await fetchAuthDebug().then(({ result }) => result).catch(() => null);
-          if (applyAuthDebugFallback(debugResult, '/api/me failed, but /api/auth/debug found a valid session')) {
-            return;
-          }
-          if (!authDebugEnabled) {
-            window.location.replace('/login/?next=dashboard');
+          status.textContent = authDebugEnabled ? 'Session check failed. Login debug is shown below.' : 'Session check is unavailable. Refresh the page or request a new magic link.';
+          if (accountStatus) accountStatus.textContent = authDebugEnabled ? 'Session check failed — review login debug below.' : 'Session check unavailable.';
+          if (authDebugEnabled) {
+            await loadAuthDebug(error.message || 'The dashboard /api/me request failed.');
           }
         });
     })();

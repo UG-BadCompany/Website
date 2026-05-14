@@ -683,6 +683,41 @@ test('me endpoint uses the debug-compatible session lookup when SQL now filters 
   assert.equal(db.queries.some((query) => /expires_at > now\(\)/.test(query.text)), false);
 });
 
+
+test('me endpoint loads roles without requiring the optional role name column', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{
+        id: 'session-1',
+        user_id: 'user-1',
+        email: 'admin@example.com',
+        full_name: 'Admin User',
+        phone: '555-0100',
+        is_active: true,
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      }];
+      if (/select roles\.key, roles\.name/.test(text)) throw new Error('roles.name column is unavailable');
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin' }, { key: 'client' }, { key: 'worker' }];
+      if (/role_permissions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(db.queries.some((query) => /select roles\.key, roles\.name/.test(query.text)), false);
+});
+
 test('me endpoint uses role defaults when role permission table is unavailable', async () => {
   const db = {
     queries: [],
