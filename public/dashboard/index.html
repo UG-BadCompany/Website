@@ -283,6 +283,7 @@
 
     .admin-command-card strong { color: var(--dash-text); font-size: 1rem; }
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
+    .main-command-shortcuts .admin-command-actions { margin-top: 0; }
 
     .command-center-section {
       position: relative;
@@ -726,12 +727,7 @@
       <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
-    <section class="admin-command" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Main dashboard</span>
-        <h2>Your live dashboard command center</h2>
-        <p>This is the primary dashboard workspace. Use the view buttons above to switch between Admin, Client, and Worker tools when your account has those permissions.</p>
-      </div>
+    <section class="admin-command main-command-shortcuts" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
         <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
