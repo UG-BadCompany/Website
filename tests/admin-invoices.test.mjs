@@ -68,6 +68,7 @@ test('admin invoices endpoint lists paid payment history for admins', async () =
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
     [],
     [{ key: 'admin', name: 'Admin' }],
+    [],
     [{
       id: 'invoice-2',
       job_request_id: 'job-2',
@@ -98,8 +99,8 @@ test('admin invoices endpoint lists paid payment history for admins', async () =
   assert.equal(response.body.invoices[0].payment.reference, 'check-1001');
   assert.equal(response.body.summary.paid, 1);
   assert.equal(response.body.summary.amountCollectedCents, 87500);
-  assert.match(db.queries[3].text, /where invoices\.status = \?/);
-  assert.equal(db.queries[3].values[0], 'paid');
+  assert.match(db.queries[4].text, /where invoices\.status = \?/);
+  assert.equal(db.queries[4].values[0], 'paid');
 });
 
 test('admin invoices endpoint confirms payment and completes the job request', async () => {
