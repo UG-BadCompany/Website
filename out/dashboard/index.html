@@ -1312,7 +1312,7 @@
           panel = document.createElement('section');
           panel.className = 'card';
           panel.dataset.debugFallbackActions = 'true';
-          status?.closest('main')?.insertBefore(panel, document.querySelector('[data-auth-debug-panel]')?.nextSibling || status.closest('section')?.nextSibling || null);
+          status?.closest('main')?.insertBefore(panel, document.querySelector('[data-auth-debug-panel]') || status.closest('section')?.nextSibling || null);
         }
 
         const permissions = user.permissions || {};
@@ -1326,6 +1326,10 @@
         if (permissions.canViewWorkerTools) actions.push('<a class="btn btn-soft" href="#worker-jobs">Open worker jobs</a>');
 
         panel.innerHTML = `<strong>Dashboard access recovered</strong><p class="session-status">/api/me failed, but /api/auth/debug confirmed this session and permissions. Use these shortcuts while the recovered dashboard sections load.</p><div class="client-quote-actions">${actions.join('') || '<a class="btn btn-primary" href="/login/">Request a new magic link</a>'}</div>`;
+        const debugPanel = document.querySelector('[data-auth-debug-panel]');
+        const debugOutput = debugPanel?.querySelector('[data-auth-debug-output]');
+        if (debugPanel) debugPanel.dataset.recovered = 'true';
+        if (debugOutput) debugOutput.hidden = true;
         bindAdminAccessLauncher();
         bindAdminActivityLauncher();
         return panel;
