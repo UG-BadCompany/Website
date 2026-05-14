@@ -1560,12 +1560,13 @@
         debugUser.permissions = getDashboardPermissions(debugUser);
         updateDebugDashboardLink(debugUser, debugResult);
 
+        configureSignedInDashboard(debugUser);
+
         try {
           renderClientProfile(debugUser);
           bindClientProfileButton();
           bindClientProfileForm();
           bindRequestEstimateLink();
-          configureDashboardForUser(debugUser);
           revealAuthorizedFallbackSections(debugUser);
         } catch (setupError) {
           console.error('Dashboard setup failed after debug-confirmed session recovery', setupError);
@@ -1593,6 +1594,29 @@
         } catch (error) {
           console.error('Silent dashboard session recovery failed', error);
           return null;
+        }
+      };
+
+      const enrichDashboardUserFromDebug = async (user = {}) => {
+        try {
+          const { response, result } = await fetchAuthDebug();
+          if (!response.ok || !result?.canUseSession) return user;
+          const roles = [...new Set([...(user.roles || []), ...(result.roles || [])])];
+          const permissionKeys = [...new Set([...(user.permissions?.permissionKeys || []), ...(result.permissionKeys || [])])];
+          const enrichedUser = {
+            ...user,
+            fullName: user.fullName || result.session?.fullName || '',
+            roles: roles.length ? roles : (user.roles || []),
+            permissions: {
+              ...(user.permissions || {}),
+              permissionKeys,
+            },
+          };
+          updateDebugDashboardLink(enrichedUser, result);
+          return enrichedUser;
+        } catch (error) {
+          console.error('Dashboard permission enrichment from auth debug failed', error);
+          return user;
         }
       };
 
@@ -1890,6 +1914,23 @@
 
         const preferredView = availableViews.includes(permissions.defaultView) ? permissions.defaultView : availableViews[0];
         setDashboardView(preferredView || 'client');
+      };
+      const configureSignedInDashboard = (user) => {
+        try {
+          configureDashboardForUser(user);
+        } catch (configureError) {
+          console.error('Dashboard command center setup failed; forcing main dashboard controls visible', configureError);
+          const actionBar = document.querySelector('[data-main-dashboard-actions]');
+          if (actionBar) {
+            actionBar.hidden = false;
+            actionBar.querySelectorAll('[data-main-action-permission]').forEach((action) => { action.hidden = false; });
+          }
+          const switcher = document.querySelector('[data-view-switcher]');
+          if (switcher) {
+            switcher.hidden = false;
+            switcher.querySelectorAll('[data-view-button]').forEach((button) => { button.hidden = false; });
+          }
+        }
       };
       const renderRequestCard = (request, { admin = false } = {}) => {
         const className = admin ? 'admin-request' : 'client-request';
@@ -3960,31 +4001,37 @@ Additional info from client: ${payload.additionalInfo}` : '';
             return;
           }
 
+          let dashboardUser = result.user;
+          if (!authDebugEnabled) {
+            dashboardUser = await enrichDashboardUserFromDebug(dashboardUser);
+          }
+          dashboardUser.permissions = getDashboardPermissions(dashboardUser);
+          updateDebugDashboardLink(dashboardUser);
+
           status.dataset.state = 'ready';
-          status.textContent = `Signed in as ${getUserDisplayName(result.user)}`;
-          if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(result.user)}`;
+          status.textContent = `Signed in as ${getUserDisplayName(dashboardUser)}`;
+          if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(dashboardUser)}`;
           if (authDebugEnabled) {
             loadAuthDebug('/api/me says this browser is authenticated. Showing the cookie/database details for confirmation.');
           }
-          result.user.permissions = getDashboardPermissions(result.user);
-          updateDebugDashboardLink(result.user);
 
           if (logoutButton) {
             logoutButton.hidden = false;
           }
 
+          configureSignedInDashboard(dashboardUser);
+
           try {
-            renderClientProfile(result.user);
+            renderClientProfile(dashboardUser);
             bindClientProfileButton();
             bindClientProfileForm();
             bindRequestEstimateLink();
-            configureDashboardForUser(result.user);
           } catch (setupError) {
             console.error('Dashboard setup failed after successful session check', setupError);
           }
 
           try {
-            loadAuthorizedDashboardTools(result.user);
+            loadAuthorizedDashboardTools(dashboardUser);
           } catch (toolError) {
             console.error('Dashboard tool loading failed after successful session check', toolError);
           }
