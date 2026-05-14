@@ -328,7 +328,10 @@ test('verify endpoint redirects with a used-link status when a token was already
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
   ]);
-  const handler = createVerifyMagicLinkHandler({ getDatabase: async () => db });
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
@@ -337,7 +340,7 @@ test('verify endpoint redirects with a used-link status when a token was already
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
+test('verify endpoint can recover when the link token is the database magic-link id', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
@@ -541,7 +544,7 @@ test('me endpoint retries role loading and still returns role defaults when the 
   assert.equal(response.body.user.permissions.canManageInventory, true);
 });
 
-
+i
 test('me endpoint uses the debug-compatible session lookup when SQL now filters would fail', async () => {
   const db = {
     queries: [],
