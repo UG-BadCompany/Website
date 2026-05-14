@@ -312,18 +312,22 @@ export const createExpiredSessionCookie = (request) => (
   `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
 );
 
-export const parseCookies = (cookieHeader = '') => Object.fromEntries(
-  cookieHeader
-    .split(';')
-    .map((cookie) => cookie.trim())
-    .filter(Boolean)
-    .map((cookie) => {
-      const [name, ...valueParts] = cookie.split('=');
-      return [name, decodeURIComponent(valueParts.join('='))];
-    }),
-);
+export const parseCookiePairs = (cookieHeader = '') => cookieHeader
+  .split(';')
+  .map((cookie) => cookie.trim())
+  .filter(Boolean)
+  .map((cookie) => {
+    const [name, ...valueParts] = cookie.split('=');
+    return [name, decodeURIComponent(valueParts.join('='))];
+  });
 
-export const getSessionToken = (request) => parseCookies(request.headers.get('cookie') || '')[SESSION_COOKIE_NAME] || '';
+export const parseCookies = (cookieHeader = '') => Object.fromEntries(parseCookiePairs(cookieHeader));
+
+export const getSessionTokens = (request) => [...new Set(parseCookiePairs(request.headers.get('cookie') || '')
+  .filter(([name, value]) => name === SESSION_COOKIE_NAME && value)
+  .map(([, value]) => value))];
+
+export const getSessionToken = (request) => getSessionTokens(request)[0] || '';
 
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();

@@ -479,6 +479,50 @@ test('auth debug endpoint reports the matching database session and roles for a 
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
+
+test('auth debug endpoint chooses a usable duplicate session cookie over a revoked one', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) {
+        if (values[0] === hashToken('revoked-token')) return [{
+          id: 'revoked-session',
+          user_id: 'user-1',
+          email: 'client@example.com',
+          is_active: true,
+          revoked_at: '2026-05-13T00:00:00.000Z',
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        }];
+        if (values[0] === hashToken('valid-token')) return [{
+          id: 'valid-session',
+          user_id: 'user-1',
+          email: 'client@example.com',
+          is_active: true,
+          revoked_at: null,
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        }];
+      }
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin' }, { key: 'client' }];
+      if (/role_permissions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createAuthDebugHandler({ getDatabase: async () => db });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/auth/debug', {
+    headers: { cookie: 'ta_session=revoked-token; ta_session=valid-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.cookies.sessionCookieCount, 2);
+  assert.equal(response.body.canUseSession, true);
+  assert.equal(response.body.session.id, 'valid-session');
+  assert.equal(response.body.session.revoked, false);
+  assert.deepEqual(response.body.roles, ['admin', 'client']);
+});
+
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: '555-0101', company_name: 'T&A', mailing_address: '123 Main St' }],
@@ -514,6 +558,56 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 
 
 
+
+test('me endpoint chooses a usable duplicate session cookie over a revoked one', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) {
+        if (values[0] === hashToken('revoked-token')) return [{
+          id: 'revoked-session',
+          user_id: 'user-1',
+          email: 'admin@example.com',
+          full_name: 'Admin User',
+          phone: '555-0100',
+          is_active: true,
+          revoked_at: '2026-05-13T00:00:00.000Z',
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        }];
+        if (values[0] === hashToken('valid-token')) return [{
+          id: 'valid-session',
+          user_id: 'user-1',
+          email: 'admin@example.com',
+          full_name: 'Admin User',
+          phone: '555-0100',
+          is_active: true,
+          revoked_at: null,
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        }];
+      }
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
+      if (/role_permissions/.test(text)) return [];
+      if (/update auth_sessions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const rawResponse = await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=revoked-token; ta_session=valid-token' },
+  }));
+  const response = { status: rawResponse.status, body: await rawResponse.json() };
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.equal(response.body.user.id, 'user-1');
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canManageInventory, true);
+  assert.match(rawResponse.headers.get('set-cookie'), /ta_session=valid-token/);
+});
+
 test('me endpoint retries role loading and still returns role defaults when the first role query fails', async () => {
   let roleQueryAttempts = 0;
   const db = {
@@ -544,7 +638,7 @@ test('me endpoint retries role loading and still returns role defaults when the 
   assert.equal(response.body.user.permissions.canManageInventory, true);
 });
 
-i
+
 test('me endpoint uses the debug-compatible session lookup when SQL now filters would fail', async () => {
   const db = {
     queries: [],

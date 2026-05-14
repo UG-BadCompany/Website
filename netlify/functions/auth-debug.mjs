@@ -1,7 +1,7 @@
 import {
   SESSION_COOKIE_NAME,
   getPermissionKeysForRoles,
-  getSessionToken,
+  getSessionTokens,
   hashToken,
   json,
   loadDatabase,
@@ -46,7 +46,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
   }
 
   const url = new URL(request.url);
-  const sessionToken = getSessionToken(request);
+  const sessionTokens = getSessionTokens(request);
   const cookieNames = getCookieNames(request);
   const debug = {
     ok: true,
@@ -59,8 +59,9 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     cookies: {
       expectedSessionCookieName: SESSION_COOKIE_NAME,
       cookieNames,
-      hasSessionCookie: Boolean(sessionToken),
-      sessionCookieLength: sessionToken.length,
+      hasSessionCookie: sessionTokens.length > 0,
+      sessionCookieCount: sessionTokens.length,
+      sessionCookieLength: sessionTokens[0]?.length || 0,
     },
     database: {
       checked: false,
@@ -73,7 +74,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     canUseSession: false,
   };
 
-  if (!sessionToken) {
+  if (!sessionTokens.length) {
     return json(200, debug);
   }
 
@@ -82,22 +83,36 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     debug.database.checked = true;
     debug.database.available = true;
 
-    const [session] = await db.sql`
-      select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at,
-        auth_sessions.revoked_at, auth_sessions.created_at, auth_sessions.last_seen_at,
-        app_users.email, app_users.full_name, app_users.is_active
-      from auth_sessions
-      left join app_users on app_users.id = auth_sessions.user_id
-      where auth_sessions.session_hash = ${hashToken(sessionToken)}
-      order by auth_sessions.created_at desc
-      limit 1
-    `;
+    let session = null;
+    let mappedSession = null;
 
-    debug.session = mapSessionDebug(session);
+    for (const sessionToken of sessionTokens) {
+      const [candidate] = await db.sql`
+        select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at,
+          auth_sessions.revoked_at, auth_sessions.created_at, auth_sessions.last_seen_at,
+          app_users.email, app_users.full_name, app_users.is_active
+        from auth_sessions
+        left join app_users on app_users.id = auth_sessions.user_id
+        where auth_sessions.session_hash = ${hashToken(sessionToken)}
+        order by auth_sessions.created_at desc
+        limit 1
+      `;
 
-    if (session) {
-      debug.canUseSession = Boolean(session.is_active && !session.revoked_at && debug.session && !debug.session.expired);
+      if (!candidate) continue;
+
+      const candidateDebug = mapSessionDebug(candidate);
+      const candidateCanUseSession = Boolean(candidate.is_active && !candidate.revoked_at && candidateDebug && !candidateDebug.expired);
+
+      if (!session || candidateCanUseSession) {
+        session = candidate;
+        mappedSession = candidateDebug;
+        debug.canUseSession = candidateCanUseSession;
+      }
+
+      if (candidateCanUseSession) break;
     }
+
+    debug.session = mappedSession;
 
     if (session?.user_id) {
       const roles = await db.sql`

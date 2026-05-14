@@ -3,7 +3,7 @@ import {
   createExpiredSessionCookie,
   createSessionCookie,
   getPermissionKeysForRoles,
-  getSessionToken,
+  getSessionTokens,
   getSessionTtlMinutesForRoles,
   hashToken,
   json,
@@ -75,22 +75,8 @@ const isSessionUsable = (session) => {
   return Number.isFinite(expiresAt) && expiresAt > Date.now();
 };
 
-const loadCurrentUserSession = async (db, sessionToken) => {
-  try {
-    const [session] = await db.sql`
-      select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
-        app_users.email, app_users.full_name, app_users.phone,
-        app_users.secondary_phone, app_users.company_name, app_users.mailing_address,
-        app_users.is_active
-      from auth_sessions
-      left join app_users on app_users.id = auth_sessions.user_id
-      where auth_sessions.session_hash = ${hashToken(sessionToken)}
-      order by auth_sessions.created_at desc
-      limit 1
-    `;
-    return session || null;
-  } catch (profileColumnError) {
-    console.error('Failed to load optional profile columns during /api/me; retrying with base session fields', profileColumnError);
+const queryCurrentUserSession = async (db, sessionToken, { includeOptionalProfileFields = true } = {}) => {
+  if (!includeOptionalProfileFields) {
     const [session] = await db.sql`
       select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
         app_users.email, app_users.full_name, app_users.phone, app_users.is_active
@@ -102,6 +88,49 @@ const loadCurrentUserSession = async (db, sessionToken) => {
     `;
     return session || null;
   }
+
+  const [session] = await db.sql`
+      select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
+        app_users.email, app_users.full_name, app_users.phone,
+        app_users.secondary_phone, app_users.company_name, app_users.mailing_address,
+        app_users.is_active
+      from auth_sessions
+      left join app_users on app_users.id = auth_sessions.user_id
+      where auth_sessions.session_hash = ${hashToken(sessionToken)}
+      order by auth_sessions.created_at desc
+      limit 1
+    `;
+  return session || null;
+};
+
+const loadCurrentUserSession = async (db, sessionTokens) => {
+  const tokens = Array.isArray(sessionTokens) ? sessionTokens : [sessionTokens].filter(Boolean);
+  let fallbackSession = null;
+  let fallbackToken = tokens[0] || '';
+
+  for (const sessionToken of tokens) {
+    let session;
+
+    try {
+      session = await queryCurrentUserSession(db, sessionToken);
+    } catch (profileColumnError) {
+      console.error('Failed to load optional profile columns during /api/me; retrying with base session fields', profileColumnError);
+      session = await queryCurrentUserSession(db, sessionToken, { includeOptionalProfileFields: false });
+    }
+
+    if (!session) continue;
+
+    if (!fallbackSession) {
+      fallbackSession = session;
+      fallbackToken = sessionToken;
+    }
+
+    if (isSessionUsable(session)) {
+      return { session, sessionToken };
+    }
+  }
+
+  return { session: fallbackSession, sessionToken: fallbackToken };
 };
 
 const queryCurrentUserRoles = async (db, userId) => {
@@ -131,13 +160,14 @@ const loadCurrentUserRoles = async (db, userId, { logPrefix = 'Failed to load cu
   }
 };
 
-const loadCurrentUserFallback = async (db, sessionToken) => {
-  const session = await loadCurrentUserSession(db, sessionToken);
+const loadCurrentUserFallback = async (db, sessionTokens) => {
+  const { session, sessionToken } = await loadCurrentUserSession(db, sessionTokens);
 
   if (!isSessionUsable(session)) return null;
 
   return {
     session,
+    sessionToken,
     roleKeys: await loadCurrentUserRoles(db, session.user_id, {
       logPrefix: 'Failed to load current user roles during /api/me fallback; using client role',
     }),
@@ -162,9 +192,9 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
   }
 
   const optionalSessionCheck = isOptionalSessionCheck(request);
-  const sessionToken = getSessionToken(request);
+  const sessionTokens = getSessionTokens(request);
 
-  if (!sessionToken) {
+  if (!sessionTokens.length) {
     return unauthenticatedSessionResponse(
       'Sign in with a magic link to access the dashboard.',
       optionalSessionCheck ? 200 : 401,
@@ -175,7 +205,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
 
   try {
     db = await getDatabase();
-    const session = await loadCurrentUserSession(db, sessionToken);
+    const { session, sessionToken } = await loadCurrentUserSession(db, sessionTokens);
 
     if (!isSessionUsable(session)) {
       return unauthenticatedSessionResponse(
@@ -251,7 +281,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
 
     if (request.method === 'GET' && db) {
       try {
-        const fallback = await loadCurrentUserFallback(db, sessionToken);
+        const fallback = await loadCurrentUserFallback(db, sessionTokens);
 
         if (fallback) {
           const sessionTtlMinutes = getSessionTtlMinutesForRoles(fallback.roleKeys);
@@ -260,7 +290,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
             authenticated: true,
             recovered: true,
             user: mapUser(fallback.session, fallback.roleKeys, []),
-          }, { 'set-cookie': createSessionCookie(sessionToken, request, sessionTtlMinutes) });
+          }, { 'set-cookie': createSessionCookie(fallback.sessionToken, request, sessionTtlMinutes) });
         }
       } catch (fallbackError) {
         console.error('Failed to recover current user after /api/me error', fallbackError);
