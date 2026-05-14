@@ -284,6 +284,114 @@
     .admin-command-card strong { color: var(--dash-text); font-size: 1rem; }
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
 
+    .main-dashboard-command {
+      position: relative;
+      isolation: isolate;
+      margin: 22px 0 30px;
+      padding: clamp(22px, 4vw, 34px);
+      border-radius: 32px;
+      background:
+        linear-gradient(135deg, rgba(249,115,22,.18), rgba(255,255,255,.08)),
+        radial-gradient(circle at 88% 14%, rgba(96,165,250,.20), transparent 26rem),
+        rgba(15,23,42,.56);
+      box-shadow: 0 34px 90px rgba(0,0,0,.28);
+    }
+
+    .main-dashboard-command::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      z-index: -1;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 26px;
+      pointer-events: none;
+    }
+
+    .main-dashboard-command .admin-command-header {
+      max-width: none;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 18px;
+    }
+
+    .main-dashboard-command .admin-command-header p { max-width: 72ch; }
+
+    .command-center-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-self: end;
+      padding: 10px 13px;
+      border: 1px solid rgba(34,197,94,.28);
+      border-radius: 999px;
+      color: #bbf7d0;
+      background: rgba(34,197,94,.10);
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .main-command-groups {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .main-command-group {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      background: rgba(255,255,255,.055);
+    }
+
+    .main-command-group h3 {
+      margin: 0;
+      color: var(--dash-text);
+      font-size: .88rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .main-command-group p {
+      margin: -4px 0 0;
+      font-size: .9rem;
+    }
+
+    .main-command-group .admin-command-actions {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 0;
+    }
+
+    .main-dashboard-command .admin-command-card {
+      min-height: 104px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.055));
+    }
+
+    .main-dashboard-command .admin-command-card strong::before {
+      content: "↗";
+      display: inline-grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      margin-right: 8px;
+      border-radius: 999px;
+      color: #fed7aa;
+      background: rgba(249,115,22,.16);
+      font-size: .78rem;
+      vertical-align: 1px;
+    }
+
+    @media(max-width:980px) {
+      .main-dashboard-command .admin-command-header,
+      .main-command-groups { grid-template-columns: 1fr; }
+      .command-center-status { justify-self: start; }
+    }
+
     .client-command {
       background:
         linear-gradient(135deg, rgba(96,165,250,.16), rgba(255,255,255,.06)),
@@ -532,21 +640,42 @@
 
     <section class="admin-command main-dashboard-command" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
       <div class="admin-command-header">
-        <span class="eyebrow">Main dashboard</span>
-        <h2>Your live dashboard command center</h2>
-        <p>This is the primary dashboard workspace. Use the view buttons above to switch between Admin, Client, and Worker tools when your account has those permissions.</p>
+        <div>
+          <span class="eyebrow">Main dashboard</span>
+          <h2>Command center</h2>
+          <p>Your primary workspace is organized by role. Use the Admin, Client, and Worker view buttons above, or jump straight into the tools below.</p>
+        </div>
+        <span class="command-center-status">Live workspace</span>
       </div>
-      <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
-        <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
-        <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
-        <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
-        <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
-        <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
-        <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
-        <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+      <div class="main-command-groups" aria-label="Main dashboard shortcuts">
+        <section class="main-command-group" aria-label="Admin command center tools">
+          <h3>Admin operations</h3>
+          <p>Run work orders, billing, inventory, users, and activity.</p>
+          <div class="admin-command-actions">
+            <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+            <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+            <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+            <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
+            <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+          </div>
+        </section>
+        <section class="main-command-group" aria-label="Client command center tools">
+          <h3>Client tools</h3>
+          <p>Manage requests, quotes, invoices, and account details.</p>
+          <div class="admin-command-actions">
+            <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+            <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+            <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+            <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
+          </div>
+        </section>
+        <section class="main-command-group" aria-label="Worker command center tools">
+          <h3>Worker tools</h3>
+          <p>Open assigned jobs, notes, schedule details, and completion tools.</p>
+          <div class="admin-command-actions">
+            <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+          </div>
+        </section>
       </div>
     </section>
 
