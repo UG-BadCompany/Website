@@ -291,7 +291,7 @@ test('verify endpoint signs in directly from a magic-link GET and redirects to t
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
   assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
@@ -319,7 +319,7 @@ test('verify endpoint can recover when the link token is the database magic-link
   const response = await handler(new Request('https://site.test/api/auth/verify?token=6f6c428d-286f-41d3-b1a0-ec2e12c4c2be'));
 
   assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries[0].values[2], '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be');
 });
@@ -361,7 +361,7 @@ test('verify endpoint can recover when the link token is the database magic-link
   }));
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
@@ -405,7 +405,7 @@ test('verify endpoint still redirects when marking the used magic link fails aft
   }));
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get('location'), '/dashboard/?auth_debug=1');
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
   assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);
@@ -620,7 +620,7 @@ test('me endpoint chooses a usable duplicate session cookie over a revoked one',
   assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.canViewAdminTools, true);
   assert.equal(response.body.user.permissions.canManageInventory, true);
-  assert.match(rawResponse.headers.get('set-cookie'), /ta_session=valid-token/);
+  assert.equal(rawResponse.headers.has('set-cookie'), false);
 });
 
 test('me endpoint retries role loading and still returns role defaults when the first role query fails', async () => {
@@ -723,7 +723,7 @@ test('me endpoint falls back to debug-compatible session fields when app user pr
   assert.equal(response.body.user.fullName, 'Admin User');
   assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.canViewAdminTools, true);
-  assert.equal(db.queries.filter((query) => /from auth_sessions/.test(query.text)).length, 3);
+  assert.equal(db.queries.filter((query) => /from auth_sessions/.test(query.text)).length, 1);
   assert.equal(db.queries.some((query) => /from auth_sessions/.test(query.text) && !/app_users\.phone/.test(query.text)), true);
 });
 

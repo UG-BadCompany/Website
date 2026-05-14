@@ -116,7 +116,7 @@ const queryCurrentUserSession = async (db, sessionToken, { profileFieldSet = 'fu
   return session || null;
 };
 
-const loadCurrentUserSession = async (db, sessionTokens) => {
+const loadCurrentUserSession = async (db, sessionTokens, { profileFieldSet = 'full' } = {}) => {
   const tokens = Array.isArray(sessionTokens) ? sessionTokens : [sessionTokens].filter(Boolean);
   let fallbackSession = null;
   let fallbackToken = tokens[0] || '';
@@ -125,7 +125,7 @@ const loadCurrentUserSession = async (db, sessionTokens) => {
     let session;
 
     try {
-      session = await queryCurrentUserSession(db, sessionToken);
+      session = await queryCurrentUserSession(db, sessionToken, { profileFieldSet });
     } catch (profileColumnError) {
       console.error('Failed to load optional profile columns during /api/me; retrying with base session fields', profileColumnError);
       try {
@@ -223,7 +223,9 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
 
   try {
     db = await getDatabase();
-    const { session, sessionToken } = await loadCurrentUserSession(db, sessionTokens);
+    const { session, sessionToken } = await loadCurrentUserSession(db, sessionTokens, {
+      profileFieldSet: request.method === 'GET' ? 'minimal' : 'full',
+    });
 
     if (!isSessionUsable(session)) {
       return unauthenticatedSessionResponse(
@@ -237,21 +239,22 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     const permissionKeys = await loadRolePermissionKeys(db, session.user_id, {
       logPrefix: 'Failed to load role permissions for current user; using role defaults',
     });
-    const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
-    const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
-
-    try {
-      await db.sql`
-        update auth_sessions
-        set last_seen_at = now(),
-            expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
-        where id = ${session.id}
-      `;
-    } catch (touchError) {
-      console.error('Failed to refresh current session expiry; continuing with authenticated response', touchError);
-    }
 
     if (request.method === 'PATCH') {
+      const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
+      const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
+
+      try {
+        await db.sql`
+          update auth_sessions
+          set last_seen_at = now(),
+              expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
+          where id = ${session.id}
+        `;
+      } catch (touchError) {
+        console.error('Failed to refresh current session expiry before profile update; continuing with profile update', touchError);
+      }
+
       const body = await parseJsonBody(request);
 
       if (!body) {
@@ -293,7 +296,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       ok: true,
       authenticated: true,
       user: mapUser(session, roleKeys, permissionKeys),
-    }, { 'set-cookie': sessionCookie });
+    });
   } catch (error) {
     console.error('Failed to load current user', error);
 
@@ -302,13 +305,12 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
         const fallback = await loadCurrentUserFallback(db, sessionTokens);
 
         if (fallback) {
-          const sessionTtlMinutes = getSessionTtlMinutesForRoles(fallback.roleKeys);
           return json(200, {
             ok: true,
             authenticated: true,
             recovered: true,
             user: mapUser(fallback.session, fallback.roleKeys, []),
-          }, { 'set-cookie': createSessionCookie(fallback.sessionToken, request, sessionTtlMinutes) });
+          });
         }
       } catch (fallbackError) {
         console.error('Failed to recover current user after /api/me error', fallbackError);
