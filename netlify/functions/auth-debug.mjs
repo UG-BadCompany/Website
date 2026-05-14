@@ -15,6 +15,10 @@ const maskEmail = (email = '') => {
   return `${name.slice(0, 2)}***@${domain}`;
 };
 
+const DEBUG_DASHBOARD_EMAIL = 'thomas.debacker.ii@gmail.com';
+
+const canOpenDebugDashboard = (email = '') => String(email || '').trim().toLowerCase() === DEBUG_DASHBOARD_EMAIL;
+
 const getCookieNames = (request) => (request.headers.get('cookie') || '')
   .split(';')
   .map((cookie) => cookie.trim().split('=')[0])
@@ -72,6 +76,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
     roles: [],
     permissionKeys: [],
     canUseSession: false,
+    canOpenDebugDashboard: false,
   };
 
   if (!sessionTokens.length) {
@@ -107,6 +112,7 @@ export const createAuthDebugHandler = ({ getDatabase = loadDatabase } = {}) => a
         session = candidate;
         mappedSession = candidateDebug;
         debug.canUseSession = candidateCanUseSession;
+        debug.canOpenDebugDashboard = candidateCanUseSession && canOpenDebugDashboard(candidate.email);
       }
 
       if (candidateCanUseSession) break;

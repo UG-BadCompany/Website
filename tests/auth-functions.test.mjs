@@ -416,6 +416,10 @@ test('verify endpoint still redirects when marking the used magic link fails aft
 test('dashboard page renders a visible session status and login debug panel hook', async () => {
   const dashboard = await readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
 
+  assert.match(dashboard, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3\.png\?raw=true/);
+  assert.match(dashboard, /data-debug-dashboard-link/);
+  assert.match(dashboard, /thomas\.debacker\.ii@gmail\.com/);
+  assert.match(dashboard, /\[hidden\] \{ display: none !important; \}/);
   assert.match(dashboard, /data-session-status/);
   assert.match(dashboard, /Session check/);
   assert.match(dashboard, /data-auth-debug-panel/);
@@ -487,6 +491,7 @@ test('auth debug endpoint reports the matching database session and roles for a 
   assert.deepEqual(response.body.cookies.cookieNames, ['ta_session', 'other']);
   assert.equal(response.body.database.available, true);
   assert.equal(response.body.canUseSession, true);
+  assert.equal(response.body.canOpenDebugDashboard, false);
   assert.equal(response.body.session.id, 'session-1');
   assert.equal(response.body.session.email, 'cl***@example.com');
   assert.equal(response.body.session.expired, false);
@@ -495,6 +500,32 @@ test('auth debug endpoint reports the matching database session and roles for a 
   assert.equal(response.body.permissionKeys.includes('client.requests.manage'), true);
   assert.match(db.queries[0].text, /from auth_sessions/);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+
+test('auth debug endpoint allows the debug dashboard button only for Thomas account', async () => {
+  const db = createMockDb([
+    [{
+      id: 'session-1',
+      user_id: 'user-1',
+      email: 'thomas.debacker.ii@gmail.com',
+      is_active: true,
+      revoked_at: null,
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+    }],
+    [{ key: 'admin' }, { key: 'client' }, { key: 'worker' }],
+    [],
+  ]);
+  const handler = createAuthDebugHandler({ getDatabase: async () => db });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/auth/debug', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.canUseSession, true);
+  assert.equal(response.body.canOpenDebugDashboard, true);
+  assert.equal(response.body.session.email, 'th***@gmail.com');
 });
 
 

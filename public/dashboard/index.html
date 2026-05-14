@@ -125,6 +125,7 @@
       mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 82%);
     }
 
+    [hidden] { display: none !important; }
     p { color: var(--dash-muted); }
     .nav { background: rgba(7,10,15,.80); border-bottom-color: var(--dash-line); }
     .brand, .nav-links { color: var(--dash-text); }
@@ -494,7 +495,7 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div></div></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div></div></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -1392,6 +1393,8 @@
       const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
+      const debugDashboardLink = document.querySelector('[data-debug-dashboard-link]');
+      const DEBUG_DASHBOARD_EMAIL = 'thomas.debacker.ii@gmail.com';
       const dashboardParams = new URLSearchParams(window.location.search);
       const authDebugEnabled = dashboardParams.has('auth_debug') || dashboardParams.has('debug');
 
@@ -1437,6 +1440,43 @@
           availableViews: availableViews.length ? availableViews : ['client'],
           permissionKeys: [...permissionSet],
         };
+      };
+
+      const getDashboardPermissions = (user = {}) => {
+        const provided = user.permissions || {};
+        const fallback = buildDebugFallbackPermissions(user.roles || [], provided.permissionKeys || []);
+        const mergeBool = (key) => Boolean(provided[key] || fallback[key]);
+        const availableViews = [...new Set([...(provided.availableViews || []), ...(fallback.availableViews || [])])];
+
+        return {
+          ...provided,
+          canViewClientTools: mergeBool('canViewClientTools'),
+          canViewWorkerTools: mergeBool('canViewWorkerTools'),
+          canViewAdminTools: mergeBool('canViewAdminTools'),
+          canSwitchDashboardView: mergeBool('canSwitchDashboardView'),
+          canManageUsers: mergeBool('canManageUsers'),
+          canManageRoles: mergeBool('canManageRoles'),
+          canManageRequests: mergeBool('canManageRequests'),
+          canManageQuotes: mergeBool('canManageQuotes'),
+          canViewInvoices: mergeBool('canViewInvoices'),
+          canManageInvoices: mergeBool('canManageInvoices'),
+          canViewAdminActivity: mergeBool('canViewAdminActivity'),
+          canManageInventory: mergeBool('canManageInventory'),
+          defaultView: provided.defaultView || fallback.defaultView,
+          availableViews: availableViews.length ? availableViews : fallback.availableViews,
+          permissionKeys: [...new Set([...(provided.permissionKeys || []), ...(fallback.permissionKeys || [])])],
+        };
+      };
+
+      const normalizeDashboardEmail = (email = '') => String(email || '').trim().toLowerCase();
+      const canOpenDebugDashboard = (user = {}, debugResult = null) => (
+        normalizeDashboardEmail(user.email) === DEBUG_DASHBOARD_EMAIL
+        || Boolean(debugResult?.canOpenDebugDashboard)
+      );
+
+      const updateDebugDashboardLink = (user = {}, debugResult = null) => {
+        if (!debugDashboardLink) return;
+        debugDashboardLink.hidden = !canOpenDebugDashboard(user, debugResult);
       };
 
       const revealAuthorizedFallbackSections = (user) => {
@@ -1501,13 +1541,25 @@
         if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(debugUser)}`;
         if (logoutButton) logoutButton.hidden = false;
 
-        renderClientProfile(debugUser);
-        bindClientProfileButton();
-        bindClientProfileForm();
-        bindRequestEstimateLink();
-        configureDashboardForUser(debugUser);
-        revealAuthorizedFallbackSections(debugUser);
-        loadAuthorizedDashboardTools(debugUser);
+        debugUser.permissions = getDashboardPermissions(debugUser);
+        updateDebugDashboardLink(debugUser, debugResult);
+
+        try {
+          renderClientProfile(debugUser);
+          bindClientProfileButton();
+          bindClientProfileForm();
+          bindRequestEstimateLink();
+          configureDashboardForUser(debugUser);
+          revealAuthorizedFallbackSections(debugUser);
+        } catch (setupError) {
+          console.error('Dashboard setup failed after debug-confirmed session recovery', setupError);
+        }
+
+        try {
+          loadAuthorizedDashboardTools(debugUser);
+        } catch (toolError) {
+          console.error('Dashboard tool loading failed after debug-confirmed session recovery', toolError);
+        }
 
         if (showDebugPanel) {
           const panel = ensureFallbackActionPanel(debugUser);
@@ -1529,7 +1581,8 @@
       };
 
       const configureMainDashboardActions = (user) => {
-        const permissions = user.permissions || {};
+        const permissions = getDashboardPermissions(user);
+        user.permissions = permissions;
         const actionBar = document.querySelector('[data-main-dashboard-actions]');
         if (!actionBar) return;
         let visibleCount = 0;
@@ -3891,19 +3944,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (authDebugEnabled) {
             loadAuthDebug('/api/me says this browser is authenticated. Showing the cookie/database details for confirmation.');
           }
-          renderClientProfile(result.user);
+          result.user.permissions = getDashboardPermissions(result.user);
+          updateDebugDashboardLink(result.user);
 
           if (logoutButton) {
             logoutButton.hidden = false;
           }
 
+          try {
+            renderClientProfile(result.user);
+            bindClientProfileButton();
+            bindClientProfileForm();
+            bindRequestEstimateLink();
+            configureDashboardForUser(result.user);
+          } catch (setupError) {
+            console.error('Dashboard setup failed after successful session check', setupError);
+          }
 
-          bindClientProfileButton();
-          bindClientProfileForm();
-          bindRequestEstimateLink();
-          configureDashboardForUser(result.user);
-
-          loadAuthorizedDashboardTools(result.user);
+          try {
+            loadAuthorizedDashboardTools(result.user);
+          } catch (toolError) {
+            console.error('Dashboard tool loading failed after successful session check', toolError);
+          }
         })
         .catch(async (error) => {
           status.dataset.state = 'error';
