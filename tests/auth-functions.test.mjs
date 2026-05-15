@@ -10,6 +10,7 @@ import {
   hashToken,
   shouldSendEmail,
   normalizeClientAccountPayload,
+  parseCookies,
   validateClientAccount,
   validateEmail,
   createOrUpdateMagicLinkUser,
@@ -62,6 +63,14 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
   assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
   assert.equal(getSessionCookieMaxAgeSeconds(30), 1800);
   assert.equal(getSessionCookieMaxAgeSeconds(120), 7200);
+});
+
+
+test('auth helper parses cookie headers through a single exported parser', () => {
+  assert.deepEqual(parseCookies('ta_session=session-token; theme=light%20mode'), {
+    ta_session: 'session-token',
+    theme: 'light mode',
+  });
 });
 
 
