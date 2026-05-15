@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import {
@@ -71,6 +72,13 @@ test('auth helper parses cookie headers through a single exported parser', () =>
     ta_session: 'session-token',
     theme: 'light mode',
   });
+});
+
+
+test('me endpoint avoids raw try blocks that caused Netlify syntax failures', async () => {
+  const source = await readFile(new URL('../netlify/functions/me.mjs', import.meta.url), 'utf8');
+
+  assert.equal(/\btry\b/.test(source), false);
 });
 
 

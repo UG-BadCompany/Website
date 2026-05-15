@@ -210,107 +210,107 @@ const createSessionRefreshHeaders = (sessionToken, request, roleKeys) => {
   };
 };
 
+const handleMeRequest = async (request, getDatabase, sessionToken) => {
+  const db = await getDatabase();
+  const [session] = await db.sql`
+    select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name, app_users.phone, app_users.secondary_phone, app_users.company_name, app_users.mailing_address
+    from auth_sessions
+    join app_users on app_users.id = auth_sessions.user_id
+    where auth_sessions.session_hash = ${hashToken(sessionToken)}
+      and auth_sessions.revoked_at is null
+      and auth_sessions.expires_at > now()
+      and app_users.is_active = true
+    limit 1
+  `;
+
+  if (!session) {
+    return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
+  }
+
+  const roles = await db.sql`
+    select roles.key, roles.name
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    where user_roles.user_id = ${session.user_id}
+    order by roles.key
+  `;
+
+  const roleKeys = roles.map((role) => role.key);
+  const rolePermissions = await db.sql`
+    select distinct role_permissions.permission_key
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+    where user_roles.user_id = ${session.user_id}
+    order by role_permissions.permission_key
+  `;
+  const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
+  const sessionRefresh = createSessionRefreshHeaders(sessionToken, request, roleKeys);
+
+  await db.sql`
+    update auth_sessions
+    set last_seen_at = now(),
+        expires_at = ${sessionRefresh.expiresAt}::timestamptz
+    where id = ${session.id}
+  `;
+
+  if (request.method === 'PATCH') {
+    const body = await parseJsonBody(request);
+
+    if (!body) {
+      return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+    }
+
+    const payload = normalizeProfilePayload(body);
+    const [updatedUser] = await db.sql`
+      update app_users
+      set full_name = ${payload.fullName || null},
+          phone = ${payload.phone || null},
+          secondary_phone = ${payload.secondaryPhone || null},
+          company_name = ${payload.companyName || null},
+          mailing_address = ${payload.mailingAddress || null},
+          updated_at = now()
+      where id = ${session.user_id}
+      returning id as user_id, email, full_name, phone, secondary_phone, company_name, mailing_address
+    `;
+
+    await db.sql`
+      insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+      values (
+        ${session.user_id},
+        ${'client_profile.updated'},
+        ${'app_user'},
+        ${session.user_id},
+        ${JSON.stringify({ source: 'client_dashboard' })}::jsonb
+      )
+    `;
+
+    return json(200, {
+      ok: true,
+      authenticated: true,
+      user: mapUser(updatedUser, roleKeys, permissionKeys),
+    }, sessionRefresh.headers);
+  }
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    user: mapUser(session, roleKeys, permissionKeys),
+  }, sessionRefresh.headers);
+};
+
 export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (!['GET', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const optionalSessionCheck = isOptionalSessionCheck(request);
-  const sessionTokens = getSessionTokens(request);
+  const sessionToken = getSessionToken(request);
 
-  if (!sessionTokens.length) {
-    return unauthenticatedSessionResponse(
-      'Sign in with a magic link to access the dashboard.',
-      optionalSessionCheck ? 200 : 401,
-    );
+  if (!sessionToken) {
+    return json(401, { ok: false, authenticated: false, message: 'Sign in with a magic link to access the dashboard.' });
   }
 
-  let db;
-
-  try {
-    db = await getDatabase();
-    const { session, sessionToken } = await loadCurrentUserSession(db, sessionTokens, {
-      profileFieldSet: request.method === 'GET' ? 'minimal' : 'full',
-    });
-
-    if (!isSessionUsable(session)) {
-      return unauthenticatedSessionResponse(
-        'Your session expired. Request a new magic link.',
-        optionalSessionCheck ? 200 : 401,
-        optionalSessionCheck ? { 'set-cookie': createExpiredSessionCookie(request) } : {},
-      );
-    }
-
-    const roles = await db.sql`
-      select roles.key, roles.name
-      from user_roles
-      join roles on roles.id = user_roles.role_id
-      where user_roles.user_id = ${session.user_id}
-      order by roles.key
-    `;
-
-    const roleKeys = roles.map((role) => role.key);
-    const rolePermissions = await db.sql`
-      select distinct role_permissions.permission_key
-      from user_roles
-      join roles on roles.id = user_roles.role_id
-      join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
-      where user_roles.user_id = ${session.user_id}
-      order by role_permissions.permission_key
-    `;
-    const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
-    const sessionRefresh = createSessionRefreshHeaders(sessionToken, request, roleKeys);
-
-    await db.sql`
-      update auth_sessions
-      set last_seen_at = now(),
-          expires_at = ${sessionRefresh.expiresAt}::timestamptz
-      where id = ${session.id}
-    `;
-
-      const body = await parseJsonBody(request);
-
-      if (!body) {
-        return json(400, { ok: false, message: 'Request body must be valid JSON.' });
-      }
-
-      const payload = normalizeProfilePayload(body);
-      const [updatedUser] = await db.sql`
-        update app_users
-        set full_name = ${payload.fullName || null},
-            phone = ${payload.phone || null},
-            secondary_phone = ${payload.secondaryPhone || null},
-            company_name = ${payload.companyName || null},
-            mailing_address = ${payload.mailingAddress || null},
-            updated_at = now()
-        where id = ${session.user_id}
-        returning id as user_id, email, full_name, phone, secondary_phone, company_name, mailing_address
-      `;
-
-      await db.sql`
-        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-        values (
-          ${session.user_id},
-          ${'client_profile.updated'},
-          ${'app_user'},
-          ${session.user_id},
-          ${JSON.stringify({ source: 'client_dashboard' })}::jsonb
-        )
-      `;
-
-      return json(200, {
-        ok: true,
-        authenticated: true,
-        user: mapUser(updatedUser, roleKeys, permissionKeys),
-      }, sessionRefresh.headers);
-    }
-
-    return json(200, {
-      ok: true,
-      authenticated: true,
-      user: mapUser(session, roleKeys, permissionKeys),
-    }, sessionRefresh.headers);
-  } catch (error) {
+  return handleMeRequest(request, getDatabase, sessionToken).catch((error) => {
     console.error('Failed to load current user', error);
 
     if (request.method === 'GET' && db) {
@@ -331,7 +331,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     }
 
     return json(500, { ok: false, authenticated: false, message: 'We could not load your session right now.' });
-  }
+  });
 };
 
 export default createMeHandler();
