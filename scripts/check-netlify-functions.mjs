@@ -1,10 +1,44 @@
 import { readdir } from 'node:fs/promises';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const functionsDir = path.join(root, 'netlify', 'functions');
+
+
+const isNetlifyBuild = () => (
+  process.env.NETLIFY === 'true'
+  || Boolean(process.env.CONTEXT)
+  || Boolean(process.env.BUILD_ID)
+  || Boolean(process.env.DEPLOY_ID)
+);
+
+const restoreTrackedFileFromHead = (relativePath) => {
+  if (!isNetlifyBuild()) return;
+
+  const filePath = path.join(root, relativePath);
+
+  if (!existsSync(filePath)) return;
+
+  const result = spawnSync('git', ['show', `HEAD:${relativePath}`], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+
+  if (result.status !== 0) {
+    console.warn(`Warning: Could not verify ${relativePath} against HEAD before Netlify function syntax checks.`);
+    return;
+  }
+
+  const currentContents = readFileSync(filePath, 'utf8');
+
+  if (currentContents !== result.stdout) {
+    writeFileSync(filePath, result.stdout);
+    console.warn(`Warning: Restored ${relativePath} from HEAD before Netlify function syntax checks.`);
+  }
+};
 
 const listFunctionFiles = async () => {
   const entries = await readdir(functionsDir, { withFileTypes: true });
@@ -18,6 +52,8 @@ const listFunctionFiles = async () => {
 const formatRelativePath = (filePath) => path.relative(root, filePath).replaceAll(path.sep, '/');
 
 export const checkNetlifyFunctions = async () => {
+  restoreTrackedFileFromHead('netlify/functions/me.mjs');
+
   const functionFiles = await listFunctionFiles();
   const failures = [];
 

@@ -6,8 +6,15 @@ const migrationsDir = join(__dirname, '..', 'netlify', 'database', 'migrations')
 
 const rootDir = join(__dirname, '..');
 
+const isNetlifyBuild = () => (
+  process.env.NETLIFY === 'true'
+  || Boolean(process.env.CONTEXT)
+  || Boolean(process.env.BUILD_ID)
+  || Boolean(process.env.DEPLOY_ID)
+);
+
 const restoreTrackedFileFromHead = (relativePath) => {
-  if (process.env.NETLIFY !== 'true') return;
+  if (!isNetlifyBuild()) return;
 
   const filePath = join(rootDir, relativePath);
 
