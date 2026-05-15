@@ -115,3 +115,7 @@ test('npm prebuild uses the CommonJS Netlify migration guard', async () => {
   await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/prebuild-netlify-migrations.cjs']));
 });
 
+test('Netlify function syntax checker parses and passes current functions', async () => {
+  await assert.doesNotReject(execFileAsync(process.execPath, ['--check', 'scripts/check-netlify-functions.mjs']));
+  await assert.doesNotReject(execFileAsync(process.execPath, ['scripts/check-netlify-functions.mjs']));
+});
