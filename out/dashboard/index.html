@@ -6,12 +6,40 @@
   <title>Dashboard | T&A Contracting</title>
   <meta name="description" content="Secure dashboard placeholder for T&A Contracting clients, workers, and admins.">
   <style>
-    :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 86% 7%,rgba(216,135,52,.22),transparent 28rem),linear-gradient(180deg,#fffaf4,#fff 48%,#fff7ec)} a{text-decoration:none;color:inherit}.wrap{width:min(1180px,calc(100% - 36px));margin:0 auto}.nav{border-bottom:1px solid var(--line);background:rgba(255,250,244,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:2}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:950;text-transform:uppercase;letter-spacing:.03em}.brand img{width:82px;height:56px;object-fit:contain}.nav-links{display:flex;gap:14px;align-items:center;font-weight:850}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid rgba(17,17,17,.12);font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.btn-soft{background:rgba(255,255,255,.8)}.hero{padding:46px 0 22px}.dashboard-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:clamp(24px,5vw,46px);border:1px solid var(--line);border-radius:32px;background:rgba(255,255,255,.84);box-shadow:var(--shadow)}.eyebrow{display:inline-flex;margin-bottom:14px;padding:8px 12px;border-radius:999px;background:#fff1e4;color:var(--rust);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.8rem,6vw,5.4rem);line-height:.96;letter-spacing:-.07em}h2{margin:0;font-size:clamp(1.7rem,3vw,3rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:620;line-height:1.65}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:28px;background:radial-gradient(circle at 50% 10%,rgba(216,135,52,.18),transparent 18rem),#fff;border:1px solid var(--line)}.logo-panel img{width:min(100%,430px);height:auto;padding:20px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.role{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--muted)}.role.active-client{color:var(--rust)}.role.active-worker{color:var(--blue)}.role.active-admin{color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}.card{padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(45,27,13,.08)}.card strong{display:block;margin-bottom:9px;font-size:1.05rem}.metric{font-size:2rem;font-weight:950;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffaf4;color:var(--muted);font-weight:720}.session-status{margin:18px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4;color:var(--muted);font-weight:800}.admin-inbox,.client-requests,.client-quotes,.client-properties{margin:26px 0}.client-request-form{display:grid;gap:12px;margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.48);backdrop-filter:blur(8px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(920px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fff;box-shadow:0 30px 90px rgba(17,17,17,.28)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px 0}.admin-request-modal-header strong{font-size:1.1rem}.admin-request-modal-header p{margin:6px 0 0}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted);font-size:.86rem;font-weight:900}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;color:var(--ink);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffaf4}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.session-status[data-state="ready"]{color:var(--green)}.session-status[data-state="error"]{color:var(--rust-dark)}.locked{opacity:.62}.locked strong::after{content:"  • backend permission required";color:var(--muted);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffaf4}.profile-summary span{display:block;color:var(--muted);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted);font-weight:800}.worker-filter-toolbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin:18px 0;padding:16px;border:2px solid rgba(173,63,24,.18);border-radius:20px;background:#fff}.worker-filter-toolbar label{display:grid;gap:7px;color:var(--muted);font-weight:950}.worker-filter-toolbar select{min-width:230px;border:1px solid var(--line);border-radius:14px;padding:12px;font:inherit;background:#fffaf4}.worker-filter-count{font-weight:950;color:var(--rust)}.worker-evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.worker-evidence-grid div{padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff}.footer{border-top:1px solid var(--line);padding:26px 0;margin:40px auto;color:var(--muted);font-weight:650}@media(max-width:850px){.dashboard-hero,.grid,.tools,.client-request-form-grid{grid-template-columns:1fr}.nav-links a:not(.btn){display:none}.brand span{display:none}}
+    :root {
+      --ink:#f8efe5;
+      --ink-dark:#1a120d;
+      --muted:#d6c4b3;
+      --muted-dark:#76685d;
+      --rust:#d8652b;
+      --rust-dark:#8b3418;
+      --copper:#f1a64a;
+      --cream:#fff6ea;
+      --surface:#160f0b;
+      --surface-2:#21150f;
+      --card:#fffaf3;
+      --line:rgba(255,255,255,.16);
+      --line-dark:rgba(51,31,20,.12);
+      --green:#58c783;
+      --blue:#6ea8ff;
+      --shadow:0 26px 80px rgba(22,12,6,.28);
+      --radius:28px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scrollbar-gutter:stable;background:#130d09}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0%,rgba(216,101,43,.42),transparent 28rem),radial-gradient(circle at 88% 10%,rgba(241,166,74,.24),transparent 26rem),linear-gradient(180deg,#130d09 0%,#22140d 42%,#fff6ea 42%,#fffaf5 100%);min-height:100vh}
+    a{text-decoration:none;color:inherit}.wrap{width:min(1200px,calc(100% - 36px));margin:0 auto}
+    .nav{position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(19,13,9,.78);backdrop-filter:blur(18px)}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:12px 0}.brand{display:flex;align-items:center;gap:14px;font-weight:1000;text-transform:uppercase;letter-spacing:.045em}.brand img{width:74px;height:58px;object-fit:contain;border-radius:16px;background:rgba(255,246,234,.08);padding:4px}.nav-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:850}.nav-links>a:not(.btn){color:var(--muted);padding:10px 8px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 17px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-weight:950;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}.btn:hover{transform:translateY(-1px)}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--copper));color:#21120a;border-color:transparent;box-shadow:0 12px 30px rgba(216,101,43,.28)}.btn-soft{background:rgba(255,255,255,.08);color:var(--ink);border-color:rgba(255,255,255,.18)}
+    .hero{padding:44px 0 22px}.dashboard-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.55fr);gap:24px;align-items:stretch;padding:clamp(24px,4vw,48px);border:1px solid rgba(255,255,255,.18);border-radius:36px;background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04));box-shadow:var(--shadow);overflow:hidden;position:relative}.dashboard-hero::before{content:"";position:absolute;inset:-1px;background:radial-gradient(circle at 20% 15%,rgba(241,166,74,.2),transparent 24rem);pointer-events:none}.dashboard-hero>*{position:relative}.eyebrow{display:inline-flex;margin-bottom:16px;padding:8px 12px;border-radius:999px;background:rgba(241,166,74,.14);color:#ffd7a6;font-size:.78rem;font-weight:1000;letter-spacing:.1em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.55rem,5.4vw,5.35rem);line-height:.94;letter-spacing:-.07em;max-width:850px}h2{margin:0;font-size:clamp(1.55rem,2.5vw,2.7rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:650;line-height:1.65}.hero p{max-width:720px}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:30px;background:linear-gradient(180deg,rgba(255,246,234,.95),rgba(255,250,243,.82));border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 24px 70px rgba(0,0,0,.18)}.logo-panel img{width:min(100%,360px);height:auto;padding:18px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.role{padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);font-weight:950;color:var(--muted)}.role.active-client{color:#ffd7a6}.role.active-worker{color:#bcd7ff}.role.active-admin{color:#baf3c8}
+    .session-status{margin:18px 0 0;padding:14px 16px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(255,255,255,.08);color:var(--muted);font-weight:850}.session-status[data-state="ready"]{color:#baf3c8}.session-status[data-state="error"]{color:#ffd0c4}
+    .command-center{margin:10px 0 24px;padding:22px;border:1px solid rgba(255,255,255,.16);border-radius:32px;background:rgba(255,255,255,.08);box-shadow:0 18px 60px rgba(0,0,0,.18)}.command-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:16px}.command-header p{margin:8px 0 0}.command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.command-card{min-height:158px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:18px;border-radius:24px;border:1px solid rgba(255,255,255,.18);background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.06));box-shadow:0 18px 44px rgba(0,0,0,.16)}.command-card span{width:42px;height:42px;display:grid;place-items:center;border-radius:15px;background:rgba(216,101,43,.25);color:#ffd7a6;font-size:1.15rem;font-weight:1000}.command-card strong{font-size:1.08rem}.command-card p{margin:0;font-size:.92rem}.command-card:hover{border-color:rgba(241,166,74,.54);transform:translateY(-2px)}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}.card{padding:24px;border:1px solid var(--line-dark);border-radius:var(--radius);background:rgba(255,250,243,.94);color:var(--ink-dark);box-shadow:0 18px 50px rgba(45,27,13,.08)}.card>strong,.card h2{display:block;margin-bottom:9px;color:var(--ink-dark)}.card p,.card .session-status{color:var(--muted-dark)}.metric{font-size:2.1rem;font-weight:1000;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line-dark);border-radius:16px;background:#fff;color:var(--muted-dark);font-weight:760}.admin-inbox,.client-requests,.client-quotes,.client-properties,.admin-invoices,.admin-access,.worker-jobs{margin:26px 0}.client-request-form{display:grid;gap:14px;margin:18px 0;padding:18px;border:1px solid var(--line-dark);border-radius:22px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.58);backdrop-filter:blur(10px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(960px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fffaf3;color:var(--ink-dark);box-shadow:0 30px 90px rgba(17,17,17,.34)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:20px 22px 0}.admin-request-modal-header strong{font-size:1.12rem}.admin-request-modal-header p{margin:6px 0 0;color:var(--muted-dark)}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem;color:var(--ink-dark);background:#fff}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted-dark);font-size:.86rem;font-weight:950}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line-dark);border-radius:14px;padding:12px 13px;font:inherit;color:var(--ink-dark);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.card .btn-soft,.admin-request-modal .btn-soft{background:#fff;color:var(--ink-dark);border-color:var(--line-dark)}.card .session-status,.admin-request-modal .session-status{background:#fff;border-color:var(--line-dark)}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line-dark);border-radius:18px;background:#fff}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted-dark);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff7eb;border:1px solid var(--line-dark);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0;color:var(--muted-dark)}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.locked{opacity:.72}.locked strong::after{content:"  • backend permission required";color:var(--muted-dark);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line-dark);border-radius:16px;background:#fff}.profile-summary span{display:block;color:var(--muted-dark);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted-dark);font-weight:800}.worker-filter-toolbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin:18px 0;padding:16px;border:2px solid rgba(173,63,24,.18);border-radius:20px;background:#fff}.worker-filter-toolbar label{display:grid;gap:7px;color:var(--muted-dark);font-weight:950}.worker-filter-toolbar select{min-width:230px;border:1px solid var(--line-dark);border-radius:14px;padding:12px;font:inherit;background:#fffaf4}.worker-filter-count{font-weight:950;color:var(--rust)}.worker-evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.worker-evidence-grid div{padding:10px;border:1px solid var(--line-dark);border-radius:14px;background:#fff}.footer{border-top:1px solid rgba(17,17,17,.1);padding:26px 0;margin:40px auto;color:var(--muted-dark);font-weight:650}
+    :focus-visible{outline:3px solid rgba(241,166,74,.75);outline-offset:3px}@media(max-width:980px){.dashboard-hero,.command-grid{grid-template-columns:1fr 1fr}.tools{grid-template-columns:1fr}}@media(max-width:720px){.dashboard-hero,.grid,.command-grid,.client-request-form-grid,.profile-summary,.worker-evidence-grid{grid-template-columns:1fr}.nav-inner{align-items:flex-start}.nav-links{justify-content:flex-end}.brand span{display:none}h1{font-size:clamp(2.35rem,12vw,4rem)}}
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><button class="btn btn-soft" type="button" data-logout-button hidden>Sign out</button><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="/assets/ta-contracting-logo.svg" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><button class="btn btn-soft" type="button" data-profile-button hidden>My Profile</button><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a></nav></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
@@ -30,6 +58,36 @@
       </div>
     </section>
 
+    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
+      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
+      <div class="command-grid" aria-label="Admin command center shortcuts">
+        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
+        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
+        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
+        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
+      </div>
+    </section>
+
+    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
+      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
+      <div class="command-grid" aria-label="Client command center shortcuts">
+        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
+        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
+        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
+        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
+      </div>
+    </section>
+
+    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
+      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
+      <div class="command-grid" aria-label="Worker command center shortcuts">
+        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
+        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
+        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
+        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
+      </div>
+    </section>
+
     <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
       <article class="card"><strong>Quotes Waiting</strong><div class="metric" data-quotes-metric>0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
@@ -37,7 +95,7 @@
     </section>
 
 
-    <section class="card admin-inbox" data-admin-inbox data-dashboard-section data-views="admin" hidden>
+    <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
       <strong>Admin request inbox</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
@@ -127,8 +185,15 @@
       </div>
     </section>
 
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-section data-views="admin" hidden>
+      <strong>Admin invoices &amp; payments</strong>
+      <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
+      <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-list></div>
+    </section>
 
-    <section class="card admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
+
+    <section class="card admin-access" id="admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
       <strong>Admin roles & users</strong>
       <p>Search users, update profile details, and manage roles from one selector. Choose an existing role to edit it, or create a new role from the same role manager.</p>
       <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
@@ -211,6 +276,31 @@
       </div>
     </section>
 
+    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
         <div class="admin-request-modal-header">
@@ -280,7 +370,7 @@
       </section>
     </section>
 
-    <section class="card client-requests" id="submit-request" data-client-requests data-dashboard-section data-views="client" hidden>
+    <section class="card client-requests" id="submit-request" data-client-requests-anchor data-client-requests data-dashboard-section data-views="client" hidden>
       <strong>My job requests</strong>
       <p>Signed-in clients can see the estimate requests connected to their account.</p>
       <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
@@ -349,15 +439,22 @@
       </div>
     </section>
 
-    <section class="card client-quotes" data-client-quotes data-dashboard-section data-views="client" hidden>
+    <section class="card client-quotes" id="client-quotes" data-client-quotes data-dashboard-section data-views="client" hidden>
       <strong>My quotes</strong>
       <p>Quotes connected to your account will appear here for review before approvals and payments are added.</p>
       <p class="session-status" data-client-quotes-status role="status" aria-live="polite">Loading your quotes…</p>
       <div class="client-quote-list" data-client-quote-list></div>
     </section>
 
+    <section class="card client-invoices" id="client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
+      <strong>My invoices &amp; payments</strong>
+      <p>Open invoices connected to your jobs appear here so you can track balances and payment status.</p>
+      <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
+      <div class="client-quote-list" data-client-invoice-list></div>
+    </section>
 
-    <section class="card worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
+
+    <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
       <p>Use the status dropdown to switch this page between active, completed, cancelled, or a specific work-order status. Open any work order to add notes, checklist items, materials, and completion photos/attachments.</p>
       <div class="worker-filter-toolbar" data-worker-filter-control>
@@ -430,6 +527,12 @@
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
     (() => {
+      const tokenFromDashboardUrl = new URLSearchParams(window.location.search).get('token');
+      if (tokenFromDashboardUrl) {
+        window.location.replace(`/api/auth/verify?token=${encodeURIComponent(tokenFromDashboardUrl)}`);
+        return;
+      }
+
       const status = document.querySelector('[data-session-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const profileButton = document.querySelector('[data-profile-button]');
@@ -437,6 +540,33 @@
       if (!status) {
         return;
       }
+
+      const fetchJson = async (url, options = {}, timeoutMs = 12000) => {
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            if (controller) controller.abort();
+            reject(new DOMException('Request timed out', 'AbortError'));
+          }, timeoutMs);
+        });
+        const requestPromise = fetch(url, {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          ...options,
+          headers: {
+            accept: 'application/json',
+            ...(options.headers || {}),
+          },
+          ...(controller ? { signal: controller.signal } : {}),
+        }).then(async (response) => ({ response, result: await response.json().catch(() => ({})) }));
+
+        try {
+          return await Promise.race([requestPromise, timeoutPromise]);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      };
 
       const escapeHtml = (value = '') => String(value).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
       const currentAdminRequests = new Map();
@@ -456,17 +586,15 @@
         }
 
         logoutButton.dataset.bound = 'true';
-        logoutButton.addEventListener('click', async () => {
-          logoutButton.disabled = true;
+        logoutButton.addEventListener('click', async (event) => {
+          event.preventDefault();
+          logoutButton.setAttribute('aria-disabled', 'true');
           status.textContent = 'Signing out…';
 
           try {
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { accept: 'application/json' },
-            });
+            await fetchJson('/api/auth/logout', { method: 'POST' }, 5000);
           } finally {
-            window.location.href = '/login/?signed-out=1';
+            window.location.href = logoutButton.getAttribute('href') || '/login/?signed-out=1';
           }
         });
       };
@@ -499,8 +627,13 @@
       const formatMoney = (amountCents = 0) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((amountCents || 0) / 100);
       const formatDate = (value) => {
         if (!value) return '';
-        const date = new Date(`${value}T00:00:00`);
+        const date = new Date(String(value).includes('T') ? value : `${value}T00:00:00`);
         return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+      };
+      const formatDateTime = (value) => {
+        if (!value) return '';
+        const date = new Date(value);
+        return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
       };
       const setDashboardView = (view) => {
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
@@ -586,6 +719,32 @@
         </article>
       `;
 
+      const renderInvoiceCard = (invoice, { admin = false } = {}) => {
+        const className = admin ? 'admin-request' : 'client-quote';
+        const badgeClass = admin ? 'admin-request-badge' : 'client-quote-badge';
+        const metaClass = admin ? 'admin-request-meta' : 'client-quote-meta';
+        const clientMeta = admin && invoice.client
+          ? `<span>${escapeHtml(invoice.client.fullName || invoice.client.email || 'Client')}</span><span>${escapeHtml(invoice.client.phone || invoice.client.email || 'No contact')}</span>`
+          : '';
+        const dueMeta = invoice.dueAt ? `<span>Due ${escapeHtml(formatDate(invoice.dueAt))}</span>` : '<span>No due date</span>';
+        const job = invoice.jobRequest || {};
+
+        return `
+          <article class="${className}">
+            <span class="${badgeClass}">${escapeHtml((invoice.status || 'open').replaceAll('_', ' '))}</span>
+            <strong>${escapeHtml(invoice.title || 'Invoice')} — ${formatMoney(invoice.amountCents)}</strong>
+            <div class="${metaClass}">
+              ${clientMeta}
+              <span>${escapeHtml(job.serviceType || 'No linked request')}</span>
+              <span>${escapeHtml(job.city || 'No city')}</span>
+              ${dueMeta}
+            </div>
+            ${job.streetAddress ? `<p>${escapeHtml(job.streetAddress)}</p>` : ''}
+            ${admin && invoice.status === 'open' ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${escapeHtml(invoice.amountCents || 0)}">Confirm payment</button></div>` : ''}
+          </article>
+        `;
+      };
+
       const renderAdminAssignmentCard = (assignment) => `
         <article class="admin-assignment">
           <span class="admin-assignment-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
@@ -598,6 +757,75 @@
           ${assignment.workerNotes ? `<p><strong>Worker notes</strong> ${escapeHtml(assignment.workerNotes)}</p>` : ''}
         </article>
       `;
+
+      const renderAdminActivityEvent = (event) => {
+        const actor = event.actor?.email || event.actor?.fullName || 'System event';
+        const metadata = event.metadata && Object.keys(event.metadata).length
+          ? `<p><strong>Details</strong> ${escapeHtml(JSON.stringify(event.metadata))}</p>`
+          : '';
+
+        return `
+          <article class="admin-request">
+            <span class="admin-request-badge">${escapeHtml(event.eventType || 'activity')}</span>
+            <strong>${escapeHtml(event.entityType || 'event')}${event.entityId ? ` — ${escapeHtml(event.entityId)}` : ''}</strong>
+            <div class="admin-request-meta">
+              <span>${escapeHtml(actor)}</span>
+              <span>${escapeHtml(formatDateTime(event.createdAt) || 'No timestamp')}</span>
+            </div>
+            ${metadata}
+          </article>
+        `;
+      };
+
+      const loadAdminActivity = async () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const panelStatus = document.querySelector('[data-admin-activity-status]');
+        const activityList = document.querySelector('[data-admin-activity-list]');
+        const form = document.querySelector('[data-admin-activity-filter-form]');
+
+        if (!panel || !panelStatus || !activityList) {
+          return;
+        }
+
+        const params = new URLSearchParams();
+        const eventType = form?.querySelector('[data-admin-activity-event-type]')?.value.trim() || '';
+        const search = form?.querySelector('[data-admin-activity-search]')?.value.trim() || '';
+        const limit = form?.querySelector('[data-admin-activity-limit]')?.value || '25';
+        if (eventType) params.set('eventType', eventType);
+        if (search) params.set('search', search);
+        if (limit) params.set('limit', limit);
+
+        try {
+          panelStatus.dataset.state = 'loading';
+          panelStatus.textContent = 'Loading admin activity…';
+          const response = await fetch(`/api/admin/activity?${params.toString()}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Admin activity is not available.');
+          }
+
+          const events = result.events || [];
+          panelStatus.dataset.state = 'ready';
+          panelStatus.textContent = events.length ? `${events.length} audit event${events.length === 1 ? '' : 's'} loaded.` : 'No audit activity matches those filters.';
+          activityList.innerHTML = events.length ? events.map(renderAdminActivityEvent).join('') : '<p class="session-status">No audit events found.</p>';
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const bindAdminActivityActions = () => {
+        const panel = document.querySelector('[data-admin-activity]');
+        const form = document.querySelector('[data-admin-activity-filter-form]');
+        if (!panel || !form || panel.dataset.activityActionsBound) return;
+        panel.dataset.activityActionsBound = 'true';
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          loadAdminActivity();
+        });
+        panel.querySelector('[data-admin-activity-refresh]')?.addEventListener('click', () => loadAdminActivity());
+      };
 
       const renderWorkerJobCard = (assignment) => {
         const completionPhotoNames = assignment.completionPhotoNames || [];
@@ -820,6 +1048,45 @@
           }
 
           renderClientQuoteData(result);
+        } catch (error) {
+          panelStatus.dataset.state = 'error';
+          panelStatus.textContent = error.message;
+        }
+      };
+
+      const renderClientInvoiceData = (result) => {
+        const panelStatus = document.querySelector('[data-client-invoices-status]');
+        const invoiceList = document.querySelector('[data-client-invoice-list]');
+        const invoices = result.invoices || [];
+        const amountDue = result.summary?.amountDueCents || 0;
+
+        if (panelStatus) {
+          panelStatus.dataset.state = 'ready';
+          panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} loaded. Balance due: ${formatMoney(amountDue)}.` : 'No open invoices right now.';
+        }
+        if (invoiceList) {
+          invoiceList.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('') : '<p class="session-status">No open invoices yet.</p>';
+        }
+      };
+
+      const loadClientInvoices = async () => {
+        const panel = document.querySelector('[data-client-invoices]');
+        const panelStatus = document.querySelector('[data-client-invoices-status]');
+        const invoiceList = document.querySelector('[data-client-invoice-list]');
+
+        if (!panel || !panelStatus || !invoiceList) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/client/invoices', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.message || 'Your invoices are not available.');
+          }
+
+          renderClientInvoiceData(result);
         } catch (error) {
           panelStatus.dataset.state = 'error';
           panelStatus.textContent = error.message;
@@ -1678,6 +1945,82 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+
+
+      const renderAdminInvoiceData = (result) => {
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const list = document.querySelector('[data-admin-invoice-list]');
+        const invoices = result.invoices || [];
+        const amountDue = result.summary?.amountDueCents || 0;
+
+        if (status) {
+          status.dataset.state = 'ready';
+          status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} need follow-up. Open balance: ${formatMoney(amountDue)}.` : 'No open invoices need payment follow-up.';
+        }
+        if (list) {
+          list.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice, { admin: true })).join('') : '<p class="session-status">No unpaid invoices found.</p>';
+        }
+      };
+
+      const confirmAdminPayment = async (invoiceId, amountCents) => {
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const method = window.prompt('Payment method (cash, check, card, ACH, etc.)', 'cash');
+        if (method === null) return;
+        const reference = window.prompt('Payment reference or receipt number (optional)', '') || '';
+        if (status) status.textContent = 'Confirming payment…';
+
+        const response = await fetch('/api/admin/invoices', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ invoiceId, amountCents: Number(amountCents), method, reference }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Payment could not be confirmed.');
+        await window.taDashboardActions.loadAdminInvoices();
+        if (status) status.textContent = `Payment confirmed for ${formatMoney(result.payment?.amountCents || amountCents)}.`;
+      };
+
+      window.taDashboardActions = window.taDashboardActions || {};
+      window.taDashboardActions.bindAdminInvoiceActions = () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        if (!panel || panel.dataset.invoiceActionsBound) return;
+        panel.dataset.invoiceActionsBound = 'true';
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-admin-confirm-payment]');
+          if (!button) return;
+          button.disabled = true;
+          try {
+            await confirmAdminPayment(button.dataset.adminConfirmPayment, button.dataset.adminPaymentAmount);
+          } catch (error) {
+            const status = document.querySelector('[data-admin-invoices-status]');
+            if (status) {
+              status.dataset.state = 'error';
+              status.textContent = error.message;
+            }
+          } finally {
+            button.disabled = false;
+          }
+        });
+      };
+
+      window.taDashboardActions.loadAdminInvoices = async () => {
+        const panel = document.querySelector('[data-admin-invoices]');
+        const status = document.querySelector('[data-admin-invoices-status]');
+        const list = document.querySelector('[data-admin-invoice-list]');
+        if (!panel || !status || !list) return;
+
+        try {
+          const response = await fetch('/api/admin/invoices', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Admin invoices are not available.');
+          renderAdminInvoiceData(result);
+          window.taDashboardActions.bindAdminInvoiceActions();
+        } catch (error) {
+          status.dataset.state = 'error';
+          status.textContent = error.message;
+        }
+      };
+
       const loadAdminRequests = async (selectedRequestId = '') => {
         const inbox = document.querySelector('[data-admin-inbox]');
         const inboxStatus = document.querySelector('[data-admin-requests-status]');
@@ -1729,8 +2072,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      fetch('/api/me', { headers: { accept: 'application/json' } })
-        .then(async (response) => ({ response, result: await response.json().catch(() => ({})) }))
+      bindLogout();
+      status.dataset.state = 'loading';
+      status.textContent = 'Checking secure session…';
+
+      fetchJson('/api/me')
         .then(({ response, result }) => {
           if (!response.ok || !result.authenticated) {
             status.dataset.state = 'error';
@@ -1750,7 +2096,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
             profileButton.hidden = false;
           }
 
-          bindLogout();
           bindClientProfileButton();
           bindRequestEstimateLink();
           configureDashboardForUser(result.user);
@@ -1763,6 +2108,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
             bindQuoteDecisionActions();
             loadClientRequests();
             loadClientQuotes();
+            if (result.user.permissions?.canViewInvoices) {
+              loadClientInvoices();
+            }
           }
 
           if (result.user.permissions?.canViewWorkerTools) {
@@ -1774,13 +2122,25 @@ Additional info from client: ${payload.additionalInfo}` : '';
             loadAdminRequests();
           }
 
+          if (result.user.permissions?.canManageInvoices) {
+            window.taDashboardActions.bindAdminInvoiceActions();
+            window.taDashboardActions.loadAdminInvoices();
+          }
+
           if (result.user.permissions?.canManageUsers || result.user.permissions?.canManageRoles) {
             loadAdminAccess();
           }
+
+          if (result.user.permissions?.canViewAdminActivity) {
+            bindAdminActivityActions();
+            loadAdminActivity();
+          }
         })
-        .catch(() => {
+        .catch((error) => {
           status.dataset.state = 'error';
-          status.textContent = 'Session check is unavailable in this local/static preview. Deploy Netlify Functions to verify portal access.';
+          status.innerHTML = error?.name === 'AbortError'
+            ? 'Session check timed out. Refresh the dashboard or <a href="/login/">request a new magic link</a>.'
+            : 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
   </script>
