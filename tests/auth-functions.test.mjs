@@ -4,11 +4,15 @@ import {
   getAllowedSiteUrls,
   getFromEmail,
   getSiteUrl,
+  getSessionCookieMaxAgeSeconds,
+  getSessionTtlMinutesForRoles,
   hashToken,
   shouldSendEmail,
   normalizeClientAccountPayload,
+  parseCookies,
   validateClientAccount,
   validateEmail,
+  createOrUpdateMagicLinkUser,
 } from '../netlify/functions/auth-utils.mjs';
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
@@ -48,6 +52,23 @@ test('auth helper normalizes account fields and validates email/phone input', ()
   assert.equal(normalized.botField, '');
   assert.equal(validateEmail('bad-email'), 'Enter a valid email address.');
   assert.equal(validateClientAccount({ name: 'Owner', email: 'owner@example.com', phone: '555-0100' }), null);
+});
+
+
+test('auth helper uses short client sessions and longer staff sessions', () => {
+  assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
+  assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
+  assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+  assert.equal(getSessionCookieMaxAgeSeconds(30), 1800);
+  assert.equal(getSessionCookieMaxAgeSeconds(120), 7200);
+});
+
+
+test('auth helper parses cookie headers through a single exported parser', () => {
+  assert.deepEqual(parseCookies('ta_session=session-token; theme=light%20mode'), {
+    ta_session: 'session-token',
+    theme: 'light mode',
+  });
 });
 
 
@@ -102,6 +123,10 @@ test('site URL helper supports the production domain and Netlify subdomain alias
   assert.equal(
     getSiteUrl(new Request('https://ta-contracting.org/login/')),
     'https://ta-contracting.org',
+  );
+  assert.equal(
+    getSiteUrl(new Request('https://www.ta-contracting.org/login/')),
+    'https://www.ta-contracting.org',
   );
   assert.equal(
     getSiteUrl(new Request('https://unexpected.example/login/')),
@@ -163,10 +188,34 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and redirects', async () => {
+
+
+test('magic-link user lookup reuses existing account case-insensitively', async () => {
+  const db = createMockDb([
+    [{ id: 'user-1' }],
+    [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
+  ]);
+
+  const user = await createOrUpdateMagicLinkUser(db, {
+    email: 'CLIENT@example.com',
+    name: 'Client',
+    phone: '555-0100',
+  });
+
+  assert.equal(user.id, 'user-1');
+  assert.match(db.queries[0].text, /where lower\(email\) = lower/);
+  assert.equal(db.queries[0].values[0], 'client@example.com');
+  assert.match(db.queries[1].text, /update app_users/);
+  assert.equal(db.queries[2].values[0], 'user-1');
+});
+
+test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and opens the dashboard', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', purpose: 'client_account', client_name: 'Client', client_phone: '555-0100' }],
+    [],
     [{ id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }],
+    [],
     [],
     [],
     [],
@@ -181,24 +230,50 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   assert.equal(response.status, 302);
   assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 5);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=1800/);
+  assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
-  assert.match(db.queries[4].text, /insert into auth_sessions/);
-  assert.equal(db.queries[4].values[1], hashToken('session-token'));
+  assert.match(db.queries[5].text, /from user_roles/);
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
+  assert.equal(db.queries[6].values[1], hashToken('session-token'));
+});
+
+test('verify endpoint gives admin and worker sessions a two-hour cookie', async () => {
+  const db = createMockDb([
+    [{ id: 'link-1', email: 'admin@example.com', purpose: 'login', client_name: null, client_phone: null }],
+    [],
+    [{ id: 'user-1', email: 'admin@example.com', full_name: 'Admin', phone: null }],
+    [],
+    [],
+    [{ key: 'admin' }, { key: 'worker' }],
+    [],
+  ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.match(response.headers.get('set-cookie'), /Max-Age=7200/);
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
 });
 
 test('me endpoint loads the signed-in user and roles from the session cookie', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: '555-0101', company_name: 'T&A', mailing_address: '123 Main St' }],
-    [],
     [{ key: 'client', name: 'Client' }, { key: 'admin', name: 'Admin' }],
+    [],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+  const rawResponse = await handler(new Request('https://site.test/api/me', {
     headers: { cookie: 'ta_session=session-token' },
-  })));
+  }));
+  const response = await readJson(rawResponse);
 
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
@@ -213,24 +288,30 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
   assert.equal(response.body.user.permissions.canManageUsers, true);
   assert.equal(response.body.user.permissions.canManageRoles, true);
+  assert.equal(response.body.user.permissions.canViewInvoices, true);
+  assert.equal(response.body.user.permissions.canManageInvoices, true);
+  assert.equal(response.body.user.permissions.canViewAdminActivity, true);
   assert.equal(response.body.user.permissions.defaultView, 'admin');
   assert.deepEqual(response.body.user.permissions.availableViews, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.permissionKeys.includes('admin.roles.manage'), true);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
+  assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=7200/);
+  assert.match(db.queries[3].text, /expires_at/);
 });
 
 
 test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
-    [],
     [{ key: 'client', name: 'Client' }],
+    [],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+  const rawResponse = await handler(new Request('https://site.test/api/me', {
     headers: { cookie: 'ta_session=session-token' },
-  })));
+  }));
+  const response = await readJson(rawResponse);
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body.user.roles, ['client']);
@@ -240,7 +321,12 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
-  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.quotes.manage', 'client.requests.manage', 'client.tools']);
+  assert.equal(response.body.user.permissions.canViewInvoices, true);
+  assert.equal(response.body.user.permissions.canManageInvoices, false);
+  assert.equal(response.body.user.permissions.canViewAdminActivity, false);
+  assert.deepEqual(response.body.user.permissions.permissionKeys, ['client.invoices.manage', 'client.quotes.manage', 'client.requests.manage', 'client.tools']);
+  assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=1800/);
+  assert.match(db.queries[3].text, /expires_at/);
 });
 
 test('logout endpoint revokes the current session and clears the session cookie', async () => {
@@ -259,6 +345,25 @@ test('logout endpoint revokes the current session and clears the session cookie'
   assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
   assert.equal(db.queries.length, 1);
   assert.match(db.queries[0].text, /update auth_sessions/);
+  assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+
+
+test('logout endpoint supports link-based sign out and clears the session cookie', async () => {
+  const db = createMockDb();
+  const handler = createLogoutHandler({ getDatabase: async () => db });
+
+  const response = await handler(new Request('https://site.test/api/auth/logout?redirect=/login/?signed-out=1', {
+    method: 'GET',
+    headers: { cookie: 'ta_session=session-token' },
+  }));
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/login/?signed-out=1');
+  assert.match(response.headers.get('set-cookie'), /ta_session=;/);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(db.queries.length, 1);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
@@ -283,18 +388,19 @@ test('magic-link endpoint accepts honeypot submissions without writing tokens', 
 test('me endpoint lets a signed-in client update their profile', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100', secondary_phone: null, company_name: null, mailing_address: null }],
-    [],
     [{ key: 'client', name: 'Client' }],
+    [],
     [],
     [{ id: 'user-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client Updated', phone: '555-0200', secondary_phone: '555-0300', company_name: 'Client Co', mailing_address: '456 Oak Ave' }],
     [],
   ]);
   const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+  const rawResponse = await handler(new Request('https://site.test/api/me', {
     method: 'PATCH',
     headers: { cookie: 'ta_session=session-token', 'content-type': 'application/json' },
     body: JSON.stringify({ fullName: 'Client Updated', phone: '555-0200', secondaryPhone: '555-0300', companyName: 'Client Co', mailingAddress: '456 Oak Ave' }),
-  })));
+  }));
+  const response = await readJson(rawResponse);
 
   assert.equal(response.status, 200);
   assert.equal(response.body.user.fullName, 'Client Updated');
@@ -302,6 +408,9 @@ test('me endpoint lets a signed-in client update their profile', async () => {
   assert.equal(response.body.user.secondaryPhone, '555-0300');
   assert.equal(response.body.user.companyName, 'Client Co');
   assert.equal(response.body.user.mailingAddress, '456 Oak Ave');
+  assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=1800/);
+  assert.match(db.queries[3].text, /update auth_sessions/);
+  assert.match(db.queries[3].text, /expires_at/);
   assert.match(db.queries[4].text, /update app_users/);
   assert.match(db.queries[5].text, /insert into audit_events/);
 });
