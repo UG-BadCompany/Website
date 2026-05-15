@@ -1,6 +1,6 @@
 import {
   createExpiredSessionCookie,
-  getSessionToken,
+  getSessionTokens,
   hashToken,
   json,
   loadDatabase,
@@ -22,22 +22,23 @@ export const createLogoutHandler = ({ getDatabase = loadDatabase } = {}) => asyn
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const sessionToken = getSessionToken(request);
+  const sessionTokens = getSessionTokens(request);
 
-  if (sessionToken) {
+  if (sessionTokens.length) {
     try {
       const db = await getDatabase();
 
-      await db.sql`
-        update auth_sessions
-        set revoked_at = now()
-        where session_hash = ${hashToken(sessionToken)}
-          and revoked_at is null
-      `;
+      for (const sessionToken of sessionTokens) {
+        await db.sql`
+          update auth_sessions
+          set revoked_at = now()
+          where session_hash = ${hashToken(sessionToken)}
+            and revoked_at is null
+        `;
+      }
     } catch (error) {
       console.error('Failed to revoke session', error);
-
-      return json(500, { ok: false, message: 'We could not sign you out right now.' });
+      // Still clear the browser cookie below so users can leave a stale session immediately.
     }
   }
 
