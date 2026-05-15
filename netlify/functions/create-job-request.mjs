@@ -35,6 +35,7 @@ export const normalizePayload = (payload) => {
     normalized[field] = clean(payload[field]).slice(0, maxLength);
   }
 
+  normalized.email = normalized.email.toLowerCase();
   normalized.botField = clean(payload['bot-field']);
 
   return normalized;
