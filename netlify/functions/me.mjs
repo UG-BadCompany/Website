@@ -201,6 +201,15 @@ const mapUser = (session, roleKeys, permissionKeys) => ({
   permissions: buildPermissions(roleKeys, permissionKeys),
 });
 
+const createSessionRefreshHeaders = (sessionToken, request, roleKeys) => {
+  const ttlMinutes = getSessionTtlMinutesForRoles(roleKeys);
+
+  return {
+    headers: { 'set-cookie': createSessionCookie(sessionToken, request, ttlMinutes) },
+    expiresAt: minutesFromNow(ttlMinutes),
+  };
+};
+
 export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (!['GET', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
@@ -250,14 +259,12 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       order by role_permissions.permission_key
     `;
     const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
-    const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
-    const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
-    const sessionExpiresAt = minutesFromNow(sessionTtlMinutes);
+    const sessionRefresh = createSessionRefreshHeaders(sessionToken, request, roleKeys);
 
     await db.sql`
       update auth_sessions
       set last_seen_at = now(),
-          expires_at = ${sessionExpiresAt}::timestamptz
+          expires_at = ${sessionRefresh.expiresAt}::timestamptz
       where id = ${session.id}
     `;
 
@@ -295,14 +302,14 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
         ok: true,
         authenticated: true,
         user: mapUser(updatedUser, roleKeys, permissionKeys),
-      }, { 'set-cookie': sessionCookie });
+      }, sessionRefresh.headers);
     }
 
     return json(200, {
       ok: true,
       authenticated: true,
       user: mapUser(session, roleKeys, permissionKeys),
-    }, { 'set-cookie': sessionCookie });
+    }, sessionRefresh.headers);
   } catch (error) {
     console.error('Failed to load current user', error);
 
