@@ -294,6 +294,12 @@ export const parseCookies = (cookieHeader = '') => Object.fromEntries(parseCooki
 
 export const getSessionToken = (request) => parseCookies(request.headers.get('cookie') || '')[SESSION_COOKIE_NAME] || '';
 
+export const getSessionTokens = (request) =>
+  parseCookiePairs(request.headers.get('cookie') || '')
+    .filter(([name]) => name === SESSION_COOKIE_NAME)
+    .map(([, value]) => value)
+    .filter(Boolean);
+
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
   const [existingUser] = await db.sql`
