@@ -32,7 +32,7 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
       job_request_id: 'job-1',
       client_id: 'client-1',
       status: 'open',
-      title: 'Repair invoice',
+      title: 'Invoice & payment desk',
       amount_cents: 42500,
       paid_at: null,
       created_at: '2026-05-09T00:00:00.000Z',
@@ -44,6 +44,11 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
       service_type: 'Drywall repair',
       city: 'Mesa',
       street_address: '123 Main St',
+      payment_provider: 'square',
+      provider_checkout_id: 'checkout-1',
+      provider_checkout_url: 'https://square.link/pay/checkout-1',
+      provider_status: 'created',
+      provider_metadata: { orderId: 'order-1' },
     }],
   ]);
   const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
@@ -51,7 +56,51 @@ test('admin invoices endpoint lists open invoices for admins', async () => {
   assert.equal(response.status, 200);
   assert.equal(response.body.invoices.length, 1);
   assert.equal(response.body.summary.amountDueCents, 42500);
+  assert.equal(response.body.invoices[0].title, 'Drywall repair — Client invoice');
+  assert.equal(response.body.invoices[0].provider.name, 'square');
+  assert.equal(response.body.invoices[0].provider.checkoutUrl, 'https://square.link/pay/checkout-1');
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
+});
+
+
+test('admin invoices endpoint lists paid payment history for admins', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [],
+    [{
+      id: 'invoice-2',
+      job_request_id: 'job-2',
+      client_id: 'client-2',
+      status: 'paid',
+      title: 'Fence invoice',
+      amount_cents: 90000,
+      paid_at: '2026-05-11T00:00:00.000Z',
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-11T00:00:00.000Z',
+      client_full_name: 'Paid Client',
+      client_email: 'paid@example.com',
+      client_phone: '555-0199',
+      job_request_status: 'completed',
+      service_type: 'Fence repair',
+      city: 'Tempe',
+      street_address: '456 Main St',
+      payment_amount_cents: 87500,
+      payment_method: 'check',
+      payment_reference: 'check-1001',
+      payment_confirmed_at: '2026-05-11T00:00:00.000Z',
+    }],
+  ]);
+  const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/invoices?status=paid', { headers: { cookie: 'ta_session=session-token' } })));
+  assert.equal(response.status, 200);
+  assert.equal(response.body.filter, 'paid');
+  assert.equal(response.body.invoices[0].payment.reference, 'check-1001');
+  assert.equal(response.body.summary.paid, 1);
+  assert.equal(response.body.summary.amountCollectedCents, 87500);
+  assert.match(db.queries[4].text, /where invoices\.status = \?/);
+  assert.equal(db.queries[4].values[0], 'paid');
 });
 
 test('admin invoices endpoint confirms payment and completes the job request', async () => {
