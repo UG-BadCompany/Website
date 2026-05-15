@@ -15,43 +15,45 @@ export const createVerifyMagicLinkHandler = ({
   getDatabase = loadDatabase,
   makeSessionToken = createToken,
 } = {}) => async (request) => {
-  if (request.method !== 'GET') {
+  if (!['GET', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token') || '';
+  const token = await getTokenFromRequest(request);
 
   if (!token) {
-    return Response.redirect(`${getSiteUrl(request)}/login/?auth=missing-token`, 302);
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
   }
 
   try {
     const db = await getDatabase();
+    const tokenHash = hashToken(token);
     const [magicLink] = await db.sql`
-      select id, email, purpose, client_name, client_phone
+      select id, email, expires_at, consumed_at,
+        case when token_hash = ${tokenHash} then 'token' else 'id' end as matched_by
       from auth_magic_links
-      where token_hash = ${hashToken(token)}
-        and consumed_at is null
-        and expires_at > now()
+      where token_hash = ${tokenHash}
+        or id::text = ${token}
+      order by created_at desc
       limit 1
     `;
+    const magicLinkStatus = getMagicLinkStatus(magicLink);
 
-    if (!magicLink) {
-      return Response.redirect(`${getSiteUrl(request)}/login/?auth=expired`, 302);
+    if (magicLinkStatus !== 'active') {
+      console.error('Magic link verification did not find an active link', {
+        status: magicLinkStatus,
+        matchedBy: magicLink?.matched_by || null,
+        magicLinkId: magicLink?.id || null,
+        hasConsumedAt: Boolean(magicLink?.consumed_at),
+        expiresAt: magicLink?.expires_at || null,
+      });
+
+      return getInactiveRedirect(magicLinkStatus);
     }
 
     const user = await createOrUpdateMagicLinkUser(db, {
       email: magicLink.email,
-      name: magicLink.client_name,
-      phone: magicLink.client_phone,
     });
-
-    await db.sql`
-      update auth_magic_links
-      set consumed_at = now()
-      where id = ${magicLink.id}
-    `;
 
     const sessionToken = makeSessionToken();
     const sessionRoleRows = await db.sql`
@@ -68,8 +70,18 @@ export const createVerifyMagicLinkHandler = ({
       values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
     `;
 
+    try {
+      await db.sql`
+        update auth_magic_links
+        set consumed_at = now()
+        where id = ${magicLink.id}
+      `;
+    } catch (consumeError) {
+      console.error('Failed to mark magic link consumed after session creation', consumeError);
+    }
+
     return new Response(null, {
-      status: 302,
+      status: request.method === 'POST' ? 303 : 302,
       headers: {
         location: `${getSiteUrl(request)}/dashboard/`,
         'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
@@ -78,7 +90,7 @@ export const createVerifyMagicLinkHandler = ({
   } catch (error) {
     console.error('Failed to verify magic link', error);
 
-    return Response.redirect(`${getSiteUrl(request)}/login/?auth=error`, 302);
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=error' } });
   }
 };
 

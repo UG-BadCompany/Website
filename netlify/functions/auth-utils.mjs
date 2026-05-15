@@ -60,6 +60,25 @@ export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = [])
   return [...permissionKeys].sort();
 };
 
+
+export const loadRolePermissionKeys = async (db, userId, { logPrefix = 'Failed to load role permissions; using role defaults' } = {}) => {
+  try {
+    const rolePermissions = await db.sql`
+      select distinct role_permissions.permission_key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+      where user_roles.user_id = ${userId}
+      order by role_permissions.permission_key
+    `;
+
+    return rolePermissions.map((permission) => permission.permission_key);
+  } catch (error) {
+    console.error(logPrefix, error);
+    return [];
+  }
+};
+
 export const clean = (value, maxLength = 254) => (
   typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
 );
@@ -173,7 +192,7 @@ export const getSiteUrl = (request) => {
   return allowedSiteUrls[0] || requestOrigin;
 };
 
-export const createMagicLinkUrl = (request, token) => `${getSiteUrl(request)}/api/auth/verify?token=${encodeURIComponent(token)}`;
+export const createMagicLinkUrl = (request, token) => new URL(`/api/auth/verify?token=${encodeURIComponent(token)}`, request.url).toString();
 
 export const isConfiguredSecret = (value, placeholderFragments = []) => {
   const cleaned = clean(value);
@@ -249,24 +268,67 @@ export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_S
   return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${secure}`;
 };
 
-export const createExpiredSessionCookie = (request) => {
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
-
-  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
-};
-
-export const parseCookies = (cookieHeader = '') => Object.fromEntries(
-  cookieHeader
-    .split(';')
-    .map((cookie) => cookie.trim())
-    .filter(Boolean)
-    .map((cookie) => {
-      const [name, ...valueParts] = cookie.split('=');
-      return [name, decodeURIComponent(valueParts.join('='))];
-    }),
+const isCookieDomainSafe = (hostname) => (
+  hostname
+    && hostname.includes('.')
+    && !hostname.endsWith('.netlify.app')
+    && !['localhost', '127.0.0.1'].includes(hostname)
 );
 
-export const getSessionToken = (request) => parseCookies(request.headers.get('cookie') || '')[SESSION_COOKIE_NAME] || '';
+const normalizeCookieDomain = (domain) => hostnameWithoutWww(clean(domain, 253).toLowerCase().replace(/^\.+/, ''));
+
+const getConfiguredCookieDomain = (request) => {
+  const requestHostname = new URL(request.url).hostname.toLowerCase();
+  const explicitDomain = normalizeCookieDomain(process.env.AUTH_COOKIE_DOMAIN);
+
+  if (isCookieDomainSafe(explicitDomain)
+    && (requestHostname === explicitDomain || requestHostname.endsWith(`.${explicitDomain}`))) {
+    return explicitDomain;
+  }
+
+  return getAllowedSiteUrls()
+    .map((siteUrl) => normalizeCookieDomain(new URL(siteUrl).hostname))
+    .find((siteHostname) => isCookieDomainSafe(siteHostname)
+      && (requestHostname === siteHostname || requestHostname.endsWith(`.${siteHostname}`))) || '';
+};
+
+const getCookieDomainAttribute = (request) => {
+  const cookieDomain = getConfiguredCookieDomain(request);
+
+  return cookieDomain ? `; Domain=.${cookieDomain}` : '';
+};
+
+const getCookieSecurityAttributes = (request) => (
+  `${getCookieDomainAttribute(request)}; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
+);
+
+export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
+  const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
+  const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
+
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=${maxAgeSeconds}; Expires=${expires}`;
+};
+
+export const createExpiredSessionCookie = (request) => (
+  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+);
+
+export const parseCookiePairs = (cookieHeader = '') => cookieHeader
+  .split(';')
+  .map((cookie) => cookie.trim())
+  .filter(Boolean)
+  .map((cookie) => {
+    const [name, ...valueParts] = cookie.split('=');
+    return [name, decodeURIComponent(valueParts.join('='))];
+  });
+
+export const parseCookies = (cookieHeader = '') => Object.fromEntries(parseCookiePairs(cookieHeader));
+
+export const getSessionTokens = (request) => [...new Set(parseCookiePairs(request.headers.get('cookie') || '')
+  .filter(([name, value]) => name === SESSION_COOKIE_NAME && value)
+  .map(([, value]) => value))];
+
+export const getSessionToken = (request) => getSessionTokens(request)[0] || '';
 
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
@@ -292,8 +354,6 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     insert into app_users (auth_provider, auth_subject, email, full_name, phone)
     values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
     on conflict (email) do update set
-      auth_provider = case when app_users.auth_provider = 'pending' then 'magic_link' else app_users.auth_provider end,
-      auth_subject = case when app_users.auth_provider = 'pending' or app_users.auth_subject is null then excluded.auth_subject else app_users.auth_subject end,
       full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
       phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
       is_active = true,
@@ -301,14 +361,28 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     returning id, email, full_name, phone
   `;
 
-  await db.sql`
-    insert into user_roles (user_id, role_id)
-    select ${user.id}, roles.id
-    from roles
-    where roles.key = 'client'
-      and not exists (select 1 from user_roles where user_roles.user_id = ${user.id})
-    on conflict do nothing
-  `;
+  if (!savedUser) {
+    throw new Error(`Unable to create or update magic-link user for ${normalizedEmail}`);
+  }
 
-  return user;
+  try {
+    await db.sql`
+      insert into roles (key, name, description)
+      values ('client', 'Client', 'Can manage their own properties, requests, quotes, invoices, files, and messages.')
+      on conflict (key) do nothing
+    `;
+
+    await db.sql`
+      insert into user_roles (user_id, role_id)
+      select ${savedUser.id}, roles.id
+      from roles
+      where roles.key = 'client'
+        and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
+      on conflict do nothing
+    `;
+  } catch (error) {
+    console.error('Failed to assign default client role during magic-link sign-in', error);
+  }
+
+  return savedUser;
 };
