@@ -5,6 +5,7 @@ import {
   getAllowedSiteUrls,
   getFromEmail,
   getSiteUrl,
+  getSessionCookieMaxAgeSeconds,
   getSessionTtlMinutesForRoles,
   hashToken,
   shouldSendEmail,
@@ -59,6 +60,8 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
   assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
   assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
   assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
+  assert.equal(getSessionCookieMaxAgeSeconds(30), 1800);
+  assert.equal(getSessionCookieMaxAgeSeconds(120), 7200);
 });
 
 

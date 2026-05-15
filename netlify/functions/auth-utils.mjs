@@ -260,57 +260,34 @@ export const getSessionTtlMinutesForRoles = (roleKeys = []) => (
     : CLIENT_SESSION_TTL_MINUTES
 );
 
-export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
-  const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
-  const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
-
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${secure}`;
-};
-
-const isCookieDomainSafe = (hostname) => (
-  hostname
-    && hostname.includes('.')
-    && !hostname.endsWith('.netlify.app')
-    && !['localhost', '127.0.0.1'].includes(hostname)
+export const getSessionCookieMaxAgeSeconds = (ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => (
+  Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60))
 );
 
-const normalizeCookieDomain = (domain) => hostnameWithoutWww(clean(domain, 253).toLowerCase().replace(/^\.+/, ''));
-
-const getConfiguredCookieDomain = (request) => {
-  const requestHostname = new URL(request.url).hostname.toLowerCase();
-  const explicitDomain = normalizeCookieDomain(process.env.AUTH_COOKIE_DOMAIN);
-
-  if (isCookieDomainSafe(explicitDomain)
-    && (requestHostname === explicitDomain || requestHostname.endsWith(`.${explicitDomain}`))) {
-    return explicitDomain;
-  }
-
-  return getAllowedSiteUrls()
-    .map((siteUrl) => normalizeCookieDomain(new URL(siteUrl).hostname))
-    .find((siteHostname) => isCookieDomainSafe(siteHostname)
-      && (requestHostname === siteHostname || requestHostname.endsWith(`.${siteHostname}`))) || '';
-};
-
-const getCookieDomainAttribute = (request) => {
-  const cookieDomain = getConfiguredCookieDomain(request);
-
-  return cookieDomain ? `; Domain=.${cookieDomain}` : '';
-};
-
-const getCookieSecurityAttributes = (request) => (
-  `${getCookieDomainAttribute(request)}; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
+const getSessionCookieSecureSuffix = (request) => (
+  new URL(request.url).protocol === 'https:' ? '; Secure' : ''
 );
 
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
-  const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
+  const maxAgeSeconds = getSessionCookieMaxAgeSeconds(ttlMinutes);
   const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
 
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=${maxAgeSeconds}; Expires=${expires}`;
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${getSessionCookieSecureSuffix(request)}`;
 };
 
 export const createExpiredSessionCookie = (request) => (
-  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${getSessionCookieSecureSuffix(request)}`
+);
+
+export const parseCookies = (cookieHeader = '') => Object.fromEntries(
+  cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .filter(Boolean)
+    .map((cookie) => {
+      const [name, ...valueParts] = cookie.split('=');
+      return [name, decodeURIComponent(valueParts.join('='))];
+    }),
 );
 
 export const parseCookiePairs = (cookieHeader = '') => cookieHeader

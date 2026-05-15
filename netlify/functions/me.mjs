@@ -252,11 +252,12 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
     const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
     const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
+    const sessionExpiresAt = minutesFromNow(sessionTtlMinutes);
 
     await db.sql`
       update auth_sessions
       set last_seen_at = now(),
-          expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
+          expires_at = ${sessionExpiresAt}::timestamptz
       where id = ${session.id}
     `;
 
