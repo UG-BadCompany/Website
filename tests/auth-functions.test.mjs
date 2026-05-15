@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import {
   getAllowedSiteUrls,
   getFromEmail,
@@ -18,6 +19,7 @@ import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
 import { createMagicLinkHandler } from '../netlify/functions/request-magic-link.mjs';
 import { createVerifyMagicLinkHandler } from '../netlify/functions/verify-magic-link.mjs';
+import { createAuthDebugHandler } from '../netlify/functions/auth-debug.mjs';
 
 const request = (body, method = 'POST', url = 'https://example.test/api/auth') => new Request(url, {
   method,
@@ -142,6 +144,80 @@ test('site URL helper supports the production domain and Netlify subdomain alias
   }
 });
 
+
+
+test('session cookies keep same-site behavior, add Secure, and share across configured www/apex hosts', () => {
+  const original = {
+    SITE_URL: process.env.SITE_URL,
+    SITE_URL_ALIASES: process.env.SITE_URL_ALIASES,
+    AUTH_COOKIE_DOMAIN: process.env.AUTH_COOKIE_DOMAIN,
+  };
+
+  delete process.env.SITE_URL;
+  delete process.env.SITE_URL_ALIASES;
+  delete process.env.AUTH_COOKIE_DOMAIN;
+
+  const httpsCookie = createSessionCookie('session-token', new Request('https://site.test/api/auth/verify'));
+  const forwardedCookie = createSessionCookie('session-token', new Request('http://site.test/api/auth/verify', {
+    headers: { 'x-forwarded-proto': 'https' },
+  }));
+  const localCookie = createSessionCookie('session-token', new Request('http://localhost:8888/api/auth/verify'));
+  const expiredCookie = createExpiredSessionCookie(new Request('https://site.test/api/auth/logout'));
+
+  assert.match(httpsCookie, /SameSite=Lax/);
+  assert.match(httpsCookie, /Secure/);
+  assert.doesNotMatch(httpsCookie, /Domain=/);
+  assert.match(forwardedCookie, /SameSite=Lax/);
+  assert.match(forwardedCookie, /Secure/);
+  assert.match(localCookie, /SameSite=Lax/);
+  assert.doesNotMatch(localCookie, /Secure/);
+  assert.match(expiredCookie, /SameSite=Lax/);
+  assert.match(expiredCookie, /Max-Age=0/);
+
+  process.env.SITE_URL = 'https://ta-contracting.org';
+  const wwwCookie = createSessionCookie('session-token', new Request('https://www.ta-contracting.org/api/auth/verify'));
+  assert.match(wwwCookie, /Domain=\.ta-contracting\.org/);
+  assert.match(wwwCookie, /Secure/);
+
+  process.env.AUTH_COOKIE_DOMAIN = 'ta-contracting.org';
+  const apexCookie = createSessionCookie('session-token', new Request('https://ta-contracting.org/api/auth/verify'));
+  assert.match(apexCookie, /Domain=\.ta-contracting\.org/);
+
+  const netlifyCookie = createSessionCookie('session-token', new Request('https://tacontracting.netlify.app/api/auth/verify'));
+  assert.doesNotMatch(netlifyCookie, /Domain=/);
+
+  for (const [key, value] of Object.entries(original)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
+test('magic-link URL uses the request host so session cookies stay on the dashboard host', () => {
+  const original = {
+    SITE_URL: process.env.SITE_URL,
+    SITE_URL_ALIASES: process.env.SITE_URL_ALIASES,
+  };
+
+  process.env.SITE_URL = 'https://ta-contracting.org';
+  delete process.env.SITE_URL_ALIASES;
+
+  assert.equal(
+    createMagicLinkUrl(new Request('https://tacontracting.netlify.app/login/'), 'magic-token'),
+    'https://tacontracting.netlify.app/api/auth/verify?token=magic-token',
+  );
+
+  for (const [key, value] of Object.entries(original)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
 test('magic-link endpoint stores a hashed token and returns a development link when email is not configured', async () => {
   const db = createMockDb();
   const handler = createMagicLinkHandler({
@@ -228,7 +304,7 @@ test('verify endpoint consumes a magic link, upserts the user, creates a session
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
   assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), 'https://site.test/dashboard/');
+  assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.match(response.headers.get('set-cookie'), /Max-Age=1800/);
   assert.equal(db.queries.length, 7);
@@ -300,7 +376,222 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
 });
 
 
-test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
+
+
+
+
+test('me endpoint chooses a usable duplicate session cookie over a revoked one', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) {
+        if (values[0] === hashToken('revoked-token')) return [{
+          id: 'revoked-session',
+          user_id: 'user-1',
+          email: 'admin@example.com',
+          full_name: 'Admin User',
+          phone: '555-0100',
+          is_active: true,
+          revoked_at: '2026-05-13T00:00:00.000Z',
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        }];
+        if (values[0] === hashToken('valid-token')) return [{
+          id: 'valid-session',
+          user_id: 'user-1',
+          email: 'admin@example.com',
+          full_name: 'Admin User',
+          phone: '555-0100',
+          is_active: true,
+          revoked_at: null,
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        }];
+      }
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
+      if (/role_permissions/.test(text)) return [];
+      if (/update auth_sessions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const rawResponse = await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=revoked-token; ta_session=valid-token' },
+  }));
+  const response = { status: rawResponse.status, body: await rawResponse.json() };
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.equal(response.body.user.id, 'user-1');
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canManageInventory, true);
+  assert.equal(rawResponse.headers.has('set-cookie'), false);
+});
+
+test('me endpoint retries role loading and still returns role defaults when the first role query fails', async () => {
+  let roleQueryAttempts = 0;
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{ id: 'session-1', user_id: 'user-1', email: 'admin@example.com', full_name: 'Admin User', phone: '555-0100' }];
+      if (text.includes('from user_roles') && text.includes('join roles')) {
+        roleQueryAttempts += 1;
+        if (roleQueryAttempts === 1) throw new Error('temporary role load failure');
+        return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
+      }
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
+  assert.equal(response.body.user.permissions.canManageUsers, true);
+  assert.equal(response.body.user.permissions.canManageInventory, true);
+});
+
+
+test('me endpoint uses the debug-compatible session lookup when SQL now filters would fail', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/expires_at > now\(\)/.test(text)) throw new Error('database now filter should not be used for session lookup');
+      if (/from auth_sessions/.test(text)) return [{
+        id: 'session-1',
+        user_id: 'user-1',
+        email: 'admin@example.com',
+        full_name: 'Admin User',
+        phone: '555-0100',
+        is_active: true,
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      }];
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
+      if (/role_permissions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(response.body.user.permissions.canManageInventory, true);
+  assert.equal(db.queries.some((query) => /expires_at > now\(\)/.test(query.text)), false);
+});
+
+
+
+test('me endpoint falls back to debug-compatible session fields when app user profile columns are unavailable', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text) && /app_users\.phone/.test(text)) throw new Error('app_users.phone column is unavailable');
+      if (/from auth_sessions/.test(text)) return [{
+        id: 'session-1',
+        user_id: 'user-1',
+        email: 'admin@example.com',
+        full_name: 'Admin User',
+        is_active: true,
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      }];
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin' }, { key: 'client' }, { key: 'worker' }];
+      if (/role_permissions/.test(text)) return [];
+      if (/update auth_sessions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.equal(response.body.user.fullName, 'Admin User');
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(db.queries.filter((query) => /from auth_sessions/.test(query.text)).length, 1);
+  assert.equal(db.queries.some((query) => /from auth_sessions/.test(query.text) && !/app_users\.phone/.test(query.text)), true);
+});
+
+test('me endpoint loads roles without requiring the optional role name column', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{
+        id: 'session-1',
+        user_id: 'user-1',
+        email: 'admin@example.com',
+        full_name: 'Admin User',
+        phone: '555-0100',
+        is_active: true,
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      }];
+      if (/select roles\.key, roles\.name/.test(text)) throw new Error('roles.name column is unavailable');
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin' }, { key: 'client' }, { key: 'worker' }];
+      if (/role_permissions/.test(text)) return [];
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
+  assert.equal(response.body.user.permissions.canViewAdminTools, true);
+  assert.equal(db.queries.some((query) => /select roles\.key, roles\.name/.test(query.text)), false);
+});
+
+test('me endpoint uses role defaults when role permission table is unavailable', async () => {
+  const db = {
+    queries: [],
+    sql(strings, ...values) {
+      const text = strings.join('?');
+      this.queries.push({ text, values });
+      if (/from auth_sessions/.test(text)) return [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client', phone: '555-0100' }];
+      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'client', name: 'Client' }];
+      if (/role_permissions/.test(text)) throw new Error('role_permissions missing');
+      return [];
+    },
+  };
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.authenticated, true);
+  assert.deepEqual(response.body.user.roles, ['client']);
+  assert.equal(response.body.user.permissions.canViewClientTools, true);
+  assert.equal(response.body.user.permissions.canViewInvoices, true);
+});
+
+test('me endpoint falls back to client access when a magic-link account has no assigned roles', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
     [{ key: 'client', name: 'Client' }],
@@ -318,6 +609,7 @@ test('me endpoint scopes plain client users to client-only dashboard permissions
   assert.equal(response.body.user.permissions.canViewClientTools, true);
   assert.equal(response.body.user.permissions.canViewWorkerTools, false);
   assert.equal(response.body.user.permissions.canViewAdminTools, false);
+  assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.canSwitchDashboardView, false);
   assert.equal(response.body.user.permissions.defaultView, 'client');
   assert.deepEqual(response.body.user.permissions.availableViews, ['client']);

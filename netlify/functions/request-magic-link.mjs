@@ -66,7 +66,7 @@ export const createMagicLinkHandler = ({
       emailSent: emailResult.sent,
       message: emailResult.sent
         ? 'Check your email for a secure sign-in link.'
-        : `${emailResult.reason || 'Email delivery is off.'} The magic link was still created; use the development link below while email is being fixed.`,
+        : `${emailResult.reason || 'Email delivery is off.'} The magic link was still created; use the secure sign-in link below while email is being fixed.`,
       ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
     });
   } catch (error) {

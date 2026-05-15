@@ -760,6 +760,7 @@ The website should add credibility wherever possible.
 - Review request automation
 - City/service landing pages
 - Reporting and analytics
+- Inventory system for tracking materials, tools, stock levels, and job usage
 - Online booking
 - Customer subscriptions or maintenance memberships
 
