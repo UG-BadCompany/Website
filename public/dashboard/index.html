@@ -283,6 +283,7 @@
 
     .admin-command-card strong { color: var(--dash-text); font-size: 1rem; }
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
+    .main-command-shortcuts .admin-command-actions { margin-top: 0; }
 
     .main-command-shortcuts {
       margin: 38px 0 34px;
@@ -508,9 +509,25 @@
         radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
       box-shadow: 0 22px 60px rgba(45,27,13,.12);
     }
-    html[data-theme="light"] .admin-command-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.70); }
-    html[data-theme="light"] .admin-command-card strong { color: #111827; }
-    html[data-theme="light"] .admin-command-card span { color: #5f5148; }
+    html[data-theme="light"] .admin-command-card,
+    html[data-theme="light"] .command-center-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.78); }
+    html[data-theme="light"] .command-center-section {
+      border-top-color: rgba(17,17,17,.10);
+      border-bottom-color: rgba(17,17,17,.08);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(249,115,22,.12), transparent 28rem),
+        linear-gradient(180deg, rgba(255,250,244,.42), rgba(247,234,220,.72));
+    }
+    html[data-theme="light"] .command-center-shell { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.90); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="light"] .command-center-heading { border-bottom-color: rgba(17,17,17,.10); }
+    html[data-theme="light"] .command-center-heading span:not(.command-center-status) { color: #5f5148; }
+    html[data-theme="light"] .command-center-group { border-color: rgba(17,17,17,.10); background: rgba(255,250,244,.72); }
+    html[data-theme="light"] .admin-command-card strong,
+    html[data-theme="light"] .command-center-card strong,
+    html[data-theme="light"] .command-center-group h3,
+    html[data-theme="light"] .command-center-heading h2 { color: #111827; }
+    html[data-theme="light"] .admin-command-card span,
+    html[data-theme="light"] .command-center-card span { color: #5f5148; }
     html[data-theme="light"] .client-request-attachments { border-color: rgba(38,94,157,.24); background: rgba(38,94,157,.07); }
     html[data-theme="light"] .client-request-attachments small,
     html[data-theme="light"] .client-request-attachment-list { color: #5f5148; }
@@ -530,6 +547,18 @@
             <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
             <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
+          </div>
+          <div class="dashboard-hero-actions admin-command-actions" aria-label="Main dashboard shortcuts" data-main-dashboard-actions hidden>
+            <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+            <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+            <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+            <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
+            <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+            <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+            <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+            <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+            <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
+            <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
           </div>
         </div>
         <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
