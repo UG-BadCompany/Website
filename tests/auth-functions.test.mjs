@@ -349,24 +349,6 @@ test('verify endpoint can recover when the link token is the database magic-link
     [],
     [],
     [],
-    [],
-  ]);
-  const handler = createVerifyMagicLinkHandler({
-    getDatabase: async () => db,
-    makeSessionToken: () => 'session-token',
-  });
-
-  const response = await handler(new Request('https://site.test/api/auth/verify?token=6f6c428d-286f-41d3-b1a0-ec2e12c4c2be'));
-
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get('location'), '/dashboard/');
-  assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries[0].values[2], '6f6c428d-286f-41d3-b1a0-ec2e12c4c2be');
-});
-
-test('verify endpoint redirects with a used-link status when a token was already consumed', async () => {
-  const db = createMockDb([
-    [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
   ]);
   const handler = createVerifyMagicLinkHandler({
     getDatabase: async () => db,

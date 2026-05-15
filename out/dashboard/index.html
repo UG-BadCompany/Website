@@ -283,6 +283,11 @@
 
     .admin-command-card strong { color: var(--dash-text); font-size: 1rem; }
     .admin-command-card span { color: var(--dash-muted); font-size: .9rem; font-weight: 720; line-height: 1.45; }
+
+    .main-command-shortcuts {
+      margin: 38px 0 34px;
+    }
+
     .main-command-shortcuts .admin-command-actions { margin-top: 0; }
 
     .client-command {
@@ -398,8 +403,16 @@
       font-size: .88rem;
     }
 
+    .account-session-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      width: min(100%, 620px);
+    }
+
     .account-status {
-      max-width: min(100%, 620px);
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -413,10 +426,19 @@
       text-align: right;
     }
 
+    .account-session-row [data-logout-button] {
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 0 14px;
+      font-size: .84rem;
+    }
+
     @media(max-width:850px) {
       .nav-inner { align-items: flex-start; }
       .dashboard-nav-cluster { justify-items: stretch; min-width: 0; }
-      .dashboard-nav-row, .nav-links { justify-content: flex-start; }
+      .dashboard-nav-row, .nav-links,
+      .account-session-row { justify-content: flex-start; }
+      .account-session-row { width: 100%; flex-wrap: wrap; }
       .account-status { text-align: left; }
     }
 
@@ -496,7 +518,7 @@
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div></div></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
   <main class="wrap">
     <section class="hero">
       <div class="dashboard-hero">
