@@ -1,14 +1,12 @@
 import {
   clean,
-  createExpiredSessionCookie,
   createSessionCookie,
   getPermissionKeysForRoles,
-  getSessionTokens,
+  getSessionToken,
   getSessionTtlMinutesForRoles,
   hashToken,
   json,
   loadDatabase,
-  loadRolePermissionKeys,
   minutesFromNow,
   parseJsonBody,
 } from './auth-utils.mjs';
@@ -37,7 +35,6 @@ const buildPermissions = (roles, assignedPermissionKeys = []) => {
     canViewInvoices: permissionSet.has('client.invoices.manage'),
     canManageInvoices: permissionSet.has('admin.invoices.manage'),
     canViewAdminActivity: permissionSet.has('admin.activity.view'),
-    canManageInventory: permissionSet.has('admin.inventory.manage'),
     defaultView: canViewAdminTools ? 'admin' : (canViewWorkerTools ? 'worker' : 'client'),
     availableViews: availableViews.length ? availableViews : roles,
     permissionKeys,
@@ -235,25 +232,33 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       );
     }
 
-    const roleKeys = await loadCurrentUserRoles(db, session.user_id);
-    const permissionKeys = await loadRolePermissionKeys(db, session.user_id, {
-      logPrefix: 'Failed to load role permissions for current user; using role defaults',
-    });
+    const roles = await db.sql`
+      select roles.key, roles.name
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${session.user_id}
+      order by roles.key
+    `;
 
-    if (request.method === 'PATCH') {
-      const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
-      const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
+    const roleKeys = roles.map((role) => role.key);
+    const rolePermissions = await db.sql`
+      select distinct role_permissions.permission_key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+      where user_roles.user_id = ${session.user_id}
+      order by role_permissions.permission_key
+    `;
+    const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
+    const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
+    const sessionCookie = createSessionCookie(sessionToken, request, sessionTtlMinutes);
 
-      try {
-        await db.sql`
-          update auth_sessions
-          set last_seen_at = now(),
-              expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
-          where id = ${session.id}
-        `;
-      } catch (touchError) {
-        console.error('Failed to refresh current session expiry before profile update; continuing with profile update', touchError);
-      }
+    await db.sql`
+      update auth_sessions
+      set last_seen_at = now(),
+          expires_at = ${minutesFromNow(sessionTtlMinutes)}::timestamptz
+      where id = ${session.id}
+    `;
 
       const body = await parseJsonBody(request);
 
@@ -296,7 +301,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       ok: true,
       authenticated: true,
       user: mapUser(session, roleKeys, permissionKeys),
-    });
+    }, { 'set-cookie': sessionCookie });
   } catch (error) {
     console.error('Failed to load current user', error);
 

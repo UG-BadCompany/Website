@@ -112,13 +112,18 @@ const loadAccess = async (db, userId) => {
   `;
   const roleKeys = roles.map((role) => role.key);
 
-  const assignedPermissionKeys = await loadRolePermissionKeys(db, userId, {
-    logPrefix: 'Failed to load admin invoice permissions; using role defaults',
-  });
+  const rolePermissions = await db.sql`
+    select distinct role_permissions.permission_key
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
+    where user_roles.user_id = ${userId}
+    order by role_permissions.permission_key
+  `;
 
   return {
     roleKeys,
-    permissionKeys: getPermissionKeysForRoles(roleKeys, assignedPermissionKeys),
+    permissionKeys: getPermissionKeysForRoles(roleKeys, rolePermissions.map((permission) => permission.permission_key)),
   };
 };
 

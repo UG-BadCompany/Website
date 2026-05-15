@@ -362,49 +362,12 @@
         <a class="btn btn-primary" href="/#estimate">Request Estimate</a>
       </nav>
     </div>
-  </header>
-
-  <main class="wrap portal-shell">
-    <section class="portal-hero" aria-labelledby="portal-title">
-      <div class="hero-copy">
-        <span class="eyebrow">Secure Client Portal</span>
-        <h1 id="portal-title">Access your T&amp;A Contracting dashboard.</h1>
-        <p class="hero-lede">Request a secure one-time link to manage requests, saved properties, quotes, invoices, and schedule updates from one protected portal.</p>
-        <div class="portal-benefits" aria-label="Portal benefits">
-          <article class="benefit"><strong>Clients</strong><p>Track job requests, properties, quotes, invoices, and completion approvals.</p></article>
-          <article class="benefit"><strong>Workers</strong><p>Open assigned work, update job status, and attach before/after files.</p></article>
-          <article class="benefit"><strong>Admins</strong><p>Manage work orders, users, quotes, invoices, and activity from the command center.</p></article>
-        </div>
-      </div>
-
-      <div class="login-panel">
-        <div class="login-logo" aria-hidden="true">
-          <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="">
-        </div>
-        <article class="login-card" id="portal-access">
-          <h2>Send Secure Link</h2>
-          <p>Enter your email to receive a secure Client Portal link. If email delivery is still being configured, the portal will show a temporary secure sign-in link after your request.</p>
-          <form class="form" data-auth-form data-endpoint="/api/auth/magic-link" aria-label="Magic link portal access request">
-            <input type="hidden" name="bot-field" value="">
-            <div class="field"><label for="magic-email">Email</label><input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
-            <button class="btn btn-primary" type="submit">Send Secure Link</button>
-            <p class="status" role="status" aria-live="polite">You are not signed in yet. Enter your email to request a secure sign-in link.</p>
-          </form>
-          <p class="notice">Already signed in? Use the Dashboard link above and we’ll take you straight to your account.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="card access-card">
-      <h2>How account access works</h2>
-      <ul class="steps">
-        <li>Request an estimate or contact T&amp;A Contracting so we can connect your email to your client account.</li>
-        <li>Use this page to request a secure one-time sign-in link.</li>
-        <li>Open the link from your email to view requests, saved properties, quotes, invoices, and schedule updates.</li>
-        <li>Need help? Contact T&amp;A Contracting and we can update your account details.</li>
-      </ul>
-    </section>
-  </main>
+  </div>
+</section>
+<section class="card"><h2>How account access works</h2><ul class="list"><li>1. Request an estimate or contact T&A Contracting so we can connect your email to your client account.</li><li>2. Use this page to request a secure one-time sign-in link.</li><li>3. Open the link from your email to view requests, saved properties, quotes, and schedule updates.</li><li>4. Need help? Contact T&A Contracting and we can update your account details.</li></ul></section>
+</main>
+<footer class="wrap footer"><strong>T&A Contracting</strong> — Secure client portal access for requests, properties, quotes, and project updates.</footer>
+<script src="/assets/login.js" defer></script>
 
   <footer class="wrap footer"><strong>T&amp;A Contracting</strong> — Secure portal access for clients, workers, and admins.</footer>
   <script src="/assets/login.js" defer></script>

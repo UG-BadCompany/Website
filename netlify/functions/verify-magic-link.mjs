@@ -2,46 +2,14 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
+  getSessionTtlMinutesForRoles,
+  getSiteUrl,
   hashToken,
   json,
   loadDatabase,
+  minutesFromNow,
 } from './auth-utils.mjs';
 
-const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
-
-const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-
-
-
-const getMagicLinkStatus = (magicLink) => {
-  if (!magicLink) return 'not-found';
-  if (magicLink.consumed_at) return 'used';
-
-  const expiresAt = new Date(magicLink.expires_at).getTime();
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return 'expired';
-
-  return 'active';
-};
-
-const getInactiveRedirect = (status) => {
-  const authState = status === 'used' ? 'used' : 'expired';
-
-  return new Response(null, { status: 302, headers: { location: `/login/?auth=${authState}` } });
-};
-
-const getTokenFromRequest = async (request) => {
-  if (request.method === 'GET') {
-    const url = new URL(request.url);
-    return url.searchParams.get('token') || '';
-  }
-
-  if (request.method === 'POST') {
-    const formData = await request.formData();
-    return String(formData.get('token') || '');
-  }
-
-  return '';
-};
 
 export const createVerifyMagicLinkHandler = ({
   getDatabase = loadDatabase,
@@ -88,10 +56,18 @@ export const createVerifyMagicLinkHandler = ({
     });
 
     const sessionToken = makeSessionToken();
+    const sessionRoleRows = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const verifySessionTtlMinutes = getSessionTtlMinutesForRoles(sessionRoleRows.map((role) => role.key));
 
     await db.sql`
       insert into auth_sessions (user_id, session_hash, expires_at)
-      values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
+      values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
     `;
 
     try {
@@ -107,8 +83,8 @@ export const createVerifyMagicLinkHandler = ({
     return new Response(null, {
       status: request.method === 'POST' ? 303 : 302,
       headers: {
-        location: '/dashboard/',
-        'set-cookie': createSessionCookie(sessionToken, request),
+        location: `${getSiteUrl(request)}/dashboard/`,
+        'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
       },
     });
   } catch (error) {
