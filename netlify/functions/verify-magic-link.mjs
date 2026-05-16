@@ -10,6 +10,11 @@ import {
   minutesFromNow,
 } from './auth-utils.mjs';
 
+export const getTokenFromRequest = (request) => {
+  const url = new URL(request.url);
+
+  return url.searchParams.get('token') || '';
+};
 
 export const createVerifyMagicLinkHandler = ({
   getDatabase = loadDatabase,
@@ -19,7 +24,7 @@ export const createVerifyMagicLinkHandler = ({
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const token = await getTokenFromRequest(request);
+  const token = getTokenFromRequest(request);
 
   if (!token) {
     return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });

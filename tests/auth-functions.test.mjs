@@ -19,8 +19,10 @@ import {
 import { createMeHandler } from '../netlify/functions/me.mjs';
 import { createLogoutHandler } from '../netlify/functions/logout.mjs';
 import { createMagicLinkHandler } from '../netlify/functions/request-magic-link.mjs';
-import { createVerifyMagicLinkHandler } from '../netlify/functions/verify-magic-link.mjs';
-import { createAuthDebugHandler } from '../netlify/functions/auth-debug.mjs';
+import {
+  createVerifyMagicLinkHandler,
+  getTokenFromRequest,
+} from '../netlify/functions/verify-magic-link.mjs';
 
 const request = (body, method = 'POST', url = 'https://example.test/api/auth') => new Request(url, {
   method,
@@ -292,6 +294,14 @@ test('magic-link user lookup reuses existing account case-insensitively', async 
   assert.equal(db.queries[0].values[0], 'client@example.com');
   assert.match(db.queries[1].text, /update app_users/);
   assert.equal(db.queries[2].values[0], 'user-1');
+});
+
+test('verify endpoint token parser reads dashboard email link query tokens', () => {
+  const requestWithToken = new Request('https://site.test/dashboard/?token=magic-token');
+  const requestWithoutToken = new Request('https://site.test/api/auth/verify');
+
+  assert.equal(getTokenFromRequest(requestWithToken), 'magic-token');
+  assert.equal(getTokenFromRequest(requestWithoutToken), '');
 });
 
 test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and opens the dashboard', async () => {

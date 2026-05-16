@@ -310,7 +310,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     return json(401, { ok: false, authenticated: false, message: 'Sign in with a magic link to access the dashboard.' });
   }
 
-  return handleMeRequest(request, getDatabase, sessionToken).catch(async (error) => {
+  return handleMeRequest(request, getDatabase, sessionToken).catch((error) => {
     console.error('Failed to load current user', error);
 
     if (request.method === 'GET') {
