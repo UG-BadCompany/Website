@@ -50,11 +50,14 @@ The portal uses one login. After sign-in, the backend loads roles and permission
 | `POST /api/client/job-requests` | Yes | `client` or `admin` | Creates a job request for an owned client property or a new property under the signed-in account. |
 | `GET /api/client/quotes` | Yes | `client` or `admin` | Returns non-draft quotes scoped to the signed-in client account. |
 | `PATCH /api/client/quotes` | Yes | `client` or `admin` | Accepts or declines an owned sent/viewed quote. |
+| `GET /api/client/invoices` | Yes | `client` or `admin` | Returns unpaid invoices scoped to the signed-in client account. |
 | `GET /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Returns assigned jobs scoped to the signed-in worker; admins can view all assignments. |
 | `PATCH /api/worker/jobs` | Yes | `worker.jobs.manage`, `worker`, or `admin` | Updates status, worker notes, checklist items, material notes, and required completion notes/photo evidence for an assigned job; workers are scoped to their own assignments. |
 | `GET /api/admin/job-requests` | Yes | `admin` | Returns recent public job requests and status counts. |
 | `PATCH /api/admin/job-requests` | Yes | `admin` | Updates a request status/internal admin notes and can create/update worker assignments from the admin work panel. |
 | `POST /api/admin/quotes` | Yes | `admin` | Creates a draft quote or sends a quote for an existing client-linked job request. |
+| `GET /api/admin/invoices` | Yes | `admin` | Lists unpaid invoices and amount-due summary for admin payment follow-up. |
+| `PATCH /api/admin/invoices` | Yes | `admin` | Confirms payment, records a payment row, completes the linked job request, and writes an audit event. |
 | `GET /api/admin/users` | Yes | `admin.users.manage` or `admin` | Lists users and assignable roles for the admin access panel. |
 | `POST /api/admin/users` | Yes | `admin.users.manage` or `admin` | Creates a user and assigns one or more roles. |
 | `PATCH /api/admin/users` | Yes | `admin.users.manage` or `admin` | Replaces an existing user's assigned roles. |
