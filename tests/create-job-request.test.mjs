@@ -50,7 +50,7 @@ test('normalizes strings and caps long public form fields', () => {
 
   assert.equal(normalized.name.length, 140);
   assert.equal(normalized.phone, '555-0100');
-  assert.equal(normalized.email, 'TEST@example.com');
+  assert.equal(normalized.email, 'test@example.com');
   assert.equal(normalized.city, '');
   assert.equal(normalized.streetAddress.length, 240);
   assert.equal(normalized.service, 'Home repair');

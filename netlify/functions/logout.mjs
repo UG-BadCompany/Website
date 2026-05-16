@@ -6,8 +6,19 @@ import {
   loadDatabase,
 } from './auth-utils.mjs';
 
+const getLogoutRedirect = (request) => {
+  const url = new URL(request.url);
+  const redirect = url.searchParams.get('redirect') || '/login/?signed-out=1';
+
+  if (!redirect.startsWith('/') || redirect.startsWith('//')) {
+    return '/login/?signed-out=1';
+  }
+
+  return redirect;
+};
+
 export const createLogoutHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (request.method !== 'POST') {
+  if (!['GET', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -28,6 +39,17 @@ export const createLogoutHandler = ({ getDatabase = loadDatabase } = {}) => asyn
 
       return json(500, { ok: false, message: 'We could not sign you out right now.' });
     }
+  }
+
+  if (request.method === 'GET') {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location: getLogoutRedirect(request),
+        'set-cookie': createExpiredSessionCookie(request),
+        'cache-control': 'no-store',
+      },
+    });
   }
 
   return json(200, { ok: true, message: 'Signed out.' }, {
