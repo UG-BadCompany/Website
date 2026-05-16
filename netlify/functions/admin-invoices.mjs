@@ -5,8 +5,16 @@ import {
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
+
+const INVOICE_FILTERS = new Set(['open', 'paid', 'all']);
+
+const normalizeInvoiceFilter = (value) => {
+  const filter = clean(value, 20) || 'open';
+  return INVOICE_FILTERS.has(filter) ? filter : 'open';
+};
 
 const normalizePaymentPayload = (body = {}) => ({
   invoiceId: clean(body.invoiceId, 80),
@@ -15,12 +23,22 @@ const normalizePaymentPayload = (body = {}) => ({
   reference: clean(body.reference, 160),
 });
 
+const RESERVED_INVOICE_TITLES = new Set(['invoice & payment desk']);
+
+const getInvoiceTitle = (invoice = {}) => {
+  const rawTitle = clean(invoice.title, 180);
+  if (rawTitle && !RESERVED_INVOICE_TITLES.has(rawTitle.toLowerCase())) return rawTitle;
+  const service = clean(invoice.service_type, 120) || 'Completed work';
+  const client = clean(invoice.client_full_name || invoice.client_email, 120);
+  return `${service}${client ? ` — ${client}` : ''} invoice`;
+};
+
 const mapInvoice = (invoice) => ({
   id: invoice.id,
   jobRequestId: invoice.job_request_id,
   clientId: invoice.client_id,
   status: invoice.status,
-  title: invoice.title,
+  title: getInvoiceTitle(invoice),
   amountCents: invoice.amount_cents,
   dueAt: invoice.due_at,
   paidAt: invoice.paid_at,
@@ -37,6 +55,27 @@ const mapInvoice = (invoice) => ({
     serviceType: invoice.service_type,
     city: invoice.city,
     streetAddress: invoice.street_address,
+  } : null,
+  provider: {
+    name: invoice.payment_provider || 'manual',
+    invoiceId: invoice.provider_invoice_id,
+    checkoutId: invoice.provider_checkout_id,
+    checkoutUrl: invoice.provider_checkout_url,
+    status: invoice.provider_status,
+    metadata: invoice.provider_metadata || {},
+  },
+  payment: invoice.payment_confirmed_at ? {
+    amountCents: invoice.payment_amount_cents,
+    method: invoice.payment_method,
+    reference: invoice.payment_reference,
+    confirmedAt: invoice.payment_confirmed_at,
+    provider: {
+      name: invoice.payment_payment_provider || 'manual',
+      paymentId: invoice.payment_provider_payment_id,
+      status: invoice.payment_provider_status,
+      receiptUrl: invoice.payment_provider_receipt_url,
+      metadata: invoice.payment_provider_metadata || {},
+    },
   } : null,
 });
 
@@ -88,8 +127,108 @@ const loadAccess = async (db, userId) => {
   };
 };
 
-const listAdminInvoices = async (db) => {
-  const invoices = await db.sql`
+const selectAdminInvoiceRows = async (db, filter) => {
+  if (filter === 'paid') {
+    return await db.sql`
+      select
+        invoices.id,
+        invoices.job_request_id,
+        invoices.client_id,
+        invoices.status,
+        invoices.title,
+        invoices.amount_cents,
+        invoices.paid_at,
+        invoices.created_at,
+        invoices.updated_at,
+        invoices.payment_provider,
+        invoices.provider_invoice_id,
+        invoices.provider_checkout_id,
+        invoices.provider_checkout_url,
+        invoices.provider_status,
+        invoices.provider_metadata,
+        clients.full_name as client_full_name,
+        clients.email as client_email,
+        clients.phone as client_phone,
+        job_requests.status as job_request_status,
+        job_requests.service_type,
+        job_requests.city,
+        job_requests.street_address,
+        latest_payment.amount_cents as payment_amount_cents,
+        latest_payment.method as payment_method,
+        latest_payment.reference as payment_reference,
+        latest_payment.confirmed_at as payment_confirmed_at,
+        latest_payment.payment_provider as payment_payment_provider,
+        latest_payment.provider_payment_id as payment_provider_payment_id,
+        latest_payment.provider_status as payment_provider_status,
+        latest_payment.provider_receipt_url as payment_provider_receipt_url,
+        latest_payment.provider_metadata as payment_provider_metadata
+      from invoices
+      left join app_users clients on clients.id = invoices.client_id
+      left join job_requests on job_requests.id = invoices.job_request_id
+      left join lateral (
+        select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at, payments.payment_provider, payments.provider_payment_id, payments.provider_status, payments.provider_receipt_url, payments.provider_metadata
+        from payments
+        where payments.invoice_id = invoices.id
+        order by payments.confirmed_at desc
+        limit 1
+      ) latest_payment on true
+      where invoices.status = ${'paid'}
+      order by coalesce(invoices.paid_at, latest_payment.confirmed_at, invoices.updated_at) desc
+      limit 75
+    `;
+  }
+
+  if (filter === 'all') {
+    return await db.sql`
+      select
+        invoices.id,
+        invoices.job_request_id,
+        invoices.client_id,
+        invoices.status,
+        invoices.title,
+        invoices.amount_cents,
+        invoices.paid_at,
+        invoices.created_at,
+        invoices.updated_at,
+        invoices.payment_provider,
+        invoices.provider_invoice_id,
+        invoices.provider_checkout_id,
+        invoices.provider_checkout_url,
+        invoices.provider_status,
+        invoices.provider_metadata,
+        clients.full_name as client_full_name,
+        clients.email as client_email,
+        clients.phone as client_phone,
+        job_requests.status as job_request_status,
+        job_requests.service_type,
+        job_requests.city,
+        job_requests.street_address,
+        latest_payment.amount_cents as payment_amount_cents,
+        latest_payment.method as payment_method,
+        latest_payment.reference as payment_reference,
+        latest_payment.confirmed_at as payment_confirmed_at,
+        latest_payment.payment_provider as payment_payment_provider,
+        latest_payment.provider_payment_id as payment_provider_payment_id,
+        latest_payment.provider_status as payment_provider_status,
+        latest_payment.provider_receipt_url as payment_provider_receipt_url,
+        latest_payment.provider_metadata as payment_provider_metadata
+      from invoices
+      left join app_users clients on clients.id = invoices.client_id
+      left join job_requests on job_requests.id = invoices.job_request_id
+      left join lateral (
+        select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at, payments.payment_provider, payments.provider_payment_id, payments.provider_status, payments.provider_receipt_url, payments.provider_metadata
+        from payments
+        where payments.invoice_id = invoices.id
+        order by payments.confirmed_at desc
+        limit 1
+      ) latest_payment on true
+      where invoices.status <> ${'void'}
+      order by invoices.created_at desc
+      limit 75
+    `;
+  }
+
+  return await db.sql`
     select
       invoices.id,
       invoices.job_request_id,
@@ -101,28 +240,57 @@ const listAdminInvoices = async (db) => {
       invoices.paid_at,
       invoices.created_at,
       invoices.updated_at,
+      invoices.payment_provider,
+      invoices.provider_invoice_id,
+      invoices.provider_checkout_id,
+      invoices.provider_checkout_url,
+      invoices.provider_status,
+      invoices.provider_metadata,
       clients.full_name as client_full_name,
       clients.email as client_email,
       clients.phone as client_phone,
       job_requests.status as job_request_status,
       job_requests.service_type,
       job_requests.city,
-      job_requests.street_address
+      job_requests.street_address,
+      latest_payment.amount_cents as payment_amount_cents,
+      latest_payment.method as payment_method,
+      latest_payment.reference as payment_reference,
+      latest_payment.confirmed_at as payment_confirmed_at,
+      latest_payment.payment_provider as payment_payment_provider,
+      latest_payment.provider_payment_id as payment_provider_payment_id,
+      latest_payment.provider_status as payment_provider_status,
+      latest_payment.provider_receipt_url as payment_provider_receipt_url,
+      latest_payment.provider_metadata as payment_provider_metadata
     from invoices
     left join app_users clients on clients.id = invoices.client_id
     left join job_requests on job_requests.id = invoices.job_request_id
-    where invoices.status <> 'paid'
+    left join lateral (
+      select payments.amount_cents, payments.method, payments.reference, payments.confirmed_at, payments.payment_provider, payments.provider_payment_id, payments.provider_status, payments.provider_receipt_url, payments.provider_metadata
+      from payments
+      where payments.invoice_id = invoices.id
+      order by payments.confirmed_at desc
+      limit 1
+    ) latest_payment on true
+    where invoices.status = ${'open'}
     order by invoices.created_at desc
     limit 75
   `;
+};
 
-  const mappedInvoices = invoices.map(mapInvoice);
+const listAdminInvoices = async (db, filter = 'open') => {
+  const mappedInvoices = (await selectAdminInvoiceRows(db, filter)).map(mapInvoice);
+  const openInvoices = mappedInvoices.filter((invoice) => invoice.status === 'open');
+  const paidInvoices = mappedInvoices.filter((invoice) => invoice.status === 'paid');
 
   return {
+    filter,
     invoices: mappedInvoices,
     summary: {
-      open: mappedInvoices.filter((invoice) => invoice.status === 'open').length,
-      amountDueCents: mappedInvoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
+      open: openInvoices.length,
+      paid: paidInvoices.length,
+      amountDueCents: openInvoices.reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
+      amountCollectedCents: paidInvoices.reduce((sum, invoice) => sum + (invoice.payment?.amountCents || invoice.amountCents || 0), 0),
     },
   };
 };
@@ -242,6 +410,8 @@ export const createAdminInvoicesHandler = ({ getDatabase = loadDatabase } = {}) 
       return await handlePatch({ request, db, session });
     }
 
+    const invoiceFilter = normalizeInvoiceFilter(new URL(request.url).searchParams.get('status'));
+
     return json(200, {
       ok: true,
       authenticated: true,
@@ -252,7 +422,7 @@ export const createAdminInvoicesHandler = ({ getDatabase = loadDatabase } = {}) 
         fullName: session.full_name,
         roles: roleKeys,
       },
-      ...(await listAdminInvoices(db)),
+      ...(await listAdminInvoices(db, invoiceFilter)),
     });
   } catch (error) {
     console.error('Failed to load admin invoices', error);
