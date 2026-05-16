@@ -5,29 +5,16 @@ import {
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
 
 const WORKER_ASSIGNMENT_STATUSES = new Set(['assigned', 'accepted', 'in_progress', 'blocked', 'completed', 'cancelled']);
 
-const normalizePhotoNames = (value) => (Array.isArray(value) ? value : [])
-  .map((name) => clean(name, 240))
-  .filter(Boolean)
-  .slice(0, 12);
-
-const normalizeChecklistItems = (value) => (Array.isArray(value) ? value : [])
-  .map((item) => clean(item, 240))
-  .filter(Boolean)
-  .slice(0, 20);
-
 const normalizeWorkerUpdatePayload = (body = {}) => ({
   assignmentId: clean(body.assignmentId, 80),
   status: clean(body.status, 40),
   workerNotes: clean(body.workerNotes, 4000),
-  materialNotes: clean(body.materialNotes, 4000),
-  checklistItems: normalizeChecklistItems(body.checklistItems),
-  completionNotes: clean(body.completionNotes, 4000),
-  completionPhotoNames: normalizePhotoNames(body.completionPhotoNames),
 });
 
 const mapDate = (value) => {
@@ -44,11 +31,6 @@ const mapAssignment = (row) => ({
   endTime: row.end_time,
   notes: row.notes,
   workerNotes: row.worker_notes,
-  materialNotes: row.material_notes,
-  checklistItems: Array.isArray(row.checklist_items) ? row.checklist_items : [],
-  completionNotes: row.completion_notes,
-  completionPhotoNames: Array.isArray(row.completion_photo_names) ? row.completion_photo_names : [],
-  completionSubmittedAt: row.completion_submitted_at,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   worker: {
@@ -111,15 +93,10 @@ const loadSessionContext = async (db, sessionToken) => {
     order by roles.key
   `;
   const roleKeys = roles.map((role) => role.key);
-  const rolePermissions = await db.sql`
-    select distinct role_permissions.permission_key
-    from user_roles
-    join roles on roles.id = user_roles.role_id
-    join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
-    where user_roles.user_id = ${session.user_id}
-    order by role_permissions.permission_key
-  `;
-  const permissionKeys = getPermissionKeysForRoles(roleKeys, rolePermissions.map((permission) => permission.permission_key));
+  const assignedPermissionKeys = await loadRolePermissionKeys(db, session.user_id, {
+    logPrefix: 'Failed to load worker job permissions; using role defaults',
+  });
+  const permissionKeys = getPermissionKeysForRoles(roleKeys, assignedPermissionKeys);
 
   return { session, roleKeys, permissionKeys };
 };
@@ -137,11 +114,6 @@ const listAssignments = async (db, context) => {
       worker_assignments.end_time,
       worker_assignments.notes,
       worker_assignments.worker_notes,
-      worker_assignments.material_notes,
-      worker_assignments.checklist_items,
-      worker_assignments.completion_notes,
-      worker_assignments.completion_photo_names,
-      worker_assignments.completion_submitted_at,
       worker_assignments.created_at,
       worker_assignments.updated_at,
       workers.id as worker_id,
@@ -183,11 +155,6 @@ const listAssignments = async (db, context) => {
       worker_assignments.end_time,
       worker_assignments.notes,
       worker_assignments.worker_notes,
-      worker_assignments.material_notes,
-      worker_assignments.checklist_items,
-      worker_assignments.completion_notes,
-      worker_assignments.completion_photo_names,
-      worker_assignments.completion_submitted_at,
       worker_assignments.created_at,
       worker_assignments.updated_at,
       workers.id as worker_id,
@@ -243,40 +210,36 @@ const handlePatch = async ({ request, db, context }) => {
     return json(422, { ok: false, message: 'Choose a valid assignment status.' });
   }
 
-  if (payload.status === 'completed' && (!payload.completionNotes || payload.completionPhotoNames.length === 0)) {
-    return json(422, { ok: false, message: 'Completion notes and at least one completion photo are required before completing work.' });
-  }
-
   const isAdmin = context.roleKeys.includes('admin');
   const [updatedAssignment] = isAdmin ? await db.sql`
     update worker_assignments
     set status = ${payload.status},
         worker_notes = ${payload.workerNotes || null},
-        material_notes = ${payload.materialNotes || null},
-        checklist_items = ${JSON.stringify(payload.checklistItems)}::jsonb,
-        completion_notes = ${payload.completionNotes || null},
-        completion_photo_names = ${JSON.stringify(payload.completionPhotoNames)}::jsonb,
-        completion_submitted_at = case when ${payload.status} = 'completed' then now() else completion_submitted_at end,
         updated_at = now()
     where id = ${payload.assignmentId}
-    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, material_notes, checklist_items, completion_notes, completion_photo_names, completion_submitted_at, created_at, updated_at
+    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
   ` : await db.sql`
     update worker_assignments
     set status = ${payload.status},
         worker_notes = ${payload.workerNotes || null},
-        material_notes = ${payload.materialNotes || null},
-        checklist_items = ${JSON.stringify(payload.checklistItems)}::jsonb,
-        completion_notes = ${payload.completionNotes || null},
-        completion_photo_names = ${JSON.stringify(payload.completionPhotoNames)}::jsonb,
-        completion_submitted_at = case when ${payload.status} = 'completed' then now() else completion_submitted_at end,
         updated_at = now()
     where id = ${payload.assignmentId}
       and worker_id = ${context.session.user_id}
-    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, material_notes, checklist_items, completion_notes, completion_photo_names, completion_submitted_at, created_at, updated_at
+    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
   `;
 
   if (!updatedAssignment) {
     return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
+  }
+
+  if (payload.status === 'completed') {
+    await db.sql`
+      update job_requests
+      set status = ${'pending_review'},
+          updated_at = now()
+      where id = ${updatedAssignment.job_request_id}
+        and status in ('scheduled', 'in_progress', 'accepted')
+    `;
   }
 
   await db.sql`
@@ -304,11 +267,6 @@ const handlePatch = async ({ request, db, context }) => {
       endTime: updatedAssignment.end_time,
       notes: updatedAssignment.notes,
       workerNotes: updatedAssignment.worker_notes,
-      materialNotes: updatedAssignment.material_notes,
-      checklistItems: Array.isArray(updatedAssignment.checklist_items) ? updatedAssignment.checklist_items : [],
-      completionNotes: updatedAssignment.completion_notes,
-      completionPhotoNames: Array.isArray(updatedAssignment.completion_photo_names) ? updatedAssignment.completion_photo_names : [],
-      completionSubmittedAt: updatedAssignment.completion_submitted_at,
       createdAt: updatedAssignment.created_at,
       updatedAt: updatedAssignment.updated_at,
     },
