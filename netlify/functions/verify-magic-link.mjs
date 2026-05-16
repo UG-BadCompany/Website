@@ -2,13 +2,19 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
-  daysFromNow,
+  getSessionTtlMinutesForRoles,
   getSiteUrl,
   hashToken,
   json,
   loadDatabase,
-  SESSION_TTL_DAYS,
+  minutesFromNow,
 } from './auth-utils.mjs';
+
+export const getTokenFromRequest = (request) => {
+  const url = new URL(request.url);
+
+  return url.searchParams.get('token') || '';
+};
 
 export const createVerifyMagicLinkHandler = ({
   getDatabase = loadDatabase,
@@ -18,8 +24,7 @@ export const createVerifyMagicLinkHandler = ({
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token') || '';
+  const token = getTokenFromRequest(request);
 
   if (!token) {
     return Response.redirect(`${getSiteUrl(request)}/login/?auth=missing-token`, 302);
@@ -53,17 +58,25 @@ export const createVerifyMagicLinkHandler = ({
     `;
 
     const sessionToken = makeSessionToken();
+    const sessionRoleRows = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const verifySessionTtlMinutes = getSessionTtlMinutesForRoles(sessionRoleRows.map((role) => role.key));
 
     await db.sql`
       insert into auth_sessions (user_id, session_hash, expires_at)
-      values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
+      values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
     `;
 
     return new Response(null, {
       status: 302,
       headers: {
         location: `${getSiteUrl(request)}/dashboard/`,
-        'set-cookie': createSessionCookie(sessionToken, request),
+        'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
       },
     });
   } catch (error) {

@@ -43,50 +43,7 @@
 <section class="card"><h2>How account access works</h2><ul class="list"><li>1. Request an estimate or contact T&A Contracting so we can connect your email to your client account.</li><li>2. Use this page to request a secure one-time sign-in link.</li><li>3. Open the link from your email to view requests, saved properties, quotes, and schedule updates.</li><li>4. Need help? Contact T&A Contracting and we can update your account details.</li></ul></section>
 </main>
 <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure client portal access for requests, properties, quotes, and project updates.</footer>
-<script>
-  (() => {
-    const forms = document.querySelectorAll('[data-auth-form]');
-
-    forms.forEach((form) => {
-      const status = form.querySelector('.status');
-      const button = form.querySelector('button[type="submit"]');
-      const setStatus = (message, state = '') => {
-        status.textContent = message;
-        status.dataset.state = state;
-      };
-
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const payload = Object.fromEntries(new FormData(form).entries());
-        button.disabled = true;
-        setStatus('Sending secure sign-in link…');
-
-        try {
-          const response = await fetch(form.dataset.endpoint, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          const result = await response.json().catch(() => ({}));
-          setStatus(result.message || 'If that email is on file, a secure sign-in link will be sent shortly.', response.ok && result.ok ? 'success' : 'error');
-          if (result.devMagicLink && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-            const link = document.createElement('a');
-            link.href = result.devMagicLink;
-            link.textContent = 'Open development magic link';
-            link.style.display = 'block';
-            link.style.marginTop = '8px';
-            status.appendChild(link);
-          }
-        } catch {
-          setStatus('We could not request a sign-in link right now. Please try again or contact T&A Contracting.', 'error');
-        } finally {
-          button.disabled = false;
-        }
-      });
-    });
-  })();
-</script>
+<script src="/assets/login.js" defer></script>
 
 </body>
 </html>
