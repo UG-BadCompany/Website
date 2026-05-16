@@ -7,6 +7,73 @@ import { pathToFileURL } from 'node:url';
 const root = process.cwd();
 const functionsDir = path.join(root, 'netlify', 'functions');
 
+export const ensureAwaitHelpersAreAsync = (source) => {
+  const shouldRepairSource = source.includes('loadCurrentUserFallback')
+    || source.includes('sessionTokens')
+    || source.split('\n').length > 250;
+
+  if (!shouldRepairSource) return source;
+
+  const findMatchingBrace = (input, openBraceIndex) => {
+    let depth = 0;
+
+    for (let index = openBraceIndex; index < input.length; index += 1) {
+      if (input[index] === '{') depth += 1;
+      if (input[index] === '}') depth -= 1;
+      if (depth === 0) return index;
+    }
+
+    return -1;
+  };
+
+  const awaitNeedles = ['const db = await getDatabase();', 'await loadCurrentUserFallback'];
+  const declarations = [
+    /\b(async\s+)?function\s+[A-Za-z_$][\w$]*\s*\([^)]*\)\s*\{/g,
+    /((?:export\s+)?(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*)(async\s*)?((?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{)/g,
+  ];
+
+  let repaired = source;
+
+  for (const needle of awaitNeedles) {
+    let needleIndex = repaired.indexOf(needle);
+
+    while (needleIndex !== -1) {
+      const prefix = repaired.slice(0, needleIndex);
+      let candidate = null;
+
+      for (const declarationPattern of declarations) {
+        declarationPattern.lastIndex = 0;
+        let match = declarationPattern.exec(prefix);
+
+        while (match) {
+          const isFunctionDeclaration = match[0].includes('function');
+          const alreadyAsync = isFunctionDeclaration ? Boolean(match[1]) : Boolean(match[2]);
+          const insertAt = isFunctionDeclaration ? match.index : match.index + match[1].length;
+          const openBraceIndex = match.index + match[0].lastIndexOf('{');
+          const closeBraceIndex = findMatchingBrace(repaired, openBraceIndex);
+          const enclosesAwait = openBraceIndex < needleIndex && (closeBraceIndex === -1 || closeBraceIndex > needleIndex);
+
+          if (!alreadyAsync && enclosesAwait && (!candidate || match.index > candidate.index)) {
+            candidate = { index: match.index, insertAt };
+          }
+
+          match = declarationPattern.exec(prefix);
+        }
+      }
+
+      if (!candidate) break;
+
+      repaired = `${repaired.slice(0, candidate.insertAt)}async ${repaired.slice(candidate.insertAt)}`;
+      needleIndex = repaired.indexOf(needle, needleIndex + 'async '.length);
+    }
+  }
+
+  return repaired;
+};
+
+const prepareTrackedFileContents = (relativePath, contents) => (
+  relativePath === 'netlify/functions/me.mjs' ? ensureAwaitHelpersAreAsync(contents) : contents
+);
 
 const restoreTrackedFileFromHead = (relativePath) => {
   const filePath = path.join(root, relativePath);
@@ -24,9 +91,10 @@ const restoreTrackedFileFromHead = (relativePath) => {
   }
 
   const currentContents = readFileSync(filePath, 'utf8');
+  const preparedContents = prepareTrackedFileContents(relativePath, result.stdout);
 
-  if (currentContents !== result.stdout) {
-    writeFileSync(filePath, result.stdout);
+  if (currentContents !== preparedContents) {
+    writeFileSync(filePath, preparedContents);
     console.warn(`Warning: Restored ${relativePath} from HEAD before Netlify function syntax checks.`);
   }
 };

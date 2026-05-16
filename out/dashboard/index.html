@@ -418,6 +418,36 @@
       </div>
     </section>
 
+    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
+      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
+      <div class="command-grid" aria-label="Admin command center shortcuts">
+        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
+        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
+        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
+        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
+      </div>
+    </section>
+
+    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
+      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
+      <div class="command-grid" aria-label="Client command center shortcuts">
+        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
+        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
+        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
+        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
+      </div>
+    </section>
+
+    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
+      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
+      <div class="command-grid" aria-label="Worker command center shortcuts">
+        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
+        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
+        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
+        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
+      </div>
+    </section>
+
     <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
       <article class="card"><strong>Quotes Waiting</strong><div class="metric" data-quotes-metric>0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
@@ -1023,6 +1053,31 @@
               <option value="inventory">Inventory</option>
               <option value="account">Accounts</option>
             </select>
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
+
+    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Admin audit activity</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <input name="eventType" data-admin-activity-event-type placeholder="payment.confirmed">
           </label>
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
