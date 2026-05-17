@@ -35,6 +35,15 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
   assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
+  assert.match(html, /data-admin-command-center/, 'admins should have a command center shortcut panel');
+  assert.match(html, /data-client-command-center/, 'clients should have a command center shortcut panel');
+  assert.match(html, /data-worker-command-center/, 'workers should have a command center shortcut panel');
+  assert.match(html, /Admin command center/, 'admin command center copy should be present');
+  assert.match(html, /Client command center/, 'client command center copy should be present');
+  assert.match(html, /Worker command center/, 'worker command center copy should be present');
+  assert.match(html, /#admin-work-orders/, 'admin command center should link to work orders');
+  assert.match(html, /#admin-invoices/, 'admin command center should link to invoices');
+  assert.match(html, /#worker-jobs/, 'worker command center should link to assigned jobs');
   assert.match(html, /data-admin-activity/, 'admins should have an audit activity panel');
   assert.match(html, /data-admin-activity-filter-form/, 'admin audit activity should have filters');
   assert.match(html, /data-client-invoices/, 'clients should have an invoice and payment panel');

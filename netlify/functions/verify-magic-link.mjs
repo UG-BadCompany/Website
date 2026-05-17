@@ -5,6 +5,7 @@ import {
   hashToken,
   json,
   loadDatabase,
+  minutesFromNow,
 } from './auth-utils.mjs';
 
 const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
@@ -35,12 +36,7 @@ const getTokenFromRequest = async (request) => {
     return url.searchParams.get('token') || '';
   }
 
-  if (request.method === 'POST') {
-    const formData = await request.formData();
-    return String(formData.get('token') || '');
-  }
-
-  return '';
+  return url.searchParams.get('token') || '';
 };
 
 export const createVerifyMagicLinkHandler = ({
@@ -51,7 +47,7 @@ export const createVerifyMagicLinkHandler = ({
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const token = await getTokenFromRequest(request);
+  const token = getTokenFromRequest(request);
 
   if (!token) {
     return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
@@ -88,10 +84,18 @@ export const createVerifyMagicLinkHandler = ({
     });
 
     const sessionToken = makeSessionToken();
+    const sessionRoleRows = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const verifySessionTtlMinutes = getSessionTtlMinutesForRoles(sessionRoleRows.map((role) => role.key));
 
     await db.sql`
       insert into auth_sessions (user_id, session_hash, expires_at)
-      values (${user.id}, ${hashToken(sessionToken)}, ${daysFromNow(SESSION_TTL_DAYS)}::timestamptz)
+      values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
     `;
 
     if (request.method === 'POST') {
