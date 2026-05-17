@@ -2,6 +2,7 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
+  getSessionTtlMinutesForRoles,
   hashToken,
   json,
   loadDatabase,
@@ -31,12 +32,28 @@ const getInactiveRedirect = (status) => {
 };
 
 const getTokenFromRequest = async (request) => {
-  if (request.method === 'GET') {
-    const url = new URL(request.url);
-    return url.searchParams.get('token') || '';
+  const url = new URL(request.url);
+  const queryToken = url.searchParams.get('token');
+
+  if (queryToken || request.method === 'GET') {
+    return queryToken || '';
   }
 
-  return url.searchParams.get('token') || '';
+  const contentType = request.headers.get('content-type') || '';
+  const bodyText = await request.text().catch(() => '');
+
+  if (!bodyText) return '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      const body = JSON.parse(bodyText);
+      return typeof body.token === 'string' ? body.token : '';
+    } catch {
+      return '';
+    }
+  }
+
+  return new URLSearchParams(bodyText).get('token') || '';
 };
 
 export const createVerifyMagicLinkHandler = ({
@@ -47,7 +64,7 @@ export const createVerifyMagicLinkHandler = ({
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
-  const token = getTokenFromRequest(request);
+  const token = await getTokenFromRequest(request);
 
   if (!token) {
     return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
@@ -114,7 +131,7 @@ export const createVerifyMagicLinkHandler = ({
       status: request.method === 'POST' ? 303 : 302,
       headers: {
         location: '/dashboard/',
-        'set-cookie': createSessionCookie(sessionToken, request),
+        'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
       },
     });
   } catch (error) {
