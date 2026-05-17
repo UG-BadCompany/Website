@@ -535,24 +535,17 @@
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
             <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
           </div>
-          <div class="dashboard-hero-actions admin-command-actions" aria-label="Main dashboard shortcuts" data-main-dashboard-actions hidden>
-            <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
-            <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
-            <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
-            <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
-            <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-            <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
-            <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
-            <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
-            <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-            <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
-          </div>
         </div>
         <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
     <section class="admin-command main-command-shortcuts" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
+      <div class="admin-command-header">
+        <span class="eyebrow">Command center</span>
+        <h2>All dashboard tools under the hero.</h2>
+        <p>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
+      </div>
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
         <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
@@ -574,7 +567,7 @@
 
     <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
       <div class="admin-command-header">
-        <span class="eyebrow">Admin operations</span>
+        <span class="eyebrow">Admin command center</span>
         <h2>Run today’s work from one command center.</h2>
         <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail from the command center cards.</p>
       </div>
@@ -601,337 +594,21 @@
       </div>
     </section>
 
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
+    <section class="admin-command worker-command" data-worker-command-center data-dashboard-section data-views="worker" hidden>
+      <div class="admin-command-header">
+        <span class="eyebrow">Worker command center</span>
+        <h2>Run assigned jobs from one command center.</h2>
+        <p>Open active work orders, update job status, record field notes, and attach completion evidence from the worker cards.</p>
+      </div>
+      <div class="admin-command-actions" aria-label="Worker quick actions">
+        <a class="admin-command-card" href="#worker-jobs"><strong>Assigned jobs</strong><span>See active work orders and filter by job status.</span></a>
+        <a class="admin-command-card" href="#worker-jobs"><strong>Checklist</strong><span>Record materials, blockers, access notes, and completed tasks.</span></a>
+        <a class="admin-command-card" href="#worker-jobs"><strong>Evidence</strong><span>Add before photos, after photos, completion notes, and file details.</span></a>
+        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile</strong><span>Keep your contact details current for dispatch and admin follow-up.</span></button>
       </div>
     </section>
 
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
-      </div>
-    </section>
-
-    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="admin client worker">
+    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="client worker">
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
       <article class="card"><strong>Quotes Waiting</strong><div class="metric" data-quotes-metric>0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
       <article class="card"><strong>Properties</strong><div class="metric" data-properties-metric>0</div><p>Client properties connected to submitted requests will appear here.</p></article>
@@ -1086,6 +763,19 @@
       <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-summary aria-label="Invoice totals"></div>
+      <div class="client-request-form-grid" data-admin-invoice-filters>
+        <label>Invoice view
+          <select data-admin-invoice-status-filter>
+            <option value="open">Open invoices</option>
+            <option value="paid">Paid history</option>
+            <option value="all">All invoices</option>
+          </select>
+        </label>
+        <label>Search invoices
+          <input type="search" data-admin-invoice-search placeholder="Client, title, invoice number, or status">
+        </label>
+      </div>
       <div class="admin-request-list" data-admin-invoice-list></div>
     </section>
 
@@ -1753,13 +1443,7 @@
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
-    (() => {
-      const tokenFromDashboardUrl = new URLSearchParams(window.location.search).get('token');
-      if (tokenFromDashboardUrl) {
-        window.location.replace(`/api/auth/verify?token=${encodeURIComponent(tokenFromDashboardUrl)}`);
-        return;
-      }
-
+    (async () => {
       const sessionCard = document.querySelector('[data-session-card]');
       const status = document.querySelector('[data-session-status]');
       const accountStatus = document.querySelector('[data-account-status]');
@@ -2057,6 +1741,42 @@
           bindAdminActivityActions();
           loadAdminActivity();
         }
+      };
+
+      const verifyDashboardMagicLinkToken = async () => {
+        const url = new URL(window.location.href);
+        const tokenFromDashboardUrl = url.searchParams.get('token');
+        if (!tokenFromDashboardUrl) return true;
+
+        if (status) {
+          status.dataset.state = 'loading';
+          status.textContent = 'Completing secure sign-in…';
+        }
+        if (accountStatus) accountStatus.textContent = 'Completing secure sign-in…';
+
+        const response = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
+          credentials: 'same-origin',
+          body: new URLSearchParams({ token: tokenFromDashboardUrl }),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        url.searchParams.delete('token');
+        const cleanPath = `${url.pathname || '/dashboard/'}${url.search}${url.hash}`;
+        window.history.replaceState(null, document.title, cleanPath || '/dashboard/');
+
+        if (!response.ok || !result.ok) {
+          if (['used', 'expired'].includes(result.auth)) {
+            if (status) status.textContent = 'Magic link was already used; checking your existing secure session…';
+            if (accountStatus) accountStatus.textContent = 'Checking existing secure session…';
+            return true;
+          }
+
+          throw new Error(result.message || 'This magic link could not be verified. Request a new secure link.');
+        }
+
+        return true;
       };
 
       const fetchAuthDebug = () => fetchJson('/api/auth/debug');
@@ -4351,6 +4071,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
       };
 
       bindLogout();
+
+      try {
+        await verifyDashboardMagicLinkToken();
+      } catch (error) {
+        status.dataset.state = 'error';
+        status.innerHTML = `${escapeHtml(error.message)} <a href="/login/">Request a new magic link</a>.`;
+        if (accountStatus) accountStatus.textContent = 'Magic-link sign-in failed.';
+        return;
+      }
+
       status.dataset.state = 'loading';
       status.textContent = 'Checking secure session…';
       if (accountStatus) accountStatus.textContent = 'Checking secure session…';
