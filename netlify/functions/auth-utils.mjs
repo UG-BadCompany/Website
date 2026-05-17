@@ -302,7 +302,7 @@ const getCookieSecurityAttributes = (request) => (
 );
 
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
-  const maxAgeSeconds = Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60));
+  const maxAgeSeconds = getSessionCookieMaxAgeSeconds(ttlMinutes);
   const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
 
   return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=${maxAgeSeconds}; Expires=${expires}`;
@@ -328,6 +328,12 @@ export const getSessionTokens = (request) => [...new Set(parseCookiePairs(reques
   .map(([, value]) => value))];
 
 export const getSessionToken = (request) => getSessionTokens(request)[0] || '';
+
+export const getSessionTokens = (request) =>
+  parseCookiePairs(request.headers.get('cookie') || '')
+    .filter(([name]) => name === SESSION_COOKIE_NAME)
+    .map(([, value]) => value)
+    .filter(Boolean);
 
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
