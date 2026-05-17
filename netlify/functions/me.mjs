@@ -204,8 +204,10 @@ const mapUser = (session, roleKeys, permissionKeys) => ({
   permissions: buildPermissions(roleKeys, permissionKeys),
 });
 
-const createSessionRefreshHeaders = (sessionToken, request, roleKeys) => {
-  const ttlMinutes = getSessionTtlMinutesForRoles(roleKeys);
+export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
+  if (!['GET', 'PATCH'].includes(request.method)) {
+    return json(405, { ok: false, message: 'Method not allowed.' });
+  }
 
   const optionalSessionCheck = isOptionalSessionCheck(request);
   const sessionTokens = getSessionTokens(request);
@@ -316,7 +318,7 @@ const createSessionRefreshHeaders = (sessionToken, request, roleKeys) => {
     }
 
     return json(500, { ok: false, authenticated: false, message: 'We could not load your session right now.' });
-  });
+  }
 };
 
 export default createMeHandler();
