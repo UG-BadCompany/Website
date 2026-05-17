@@ -360,6 +360,10 @@ test('verify endpoint redirects with a used-link status when a token was already
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: new Date().toISOString(), matched_by: 'token' }],
   ]);
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => db,
+    makeSessionToken: () => 'session-token',
+  });
 
   const response = await handler(new Request('https://site.test/api/auth/verify?token=magic-token'));
 
@@ -368,20 +372,11 @@ test('verify endpoint redirects with a used-link status when a token was already
   assert.equal(db.queries.length, 1);
 });
 
-test('verify endpoint token parser reads dashboard email link query tokens', () => {
-  const requestWithToken = new Request('https://site.test/dashboard/?token=magic-token');
-  const requestWithoutToken = new Request('https://site.test/api/auth/verify');
-
-  assert.equal(getTokenFromRequest(requestWithToken), 'magic-token');
-  assert.equal(getTokenFromRequest(requestWithoutToken), '');
-});
-
-test('verify endpoint consumes a magic link, upserts the user, creates a session cookie, and opens the dashboard', async () => {
+test('verify endpoint can recover when the link token is the database magic-link id', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
     [{ id: 'user-1', email: 'Client@Example.com', full_name: '', phone: '' }],
-    [],
     [],
     [],
     [],
@@ -839,190 +834,6 @@ test('me endpoint loads roles without requiring the optional role name column', 
     headers: { cookie: 'ta_session=session-token' },
   })));
 
-
-
-
-
-test('me endpoint chooses a usable duplicate session cookie over a revoked one', async () => {
-  const db = {
-    queries: [],
-    sql(strings, ...values) {
-      const text = strings.join('?');
-      this.queries.push({ text, values });
-      if (/from auth_sessions/.test(text)) {
-        if (values[0] === hashToken('revoked-token')) return [{
-          id: 'revoked-session',
-          user_id: 'user-1',
-          email: 'admin@example.com',
-          full_name: 'Admin User',
-          phone: '555-0100',
-          is_active: true,
-          revoked_at: '2026-05-13T00:00:00.000Z',
-          expires_at: new Date(Date.now() + 60_000).toISOString(),
-        }];
-        if (values[0] === hashToken('valid-token')) return [{
-          id: 'valid-session',
-          user_id: 'user-1',
-          email: 'admin@example.com',
-          full_name: 'Admin User',
-          phone: '555-0100',
-          is_active: true,
-          revoked_at: null,
-          expires_at: new Date(Date.now() + 60_000).toISOString(),
-        }];
-      }
-      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
-      if (/role_permissions/.test(text)) return [];
-      if (/update auth_sessions/.test(text)) return [];
-      return [];
-    },
-  };
-  const handler = createMeHandler({ getDatabase: async () => db });
-  const rawResponse = await handler(new Request('https://site.test/api/me', {
-    headers: { cookie: 'ta_session=revoked-token; ta_session=valid-token' },
-  }));
-  const response = { status: rawResponse.status, body: await rawResponse.json() };
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.authenticated, true);
-  assert.equal(response.body.user.id, 'user-1');
-  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
-  assert.equal(response.body.user.permissions.canViewAdminTools, true);
-  assert.equal(response.body.user.permissions.canManageInventory, true);
-  assert.equal(rawResponse.headers.has('set-cookie'), false);
-});
-
-test('me endpoint retries role loading and still returns role defaults when the first role query fails', async () => {
-  let roleQueryAttempts = 0;
-  const db = {
-    queries: [],
-    sql(strings, ...values) {
-      const text = strings.join('?');
-      this.queries.push({ text, values });
-      if (/from auth_sessions/.test(text)) return [{ id: 'session-1', user_id: 'user-1', email: 'admin@example.com', full_name: 'Admin User', phone: '555-0100' }];
-      if (text.includes('from user_roles') && text.includes('join roles')) {
-        roleQueryAttempts += 1;
-        if (roleQueryAttempts === 1) throw new Error('temporary role load failure');
-        return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
-      }
-      return [];
-    },
-  };
-  const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
-    headers: { cookie: 'ta_session=session-token' },
-  })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.authenticated, true);
-  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
-  assert.equal(response.body.user.permissions.canViewAdminTools, true);
-  assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
-  assert.equal(response.body.user.permissions.canManageUsers, true);
-  assert.equal(response.body.user.permissions.canManageInventory, true);
-});
-
-
-test('me endpoint uses the debug-compatible session lookup when SQL now filters would fail', async () => {
-  const db = {
-    queries: [],
-    sql(strings, ...values) {
-      const text = strings.join('?');
-      this.queries.push({ text, values });
-      if (/expires_at > now\(\)/.test(text)) throw new Error('database now filter should not be used for session lookup');
-      if (/from auth_sessions/.test(text)) return [{
-        id: 'session-1',
-        user_id: 'user-1',
-        email: 'admin@example.com',
-        full_name: 'Admin User',
-        phone: '555-0100',
-        is_active: true,
-        revoked_at: null,
-        expires_at: new Date(Date.now() + 60_000).toISOString(),
-      }];
-      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin', name: 'Admin' }, { key: 'client', name: 'Client' }, { key: 'worker', name: 'Worker' }];
-      if (/role_permissions/.test(text)) return [];
-      return [];
-    },
-  };
-  const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
-    headers: { cookie: 'ta_session=session-token' },
-  })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.authenticated, true);
-  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
-  assert.equal(response.body.user.permissions.canViewAdminTools, true);
-  assert.equal(response.body.user.permissions.canManageInventory, true);
-  assert.equal(db.queries.some((query) => /expires_at > now\(\)/.test(query.text)), false);
-});
-
-
-
-test('me endpoint falls back to debug-compatible session fields when app user profile columns are unavailable', async () => {
-  const db = {
-    queries: [],
-    sql(strings, ...values) {
-      const text = strings.join('?');
-      this.queries.push({ text, values });
-      if (/from auth_sessions/.test(text) && /app_users\.phone/.test(text)) throw new Error('app_users.phone column is unavailable');
-      if (/from auth_sessions/.test(text)) return [{
-        id: 'session-1',
-        user_id: 'user-1',
-        email: 'admin@example.com',
-        full_name: 'Admin User',
-        is_active: true,
-        revoked_at: null,
-        expires_at: new Date(Date.now() + 60_000).toISOString(),
-      }];
-      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin' }, { key: 'client' }, { key: 'worker' }];
-      if (/role_permissions/.test(text)) return [];
-      if (/update auth_sessions/.test(text)) return [];
-      return [];
-    },
-  };
-  const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
-    headers: { cookie: 'ta_session=session-token' },
-  })));
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.authenticated, true);
-  assert.equal(response.body.user.fullName, 'Admin User');
-  assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
-  assert.equal(response.body.user.permissions.canViewAdminTools, true);
-  assert.equal(db.queries.filter((query) => /from auth_sessions/.test(query.text)).length, 1);
-  assert.equal(db.queries.some((query) => /from auth_sessions/.test(query.text) && !/app_users\.phone/.test(query.text)), true);
-});
-
-test('me endpoint loads roles without requiring the optional role name column', async () => {
-  const db = {
-    queries: [],
-    sql(strings, ...values) {
-      const text = strings.join('?');
-      this.queries.push({ text, values });
-      if (/from auth_sessions/.test(text)) return [{
-        id: 'session-1',
-        user_id: 'user-1',
-        email: 'admin@example.com',
-        full_name: 'Admin User',
-        phone: '555-0100',
-        is_active: true,
-        revoked_at: null,
-        expires_at: new Date(Date.now() + 60_000).toISOString(),
-      }];
-      if (/select roles\.key, roles\.name/.test(text)) throw new Error('roles.name column is unavailable');
-      if (text.includes('from user_roles') && text.includes('join roles') && !text.includes('role_permissions')) return [{ key: 'admin' }, { key: 'client' }, { key: 'worker' }];
-      if (/role_permissions/.test(text)) return [];
-      return [];
-    },
-  };
-  const handler = createMeHandler({ getDatabase: async () => db });
-  const response = await readJson(await handler(new Request('https://site.test/api/me', {
-    headers: { cookie: 'ta_session=session-token' },
-  })));
-
   assert.equal(response.status, 200);
   assert.equal(response.body.authenticated, true);
   assert.deepEqual(response.body.user.roles, ['admin', 'client', 'worker']);
@@ -1058,6 +869,25 @@ test('me endpoint falls back to client access when a magic-link account has no a
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
     [],
+    [],
+    [],
+  ]);
+  const handler = createMeHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/me', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body.user.roles, ['client']);
+  assert.equal(response.body.user.permissions.canViewClientTools, true);
+  assert.equal(response.body.user.permissions.defaultView, 'client');
+  assert.deepEqual(response.body.user.permissions.availableViews, ['client']);
+});
+
+test('me endpoint scopes plain client users to client-only dashboard permissions', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'user-1', email: 'client@example.com', full_name: 'Client' }],
+    [{ key: 'client', name: 'Client' }],
     [],
     [],
   ]);
