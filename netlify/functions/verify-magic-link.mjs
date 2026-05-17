@@ -2,16 +2,39 @@ import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
   createToken,
-  getSessionTtlMinutesForRoles,
-  getSiteUrl,
   hashToken,
   json,
   loadDatabase,
   minutesFromNow,
 } from './auth-utils.mjs';
 
-export const getTokenFromRequest = (request) => {
-  const url = new URL(request.url);
+const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
+
+const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+
+
+const getMagicLinkStatus = (magicLink) => {
+  if (!magicLink) return 'not-found';
+  if (magicLink.consumed_at) return 'used';
+
+  const expiresAt = new Date(magicLink.expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return 'expired';
+
+  return 'active';
+};
+
+const getInactiveRedirect = (status) => {
+  const authState = status === 'used' ? 'used' : 'expired';
+
+  return new Response(null, { status: 302, headers: { location: `/login/?auth=${authState}` } });
+};
+
+const getTokenFromRequest = async (request) => {
+  if (request.method === 'GET') {
+    const url = new URL(request.url);
+    return url.searchParams.get('token') || '';
+  }
 
   return url.searchParams.get('token') || '';
 };
@@ -75,21 +98,23 @@ export const createVerifyMagicLinkHandler = ({
       values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
     `;
 
-    try {
-      await db.sql`
-        update auth_magic_links
-        set consumed_at = now()
-        where id = ${magicLink.id}
-      `;
-    } catch (consumeError) {
-      console.error('Failed to mark magic link consumed after session creation', consumeError);
+    if (request.method === 'POST') {
+      try {
+        await db.sql`
+          update auth_magic_links
+          set consumed_at = now()
+          where id = ${magicLink.id}
+        `;
+      } catch (consumeError) {
+        console.error('Failed to mark magic link consumed after session creation', consumeError);
+      }
     }
 
     return new Response(null, {
       status: request.method === 'POST' ? 303 : 302,
       headers: {
-        location: `${getSiteUrl(request)}/dashboard/`,
-        'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
+        location: '/dashboard/',
+        'set-cookie': createSessionCookie(sessionToken, request),
       },
     });
   } catch (error) {

@@ -20,6 +20,7 @@ export const PORTAL_PERMISSIONS = [
   { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
   { key: 'admin.invoices.manage', label: 'Admin invoice and payment management', description: 'Create invoices and confirm payments.' },
   { key: 'admin.activity.view', label: 'Admin audit activity', description: 'View recent admin activity and audit events.' },
+  { key: 'admin.inventory.manage', label: 'Admin inventory management', description: 'Manage inventory items, stock changes, and work order material usage.' },
   { key: 'admin.users.manage', label: 'Admin user management', description: 'Create users and assign roles.' },
   { key: 'admin.roles.manage', label: 'Admin role management', description: 'Create roles and manage permissions.' },
   { key: 'dashboard.switch_views', label: 'Dashboard view switching', description: 'Switch between role views for support.' },
@@ -167,7 +168,7 @@ export const getAllowedSiteUrls = () => [
     .map((url) => normalizeSiteUrl(url)),
 ].filter((url) => url && !url.includes('your-domain.example'));
 
-const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
+export const hostnameWithoutWww = (hostname) => hostname.replace(/^www\./i, '');
 
 const matchesConfiguredSiteHost = (requestOrigin, allowedSiteUrls) => {
   const requestUrl = new URL(requestOrigin);
@@ -260,39 +261,73 @@ export const getSessionTtlMinutesForRoles = (roleKeys = []) => (
     : CLIENT_SESSION_TTL_MINUTES
 );
 
-export const getSessionCookieMaxAgeSeconds = (ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => (
-  Math.max(60, Math.round(Number(ttlMinutes || CLIENT_SESSION_TTL_MINUTES) * 60))
+const isSecureCookieRequest = (request) => {
+  const forwardedProto = clean(request.headers.get('x-forwarded-proto')).toLowerCase();
+
+  return new URL(request.url).protocol === 'https:' || forwardedProto.split(',').map((proto) => proto.trim()).includes('https');
+};
+
+const isCookieDomainSafe = (hostname) => (
+  hostname
+    && hostname.includes('.')
+    && !hostname.endsWith('.netlify.app')
+    && !['localhost', '127.0.0.1'].includes(hostname)
 );
 
-const getSessionCookieSecureSuffix = (request) => (
-  new URL(request.url).protocol === 'https:' ? '; Secure' : ''
+const normalizeCookieDomain = (domain) => hostnameWithoutWww(clean(domain, 253).toLowerCase().replace(/^\.+/, ''));
+
+const getConfiguredCookieDomain = (request) => {
+  const requestHostname = new URL(request.url).hostname.toLowerCase();
+  const explicitDomain = normalizeCookieDomain(process.env.AUTH_COOKIE_DOMAIN);
+
+  if (isCookieDomainSafe(explicitDomain)
+    && (requestHostname === explicitDomain || requestHostname.endsWith(`.${explicitDomain}`))) {
+    return explicitDomain;
+  }
+
+  return getAllowedSiteUrls()
+    .map((siteUrl) => normalizeCookieDomain(new URL(siteUrl).hostname))
+    .find((siteHostname) => isCookieDomainSafe(siteHostname)
+      && (requestHostname === siteHostname || requestHostname.endsWith(`.${siteHostname}`))) || '';
+};
+
+const getCookieDomainAttribute = (request) => {
+  const cookieDomain = getConfiguredCookieDomain(request);
+
+  return cookieDomain ? `; Domain=.${cookieDomain}` : '';
+};
+
+const getCookieSecurityAttributes = (request) => (
+  `${getCookieDomainAttribute(request)}; SameSite=Lax${isSecureCookieRequest(request) ? '; Secure' : ''}`
 );
 
 export const createSessionCookie = (sessionToken, request, ttlMinutes = CLIENT_SESSION_TTL_MINUTES) => {
   const maxAgeSeconds = getSessionCookieMaxAgeSeconds(ttlMinutes);
   const expires = new Date(Date.now() + maxAgeSeconds * 1000).toUTCString();
 
-  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Expires=${expires}${getSessionCookieSecureSuffix(request)}`;
+  return `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=${maxAgeSeconds}; Expires=${expires}`;
 };
 
 export const createExpiredSessionCookie = (request) => (
-  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${getSessionCookieSecureSuffix(request)}`
+  `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly${getCookieSecurityAttributes(request)}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
 );
 
-const parseCookiePairs = (cookieHeader = '') => (
-  cookieHeader
-    .split(';')
-    .map((cookie) => cookie.trim())
-    .filter(Boolean)
-    .map((cookie) => {
-      const [name, ...valueParts] = cookie.split('=');
-      return [name, decodeURIComponent(valueParts.join('='))];
-    })
-);
+export const parseCookiePairs = (cookieHeader = '') => cookieHeader
+  .split(';')
+  .map((cookie) => cookie.trim())
+  .filter(Boolean)
+  .map((cookie) => {
+    const [name, ...valueParts] = cookie.split('=');
+    return [name, decodeURIComponent(valueParts.join('='))];
+  });
 
 export const parseCookies = (cookieHeader = '') => Object.fromEntries(parseCookiePairs(cookieHeader));
 
-export const getSessionToken = (request) => parseCookies(request.headers.get('cookie') || '')[SESSION_COOKIE_NAME] || '';
+export const getSessionTokens = (request) => [...new Set(parseCookiePairs(request.headers.get('cookie') || '')
+  .filter(([name, value]) => name === SESSION_COOKIE_NAME && value)
+  .map(([, value]) => value))];
+
+export const getSessionToken = (request) => getSessionTokens(request)[0] || '';
 
 export const getSessionTokens = (request) =>
   parseCookiePairs(request.headers.get('cookie') || '')
@@ -303,18 +338,16 @@ export const getSessionTokens = (request) =>
 export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
   const normalizedEmail = clean(email).toLowerCase();
   const [existingUser] = await db.sql`
-    select id
+    select id, email, full_name, phone
     from app_users
     where lower(email) = lower(${normalizedEmail})
     order by created_at asc
     limit 1
   `;
 
-  const [user] = existingUser ? await db.sql`
+  const [savedUser] = existingUser ? await db.sql`
     update app_users
-    set auth_provider = case when auth_provider = 'pending' then 'magic_link' else auth_provider end,
-        auth_subject = case when auth_provider = 'pending' or auth_subject is null then ${normalizedEmail} else auth_subject end,
-        full_name = coalesce(nullif(full_name, ''), ${name || null}),
+    set full_name = coalesce(nullif(full_name, ''), ${name || null}),
         phone = coalesce(nullif(phone, ''), ${phone || null}),
         is_active = true,
         updated_at = now()

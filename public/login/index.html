@@ -358,24 +358,22 @@
       </a>
       <nav class="nav-links" aria-label="Primary links">
         <a href="/">Home</a>
-        <a href="/dashboard/">Dashboard</a>
+        <a href="/login/?next=dashboard#portal-access">Dashboard</a>
         <a class="btn btn-primary" href="/#estimate">Request Estimate</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap portal-shell">
-    <section class="portal-hero" aria-labelledby="login-title">
+    <section class="portal-hero" aria-labelledby="portal-title">
       <div class="hero-copy">
         <span class="eyebrow">Secure Client Portal</span>
-        <h1 id="login-title">Sign in with a secure magic link.</h1>
-        <p class="hero-lede">Enter the email you use with T&amp;A Contracting and we’ll send a one-time link that opens your project workspace without a password.</p>
-        <p class="notice">If the email does not arrive within a few minutes, check spam or contact T&amp;A Contracting so we can confirm the email on your account.</p>
-
-        <div class="portal-benefits" aria-label="Client portal highlights">
-          <article class="benefit"><strong>Requests</strong><p>Follow new, quoted, scheduled, in-progress, and completed work in one place.</p></article>
-          <article class="benefit"><strong>Quotes</strong><p>Review quote details and approve or decline work from your account.</p></article>
-          <article class="benefit"><strong>Properties</strong><p>Keep home, rental, business, and property-manager jobs organized.</p></article>
+        <h1 id="portal-title">Access your T&amp;A Contracting dashboard.</h1>
+        <p class="hero-lede">Request a secure one-time link to manage requests, saved properties, quotes, invoices, and schedule updates from one protected portal.</p>
+        <div class="portal-benefits" aria-label="Portal benefits">
+          <article class="benefit"><strong>Clients</strong><p>Track job requests, properties, quotes, invoices, and completion approvals.</p></article>
+          <article class="benefit"><strong>Workers</strong><p>Open assigned work, update job status, and attach before/after files.</p></article>
+          <article class="benefit"><strong>Admins</strong><p>Manage work orders, users, quotes, invoices, and activity from the command center.</p></article>
         </div>
       </div>
 
@@ -383,25 +381,22 @@
         <div class="login-logo" aria-hidden="true">
           <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="">
         </div>
-        <article class="login-card">
-          <span class="eyebrow">Magic Link Login</span>
-          <h2>Open the portal</h2>
-          <p>For your privacy, each sign-in link expires automatically and can only be used once.</p>
+        <article class="login-card" id="portal-access">
+          <h2>Send Secure Link</h2>
+          <p>Enter your email to receive a secure Client Portal link. If email delivery is still being configured, the portal will show a temporary secure sign-in link after your request.</p>
           <form class="form" data-auth-form data-endpoint="/api/auth/magic-link" aria-label="Magic link portal access request">
             <input type="hidden" name="bot-field" value="">
-            <div class="field">
-              <label for="magic-email">Email address</label>
-              <input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required>
-            </div>
+            <div class="field"><label for="magic-email">Email</label><input id="magic-email" name="email" type="email" placeholder="name@example.com" autocomplete="email" required></div>
             <button class="btn btn-primary" type="submit">Send Secure Link</button>
-            <p class="status" role="status" aria-live="polite"></p>
+            <p class="status" role="status" aria-live="polite">You are not signed in yet. Enter your email to request a secure sign-in link.</p>
           </form>
+          <p class="notice">Already signed in? Use the Dashboard link above and we’ll take you straight to your account.</p>
         </article>
       </div>
     </section>
 
-    <section class="card access-card" aria-labelledby="access-title">
-      <h2 id="access-title">How account access works</h2>
+    <section class="card access-card">
+      <h2>How account access works</h2>
       <ul class="steps">
         <li>Request an estimate or contact T&amp;A Contracting so we can connect your email to your client account.</li>
         <li>Use this page to request a secure one-time sign-in link.</li>
@@ -411,67 +406,7 @@
     </section>
   </main>
 
-  <footer class="wrap footer"><strong>T&amp;A Contracting</strong> — Secure portal access for requests, properties, quotes, invoices, and project updates.</footer>
-
-  <script>
-    (() => {
-      const redirectExistingSession = async () => {
-        if (new URLSearchParams(window.location.search).has('signed-out')) return;
-
-        try {
-          const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (response.ok && result.authenticated) {
-            window.location.replace('/dashboard/');
-          }
-        } catch {
-          // Stay on the magic-link request form if the session check is unavailable.
-        }
-      };
-
-      redirectExistingSession();
-
-      const forms = document.querySelectorAll('[data-auth-form]');
-
-      forms.forEach((form) => {
-        const status = form.querySelector('.status');
-        const button = form.querySelector('button[type="submit"]');
-        const setStatus = (message, state = '') => {
-          status.textContent = message;
-          status.dataset.state = state;
-        };
-
-        form.addEventListener('submit', async (event) => {
-          event.preventDefault();
-
-          const payload = Object.fromEntries(new FormData(form).entries());
-          button.disabled = true;
-          setStatus('Sending secure sign-in link…');
-
-          try {
-            const response = await fetch(form.dataset.endpoint, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            const result = await response.json().catch(() => ({}));
-            setStatus(result.message || 'If that email is on file, a secure sign-in link will be sent shortly.', response.ok && result.ok ? 'success' : 'error');
-            if (result.devMagicLink && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-              const link = document.createElement('a');
-              link.href = result.devMagicLink;
-              link.textContent = 'Open development magic link';
-              link.style.display = 'block';
-              link.style.marginTop = '8px';
-              status.appendChild(link);
-            }
-          } catch {
-            setStatus('We could not request a sign-in link right now. Please try again or contact T&A Contracting.', 'error');
-          } finally {
-            button.disabled = false;
-          }
-        });
-      });
-    })();
-  </script>
+  <footer class="wrap footer"><strong>T&amp;A Contracting</strong> — Secure portal access for clients, workers, and admins.</footer>
+  <script src="/assets/login.js" defer></script>
 </body>
 </html>
