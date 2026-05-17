@@ -16,6 +16,9 @@ test('dashboard places a single all-tools command center directly under the hero
   assert.equal((html.match(/<section[^>]+data-main-dashboard-actions/g) || []).length, 1, 'only one all-tools command center should own main dashboard actions');
   assert.doesNotMatch(html, /dashboard-hero-actions admin-command-actions/, 'shortcut cards should not be embedded inside the hero panel');
   assert.doesNotMatch(html, /<section class="command-center"/, 'old duplicated command-center sections should not render');
+  assert.match(html, /\.main-command-shortcuts \.admin-command-actions \{[\s\S]*repeat\(auto-fit, minmax\(210px, 1fr\)\)/, 'main command center cards should use wider responsive columns');
+  assert.match(html, /\.main-command-shortcuts \.admin-command-card \{[\s\S]*background: #fff;/, 'main command center cards should use a high-contrast card background');
+  assert.match(html, /\.main-command-shortcuts \.admin-command-card::before/, 'main command center cards should have an accent marker for scanability');
 
   for (const label of [
     'Work orders',
