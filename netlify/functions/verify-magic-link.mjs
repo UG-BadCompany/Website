@@ -25,8 +25,20 @@ const getMagicLinkStatus = (magicLink) => {
   return 'active';
 };
 
-const getInactiveRedirect = (status) => {
+const wantsJsonResponse = (request) => (request.headers.get('accept') || '').includes('application/json');
+
+const getInactiveRedirect = (status, request) => {
   const authState = status === 'used' ? 'used' : 'expired';
+
+  if (wantsJsonResponse(request)) {
+    return json(authState === 'used' ? 409 : 410, {
+      ok: false,
+      auth: authState,
+      message: authState === 'used'
+        ? 'This magic link has already been used. Request a new secure link.'
+        : 'This magic link expired. Request a new secure link.',
+    });
+  }
 
   return new Response(null, { status: 302, headers: { location: `/login/?auth=${authState}` } });
 };
@@ -67,6 +79,10 @@ export const createVerifyMagicLinkHandler = ({
   const token = await getTokenFromRequest(request);
 
   if (!token) {
+    if (wantsJsonResponse(request)) {
+      return json(400, { ok: false, auth: 'missing-token', message: 'Magic-link token is missing.' });
+    }
+
     return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
   }
 
@@ -93,7 +109,7 @@ export const createVerifyMagicLinkHandler = ({
         expiresAt: magicLink?.expires_at || null,
       });
 
-      return getInactiveRedirect(magicLinkStatus);
+      return getInactiveRedirect(magicLinkStatus, request);
     }
 
     const user = await createOrUpdateMagicLinkUser(db, {
@@ -127,15 +143,25 @@ export const createVerifyMagicLinkHandler = ({
       }
     }
 
+    const sessionCookie = createSessionCookie(sessionToken, request, verifySessionTtlMinutes);
+
+    if (wantsJsonResponse(request)) {
+      return json(200, { ok: true, location: '/dashboard/' }, { 'set-cookie': sessionCookie });
+    }
+
     return new Response(null, {
       status: request.method === 'POST' ? 303 : 302,
       headers: {
         location: '/dashboard/',
-        'set-cookie': createSessionCookie(sessionToken, request, verifySessionTtlMinutes),
+        'set-cookie': sessionCookie,
       },
     });
   } catch (error) {
     console.error('Failed to verify magic link', error);
+
+    if (wantsJsonResponse(request)) {
+      return json(500, { ok: false, auth: 'error', message: 'We could not verify this magic link. Request a new secure link.' });
+    }
 
     return new Response(null, { status: 302, headers: { location: '/login/?auth=error' } });
   }

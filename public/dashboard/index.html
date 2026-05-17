@@ -1753,13 +1753,7 @@
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
-    (() => {
-      const tokenFromDashboardUrl = new URLSearchParams(window.location.search).get('token');
-      if (tokenFromDashboardUrl) {
-        window.location.replace(`/api/auth/verify?token=${encodeURIComponent(tokenFromDashboardUrl)}`);
-        return;
-      }
-
+    (async () => {
       const sessionCard = document.querySelector('[data-session-card]');
       const status = document.querySelector('[data-session-status]');
       const accountStatus = document.querySelector('[data-account-status]');
@@ -2057,6 +2051,42 @@
           bindAdminActivityActions();
           loadAdminActivity();
         }
+      };
+
+      const verifyDashboardMagicLinkToken = async () => {
+        const url = new URL(window.location.href);
+        const tokenFromDashboardUrl = url.searchParams.get('token');
+        if (!tokenFromDashboardUrl) return true;
+
+        if (status) {
+          status.dataset.state = 'loading';
+          status.textContent = 'Completing secure sign-in…';
+        }
+        if (accountStatus) accountStatus.textContent = 'Completing secure sign-in…';
+
+        const response = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
+          credentials: 'same-origin',
+          body: new URLSearchParams({ token: tokenFromDashboardUrl }),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        url.searchParams.delete('token');
+        const cleanPath = `${url.pathname || '/dashboard/'}${url.search}${url.hash}`;
+        window.history.replaceState(null, document.title, cleanPath || '/dashboard/');
+
+        if (!response.ok || !result.ok) {
+          if (['used', 'expired'].includes(result.auth)) {
+            if (status) status.textContent = 'Magic link was already used; checking your existing secure session…';
+            if (accountStatus) accountStatus.textContent = 'Checking existing secure session…';
+            return true;
+          }
+
+          throw new Error(result.message || 'This magic link could not be verified. Request a new secure link.');
+        }
+
+        return true;
       };
 
       const fetchAuthDebug = () => fetchJson('/api/auth/debug');
@@ -4351,6 +4381,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
       };
 
       bindLogout();
+
+      try {
+        await verifyDashboardMagicLinkToken();
+      } catch (error) {
+        status.dataset.state = 'error';
+        status.innerHTML = `${escapeHtml(error.message)} <a href="/login/">Request a new magic link</a>.`;
+        if (accountStatus) accountStatus.textContent = 'Magic-link sign-in failed.';
+        return;
+      }
+
       status.dataset.state = 'loading';
       status.textContent = 'Checking secure session…';
       if (accountStatus) accountStatus.textContent = 'Checking secure session…';
