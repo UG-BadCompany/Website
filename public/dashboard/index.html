@@ -1161,9 +1161,9 @@
           <h1>Welcome back to your T&A workspace.</h1>
           <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
-            <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView?.('admin')">Admin view</button>
-            <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView?.('client')">Client view</button>
-            <button class="role" type="button" data-view-button="worker" aria-pressed="false" onclick="window.taSetDashboardView?.('worker')">Worker view</button>
+            <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('admin')">Admin view</button>
+            <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('client')">Client view</button>
+            <button class="role" type="button" data-view-button="worker" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('worker')">Worker view</button>
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
@@ -2075,6 +2075,7 @@
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
     (async () => {
+      window.taSetDashboardView = (view) => { window.taPendingDashboardView = view; };
       const sessionCard = document.querySelector('[data-session-card]');
       const status = document.querySelector('[data-session-status]');
       const accountStatus = document.querySelector('[data-account-status]');
@@ -2657,12 +2658,18 @@
 
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
       };
-      window.taSetDashboardView = (view) => setDashboardView(view);
+      window.taSetDashboardView = (view) => {
+        window.taPendingDashboardView = view;
+        setDashboardView(view);
+      };
 
+      const normalizeDashboardViewName = (view = '') => String(view || '').trim().toLowerCase();
       const getAvailableDashboardViews = (user = {}) => {
         const permissions = user.permissions || {};
-        const roles = new Set(user.roles || []);
-        const views = new Set(permissions.availableViews || user.roles || []);
+        const normalizedRoles = (user.roles || []).map(normalizeDashboardViewName);
+        const normalizedProvidedViews = (permissions.availableViews || user.roles || []).map(normalizeDashboardViewName);
+        const roles = new Set(normalizedRoles);
+        const views = new Set(normalizedProvidedViews);
         const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'));
         if (canSwitchAllViews) {
           ['admin', 'client', 'worker'].forEach((view) => views.add(view));
@@ -2699,7 +2706,9 @@
           });
         }
 
-        const preferredView = availableViews.includes(currentDashboardView) ? currentDashboardView : (availableViews.includes(permissions.defaultView) ? permissions.defaultView : availableViews[0]);
+        const requestedView = normalizeDashboardViewName(window.taPendingDashboardView || currentDashboardView);
+        const defaultView = normalizeDashboardViewName(permissions.defaultView);
+        const preferredView = availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]);
         configureMainDashboardActions(user, preferredView || 'client');
         setDashboardView(preferredView || 'client');
       };
