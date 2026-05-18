@@ -1161,10 +1161,11 @@
           <h1>Welcome back to your T&A workspace.</h1>
           <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
-            <button class="role" type="button" data-view-button="admin" aria-pressed="false">Admin view</button>
-            <button class="role" type="button" data-view-button="client" aria-pressed="false">Client view</button>
-            <button class="role" type="button" data-view-button="worker" aria-pressed="false">Worker view</button>
+            <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView?.('admin')">Admin view</button>
+            <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView?.('client')">Client view</button>
+            <button class="role" type="button" data-view-button="worker" aria-pressed="false" onclick="window.taSetDashboardView?.('worker')">Worker view</button>
           </div>
+          <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
         <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
@@ -2619,9 +2620,15 @@
         const eyebrow = document.querySelector('[data-main-command-eyebrow]');
         const title = document.querySelector('[data-main-command-title]');
         const description = document.querySelector('[data-main-command-description]');
+        const viewStatus = document.querySelector('[data-dashboard-view-status]');
         if (eyebrow) eyebrow.textContent = copy.eyebrow;
         if (title) title.textContent = copy.title;
         if (description) description.textContent = copy.description;
+        if (viewStatus) {
+          viewStatus.hidden = false;
+          viewStatus.dataset.activeView = view;
+          viewStatus.textContent = `Showing ${copy.eyebrow.toLowerCase()} tools.`;
+        }
       };
 
       const setDashboardView = (view) => {
@@ -2650,6 +2657,8 @@
 
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
       };
+      window.taSetDashboardView = (view) => setDashboardView(view);
+
       const getAvailableDashboardViews = (user = {}) => {
         const permissions = user.permissions || {};
         const roles = new Set(user.roles || []);

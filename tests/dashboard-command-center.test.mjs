@@ -47,6 +47,9 @@ test('dashboard view switcher exposes all role views for switch-capable users', 
   assert.match(html, /\['admin', 'client', 'worker'\]\.forEach\(\(view\) => views\.add\(view\)\)/, 'all role views should be restored for switch-capable users');
   assert.match(html, /button\.setAttribute\('aria-pressed', String\(isActive\)\)/, 'view buttons should update pressed state when switching');
   assert.match(html, /switcher\.addEventListener\('click'/, 'view switcher should use delegated click handling so role buttons keep working');
+  assert.match(html, /onclick="window\.taSetDashboardView\?\.\('admin'\)"/, 'admin view button should have a direct click fallback');
+  assert.match(html, /window\.taSetDashboardView = \(view\) => setDashboardView\(view\)/, 'dashboard should expose a direct view-switch fallback for role buttons');
+  assert.match(html, /data-dashboard-view-status/, 'dashboard should show visible feedback for the selected role view');
   assert.match(html, /data-main-command-title/, 'main command center heading should update when the selected view changes');
   assert.match(html, /Admin tools for running the business/, 'admin view should have clear admin command-center copy');
   assert.match(html, /Client tools for managing a project/, 'client view should have clear client command-center copy');
