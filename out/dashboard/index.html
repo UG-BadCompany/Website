@@ -2307,6 +2307,35 @@
         }
       };
 
+      const dedupeDashboardSingletons = () => {
+        const singletonSelectors = [
+          '[data-main-dashboard-actions]',
+          '[data-view-switcher]',
+          '[data-admin-command-center]',
+          '[data-client-command-center]',
+          '[data-worker-command-center]',
+          '[data-admin-invoices]',
+          '[data-admin-activity]',
+        ];
+
+        const singletonKeys = new Set();
+        document.querySelectorAll('[data-dashboard-singleton]').forEach((element) => {
+          const singletonKey = element.dataset.dashboardSingleton;
+          if (singletonKey) singletonKeys.add(singletonKey);
+        });
+
+        singletonSelectors.forEach((selector) => {
+          const elements = Array.from(document.querySelectorAll(selector));
+          elements.slice(1).forEach((element) => element.remove());
+        });
+
+        singletonKeys.forEach((singletonKey) => {
+          const elements = Array.from(document.querySelectorAll('[data-dashboard-singleton]'))
+            .filter((element) => element.dataset.dashboardSingleton === singletonKey);
+          elements.slice(1).forEach((element) => element.remove());
+        });
+      };
+
       const configureMainDashboardActions = (user, activeView = '') => {
         const permissions = getDashboardPermissions(user);
         user.permissions = permissions;
