@@ -798,6 +798,142 @@
       .dashboard-hero { grid-template-columns: 1fr; }
     }
 
+
+    /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
+    .main-command-shortcuts {
+      color: var(--dash-text);
+      border-color: rgba(255,255,255,.16);
+      background:
+        linear-gradient(135deg, rgba(249,115,22,.18), rgba(15,23,42,.62)),
+        radial-gradient(circle at 92% 10%, rgba(96,165,250,.14), transparent 24rem),
+        rgba(15,23,42,.58);
+      box-shadow: 0 26px 80px rgba(0,0,0,.24);
+    }
+
+    .main-command-shortcuts .admin-command-header h2,
+    .main-command-shortcuts .admin-command-card strong { color: var(--dash-text); }
+    .main-command-shortcuts .admin-command-header p,
+    .main-command-shortcuts .admin-command-card span { color: var(--dash-muted); }
+    .main-command-shortcuts .eyebrow {
+      color: #fed7aa;
+      background: rgba(249,115,22,.16);
+      border: 1px solid rgba(251,146,60,.24);
+    }
+    .main-command-shortcuts .admin-command-card {
+      color: var(--dash-text);
+      border-color: rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      box-shadow: 0 18px 46px rgba(0,0,0,.20);
+    }
+    .main-command-shortcuts .admin-command-card:hover,
+    .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(251,146,60,.46);
+      background: linear-gradient(180deg, rgba(255,255,255,.17), rgba(255,255,255,.09));
+    }
+
+    .tools { align-items: stretch; }
+    .tools .card {
+      border-color: rgba(255,255,255,.18);
+      background:
+        linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.64)),
+        radial-gradient(circle at 88% 8%, rgba(249,115,22,.18), transparent 18rem);
+    }
+    .tools .card strong { color: var(--dash-text); font-size: 1.16rem; }
+    .tools .card p { color: #dbe4ef; }
+    .tools .tool-list li {
+      position: relative;
+      color: #f8fafc;
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.105);
+      box-shadow: inset 4px 0 0 rgba(249,115,22,.72);
+      font-weight: 860;
+    }
+
+    html[data-theme="light"] {
+      --dash-text: #111827;
+      --dash-muted: #475467;
+      --dash-line: rgba(17,24,39,.18);
+      --dash-surface: rgba(255,255,255,.94);
+      --dash-surface-strong: rgba(255,255,255,.98);
+    }
+    html[data-theme="light"] body { color: #111827; }
+    html[data-theme="light"] .nav-links > a:not(.btn) { color: #384252; }
+    html[data-theme="light"] .btn-soft,
+    html[data-theme="light"] .account-status {
+      color: #111827;
+      background: rgba(255,255,255,.92);
+      border-color: rgba(17,24,39,.18);
+    }
+    html[data-theme="light"] .main-command-shortcuts {
+      color: #111827;
+      border-color: rgba(173,63,24,.20);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.96)),
+        radial-gradient(circle at 92% 12%, rgba(249,115,22,.14), transparent 24rem);
+      box-shadow: 0 24px 70px rgba(45,27,13,.14);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-header h2,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card strong { color: #111827; }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-header p,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card span { color: #475467; }
+    html[data-theme="light"] .main-command-shortcuts .eyebrow {
+      color: #9a3412;
+      background: rgba(249,115,22,.12);
+      border-color: rgba(154,52,18,.18);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card {
+      border-color: rgba(17,24,39,.14);
+      background: #ffffff;
+      box-shadow: 0 14px 34px rgba(45,27,13,.10);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card:hover,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(194,65,12,.34);
+      background: #fff7ed;
+    }
+    html[data-theme="light"] .admin-command {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,247,237,.92)),
+        radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
+    }
+    html[data-theme="light"] .admin-command-card {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.92);
+    }
+    html[data-theme="light"] .admin-command-card strong { color: #111827; }
+    html[data-theme="light"] .admin-command-card span { color: #475467; }
+    html[data-theme="light"] .dashboard-hero,
+    html[data-theme="light"] .card,
+    html[data-theme="light"] .client-request-form,
+    html[data-theme="light"] .admin-request,
+    html[data-theme="light"] .client-request,
+    html[data-theme="light"] .client-quote,
+    html[data-theme="light"] .client-property,
+    html[data-theme="light"] .worker-job,
+    html[data-theme="light"] .admin-assignment,
+    html[data-theme="light"] .admin-request-modal-panel {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 22px 60px rgba(45,27,13,.11);
+    }
+    html[data-theme="light"] .tools .card {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.94)),
+        radial-gradient(circle at 92% 10%, rgba(249,115,22,.12), transparent 18rem);
+    }
+    html[data-theme="light"] .tools .card strong { color: #111827; }
+    html[data-theme="light"] .tools .card p { color: #475467; }
+    html[data-theme="light"] .tools .tool-list li {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: #ffffff;
+      box-shadow: inset 4px 0 0 rgba(194,65,12,.68), 0 10px 24px rgba(45,27,13,.07);
+    }
+
   </style>
 </head>
 <body>

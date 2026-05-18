@@ -798,6 +798,142 @@
       .dashboard-hero { grid-template-columns: 1fr; }
     }
 
+
+    /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
+    .main-command-shortcuts {
+      color: var(--dash-text);
+      border-color: rgba(255,255,255,.16);
+      background:
+        linear-gradient(135deg, rgba(249,115,22,.18), rgba(15,23,42,.62)),
+        radial-gradient(circle at 92% 10%, rgba(96,165,250,.14), transparent 24rem),
+        rgba(15,23,42,.58);
+      box-shadow: 0 26px 80px rgba(0,0,0,.24);
+    }
+
+    .main-command-shortcuts .admin-command-header h2,
+    .main-command-shortcuts .admin-command-card strong { color: var(--dash-text); }
+    .main-command-shortcuts .admin-command-header p,
+    .main-command-shortcuts .admin-command-card span { color: var(--dash-muted); }
+    .main-command-shortcuts .eyebrow {
+      color: #fed7aa;
+      background: rgba(249,115,22,.16);
+      border: 1px solid rgba(251,146,60,.24);
+    }
+    .main-command-shortcuts .admin-command-card {
+      color: var(--dash-text);
+      border-color: rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      box-shadow: 0 18px 46px rgba(0,0,0,.20);
+    }
+    .main-command-shortcuts .admin-command-card:hover,
+    .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(251,146,60,.46);
+      background: linear-gradient(180deg, rgba(255,255,255,.17), rgba(255,255,255,.09));
+    }
+
+    .tools { align-items: stretch; }
+    .tools .card {
+      border-color: rgba(255,255,255,.18);
+      background:
+        linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.64)),
+        radial-gradient(circle at 88% 8%, rgba(249,115,22,.18), transparent 18rem);
+    }
+    .tools .card strong { color: var(--dash-text); font-size: 1.16rem; }
+    .tools .card p { color: #dbe4ef; }
+    .tools .tool-list li {
+      position: relative;
+      color: #f8fafc;
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.105);
+      box-shadow: inset 4px 0 0 rgba(249,115,22,.72);
+      font-weight: 860;
+    }
+
+    html[data-theme="light"] {
+      --dash-text: #111827;
+      --dash-muted: #475467;
+      --dash-line: rgba(17,24,39,.18);
+      --dash-surface: rgba(255,255,255,.94);
+      --dash-surface-strong: rgba(255,255,255,.98);
+    }
+    html[data-theme="light"] body { color: #111827; }
+    html[data-theme="light"] .nav-links > a:not(.btn) { color: #384252; }
+    html[data-theme="light"] .btn-soft,
+    html[data-theme="light"] .account-status {
+      color: #111827;
+      background: rgba(255,255,255,.92);
+      border-color: rgba(17,24,39,.18);
+    }
+    html[data-theme="light"] .main-command-shortcuts {
+      color: #111827;
+      border-color: rgba(173,63,24,.20);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.96)),
+        radial-gradient(circle at 92% 12%, rgba(249,115,22,.14), transparent 24rem);
+      box-shadow: 0 24px 70px rgba(45,27,13,.14);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-header h2,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card strong { color: #111827; }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-header p,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card span { color: #475467; }
+    html[data-theme="light"] .main-command-shortcuts .eyebrow {
+      color: #9a3412;
+      background: rgba(249,115,22,.12);
+      border-color: rgba(154,52,18,.18);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card {
+      border-color: rgba(17,24,39,.14);
+      background: #ffffff;
+      box-shadow: 0 14px 34px rgba(45,27,13,.10);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card:hover,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(194,65,12,.34);
+      background: #fff7ed;
+    }
+    html[data-theme="light"] .admin-command {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,247,237,.92)),
+        radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
+    }
+    html[data-theme="light"] .admin-command-card {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.92);
+    }
+    html[data-theme="light"] .admin-command-card strong { color: #111827; }
+    html[data-theme="light"] .admin-command-card span { color: #475467; }
+    html[data-theme="light"] .dashboard-hero,
+    html[data-theme="light"] .card,
+    html[data-theme="light"] .client-request-form,
+    html[data-theme="light"] .admin-request,
+    html[data-theme="light"] .client-request,
+    html[data-theme="light"] .client-quote,
+    html[data-theme="light"] .client-property,
+    html[data-theme="light"] .worker-job,
+    html[data-theme="light"] .admin-assignment,
+    html[data-theme="light"] .admin-request-modal-panel {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 22px 60px rgba(45,27,13,.11);
+    }
+    html[data-theme="light"] .tools .card {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.94)),
+        radial-gradient(circle at 92% 10%, rgba(249,115,22,.12), transparent 18rem);
+    }
+    html[data-theme="light"] .tools .card strong { color: #111827; }
+    html[data-theme="light"] .tools .card p { color: #475467; }
+    html[data-theme="light"] .tools .tool-list li {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: #ffffff;
+      box-shadow: inset 4px 0 0 rgba(194,65,12,.68), 0 10px 24px rgba(45,27,13,.07);
+    }
+
   </style>
 </head>
 <body>
@@ -884,36 +1020,6 @@
         <a class="admin-command-card" href="#worker-jobs"><strong>Checklist</strong><span>Record materials, blockers, access notes, and completed tasks.</span></a>
         <a class="admin-command-card" href="#worker-jobs"><strong>Evidence</strong><span>Add before photos, after photos, completion notes, and file details.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile</strong><span>Keep your contact details current for dispatch and admin follow-up.</span></button>
-      </div>
-    </section>
-
-    <section class="command-center" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="command-header"><div><span class="eyebrow">Admin command center</span><h2>Run today’s work from one place.</h2><p>Jump into work orders, billing, role access, and audit history without hunting through the page.</p></div></div>
-      <div class="command-grid" aria-label="Admin command center shortcuts">
-        <a class="command-card" href="#admin-work-orders"><span>WO</span><strong>Work orders</strong><p>Review new requests, update status, quote work, and assign workers.</p></a>
-        <a class="command-card" href="#admin-invoices"><span>$</span><strong>Invoices</strong><p>Confirm matching payments and close paid work orders.</p></a>
-        <a class="command-card" href="#admin-access"><span>👥</span><strong>Roles & users</strong><p>Find accounts, adjust roles, and manage portal access.</p></a>
-        <a class="command-card" href="#admin-activity"><span>↻</span><strong>Activity</strong><p>Audit recent status, quote, invoice, and user changes.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="command-header"><div><span class="eyebrow">Client command center</span><h2>Your requests, quotes, and invoices.</h2><p>Start a new request, check project progress, review quotes, and keep property details current.</p></div></div>
-      <div class="command-grid" aria-label="Client command center shortcuts">
-        <a class="command-card" href="#submit-request" data-request-estimate-link><span>+</span><strong>Submit request</strong><p>Send a repair, maintenance, or improvement request to T&A.</p></a>
-        <a class="command-card" href="#client-requests"><span>WO</span><strong>My work orders</strong><p>Track open requests and add updates before work begins.</p></a>
-        <a class="command-card" href="#client-quotes"><span>✓</span><strong>Quotes</strong><p>Review quote details and approve or decline next steps.</p></a>
-        <a class="command-card" href="#client-invoices"><span>$</span><strong>Invoices</strong><p>View open balances and payment status for completed work.</p></a>
-      </div>
-    </section>
-
-    <section class="command-center" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="command-header"><div><span class="eyebrow">Worker command center</span><h2>Field work without the clutter.</h2><p>Open assigned jobs, update progress, add checklist notes, and attach completion evidence.</p></div></div>
-      <div class="command-grid" aria-label="Worker command center shortcuts">
-        <a class="command-card" href="#worker-jobs"><span>WO</span><strong>Assigned jobs</strong><p>See active work orders and filter by job status.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📋</span><strong>Checklist</strong><p>Record materials, blockers, and completed tasks.</p></a>
-        <a class="command-card" href="#worker-jobs"><span>📷</span><strong>Evidence</strong><p>Add completion notes and photo/file names before closeout.</p></a>
-        <a class="command-card" href="#"><span>↗</span><strong>Need help?</strong><p>Use job notes to flag access issues or admin follow-up.</p></a>
       </div>
     </section>
 
