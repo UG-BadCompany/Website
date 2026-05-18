@@ -2099,7 +2099,7 @@
         panel = document.createElement('section');
         panel.className = 'card';
         panel.dataset.authDebugPanel = 'true';
-        panel.innerHTML = '<strong>Login debug</strong><p class="session-status" data-auth-debug-summary>Loading login debug…</p><pre data-auth-debug-output style="white-space:pre-wrap;overflow:auto;max-height:420px;margin-top:14px;padding:14px;border-radius:16px;background:#111827;color:#f8fafc;font-size:.85rem;line-height:1.5;"></pre><p><a class="btn btn-soft" href="/api/auth/debug" target="_blank" rel="noopener">Open raw debug JSON</a> <a class="btn btn-primary" href="/login/">Request a new magic link</a></p>';
+        panel.innerHTML = '<strong>Login debug</strong><p class="session-status" data-auth-debug-summary>Loading login debug…</p><div class="admin-command-actions" data-auth-debug-controls hidden><button class="admin-command-card" type="button" data-debug-switch-view="admin"><strong>Switch to admin view</strong><span>Exercise view switching and permission-scoped shortcuts.</span></button><button class="admin-command-card" type="button" data-debug-switch-view="client"><strong>Switch to client view</strong><span>Validate client request, quote, and invoice sections.</span></button><button class="admin-command-card" type="button" data-debug-switch-view="worker"><strong>Switch to worker view</strong><span>Validate worker jobs, checklists, and notes sections.</span></button><button class="admin-command-card" type="button" data-debug-refresh-session><strong>Re-check session endpoints</strong><span>Run /api/me and /api/auth/debug checks and print a quick health report.</span></button></div><pre data-auth-debug-health hidden style="white-space:pre-wrap;overflow:auto;max-height:200px;margin-top:10px;padding:14px;border-radius:16px;background:#0b1220;color:#cbd5e1;font-size:.8rem;line-height:1.45;"></pre><pre data-auth-debug-output style="white-space:pre-wrap;overflow:auto;max-height:420px;margin-top:14px;padding:14px;border-radius:16px;background:#111827;color:#f8fafc;font-size:.85rem;line-height:1.5;"></pre><p><a class="btn btn-soft" href="/api/auth/debug" target="_blank" rel="noopener">Open raw debug JSON</a> <a class="btn btn-primary" href="/login/">Request a new magic link</a></p>';
         status?.closest('main')?.insertBefore(panel, status.closest('section')?.nextSibling || null);
         return panel;
       };
@@ -2413,6 +2413,60 @@
         }
 
         return true;
+      };
+
+
+      const runDashboardDebugHealthCheck = async () => {
+        const panel = ensureAuthDebugPanel();
+        const health = panel.querySelector('[data-auth-debug-health]');
+        if (!health) return;
+        health.hidden = false;
+        health.textContent = 'Running endpoint checks…';
+        const stamp = new Date().toISOString();
+        try {
+          const [me, debug] = await Promise.all([
+            fetchJson('/api/me'),
+            fetchJson('/api/auth/debug'),
+          ]);
+          const report = {
+            checkedAt: stamp,
+            meStatus: me?.authenticated ? 'authenticated' : (me?.error || 'unknown'),
+            meRoles: me?.user?.roles || [],
+            debugCanUseSession: Boolean(debug?.canUseSession),
+            debugRoles: debug?.roles || [],
+            hasSessionCookie: Boolean(debug?.cookies?.hasSessionCookie),
+            sessionCookieCount: debug?.cookies?.sessionCookieCount || 0,
+            currentView: document.documentElement.dataset.dashboardView || null,
+            availableViews: availableDashboardViews,
+          };
+          health.textContent = JSON.stringify(report, null, 2);
+        } catch (error) {
+          health.textContent = JSON.stringify({ checkedAt: stamp, error: error.message }, null, 2);
+        }
+      };
+
+      const bindDashboardDebugControls = () => {
+        const panel = ensureAuthDebugPanel();
+        const controls = panel.querySelector('[data-auth-debug-controls]');
+        if (!controls) return;
+        controls.hidden = false;
+        if (!controls.dataset.boundDebugControls) {
+          controls.dataset.boundDebugControls = 'true';
+          controls.addEventListener('click', (event) => {
+            const viewButton = event.target.closest('[data-debug-switch-view]');
+            if (viewButton) {
+              const view = viewButton.dataset.debugSwitchView;
+              if (typeof window.taSetDashboardView === 'function') {
+                window.taSetDashboardView(view);
+              }
+              return;
+            }
+            const refreshButton = event.target.closest('[data-debug-refresh-session]');
+            if (refreshButton) {
+              runDashboardDebugHealthCheck();
+            }
+          });
+        }
       };
 
       const fetchAuthDebug = () => fetchJson('/api/auth/debug');

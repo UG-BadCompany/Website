@@ -59,3 +59,18 @@ test('dashboard view switcher exposes all role views for switch-capable users', 
   assert.match(html, /data-main-action-views="client"/, 'client command shortcuts should be scoped to the client view');
   assert.match(html, /data-main-action-views="worker"/, 'worker command shortcuts should be scoped to the worker view');
 });
+
+test('auth debug mode exposes advanced dashboard debug controls', async () => {
+  const html = await loadDashboardHtml();
+
+  assert.match(html, /data-auth-debug-controls/, 'debug panel should include interactive debug controls');
+  assert.match(html, /data-debug-switch-view="admin"/, 'debug controls should include an admin view switch action');
+  assert.match(html, /data-debug-switch-view="client"/, 'debug controls should include a client view switch action');
+  assert.match(html, /data-debug-switch-view="worker"/, 'debug controls should include a worker view switch action');
+  assert.match(html, /data-debug-refresh-session/, 'debug controls should include a quick session refresh check');
+  assert.match(html, /runDashboardDebugHealthCheck = async \(\) =>/, 'dashboard should expose a health-check helper for debug mode');
+  assert.match(html, /bindDashboardDebugControls = \(\) =>/, 'dashboard should bind debug control click handlers');
+  assert.match(html, /window\.taSetDashboardView\(view\)/, 'debug controls should switch views through the shared dashboard switch helper');
+  assert.match(html, /fetchJson\('\/api\/me'\)/, 'health check should verify /api/me');
+  assert.match(html, /fetchJson\('\/api\/auth\/debug'\)/, 'health check should verify /api/auth/debug');
+});
