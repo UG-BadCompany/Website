@@ -286,9 +286,56 @@
 
     .main-command-shortcuts {
       margin: 38px 0 34px;
+      border-color: rgba(173,63,24,.22);
+      color: #111827;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,246,234,.94)),
+        radial-gradient(circle at 92% 12%, rgba(249,115,22,.18), transparent 24rem);
+      box-shadow: 0 24px 70px rgba(45,27,13,.16);
     }
 
-    .main-command-shortcuts .admin-command-actions { margin-top: 0; }
+    .main-command-shortcuts .admin-command-header { max-width: none; }
+    .main-command-shortcuts .admin-command-header h2 { color: #111827; }
+    .main-command-shortcuts .admin-command-header p { color: #5f5148; }
+    .main-command-shortcuts .eyebrow {
+      color: var(--rust);
+      background: rgba(249,115,22,.12);
+    }
+
+    .main-command-shortcuts .admin-command-actions {
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .main-command-shortcuts .admin-command-card {
+      position: relative;
+      min-height: 142px;
+      padding: 18px 18px 18px 20px;
+      border-color: rgba(173,63,24,.20);
+      color: #111827;
+      background: #fff;
+      box-shadow: 0 14px 34px rgba(45,27,13,.10);
+    }
+
+    .main-command-shortcuts .admin-command-card::before {
+      content: "";
+      position: absolute;
+      inset: 16px auto 16px 0;
+      width: 5px;
+      border-radius: 0 999px 999px 0;
+      background: linear-gradient(180deg, var(--dash-orange), var(--dash-amber));
+    }
+
+    .main-command-shortcuts .admin-command-card:hover,
+    .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(173,63,24,.42);
+      background: #fffaf4;
+      box-shadow: 0 18px 42px rgba(45,27,13,.16);
+    }
+
+    .main-command-shortcuts .admin-command-card strong { color: #111827; font-size: 1.08rem; }
+    .main-command-shortcuts .admin-command-card span { color: #5f5148; font-weight: 780; }
 
     .client-command {
       background:
@@ -508,12 +555,599 @@
         radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
       box-shadow: 0 22px 60px rgba(45,27,13,.12);
     }
-    html[data-theme="light"] .admin-command-card { color: #111827; border-color: rgba(17,17,17,.12); background: rgba(255,255,255,.70); }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scrollbar-gutter:stable;background:#130d09}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0%,rgba(216,101,43,.42),transparent 28rem),radial-gradient(circle at 88% 10%,rgba(241,166,74,.24),transparent 26rem),linear-gradient(180deg,#130d09 0%,#22140d 42%,#fff6ea 42%,#fffaf5 100%);min-height:100vh}
+    a{text-decoration:none;color:inherit}.wrap{width:min(1200px,calc(100% - 36px));margin:0 auto}
+    .nav{position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(19,13,9,.78);backdrop-filter:blur(18px)}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:12px 0}.brand{display:flex;align-items:center;gap:14px;font-weight:1000;text-transform:uppercase;letter-spacing:.045em}.brand img{width:74px;height:58px;object-fit:contain;border-radius:16px;background:rgba(255,246,234,.08);padding:4px}.nav-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:850}.nav-links>a:not(.btn){color:var(--muted);padding:10px 8px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 17px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-weight:950;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}.btn:hover{transform:translateY(-1px)}.btn-primary{background:linear-gradient(135deg,var(--rust),var(--copper));color:#21120a;border-color:transparent;box-shadow:0 12px 30px rgba(216,101,43,.28)}.btn-soft{background:rgba(255,255,255,.08);color:var(--ink);border-color:rgba(255,255,255,.18)}
+    .hero{padding:44px 0 22px}.dashboard-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.55fr);gap:24px;align-items:stretch;padding:clamp(24px,4vw,48px);border:1px solid rgba(255,255,255,.18);border-radius:36px;background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04));box-shadow:var(--shadow);overflow:hidden;position:relative}.dashboard-hero::before{content:"";position:absolute;inset:-1px;background:radial-gradient(circle at 20% 15%,rgba(241,166,74,.2),transparent 24rem);pointer-events:none}.dashboard-hero>*{position:relative}.eyebrow{display:inline-flex;margin-bottom:16px;padding:8px 12px;border-radius:999px;background:rgba(241,166,74,.14);color:#ffd7a6;font-size:.78rem;font-weight:1000;letter-spacing:.1em;text-transform:uppercase}h1{margin:0;font-size:clamp(2.55rem,5.4vw,5.35rem);line-height:.94;letter-spacing:-.07em;max-width:850px}h2{margin:0;font-size:clamp(1.55rem,2.5vw,2.7rem);line-height:1;letter-spacing:-.045em}p{color:var(--muted);font-weight:650;line-height:1.65}.hero p{max-width:720px}.logo-panel{display:grid;place-items:center;min-height:260px;border-radius:30px;background:linear-gradient(180deg,rgba(255,246,234,.95),rgba(255,250,243,.82));border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 24px 70px rgba(0,0,0,.18)}.logo-panel img{width:min(100%,360px);height:auto;padding:18px}.role-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.role{padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);font-weight:950;color:var(--muted)}.role.active-client{color:#ffd7a6}.role.active-worker{color:#bcd7ff}.role.active-admin{color:#baf3c8}
+    .session-status{margin:18px 0 0;padding:14px 16px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(255,255,255,.08);color:var(--muted);font-weight:850}.session-status[data-state="ready"]{color:#baf3c8}.session-status[data-state="error"]{color:#ffd0c4}
+    .command-center{margin:10px 0 24px;padding:22px;border:1px solid rgba(255,255,255,.16);border-radius:32px;background:rgba(255,255,255,.08);box-shadow:0 18px 60px rgba(0,0,0,.18)}.command-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:16px}.command-header p{margin:8px 0 0}.command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.command-card{min-height:158px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:18px;border-radius:24px;border:1px solid rgba(255,255,255,.18);background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.06));box-shadow:0 18px 44px rgba(0,0,0,.16)}.command-card span{width:42px;height:42px;display:grid;place-items:center;border-radius:15px;background:rgba(216,101,43,.25);color:#ffd7a6;font-size:1.15rem;font-weight:1000}.command-card strong{font-size:1.08rem}.command-card p{margin:0;font-size:.92rem}.command-card:hover{border-color:rgba(241,166,74,.54);transform:translateY(-2px)}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}.card{padding:24px;border:1px solid var(--line-dark);border-radius:var(--radius);background:rgba(255,250,243,.94);color:var(--ink-dark);box-shadow:0 18px 50px rgba(45,27,13,.08)}.card>strong,.card h2{display:block;margin-bottom:9px;color:var(--ink-dark)}.card p,.card .session-status{color:var(--muted-dark)}.metric{font-size:2.1rem;font-weight:1000;color:var(--rust)}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:70px}.tool-list{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}.tool-list li{padding:12px 14px;border:1px solid var(--line-dark);border-radius:16px;background:#fff;color:var(--muted-dark);font-weight:760}.admin-inbox,.client-requests,.client-quotes,.client-properties,.admin-invoices,.admin-access,.worker-jobs{margin:26px 0}.client-request-form{display:grid;gap:14px;margin:18px 0;padding:18px;border:1px solid var(--line-dark);border-radius:22px;background:#fff}.admin-request-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(17,17,17,.58);backdrop-filter:blur(10px)}.admin-request-modal[hidden]{display:none}.admin-request-modal-panel{width:min(960px,100%);max-height:min(88vh,980px);overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:28px;background:#fffaf3;color:var(--ink-dark);box-shadow:0 30px 90px rgba(17,17,17,.34)}.admin-request-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:20px 22px 0}.admin-request-modal-header strong{font-size:1.12rem}.admin-request-modal-header p{margin:6px 0 0;color:var(--muted-dark)}.admin-request-modal-close{flex:0 0 auto;min-width:46px;padding:0 12px;font-size:1.25rem;color:var(--ink-dark);background:#fff}.client-request-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.client-request-form label{display:grid;gap:7px;color:var(--muted-dark);font-size:.86rem;font-weight:950}.client-request-form input,.client-request-form select,.client-request-form textarea{width:100%;border:1px solid var(--line-dark);border-radius:14px;padding:12px 13px;font:inherit;color:var(--ink-dark);background:#fffaf4}.client-request-form textarea{min-height:110px;resize:vertical}.client-request-form .full{grid-column:1/-1}.client-request-form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.card .btn-soft,.admin-request-modal .btn-soft{background:#fff;color:var(--ink-dark);border-color:var(--line-dark)}.card .session-status,.admin-request-modal .session-status{background:#fff;border-color:var(--line-dark)}.admin-request-list,.client-request-list,.client-quote-list,.client-property-list,.worker-job-list,.admin-assignment-list{display:grid;gap:12px;margin-top:18px}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{padding:16px;border:1px solid var(--line-dark);border-radius:18px;background:#fff}.admin-request strong,.client-request strong,.client-quote strong,.client-property strong,.worker-job strong,.admin-assignment strong{margin:0 0 6px}.admin-request-meta,.client-request-meta,.client-quote-meta,.client-property-meta,.worker-job-meta,.admin-assignment-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted-dark);font-weight:800;font-size:.9rem}.admin-request-badge,.client-request-badge,.client-quote-badge,.client-property-badge,.worker-job-badge,.admin-assignment-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#fff7eb;border:1px solid var(--line-dark);color:var(--rust);font-weight:950;text-transform:capitalize}.admin-request p,.client-request p,.client-quote p,.client-property p,.worker-job p,.admin-assignment p{margin:8px 0 0;color:var(--muted-dark)}.client-quote-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.btn-danger{background:#fff;color:var(--rust-dark);border-color:rgba(173,63,24,.28)}.locked{opacity:.72}.locked strong::after{content:"  • backend permission required";color:var(--muted-dark);font-size:.8rem;font-weight:700}.profile-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.profile-summary div{padding:12px;border:1px solid var(--line-dark);border-radius:16px;background:#fff}.profile-summary span{display:block;color:var(--muted-dark);font-size:.82rem;font-weight:900}.profile-summary strong{margin:4px 0 0}.request-update-note{font-size:.9rem;color:var(--muted-dark);font-weight:800}.worker-filter-toolbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin:18px 0;padding:16px;border:2px solid rgba(173,63,24,.18);border-radius:20px;background:#fff}.worker-filter-toolbar label{display:grid;gap:7px;color:var(--muted-dark);font-weight:950}.worker-filter-toolbar select{min-width:230px;border:1px solid var(--line-dark);border-radius:14px;padding:12px;font:inherit;background:#fffaf4}.worker-filter-count{font-weight:950;color:var(--rust)}.worker-evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.worker-evidence-grid div{padding:10px;border:1px solid var(--line-dark);border-radius:14px;background:#fff}.footer{border-top:1px solid rgba(17,17,17,.1);padding:26px 0;margin:40px auto;color:var(--muted-dark);font-weight:650}
+    :focus-visible{outline:3px solid rgba(241,166,74,.75);outline-offset:3px}@media(max-width:980px){.dashboard-hero,.command-grid{grid-template-columns:1fr 1fr}.tools{grid-template-columns:1fr}}@media(max-width:720px){.dashboard-hero,.grid,.command-grid,.client-request-form-grid,.profile-summary,.worker-evidence-grid{grid-template-columns:1fr}.nav-inner{align-items:flex-start}.nav-links{justify-content:flex-end}.brand span{display:none}h1{font-size:clamp(2.35rem,12vw,4rem)}}
+
+
+    /* Unified homepage/dashboard visual system */
+    :root {
+      --dash-bg: #070a0f;
+      --dash-surface: rgba(255,255,255,.085);
+      --dash-surface-strong: rgba(255,255,255,.14);
+      --dash-line: rgba(255,255,255,.15);
+      --dash-text: #f8fafc;
+      --dash-muted: #cbd5e1;
+      --dash-orange: #f97316;
+      --dash-amber: #f59e0b;
+      --dash-green: #22c55e;
+      --dash-blue: #60a5fa;
+    }
+
+    body {
+      color: var(--dash-text);
+      background:
+        radial-gradient(circle at 12% -8%, rgba(249,115,22,.34), transparent 34rem),
+        radial-gradient(circle at 92% 0%, rgba(96,165,250,.16), transparent 28rem),
+        linear-gradient(135deg, #070a0f 0%, #111827 48%, #251109 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 82%);
+    }
+
+    .wrap,
+    .nav-inner,
+    .section { width: min(1200px, calc(100% - 36px)); }
+
+    .nav {
+      background: rgba(7,10,15,.80);
+      border-bottom-color: var(--dash-line);
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+
+    .brand,
+    .nav-links,
+    h1,
+    h2,
+    h3,
+    label,
+    .card strong,
+    .benefit strong,
+    .service-card strong,
+    .workflow-card strong { color: var(--dash-text); }
+
+    .brand img,
+    .brand-logo {
+      width: clamp(86px, 8vw, 118px);
+      height: auto;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      object-fit: contain;
+    }
+
+    .btn {
+      color: var(--dash-text);
+      border-color: var(--dash-line);
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--dash-orange), #b93815);
+      box-shadow: 0 16px 42px rgba(249,115,22,.28);
+    }
+
+    .btn-soft,
+    .btn-secondary { background: rgba(255,255,255,.10); color: var(--dash-text); }
+
+    .hero-card,
+    .portal-hero,
+    .dashboard-hero {
+      border-color: var(--dash-line);
+      border-radius: 36px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.055)),
+        radial-gradient(circle at 78% 22%, rgba(249,115,22,.24), transparent 24rem);
+      box-shadow: 0 34px 100px rgba(0,0,0,.34);
+      backdrop-filter: blur(22px);
+    }
+
+    .hero-card,
+    .portal-hero { grid-template-columns: minmax(0, 1fr) minmax(260px, .55fr); }
+
+    .eyebrow {
+      color: #ffd7a6;
+      background: rgba(241,166,74,.14);
+      border-color: rgba(255,255,255,.18);
+      font-weight: 1000;
+      letter-spacing: .10em;
+    }
+
+    p,
+    .footer,
+    .session-status,
+    .account-status,
+    .card p,
+    .benefit p,
+    .service-card p,
+    .workflow-card p,
+    .list li,
+    .form-note,
+    .estimate-list li { color: var(--dash-muted); }
+
+    .logo-panel,
+    .login-logo,
+    .hero-media {
+      border-color: rgba(255,255,255,.24);
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255,246,234,.95), rgba(255,250,243,.82)),
+        radial-gradient(circle at 50% 12%, rgba(216,135,52,.18), transparent 18rem);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 24px 70px rgba(0,0,0,.18);
+    }
+
+    .logo-panel img,
+    .login-logo img,
+    .hero-logo {
+      width: min(100%, 430px);
+      padding: 18px;
+      background: transparent;
+      box-shadow: none;
+      filter: drop-shadow(0 26px 48px rgba(0,0,0,.34));
+    }
+
+    .card,
+    .benefit,
+    .login-card,
+    .notice,
+    .service-card,
+    .workflow-card,
+    .estimate-shell,
+    .estimate-form,
+    .client-request-form,
+    .admin-request,
+    .client-request,
+    .client-quote,
+    .client-property,
+    .worker-job,
+    .admin-assignment,
+    .admin-request-modal-panel {
+      color: var(--dash-text);
+      border-color: var(--dash-line);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.055));
+      box-shadow: 0 24px 70px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
+    }
+
+    input,
+    select,
+    textarea {
+      color: var(--dash-text);
+      background: rgba(7,10,15,.64);
+      border-color: var(--dash-line);
+    }
+
+    input::placeholder,
+    textarea::placeholder { color: #94a3b8; }
+
+    .metric { color: #fdba74; }
+    .footer { border-top-color: var(--dash-line); }
+
+    html[data-theme="light"] body {
+      color: #111827;
+      background:
+        radial-gradient(circle at 10% -8%, rgba(249,115,22,.16), transparent 32rem),
+        radial-gradient(circle at 92% 0%, rgba(216,135,52,.14), transparent 28rem),
+        linear-gradient(135deg, #fffaf2 0%, #ffffff 52%, #f7eadc 100%);
+    }
+
+    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="light"] .brand,
+    html[data-theme="light"] .nav-links,
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] h3,
+    html[data-theme="light"] label,
+    html[data-theme="light"] .card strong,
+    html[data-theme="light"] .benefit strong,
+    html[data-theme="light"] .service-card strong,
+    html[data-theme="light"] .workflow-card strong { color: #111827; }
+
+    html[data-theme="light"] p,
+    html[data-theme="light"] .footer,
+    html[data-theme="light"] .session-status,
+    html[data-theme="light"] .account-status,
+    html[data-theme="light"] .card p,
+    html[data-theme="light"] .benefit p,
+    html[data-theme="light"] .service-card p,
+    html[data-theme="light"] .workflow-card p,
+    html[data-theme="light"] .list li,
+    html[data-theme="light"] .form-note,
+    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+
+    html[data-theme="light"] .hero-card,
+    html[data-theme="light"] .portal-hero,
+    html[data-theme="light"] .dashboard-hero,
+    html[data-theme="light"] .card,
+    html[data-theme="light"] .benefit,
+    html[data-theme="light"] .login-card,
+    html[data-theme="light"] .notice,
+    html[data-theme="light"] .service-card,
+    html[data-theme="light"] .workflow-card,
+    html[data-theme="light"] .estimate-shell,
+    html[data-theme="light"] .estimate-form {
+      color: #111827;
+      border-color: rgba(17,17,17,.12);
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 22px 60px rgba(45,27,13,.12);
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .hero-card,
+      .portal-hero,
+      .dashboard-hero { grid-template-columns: 1fr; }
+    }
+
+
+    /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
+    .main-command-shortcuts {
+      color: var(--dash-text);
+      border-color: rgba(255,255,255,.16);
+      background:
+        linear-gradient(135deg, rgba(249,115,22,.18), rgba(15,23,42,.62)),
+        radial-gradient(circle at 92% 10%, rgba(96,165,250,.14), transparent 24rem),
+        rgba(15,23,42,.58);
+      box-shadow: 0 26px 80px rgba(0,0,0,.24);
+    }
+
+    .main-command-shortcuts .admin-command-header h2,
+    .main-command-shortcuts .admin-command-card strong { color: var(--dash-text); }
+    .main-command-shortcuts .admin-command-header p,
+    .main-command-shortcuts .admin-command-card span { color: var(--dash-muted); }
+    .main-command-shortcuts .eyebrow {
+      color: #fed7aa;
+      background: rgba(249,115,22,.16);
+      border: 1px solid rgba(251,146,60,.24);
+    }
+    .main-command-shortcuts .admin-command-card {
+      color: var(--dash-text);
+      border-color: rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      box-shadow: 0 18px 46px rgba(0,0,0,.20);
+    }
+    .main-command-shortcuts .admin-command-card:hover,
+    .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(251,146,60,.46);
+      background: linear-gradient(180deg, rgba(255,255,255,.17), rgba(255,255,255,.09));
+    }
+
+    .tools { align-items: stretch; }
+    .tools .card {
+      border-color: rgba(255,255,255,.18);
+      background:
+        linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.64)),
+        radial-gradient(circle at 88% 8%, rgba(249,115,22,.18), transparent 18rem);
+    }
+    .tools .card strong { color: var(--dash-text); font-size: 1.16rem; }
+    .tools .card p { color: #dbe4ef; }
+    .tools .tool-list li {
+      position: relative;
+      color: #f8fafc;
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.105);
+      box-shadow: inset 4px 0 0 rgba(249,115,22,.72);
+      font-weight: 860;
+    }
+
+    html[data-theme="light"] {
+      --dash-text: #111827;
+      --dash-muted: #475467;
+      --dash-line: rgba(17,24,39,.18);
+      --dash-surface: rgba(255,255,255,.94);
+      --dash-surface-strong: rgba(255,255,255,.98);
+    }
+    html[data-theme="light"] body { color: #111827; }
+    html[data-theme="light"] .nav-links > a:not(.btn) { color: #384252; }
+    html[data-theme="light"] .btn-soft,
+    html[data-theme="light"] .account-status {
+      color: #111827;
+      background: rgba(255,255,255,.92);
+      border-color: rgba(17,24,39,.18);
+    }
+    html[data-theme="light"] .main-command-shortcuts {
+      color: #111827;
+      border-color: rgba(173,63,24,.20);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.96)),
+        radial-gradient(circle at 92% 12%, rgba(249,115,22,.14), transparent 24rem);
+      box-shadow: 0 24px 70px rgba(45,27,13,.14);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-header h2,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card strong { color: #111827; }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-header p,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card span { color: #475467; }
+    html[data-theme="light"] .main-command-shortcuts .eyebrow {
+      color: #9a3412;
+      background: rgba(249,115,22,.12);
+      border-color: rgba(154,52,18,.18);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card {
+      border-color: rgba(17,24,39,.14);
+      background: #ffffff;
+      box-shadow: 0 14px 34px rgba(45,27,13,.10);
+    }
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card:hover,
+    html[data-theme="light"] .main-command-shortcuts .admin-command-card:focus-visible {
+      border-color: rgba(194,65,12,.34);
+      background: #fff7ed;
+    }
+    html[data-theme="light"] .admin-command {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,247,237,.92)),
+        radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
+    }
+    html[data-theme="light"] .admin-command-card {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.92);
+    }
     html[data-theme="light"] .admin-command-card strong { color: #111827; }
-    html[data-theme="light"] .admin-command-card span { color: #5f5148; }
-    html[data-theme="light"] .client-request-attachments { border-color: rgba(38,94,157,.24); background: rgba(38,94,157,.07); }
-    html[data-theme="light"] .client-request-attachments small,
-    html[data-theme="light"] .client-request-attachment-list { color: #5f5148; }
+    html[data-theme="light"] .admin-command-card span { color: #475467; }
+    html[data-theme="light"] .dashboard-hero,
+    html[data-theme="light"] .card,
+    html[data-theme="light"] .client-request-form,
+    html[data-theme="light"] .admin-request,
+    html[data-theme="light"] .client-request,
+    html[data-theme="light"] .client-quote,
+    html[data-theme="light"] .client-property,
+    html[data-theme="light"] .worker-job,
+    html[data-theme="light"] .admin-assignment,
+    html[data-theme="light"] .admin-request-modal-panel {
+      color: #111827;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 22px 60px rgba(45,27,13,.11);
+    }
+    html[data-theme="light"] .tools .card {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.94)),
+        radial-gradient(circle at 92% 10%, rgba(249,115,22,.12), transparent 18rem);
+    }
+    html[data-theme="light"] .tools .card strong { color: #111827; }
+    html[data-theme="light"] .tools .card p { color: #475467; }
+    html[data-theme="light"] .tools .tool-list li {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: #ffffff;
+      box-shadow: inset 4px 0 0 rgba(194,65,12,.68), 0 10px 24px rgba(45,27,13,.07);
+    }
+
+
+    /* Top navigation polish and compact account controls. */
+    .dashboard-nav-cluster {
+      gap: 6px;
+      min-width: min(100%, 560px);
+    }
+    .dashboard-nav-row { gap: 8px; }
+    .dashboard-nav-row > a:not(.btn) {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      color: #e2e8f0;
+      background: rgba(255,255,255,.07);
+    }
+    .dashboard-nav-row .btn {
+      min-height: 38px;
+      padding: 0 15px;
+      border-radius: 999px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.18);
+    }
+    .dashboard-nav-row .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+    }
+    .dashboard-nav-row .btn-soft,
+    .theme-toggle {
+      color: #f8fafc;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-color: rgba(255,255,255,.16);
+    }
+    .dashboard-nav-row .btn:hover,
+    .dashboard-nav-row > a:not(.btn):hover,
+    .dashboard-nav-row .btn:focus-visible,
+    .dashboard-nav-row > a:not(.btn):focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(251,146,60,.42);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 16px 34px rgba(0,0,0,.24);
+    }
+    .account-session-row {
+      gap: 7px;
+      width: auto;
+      max-width: min(100%, 480px);
+    }
+    .account-status {
+      max-width: min(52vw, 240px);
+      padding: 6px 10px;
+      min-height: 30px;
+      font-size: .74rem;
+      font-weight: 820;
+      line-height: 1;
+      background: rgba(15,23,42,.46);
+    }
+    .account-session-row [data-logout-button] {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: .74rem;
+      font-weight: 900;
+      background: rgba(255,255,255,.075);
+    }
+    .role[data-active="true"] {
+      color: #21120a;
+      border-color: rgba(251,146,60,.58);
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      box-shadow: 0 12px 26px rgba(249,115,22,.24);
+    }
+    .role[data-active="false"] {
+      color: var(--dash-muted);
+      background: rgba(255,255,255,.075);
+      border-color: var(--dash-line);
+    }
+
+    html[data-theme="light"] .dashboard-nav-row > a:not(.btn) {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.82);
+    }
+    html[data-theme="light"] .dashboard-nav-row .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+    }
+    html[data-theme="light"] .dashboard-nav-row .btn-soft,
+    html[data-theme="light"] .theme-toggle,
+    html[data-theme="light"] .account-session-row [data-logout-button] {
+      color: #111827;
+      border-color: rgba(17,24,39,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
+      box-shadow: 0 10px 24px rgba(45,27,13,.09);
+    }
+    html[data-theme="light"] .account-status {
+      color: #344054;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.88);
+    }
+    html[data-theme="light"] .role[data-active="false"] {
+      color: #475467;
+      background: rgba(255,255,255,.88);
+      border-color: rgba(17,24,39,.14);
+    }
+
+
+    /* Shared polished top-right navigation controls */
+    .nav-links {
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav-links > a:not(.btn),
+    .nav-links > button:not(.btn) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 999px;
+      color: #e2e8f0;
+      background: rgba(255,255,255,.07);
+      font: inherit;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .nav-links .btn {
+      min-height: 38px;
+      padding: 0 15px;
+      border-radius: 999px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.18);
+    }
+
+    .nav-links .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      border-color: transparent;
+    }
+
+    .nav-links .btn-soft,
+    .nav-links .btn-secondary,
+    .nav-links .btn:not(.btn-primary) {
+      color: #f8fafc;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-color: rgba(255,255,255,.16);
+    }
+
+    .nav-links > a:not(.btn):hover,
+    .nav-links > button:not(.btn):hover,
+    .nav-links .btn:hover,
+    .nav-links > a:not(.btn):focus-visible,
+    .nav-links > button:not(.btn):focus-visible,
+    .nav-links .btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(251,146,60,.42);
+      background: rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 16px 34px rgba(0,0,0,.24);
+    }
+
+    .nav-links .account-status,
+    .nav-links [data-inventory-account-status] {
+      min-height: 30px;
+      max-width: min(52vw, 240px);
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      color: #cbd5e1;
+      background: rgba(15,23,42,.46);
+      font-size: .74rem;
+      font-weight: 820;
+      line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-links [data-inventory-logout],
+    .account-session-row [data-logout-button] {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: .74rem;
+      font-weight: 900;
+    }
+
+    html[data-theme="light"] .nav-links > a:not(.btn),
+    html[data-theme="light"] .nav-links > button:not(.btn) {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.82);
+    }
+
+    html[data-theme="light"] .nav-links .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      border-color: transparent;
+    }
+
+    html[data-theme="light"] .nav-links .btn-soft,
+    html[data-theme="light"] .nav-links .btn-secondary,
+    html[data-theme="light"] .nav-links .btn:not(.btn-primary),
+    html[data-theme="light"] .nav-links [data-inventory-logout] {
+      color: #111827;
+      border-color: rgba(17,24,39,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
+      box-shadow: 0 10px 24px rgba(45,27,13,.09);
+    }
+
+    html[data-theme="light"] .nav-links .account-status,
+    html[data-theme="light"] .nav-links [data-inventory-account-status] {
+      color: #344054;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.88);
+    }
 
   </style>
 </head>
@@ -531,35 +1165,28 @@
             <button class="role active-client" type="button" data-view-button="client">Client view</button>
             <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
           </div>
-          <div class="dashboard-hero-actions admin-command-actions" aria-label="Main dashboard shortcuts" data-main-dashboard-actions hidden>
-            <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
-            <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
-            <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
-            <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
-            <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-            <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
-            <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
-            <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
-            <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-            <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
-          </div>
         </div>
         <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
     <section class="admin-command main-command-shortcuts" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
+      <div class="admin-command-header">
+        <span class="eyebrow">Command center</span>
+        <h2>All dashboard tools under the hero.</h2>
+        <p>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
+      </div>
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
-        <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
-        <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
-        <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
-        <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
-        <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
-        <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
-        <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+        <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+        <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+        <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
+        <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+        <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+        <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+        <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
+        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
       </div>
     </section>
 
@@ -570,7 +1197,7 @@
 
     <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
       <div class="admin-command-header">
-        <span class="eyebrow">Admin operations</span>
+        <span class="eyebrow">Admin command center</span>
         <h2>Run today’s work from one command center.</h2>
         <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail from the command center cards.</p>
       </div>
@@ -601,11 +1228,13 @@
       <div class="admin-command-header">
         <span class="eyebrow">Worker command center</span>
         <h2>Run assigned jobs from one command center.</h2>
-        <p>Jump into assigned work, schedules, locations, notes, and status updates without extra shortcut buttons.</p>
+        <p>Open active work orders, update job status, record field notes, and attach completion evidence from the worker cards.</p>
       </div>
       <div class="admin-command-actions" aria-label="Worker quick actions">
-        <a class="admin-command-card" href="#worker-jobs"><strong>Assigned jobs</strong><span>Open your work queue, review job details, and save status or completion notes.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>My profile</strong><span>Keep your contact details current for scheduling and job communication.</span></button>
+        <a class="admin-command-card" href="#worker-jobs"><strong>Assigned jobs</strong><span>See active work orders and filter by job status.</span></a>
+        <a class="admin-command-card" href="#worker-jobs"><strong>Checklist</strong><span>Record materials, blockers, access notes, and completed tasks.</span></a>
+        <a class="admin-command-card" href="#worker-jobs"><strong>Evidence</strong><span>Add before photos, after photos, completion notes, and file details.</span></a>
+        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile</strong><span>Keep your contact details current for dispatch and admin follow-up.</span></button>
       </div>
     </section>
 
@@ -617,8 +1246,8 @@
 
 
     <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
-      <strong>Work order command center</strong>
-      <p>Filter the active pipeline, open each request workspace, and move work from intake through quote, schedule, verification, and payment.</p>
+      <strong>Admin request inbox</strong>
+      <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-pipeline-summary></div>
       <div class="client-request-form-grid" data-admin-request-filters>
@@ -764,9 +1393,54 @@
       <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-summary aria-label="Invoice totals"></div>
+      <div class="client-request-form-grid" data-admin-invoice-filters>
+        <label>Invoice view
+          <select data-admin-invoice-status-filter>
+            <option value="open">Open invoices</option>
+            <option value="paid">Paid history</option>
+            <option value="all">All invoices</option>
+          </select>
+        </label>
+        <label>Search invoices
+          <input type="search" data-admin-invoice-search placeholder="Client, title, invoice number, or status">
+        </label>
+      </div>
       <div class="admin-request-list" data-admin-invoice-list></div>
     </section>
 
+    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+      <strong>Activity audit trail</strong>
+      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <form class="client-request-form" data-admin-activity-filter-form>
+        <div class="client-request-form-grid">
+          <label>Event type
+            <select name="eventType" data-admin-activity-type-filter>
+              <option value="">All activity</option>
+              <option value="status">Status changes</option>
+              <option value="quote">Quotes</option>
+              <option value="payment">Payments</option>
+              <option value="assignment">Assignments</option>
+              <option value="inventory">Inventory</option>
+              <option value="account">Accounts</option>
+            </select>
+          </label>
+          <label>Search
+            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
+          </label>
+          <label>Limit
+            <select name="limit" data-admin-activity-limit>
+              <option value="25">25 events</option>
+              <option value="50">50 events</option>
+              <option value="100">100 events</option>
+            </select>
+          </label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-soft" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
+      </form>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Loading admin activity…</p>
+      <div class="admin-request-list" data-admin-activity-list></div>
+    </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Activity audit trail</strong>
@@ -1377,13 +2051,12 @@
       <div class="client-quote-list" data-client-quote-list></div>
     </section>
 
-    <section class="card client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
+    <section class="card client-invoices" id="client-invoices" data-client-invoices data-dashboard-section data-views="client" hidden>
       <strong>My invoices &amp; payments</strong>
       <p>Open invoices connected to your jobs appear here so you can track balances and payment status.</p>
       <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
       <div class="client-quote-list" data-client-invoice-list></div>
     </section>
-
 
 
     <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
@@ -1400,13 +2073,7 @@
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <script>
-    (() => {
-      const tokenFromDashboardUrl = new URLSearchParams(window.location.search).get('token');
-      if (tokenFromDashboardUrl) {
-        window.location.replace(`/api/auth/verify?token=${encodeURIComponent(tokenFromDashboardUrl)}`);
-        return;
-      }
-
+    (async () => {
       const sessionCard = document.querySelector('[data-session-card]');
       const status = document.querySelector('[data-session-status]');
       const accountStatus = document.querySelector('[data-account-status]');
@@ -1572,7 +2239,7 @@
 
         status.dataset.state = 'ready';
         status.textContent = `Signed in as ${getUserDisplayName(debugUser)}`;
-        if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(debugUser)}`;
+        if (accountStatus) accountStatus.textContent = `Signed in: ${getUserDisplayName(debugUser)}`;
         if (logoutButton) logoutButton.hidden = false;
 
         debugUser.permissions = getDashboardPermissions(debugUser);
@@ -1638,7 +2305,7 @@
         }
       };
 
-      const configureMainDashboardActions = (user) => {
+      const configureMainDashboardActions = (user, activeView = '') => {
         const permissions = getDashboardPermissions(user);
         user.permissions = permissions;
         const actionBar = document.querySelector('[data-main-dashboard-actions]');
@@ -1646,14 +2313,18 @@
         let visibleCount = 0;
         actionBar.querySelectorAll('[data-main-action-permission]').forEach((action) => {
           const permissionKey = action.dataset.mainActionPermission;
-          const visible = Boolean(permissions[permissionKey]);
+          const actionViews = (action.dataset.mainActionViews || '').split(' ').filter(Boolean);
+          const matchesActiveView = !activeView || !actionViews.length || actionViews.includes(activeView);
+          const visible = matchesActiveView && Boolean(permissions[permissionKey]);
           action.hidden = !visible;
           if (visible) visibleCount += 1;
         });
         if (!visibleCount && (permissions.canViewAdminTools || permissions.canViewClientTools || permissions.canViewWorkerTools)) {
           actionBar.querySelectorAll('[data-main-action-permission]').forEach((action) => {
-            action.hidden = false;
-            visibleCount += 1;
+            const actionViews = (action.dataset.mainActionViews || '').split(' ').filter(Boolean);
+            const visible = !activeView || !actionViews.length || actionViews.includes(activeView);
+            action.hidden = !visible;
+            if (visible) visibleCount += 1;
           });
         }
         actionBar.hidden = visibleCount === 0;
@@ -1704,6 +2375,42 @@
           bindAdminActivityActions();
           loadAdminActivity();
         }
+      };
+
+      const verifyDashboardMagicLinkToken = async () => {
+        const url = new URL(window.location.href);
+        const tokenFromDashboardUrl = url.searchParams.get('token');
+        if (!tokenFromDashboardUrl) return true;
+
+        if (status) {
+          status.dataset.state = 'loading';
+          status.textContent = 'Completing secure sign-in…';
+        }
+        if (accountStatus) accountStatus.textContent = 'Completing secure sign-in…';
+
+        const response = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
+          credentials: 'same-origin',
+          body: new URLSearchParams({ token: tokenFromDashboardUrl }),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        url.searchParams.delete('token');
+        const cleanPath = `${url.pathname || '/dashboard/'}${url.search}${url.hash}`;
+        window.history.replaceState(null, document.title, cleanPath || '/dashboard/');
+
+        if (!response.ok || !result.ok) {
+          if (['used', 'expired'].includes(result.auth)) {
+            if (status) status.textContent = 'Magic link was already used; checking your existing secure session…';
+            if (accountStatus) accountStatus.textContent = 'Checking existing secure session…';
+            return true;
+          }
+
+          throw new Error(result.message || 'This magic link could not be verified. Request a new secure link.');
+        }
+
+        return true;
       };
 
       const fetchAuthDebug = () => fetchJson('/api/auth/debug');
@@ -1802,6 +2509,8 @@
       let currentAdminInventoryItems = [];
       let currentAdminInventoryUsage = [];
       let currentProfileUser = null;
+      let currentDashboardView = '';
+      let availableDashboardViews = [];
       let adminActivityLoaded = false;
       let adminActivityFilterTimer = null;
       let currentAdminActivityPage = 1;
@@ -1889,20 +2598,34 @@
       };
       const setDashboardView = (view) => {
         dedupeDashboardSingletons();
+        const fallbackView = availableDashboardViews[0] || 'client';
+        const nextView = availableDashboardViews.includes(view) ? view : fallbackView;
+        currentDashboardView = nextView;
+        document.documentElement.dataset.dashboardView = nextView;
+
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
-          const views = (section.dataset.views || '').split(' ');
+          const views = (section.dataset.views || '').split(' ').filter(Boolean);
           const requiredPermission = section.dataset.permission;
           const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
-          section.hidden = !views.includes(view) || !hasRequiredPermission;
+          section.hidden = !views.includes(nextView) || !hasRequiredPermission;
         });
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
-          button.dataset.active = String(button.dataset.viewButton === view);
+          const isActive = button.dataset.viewButton === nextView;
+          button.dataset.active = String(isActive);
+          button.setAttribute('aria-pressed', String(isActive));
         });
+
+        if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
       };
       const getAvailableDashboardViews = (user = {}) => {
         const permissions = user.permissions || {};
+        const roles = new Set(user.roles || []);
         const views = new Set(permissions.availableViews || user.roles || []);
+        const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'));
+        if (canSwitchAllViews) {
+          ['admin', 'client', 'worker'].forEach((view) => views.add(view));
+        }
         if (permissions.canViewAdminTools) views.add('admin');
         if (permissions.canViewClientTools) views.add('client');
         if (permissions.canViewWorkerTools) views.add('worker');
@@ -1915,14 +2638,15 @@
         dedupeDashboardSingletons();
         const permissions = user.permissions || {};
         const availableViews = getAvailableDashboardViews(user);
+        availableDashboardViews = availableViews;
         const switcher = document.querySelector('[data-view-switcher]');
-        configureMainDashboardActions(user);
 
         if (switcher) {
           switcher.hidden = availableViews.length <= 1;
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             const canView = availableViews.includes(button.dataset.viewButton);
             button.hidden = !canView;
+            button.disabled = !canView;
             if (canView && !button.dataset.boundViewSwitch) {
               button.dataset.boundViewSwitch = 'true';
               button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
@@ -1930,7 +2654,8 @@
           });
         }
 
-        const preferredView = availableViews.includes(permissions.defaultView) ? permissions.defaultView : availableViews[0];
+        const preferredView = availableViews.includes(currentDashboardView) ? currentDashboardView : (availableViews.includes(permissions.defaultView) ? permissions.defaultView : availableViews[0]);
+        configureMainDashboardActions(user, preferredView || 'client');
         setDashboardView(preferredView || 'client');
       };
       const configureSignedInDashboard = (user) => {
@@ -3998,6 +4723,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
       };
 
       bindLogout();
+
+      try {
+        await verifyDashboardMagicLinkToken();
+      } catch (error) {
+        status.dataset.state = 'error';
+        status.innerHTML = `${escapeHtml(error.message)} <a href="/login/">Request a new magic link</a>.`;
+        if (accountStatus) accountStatus.textContent = 'Magic-link sign-in failed.';
+        return;
+      }
+
       status.dataset.state = 'loading';
       status.textContent = 'Checking secure session…';
       if (accountStatus) accountStatus.textContent = 'Checking secure session…';
@@ -4027,8 +4762,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
           updateDebugDashboardLink(dashboardUser);
 
           status.dataset.state = 'ready';
-          status.textContent = `Signed in as ${getUserDisplayName(dashboardUser)}`;
-          if (accountStatus) accountStatus.textContent = `Logged in as ${getUserDisplayName(dashboardUser)}`;
+          status.textContent = `Signed in as ${getUserDisplayName(result.user)}`;
+          if (accountStatus) accountStatus.textContent = `Signed in: ${getUserDisplayName(dashboardUser)}`;
           if (authDebugEnabled) {
             loadAuthDebug('/api/me says this browser is authenticated. Showing the cookie/database details for confirmation.');
           }
