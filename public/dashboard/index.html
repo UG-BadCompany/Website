@@ -1036,6 +1036,119 @@
       border-color: rgba(17,24,39,.14);
     }
 
+
+    /* Shared polished top-right navigation controls */
+    .nav-links {
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav-links > a:not(.btn),
+    .nav-links > button:not(.btn) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 999px;
+      color: #e2e8f0;
+      background: rgba(255,255,255,.07);
+      font: inherit;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .nav-links .btn {
+      min-height: 38px;
+      padding: 0 15px;
+      border-radius: 999px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.18);
+    }
+
+    .nav-links .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      border-color: transparent;
+    }
+
+    .nav-links .btn-soft,
+    .nav-links .btn-secondary,
+    .nav-links .btn:not(.btn-primary) {
+      color: #f8fafc;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-color: rgba(255,255,255,.16);
+    }
+
+    .nav-links > a:not(.btn):hover,
+    .nav-links > button:not(.btn):hover,
+    .nav-links .btn:hover,
+    .nav-links > a:not(.btn):focus-visible,
+    .nav-links > button:not(.btn):focus-visible,
+    .nav-links .btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(251,146,60,.42);
+      background: rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 16px 34px rgba(0,0,0,.24);
+    }
+
+    .nav-links .account-status,
+    .nav-links [data-inventory-account-status] {
+      min-height: 30px;
+      max-width: min(52vw, 240px);
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      color: #cbd5e1;
+      background: rgba(15,23,42,.46);
+      font-size: .74rem;
+      font-weight: 820;
+      line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-links [data-inventory-logout],
+    .account-session-row [data-logout-button] {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: .74rem;
+      font-weight: 900;
+    }
+
+    html[data-theme="light"] .nav-links > a:not(.btn),
+    html[data-theme="light"] .nav-links > button:not(.btn) {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.82);
+    }
+
+    html[data-theme="light"] .nav-links .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      border-color: transparent;
+    }
+
+    html[data-theme="light"] .nav-links .btn-soft,
+    html[data-theme="light"] .nav-links .btn-secondary,
+    html[data-theme="light"] .nav-links .btn:not(.btn-primary),
+    html[data-theme="light"] .nav-links [data-inventory-logout] {
+      color: #111827;
+      border-color: rgba(17,24,39,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
+      box-shadow: 0 10px 24px rgba(45,27,13,.09);
+    }
+
+    html[data-theme="light"] .nav-links .account-status,
+    html[data-theme="light"] .nav-links [data-inventory-account-status] {
+      color: #344054;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.88);
+    }
+
   </style>
 </head>
 <body>
@@ -2507,7 +2620,12 @@
       };
       const getAvailableDashboardViews = (user = {}) => {
         const permissions = user.permissions || {};
+        const roles = new Set(user.roles || []);
         const views = new Set(permissions.availableViews || user.roles || []);
+        const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'));
+        if (canSwitchAllViews) {
+          ['admin', 'client', 'worker'].forEach((view) => views.add(view));
+        }
         if (permissions.canViewAdminTools) views.add('admin');
         if (permissions.canViewClientTools) views.add('client');
         if (permissions.canViewWorkerTools) views.add('worker');

@@ -240,13 +240,173 @@
       .dashboard-hero { grid-template-columns: 1fr; }
     }
 
+
+    /* Shared polished top-right navigation controls */
+    .nav-links {
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav-links > a:not(.btn),
+    .nav-links > button:not(.btn) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 999px;
+      color: #e2e8f0;
+      background: rgba(255,255,255,.07);
+      font: inherit;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .nav-links .btn {
+      min-height: 38px;
+      padding: 0 15px;
+      border-radius: 999px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.18);
+    }
+
+    .nav-links .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      border-color: transparent;
+    }
+
+    .nav-links .btn-soft,
+    .nav-links .btn-secondary,
+    .nav-links .btn:not(.btn-primary) {
+      color: #f8fafc;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-color: rgba(255,255,255,.16);
+    }
+
+    .nav-links > a:not(.btn):hover,
+    .nav-links > button:not(.btn):hover,
+    .nav-links .btn:hover,
+    .nav-links > a:not(.btn):focus-visible,
+    .nav-links > button:not(.btn):focus-visible,
+    .nav-links .btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(251,146,60,.42);
+      background: rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 16px 34px rgba(0,0,0,.24);
+    }
+
+    .nav-links .account-status,
+    .nav-links [data-inventory-account-status] {
+      min-height: 30px;
+      max-width: min(52vw, 240px);
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      color: #cbd5e1;
+      background: rgba(15,23,42,.46);
+      font-size: .74rem;
+      font-weight: 820;
+      line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-links [data-inventory-logout],
+    .account-session-row [data-logout-button] {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: .74rem;
+      font-weight: 900;
+    }
+
+    html[data-theme="light"] .nav-links > a:not(.btn),
+    html[data-theme="light"] .nav-links > button:not(.btn) {
+      color: #1f2937;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.82);
+    }
+
+    html[data-theme="light"] .nav-links .btn-primary {
+      color: #21120a;
+      background: linear-gradient(135deg, #fb923c, #facc15);
+      border-color: transparent;
+    }
+
+    html[data-theme="light"] .nav-links .btn-soft,
+    html[data-theme="light"] .nav-links .btn-secondary,
+    html[data-theme="light"] .nav-links .btn:not(.btn-primary),
+    html[data-theme="light"] .nav-links [data-inventory-logout] {
+      color: #111827;
+      border-color: rgba(17,24,39,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
+      box-shadow: 0 10px 24px rgba(45,27,13,.09);
+    }
+
+    html[data-theme="light"] .nav-links .account-status,
+    html[data-theme="light"] .nav-links [data-inventory-account-status] {
+      color: #344054;
+      border-color: rgba(17,24,39,.14);
+      background: rgba(255,255,255,.88);
+    }
+
+
+    /* Thank-you confirmation page polish */
+    .thank-you-hero .hero-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thank-you-hero .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -8rem -10rem auto;
+      width: 26rem;
+      height: 26rem;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(249,115,22,.18), transparent 68%);
+      pointer-events: none;
+    }
+
+    .thank-you-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .thank-you-next-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin: 6px 0 70px;
+    }
+
+    .thank-you-next-steps .card {
+      min-height: 160px;
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.055));
+    }
+
+    .thank-you-next-steps .eyebrow {
+      margin-bottom: 12px;
+      font-size: .72rem;
+    }
+
+    @media(max-width:850px) {
+      .thank-you-next-steps { grid-template-columns: 1fr; }
+    }
+
   </style>
 
 </head>
 <body>
 <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><nav class="nav-links"><a href="/">Home</a><a href="/login/">Client Portal</a><a class="btn btn-primary" href="/#estimate">Request Estimate</a></nav></div></header>
 <main class="wrap">
-<section class="hero"><div class="hero-card"><div><span class="eyebrow">Request Sent</span><h1>Thanks — we received your estimate request.</h1><p>Your request has been submitted. T&A Contracting will review the details and follow up with next steps. If photos were included, they will help with a faster review.</p><div class="nav-links"><a class="btn btn-primary" href="/">Back Home</a><a class="btn btn-soft" href="/login/">Open Client Portal</a></div></div><div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div></div></section>
+<section class="hero thank-you-hero"><div class="hero-card"><div><span class="eyebrow">Request Sent</span><h1>Thanks — we received your estimate request.</h1><p>Your request is in the T&amp;A Contracting workspace for review. We’ll check the details, photos, and timing notes, then follow up with next steps for your quote or site visit.</p><div class="thank-you-actions"><a class="btn btn-primary" href="/">Back Home</a><a class="btn btn-soft" href="/login/">Open Client Portal</a></div></div><div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&amp;A Contracting logo"></div></div></section>
+<section class="thank-you-next-steps" aria-label="What happens next"><article class="card"><span class="eyebrow">Step 01</span><strong>We review the request</strong><p>Service details, address notes, and uploaded photos help us understand the scope before we reach out.</p></article><article class="card"><span class="eyebrow">Step 02</span><strong>We follow up</strong><p>Expect a message or call with scheduling questions, clarification, or quote timing based on the request.</p></article><article class="card"><span class="eyebrow">Step 03</span><strong>Use the portal</strong><p>Open the client portal to track requests, quote decisions, invoices, and saved property details.</p></article></section>
 </main>
 <footer class="wrap footer"><strong>T&A Contracting</strong> — Portal foundation preview. Full authentication, database, quote approvals, and payments come in the backend phase.</footer>
 </body>

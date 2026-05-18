@@ -37,5 +37,15 @@ test('all public pages share the unified homepage and dashboard style layer', as
     assert.match(html, /--dash-bg: #070a0f/, `${file.pathname} should expose shared dashboard color tokens`);
     assert.match(html, /linear-gradient\(135deg, #070a0f 0%, #111827 48%, #251109 100%\)/, `${file.pathname} should use the shared dark shell gradient`);
     assert.match(html, /\.nav \{[\s\S]*background: rgba\(7,10,15,\.80\)/, `${file.pathname} should use the shared dark navigation style`);
+    assert.match(html, /\/\* Shared polished top-right navigation controls \*\//, `${file.pathname} should include the shared polished nav controls`);
   }
+});
+
+test('thank-you page matches the shared dashboard confirmation style', async () => {
+  const html = await readFile(new URL('../public/thank-you/index.html', import.meta.url), 'utf8');
+
+  assert.match(html, /thank-you-hero/, 'thank-you page should use the polished confirmation hero');
+  assert.match(html, /thank-you-next-steps/, 'thank-you page should show matching next-step cards');
+  assert.match(html, /Your request is in the T&amp;A Contracting workspace for review/, 'thank-you copy should match the portal workspace tone');
+  assert.match(html, /Open the client portal to track requests, quote decisions, invoices, and saved property details/, 'thank-you page should connect users back to the portal flow');
 });

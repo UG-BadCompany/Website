@@ -35,3 +35,18 @@ test('dashboard places a single all-tools command center directly under the hero
     assert.match(html, new RegExp(`<strong>${label}</strong>`), `${label} card should be in the command center`);
   }
 });
+
+
+test('dashboard view switcher exposes all role views for switch-capable users', async () => {
+  const html = await loadDashboardHtml();
+
+  assert.match(html, /data-view-button="admin"/, 'admin view button should render');
+  assert.match(html, /data-view-button="client"/, 'client view button should render');
+  assert.match(html, /data-view-button="worker"/, 'worker view button should render');
+  assert.match(html, /const canSwitchAllViews = Boolean\(permissions\.canSwitchDashboardView \|\| permissions\.canViewAdminTools \|\| roles\.has\('admin'\)\)/, 'admins and switch-capable users should be able to access all role views');
+  assert.match(html, /\['admin', 'client', 'worker'\]\.forEach\(\(view\) => views\.add\(view\)\)/, 'all role views should be restored for switch-capable users');
+  assert.match(html, /button\.setAttribute\('aria-pressed', String\(isActive\)\)/, 'view buttons should update pressed state when switching');
+  assert.match(html, /data-main-action-views="admin"/, 'admin command shortcuts should be scoped to the admin view');
+  assert.match(html, /data-main-action-views="client"/, 'client command shortcuts should be scoped to the client view');
+  assert.match(html, /data-main-action-views="worker"/, 'worker command shortcuts should be scoped to the worker view');
+});
