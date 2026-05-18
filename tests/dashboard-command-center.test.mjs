@@ -46,6 +46,11 @@ test('dashboard view switcher exposes all role views for switch-capable users', 
   assert.match(html, /const canSwitchAllViews = Boolean\(permissions\.canSwitchDashboardView \|\| permissions\.canViewAdminTools \|\| roles\.has\('admin'\)\)/, 'admins and switch-capable users should be able to access all role views');
   assert.match(html, /\['admin', 'client', 'worker'\]\.forEach\(\(view\) => views\.add\(view\)\)/, 'all role views should be restored for switch-capable users');
   assert.match(html, /button\.setAttribute\('aria-pressed', String\(isActive\)\)/, 'view buttons should update pressed state when switching');
+  assert.match(html, /switcher\.addEventListener\('click'/, 'view switcher should use delegated click handling so role buttons keep working');
+  assert.match(html, /data-main-command-title/, 'main command center heading should update when the selected view changes');
+  assert.match(html, /Admin tools for running the business/, 'admin view should have clear admin command-center copy');
+  assert.match(html, /Client tools for managing a project/, 'client view should have clear client command-center copy');
+  assert.match(html, /Worker tools for assigned field jobs/, 'worker view should have clear worker command-center copy');
   assert.match(html, /data-main-action-views="admin"/, 'admin command shortcuts should be scoped to the admin view');
   assert.match(html, /data-main-action-views="client"/, 'client command shortcuts should be scoped to the client view');
   assert.match(html, /data-main-action-views="worker"/, 'worker command shortcuts should be scoped to the worker view');

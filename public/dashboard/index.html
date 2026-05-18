@@ -1161,9 +1161,9 @@
           <h1>Welcome back to your T&A workspace.</h1>
           <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
-            <button class="role active-admin" type="button" data-view-button="admin">Admin view</button>
-            <button class="role active-client" type="button" data-view-button="client">Client view</button>
-            <button class="role active-worker" type="button" data-view-button="worker">Worker view</button>
+            <button class="role" type="button" data-view-button="admin" aria-pressed="false">Admin view</button>
+            <button class="role" type="button" data-view-button="client" aria-pressed="false">Client view</button>
+            <button class="role" type="button" data-view-button="worker" aria-pressed="false">Worker view</button>
           </div>
         </div>
         <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
@@ -1172,9 +1172,9 @@
 
     <section class="admin-command main-command-shortcuts" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
       <div class="admin-command-header">
-        <span class="eyebrow">Command center</span>
-        <h2>All dashboard tools under the hero.</h2>
-        <p>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
+        <span class="eyebrow" data-main-command-eyebrow>Command center</span>
+        <h2 data-main-command-title>All dashboard tools under the hero.</h2>
+        <p data-main-command-description>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
       </div>
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
@@ -2596,12 +2596,41 @@
         const date = new Date(value);
         return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
       };
+      const dashboardViewCopy = {
+        admin: {
+          eyebrow: 'Admin view',
+          title: 'Admin tools for running the business.',
+          description: 'Work orders, invoices, inventory, roles, users, and audit activity are visible in this view.',
+        },
+        client: {
+          eyebrow: 'Client view',
+          title: 'Client tools for managing a project.',
+          description: 'Requests, quotes, client invoices, saved properties, and profile details are visible in this view.',
+        },
+        worker: {
+          eyebrow: 'Worker view',
+          title: 'Worker tools for assigned field jobs.',
+          description: 'Assigned jobs, notes, task checklist details, and completion upload tools are visible in this view.',
+        },
+      };
+
+      const updateDashboardViewChrome = (view) => {
+        const copy = dashboardViewCopy[view] || dashboardViewCopy.client;
+        const eyebrow = document.querySelector('[data-main-command-eyebrow]');
+        const title = document.querySelector('[data-main-command-title]');
+        const description = document.querySelector('[data-main-command-description]');
+        if (eyebrow) eyebrow.textContent = copy.eyebrow;
+        if (title) title.textContent = copy.title;
+        if (description) description.textContent = copy.description;
+      };
+
       const setDashboardView = (view) => {
         dedupeDashboardSingletons();
         const fallbackView = availableDashboardViews[0] || 'client';
         const nextView = availableDashboardViews.includes(view) ? view : fallbackView;
         currentDashboardView = nextView;
         document.documentElement.dataset.dashboardView = nextView;
+        updateDashboardViewChrome(nextView);
 
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
           const views = (section.dataset.views || '').split(' ').filter(Boolean);
@@ -2614,6 +2643,9 @@
           const isActive = button.dataset.viewButton === nextView;
           button.dataset.active = String(isActive);
           button.setAttribute('aria-pressed', String(isActive));
+          button.classList.toggle('active-admin', isActive && nextView === 'admin');
+          button.classList.toggle('active-client', isActive && nextView === 'client');
+          button.classList.toggle('active-worker', isActive && nextView === 'worker');
         });
 
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
@@ -2643,14 +2675,18 @@
 
         if (switcher) {
           switcher.hidden = availableViews.length <= 1;
+          if (!switcher.dataset.boundViewSwitcher) {
+            switcher.dataset.boundViewSwitcher = 'true';
+            switcher.addEventListener('click', (event) => {
+              const button = event.target.closest('[data-view-button]');
+              if (!button || button.disabled) return;
+              setDashboardView(button.dataset.viewButton);
+            });
+          }
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             const canView = availableViews.includes(button.dataset.viewButton);
             button.hidden = !canView;
             button.disabled = !canView;
-            if (canView && !button.dataset.boundViewSwitch) {
-              button.dataset.boundViewSwitch = 'true';
-              button.addEventListener('click', () => setDashboardView(button.dataset.viewButton));
-            }
           });
         }
 
