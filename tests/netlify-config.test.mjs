@@ -5,6 +5,9 @@ import assert from 'node:assert/strict';
 const loadNetlifyToml = () => readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
 const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
 
+const loadOutDashboardHtml = () => readFile(new URL('../out/dashboard/index.html', import.meta.url), 'utf8');
+
+
 test('dashboard magic-link tokens are exchanged in place instead of Netlify redirects or reload loops', async () => {
   const config = await loadNetlifyToml();
   const dashboard = await loadDashboardHtml();
@@ -24,4 +27,13 @@ test('npm postbuild checks Netlify function syntax before verifying publish outp
     packageJson.scripts.postbuild,
     'node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs',
   );
+});
+
+
+test('generated dashboard artifact preserves auth token exchange hooks', async () => {
+  const dashboard = await loadOutDashboardHtml();
+
+  assert.match(dashboard, /const tokenFromDashboardUrl = url\.searchParams\.get\('token'\)/);
+  assert.match(dashboard, /fetch\('\/api\/auth\/verify', \{/);
+  assert.match(dashboard, /window\.history\.replaceState\(null, document\.title, cleanPath \|\| '\/dashboard\/'\)/);
 });

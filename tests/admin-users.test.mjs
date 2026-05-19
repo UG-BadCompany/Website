@@ -22,6 +22,26 @@ const createMockDb = (responses = []) => ({
   },
 });
 
+
+
+test('admin users endpoint rejects unsupported methods before opening database', async () => {
+  let openedDatabase = false;
+  const handler = createAdminUsersHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/users', {
+    method: 'PUT',
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 405);
+  assert.equal(response.body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
 test('admin users endpoint creates an account and assigns roles', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],

@@ -43,6 +43,30 @@ test('admin roles endpoint lists roles and available permissions', async () => {
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
 });
 
+
+
+test('admin roles endpoint returns 400 for invalid JSON payloads', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [],
+  ]);
+  const handler = createAdminRolesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/roles', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: 'ta_session=session-token',
+    },
+    body: '{',
+  })));
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.message, 'Request body must be valid JSON.');
+  assert.equal(db.queries.length, 4);
+});
+
 test('admin roles endpoint creates custom roles with selected permissions', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
