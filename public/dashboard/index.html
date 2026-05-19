@@ -1207,7 +1207,10 @@
     .worker-jobs > .session-status,
     .admin-inbox > .session-status,
     .admin-invoices > .session-status,
-    .admin-activity > .session-status {
+    .admin-activity > .session-status,
+    [data-admin-assignment-list] > .session-status,
+    [data-admin-invoice-list] > .session-status,
+    [data-admin-activity-list] > .session-status {
       margin: 18px 0 20px;
       border: 1px solid rgba(251,146,60,.24);
       border-left: 6px solid var(--copper);
@@ -1335,6 +1338,9 @@
     html[data-theme="light"] .admin-inbox > .session-status,
     html[data-theme="light"] .admin-invoices > .session-status,
     html[data-theme="light"] .admin-activity > .session-status,
+    html[data-theme="light"] [data-admin-assignment-list] > .session-status,
+    html[data-theme="light"] [data-admin-invoice-list] > .session-status,
+    html[data-theme="light"] [data-admin-activity-list] > .session-status,
     html[data-theme="light"] .dashboard-empty-state {
       border-color: rgba(173,63,24,.2);
       background: linear-gradient(135deg,rgba(255,244,229,.9),rgba(246,226,201,.78));
