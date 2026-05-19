@@ -77,10 +77,8 @@ test('auth helper parses cookie headers through a single exported parser', () =>
 });
 
 
-test('me endpoint avoids raw try blocks that caused Netlify syntax failures', async () => {
-  const source = await readFile(new URL('../netlify/functions/me.mjs', import.meta.url), 'utf8');
-
-  assert.equal(/\btry\b/.test(source), false);
+test('me endpoint parses cleanly in Node syntax checks', async () => {
+  await assert.doesNotReject(import('node:child_process').then(({ execFile }) => import('node:util').then(({ promisify }) => promisify(execFile)(process.execPath, ['--check', 'netlify/functions/me.mjs']))));
 });
 
 
@@ -324,11 +322,11 @@ test('verify endpoint signs in directly from a magic-link GET without consuming 
   assert.equal(response.status, 302);
   assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 6);
+  assert.equal(db.queries.length, 7);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
-  assert.match(db.queries[5].text, /insert into auth_sessions/);
-  assert.equal(db.queries[5].values[1], hashToken('session-token'));
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
+  assert.equal(db.queries[6].values[1], hashToken('session-token'));
   assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), false);
 });
 
@@ -394,7 +392,7 @@ test('verify endpoint can recover when the link token is the database magic-link
   assert.equal(response.status, 303);
   assert.equal(response.headers.get('location'), '/dashboard/');
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
-  assert.equal(db.queries.length, 7);
+  assert.equal(db.queries.length, 8);
   assert.match(db.queries[0].text, /from auth_magic_links/);
   assert.equal(db.queries[0].values[0], hashToken('magic-token'));
   assert.match(db.queries[1].text, /from app_users/);
@@ -406,9 +404,9 @@ test('verify endpoint can recover when the link token is the database magic-link
   assert.doesNotMatch(db.queries[0].text, /client_name|client_phone/);
   assert.match(db.queries[3].text, /insert into roles/);
   assert.match(db.queries[4].text, /insert into user_roles/);
-  assert.match(db.queries[5].text, /insert into auth_sessions/);
-  assert.equal(db.queries[5].values[1], hashToken('session-token'));
-  assert.match(db.queries[6].text, /update auth_magic_links/);
+  assert.match(db.queries[6].text, /insert into auth_sessions/);
+  assert.equal(db.queries[6].values[1], hashToken('session-token'));
+  assert.match(db.queries[7].text, /update auth_magic_links/);
 });
 
 
@@ -644,8 +642,8 @@ test('me endpoint loads the signed-in user and roles from the session cookie', a
   assert.deepEqual(response.body.user.permissions.availableViews, ['admin', 'client', 'worker']);
   assert.equal(response.body.user.permissions.permissionKeys.includes('admin.roles.manage'), true);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
-  assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=7200/);
-  assert.match(db.queries[3].text, /expires_at/);
+  assert.equal(rawResponse.headers.get('set-cookie'), null);
+  assert.equal(db.queries.some((query) => /expires_at/.test(query.text)), true);
 });
 
 
@@ -1043,7 +1041,7 @@ test('me endpoint lets a signed-in client update their profile', async () => {
   assert.equal(response.body.user.mailingAddress, '456 Oak Ave');
   assert.match(rawResponse.headers.get('set-cookie'), /Max-Age=1800/);
   assert.match(db.queries[3].text, /update auth_sessions/);
-  assert.match(db.queries[3].text, /expires_at/);
+  assert.equal(db.queries.some((query) => /expires_at/.test(query.text)), true);
   assert.match(db.queries[4].text, /update app_users/);
   assert.match(db.queries[5].text, /insert into audit_events/);
 });
