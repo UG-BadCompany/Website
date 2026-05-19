@@ -1204,7 +1204,10 @@
     .client-requests > .session-status,
     .client-quotes > .session-status,
     .client-invoices > .session-status,
-    .worker-jobs > .session-status {
+    .worker-jobs > .session-status,
+    .admin-inbox > .session-status,
+    .admin-invoices > .session-status,
+    .admin-activity > .session-status {
       margin: 18px 0 20px;
       border: 1px solid rgba(251,146,60,.24);
       border-left: 6px solid var(--copper);
@@ -1215,6 +1218,9 @@
     }
 
     .worker-jobs > .session-status { border-left-color: var(--blue); }
+    .admin-invoices > .session-status { border-left-color: #ffb454; }
+    .admin-activity > .session-status { border-left-color: #8cc6ff; }
+    .admin-inbox > .session-status { border-left-color: #c2f0d0; }
 
     .client-request-form {
       gap: 18px;
@@ -1314,6 +1320,9 @@
     html[data-theme="light"] .client-quotes > p:not(.session-status),
     html[data-theme="light"] .client-invoices > p:not(.session-status),
     html[data-theme="light"] .worker-jobs > p:not(.session-status),
+    html[data-theme="light"] .admin-inbox > p:not(.session-status),
+    html[data-theme="light"] .admin-invoices > p:not(.session-status),
+    html[data-theme="light"] .admin-activity > p:not(.session-status),
     html[data-theme="light"] .client-request-form-intro,
     html[data-theme="light"] .client-request-attachments small,
     html[data-theme="light"] .client-request-attachment-list,
@@ -1323,6 +1332,9 @@
     html[data-theme="light"] .client-quotes > .session-status,
     html[data-theme="light"] .client-invoices > .session-status,
     html[data-theme="light"] .worker-jobs > .session-status,
+    html[data-theme="light"] .admin-inbox > .session-status,
+    html[data-theme="light"] .admin-invoices > .session-status,
+    html[data-theme="light"] .admin-activity > .session-status,
     html[data-theme="light"] .dashboard-empty-state {
       border-color: rgba(173,63,24,.2);
       background: linear-gradient(135deg,rgba(255,244,229,.9),rgba(246,226,201,.78));
