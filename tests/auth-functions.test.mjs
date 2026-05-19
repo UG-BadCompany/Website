@@ -252,7 +252,8 @@ test('magic-link endpoint stores a hashed token and returns a development link w
 });
 
 
-test('magic-link endpoint still returns a usable development link when email delivery fails', async () => {
+test('magic-link endpoint still returns a usable development link when email delivery fails', async (context) => {
+  const consoleErrorMock = context.mock.method(console, 'error', () => {});
   const db = createMockDb();
   const handler = createMagicLinkHandler({
     getDatabase: async () => db,
@@ -270,6 +271,7 @@ test('magic-link endpoint still returns a usable development link when email del
   assert.match(response.body.message, /Email delivery failed/);
   assert.equal(response.body.devMagicLink, 'https://site.test/api/auth/verify?token=magic-token');
   assert.equal(db.queries.length, 1);
+  assert.equal(consoleErrorMock.mock.calls.length, 1);
 });
 
 
@@ -283,7 +285,8 @@ test('latest magic-link migration restores profile metadata columns for existing
 
 
 
-test('magic-link user helper does not fail sign-in when role assignment has a stale schema problem', async () => {
+test('magic-link user helper does not fail sign-in when role assignment has a stale schema problem', async (context) => {
+  const consoleErrorMock = context.mock.method(console, 'error', () => {});
   const db = {
     queries: [],
     sql(strings, ...values) {
@@ -300,6 +303,7 @@ test('magic-link user helper does not fail sign-in when role assignment has a st
 
   assert.equal(user.id, 'user-1');
   assert.equal(db.queries.some((query) => /insert into roles/.test(query.text)), true);
+  assert.equal(consoleErrorMock.mock.calls.length, 1);
 });
 
 test('verify endpoint signs in directly from a magic-link GET without consuming the link and redirects to the dashboard', async () => {
@@ -410,7 +414,8 @@ test('verify endpoint can recover when the link token is the database magic-link
 });
 
 
-test('verify endpoint still redirects when marking the used magic link fails after session creation', async () => {
+test('verify endpoint still redirects when marking the used magic link fails after session creation', async (context) => {
+  const consoleErrorMock = context.mock.method(console, 'error', () => {});
   const db = {
     queries: [],
     sql(strings, ...values) {
@@ -438,6 +443,7 @@ test('verify endpoint still redirects when marking the used magic link fails aft
   assert.match(response.headers.get('set-cookie'), /ta_session=session-token/);
   assert.equal(db.queries.some((query) => /insert into auth_sessions/.test(query.text)), true);
   assert.equal(db.queries.some((query) => /update auth_magic_links/.test(query.text)), true);
+  assert.equal(consoleErrorMock.mock.calls.length, 1);
 });
 
 
@@ -700,7 +706,8 @@ test('me endpoint chooses a usable duplicate session cookie over a revoked one',
   assert.equal(rawResponse.headers.has('set-cookie'), false);
 });
 
-test('me endpoint retries role loading and still returns role defaults when the first role query fails', async () => {
+test('me endpoint retries role loading and still returns role defaults when the first role query fails', async (context) => {
+  const consoleErrorMock = context.mock.method(console, 'error', () => {});
   let roleQueryAttempts = 0;
   const db = {
     queries: [],
@@ -728,6 +735,7 @@ test('me endpoint retries role loading and still returns role defaults when the 
   assert.equal(response.body.user.permissions.canSwitchDashboardView, true);
   assert.equal(response.body.user.permissions.canManageUsers, true);
   assert.equal(response.body.user.permissions.canManageInventory, true);
+  assert.equal(consoleErrorMock.mock.calls.length, 1);
 });
 
 
@@ -838,7 +846,8 @@ test('me endpoint loads roles without requiring the optional role name column', 
   assert.equal(db.queries.some((query) => /select roles\.key, roles\.name/.test(query.text)), false);
 });
 
-test('me endpoint uses role defaults when role permission table is unavailable', async () => {
+test('me endpoint uses role defaults when role permission table is unavailable', async (context) => {
+  const consoleErrorMock = context.mock.method(console, 'error', () => {});
   const db = {
     queries: [],
     sql(strings, ...values) {
@@ -860,6 +869,7 @@ test('me endpoint uses role defaults when role permission table is unavailable',
   assert.deepEqual(response.body.user.roles, ['client']);
   assert.equal(response.body.user.permissions.canViewClientTools, true);
   assert.equal(response.body.user.permissions.canViewInvoices, true);
+  assert.equal(consoleErrorMock.mock.calls.length, 1);
 });
 
 test('me endpoint falls back to client access when a magic-link account has no assigned roles', async () => {
