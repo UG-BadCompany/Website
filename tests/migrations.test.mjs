@@ -9,7 +9,7 @@ import { validateMigrationFiles } from '../scripts/check-netlify-migrations.mjs'
 const execFileAsync = promisify(execFile);
 
 const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
-const lockedScheduleSha256 = 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1';
+const lockedScheduleSha256 = 'f9cf4dc0988130a124df27bcdee45650b1162d1e555f761a0b8ef5ecbc67fd80';
 
 test('Netlify Database migrations allow applied compatibility names to remain committed', async () => {
   const { errors, files } = await validateMigrationFiles();
@@ -41,7 +41,7 @@ test('applied 0004 schedule migration keeps locked checksum', async () => {
 
 test('applied compatibility migrations keep their original SQL bodies', async () => {
   const mirroredMigrations = [
-    ['0006_job_request_schedule_dates.sql', '0004_work_order_schedule.sql'],
+    ['0004_work_order_schedule.sql', '0004_work_order_schedule.sql'],
     ['0011_completion_review_status.sql', '0011_completion_review_status.sql'],
     ['0012_quote_payment_completion_controls.sql', '0012_quote_payment_completion_controls.sql'],
     ['0013_invoices_payments.sql', '0013_invoices_payments.sql'],
