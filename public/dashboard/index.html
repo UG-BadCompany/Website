@@ -1415,56 +1415,14 @@
         <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
         <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
     </section>
 
     <section class="card session-check" data-session-card>
       <strong>Session check</strong>
       <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
-    </section>
-
-    <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Admin command center</span>
-        <h2>Run today’s work from one command center.</h2>
-        <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail from the command center cards.</p>
-      </div>
-      <div class="admin-command-actions" aria-label="Admin quick actions">
-        <a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Review intake, quote, schedule, assign, and verify completed work.</span></a>
-        <a class="admin-command-card" href="#admin-invoices"><strong>Invoices</strong><span>Confirm payments, review paid history, and close out completed jobs.</span></a>
-        <a class="admin-command-card" href="/inventory/" data-dashboard-section data-views="admin" data-permission="canManageInventory" hidden><strong>Inventory</strong><span>Track materials, tools, suppliers, reorder points, and stock changes.</span></a>
-        <button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles &amp; users</strong><span>Update users, profile details, custom roles, and admin permissions.</span></button>
-        <button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search status changes, payments, assignments, quotes, and account updates.</span></button>
-      </div>
-    </section>
-
-    <section class="admin-command client-command" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Client command center</span>
-        <h2>Manage your project from one command center.</h2>
-        <p>Open requests, quotes, invoices, and profile details from the command center cards without extra shortcut buttons.</p>
-      </div>
-      <div class="admin-command-actions" aria-label="Client quick actions">
-        <a class="admin-command-card" href="#submit-request" data-request-estimate-link><strong>Requests</strong><span>Review open work, add project details, approve completed work, or submit another request.</span></a>
-        <a class="admin-command-card" href="#client-quotes"><strong>Quotes</strong><span>Approve, decline, or review estimates that are waiting for your decision.</span></a>
-        <a class="admin-command-card" href="#client-invoices"><strong>Invoices</strong><span>Check open invoices and payment status tied to your completed work.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile &amp; properties</strong><span>Update contact information, saved addresses, access notes, and property details.</span></button>
-      </div>
-    </section>
-
-    <section class="admin-command worker-command" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Worker command center</span>
-        <h2>Run assigned jobs from one command center.</h2>
-        <p>Open active work orders, update job status, record field notes, and attach completion evidence from the worker cards.</p>
-      </div>
-      <div class="admin-command-actions" aria-label="Worker quick actions">
-        <a class="admin-command-card" href="#worker-jobs"><strong>Assigned jobs</strong><span>See active work orders and filter by job status.</span></a>
-        <a class="admin-command-card" href="#worker-jobs"><strong>Checklist</strong><span>Record materials, blockers, access notes, and completed tasks.</span></a>
-        <a class="admin-command-card" href="#worker-jobs"><strong>Evidence</strong><span>Add before photos, after photos, completion notes, and file details.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile</strong><span>Keep your contact details current for dispatch and admin follow-up.</span></button>
-      </div>
     </section>
 
     <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="client worker">
