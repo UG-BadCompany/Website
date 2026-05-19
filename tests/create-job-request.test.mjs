@@ -35,6 +35,23 @@ const createMockDb = (responses = defaultDbResponses()) => ({
   },
 });
 
+
+
+test('rejects unsupported methods before parsing request payloads', async () => {
+  let openedDatabase = false;
+  const handler = createJobRequestHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(request(undefined, 'PATCH')));
+
+  assert.equal(response.status, 405);
+  assert.deepEqual(response.body, { ok: false, message: 'Method not allowed.' });
+  assert.equal(openedDatabase, false);
+});
 test('normalizes strings and caps long public form fields', () => {
   const normalized = normalizePayload({
     name: `  ${'A'.repeat(200)}  `,
