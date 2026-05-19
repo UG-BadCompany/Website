@@ -12,6 +12,28 @@ const createMockDb = (responses = []) => ({
   },
 });
 
+
+
+test('verify endpoint rejects unsupported methods before touching the database', async () => {
+  let openedDatabase = false;
+  const handler = createVerifyMagicLinkHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+    makeSessionToken: () => 'session-token',
+  });
+
+  const response = await handler(new Request('https://site.test/api/auth/verify', {
+    method: 'PUT',
+    headers: { accept: 'application/json' },
+  }));
+  const body = await response.json();
+
+  assert.equal(response.status, 405);
+  assert.equal(body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
 test('verify endpoint returns JSON and a session cookie for dashboard token exchanges', async () => {
   const db = createMockDb([
     [{ id: 'link-1', email: 'client@example.com', expires_at: new Date(Date.now() + 60_000).toISOString(), consumed_at: null }],
