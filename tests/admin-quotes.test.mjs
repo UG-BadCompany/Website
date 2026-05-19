@@ -22,6 +22,24 @@ const quoteRequest = (body, cookie = 'ta_session=session-token') => new Request(
   body: JSON.stringify(body),
 });
 
+
+
+test('admin quote endpoint rejects unsupported methods before auth or database work', async () => {
+  let openedDatabase = false;
+  const handler = createAdminQuotesHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes', { method: 'GET' })));
+
+  assert.equal(response.status, 405);
+  assert.equal(response.body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
+
 test('admin quote endpoint requires a signed-in session', async () => {
   let openedDatabase = false;
   const handler = createAdminQuotesHandler({
