@@ -323,3 +323,46 @@ test('admin job request endpoint verifies completion by moving request to waitin
   assert.match(db.queries[5].text, /insert into invoices/);
   assert.deepEqual(db.queries[5].values.slice(0, 7), ['job-1', 'client-1', 'quote-1', 'open', 'Drywall repair invoice', 42500, 'admin-1']);
 });
+
+
+test('admin job request endpoint falls back to active scope for unsupported scope values', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'job-active-1',
+      status: 'new',
+      requester_name: 'Active Customer',
+      requester_email: 'active@example.com',
+      requester_phone: '555-0111',
+      city: 'Mesa',
+      service_type: 'Drywall repair',
+      preferred_timeframe: 'This week',
+      description: 'Patch and paint',
+      admin_notes: '',
+      estimated_start_date: null,
+      completion_date: null,
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+    }],
+    [{ status: 'new', count: 1 }],
+    [],
+    [],
+    [],
+  ]);
+
+  const handler = createAdminJobRequestsHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/job-requests?scope=bad-scope', {
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.scope, 'active');
+  assert.equal(response.body.requests.length, 1);
+  assert.equal(response.body.requests[0].status, 'new');
+  assert.deepEqual(response.body.statusCounts, { new: 1 });
+  assert.match(db.queries[3].text, /status not in/);
+  assert.equal(db.queries[3].values[0], 'completed');
+  assert.equal(db.queries[3].values[1], 'cancelled');
+});
