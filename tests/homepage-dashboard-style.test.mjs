@@ -49,3 +49,28 @@ test('thank-you page matches the shared dashboard confirmation style', async () 
   assert.match(html, /Your request is in the T&amp;A Contracting workspace for review/, 'thank-you copy should match the portal workspace tone');
   assert.match(html, /Open the client portal to track requests, quote decisions, invoices, and saved property details/, 'thank-you page should connect users back to the portal flow');
 });
+
+
+test('generated out pages keep shared visual-system signatures for home and dashboard', async () => {
+  const targets = [
+    ['index', new URL('../public/index.html', import.meta.url), new URL('../out/index.html', import.meta.url)],
+    ['dashboard', new URL('../public/dashboard/index.html', import.meta.url), new URL('../out/dashboard/index.html', import.meta.url)],
+  ];
+
+  for (const [label, publicUrl, outUrl] of targets) {
+    const [publicHtml, outHtml] = await Promise.all([
+      readFile(publicUrl, 'utf8'),
+      readFile(outUrl, 'utf8'),
+    ]);
+
+    for (const signature of [
+      '/* Unified homepage/dashboard visual system */',
+      '--dash-bg: #070a0f',
+      'linear-gradient(135deg, #070a0f 0%, #111827 48%, #251109 100%)',
+      '/* Shared polished top-right navigation controls */',
+    ]) {
+      assert.equal(publicHtml.includes(signature), true, `${label} public should include ${signature}`);
+      assert.equal(outHtml.includes(signature), true, `${label} out should include ${signature}`);
+    }
+  }
+});

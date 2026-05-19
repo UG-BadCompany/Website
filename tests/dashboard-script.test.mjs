@@ -3,9 +3,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
+const loadOutDashboardHtml = () => readFile(new URL('../out/dashboard/index.html', import.meta.url), 'utf8');
 const loadInventoryHtml = () => readFile(new URL('../public/inventory/index.html', import.meta.url), 'utf8');
 const loadHomeHtml = () => readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const loadLoginHtml = () => readFile(new URL('../public/login/index.html', import.meta.url), 'utf8');
+const loadLoginScript = () => readFile(new URL('../public/assets/login.js', import.meta.url), 'utf8');
 const extractInlineScripts = (html) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
 test('dashboard inline scripts parse without duplicate declarations', async () => {
@@ -118,7 +120,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(script, /const confirmAdminPayment =/, 'admins should be able to confirm invoice payments');
   assert.match(script, /window\.taDashboardActions\.bindAdminInvoiceActions =/, 'admin invoice action binding should live on a dashboard action namespace');
   assert.doesNotMatch(script, /const bindAdminInvoiceActions =|function bindAdminInvoiceActions\(\)/, 'admin invoice action binding must not declare a top-level identifier that can collide after deploy merges');
-  assert.match(script, /tokenFromDashboardUrl[\s\S]*\/api\/auth\/verify\?token=/, 'dashboard token links should be routed through the magic-link verifier before session checks');
+  assert.match(script, /tokenFromDashboardUrl[\s\S]*fetch\('\/api\/auth\/verify'/, 'dashboard token links should be routed through the magic-link verifier endpoint before session checks');
+  assert.match(script, /new URLSearchParams\(\{ token: tokenFromDashboardUrl \}\)/, 'dashboard token verification should post the token to the verifier endpoint');
   assert.match(script, /canManageInvoices/, 'admin invoice loading should honor invoice management permission');
   assert.match(script, /const loadWorkerJobs =/, 'workers should load assigned jobs');
   assert.match(script, /const bindWorkerJobActions =/, 'worker job update controls should be bound');
@@ -171,7 +174,7 @@ test('homepage portal links route logged-out users straight to login and active 
 
 test('login page redirects existing sessions back to the dashboard', async () => {
   const html = await loadLoginHtml();
-  const [script] = extractInlineScripts(html);
+  const script = await loadLoginScript();
 
   assert.match(html, /href="\/dashboard\/">Dashboard/, 'login nav should point users with sessions back to the dashboard');
   assert.doesNotMatch(html, /href="\/login\/">Client Portal/, 'login nav should not loop portal users back to login');
@@ -182,8 +185,27 @@ test('login page redirects existing sessions back to the dashboard', async () =>
   assert.match(html, /requests, saved properties, quotes, invoices, and schedule updates/, 'login page should mention the current portal capabilities');
   assert.doesNotMatch(html, /Open your Client Portal with a secure magic link/, 'login page should not use the old standalone light-page hero copy');
   assert.match(script, /const redirectExistingSession = async/, 'login page should check for an existing session');
-  assert.match(script, /fetch\('\/api\/me'/, 'login page should use api\/me for the existing-session check');
+  assert.match(script, /fetch\('\/api\/me\?optional=1'/, 'login page should use api\/me optional mode for the existing-session check');
   assert.match(script, /window\.location\.replace\('\/dashboard\/'\)/, 'authenticated users should be sent to the dashboard');
   assert.match(script, /signed-out/, 'signed-out redirects should not bounce straight back to the dashboard');
   assert.doesNotThrow(() => new Function(script));
+});
+
+
+test('generated dashboard artifact preserves core auth and command-center hooks', async () => {
+  const [publicHtml, outHtml] = await Promise.all([loadDashboardHtml(), loadOutDashboardHtml()]);
+
+  for (const signature of [
+    'data-main-dashboard-actions',
+    'data-view-button="admin"',
+    'data-view-button="client"',
+    'data-view-button="worker"',
+    'window.taSetDashboardView = (view) =>',
+    'tokenFromDashboardUrl',
+    "fetch('/api/auth/verify'",
+    'renderDashboardEmptyState',
+  ]) {
+    assert.equal(publicHtml.includes(signature), true, `public dashboard should include ${signature}`);
+    assert.equal(outHtml.includes(signature), true, `out dashboard should include ${signature}`);
+  }
 });
