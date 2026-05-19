@@ -1425,7 +1425,8 @@
       <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
-    <section class="card admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
+    <div class="admin-request-modal" data-admin-access role="dialog" aria-modal="true" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
       <strong>Roles &amp; users</strong>
       <p>Manage dashboard access, custom roles, and user assignments.</p>
       <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
@@ -1446,7 +1447,8 @@
         <button class="btn btn-soft" type="button" data-admin-access-close>Close</button>
       </div>
       <div class="admin-request-list" data-admin-user-results></div>
-    </section>
+          </section>
+    </div>
 
     <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" hidden>
       <section class="admin-request-modal-panel admin-access-panel">
