@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+
+const PUBLIC_DASHBOARD_PATH = new URL('../public/dashboard/index.html', import.meta.url);
+const OUT_DASHBOARD_PATH = new URL('../out/dashboard/index.html', import.meta.url);
 import test from 'node:test';
 
-const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
+const loadDashboardHtml = () => readFile(PUBLIC_DASHBOARD_PATH, 'utf8');
 
 test('dashboard places a single all-tools command center directly under the hero', async () => {
   const html = await loadDashboardHtml();
@@ -94,4 +97,23 @@ test('client and worker empty dashboard states are easy to scan', async () => {
   assert.match(html, /No quotes ready yet\./, 'client quotes should have a visible empty state card');
   assert.match(html, /No open invoices yet\./, 'client invoices should have a visible empty state card');
   assert.match(html, /No assigned jobs yet\./, 'worker jobs should have a visible empty state card');
+});
+
+
+test('generated out dashboard includes the same command-center and view-switch helpers as source dashboard', async () => {
+  const [publicHtml, outHtml] = await Promise.all([
+    readFile(PUBLIC_DASHBOARD_PATH, 'utf8'),
+    readFile(OUT_DASHBOARD_PATH, 'utf8'),
+  ]);
+
+  for (const signature of [
+    'data-main-dashboard-actions',
+    'data-main-action-views="admin"',
+    'const dedupeDashboardSingletons = () =>',
+    'const renderDashboardEmptyState = (title, message) =>',
+    'window.taSetDashboardView = (view) =>',
+  ]) {
+    assert.equal(publicHtml.includes(signature), true, `public dashboard should include ${signature}`);
+    assert.equal(outHtml.includes(signature), true, `out dashboard should include ${signature}`);
+  }
 });
