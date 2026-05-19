@@ -3128,7 +3128,7 @@
         const filteredRequests = getFilteredAdminRequests();
         inboxList.innerHTML = filteredRequests.length
           ? filteredRequests.map((request) => renderRequestCard(request, { admin: true })).join('')
-          : '<p class="session-status">No work orders match those filters.</p>';
+          : renderDashboardEmptyState('No work orders match those filters.', 'Try broadening the scope, status, or search filters to load matching work orders.');
 
         if (inboxStatus) {
           const total = currentAdminRequests.size;
