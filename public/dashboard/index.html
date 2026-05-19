@@ -1504,11 +1504,11 @@
       </div>
       <div class="client-request-form-actions">
         <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit Role</button>
-        <button class="btn btn-soft" type="button" data-admin-role-create>Create Role</button>
+        <button class="btn btn-soft" type="button" data-admin-new-role>Create Role</button>
         <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
         <button class="btn btn-soft" type="button" data-admin-access-close>Done</button>
       </div>
-      <div class="admin-request-list" data-admin-user-results></div>
+      <div class="admin-request-list" data-admin-user-search-results></div>
           </section>
     </div>
 
@@ -1522,17 +1522,17 @@
           <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-role-modal-close aria-label="Close role editor">×</button>
         </div>
         <form class="client-request-form" data-admin-role-form>
-          <input type="hidden" name="roleId">
+          <input type="hidden" name="roleId" data-admin-role-id>
           <label>Role key
-            <input name="key" placeholder="crew-lead">
+            <input name="key" data-admin-role-key placeholder="crew-lead">
           </label>
           <label>Role name
-            <input name="name" required placeholder="Crew Lead">
+            <input name="name" data-admin-role-name required placeholder="Crew Lead">
           </label>
           <label class="full">Description
-            <textarea name="description" placeholder="Role purpose and scope."></textarea>
+            <textarea name="description" data-admin-role-description placeholder="Role purpose and scope."></textarea>
           </label>
-          <div class="full" data-admin-role-permissions></div>
+          <div class="full" data-admin-permission-list></div>
           <div class="client-request-form-actions">
             <button class="btn btn-primary" type="submit">Save role</button>
             <span data-admin-role-form-status aria-live="polite"></span>
@@ -1551,32 +1551,33 @@
           <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-user-modal-close aria-label="Close user editor">×</button>
         </div>
         <form class="client-request-form" data-admin-user-form>
-          <input type="hidden" name="userId">
+          <input type="hidden" name="userId" data-admin-user-id>
           <label>Email
-            <input name="email" type="email" required placeholder="user@example.com">
+            <input name="email" data-admin-user-email type="email" required placeholder="user@example.com">
           </label>
           <label>Full name
-            <input name="fullName" placeholder="Full name">
+            <input name="fullName" data-admin-user-name placeholder="Full name">
           </label>
           <label>Phone
-            <input name="phone" placeholder="555-0100">
+            <input name="phone" data-admin-user-phone placeholder="555-0100">
           </label>
           <label>Secondary phone
-            <input name="secondaryPhone" placeholder="555-0101">
+            <input name="secondaryPhone" data-admin-user-secondary-phone placeholder="555-0101">
           </label>
           <label>Company
-            <input name="companyName" placeholder="Company name">
+            <input name="companyName" data-admin-user-company placeholder="Company name">
           </label>
           <label class="full">Mailing address
-            <input name="mailingAddress" placeholder="Street, City, State ZIP">
+            <input name="mailingAddress" data-admin-user-mailing-address placeholder="Street, City, State ZIP">
           </label>
           <label class="full">Internal notes
-            <textarea name="internalNotes" placeholder="Notes for dispatch or admin team."></textarea>
+            <textarea name="internalNotes" data-admin-user-internal-notes placeholder="Notes for dispatch or admin team."></textarea>
           </label>
-          <div class="full" data-admin-user-roles></div>
+          <div class="full" data-admin-user-role-list></div>
+          <div class="full" data-admin-user-property-list></div>
           <div class="client-request-form-actions">
             <button class="btn btn-primary" type="submit">Save user</button>
-            <button class="btn btn-danger" type="button" data-admin-user-delete>Delete user</button>
+            <button class="btn btn-danger" type="button" data-admin-delete-user>Delete user</button>
             <span data-admin-user-form-status aria-live="polite"></span>
           </div>
         </form>
