@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const loadDashboardHtml = () => readFile(new URL('../public/dashboard/index.html', import.meta.url), 'utf8');
+const loadOutDashboardHtml = () => readFile(new URL('../out/dashboard/index.html', import.meta.url), 'utf8');
 const loadInventoryHtml = () => readFile(new URL('../public/inventory/index.html', import.meta.url), 'utf8');
 const loadHomeHtml = () => readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const loadLoginHtml = () => readFile(new URL('../public/login/index.html', import.meta.url), 'utf8');
@@ -188,4 +189,23 @@ test('login page redirects existing sessions back to the dashboard', async () =>
   assert.match(script, /window\.location\.replace\('\/dashboard\/'\)/, 'authenticated users should be sent to the dashboard');
   assert.match(script, /signed-out/, 'signed-out redirects should not bounce straight back to the dashboard');
   assert.doesNotThrow(() => new Function(script));
+});
+
+
+test('generated dashboard artifact preserves core auth and command-center hooks', async () => {
+  const [publicHtml, outHtml] = await Promise.all([loadDashboardHtml(), loadOutDashboardHtml()]);
+
+  for (const signature of [
+    'data-main-dashboard-actions',
+    'data-view-button="admin"',
+    'data-view-button="client"',
+    'data-view-button="worker"',
+    'window.taSetDashboardView = (view) =>',
+    'tokenFromDashboardUrl',
+    "fetch('/api/auth/verify'",
+    'renderDashboardEmptyState',
+  ]) {
+    assert.equal(publicHtml.includes(signature), true, `public dashboard should include ${signature}`);
+    assert.equal(outHtml.includes(signature), true, `out dashboard should include ${signature}`);
+  }
 });
