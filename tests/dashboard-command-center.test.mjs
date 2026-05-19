@@ -79,3 +79,17 @@ test('auth debug mode exposes advanced dashboard debug controls', async () => {
   assert.match(html, /fetchJson\('\/api\/me'\)/, 'health check should verify /api/me');
   assert.match(html, /fetchJson\('\/api\/auth\/debug'\)/, 'health check should verify /api/auth/debug');
 });
+
+test('client and worker empty dashboard states are easy to scan', async () => {
+  const html = await loadDashboardHtml();
+
+  assert.match(html, /\/\* Client and worker workspace readability \*\//, 'dashboard should include a dedicated readability pass for client and worker panels');
+  assert.match(html, /\.client-requests > strong,[\s\S]*font-size: clamp\(1\.55rem,3vw,2\.35rem\)/, 'client and worker panel headings should be larger and easier to scan');
+  assert.match(html, /\.client-request-form-intro/, 'request form should include explanatory intro styling');
+  assert.match(html, /Start with the service and project details/, 'request form should explain where clients should start');
+  assert.match(html, /const renderDashboardEmptyState = \(title, message\) =>/, 'dashboard should render reusable high-contrast empty states');
+  assert.match(html, /No job requests yet\./, 'client requests should have a visible empty state card');
+  assert.match(html, /No quotes ready yet\./, 'client quotes should have a visible empty state card');
+  assert.match(html, /No open invoices yet\./, 'client invoices should have a visible empty state card');
+  assert.match(html, /No assigned jobs yet\./, 'worker jobs should have a visible empty state card');
+});
