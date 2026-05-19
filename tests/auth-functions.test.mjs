@@ -1,12 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { readFile } from 'node:fs/promises';
 import {
   getAllowedSiteUrls,
   getFromEmail,
   getSiteUrl,
-  getSessionCookieMaxAgeSeconds,
   getSessionTtlMinutesForRoles,
   hashToken,
   shouldSendEmail,
@@ -65,8 +63,9 @@ test('auth helper uses short client sessions and longer staff sessions', () => {
   assert.equal(getSessionTtlMinutesForRoles(['client']), 30);
   assert.equal(getSessionTtlMinutesForRoles(['worker']), 120);
   assert.equal(getSessionTtlMinutesForRoles(['client', 'admin']), 120);
-  assert.equal(getSessionCookieMaxAgeSeconds(30), 1800);
-  assert.equal(getSessionCookieMaxAgeSeconds(120), 7200);
+  const request = new Request('https://example.test/dashboard');
+  assert.match(createSessionCookie('session-token', request, 30), /Max-Age=1800/);
+  assert.match(createSessionCookie('session-token', request, 120), /Max-Age=7200/);
 });
 
 
