@@ -66,3 +66,32 @@ test('admin activity endpoint lists recent audit events for admins', async () =>
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
   assert.match(db.queries[4].text, /from audit_events/);
 });
+
+
+test('admin activity endpoint clamps oversized limits and safely parses invalid metadata', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin' }],
+    [{ permission_key: 'admin.activity.view' }],
+    [{
+      id: 'event-2',
+      actor_user_id: null,
+      event_type: 'job.updated',
+      entity_type: 'job',
+      entity_id: 'job-1',
+      metadata: '{not-valid-json}',
+      created_at: '2026-05-14T00:00:00.000Z',
+      actor_email: null,
+      actor_full_name: null,
+    }],
+  ]);
+  const handler = createAdminActivityHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/activity?limit=500', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.filters.limit, 100);
+  assert.equal(response.body.events[0].metadata && Object.keys(response.body.events[0].metadata).length, 0);
+  assert.equal(response.body.events[0].actor, null);
+  assert.ok(db.queries[4].values.includes(100));
+});
