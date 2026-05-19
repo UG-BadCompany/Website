@@ -49,6 +49,11 @@ test('dashboard view switcher exposes all role views for switch-capable users', 
   assert.match(html, /switcher\.addEventListener\('click'/, 'view switcher should use delegated click handling so role buttons keep working');
   assert.match(html, /onclick="window\.taSetDashboardView && window\.taSetDashboardView\('admin'\)"/, 'admin view button should have a direct click fallback');
   assert.match(html, /window\.taSetDashboardView = \(view\) => \{[\s\S]*setDashboardView\(view\);[\s\S]*\}/, 'dashboard should expose a direct view-switch fallback for role buttons');
+  assert.match(html, /const dedupeDashboardSingletons = \(\) =>/, 'dashboard should define the singleton cleanup helper before configuring views');
+  assert.ok(
+    html.indexOf('const dedupeDashboardSingletons = () =>') < html.indexOf('const setDashboardView = (view) =>'),
+    'singleton cleanup helper should be initialized before direct view switching can call it',
+  );
   assert.match(html, /const normalizeDashboardViewName =/, 'dashboard should normalize role/view names before deciding available views');
   assert.match(html, /data-dashboard-view-status/, 'dashboard should show visible feedback for the selected role view');
   assert.match(html, /data-main-command-title/, 'main command center heading should update when the selected view changes');
@@ -73,4 +78,18 @@ test('auth debug mode exposes advanced dashboard debug controls', async () => {
   assert.match(html, /window\.taSetDashboardView\(view\)/, 'debug controls should switch views through the shared dashboard switch helper');
   assert.match(html, /fetchJson\('\/api\/me'\)/, 'health check should verify /api/me');
   assert.match(html, /fetchJson\('\/api\/auth\/debug'\)/, 'health check should verify /api/auth/debug');
+});
+
+test('client and worker empty dashboard states are easy to scan', async () => {
+  const html = await loadDashboardHtml();
+
+  assert.match(html, /\/\* Client and worker workspace readability \*\//, 'dashboard should include a dedicated readability pass for client and worker panels');
+  assert.match(html, /\.client-requests > strong,[\s\S]*font-size: clamp\(1\.55rem,3vw,2\.35rem\)/, 'client and worker panel headings should be larger and easier to scan');
+  assert.match(html, /\.client-request-form-intro/, 'request form should include explanatory intro styling');
+  assert.match(html, /Start with the service and project details/, 'request form should explain where clients should start');
+  assert.match(html, /const renderDashboardEmptyState = \(title, message\) =>/, 'dashboard should render reusable high-contrast empty states');
+  assert.match(html, /No job requests yet\./, 'client requests should have a visible empty state card');
+  assert.match(html, /No quotes ready yet\./, 'client quotes should have a visible empty state card');
+  assert.match(html, /No open invoices yet\./, 'client invoices should have a visible empty state card');
+  assert.match(html, /No assigned jobs yet\./, 'worker jobs should have a visible empty state card');
 });
