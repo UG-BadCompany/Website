@@ -73,6 +73,68 @@
       background: linear-gradient(180deg,var(--rust),var(--copper));
     }
 
+    [data-admin-access] .admin-request-modal-panel {
+      background: linear-gradient(180deg,rgba(15,23,42,.96),rgba(30,41,59,.94));
+      border: 1px solid rgba(251,146,60,.28);
+      color: #f8fafc;
+    }
+
+    [data-admin-access] .admin-request-modal-header p,
+    [data-admin-access] .client-request-form label {
+      color: #dbe4ef;
+    }
+
+    [data-admin-access] [data-admin-access-status] {
+      border: 1px solid rgba(251,146,60,.3);
+      border-left: 6px solid var(--copper);
+      background: linear-gradient(135deg,rgba(15,23,42,.82),rgba(30,41,59,.62));
+      color: #f8fafc;
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    [data-admin-access] .client-request-form-actions .btn {
+      min-height: 48px;
+      font-size: .95rem;
+      font-weight: 900;
+      border-radius: 14px;
+      padding-inline: 16px;
+    }
+
+    [data-admin-access] .client-request-form-actions .btn-soft {
+      background: rgba(255,255,255,.12);
+      color: #f8fafc;
+      border-color: rgba(251,146,60,.3);
+    }
+
+    [data-admin-access] .client-request-form-actions .btn-soft:hover {
+      background: rgba(251,146,60,.2);
+    }
+
+    html[data-theme="light"] [data-admin-access] .admin-request-modal-panel {
+      background: linear-gradient(180deg,rgba(255,244,229,.97),rgba(246,226,201,.92));
+      color: #2a211b;
+      border-color: rgba(173,63,24,.22);
+    }
+
+    html[data-theme="light"] [data-admin-access] .admin-request-modal-header p,
+    html[data-theme="light"] [data-admin-access] .client-request-form label {
+      color: #5b4d43;
+    }
+
+    html[data-theme="light"] [data-admin-access] [data-admin-access-status] {
+      background: linear-gradient(135deg,rgba(255,244,229,.95),rgba(246,226,201,.82));
+      color: #332922;
+      border-color: rgba(173,63,24,.24);
+    }
+
+    html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-soft {
+      background: #fff;
+      color: #2a211b;
+      border-color: rgba(173,63,24,.24);
+    }
+
+
     .client-profile [data-client-profile-form][hidden] { display: none; }
 
     .client-profile-properties {
@@ -1429,7 +1491,7 @@
       <section class="admin-request-modal-panel admin-access-panel">
       <strong>Roles &amp; users</strong>
       <p>Manage dashboard access, custom roles, and user assignments.</p>
-      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
+      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles & users…</p>
       <div class="client-request-form-grid">
         <label>Role
           <select data-admin-role-select>
@@ -1441,10 +1503,10 @@
         </label>
       </div>
       <div class="client-request-form-actions">
-        <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit selected role</button>
-        <button class="btn btn-soft" type="button" data-admin-role-create>Create role</button>
+        <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit Role</button>
+        <button class="btn btn-soft" type="button" data-admin-role-create>Create Role</button>
         <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
-        <button class="btn btn-soft" type="button" data-admin-access-close>Close</button>
+        <button class="btn btn-soft" type="button" data-admin-access-close>Done</button>
       </div>
       <div class="admin-request-list" data-admin-user-results></div>
           </section>
@@ -1454,7 +1516,7 @@
       <section class="admin-request-modal-panel admin-access-panel">
         <div class="admin-request-modal-header">
           <div>
-            <strong data-admin-role-modal-title>Create role</strong>
+            <strong data-admin-role-modal-title>Create Role</strong>
             <p>Pick role permissions and save.</p>
           </div>
           <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-role-modal-close aria-label="Close role editor">×</button>
@@ -4598,7 +4660,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const status = document.querySelector('[data-admin-role-form-status]');
         if (roleId) roleId.value = '';
         if (key) key.disabled = false;
-        if (title) title.textContent = 'Create role';
+        if (title) title.textContent = 'Create Role';
         if (status) status.textContent = '';
         renderPermissionInputs([]);
       };
