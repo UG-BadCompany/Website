@@ -56,7 +56,8 @@ test('admin inventory endpoint lists active items and low-stock summary', async 
 });
 
 
-test('admin inventory endpoint keeps admin role defaults when role permission rows cannot load', async () => {
+test('admin inventory endpoint keeps admin role defaults when role permission rows cannot load', async (context) => {
+  const consoleErrorMock = context.mock.method(console, 'error', () => {});
   const db = {
     queries: [],
     sql(strings, ...values) {
@@ -76,6 +77,7 @@ test('admin inventory endpoint keeps admin role defaults when role permission ro
   assert.equal(response.status, 200);
   assert.equal(response.body.authorized, true);
   assert.equal(response.body.items.length, 1);
+  assert.equal(consoleErrorMock.mock.calls.length, 1);
 });
 
 test('admin inventory endpoint creates an item and writes audit event', async () => {
