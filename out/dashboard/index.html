@@ -1153,11 +1153,13 @@
     .client-quotes,
     .client-invoices,
     .worker-jobs {
-      border: 2px solid rgba(173,63,24,.16);
+      color: var(--dash-text);
+      border: 1px solid rgba(255,255,255,.18);
       background:
-        linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,236,.96)),
-        radial-gradient(circle at 100% 0,rgba(216,135,52,.18),transparent 22rem);
-      box-shadow: 0 28px 70px rgba(45,27,13,.13);
+        linear-gradient(135deg,rgba(15,23,42,.82),rgba(19,13,9,.72)),
+        radial-gradient(circle at 100% 0,rgba(249,115,22,.18),transparent 22rem);
+      box-shadow: 0 28px 80px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
     }
 
     .client-requests > strong,
@@ -1168,7 +1170,7 @@
       align-items: center;
       gap: 10px;
       margin-bottom: 10px;
-      color: #2a211b;
+      color: var(--dash-text);
       font-size: clamp(1.55rem,3vw,2.35rem);
       line-height: 1.05;
       letter-spacing: -.035em;
@@ -1184,7 +1186,7 @@
       flex: 0 0 auto;
       border-radius: 999px;
       background: linear-gradient(180deg,var(--rust),var(--copper));
-      box-shadow: 0 8px 18px rgba(173,63,24,.24);
+      box-shadow: 0 8px 18px rgba(249,115,22,.28);
     }
 
     .worker-jobs > strong::before { background: linear-gradient(180deg,var(--blue),#5d93ce); }
@@ -1195,7 +1197,7 @@
     .worker-jobs > p:not(.session-status) {
       max-width: 760px;
       margin: 0 0 16px;
-      color: #4c4037;
+      color: #dbe4ef;
       font-size: 1.03rem;
     }
 
@@ -1204,11 +1206,11 @@
     .client-invoices > .session-status,
     .worker-jobs > .session-status {
       margin: 18px 0 20px;
-      border: 1px solid rgba(173,63,24,.2);
-      border-left: 6px solid var(--rust);
-      background: #fff;
-      color: #332922;
-      box-shadow: 0 14px 30px rgba(45,27,13,.08);
+      border: 1px solid rgba(251,146,60,.24);
+      border-left: 6px solid var(--copper);
+      background: linear-gradient(135deg,rgba(15,23,42,.72),rgba(30,41,59,.52));
+      color: #f8fafc;
+      box-shadow: 0 14px 34px rgba(0,0,0,.16);
       font-size: 1rem;
     }
 
@@ -1218,29 +1220,31 @@
       gap: 18px;
       margin: 24px 0;
       padding: clamp(18px,3vw,28px);
-      border: 2px solid rgba(173,63,24,.15);
+      border: 1px solid rgba(251,146,60,.22);
       border-radius: 26px;
-      background: linear-gradient(180deg,#fff,#fffaf4);
-      box-shadow: 0 18px 44px rgba(45,27,13,.09);
+      background:
+        linear-gradient(180deg,rgba(15,23,42,.78),rgba(30,41,59,.5)),
+        radial-gradient(circle at 0 0,rgba(249,115,22,.12),transparent 18rem);
+      box-shadow: 0 18px 48px rgba(0,0,0,.18);
     }
 
     .client-request-form > strong {
       margin: 0;
       padding-bottom: 12px;
-      border-bottom: 1px solid rgba(17,17,17,.08);
-      color: #2a211b;
+      border-bottom: 1px solid rgba(255,255,255,.14);
+      color: var(--dash-text);
       font-size: clamp(1.2rem,2vw,1.55rem);
     }
 
     .client-request-form-intro {
       margin: -8px 0 0;
-      color: #5b4d43;
+      color: var(--dash-muted);
       font-weight: 760;
     }
 
     .client-request-form label {
       gap: 9px;
-      color: #332922;
+      color: #f8fafc;
       font-size: .93rem;
       letter-spacing: .01em;
     }
@@ -1248,24 +1252,25 @@
     .client-request-form input,
     .client-request-form select,
     .client-request-form textarea {
-      border: 2px solid rgba(17,17,17,.14);
-      background: #fff;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.7),0 8px 18px rgba(45,27,13,.05);
+      color: var(--dash-text);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(7,10,15,.68);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06),0 8px 18px rgba(0,0,0,.12);
     }
 
     .client-request-form input::placeholder,
-    .client-request-form textarea::placeholder { color: #8a7a6d; opacity: 1; }
+    .client-request-form textarea::placeholder { color: #94a3b8; opacity: 1; }
 
     .client-request-attachments {
       padding: 16px;
-      border: 1px dashed rgba(173,63,24,.32);
+      border: 1px dashed rgba(251,146,60,.35);
       border-radius: 18px;
-      background: #fff7ec;
+      background: rgba(249,115,22,.09);
     }
 
     .client-request-attachments small,
     .client-request-attachment-list {
-      color: #5b4d43;
+      color: #dbe4ef;
       font-weight: 760;
       line-height: 1.5;
     }
@@ -1275,15 +1280,82 @@
       gap: 6px;
       margin-top: 16px;
       padding: 18px 20px;
-      border: 1px solid rgba(173,63,24,.18);
+      border: 1px solid rgba(251,146,60,.22);
       border-radius: 20px;
-      background: #fff;
-      color: #332922;
-      box-shadow: 0 14px 30px rgba(45,27,13,.07);
+      background: linear-gradient(135deg,rgba(15,23,42,.72),rgba(30,41,59,.5));
+      color: var(--dash-text);
+      box-shadow: 0 14px 34px rgba(0,0,0,.16);
     }
 
     .dashboard-empty-state strong { margin: 0; font-size: 1.05rem; }
-    .dashboard-empty-state p { margin: 0; color: #5b4d43; }
+    .dashboard-empty-state p { margin: 0; color: var(--dash-muted); }
+
+    html[data-theme="light"] .client-requests,
+    html[data-theme="light"] .client-quotes,
+    html[data-theme="light"] .client-invoices,
+    html[data-theme="light"] .worker-jobs {
+      color: #111827;
+      border-color: rgba(173,63,24,.2);
+      background:
+        linear-gradient(180deg,rgba(255,248,238,.94),rgba(246,226,201,.86)),
+        radial-gradient(circle at 100% 0,rgba(216,135,52,.18),transparent 22rem);
+      box-shadow: 0 28px 70px rgba(45,27,13,.14);
+    }
+
+    html[data-theme="light"] .client-requests > strong,
+    html[data-theme="light"] .client-quotes > strong,
+    html[data-theme="light"] .client-invoices > strong,
+    html[data-theme="light"] .worker-jobs > strong,
+    html[data-theme="light"] .client-request-form > strong,
+    html[data-theme="light"] .client-request-form label,
+    html[data-theme="light"] .dashboard-empty-state { color: #2a211b; }
+
+    html[data-theme="light"] .client-requests > p:not(.session-status),
+    html[data-theme="light"] .client-quotes > p:not(.session-status),
+    html[data-theme="light"] .client-invoices > p:not(.session-status),
+    html[data-theme="light"] .worker-jobs > p:not(.session-status),
+    html[data-theme="light"] .client-request-form-intro,
+    html[data-theme="light"] .client-request-attachments small,
+    html[data-theme="light"] .client-request-attachment-list,
+    html[data-theme="light"] .dashboard-empty-state p { color: #5b4d43; }
+
+    html[data-theme="light"] .client-requests > .session-status,
+    html[data-theme="light"] .client-quotes > .session-status,
+    html[data-theme="light"] .client-invoices > .session-status,
+    html[data-theme="light"] .worker-jobs > .session-status,
+    html[data-theme="light"] .dashboard-empty-state {
+      border-color: rgba(173,63,24,.2);
+      background: linear-gradient(135deg,rgba(255,244,229,.9),rgba(246,226,201,.78));
+      color: #332922;
+      box-shadow: 0 14px 30px rgba(45,27,13,.08);
+    }
+
+    html[data-theme="light"] .client-request-form {
+      border-color: rgba(173,63,24,.2);
+      background:
+        linear-gradient(180deg,rgba(255,244,229,.92),rgba(246,226,201,.74)),
+        radial-gradient(circle at 0 0,rgba(216,135,52,.16),transparent 18rem);
+      box-shadow: 0 18px 44px rgba(45,27,13,.1);
+    }
+
+    html[data-theme="light"] .client-request-form > strong { border-bottom-color: rgba(17,17,17,.1); }
+
+    html[data-theme="light"] .client-request-form input,
+    html[data-theme="light"] .client-request-form select,
+    html[data-theme="light"] .client-request-form textarea {
+      color: #111827;
+      border-color: rgba(17,17,17,.16);
+      background: rgba(255,250,244,.78);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.46),0 8px 18px rgba(45,27,13,.06);
+    }
+
+    html[data-theme="light"] .client-request-form input::placeholder,
+    html[data-theme="light"] .client-request-form textarea::placeholder { color: #7a6a5d; }
+
+    html[data-theme="light"] .client-request-attachments {
+      border-color: rgba(173,63,24,.3);
+      background: rgba(255,238,216,.76);
+    }
 
   </style>
 </head>

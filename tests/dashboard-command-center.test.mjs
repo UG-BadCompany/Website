@@ -84,6 +84,8 @@ test('client and worker empty dashboard states are easy to scan', async () => {
   const html = await loadDashboardHtml();
 
   assert.match(html, /\/\* Client and worker workspace readability \*\//, 'dashboard should include a dedicated readability pass for client and worker panels');
+  assert.match(html, /\.client-requests,[\s\S]*linear-gradient\(135deg,rgba\(15,23,42,\.82\),rgba\(19,13,9,\.72\)\)/, 'client and worker panels should use integrated dark dashboard surfaces instead of white cards');
+  assert.match(html, /html\[data-theme="light"\] \.client-requests,[\s\S]*rgba\(255,248,238,\.94\),rgba\(246,226,201,\.86\)/, 'light mode panels should use warm integrated surfaces instead of plain white');
   assert.match(html, /\.client-requests > strong,[\s\S]*font-size: clamp\(1\.55rem,3vw,2\.35rem\)/, 'client and worker panel headings should be larger and easier to scan');
   assert.match(html, /\.client-request-form-intro/, 'request form should include explanatory intro styling');
   assert.match(html, /Start with the service and project details/, 'request form should explain where clients should start');
