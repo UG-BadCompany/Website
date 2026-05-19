@@ -13,7 +13,6 @@
     /* Modern dashboard refresh, ADA helpers, and stable scrolling */
     html{overflow-x:clip;scrollbar-gutter:stable;scroll-padding-top:98px}body{overflow-x:clip;accent-color:var(--rust)}html::-webkit-scrollbar,body::-webkit-scrollbar{width:12px}html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:#fff4e5}html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{border:3px solid #fff4e5;border-radius:999px;background:linear-gradient(180deg,var(--rust),var(--copper))}.skip-link{position:fixed;left:18px;top:14px;z-index:1000;transform:translateY(-160%);padding:12px 16px;border-radius:999px;color:#fff;background:#111;font-weight:950;box-shadow:var(--shadow);transition:transform .16s ease}.skip-link:focus{transform:translateY(0)}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(173,63,24,.72);outline-offset:4px}.nav{z-index:12;box-shadow:0 10px 34px rgba(45,27,13,.06)}.brand img,.logo-panel img{padding:5px;border-radius:16px;background:rgba(255,255,255,.96);box-shadow:0 10px 24px rgba(45,27,13,.08)}.logo-panel img{max-height:320px;object-fit:contain}.dashboard-hero{position:relative;overflow:clip;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,248,238,.82));isolation:isolate;animation:dashboard-rise .7s ease both}.dashboard-hero::before{content:"";position:absolute;inset:-30% auto auto 48%;width:520px;height:520px;border-radius:999px;background:radial-gradient(circle,rgba(216,135,52,.22),transparent 66%);z-index:-1}.grid{align-items:stretch}.card{scroll-margin-top:160px;position:relative;overflow:clip;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,250,244,.92));transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}.card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--rust),var(--copper));opacity:.78}.card:hover,.card:focus-within{transform:translateY(-3px);border-color:rgba(173,63,24,.24);box-shadow:0 24px 60px rgba(45,27,13,.12)}.admin-inbox,.admin-access,.admin-invoices,.admin-activity,.client-requests,.client-quotes,.client-invoices,.worker-jobs{margin:26px 0 0;padding:clamp(20px,3vw,32px)}.client-request-form{background:rgba(255,255,255,.82);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}.client-request-form input,.client-request-form select,.client-request-form textarea{min-height:48px}.session-status{border-left:4px solid var(--copper)}.admin-request,.client-request,.client-quote,.client-property,.worker-job,.admin-assignment{background:#fff;box-shadow:0 10px 24px rgba(45,27,13,.06);transition:transform .18s ease,border-color .18s ease}.admin-request:hover,.client-request:hover,.client-quote:hover,.client-property:hover,.worker-job:hover,.admin-assignment:hover{transform:translateY(-2px);border-color:rgba(173,63,24,.22)}.admin-request-modal{padding:clamp(14px,4vw,28px)}.admin-request-modal-panel{scrollbar-width:thin}.admin-request-modal-panel::-webkit-scrollbar{height:10px;width:10px}.admin-request-modal-panel::-webkit-scrollbar-thumb{border-radius:999px;background:rgba(173,63,24,.45)}@keyframes dashboard-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}@media(max-width:850px){.card:hover,.card:focus-within{transform:none}}
 
-
     /* Cleanup pass: logo sizing, dashboard grouping, modal scrollbars, and profile edit state */
     .brand img {
       width: clamp(86px, 8vw, 118px);
@@ -1149,6 +1148,235 @@
       background: rgba(255,255,255,.88);
     }
 
+    /* Client and worker workspace readability */
+    .client-requests,
+    .client-quotes,
+    .client-invoices,
+    .worker-jobs {
+      color: var(--dash-text);
+      border: 1px solid rgba(255,255,255,.18);
+      background:
+        linear-gradient(135deg,rgba(15,23,42,.82),rgba(19,13,9,.72)),
+        radial-gradient(circle at 100% 0,rgba(249,115,22,.18),transparent 22rem);
+      box-shadow: 0 28px 80px rgba(0,0,0,.24);
+      backdrop-filter: blur(18px);
+    }
+
+    .client-requests > strong,
+    .client-quotes > strong,
+    .client-invoices > strong,
+    .worker-jobs > strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--dash-text);
+      font-size: clamp(1.55rem,3vw,2.35rem);
+      line-height: 1.05;
+      letter-spacing: -.035em;
+    }
+
+    .client-requests > strong::before,
+    .client-quotes > strong::before,
+    .client-invoices > strong::before,
+    .worker-jobs > strong::before {
+      content: "";
+      width: 14px;
+      height: 44px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: linear-gradient(180deg,var(--rust),var(--copper));
+      box-shadow: 0 8px 18px rgba(249,115,22,.28);
+    }
+
+    .worker-jobs > strong::before { background: linear-gradient(180deg,var(--blue),#5d93ce); }
+
+    .client-requests > p:not(.session-status),
+    .client-quotes > p:not(.session-status),
+    .client-invoices > p:not(.session-status),
+    .worker-jobs > p:not(.session-status) {
+      max-width: 760px;
+      margin: 0 0 16px;
+      color: #dbe4ef;
+      font-size: 1.03rem;
+    }
+
+    .client-requests > .session-status,
+    .client-quotes > .session-status,
+    .client-invoices > .session-status,
+    .worker-jobs > .session-status,
+    .admin-inbox > .session-status,
+    .admin-invoices > .session-status,
+    .admin-activity > .session-status,
+    [data-admin-assignment-list] > .session-status,
+    [data-admin-work-order-inventory-usage] > .session-status,
+    [data-admin-invoice-list] > .session-status,
+    [data-admin-activity-list] > .session-status {
+      margin: 18px 0 20px;
+      border: 1px solid rgba(251,146,60,.24);
+      border-left: 6px solid var(--copper);
+      background: linear-gradient(135deg,rgba(15,23,42,.72),rgba(30,41,59,.52));
+      color: #f8fafc;
+      box-shadow: 0 14px 34px rgba(0,0,0,.16);
+      font-size: 1rem;
+    }
+
+    .worker-jobs > .session-status { border-left-color: var(--blue); }
+    .admin-invoices > .session-status { border-left-color: #ffb454; }
+    .admin-activity > .session-status { border-left-color: #8cc6ff; }
+    .admin-inbox > .session-status { border-left-color: #c2f0d0; }
+
+    .client-request-form {
+      gap: 18px;
+      margin: 24px 0;
+      padding: clamp(18px,3vw,28px);
+      border: 1px solid rgba(251,146,60,.22);
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg,rgba(15,23,42,.78),rgba(30,41,59,.5)),
+        radial-gradient(circle at 0 0,rgba(249,115,22,.12),transparent 18rem);
+      box-shadow: 0 18px 48px rgba(0,0,0,.18);
+    }
+
+    .client-request-form > strong {
+      margin: 0;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.14);
+      color: var(--dash-text);
+      font-size: clamp(1.2rem,2vw,1.55rem);
+    }
+
+    .client-request-form-intro {
+      margin: -8px 0 0;
+      color: var(--dash-muted);
+      font-weight: 760;
+    }
+
+    .client-request-form label {
+      gap: 9px;
+      color: #f8fafc;
+      font-size: .93rem;
+      letter-spacing: .01em;
+    }
+
+    .client-request-form input,
+    .client-request-form select,
+    .client-request-form textarea {
+      color: var(--dash-text);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(7,10,15,.68);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06),0 8px 18px rgba(0,0,0,.12);
+    }
+
+    .client-request-form input::placeholder,
+    .client-request-form textarea::placeholder { color: #94a3b8; opacity: 1; }
+
+    .client-request-attachments {
+      padding: 16px;
+      border: 1px dashed rgba(251,146,60,.35);
+      border-radius: 18px;
+      background: rgba(249,115,22,.09);
+    }
+
+    .client-request-attachments small,
+    .client-request-attachment-list {
+      color: #dbe4ef;
+      font-weight: 760;
+      line-height: 1.5;
+    }
+
+    .dashboard-empty-state {
+      display: grid;
+      gap: 6px;
+      margin-top: 16px;
+      padding: 18px 20px;
+      border: 1px solid rgba(251,146,60,.22);
+      border-radius: 20px;
+      background: linear-gradient(135deg,rgba(15,23,42,.72),rgba(30,41,59,.5));
+      color: var(--dash-text);
+      box-shadow: 0 14px 34px rgba(0,0,0,.16);
+    }
+
+    .dashboard-empty-state strong { margin: 0; font-size: 1.05rem; }
+    .dashboard-empty-state p { margin: 0; color: var(--dash-muted); }
+
+    html[data-theme="light"] .client-requests,
+    html[data-theme="light"] .client-quotes,
+    html[data-theme="light"] .client-invoices,
+    html[data-theme="light"] .worker-jobs {
+      color: #111827;
+      border-color: rgba(173,63,24,.2);
+      background:
+        linear-gradient(180deg,rgba(255,248,238,.94),rgba(246,226,201,.86)),
+        radial-gradient(circle at 100% 0,rgba(216,135,52,.18),transparent 22rem);
+      box-shadow: 0 28px 70px rgba(45,27,13,.14);
+    }
+
+    html[data-theme="light"] .client-requests > strong,
+    html[data-theme="light"] .client-quotes > strong,
+    html[data-theme="light"] .client-invoices > strong,
+    html[data-theme="light"] .worker-jobs > strong,
+    html[data-theme="light"] .client-request-form > strong,
+    html[data-theme="light"] .client-request-form label,
+    html[data-theme="light"] .dashboard-empty-state { color: #2a211b; }
+
+    html[data-theme="light"] .client-requests > p:not(.session-status),
+    html[data-theme="light"] .client-quotes > p:not(.session-status),
+    html[data-theme="light"] .client-invoices > p:not(.session-status),
+    html[data-theme="light"] .worker-jobs > p:not(.session-status),
+    html[data-theme="light"] .admin-inbox > p:not(.session-status),
+    html[data-theme="light"] .admin-invoices > p:not(.session-status),
+    html[data-theme="light"] .admin-activity > p:not(.session-status),
+    html[data-theme="light"] .client-request-form-intro,
+    html[data-theme="light"] .client-request-attachments small,
+    html[data-theme="light"] .client-request-attachment-list,
+    html[data-theme="light"] .dashboard-empty-state p { color: #5b4d43; }
+
+    html[data-theme="light"] .client-requests > .session-status,
+    html[data-theme="light"] .client-quotes > .session-status,
+    html[data-theme="light"] .client-invoices > .session-status,
+    html[data-theme="light"] .worker-jobs > .session-status,
+    html[data-theme="light"] .admin-inbox > .session-status,
+    html[data-theme="light"] .admin-invoices > .session-status,
+    html[data-theme="light"] .admin-activity > .session-status,
+    html[data-theme="light"] [data-admin-assignment-list] > .session-status,
+    html[data-theme="light"] [data-admin-work-order-inventory-usage] > .session-status,
+    html[data-theme="light"] [data-admin-invoice-list] > .session-status,
+    html[data-theme="light"] [data-admin-activity-list] > .session-status,
+    html[data-theme="light"] .dashboard-empty-state {
+      border-color: rgba(173,63,24,.2);
+      background: linear-gradient(135deg,rgba(255,244,229,.9),rgba(246,226,201,.78));
+      color: #332922;
+      box-shadow: 0 14px 30px rgba(45,27,13,.08);
+    }
+
+    html[data-theme="light"] .client-request-form {
+      border-color: rgba(173,63,24,.2);
+      background:
+        linear-gradient(180deg,rgba(255,244,229,.92),rgba(246,226,201,.74)),
+        radial-gradient(circle at 0 0,rgba(216,135,52,.16),transparent 18rem);
+      box-shadow: 0 18px 44px rgba(45,27,13,.1);
+    }
+
+    html[data-theme="light"] .client-request-form > strong { border-bottom-color: rgba(17,17,17,.1); }
+
+    html[data-theme="light"] .client-request-form input,
+    html[data-theme="light"] .client-request-form select,
+    html[data-theme="light"] .client-request-form textarea {
+      color: #111827;
+      border-color: rgba(17,17,17,.16);
+      background: rgba(255,250,244,.78);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.46),0 8px 18px rgba(45,27,13,.06);
+    }
+
+    html[data-theme="light"] .client-request-form input::placeholder,
+    html[data-theme="light"] .client-request-form textarea::placeholder { color: #7a6a5d; }
+
+    html[data-theme="light"] .client-request-attachments {
+      border-color: rgba(173,63,24,.3);
+      background: rgba(255,238,216,.76);
+    }
+
   </style>
 </head>
 <body>
@@ -1187,7 +1415,8 @@
         <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
         <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Worker jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
     </section>
 
@@ -1196,48 +1425,100 @@
       <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
-    <section class="admin-command" data-admin-command-center data-dashboard-section data-views="admin" hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Admin command center</span>
-        <h2>Run today’s work from one command center.</h2>
-        <p>Jump into active work orders, payment follow-up, stock control, access management, and the audit trail from the command center cards.</p>
+    <section class="card admin-access" data-admin-access data-dashboard-section data-views="admin" hidden>
+      <strong>Roles &amp; users</strong>
+      <p>Manage dashboard access, custom roles, and user assignments.</p>
+      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
+      <div class="client-request-form-grid">
+        <label>Role
+          <select data-admin-role-select>
+            <option value="">Select a role to edit</option>
+          </select>
+        </label>
+        <label>User search
+          <input type="search" data-admin-user-search placeholder="Search users by name, email, phone, or role">
+        </label>
       </div>
-      <div class="admin-command-actions" aria-label="Admin quick actions">
-        <a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Review intake, quote, schedule, assign, and verify completed work.</span></a>
-        <a class="admin-command-card" href="#admin-invoices"><strong>Invoices</strong><span>Confirm payments, review paid history, and close out completed jobs.</span></a>
-        <a class="admin-command-card" href="/inventory/" data-dashboard-section data-views="admin" data-permission="canManageInventory" hidden><strong>Inventory</strong><span>Track materials, tools, suppliers, reorder points, and stock changes.</span></a>
-        <button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles &amp; users</strong><span>Update users, profile details, custom roles, and admin permissions.</span></button>
-        <button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search status changes, payments, assignments, quotes, and account updates.</span></button>
+      <div class="client-request-form-actions">
+        <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit selected role</button>
+        <button class="btn btn-soft" type="button" data-admin-role-create>Create role</button>
+        <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
+        <button class="btn btn-soft" type="button" data-admin-access-close>Close</button>
       </div>
+      <div class="admin-request-list" data-admin-user-results></div>
     </section>
 
-    <section class="admin-command client-command" data-client-command-center data-dashboard-section data-views="client" hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Client command center</span>
-        <h2>Manage your project from one command center.</h2>
-        <p>Open requests, quotes, invoices, and profile details from the command center cards without extra shortcut buttons.</p>
-      </div>
-      <div class="admin-command-actions" aria-label="Client quick actions">
-        <a class="admin-command-card" href="#submit-request" data-request-estimate-link><strong>Requests</strong><span>Review open work, add project details, approve completed work, or submit another request.</span></a>
-        <a class="admin-command-card" href="#client-quotes"><strong>Quotes</strong><span>Approve, decline, or review estimates that are waiting for your decision.</span></a>
-        <a class="admin-command-card" href="#client-invoices"><strong>Invoices</strong><span>Check open invoices and payment status tied to your completed work.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile &amp; properties</strong><span>Update contact information, saved addresses, access notes, and property details.</span></button>
-      </div>
-    </section>
+    <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div>
+            <strong data-admin-role-modal-title>Create role</strong>
+            <p>Pick role permissions and save.</p>
+          </div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-role-modal-close aria-label="Close role editor">×</button>
+        </div>
+        <form class="client-request-form" data-admin-role-form>
+          <input type="hidden" name="roleId">
+          <label>Role key
+            <input name="key" placeholder="crew-lead">
+          </label>
+          <label>Role name
+            <input name="name" required placeholder="Crew Lead">
+          </label>
+          <label class="full">Description
+            <textarea name="description" placeholder="Role purpose and scope."></textarea>
+          </label>
+          <div class="full" data-admin-role-permissions></div>
+          <div class="client-request-form-actions">
+            <button class="btn btn-primary" type="submit">Save role</button>
+            <span data-admin-role-form-status aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+    </div>
 
-    <section class="admin-command worker-command" data-worker-command-center data-dashboard-section data-views="worker" hidden>
-      <div class="admin-command-header">
-        <span class="eyebrow">Worker command center</span>
-        <h2>Run assigned jobs from one command center.</h2>
-        <p>Open active work orders, update job status, record field notes, and attach completion evidence from the worker cards.</p>
-      </div>
-      <div class="admin-command-actions" aria-label="Worker quick actions">
-        <a class="admin-command-card" href="#worker-jobs"><strong>Assigned jobs</strong><span>See active work orders and filter by job status.</span></a>
-        <a class="admin-command-card" href="#worker-jobs"><strong>Checklist</strong><span>Record materials, blockers, access notes, and completed tasks.</span></a>
-        <a class="admin-command-card" href="#worker-jobs"><strong>Evidence</strong><span>Add before photos, after photos, completion notes, and file details.</span></a>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut><strong>Profile</strong><span>Keep your contact details current for dispatch and admin follow-up.</span></button>
-      </div>
-    </section>
+    <div class="admin-request-modal" data-admin-user-modal role="dialog" aria-modal="true" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div>
+            <strong data-admin-user-modal-title>Create user</strong>
+            <p data-admin-user-modal-summary>Add account details and assign roles.</p>
+          </div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-user-modal-close aria-label="Close user editor">×</button>
+        </div>
+        <form class="client-request-form" data-admin-user-form>
+          <input type="hidden" name="userId">
+          <label>Email
+            <input name="email" type="email" required placeholder="user@example.com">
+          </label>
+          <label>Full name
+            <input name="fullName" placeholder="Full name">
+          </label>
+          <label>Phone
+            <input name="phone" placeholder="555-0100">
+          </label>
+          <label>Secondary phone
+            <input name="secondaryPhone" placeholder="555-0101">
+          </label>
+          <label>Company
+            <input name="companyName" placeholder="Company name">
+          </label>
+          <label class="full">Mailing address
+            <input name="mailingAddress" placeholder="Street, City, State ZIP">
+          </label>
+          <label class="full">Internal notes
+            <textarea name="internalNotes" placeholder="Notes for dispatch or admin team."></textarea>
+          </label>
+          <div class="full" data-admin-user-roles></div>
+          <div class="client-request-form-actions">
+            <button class="btn btn-primary" type="submit">Save user</button>
+            <button class="btn btn-danger" type="button" data-admin-user-delete>Delete user</button>
+            <span data-admin-user-form-status aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+    </div>
+
 
     <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="client worker">
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
@@ -1977,6 +2258,7 @@
       <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
       <form class="client-request-form" data-client-request-form>
         <strong>Submit another request</strong>
+        <p class="client-request-form-intro">Start with the service and project details. Add the address fields when this is a new property or the saved property needs updated access notes.</p>
         <div class="client-request-form-grid">
           <label>Existing property
             <select name="propertyId" data-client-property-select>
@@ -2305,6 +2587,35 @@
           console.error('Dashboard permission enrichment from auth debug failed', error);
           return user;
         }
+      };
+
+      const dedupeDashboardSingletons = () => {
+        const singletonSelectors = [
+          '[data-main-dashboard-actions]',
+          '[data-view-switcher]',
+          '[data-admin-command-center]',
+          '[data-client-command-center]',
+          '[data-worker-command-center]',
+          '[data-admin-invoices]',
+          '[data-admin-activity]',
+        ];
+
+        const singletonKeys = new Set();
+        document.querySelectorAll('[data-dashboard-singleton]').forEach((element) => {
+          const singletonKey = element.dataset.dashboardSingleton;
+          if (singletonKey) singletonKeys.add(singletonKey);
+        });
+
+        singletonSelectors.forEach((selector) => {
+          const elements = Array.from(document.querySelectorAll(selector));
+          elements.slice(1).forEach((element) => element.remove());
+        });
+
+        singletonKeys.forEach((singletonKey) => {
+          const elements = Array.from(document.querySelectorAll('[data-dashboard-singleton]'))
+            .filter((element) => element.dataset.dashboardSingleton === singletonKey);
+          elements.slice(1).forEach((element) => element.remove());
+        });
       };
 
       const configureMainDashboardActions = (user, activeView = '') => {
@@ -2912,7 +3223,7 @@
         const filteredRequests = getFilteredAdminRequests();
         inboxList.innerHTML = filteredRequests.length
           ? filteredRequests.map((request) => renderRequestCard(request, { admin: true })).join('')
-          : '<p class="session-status">No work orders match those filters.</p>';
+          : renderDashboardEmptyState('No work orders match those filters.', 'Try broadening the scope, status, or search filters to load matching work orders.');
 
         if (inboxStatus) {
           const total = currentAdminRequests.size;
@@ -3462,6 +3773,13 @@
         });
       };
 
+      const renderDashboardEmptyState = (title, message) => `
+        <div class="dashboard-empty-state">
+          <strong>${escapeHtml(title)}</strong>
+          <p>${escapeHtml(message)}</p>
+        </div>
+      `;
+
       const renderClientData = (result) => {
         const panelStatus = document.querySelector('[data-client-requests-status]');
         const requestList = document.querySelector('[data-client-request-list]');
@@ -3492,7 +3810,9 @@
           propertiesMetric.textContent = String(result.summary.properties || 0);
         }
 
-        requestList.innerHTML = requests.map((request) => renderRequestCard(request)).join('');
+        requestList.innerHTML = requests.length
+          ? requests.map((request) => renderRequestCard(request)).join('')
+          : renderDashboardEmptyState('No job requests yet.', 'Use the highlighted request form above to send T&A Contracting your first estimate request.');
         propertyList.innerHTML = properties.map((property) => renderPropertyCard(property)).join('');
 
         if (propertySelect) {
@@ -3520,7 +3840,9 @@
           quotesMetric.textContent = String(result.summary.waiting || 0);
         }
 
-        quoteList.innerHTML = quotes.map((quote) => renderQuoteCard(quote)).join('');
+        quoteList.innerHTML = quotes.length
+          ? quotes.map((quote) => renderQuoteCard(quote)).join('')
+          : renderDashboardEmptyState('No quotes ready yet.', 'Quotes connected to your account will appear here with review and approval controls.');
       };
 
       const decideQuote = async (quoteId, action) => {
@@ -3611,7 +3933,9 @@
           panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} loaded. Balance due: ${formatMoney(amountDue)}.` : 'No open invoices right now.';
         }
         if (invoiceList) {
-          invoiceList.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('') : '<p class="session-status">No open invoices yet.</p>';
+          invoiceList.innerHTML = invoices.length
+            ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
+            : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
         }
       };
 
@@ -4682,7 +5006,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const assignments = result.assignments || [];
           panelStatus.dataset.state = 'ready';
           panelStatus.textContent = assignments.length ? `${assignments.length} assigned job${assignments.length === 1 ? '' : 's'} loaded.` : 'No assigned jobs yet.';
-          jobList.innerHTML = assignments.map(renderWorkerJobCard).join('');
+          jobList.innerHTML = assignments.length
+            ? assignments.map(renderWorkerJobCard).join('')
+            : renderDashboardEmptyState('No assigned jobs yet.', 'Assigned jobs, schedule notes, access details, and before/after upload controls will appear here.');
           refreshVisibleJobFiles();
           const openMetric = document.querySelector('[data-open-requests-metric]');
           if (openMetric && result.summary) openMetric.textContent = String(result.summary.assigned || 0);

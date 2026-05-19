@@ -16,6 +16,25 @@ const createMockDb = (responses = []) => ({
   },
 });
 
+
+
+test('client quotes endpoint rejects unsupported methods before auth or database work', async () => {
+  let openedDatabase = false;
+  const handler = createClientQuotesHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/client/quotes', {
+    method: 'DELETE',
+  })));
+
+  assert.equal(response.status, 405);
+  assert.equal(response.body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
 test('client quotes endpoint requires a signed-in session', async () => {
   let openedDatabase = false;
   const handler = createClientQuotesHandler({
