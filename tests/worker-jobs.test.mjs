@@ -16,6 +16,25 @@ const createMockDb = (responses = []) => ({
   },
 });
 
+
+
+test('worker jobs endpoint rejects unsupported methods before auth or database work', async () => {
+  let openedDatabase = false;
+  const handler = createWorkerJobsHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/worker/jobs', {
+    method: 'DELETE',
+  })));
+
+  assert.equal(response.status, 405);
+  assert.equal(response.body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
 test('worker jobs endpoint requires a signed-in session', async () => {
   let openedDatabase = false;
   const handler = createWorkerJobsHandler({

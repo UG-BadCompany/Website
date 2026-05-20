@@ -184,3 +184,42 @@ test('admin invoices endpoint rejects mismatched payment amounts', async () => {
   assert.match(response.body.message, /must match/);
   assert.equal(db.queries.some((query) => /insert into payments/.test(query.text)), false);
 });
+
+
+test('admin invoices endpoint falls back to open filter for unsupported status values', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{ permission_key: 'admin.invoices.manage' }],
+    [{
+      id: 'invoice-open-1',
+      job_request_id: 'job-open-1',
+      client_id: 'client-open-1',
+      status: 'open',
+      title: 'Invoice & payment desk',
+      amount_cents: 21000,
+      paid_at: null,
+      created_at: '2026-05-09T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+      client_full_name: 'Open Client',
+      client_email: 'open@example.com',
+      client_phone: '555-0102',
+      job_request_status: 'waiting_payment',
+      service_type: 'Interior paint',
+      city: 'Mesa',
+      street_address: '789 Main St',
+    }],
+  ]);
+
+  const handler = createAdminInvoicesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/invoices?status=invalid-filter', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.filter, 'open');
+  assert.equal(response.body.invoices.length, 1);
+  assert.equal(response.body.invoices[0].status, 'open');
+  assert.equal(response.body.summary.open, 1);
+  assert.equal(response.body.summary.amountDueCents, 21000);
+  assert.equal(db.queries[4].values[0], 'open');
+});
