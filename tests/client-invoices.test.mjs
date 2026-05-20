@@ -11,6 +11,26 @@ const createMockDb = (responses = []) => ({
   },
 });
 
+
+
+test('client invoices endpoint rejects unsupported methods before opening database', async () => {
+  let openedDatabase = false;
+  const handler = createClientInvoicesHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/client/invoices', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 405);
+  assert.equal(response.body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
 test('client invoices endpoint returns only unpaid client invoices', async () => {
   const db = createMockDb([
     [{ id: 'session-1', user_id: 'client-1', email: 'client@example.com', full_name: 'Client' }],
