@@ -598,6 +598,92 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
+    [data-admin-access] [data-admin-access-status][data-state="ready"] {
+      background: linear-gradient(90deg, rgba(16,185,129,.22), rgba(12,18,32,.42));
+      border: 1px solid rgba(134,239,172,.42);
+      color: #dcfce7;
+      text-shadow: 0 1px 0 rgba(6,10,20,.55);
+    }
+
+    [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] {
+      border: 1px solid rgba(134,239,172,.26);
+      background: linear-gradient(160deg, rgba(13,22,40,.94), rgba(20,33,56,.88));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 14px 30px rgba(2,6,23,.35);
+    }
+
+    [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] strong {
+      color: #f8fafc;
+      font-size: 1.06rem;
+    }
+
+    [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] .admin-request-meta {
+      color: #dbe4ef;
+    }
+
+    [data-admin-access] [data-admin-user-search-results] .client-quote-actions .btn {
+      background: linear-gradient(135deg, rgba(249,115,22,.24), rgba(251,191,36,.14));
+      border-color: rgba(251,146,60,.48);
+      color: #fff;
+    }
+
+    [data-admin-user-modal] [data-admin-user-form] {
+      gap: 16px;
+      padding: 20px;
+      border-radius: 24px;
+      border: 1px solid rgba(251,146,60,.22);
+      background: linear-gradient(180deg, rgba(8,16,30,.65), rgba(16,26,44,.42));
+    }
+
+    [data-admin-user-modal] [data-admin-user-form] input,
+    [data-admin-user-modal] [data-admin-user-form] textarea,
+    [data-admin-user-modal] [data-admin-user-form] select {
+      background: rgba(15,23,42,.55);
+      border-color: rgba(148,163,184,.35);
+      color: #f8fafc;
+    }
+
+    [data-admin-user-modal] [data-admin-user-form] input::placeholder,
+    [data-admin-user-modal] [data-admin-user-form] textarea::placeholder {
+      color: #cbd5e1;
+    }
+
+    [data-admin-user-modal] [data-admin-user-form] [data-admin-user-role-list],
+    [data-admin-user-modal] [data-admin-user-form] [data-admin-user-property-list] {
+      background: rgba(15,23,42,.42);
+      border-color: rgba(148,163,184,.3);
+    }
+
+    html[data-theme="light"] [data-admin-access] [data-admin-access-status][data-state="ready"] {
+      background: linear-gradient(90deg, rgba(187,247,208,.82), rgba(240,253,244,.92));
+      border-color: rgba(34,197,94,.35);
+      color: #14532d;
+      text-shadow: none;
+    }
+
+    html[data-theme="light"] [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] {
+      border-color: rgba(34,197,94,.24);
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(240,253,244,.94));
+      box-shadow: 0 10px 24px rgba(45,27,13,.08);
+    }
+
+    html[data-theme="light"] [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] strong {
+      color: #1f2937;
+    }
+
+    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] {
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,238,.94));
+      border-color: rgba(173,63,24,.2);
+    }
+
+    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] input,
+    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] textarea,
+    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] select {
+      background: #fff;
+      color: #1f2937;
+      border-color: rgba(17,24,39,.18);
+    }
+
+
     .dashboard-nav-cluster {
       display: grid;
       justify-items: end;
@@ -4772,7 +4858,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           .slice(0, 8);
 
         results.innerHTML = matches.length ? matches.map((user) => `
-          <article class="admin-request">
+          <article class="admin-request" data-admin-user-result-card>
             <span class="admin-request-badge">${escapeHtml(user.isActive === false ? 'inactive' : ((user.roles || []).join(', ') || 'no role'))}</span>
             <strong>${escapeHtml(user.fullName || user.email)}</strong>
             <div class="admin-request-meta"><span>${escapeHtml(user.email)}</span><span>${escapeHtml(user.phone || 'No phone')}</span><span>${(user.properties || []).length} address${(user.properties || []).length === 1 ? '' : 'es'}</span></div>
@@ -4944,7 +5030,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           bindAdminAccessForms();
           if (status) {
             status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? '' : 's'} loaded. Search users below to open the full user editor.`;
+            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
           }
         } catch (error) {
           if (status) {
