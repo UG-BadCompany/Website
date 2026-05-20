@@ -12,6 +12,26 @@ const createMockDb = (responses = []) => ({
   },
 });
 
+
+
+test('job files endpoint rejects unsupported methods before opening database', async () => {
+  let openedDatabase = false;
+  const handler = createJobFilesHandler({
+    getDatabase: async () => {
+      openedDatabase = true;
+      return createMockDb();
+    },
+  });
+
+  const response = await readJson(await handler(new Request('https://site.test/api/job-files', {
+    method: 'PATCH',
+    headers: { cookie: 'ta_session=session-token' },
+  })));
+
+  assert.equal(response.status, 405);
+  assert.equal(response.body.message, 'Method not allowed.');
+  assert.equal(openedDatabase, false);
+});
 test('job files endpoint requires a signed-in session', async () => {
   let openedDatabase = false;
   const handler = createJobFilesHandler({ getDatabase: async () => { openedDatabase = true; return createMockDb(); } });
