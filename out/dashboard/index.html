@@ -550,6 +550,54 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
+    [data-admin-access-status][data-state="ready"] {
+      border-left-width: 6px;
+      background: linear-gradient(90deg, rgba(16,185,129,.18), rgba(255,255,255,.08));
+      color: #0f5132;
+      font-weight: 900;
+    }
+
+    [data-admin-user-search-results] .admin-request {
+      border-radius: 20px;
+      border-width: 2px;
+      background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(255,248,240,.95));
+      box-shadow: 0 12px 30px rgba(45,27,13,.08);
+    }
+
+    [data-admin-user-search-results] .client-quote-actions .btn {
+      min-height: 40px;
+      font-weight: 900;
+      border-radius: 12px;
+    }
+
+    [data-admin-user-modal] .admin-request-modal-panel {
+      width: min(900px, calc(100vw - 28px));
+    }
+
+    [data-admin-user-modal] .admin-request-modal-header {
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--dash-line);
+      margin-bottom: 12px;
+    }
+
+    [data-admin-user-modal] [data-admin-user-modal-summary] {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(173,63,24,.12);
+      color: var(--dash-ink);
+      font-weight: 800;
+      font-size: .85rem;
+    }
+
+    [data-admin-user-form] .client-request-form-actions {
+      padding-top: 10px;
+      border-top: 1px dashed var(--dash-line);
+      justify-content: space-between;
+    }
+
+
     .dashboard-nav-cluster {
       display: grid;
       justify-items: end;
@@ -4728,7 +4776,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             <span class="admin-request-badge">${escapeHtml(user.isActive === false ? 'inactive' : ((user.roles || []).join(', ') || 'no role'))}</span>
             <strong>${escapeHtml(user.fullName || user.email)}</strong>
             <div class="admin-request-meta"><span>${escapeHtml(user.email)}</span><span>${escapeHtml(user.phone || 'No phone')}</span><span>${(user.properties || []).length} address${(user.properties || []).length === 1 ? '' : 'es'}</span></div>
-            <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-edit-user="${escapeHtml(user.id)}">Open user</button></div>
+            <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-edit-user="${escapeHtml(user.id)}">Edit user</button></div>
           </article>
         `).join('') : '<p class="session-status">No users matched that search.</p>';
       };
@@ -4896,7 +4944,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           bindAdminAccessForms();
           if (status) {
             status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? '' : 's'} loaded. Search users to edit details, roles, and properties.`;
+            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? '' : 's'} loaded. Search users below to open the full user editor.`;
           }
         } catch (error) {
           if (status) {
