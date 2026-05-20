@@ -506,6 +506,50 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
+    .admin-access-panel {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,250,243,.96), rgba(255,255,255,.92));
+    }
+
+    [data-admin-access] .admin-access-panel > strong {
+      display: block;
+      font-size: 1.2rem;
+      margin-bottom: 6px;
+    }
+
+    [data-admin-access] .client-request-form-grid,
+    [data-admin-access] .client-request-form-actions,
+    [data-admin-access] [data-admin-user-search-results] {
+      margin-top: 14px;
+    }
+
+    [data-admin-user-form] {
+      border: 1px solid rgba(173,63,24,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,247,238,.9));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.82);
+    }
+
+    [data-admin-user-form] [data-admin-user-role-list],
+    [data-admin-user-form] [data-admin-user-property-list] {
+      padding: 12px;
+      border: 1px solid var(--dash-line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.65);
+    }
+
+    [data-admin-user-form] [data-admin-user-role-list] strong,
+    [data-admin-user-form] [data-admin-user-property-list] strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    [data-admin-user-email][disabled] {
+      opacity: .78;
+      cursor: not-allowed;
+      background: rgba(236,236,236,.55);
+    }
+
+
     .dashboard-nav-cluster {
       display: grid;
       justify-items: end;
@@ -4658,7 +4702,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         document.querySelector('[data-admin-user-internal-notes]').value = user.internalNotes || '';
         document.querySelector('[data-admin-delete-user]').hidden = false;
         document.querySelector('[data-admin-user-modal-title]').textContent = `Edit user: ${user.fullName || user.email}`;
-        document.querySelector('[data-admin-user-modal-summary]').textContent = `${user.email || ''}${user.phone ? ` • ${user.phone}` : ''}${user.secondaryPhone ? ` • ${user.secondaryPhone}` : ''}`;
+        document.querySelector('[data-admin-user-modal-summary]').textContent = `Editing ${user.fullName || user.email || 'user account'} • ${user.email || 'No email'}${user.phone ? ` • ${user.phone}` : ''}${user.secondaryPhone ? ` • ${user.secondaryPhone}` : ''}`;
         renderUserProperties(user.properties || []);
         renderUserRoleInputs(user.roles || []);
         openAdminUserModal();
@@ -4670,7 +4714,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const cleaned = query.trim().toLowerCase();
 
         if (!cleaned) {
-          results.innerHTML = '<p class="session-status">Search for a user to edit their roles. No full user list is shown here.</p>';
+          results.innerHTML = '<p class="session-status">Search for a user to edit profile details, roles, and contact information. User results appear here after typing.</p>';
           return;
         }
 
@@ -4852,7 +4896,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           bindAdminAccessForms();
           if (status) {
             status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? '' : 's'} and user search ready.`;
+            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? '' : 's'} loaded. Search users to edit details, roles, and properties.`;
           }
         } catch (error) {
           if (status) {
