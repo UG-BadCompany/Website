@@ -1115,6 +1115,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
     @media(max-width:700px){ .dashboard-tool-actions{grid-template-columns:1fr;} }
 
+    [data-dashboard-tool-list] .admin-request { background: rgba(255,255,255,.06); }
+
 
 
     /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
@@ -1735,7 +1737,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <button class="admin-command-card" type="button" data-admin-work-orders-shortcut data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></button>
         <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
-        <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+        <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
         <a class="admin-command-card" href="/portal/client/" data-request-estimate-link data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
@@ -1798,7 +1800,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           <a class="btn btn-primary" href="/portal/admin/" data-dashboard-tool-open-page>Open full workspace</a>
           <button class="btn btn-soft" type="button" data-dashboard-tool-close-secondary>Close</button>
         </div>
-        <p class="session-status" data-dashboard-tool-status>Tip: this popup keeps the main dashboard clean while still giving immediate access.</p>
+        <p class="session-status" data-dashboard-tool-status>Loading recent items…</p><div class="admin-request-list" data-dashboard-tool-list></div>
       </section>
     </div>
 
@@ -2846,7 +2848,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         if (permissions.canManageInvoices) actions.push('<button class="admin-command-card" type="button" data-admin-invoices-shortcut><strong>Invoices</strong><span>Open invoice tools in a quick popup.</span></button>');
         if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles & users</strong><span>Manage dashboard users and access.</span></button>');
         if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
-        if (permissions.canManageInventory) actions.push('<a class="admin-command-card" href="/inventory/"><strong>Inventory</strong><span>Open stock, tools, and usage controls.</span></a>');
+        if (permissions.canManageInventory) actions.push('<button class="admin-command-card" type="button" data-admin-inventory-shortcut><strong>Inventory</strong><span>Open inventory tools in a quick popup.</span></button>');
         if (permissions.canViewClientTools) actions.push('<a class="admin-command-card" href="/portal/client/"><strong>Client requests</strong><span>Submit or review work requests.</span></a>');
         if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/portal/worker/"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
 
@@ -5202,11 +5204,41 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
         const status = panel.querySelector('[data-dashboard-tool-status]');
+        const list = panel.querySelector('[data-dashboard-tool-list]');
+
+        const renderRecentItems = (items = []) => {
+          if (!list) return;
+          list.innerHTML = items.length
+            ? items.map((item) => `<article class="admin-request"><strong>${item.title}</strong><div class="admin-request-meta">${item.meta || ''}</div><p>${item.detail || ''}</p></article>`).join('')
+            : '<p class="session-status">No recent items yet.</p>';
+        };
+
+        const loadRecentItems = async (config) => {
+          if (!status) return;
+          status.textContent = 'Loading latest 5 items…';
+          try {
+            const response = await fetch(config.endpoint, { headers: { accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || result.ok === false) throw new Error(result.message || 'Could not load recent items.');
+            const raw = result.requests || result.invoices || result.items || result.events || [];
+            const rows = raw.slice(0,5).map((row) => ({
+              title: row.title || row.requestTitle || row.name || row.type || row.clientName || `Item #${row.id || ''}`,
+              meta: [row.status, row.priority, row.propertyName, row.eventType].filter(Boolean).join(' • '),
+              detail: row.description || row.notes || row.summary || row.email || ''
+            }));
+            status.textContent = `Showing latest ${rows.length} ${config.label.toLowerCase()} item${rows.length===1?'':'s'}.`;
+            renderRecentItems(rows);
+          } catch (error) {
+            status.textContent = error.message;
+            renderRecentItems([]);
+          }
+        };
 
         const launchers = [
-          { selector: '[data-admin-work-orders-shortcut]', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/portal/admin/' },
-          { selector: '[data-admin-invoices-shortcut]', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/portal/admin/' },
-          { selector: '[data-admin-activity-shortcut]', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/portal/admin/' },
+          { selector: '[data-admin-work-orders-shortcut]', key: 'workOrders', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/portal/admin/work-orders/', endpoint: '/api/admin/job-requests' },
+          { selector: '[data-admin-invoices-shortcut]', key: 'invoices', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/portal/admin/invoices/', endpoint: '/api/admin/invoices' },
+          { selector: '[data-admin-inventory-shortcut]', key: 'inventory', label: 'Inventory', description: 'Monitor stock, materials, and usage controls.', href: '/portal/admin/inventory/', endpoint: '/api/admin/inventory' },
+          { selector: '[data-admin-activity-shortcut]', key: 'activity', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/portal/admin/audit-activity/', endpoint: '/api/admin/activity?limit=5' },
         ];
 
         launchers.forEach((config) => {
@@ -5219,6 +5251,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (openPage) openPage.href = config.href;
               if (status) status.textContent = `${config.label} is available now in a dedicated workspace.`;
               setModalOpen(panel, true);
+              loadRecentItems(config);
             });
           });
         });
