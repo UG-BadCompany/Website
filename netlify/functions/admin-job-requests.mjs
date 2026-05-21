@@ -330,7 +330,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
             completion_date = ${['waiting_payment', 'completed'].includes(payload.status) ? (payload.completionDate || new Date().toISOString().slice(0, 10)) : (payload.completionDate || null)},
             updated_at = now()
         where id = ${payload.jobRequestId}
-        returning id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
+        returning id, client_id, status, requester_name, requester_email, requester_phone, city, service_type, preferred_timeframe, description, admin_notes, estimated_start_date, completion_date, created_at, updated_at
       `;
 
       if (!updatedRequest) {
@@ -352,7 +352,7 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
 
         [invoice] = await db.sql`
           insert into invoices (job_request_id, client_id, quote_id, status, title, amount_cents, created_by)
-          values (${updatedRequest.id}, ${quoteForInvoice?.client_id || null}, ${quoteForInvoice?.id || null}, ${'open'}, ${getInvoiceTitle({ quoteTitle: quoteForInvoice?.title, serviceType: updatedRequest.service_type })}, ${quoteForInvoice?.amount_cents || 0}, ${session.user_id})
+          values (${updatedRequest.id}, ${quoteForInvoice?.client_id || updatedRequest.client_id || null}, ${quoteForInvoice?.id || null}, ${'open'}, ${getInvoiceTitle({ quoteTitle: quoteForInvoice?.title, serviceType: updatedRequest.service_type })}, ${quoteForInvoice?.amount_cents || 0}, ${session.user_id})
           on conflict (job_request_id) do update set
             client_id = coalesce(invoices.client_id, excluded.client_id),
             quote_id = coalesce(invoices.quote_id, excluded.quote_id),
