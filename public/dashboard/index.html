@@ -1054,6 +1054,85 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
+
+    .dashboard-overview-note {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--dash-line);
+      background: rgba(255,255,255,.08);
+      color: var(--dash-muted);
+      font-weight: 760;
+    }
+
+    .dashboard-detail-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 14px 0 0;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-detail-toolbar .btn { min-height: 40px; }
+
+    [data-dashboard-root] [data-dashboard-section] {
+      display: none !important;
+    }
+
+    
+    .dashboard-tool-modal .admin-request-modal-panel {
+      width: min(760px, 100%);
+    }
+
+    .dashboard-tool-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media(max-width:700px){ .dashboard-tool-actions{grid-template-columns:1fr;} }
+
+    [data-dashboard-tool-list] .admin-request { background: rgba(255,255,255,.06); }
+
+    .dashboard-tool-modal .admin-request-modal-panel {
+      background:
+        linear-gradient(180deg, rgba(7,10,15,.96), rgba(17,24,39,.92)),
+        radial-gradient(circle at 82% 10%, rgba(249,115,22,.18), transparent 18rem);
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .dashboard-tool-modal .admin-request-modal-close,
+    .dashboard-tool-modal [data-dashboard-tool-close-secondary] {
+      background: rgba(15,23,42,.7);
+      border-color: rgba(148,163,184,.35);
+      color: #e2e8f0;
+      box-shadow: none;
+    }
+
+    .dashboard-tool-modal .admin-request-modal-close {
+      border-radius: 12px;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 1rem;
+    }
+
+    .dashboard-tool-modal [data-dashboard-tool-status] {
+      margin-top: 14px;
+      background: rgba(15,23,42,.68);
+      border-color: rgba(148,163,184,.28);
+      color: #dbe4ef;
+    }
+
+    .dashboard-tool-modal [data-dashboard-tool-list] .admin-request {
+      background: rgba(15,23,42,.58);
+      border-color: rgba(148,163,184,.26);
+    }
+
+
+
+
     /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
     .main-command-shortcuts {
       color: var(--dash-text);
@@ -1636,8 +1715,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
-  <main class="wrap">
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/portal/client/" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
+  <main class="wrap" data-dashboard-root>
     <section class="hero">
       <div class="dashboard-hero">
         <div>
@@ -1661,17 +1740,25 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <h2 data-main-command-title>All dashboard tools under the hero.</h2>
         <p data-main-command-description>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
       </div>
+      <p class="dashboard-overview-note" data-dashboard-overview-note>
+        Quick-launch mode: choose a command card to open one workspace at a time for a cleaner dashboard.
+      </p>
+      <div class="dashboard-detail-toolbar" data-dashboard-detail-toolbar hidden>
+        <p class="session-status" data-dashboard-detail-status>Showing a focused workspace.</p>
+        <button class="btn btn-soft" type="button" data-dashboard-show-all>Show all sections</button>
+      </div>
+
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
-        <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
-        <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
-        <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
+        <button class="admin-command-card" type="button" data-admin-work-orders-shortcut data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></button>
+        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
+        <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
-        <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
-        <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+        <button class="admin-command-card" type="button" data-client-requests-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></button>
+        <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
+        <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
     </section>
@@ -1704,6 +1791,24 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       </div>
       <div class="admin-request-list" data-admin-user-search-results></div>
           </section>
+    </div>
+
+
+    <div class="admin-request-modal dashboard-tool-modal" data-dashboard-tool-modal role="dialog" aria-modal="true" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div>
+            <strong data-dashboard-tool-title>Dashboard tool</strong>
+            <p data-dashboard-tool-description>Open this workspace in a focused popup or continue to the full page.</p>
+          </div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-dashboard-tool-close aria-label="Close tool popup">×</button>
+        </div>
+        <div class="dashboard-tool-actions">
+          <button class="btn btn-primary" type="button" data-dashboard-tool-open-page>Open full workspace</button>
+          <button class="btn btn-soft" type="button" data-dashboard-tool-close-secondary>Close</button>
+        </div>
+        <p class="session-status" data-dashboard-tool-status>Loading recent items…</p><div class="admin-request-list" data-dashboard-tool-list></div>
+      </section>
     </div>
 
     <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" hidden>
@@ -1948,6 +2053,34 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </label>
       </div>
       <div class="admin-request-list" data-admin-invoice-list></div>
+    </section>
+
+
+    <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
+      <strong>Inventory workspace</strong>
+      <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
+      <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
+      <form class="client-request-form" data-admin-inventory-create-form>
+        <strong>Add inventory item</strong>
+        <div class="client-request-form-grid">
+          <label>Name<input name="name" required placeholder="Item name"></label>
+          <label>Unit<input name="unit" placeholder="each"></label>
+          <label>Quantity on hand<input name="quantityOnHand" type="number" step="1" value="0"></label>
+          <label>Reorder point<input name="reorderPoint" type="number" step="1" value="0"></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
+      </form>
+      <form class="client-request-form" data-admin-inventory-adjust-form>
+        <strong>Quick stock adjustment</strong>
+        <div class="client-request-form-grid">
+          <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
+          <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
+          <label>Type<select name="adjustmentType"><option value="manual_adjustment">Manual adjustment</option><option value="restock">Restock</option><option value="usage">Usage</option></select></label>
+          <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
+      </form>
+      <div class="admin-request-list" data-admin-inventory-list></div>
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
@@ -2746,19 +2879,21 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
         const permissions = user.permissions || {};
         const actions = [];
-        if (permissions.canViewAdminTools) actions.push('<a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Open the admin work-order command center.</span></a>');
-        if (permissions.canManageInvoices) actions.push('<a class="admin-command-card" href="#admin-invoices"><strong>Invoices</strong><span>Confirm payments and review billing.</span></a>');
+        if (permissions.canViewAdminTools) actions.push('<button class="admin-command-card" type="button" data-admin-work-orders-shortcut><strong>Work orders</strong><span>Open work-order tools in a quick popup.</span></button>');
+        if (permissions.canManageInvoices) actions.push('<button class="admin-command-card" type="button" data-admin-invoices-shortcut><strong>Invoices</strong><span>Open invoice tools in a quick popup.</span></button>');
         if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles & users</strong><span>Manage dashboard users and access.</span></button>');
         if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
-        if (permissions.canManageInventory) actions.push('<a class="admin-command-card" href="/inventory/"><strong>Inventory</strong><span>Open stock, tools, and usage controls.</span></a>');
-        if (permissions.canViewClientTools) actions.push('<a class="admin-command-card" href="#submit-request"><strong>Client requests</strong><span>Submit or review work requests.</span></a>');
-        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="#worker-jobs"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
+        if (permissions.canManageInventory) actions.push('<button class="admin-command-card" type="button" data-admin-inventory-shortcut><strong>Inventory</strong><span>Open inventory tools in a quick popup.</span></button>');
+        if (permissions.canViewClientTools) actions.push('<button class="admin-command-card" type="button" data-client-requests-shortcut><strong>Client requests</strong><span>Submit or review work requests.</span></button>');
+        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/portal/worker/"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
 
         panel.innerHTML = `<strong>Debug session found</strong><p class="session-status">/api/auth/debug confirmed a usable session. Loading the main dashboard with these same permissions now.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
         const debugPanel = document.querySelector('[data-auth-debug-panel]');
         const debugOutput = debugPanel?.querySelector('[data-auth-debug-output]');
         if (debugPanel) debugPanel.dataset.recovered = 'true';
         if (debugOutput) debugOutput.hidden = true;
+        bindDashboardToolPopupLaunchers();
+        bindClientWorkspaceLaunchers();
         bindAdminAccessLauncher();
         bindAdminActivityLauncher();
         return panel;
@@ -2900,6 +3035,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           });
         }
         actionBar.hidden = visibleCount === 0;
+        bindDashboardToolPopupLaunchers();
+        bindClientWorkspaceLaunchers();
         bindAdminAccessLauncher();
         bindAdminActivityLauncher();
         bindClientProfileButton();
@@ -2939,6 +3076,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         }
 
         if (user.permissions?.canManageUsers || user.permissions?.canManageRoles) {
+          bindDashboardToolPopupLaunchers();
           bindAdminAccessLauncher();
           loadAdminAccess();
         }
@@ -5095,6 +5233,150 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
       };
 
+      
+      const bindDashboardToolPopupLaunchers = () => {
+        const panel = document.querySelector('[data-dashboard-tool-modal]');
+        if (!panel) return;
+        const title = panel.querySelector('[data-dashboard-tool-title]');
+        const description = panel.querySelector('[data-dashboard-tool-description]');
+        const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
+        let activeToolConfig = null;
+
+        const openWorkspaceInDashboard = (config, selectedItem = null) => {
+          if (!config) return;
+          const root = document.querySelector('[data-dashboard-root]');
+          if (root) root.removeAttribute('data-dashboard-root');
+          if (typeof window.taSetDashboardView === 'function') window.taSetDashboardView('admin');
+          const revealOne = (selector) => {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const target = document.querySelector(selector);
+            if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+          };
+          if (config.key === 'workOrders') revealOne('#admin-work-orders');
+          if (config.key === 'inventory') revealOne('[data-admin-inventory]');
+          if (config.key === 'invoices') revealOne('[data-admin-invoices]');
+          if (config.key === 'activity') {
+            revealOne('[data-admin-activity]');
+            document.querySelector('[data-admin-activity-refresh]')?.click();
+          }
+          if (selectedItem?.status && config.key === 'workOrders') {
+            const statusFilter = document.querySelector('[data-admin-scope-select]');
+            if (statusFilter) {
+              statusFilter.value = selectedItem.status;
+              statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+          if (selectedItem?.id) {
+            const match = document.querySelector(`[data-request-id="${selectedItem.id}"],[data-invoice-id="${selectedItem.id}"],[data-activity-id="${selectedItem.id}"]`);
+            match?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          setModalOpen(panel, false);
+        };
+        const status = panel.querySelector('[data-dashboard-tool-status]');
+        const list = panel.querySelector('[data-dashboard-tool-list]');
+
+        const renderRecentItems = (items = []) => {
+          if (!list) return;
+          list.innerHTML = items.length
+            ? items.map((item) => `<article class="admin-request" data-tool-item-id="${item.id || ''}" data-tool-item-status="${item.status || ''}"><strong>${item.title}</strong><div class="admin-request-meta">${item.meta || ''}</div><p>${item.detail || ''}</p></article>`).join('')
+            : '<p class="session-status">No recent items yet.</p>';
+        };
+
+        const loadRecentItems = async (config) => {
+          if (!status) return;
+          status.textContent = 'Loading latest 5 items…';
+          try {
+            const response = await fetch(config.endpoint, { headers: { accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || result.ok === false) throw new Error(result.message || 'Could not load recent items.');
+            const raw = result.requests || result.invoices || result.items || result.events || [];
+            const rows = raw.slice(0,5).map((row) => ({
+              id: row.id || row.requestId || row.invoiceId || '',
+              status: row.status || '',
+              title: row.title || row.requestTitle || row.name || row.type || row.clientName || `Item #${row.id || ''}`,
+              meta: [row.status, row.priority, row.propertyName, row.eventType].filter(Boolean).join(' • '),
+              detail: row.description || row.notes || row.summary || row.email || ''
+            }));
+            status.textContent = `Showing latest ${rows.length} ${config.label.toLowerCase()} item${rows.length===1?'':'s'}.`;
+            renderRecentItems(rows);
+          } catch (error) {
+            status.textContent = error.message;
+            renderRecentItems([]);
+          }
+        };
+
+        const launchers = [
+          { selector: '[data-admin-work-orders-shortcut]', key: 'workOrders', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/portal/admin/work-orders/', endpoint: '/api/admin/job-requests' },
+          { selector: '[data-admin-invoices-shortcut]', key: 'invoices', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/portal/admin/invoices/', endpoint: '/api/admin/invoices' },
+          { selector: '[data-admin-inventory-shortcut]', key: 'inventory', label: 'Inventory', description: 'Monitor stock, materials, and usage controls.', href: '/portal/admin/inventory/', endpoint: '/api/admin/inventory' },
+          { selector: '[data-admin-activity-shortcut]', key: 'activity', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/portal/admin/audit-activity/', endpoint: '/api/admin/activity?limit=5' },
+        ];
+
+        launchers.forEach((config) => {
+          document.querySelectorAll(config.selector).forEach((button) => {
+            if (button.dataset.boundToolPopup) return;
+            button.dataset.boundToolPopup = 'true';
+            button.addEventListener('click', () => {
+              if (title) title.textContent = config.label;
+              if (description) description.textContent = config.description;
+              activeToolConfig = config;
+              if (status) status.textContent = `${config.label} is available now in a dedicated workspace.`;
+              setModalOpen(panel, true);
+              loadRecentItems(config);
+            });
+          });
+        });
+
+        
+        list?.addEventListener('click', (event) => {
+          const item = event.target.closest('[data-tool-item-id]');
+          if (!item || !activeToolConfig) return;
+          openWorkspaceInDashboard(activeToolConfig, { id: item.dataset.toolItemId, status: item.dataset.toolItemStatus });
+        });
+
+        openPage?.addEventListener('click', () => {
+          openWorkspaceInDashboard(activeToolConfig);
+        });
+
+        panel.querySelectorAll('[data-dashboard-tool-close], [data-dashboard-tool-close-secondary]').forEach((closeButton) => {
+          closeButton.addEventListener('click', () => setModalOpen(panel, false));
+        });
+        panel.addEventListener('click', (event) => {
+          if (event.target === panel) setModalOpen(panel, false);
+        });
+      };
+
+      
+      const bindClientWorkspaceLaunchers = () => {
+        const openClientSection = (selector) => {
+          const root = document.querySelector('[data-dashboard-root]');
+          if (root) root.removeAttribute('data-dashboard-root');
+          if (typeof window.taSetDashboardView === 'function') window.taSetDashboardView('client');
+          document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+          const target = document.querySelector(selector);
+          if (target) {
+            target.hidden = false;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        };
+
+        document.querySelectorAll('[data-client-requests-shortcut]').forEach((button) => {
+          if (button.dataset.boundClientLauncher) return;
+          button.dataset.boundClientLauncher = 'true';
+          button.addEventListener('click', () => openClientSection('[data-client-requests]'));
+        });
+        document.querySelectorAll('[data-client-quotes-shortcut]').forEach((button) => {
+          if (button.dataset.boundClientLauncher) return;
+          button.dataset.boundClientLauncher = 'true';
+          button.addEventListener('click', () => openClientSection('[data-client-quotes]'));
+        });
+        document.querySelectorAll('[data-client-invoices-shortcut]').forEach((button) => {
+          if (button.dataset.boundClientLauncher) return;
+          button.dataset.boundClientLauncher = 'true';
+          button.addEventListener('click', () => openClientSection('[data-client-invoices]'));
+        });
+      };
+
       const bindAdminAccessLauncher = () => {
         const panel = document.querySelector('[data-admin-access]');
         const openButtons = document.querySelectorAll('[data-admin-access-shortcut]');
@@ -5186,7 +5468,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
       const bindAdminActivityLauncher = () => {
         const panel = document.querySelector('[data-admin-activity]');
-        const openButtons = document.querySelectorAll('[data-admin-activity-shortcut]');
+        const openButtons = document.querySelectorAll('[data-admin-activity-panel-shortcut]');
         if (!panel || !openButtons.length) return;
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
@@ -5332,6 +5614,73 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
         });
       };
+
+      const renderAdminInventoryWorkspace = () => {
+        const list = document.querySelector('[data-admin-inventory-list]');
+        const select = document.querySelector('[data-admin-inventory-item-select]');
+        if (select) {
+          select.innerHTML = '<option value="">Select item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
+        }
+        if (!list) return;
+        list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
+      };
+
+      const loadAdminInventoryWorkspace = async () => {
+        const status = document.querySelector('[data-admin-inventory-status]');
+        try {
+          if (status) status.textContent = 'Loading inventory…';
+          const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
+          currentAdminInventoryItems = result.items || [];
+          renderAdminInventoryWorkspace();
+          if (status) status.textContent = `${currentAdminInventoryItems.length} inventory item${currentAdminInventoryItems.length===1?'':'s'} loaded.`;
+        } catch (error) {
+          if (status) status.textContent = error.message;
+        }
+      };
+
+      const bindAdminInventoryWorkspaceActions = () => {
+        const createForm = document.querySelector('[data-admin-inventory-create-form]');
+        const adjustForm = document.querySelector('[data-admin-inventory-adjust-form]');
+        if (createForm && !createForm.dataset.bound) {
+          createForm.dataset.bound = 'true';
+          createForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const status = document.querySelector('[data-admin-inventory-form-status]');
+            const payload = Object.fromEntries(new FormData(createForm).entries());
+            try {
+              if (status) status.textContent = 'Saving item…';
+              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add item.');
+              createForm.reset();
+              if (status) status.textContent = 'Item added.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+        if (adjustForm && !adjustForm.dataset.bound) {
+          adjustForm.dataset.bound = 'true';
+          adjustForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const status = document.querySelector('[data-admin-inventory-adjust-status]');
+            const payload = Object.fromEntries(new FormData(adjustForm).entries());
+            payload.quantityDelta = Number(payload.quantityDelta || 0);
+            try {
+              if (status) status.textContent = 'Applying adjustment…';
+              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply adjustment.');
+              adjustForm.reset();
+              if (status) status.textContent = 'Adjustment recorded.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+      };
+
+
 
       window.taDashboardActions.loadAdminInvoices = async () => {
         const panel = document.querySelector('[data-admin-invoices]');
@@ -5493,7 +5842,46 @@ Additional info from client: ${payload.additionalInfo}` : '';
           status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
-  </script>
+  
+
+    
+
+    (function applyWorkspaceRoute() {
+      const params = new URLSearchParams(window.location.search);
+      const workspace = (params.get('workspace') || '').trim();
+      if (!workspace) return;
+
+      const root = document.querySelector('[data-dashboard-root]');
+      if (root) root.removeAttribute('data-dashboard-root');
+
+      const revealOne = (selector) => {
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          section.hidden = true;
+        });
+        const target = document.querySelector(selector);
+        if (target) {
+          target.hidden = false;
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      const activate = () => {
+        if (typeof window.taSetDashboardView === 'function') {
+          window.taSetDashboardView('admin');
+        }
+        if (workspace === 'work-orders') revealOne('#admin-work-orders');
+        if (workspace === 'invoices') revealOne('[data-admin-invoices]');
+        if (workspace === 'audit-activity') {
+          revealOne('[data-admin-activity]');
+          document.querySelector('[data-admin-activity-refresh]')?.click();
+        }
+        if (workspace === 'inventory') revealOne('[data-admin-inventory]');
+      };
+
+      window.addEventListener('load', () => setTimeout(activate, 120));
+    })();
+
+</script>
 
 </body>
 </html>
