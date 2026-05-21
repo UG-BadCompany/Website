@@ -1117,6 +1117,41 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
     [data-dashboard-tool-list] .admin-request { background: rgba(255,255,255,.06); }
 
+    .dashboard-tool-modal .admin-request-modal-panel {
+      background:
+        linear-gradient(180deg, rgba(7,10,15,.96), rgba(17,24,39,.92)),
+        radial-gradient(circle at 82% 10%, rgba(249,115,22,.18), transparent 18rem);
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .dashboard-tool-modal .admin-request-modal-close,
+    .dashboard-tool-modal [data-dashboard-tool-close-secondary] {
+      background: rgba(15,23,42,.7);
+      border-color: rgba(148,163,184,.35);
+      color: #e2e8f0;
+      box-shadow: none;
+    }
+
+    .dashboard-tool-modal .admin-request-modal-close {
+      border-radius: 12px;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 1rem;
+    }
+
+    .dashboard-tool-modal [data-dashboard-tool-status] {
+      margin-top: 14px;
+      background: rgba(15,23,42,.68);
+      border-color: rgba(148,163,184,.28);
+      color: #dbe4ef;
+    }
+
+    .dashboard-tool-modal [data-dashboard-tool-list] .admin-request {
+      background: rgba(15,23,42,.58);
+      border-color: rgba(148,163,184,.26);
+    }
+
+
 
 
     /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
