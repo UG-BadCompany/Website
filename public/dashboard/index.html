@@ -1560,6 +1560,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     .admin-invoices > .session-status { border-left-color: #ffb454; }
     .admin-activity > .session-status { border-left-color: #8cc6ff; }
     .admin-inbox > .session-status { border-left-color: #c2f0d0; }
+    .admin-inventory > .session-status { border-left-color: #ffc97f; background: rgba(255, 236, 208, 0.18); color: #ffe7c2; border-color: rgba(255, 201, 127, 0.45); }
 
     .client-request-form {
       gap: 18px;
@@ -1674,6 +1675,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     html[data-theme="light"] .admin-inbox > .session-status,
     html[data-theme="light"] .admin-invoices > .session-status,
     html[data-theme="light"] .admin-activity > .session-status,
+    html[data-theme="light"] .admin-inventory > .session-status,
     html[data-theme="light"] [data-admin-assignment-list] > .session-status,
     html[data-theme="light"] [data-admin-work-order-inventory-usage] > .session-status,
     html[data-theme="light"] [data-admin-invoice-list] > .session-status,
@@ -1761,13 +1763,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
-    </section>
-
-
-    <section class="dashboard-subpage-launch" aria-label="Role workspaces">
-      <a class="dashboard-subpage-card" href="/portal/admin/"><strong>Admin portal</strong><span>Open the dedicated admin portal.</span></a>
-      <a class="dashboard-subpage-card" href="/portal/client/"><strong>Client portal</strong><span>Open the dedicated client portal.</span></a>
-      <a class="dashboard-subpage-card" href="/portal/worker/"><strong>Worker portal</strong><span>Open the dedicated worker portal.</span></a>
     </section>
 
     <section class="card session-check" data-session-card>
