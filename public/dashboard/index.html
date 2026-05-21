@@ -1080,28 +1080,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       display: none !important;
     }
 
-    .dashboard-subpage-launch {
-      margin: 24px 0 70px;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .dashboard-subpage-card {
-      display: block;
-      padding: 22px;
-      border-radius: 22px;
-      border: 1px solid var(--dash-line);
-      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.05));
-      color: var(--dash-text);
-      box-shadow: 0 18px 48px rgba(0,0,0,.22);
-    }
-
-    .dashboard-subpage-card strong { display:block; margin-bottom:8px; font-size:1.05rem; }
-    .dashboard-subpage-card span { color: var(--dash-muted); font-weight: 700; line-height: 1.45; }
-
-    @media(max-width:900px){ .dashboard-subpage-launch{grid-template-columns:1fr;} }
-
+    
     .dashboard-tool-modal .admin-request-modal-panel {
       width: min(760px, 100%);
     }
@@ -5250,7 +5229,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const target = document.querySelector(selector);
             if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
           };
-          if (config.key === 'workOrders' || config.key === 'inventory') revealOne('#admin-work-orders');
+          if (config.key === 'workOrders') revealOne('#admin-work-orders');
+          if (config.key === 'inventory') { window.location.assign('/inventory/'); return; }
           if (config.key === 'invoices') revealOne('[data-admin-invoices]');
           if (config.key === 'activity') {
             revealOne('[data-admin-activity]');
@@ -5775,8 +5755,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           document.querySelector('[data-admin-activity-refresh]')?.click();
         }
         if (workspace === 'inventory') {
-          revealOne('#admin-work-orders');
-          document.querySelector('[data-inventory-item-select]')?.focus({ preventScroll: true });
+          window.location.assign('/inventory/');
         }
       };
 
