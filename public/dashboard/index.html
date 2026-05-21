@@ -5622,6 +5622,73 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
       };
 
+      const renderAdminInventoryWorkspace = () => {
+        const list = document.querySelector('[data-admin-inventory-list]');
+        const select = document.querySelector('[data-admin-inventory-item-select]');
+        if (select) {
+          select.innerHTML = '<option value="">Select item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
+        }
+        if (!list) return;
+        list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
+      };
+
+      const loadAdminInventoryWorkspace = async () => {
+        const status = document.querySelector('[data-admin-inventory-status]');
+        try {
+          if (status) status.textContent = 'Loading inventory…';
+          const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
+          currentAdminInventoryItems = result.items || [];
+          renderAdminInventoryWorkspace();
+          if (status) status.textContent = `${currentAdminInventoryItems.length} inventory item${currentAdminInventoryItems.length===1?'':'s'} loaded.`;
+        } catch (error) {
+          if (status) status.textContent = error.message;
+        }
+      };
+
+      const bindAdminInventoryWorkspaceActions = () => {
+        const createForm = document.querySelector('[data-admin-inventory-create-form]');
+        const adjustForm = document.querySelector('[data-admin-inventory-adjust-form]');
+        if (createForm && !createForm.dataset.bound) {
+          createForm.dataset.bound = 'true';
+          createForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const status = document.querySelector('[data-admin-inventory-form-status]');
+            const payload = Object.fromEntries(new FormData(createForm).entries());
+            try {
+              if (status) status.textContent = 'Saving item…';
+              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add item.');
+              createForm.reset();
+              if (status) status.textContent = 'Item added.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+        if (adjustForm && !adjustForm.dataset.bound) {
+          adjustForm.dataset.bound = 'true';
+          adjustForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const status = document.querySelector('[data-admin-inventory-adjust-status]');
+            const payload = Object.fromEntries(new FormData(adjustForm).entries());
+            payload.quantityDelta = Number(payload.quantityDelta || 0);
+            try {
+              if (status) status.textContent = 'Applying adjustment…';
+              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply adjustment.');
+              adjustForm.reset();
+              if (status) status.textContent = 'Adjustment recorded.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+      };
+
+
+
       window.taDashboardActions.loadAdminInvoices = async () => {
         const panel = document.querySelector('[data-admin-invoices]');
         const status = document.querySelector('[data-admin-invoices-status]');
