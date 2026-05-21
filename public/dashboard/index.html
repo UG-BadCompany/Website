@@ -1560,6 +1560,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     .admin-invoices > .session-status { border-left-color: #ffb454; }
     .admin-activity > .session-status { border-left-color: #8cc6ff; }
     .admin-inbox > .session-status { border-left-color: #c2f0d0; }
+    .admin-inventory > .session-status { border-left-color: #ffc97f; background: rgba(255, 236, 208, 0.18); color: #ffe7c2; border-color: rgba(255, 201, 127, 0.45); }
 
     .client-request-form {
       gap: 18px;
@@ -1674,6 +1675,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     html[data-theme="light"] .admin-inbox > .session-status,
     html[data-theme="light"] .admin-invoices > .session-status,
     html[data-theme="light"] .admin-activity > .session-status,
+    html[data-theme="light"] .admin-inventory > .session-status,
     html[data-theme="light"] [data-admin-assignment-list] > .session-status,
     html[data-theme="light"] [data-admin-work-order-inventory-usage] > .session-status,
     html[data-theme="light"] [data-admin-invoice-list] > .session-status,
@@ -1750,7 +1752,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <button class="admin-command-card" type="button" data-admin-work-orders-shortcut data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></button>
-        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
+        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-scroll-target="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
         <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
@@ -1761,13 +1763,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
-    </section>
-
-
-    <section class="dashboard-subpage-launch" aria-label="Role workspaces">
-      <a class="dashboard-subpage-card" href="/portal/admin/"><strong>Admin workspace</strong><span>Manage work orders, invoices, users, inventory, and activity in a dedicated admin page.</span></a>
-      <a class="dashboard-subpage-card" href="/portal/client/"><strong>Client workspace</strong><span>Submit requests, review quotes, and monitor invoices in a focused client page.</span></a>
-      <a class="dashboard-subpage-card" href="/portal/worker/"><strong>Worker workspace</strong><span>Open assigned jobs, notes, and completion tasks in a dedicated worker page.</span></a>
     </section>
 
     <section class="card session-check" data-session-card>
@@ -2042,7 +2037,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       </div>
     </section>
 
-    <section class="card admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
       <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
@@ -2618,6 +2613,11 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         if (user.permissions?.canManageInvoices) {
           window.taDashboardActions.bindAdminInvoiceActions();
           window.taDashboardActions.loadAdminInvoices();
+        }
+
+        if (user.permissions?.canManageInventory) {
+          bindAdminInventoryWorkspaceActions();
+          loadAdminInventoryWorkspace();
         }
 
         if (user.permissions?.canManageUsers || user.permissions?.canManageRoles) {
@@ -5430,69 +5430,3 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
 </body>
 </html>
-      const renderAdminInventoryWorkspace = () => {
-        const list = document.querySelector('[data-admin-inventory-list]');
-        const select = document.querySelector('[data-admin-inventory-item-select]');
-        if (select) {
-          select.innerHTML = '<option value="">Select item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
-        }
-        if (!list) return;
-        list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
-      };
-
-      const loadAdminInventoryWorkspace = async () => {
-        const status = document.querySelector('[data-admin-inventory-status]');
-        try {
-          if (status) status.textContent = 'Loading inventory…';
-          const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
-          currentAdminInventoryItems = result.items || [];
-          renderAdminInventoryWorkspace();
-          if (status) status.textContent = `${currentAdminInventoryItems.length} inventory item${currentAdminInventoryItems.length===1?'':'s'} loaded.`;
-        } catch (error) {
-          if (status) status.textContent = error.message;
-        }
-      };
-
-      const bindAdminInventoryWorkspaceActions = () => {
-        const createForm = document.querySelector('[data-admin-inventory-create-form]');
-        const adjustForm = document.querySelector('[data-admin-inventory-adjust-form]');
-        if (createForm && !createForm.dataset.bound) {
-          createForm.dataset.bound = 'true';
-          createForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const status = document.querySelector('[data-admin-inventory-form-status]');
-            const payload = Object.fromEntries(new FormData(createForm).entries());
-            try {
-              if (status) status.textContent = 'Saving item…';
-              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add item.');
-              createForm.reset();
-              if (status) status.textContent = 'Item added.';
-              await loadAdminInventoryWorkspace();
-            } catch (error) { if (status) status.textContent = error.message; }
-          });
-        }
-        if (adjustForm && !adjustForm.dataset.bound) {
-          adjustForm.dataset.bound = 'true';
-          adjustForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const status = document.querySelector('[data-admin-inventory-adjust-status]');
-            const payload = Object.fromEntries(new FormData(adjustForm).entries());
-            payload.quantityDelta = Number(payload.quantityDelta || 0);
-            try {
-              if (status) status.textContent = 'Applying adjustment…';
-              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply adjustment.');
-              adjustForm.reset();
-              if (status) status.textContent = 'Adjustment recorded.';
-              await loadAdminInventoryWorkspace();
-            } catch (error) { if (status) status.textContent = error.message; }
-          });
-        }
-      };
-
-
