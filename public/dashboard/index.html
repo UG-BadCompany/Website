@@ -2062,6 +2062,34 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <div class="admin-request-list" data-admin-invoice-list></div>
     </section>
 
+
+    <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
+      <strong>Inventory workspace</strong>
+      <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
+      <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
+      <form class="client-request-form" data-admin-inventory-create-form>
+        <strong>Add inventory item</strong>
+        <div class="client-request-form-grid">
+          <label>Name<input name="name" required placeholder="Item name"></label>
+          <label>Unit<input name="unit" placeholder="each"></label>
+          <label>Quantity on hand<input name="quantityOnHand" type="number" step="1" value="0"></label>
+          <label>Reorder point<input name="reorderPoint" type="number" step="1" value="0"></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
+      </form>
+      <form class="client-request-form" data-admin-inventory-adjust-form>
+        <strong>Quick stock adjustment</strong>
+        <div class="client-request-form-grid">
+          <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
+          <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
+          <label>Type<select name="adjustmentType"><option value="manual_adjustment">Manual adjustment</option><option value="restock">Restock</option><option value="usage">Usage</option></select></label>
+          <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
+      </form>
+      <div class="admin-request-list" data-admin-inventory-list></div>
+    </section>
+
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
@@ -5232,7 +5260,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
           };
           if (config.key === 'workOrders') revealOne('#admin-work-orders');
-          if (config.key === 'inventory') { window.location.assign('/inventory/'); return; }
+          if (config.key === 'inventory') revealOne('[data-admin-inventory]');
           if (config.key === 'invoices') revealOne('[data-admin-invoices]');
           if (config.key === 'activity') {
             revealOne('[data-admin-activity]');
@@ -5787,9 +5815,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           revealOne('[data-admin-activity]');
           document.querySelector('[data-admin-activity-refresh]')?.click();
         }
-        if (workspace === 'inventory') {
-          window.location.assign('/inventory/');
-        }
+        if (workspace === 'inventory') revealOne('[data-admin-inventory]');
       };
 
       window.addEventListener('load', () => setTimeout(activate, 120));
@@ -5799,3 +5825,69 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
 </body>
 </html>
+      const renderAdminInventoryWorkspace = () => {
+        const list = document.querySelector('[data-admin-inventory-list]');
+        const select = document.querySelector('[data-admin-inventory-item-select]');
+        if (select) {
+          select.innerHTML = '<option value="">Select item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
+        }
+        if (!list) return;
+        list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
+      };
+
+      const loadAdminInventoryWorkspace = async () => {
+        const status = document.querySelector('[data-admin-inventory-status]');
+        try {
+          if (status) status.textContent = 'Loading inventory…';
+          const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
+          currentAdminInventoryItems = result.items || [];
+          renderAdminInventoryWorkspace();
+          if (status) status.textContent = `${currentAdminInventoryItems.length} inventory item${currentAdminInventoryItems.length===1?'':'s'} loaded.`;
+        } catch (error) {
+          if (status) status.textContent = error.message;
+        }
+      };
+
+      const bindAdminInventoryWorkspaceActions = () => {
+        const createForm = document.querySelector('[data-admin-inventory-create-form]');
+        const adjustForm = document.querySelector('[data-admin-inventory-adjust-form]');
+        if (createForm && !createForm.dataset.bound) {
+          createForm.dataset.bound = 'true';
+          createForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const status = document.querySelector('[data-admin-inventory-form-status]');
+            const payload = Object.fromEntries(new FormData(createForm).entries());
+            try {
+              if (status) status.textContent = 'Saving item…';
+              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add item.');
+              createForm.reset();
+              if (status) status.textContent = 'Item added.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+        if (adjustForm && !adjustForm.dataset.bound) {
+          adjustForm.dataset.bound = 'true';
+          adjustForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const status = document.querySelector('[data-admin-inventory-adjust-status]');
+            const payload = Object.fromEntries(new FormData(adjustForm).entries());
+            payload.quantityDelta = Number(payload.quantityDelta || 0);
+            try {
+              if (status) status.textContent = 'Applying adjustment…';
+              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply adjustment.');
+              adjustForm.reset();
+              if (status) status.textContent = 'Adjustment recorded.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+      };
+
+
