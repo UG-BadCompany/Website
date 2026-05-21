@@ -2101,6 +2101,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
+      <div class="admin-request-list" data-admin-activity-summary aria-label="Activity summary cards"></div>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
@@ -2127,8 +2129,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </div>
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-primary" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
       </form>
-      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
-      <div class="admin-request-list" data-admin-activity-summary aria-label="Activity summary cards"></div>
       <div class="admin-request-list" data-admin-activity-list></div>
     </section>
 
