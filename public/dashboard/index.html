@@ -4024,6 +4024,17 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           invoiceList.innerHTML = invoices.length
             ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
             : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
+          if (!invoiceList.dataset.boundPayLink) {
+            invoiceList.dataset.boundPayLink = 'true';
+            invoiceList.addEventListener('click', (event) => {
+              const payButton = event.target.closest('[data-client-pay-invoice]');
+              if (!payButton) return;
+              const checkoutUrl = payButton.dataset.clientPayInvoice;
+              if (!checkoutUrl) return;
+              const popup = window.open(checkoutUrl, '_blank', 'noopener');
+              if (!popup) window.location.href = checkoutUrl;
+            });
+          }
         }
       };
 
