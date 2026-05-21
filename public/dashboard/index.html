@@ -1054,6 +1054,55 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
+
+    .dashboard-overview-note {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--dash-line);
+      background: rgba(255,255,255,.08);
+      color: var(--dash-muted);
+      font-weight: 760;
+    }
+
+    .dashboard-detail-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 14px 0 0;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-detail-toolbar .btn { min-height: 40px; }
+
+    [data-dashboard-root] [data-dashboard-section] {
+      display: none !important;
+    }
+
+    .dashboard-subpage-launch {
+      margin: 24px 0 70px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .dashboard-subpage-card {
+      display: block;
+      padding: 22px;
+      border-radius: 22px;
+      border: 1px solid var(--dash-line);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.05));
+      color: var(--dash-text);
+      box-shadow: 0 18px 48px rgba(0,0,0,.22);
+    }
+
+    .dashboard-subpage-card strong { display:block; margin-bottom:8px; font-size:1.05rem; }
+    .dashboard-subpage-card span { color: var(--dash-muted); font-weight: 700; line-height: 1.45; }
+
+    @media(max-width:900px){ .dashboard-subpage-launch{grid-template-columns:1fr;} }
+
+
     /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
     .main-command-shortcuts {
       color: var(--dash-text);
@@ -1636,8 +1685,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="#submit-request" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
-  <main class="wrap">
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/portal/client/" data-request-estimate-link>Request Estimate</a><a class="btn btn-soft" href="/dashboard/?auth_debug=1" data-debug-dashboard-link hidden>Debug dashboard</a><button class="btn btn-soft theme-toggle" type="button" data-theme-toggle>Light mode</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
+  <main class="wrap" data-dashboard-root>
     <section class="hero">
       <div class="dashboard-hero">
         <div>
@@ -1661,19 +1710,34 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <h2 data-main-command-title>All dashboard tools under the hero.</h2>
         <p data-main-command-description>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
       </div>
+      <p class="dashboard-overview-note" data-dashboard-overview-note>
+        Quick-launch mode: choose a command card to open one workspace at a time for a cleaner dashboard.
+      </p>
+      <div class="dashboard-detail-toolbar" data-dashboard-detail-toolbar hidden>
+        <p class="session-status" data-dashboard-detail-status>Showing a focused workspace.</p>
+        <button class="btn btn-soft" type="button" data-dashboard-show-all>Show all sections</button>
+      </div>
+
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
-        <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
-        <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
+        <a class="admin-command-card" href="/portal/admin/" data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
+        <a class="admin-command-card" href="/portal/admin/" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
         <a class="admin-command-card" href="/inventory/" data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></a>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <a class="admin-command-card" href="#submit-request" data-request-estimate-link data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
-        <a class="admin-command-card" href="#client-quotes" data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
-        <a class="admin-command-card" href="#client-invoices" data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
+        <a class="admin-command-card" href="/portal/client/" data-request-estimate-link data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></a>
+        <a class="admin-command-card" href="/portal/client/" data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></a>
+        <a class="admin-command-card" href="/portal/client/" data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="#worker-jobs" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
+    </section>
+
+
+    <section class="dashboard-subpage-launch" aria-label="Role workspaces">
+      <a class="dashboard-subpage-card" href="/portal/admin/"><strong>Admin workspace</strong><span>Manage work orders, invoices, users, inventory, and activity in a dedicated admin page.</span></a>
+      <a class="dashboard-subpage-card" href="/portal/client/"><strong>Client workspace</strong><span>Submit requests, review quotes, and monitor invoices in a focused client page.</span></a>
+      <a class="dashboard-subpage-card" href="/portal/worker/"><strong>Worker workspace</strong><span>Open assigned jobs, notes, and completion tasks in a dedicated worker page.</span></a>
     </section>
 
     <section class="card session-check" data-session-card>
@@ -2746,13 +2810,13 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
         const permissions = user.permissions || {};
         const actions = [];
-        if (permissions.canViewAdminTools) actions.push('<a class="admin-command-card" href="#admin-work-orders"><strong>Work orders</strong><span>Open the admin work-order command center.</span></a>');
-        if (permissions.canManageInvoices) actions.push('<a class="admin-command-card" href="#admin-invoices"><strong>Invoices</strong><span>Confirm payments and review billing.</span></a>');
+        if (permissions.canViewAdminTools) actions.push('<a class="admin-command-card" href="/portal/admin/"><strong>Work orders</strong><span>Open the admin work-order command center.</span></a>');
+        if (permissions.canManageInvoices) actions.push('<a class="admin-command-card" href="/portal/admin/"><strong>Invoices</strong><span>Confirm payments and review billing.</span></a>');
         if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles & users</strong><span>Manage dashboard users and access.</span></button>');
         if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
         if (permissions.canManageInventory) actions.push('<a class="admin-command-card" href="/inventory/"><strong>Inventory</strong><span>Open stock, tools, and usage controls.</span></a>');
-        if (permissions.canViewClientTools) actions.push('<a class="admin-command-card" href="#submit-request"><strong>Client requests</strong><span>Submit or review work requests.</span></a>');
-        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="#worker-jobs"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
+        if (permissions.canViewClientTools) actions.push('<a class="admin-command-card" href="/portal/client/"><strong>Client requests</strong><span>Submit or review work requests.</span></a>');
+        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/portal/worker/"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
 
         panel.innerHTML = `<strong>Debug session found</strong><p class="session-status">/api/auth/debug confirmed a usable session. Loading the main dashboard with these same permissions now.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
         const debugPanel = document.querySelector('[data-auth-debug-panel]');
@@ -5493,7 +5557,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
-  </script>
+  
+
+    
+</script>
 
 </body>
 </html>
