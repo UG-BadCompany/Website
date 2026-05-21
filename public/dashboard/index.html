@@ -3641,7 +3641,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
             </div>
             ${job.streetAddress ? `<p>${escapeHtml(job.streetAddress)}</p>` : ''}
             ${admin && invoice.status === 'open' ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${escapeHtml(invoice.amountCents || 0)}">Confirm payment</button></div>` : ''}
-            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_self" rel="noopener" data-client-pay-invoice="${escapeHtml(invoice.provider.checkoutUrl)}">Pay invoice</a>` : `<button class="btn btn-soft" type="button" data-client-payment-link-pending>Payment link pending</button>`}</div>` : ''}
+            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_self" rel="noopener" data-client-pay-invoice="${escapeHtml(invoice.provider.checkoutUrl)}">Pay invoice</a>` : `<button class="btn btn-soft" type="button" data-client-payment-link-pending data-client-invoice-id="${escapeHtml(invoice.id || '')}">Payment link pending</button>`}</div>` : ''}
           </article>
         `;
       };
@@ -4026,7 +4026,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
             : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
           if (!invoiceList.dataset.boundPayLink) {
             invoiceList.dataset.boundPayLink = 'true';
-            invoiceList.addEventListener('click', (event) => {
+            invoiceList.addEventListener('click', async (event) => {
               const payButton = event.target.closest('[data-client-pay-invoice]');
               if (payButton) {
                 const checkoutUrl = payButton.dataset.clientPayInvoice;
@@ -4037,7 +4037,28 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               }
               const pendingButton = event.target.closest('[data-client-payment-link-pending]');
               if (pendingButton) {
-                window.alert('Payment link pending. We will email you when online payment is ready, or contact support for manual payment help.');
+                pendingButton.disabled = true;
+                const priorText = pendingButton.textContent;
+                pendingButton.textContent = 'Checking for payment link…';
+                try {
+                  const response = await fetch('/api/client/invoices', { headers: { accept: 'application/json' } });
+                  const result = await response.json().catch(() => ({}));
+                  if (!response.ok || !result.ok) throw new Error(result.message || 'Your invoices are not available.');
+                  renderClientInvoiceData(result);
+                  const invoiceId = pendingButton.dataset.clientInvoiceId;
+                  const refreshedInvoice = (result.invoices || []).find((invoice) => invoice.id === invoiceId);
+                  const checkoutUrl = refreshedInvoice?.provider?.checkoutUrl || '';
+                  if (checkoutUrl) {
+                    window.location.href = checkoutUrl;
+                    return;
+                  }
+                  window.alert('This invoice still does not have a payment link yet. Please contact support to request the link.');
+                } catch (error) {
+                  window.alert(error.message || 'We could not check for a payment link right now.');
+                } finally {
+                  pendingButton.disabled = false;
+                  pendingButton.textContent = priorText;
+                }
               }
             });
           }
