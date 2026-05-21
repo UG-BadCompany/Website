@@ -1054,6 +1054,28 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
+
+    .dashboard-overview-note {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--dash-line);
+      background: rgba(255,255,255,.08);
+      color: var(--dash-muted);
+      font-weight: 760;
+    }
+
+    .dashboard-detail-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 14px 0 0;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-detail-toolbar .btn { min-height: 40px; }
+
     /* Dashboard readability tuning: blend the command center with the shell and raise contrast in light mode/lower tool cards. */
     .main-command-shortcuts {
       color: var(--dash-text);
@@ -1661,6 +1683,14 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <h2 data-main-command-title>All dashboard tools under the hero.</h2>
         <p data-main-command-description>Open work orders, invoices, inventory, roles, requests, quotes, profile details, and worker jobs from one shortcut center.</p>
       </div>
+      <p class="dashboard-overview-note" data-dashboard-overview-note>
+        Quick-launch mode: choose a command card to open one workspace at a time for a cleaner dashboard.
+      </p>
+      <div class="dashboard-detail-toolbar" data-dashboard-detail-toolbar hidden>
+        <p class="session-status" data-dashboard-detail-status>Showing a focused workspace.</p>
+        <button class="btn btn-soft" type="button" data-dashboard-show-all>Show all sections</button>
+      </div>
+
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <a class="admin-command-card" href="#admin-work-orders" data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></a>
         <a class="admin-command-card" href="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></a>
@@ -5493,7 +5523,50 @@ Additional info from client: ${payload.additionalInfo}` : '';
           status.innerHTML = 'Session check is unavailable. Refresh the page or <a href="/login/">request a new magic link</a>.';
         });
     })();
-  </script>
+  
+
+    (function dashboardFocusMode() {
+      const toolbar = document.querySelector('[data-dashboard-detail-toolbar]');
+      const status = document.querySelector('[data-dashboard-detail-status]');
+      const resetButton = document.querySelector('[data-dashboard-show-all]');
+      const sections = Array.from(document.querySelectorAll('[data-dashboard-section]'));
+      if (!toolbar || !status || !resetButton || sections.length === 0) return;
+
+      const showAll = () => {
+        toolbar.hidden = true;
+        status.textContent = 'Showing all available sections for your current role.';
+        sections.forEach((section) => {
+          if (section.dataset.userHidden === 'true') return;
+          section.hidden = false;
+        });
+      };
+
+      const showOne = (targetId) => {
+        const target = sections.find((section) => section.id === targetId);
+        if (!target) return;
+        toolbar.hidden = false;
+        sections.forEach((section) => {
+          if (section.dataset.userHidden === 'true') return;
+          section.hidden = section !== target;
+        });
+        const heading = target.querySelector('strong,h2')?.textContent?.trim() || 'Selected workspace';
+        status.textContent = `Focused workspace: ${heading}.`;
+      };
+
+      document.addEventListener('click', (event) => {
+        const card = event.target.closest('[data-main-dashboard-actions] a.admin-command-card[href^="#"]');
+        if (!card) return;
+        const targetId = (card.getAttribute('href') || '').replace('#', '');
+        if (!targetId) return;
+        event.preventDefault();
+        showOne(targetId);
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+
+      resetButton.addEventListener('click', showAll);
+    })();
+
+</script>
 
 </body>
 </html>
