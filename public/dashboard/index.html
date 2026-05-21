@@ -3393,9 +3393,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
       const renderAdminInvoiceCard = (invoice) => {
         const amountDollars = (Number(invoice.amountCents || 0) / 100).toFixed(2);
+        const hasCheckoutUrl = Boolean(invoice.provider?.checkoutUrl);
         const paymentDetails = invoice.payment ? `
           <p><strong>Payment confirmed</strong> ${formatMoney(invoice.payment.amountCents || invoice.amountCents)}${invoice.payment.method ? ` via ${escapeHtml(invoice.payment.method)}` : ''}${invoice.payment.confirmedAt ? ` on ${escapeHtml(formatDate(String(invoice.payment.confirmedAt).slice(0, 10)))}` : ''}</p>
           ${invoice.payment.reference ? `<p><strong>Reference</strong> ${escapeHtml(invoice.payment.reference)}</p>` : ''}
+        ` : '';
+        const linkActions = invoice.status === 'open' ? `
+          <div class="client-quote-actions">
+            ${hasCheckoutUrl
+              ? `<a class="btn btn-soft" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_blank" rel="noopener">Open payment link</a>`
+              : `<button class="btn btn-soft" type="button" data-admin-create-payment-link="${escapeHtml(invoice.id)}">Create payment link</button>`
+            }
+          </div>
         ` : '';
         return `
           <article class="client-quote">
@@ -3408,6 +3417,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
             </div>
             ${paymentDetails}
+            ${linkActions}
             ${invoice.status === 'open' ? `
               <form class="client-request-form" data-admin-payment-form data-admin-invoice-id="${escapeHtml(invoice.id)}">
                 <div class="client-request-form-grid">
@@ -5332,6 +5342,31 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || panel.dataset.invoiceActionsBound) return;
         panel.dataset.invoiceActionsBound = 'true';
         panel.addEventListener('click', async (event) => {
+          const linkButton = event.target.closest('[data-admin-create-payment-link]');
+          if (linkButton) {
+            linkButton.disabled = true;
+            const status = document.querySelector('[data-admin-invoices-status]');
+            try {
+              if (status) status.textContent = 'Creating Square payment link…';
+              const response = await fetch('/api/admin/square/payment-link', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ invoiceId: linkButton.dataset.adminCreatePaymentLink }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not create payment link.');
+              await window.taDashboardActions.loadAdminInvoices();
+              if (status) status.textContent = 'Payment link created.';
+            } catch (error) {
+              if (status) {
+                status.dataset.state = 'error';
+                status.textContent = error.message;
+              }
+            } finally {
+              linkButton.disabled = false;
+            }
+            return;
+          }
           const button = event.target.closest('[data-admin-confirm-payment]');
           if (!button) return;
           button.disabled = true;
