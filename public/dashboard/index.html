@@ -32,16 +32,34 @@
     }
 
 
-    [data-admin-pipeline-summary] {
+    [data-admin-pipeline-summary],
+    [data-admin-invoice-kpi-summary],
+    [data-admin-activity-summary] {
       grid-template-columns: repeat(3,minmax(0,1fr));
       align-items: stretch;
     }
 
-    [data-admin-pipeline-summary] .admin-request {
+    [data-admin-pipeline-summary] .admin-request,
+    [data-admin-invoice-kpi-summary] .admin-request,
+    [data-admin-activity-summary] .admin-request {
       text-align: center;
       min-height: 128px;
       display: grid;
       align-content: center;
+    }
+
+
+    .admin-workspace-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 6px 0 14px;
+    }
+
+    .admin-workspace-toolbar .btn[data-active="true"] {
+      background: linear-gradient(135deg,var(--rust),var(--rust-dark));
+      color: #fff;
+      border-color: transparent;
     }
 
     .admin-access-panel {
@@ -162,7 +180,9 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
     @media(max-width:760px) {
-      [data-admin-pipeline-summary] { grid-template-columns: 1fr; }
+      [data-admin-pipeline-summary],
+    [data-admin-invoice-kpi-summary],
+    [data-admin-activity-summary] { grid-template-columns: 1fr; }
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
@@ -1560,6 +1580,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     .admin-invoices > .session-status { border-left-color: #ffb454; }
     .admin-activity > .session-status { border-left-color: #8cc6ff; }
     .admin-inbox > .session-status { border-left-color: #c2f0d0; }
+    .admin-inventory > .session-status { border-left-color: #ffc97f; background: rgba(255, 236, 208, 0.18); color: #ffe7c2; border-color: rgba(255, 201, 127, 0.45); }
 
     .client-request-form {
       gap: 18px;
@@ -1674,6 +1695,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     html[data-theme="light"] .admin-inbox > .session-status,
     html[data-theme="light"] .admin-invoices > .session-status,
     html[data-theme="light"] .admin-activity > .session-status,
+    html[data-theme="light"] .admin-inventory > .session-status,
     html[data-theme="light"] [data-admin-assignment-list] > .session-status,
     html[data-theme="light"] [data-admin-work-order-inventory-usage] > .session-status,
     html[data-theme="light"] [data-admin-invoice-list] > .session-status,
@@ -1710,6 +1732,85 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     html[data-theme="light"] .client-request-attachments {
       border-color: rgba(173,63,24,.3);
       background: rgba(255,238,216,.76);
+    }
+
+  
+
+    /* Final dark-mode unification pass to remove bright white patches across dashboard workspaces */
+    html:not([data-theme="light"]) .card,
+    html:not([data-theme="light"]) .client-request-form,
+    html:not([data-theme="light"]) .admin-request,
+    html:not([data-theme="light"]) .client-request,
+    html:not([data-theme="light"]) .client-quote,
+    html:not([data-theme="light"]) .client-property,
+    html:not([data-theme="light"]) .worker-job,
+    html:not([data-theme="light"]) .admin-assignment,
+    html:not([data-theme="light"]) .admin-request-modal-panel {
+      background: linear-gradient(180deg,rgba(15,23,42,.86),rgba(30,41,59,.66));
+      border-color: rgba(251,146,60,.24);
+      color: #f8fafc;
+      box-shadow: 0 18px 44px rgba(0,0,0,.22);
+    }
+
+    html:not([data-theme="light"]) .client-request-form input,
+    html:not([data-theme="light"]) .client-request-form select,
+    html:not([data-theme="light"]) .client-request-form textarea,
+    html:not([data-theme="light"]) .worker-filter-toolbar select {
+      background: rgba(2,6,23,.72);
+      border-color: rgba(148,163,184,.35);
+      color: #f8fafc;
+    }
+
+    html:not([data-theme="light"]) .admin-request-badge,
+    html:not([data-theme="light"]) .client-request-badge,
+    html:not([data-theme="light"]) .client-quote-badge,
+    html:not([data-theme="light"]) .client-property-badge,
+    html:not([data-theme="light"]) .worker-job-badge,
+    html:not([data-theme="light"]) .admin-assignment-badge {
+      background: rgba(255,248,235,.95);
+      color: #9a3412;
+      border-color: rgba(255,255,255,.25);
+    }
+
+    html:not([data-theme="light"]) .btn-soft,
+    html:not([data-theme="light"]) .btn-danger,
+    html:not([data-theme="light"]) .account-status {
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.25);
+      color: #f8fafc;
+    }
+
+    html:not([data-theme="light"]) .admin-access-panel,
+    html:not([data-theme="light"]) .dashboard-tool-modal .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-admin-role-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-admin-user-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) .client-profile .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-client-property-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-client-request-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-admin-request-detail] .admin-request-modal-panel {
+      background: linear-gradient(180deg,rgba(15,23,42,.94),rgba(30,41,59,.78));
+      border-color: rgba(251,146,60,.28);
+      color: #f8fafc;
+    }
+
+
+    html:not([data-theme="light"]) .job-file-list > .session-status {
+      background: rgba(15,23,42,.78);
+      border-color: rgba(148,163,184,.34);
+      color: #e2e8f0;
+    }
+
+    html:not([data-theme="light"]) .worker-filter-toolbar,
+    html:not([data-theme="light"]) .profile-summary div,
+    html:not([data-theme="light"]) .worker-evidence-grid div,
+    html:not([data-theme="light"]) .tool-list li,
+    html:not([data-theme="light"]) .dashboard-empty-state,
+    html:not([data-theme="light"]) [data-dashboard-tool-list] .admin-request,
+    html:not([data-theme="light"]) .card .btn-soft,
+    html:not([data-theme="light"]) .admin-request-modal .btn-soft {
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.24);
+      color: #f8fafc;
     }
 
   </style>
@@ -1750,7 +1851,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
       <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
         <button class="admin-command-card" type="button" data-admin-work-orders-shortcut data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></button>
-        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
+        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-scroll-target="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
         <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
@@ -1758,16 +1859,9 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
         <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker" data-scroll-target="#worker-jobs"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
-    </section>
-
-
-    <section class="dashboard-subpage-launch" aria-label="Role workspaces">
-      <a class="dashboard-subpage-card" href="/portal/admin/"><strong>Admin workspace</strong><span>Manage work orders, invoices, users, inventory, and activity in a dedicated admin page.</span></a>
-      <a class="dashboard-subpage-card" href="/portal/client/"><strong>Client workspace</strong><span>Submit requests, review quotes, and monitor invoices in a focused client page.</span></a>
-      <a class="dashboard-subpage-card" href="/portal/worker/"><strong>Worker workspace</strong><span>Open assigned jobs, notes, and completion tasks in a dedicated worker page.</span></a>
     </section>
 
     <section class="card session-check" data-session-card>
@@ -1903,6 +1997,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-pipeline-summary></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="work-orders" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="work-orders">Show queue</button></div>
+      <div data-admin-workspace-body="work-orders" hidden>
       <div class="client-request-form-grid" data-admin-request-filters>
         <label>Work order view
           <select data-admin-request-scope-filter>
@@ -1932,6 +2028,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </label>
       </div>
       <div class="admin-request-list" data-admin-request-list></div>
+      </div>
       <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
         <section class="admin-request-modal-panel">
           <div class="admin-request-modal-header">
@@ -2042,10 +2139,13 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       </div>
     </section>
 
-    <section class="card admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
+    <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
       <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
+      <div class="admin-request-list" data-admin-invoice-kpi-summary aria-label="Invoice summary cards"></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="invoices" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="invoices">Show invoices</button></div>
+      <div data-admin-workspace-body="invoices" hidden>
       <div class="admin-request-list" data-admin-invoice-summary aria-label="Invoice totals"></div>
       <div class="client-request-form-grid" data-admin-invoice-filters>
         <label>Invoice view
@@ -2060,39 +2160,53 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </label>
       </div>
       <div class="admin-request-list" data-admin-invoice-list></div>
+      </div>
     </section>
 
 
     <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
-      <strong>Inventory workspace</strong>
+      <strong>Inventory workspace</strong><p><a href="/inventory/">Open full inventory page</a></p>
       <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
       <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
-      <form class="client-request-form" data-admin-inventory-create-form>
-        <strong>Add inventory item</strong>
-        <div class="client-request-form-grid">
-          <label>Name<input name="name" required placeholder="Item name"></label>
-          <label>Unit<input name="unit" placeholder="each"></label>
-          <label>Quantity on hand<input name="quantityOnHand" type="number" step="1" value="0"></label>
-          <label>Reorder point<input name="reorderPoint" type="number" step="1" value="0"></label>
+      <div class="grid" data-admin-inventory-summary aria-label="Inventory summary cards"></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="inventory" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="inventory">Manage inventory</button></div>
+      <div data-admin-workspace-body="inventory" hidden>
+      <section class="client-request-form" data-admin-inventory-manager>
+        <strong>Inventory management</strong>
+        <div class="client-request-form-actions">
+          <button class="btn btn-soft" type="button" data-admin-inventory-mode="create">Add new item</button>
+          <button class="btn btn-soft" type="button" data-admin-inventory-mode="adjust">Adjust existing item</button>
         </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
-      </form>
-      <form class="client-request-form" data-admin-inventory-adjust-form>
-        <strong>Quick stock adjustment</strong>
-        <div class="client-request-form-grid">
-          <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
-          <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
-          <label>Type<select name="adjustmentType"><option value="manual_adjustment">Manual adjustment</option><option value="restock">Restock</option><option value="usage">Usage</option></select></label>
-          <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
-        </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
-      </form>
+        <form class="client-request-form" data-admin-inventory-create-form>
+          <div class="client-request-form-grid">
+            <label>Name<input name="name" required placeholder="Item name"></label>
+            <label>Unit<input name="unit" placeholder="each"></label>
+            <label>Quantity on hand<input name="quantityOnHand" type="number" step="1" value="0"></label>
+            <label>Reorder point<input name="reorderPoint" type="number" step="1" value="0"></label>
+          </div>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
+        </form>
+        <form class="client-request-form" data-admin-inventory-adjust-form hidden>
+          <div class="client-request-form-grid">
+            <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
+            <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
+            <label>Type<select name="adjustmentType"><option value="manual_adjustment">Manual adjustment</option><option value="restock">Restock</option><option value="usage">Usage</option></select></label>
+            <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
+          </div>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
+        </form>
+      </section>
       <div class="admin-request-list" data-admin-inventory-list></div>
+      </div>
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
+      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
+      <div class="admin-request-list" data-admin-activity-summary aria-label="Activity summary cards"></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="activity" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="activity">Show activity feed</button></div>
+      <div data-admin-workspace-body="activity" hidden>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
@@ -2119,8 +2233,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </div>
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-primary" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
       </form>
-      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
       <div class="admin-request-list" data-admin-activity-list></div>
+      </div>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
@@ -2588,7 +2702,25 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         bindRequestEstimateLink();
       };
 
+
+      const bindAdminWorkspaceViewToggles = () => {
+        document.querySelectorAll('[data-admin-workspace-target]').forEach((button) => {
+          if (button.dataset.bound) return;
+          button.dataset.bound = 'true';
+          button.addEventListener('click', () => {
+            const target = button.dataset.adminWorkspaceTarget;
+            const view = button.dataset.adminWorkspaceView;
+            const body = document.querySelector(`[data-admin-workspace-body="${target}"]`);
+            if (body) body.hidden = view !== 'details';
+            document.querySelectorAll(`[data-admin-workspace-target="${target}"]`).forEach((peer) => {
+              peer.dataset.active = String(peer === button);
+            });
+          });
+        });
+      };
+
       const loadAuthorizedDashboardTools = (user) => {
+        bindAdminWorkspaceViewToggles();
         if (user.permissions?.canViewClientTools) {
           bindClientRequestForm();
           bindClientRequestEditActions();
@@ -2618,6 +2750,11 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         if (user.permissions?.canManageInvoices) {
           window.taDashboardActions.bindAdminInvoiceActions();
           window.taDashboardActions.loadAdminInvoices();
+        }
+
+        if (user.permissions?.canManageInventory) {
+          bindAdminInventoryWorkspaceActions();
+          loadAdminInventoryWorkspace();
         }
 
         if (user.permissions?.canManageUsers || user.permissions?.canManageRoles) {
@@ -3381,6 +3518,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
       const renderAdminActivityList = () => {
         const activityList = document.querySelector('[data-admin-activity-list]');
+        const activitySummary = document.querySelector('[data-admin-activity-summary]');
         const typeFilter = document.querySelector('[data-admin-activity-type-filter]')?.value || '';
         const search = (document.querySelector('[data-admin-activity-search]')?.value || '').trim().toLowerCase();
         if (!activityList) return;
@@ -3388,6 +3526,9 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           if (typeFilter && getAdminActivityType(event) !== typeFilter) return false;
           return !search || getAdminActivitySearchText(event).includes(search);
         });
+        if (activitySummary) {
+          activitySummary.innerHTML = renderAdminActivitySummaryCards(filteredEvents);
+        }
         activityList.innerHTML = filteredEvents.length ? filteredEvents.map(renderAdminActivityCard).join('') : '<p class="session-status">No audit events match those filters.</p>';
       };
 
@@ -3500,6 +3641,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
             </div>
             ${job.streetAddress ? `<p>${escapeHtml(job.streetAddress)}</p>` : ''}
             ${admin && invoice.status === 'open' ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${escapeHtml(invoice.amountCents || 0)}">Confirm payment</button></div>` : ''}
+            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<button class="btn btn-primary" type="button" data-client-pay-invoice="${escapeHtml(invoice.provider.checkoutUrl)}">Pay invoice</button>` : `<button class="btn btn-soft" type="button" disabled>Payment link pending</button>`}</div>` : ''}
           </article>
         `;
       };
@@ -3540,6 +3682,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         const panel = document.querySelector('[data-admin-activity]');
         const panelStatus = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
+        const activitySummary = document.querySelector('[data-admin-activity-summary]');
         const form = document.querySelector('[data-admin-activity-filter-form]');
 
         if (!panel || !panelStatus || !activityList) {
@@ -3567,6 +3710,9 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           const events = result.events || [];
           panelStatus.dataset.state = 'ready';
           panelStatus.textContent = events.length ? `${events.length} audit event${events.length === 1 ? '' : 's'} loaded.` : 'No audit activity matches those filters.';
+          if (activitySummary) {
+            activitySummary.innerHTML = renderAdminActivitySummaryCards(events);
+          }
           activityList.innerHTML = events.length ? events.map(renderAdminActivityEvent).join('') : '<p class="session-status">No audit events found.</p>';
         } catch (error) {
           panelStatus.dataset.state = 'error';
@@ -3878,6 +4024,17 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           invoiceList.innerHTML = invoices.length
             ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
             : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
+          if (!invoiceList.dataset.boundPayLink) {
+            invoiceList.dataset.boundPayLink = 'true';
+            invoiceList.addEventListener('click', (event) => {
+              const payButton = event.target.closest('[data-client-pay-invoice]');
+              if (!payButton) return;
+              const checkoutUrl = payButton.dataset.clientPayInvoice;
+              if (!checkoutUrl) return;
+              const popup = window.open(checkoutUrl, '_blank', 'noopener');
+              if (!popup) window.location.href = checkoutUrl;
+            });
+          }
         }
       };
 
@@ -4970,6 +5127,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-activity]');
         const status = document.querySelector('[data-admin-activity-status]');
         const activityList = document.querySelector('[data-admin-activity-list]');
+        const activitySummary = document.querySelector('[data-admin-activity-summary]');
         const moreButton = document.querySelector('[data-admin-activity-more]');
         if (!panel || !status || !activityList) return;
         const typeFilter = document.querySelector('[data-admin-activity-type-filter]')?.value || '';
@@ -5107,12 +5265,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const renderAdminInvoiceData = (result) => {
         const status = document.querySelector('[data-admin-invoices-status]');
         const list = document.querySelector('[data-admin-invoice-list]');
+        const summaryCards = document.querySelector('[data-admin-invoice-kpi-summary]');
         const invoices = result.invoices || [];
         const amountDue = result.summary?.amountDueCents || 0;
 
         if (status) {
           status.dataset.state = 'ready';
           status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} need follow-up. Open balance: ${formatMoney(amountDue)}.` : 'No open invoices need payment follow-up.';
+        }
+        if (summaryCards) {
+          summaryCards.innerHTML = renderAdminInvoiceSummaryCards(invoices);
         }
         if (list) {
           list.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice, { admin: true })).join('') : '<p class="session-status">No unpaid invoices found.</p>';
@@ -5160,11 +5322,52 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
       };
 
+
+      const renderAdminInvoiceSummaryCards = (invoices = []) => {
+        const openCount = invoices.filter((invoice) => String(invoice.status || '').toLowerCase() !== 'paid').length;
+        const paidCount = invoices.length - openCount;
+        const openBalanceCents = invoices
+          .filter((invoice) => String(invoice.status || '').toLowerCase() !== 'paid')
+          .reduce((sum, invoice) => sum + Number(invoice.balanceDueCents ?? invoice.amountDueCents ?? invoice.amountCents ?? 0), 0);
+        return `
+          <article class="admin-request"><span class="admin-request-badge">Open invoices</span><strong>${openCount}</strong><p>awaiting payment</p></article>
+          <article class="admin-request"><span class="admin-request-badge">Paid invoices</span><strong>${paidCount}</strong><p>closed billing records</p></article>
+          <article class="admin-request"><span class="admin-request-badge">Open balance</span><strong>${escapeHtml(formatMoney(openBalanceCents))}</strong><p>outstanding amount</p></article>
+        `;
+      };
+
+      const renderAdminActivitySummaryCards = (events = []) => {
+        const typeCounts = events.reduce((acc, event) => {
+          const key = String(event.eventType || event.type || 'other').toLowerCase();
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {});
+        const inventoryEvents = Number(typeCounts.inventory || 0);
+        const paymentEvents = Number(typeCounts.payment || 0);
+        return `
+          <article class="admin-request"><span class="admin-request-badge">Loaded events</span><strong>${events.length}</strong><p>currently visible</p></article>
+          <article class="admin-request"><span class="admin-request-badge">Inventory events</span><strong>${inventoryEvents}</strong><p>stock and usage updates</p></article>
+          <article class="admin-request"><span class="admin-request-badge">Payment events</span><strong>${paymentEvents}</strong><p>billing confirmations</p></article>
+        `;
+      };
+
       const renderAdminInventoryWorkspace = () => {
         const list = document.querySelector('[data-admin-inventory-list]');
         const select = document.querySelector('[data-admin-inventory-item-select]');
+        const summary = document.querySelector('[data-admin-inventory-summary]');
         if (select) {
           select.innerHTML = '<option value="">Select item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
+        }
+        const lowStockCount = currentAdminInventoryItems.filter((item) => String(item.stockStatus || '').toLowerCase() === 'low' || Number(item.quantityOnHand || 0) <= Number(item.reorderPoint || 0)).length;
+        const totalUnits = currentAdminInventoryItems.reduce((sum, item) => sum + Number(item.quantityOnHand || 0), 0);
+        const categories = new Set(currentAdminInventoryItems.map((item) => String(item.category || 'General').trim()).filter(Boolean)).size;
+        if (summary) {
+          summary.innerHTML = `
+            <article class="admin-request"><span class="admin-request-badge">Active inventory</span><strong>${currentAdminInventoryItems.length}</strong><p>tracked items</p></article>
+            <article class="admin-request"><span class="admin-request-badge">Low stock</span><strong>${lowStockCount}</strong><p>items at/under reorder point</p></article>
+            <article class="admin-request"><span class="admin-request-badge">Total units</span><strong>${totalUnits}</strong><p>units currently on hand</p></article>
+            <article class="admin-request"><span class="admin-request-badge">Categories</span><strong>${categories}</strong><p>organized groups</p></article>
+          `;
         }
         if (!list) return;
         list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
@@ -5188,6 +5391,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const bindAdminInventoryWorkspaceActions = () => {
         const createForm = document.querySelector('[data-admin-inventory-create-form]');
         const adjustForm = document.querySelector('[data-admin-inventory-adjust-form]');
+        const createModeButton = document.querySelector('[data-admin-inventory-mode="create"]');
+        const adjustModeButton = document.querySelector('[data-admin-inventory-mode="adjust"]');
+        if (createModeButton && adjustModeButton && createForm && adjustForm) {
+          const setMode = (mode) => {
+            const isCreate = mode === 'create';
+            createForm.hidden = !isCreate;
+            adjustForm.hidden = isCreate;
+            createModeButton.classList.toggle('btn-primary', isCreate);
+            createModeButton.classList.toggle('btn-soft', !isCreate);
+            adjustModeButton.classList.toggle('btn-primary', !isCreate);
+            adjustModeButton.classList.toggle('btn-soft', isCreate);
+          };
+          if (!createModeButton.dataset.bound) {
+            createModeButton.dataset.bound = 'true';
+            createModeButton.addEventListener('click', () => setMode('create'));
+          }
+          if (!adjustModeButton.dataset.bound) {
+            adjustModeButton.dataset.bound = 'true';
+            adjustModeButton.addEventListener('click', () => setMode('adjust'));
+          }
+          setMode('create');
+        }
         if (createForm && !createForm.dataset.bound) {
           createForm.dataset.bound = 'true';
           createForm.addEventListener('submit', async (event) => {
@@ -5430,69 +5655,3 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
 </body>
 </html>
-      const renderAdminInventoryWorkspace = () => {
-        const list = document.querySelector('[data-admin-inventory-list]');
-        const select = document.querySelector('[data-admin-inventory-item-select]');
-        if (select) {
-          select.innerHTML = '<option value="">Select item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
-        }
-        if (!list) return;
-        list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
-      };
-
-      const loadAdminInventoryWorkspace = async () => {
-        const status = document.querySelector('[data-admin-inventory-status]');
-        try {
-          if (status) status.textContent = 'Loading inventory…';
-          const response = await fetch('/api/admin/inventory', { headers: { accept: 'application/json' } });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
-          currentAdminInventoryItems = result.items || [];
-          renderAdminInventoryWorkspace();
-          if (status) status.textContent = `${currentAdminInventoryItems.length} inventory item${currentAdminInventoryItems.length===1?'':'s'} loaded.`;
-        } catch (error) {
-          if (status) status.textContent = error.message;
-        }
-      };
-
-      const bindAdminInventoryWorkspaceActions = () => {
-        const createForm = document.querySelector('[data-admin-inventory-create-form]');
-        const adjustForm = document.querySelector('[data-admin-inventory-adjust-form]');
-        if (createForm && !createForm.dataset.bound) {
-          createForm.dataset.bound = 'true';
-          createForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const status = document.querySelector('[data-admin-inventory-form-status]');
-            const payload = Object.fromEntries(new FormData(createForm).entries());
-            try {
-              if (status) status.textContent = 'Saving item…';
-              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not add item.');
-              createForm.reset();
-              if (status) status.textContent = 'Item added.';
-              await loadAdminInventoryWorkspace();
-            } catch (error) { if (status) status.textContent = error.message; }
-          });
-        }
-        if (adjustForm && !adjustForm.dataset.bound) {
-          adjustForm.dataset.bound = 'true';
-          adjustForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const status = document.querySelector('[data-admin-inventory-adjust-status]');
-            const payload = Object.fromEntries(new FormData(adjustForm).entries());
-            payload.quantityDelta = Number(payload.quantityDelta || 0);
-            try {
-              if (status) status.textContent = 'Applying adjustment…';
-              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply adjustment.');
-              adjustForm.reset();
-              if (status) status.textContent = 'Adjustment recorded.';
-              await loadAdminInventoryWorkspace();
-            } catch (error) { if (status) status.textContent = error.message; }
-          });
-        }
-      };
-
-
