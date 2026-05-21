@@ -1832,7 +1832,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           <button class="btn btn-soft admin-request-modal-close" type="button" data-dashboard-tool-close aria-label="Close tool popup">×</button>
         </div>
         <div class="dashboard-tool-actions">
-          <a class="btn btn-primary" href="/portal/admin/" data-dashboard-tool-open-page>Open full workspace</a>
+          <button class="btn btn-primary" type="button" data-dashboard-tool-open-page>Open full workspace</button>
           <button class="btn btn-soft" type="button" data-dashboard-tool-close-secondary>Close</button>
         </div>
         <p class="session-status" data-dashboard-tool-status>Loading recent items…</p><div class="admin-request-list" data-dashboard-tool-list></div>
@@ -5238,13 +5238,44 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const title = panel.querySelector('[data-dashboard-tool-title]');
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
+        let activeToolConfig = null;
+
+        const openWorkspaceInDashboard = (config, selectedItem = null) => {
+          if (!config) return;
+          const root = document.querySelector('[data-dashboard-root]');
+          if (root) root.removeAttribute('data-dashboard-root');
+          if (typeof window.taSetDashboardView === 'function') window.taSetDashboardView('admin');
+          const revealOne = (selector) => {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const target = document.querySelector(selector);
+            if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+          };
+          if (config.key === 'workOrders' || config.key === 'inventory') revealOne('#admin-work-orders');
+          if (config.key === 'invoices') revealOne('[data-admin-invoices]');
+          if (config.key === 'activity') {
+            revealOne('[data-admin-activity]');
+            document.querySelector('[data-admin-activity-refresh]')?.click();
+          }
+          if (selectedItem?.status && config.key === 'workOrders') {
+            const statusFilter = document.querySelector('[data-admin-scope-select]');
+            if (statusFilter) {
+              statusFilter.value = selectedItem.status;
+              statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+          if (selectedItem?.id) {
+            const match = document.querySelector(`[data-request-id="${selectedItem.id}"],[data-invoice-id="${selectedItem.id}"],[data-activity-id="${selectedItem.id}"]`);
+            match?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          setModalOpen(panel, false);
+        };
         const status = panel.querySelector('[data-dashboard-tool-status]');
         const list = panel.querySelector('[data-dashboard-tool-list]');
 
         const renderRecentItems = (items = []) => {
           if (!list) return;
           list.innerHTML = items.length
-            ? items.map((item) => `<article class="admin-request"><strong>${item.title}</strong><div class="admin-request-meta">${item.meta || ''}</div><p>${item.detail || ''}</p></article>`).join('')
+            ? items.map((item) => `<article class="admin-request" data-tool-item-id="${item.id || ''}" data-tool-item-status="${item.status || ''}"><strong>${item.title}</strong><div class="admin-request-meta">${item.meta || ''}</div><p>${item.detail || ''}</p></article>`).join('')
             : '<p class="session-status">No recent items yet.</p>';
         };
 
@@ -5257,6 +5288,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (!response.ok || result.ok === false) throw new Error(result.message || 'Could not load recent items.');
             const raw = result.requests || result.invoices || result.items || result.events || [];
             const rows = raw.slice(0,5).map((row) => ({
+              id: row.id || row.requestId || row.invoiceId || '',
+              status: row.status || '',
               title: row.title || row.requestTitle || row.name || row.type || row.clientName || `Item #${row.id || ''}`,
               meta: [row.status, row.priority, row.propertyName, row.eventType].filter(Boolean).join(' • '),
               detail: row.description || row.notes || row.summary || row.email || ''
@@ -5283,12 +5316,23 @@ Additional info from client: ${payload.additionalInfo}` : '';
             button.addEventListener('click', () => {
               if (title) title.textContent = config.label;
               if (description) description.textContent = config.description;
-              if (openPage) openPage.href = config.href;
+              activeToolConfig = config;
               if (status) status.textContent = `${config.label} is available now in a dedicated workspace.`;
               setModalOpen(panel, true);
               loadRecentItems(config);
             });
           });
+        });
+
+        
+        list?.addEventListener('click', (event) => {
+          const item = event.target.closest('[data-tool-item-id]');
+          if (!item || !activeToolConfig) return;
+          openWorkspaceInDashboard(activeToolConfig, { id: item.dataset.toolItemId, status: item.dataset.toolItemStatus });
+        });
+
+        openPage?.addEventListener('click', () => {
+          openWorkspaceInDashboard(activeToolConfig);
         });
 
         panel.querySelectorAll('[data-dashboard-tool-close], [data-dashboard-tool-close-secondary]').forEach((closeButton) => {
@@ -5700,6 +5744,45 @@ Additional info from client: ${payload.additionalInfo}` : '';
   
 
     
+
+    (function applyWorkspaceRoute() {
+      const params = new URLSearchParams(window.location.search);
+      const workspace = (params.get('workspace') || '').trim();
+      if (!workspace) return;
+
+      const root = document.querySelector('[data-dashboard-root]');
+      if (root) root.removeAttribute('data-dashboard-root');
+
+      const revealOne = (selector) => {
+        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
+          section.hidden = true;
+        });
+        const target = document.querySelector(selector);
+        if (target) {
+          target.hidden = false;
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      const activate = () => {
+        if (typeof window.taSetDashboardView === 'function') {
+          window.taSetDashboardView('admin');
+        }
+        if (workspace === 'work-orders') revealOne('#admin-work-orders');
+        if (workspace === 'invoices') revealOne('[data-admin-invoices]');
+        if (workspace === 'audit-activity') {
+          revealOne('[data-admin-activity]');
+          document.querySelector('[data-admin-activity-refresh]')?.click();
+        }
+        if (workspace === 'inventory') {
+          revealOne('#admin-work-orders');
+          document.querySelector('[data-inventory-item-select]')?.focus({ preventScroll: true });
+        }
+      };
+
+      window.addEventListener('load', () => setTimeout(activate, 120));
+    })();
+
 </script>
 
 </body>
