@@ -13,10 +13,16 @@ const SQUARE_API_VERSION = clean(process.env.SQUARE_API_VERSION, 40) || '2026-01
 const SQUARE_ENVIRONMENT = (clean(process.env.SQUARE_ENVIRONMENT, 20) || 'production').toLowerCase();
 const SQUARE_ACCESS_TOKEN = clean(process.env.SQUARE_ACCESS_TOKEN, 400);
 const SQUARE_LOCATION_ID = clean(process.env.SQUARE_LOCATION_ID, 120);
+const SQUARE_REDIRECT_BASE_URL = clean(process.env.SQUARE_REDIRECT_BASE_URL, 500).replace(/\/$/, '');
 
 const squareApiBase = () => SQUARE_ENVIRONMENT === 'production'
   ? 'https://connect.squareup.com'
   : 'https://connect.squareupsandbox.com';
+
+const getSquareRedirectBaseUrl = (request) => {
+  if (SQUARE_REDIRECT_BASE_URL) return SQUARE_REDIRECT_BASE_URL;
+  return getSiteUrl(request);
+};
 
 const mapDate = (value) => {
   if (!value) return null;
@@ -161,7 +167,7 @@ const createSquareLinkForInvoice = async ({ invoice, request }) => {
     checkout_options: {
       ask_for_shipping_address: false,
       accepted_payment_methods: { card: true, square_gift_card: false, bank_account: true },
-      redirect_url: new URL('/dashboard/?workspace=invoices', getSiteUrl(request)).toString(),
+      redirect_url: new URL('/dashboard/?workspace=invoices', getSquareRedirectBaseUrl(request)).toString(),
     },
   };
   const response = await fetch(`${squareApiBase()}/v2/online-checkout/payment-links`, {
