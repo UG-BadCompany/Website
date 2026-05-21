@@ -48,6 +48,20 @@
       align-content: center;
     }
 
+
+    .admin-workspace-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 6px 0 14px;
+    }
+
+    .admin-workspace-toolbar .btn[data-active="true"] {
+      background: linear-gradient(135deg,var(--rust),var(--rust-dark));
+      color: #fff;
+      border-color: transparent;
+    }
+
     .admin-access-panel {
       width: min(980px,100%);
       padding: 0 20px 20px;
@@ -1766,7 +1780,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
         <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
+        <a class="admin-command-card" href="/portal/worker/" data-main-action-permission="canViewWorkerTools" data-main-action-views="worker" data-scroll-target="#worker-jobs"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></a>
         <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
       </div>
     </section>
@@ -1904,6 +1918,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-pipeline-summary></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="work-orders" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="work-orders">Show queue</button></div>
+      <div data-admin-workspace-body="work-orders" hidden>
       <div class="client-request-form-grid" data-admin-request-filters>
         <label>Work order view
           <select data-admin-request-scope-filter>
@@ -1933,6 +1949,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </label>
       </div>
       <div class="admin-request-list" data-admin-request-list></div>
+      </div>
       <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
         <section class="admin-request-modal-panel">
           <div class="admin-request-modal-header">
@@ -2048,6 +2065,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
       <div class="admin-request-list" data-admin-invoice-kpi-summary aria-label="Invoice summary cards"></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="invoices" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="invoices">Show invoices</button></div>
+      <div data-admin-workspace-body="invoices" hidden>
       <div class="admin-request-list" data-admin-invoice-summary aria-label="Invoice totals"></div>
       <div class="client-request-form-grid" data-admin-invoice-filters>
         <label>Invoice view
@@ -2062,14 +2081,17 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </label>
       </div>
       <div class="admin-request-list" data-admin-invoice-list></div>
+      </div>
     </section>
 
 
     <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
-      <strong>Inventory workspace</strong>
+      <strong>Inventory workspace</strong><p><a href="/inventory/">Open full inventory page</a></p>
       <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
       <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
       <div class="grid" data-admin-inventory-summary aria-label="Inventory summary cards"></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="inventory" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="inventory">Manage inventory</button></div>
+      <div data-admin-workspace-body="inventory" hidden>
       <section class="client-request-form" data-admin-inventory-manager>
         <strong>Inventory management</strong>
         <div class="client-request-form-actions">
@@ -2096,6 +2118,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         </form>
       </section>
       <div class="admin-request-list" data-admin-inventory-list></div>
+      </div>
     </section>
 
     <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
@@ -2103,6 +2126,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
       <div class="admin-request-list" data-admin-activity-summary aria-label="Activity summary cards"></div>
+      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="activity" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="activity">Show activity feed</button></div>
+      <div data-admin-workspace-body="activity" hidden>
       <form class="client-request-form" data-admin-activity-filter-form>
         <div class="client-request-form-grid">
           <label>Event type
@@ -2130,6 +2155,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-primary" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
       </form>
       <div class="admin-request-list" data-admin-activity-list></div>
+      </div>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
@@ -2597,7 +2623,25 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         bindRequestEstimateLink();
       };
 
+
+      const bindAdminWorkspaceViewToggles = () => {
+        document.querySelectorAll('[data-admin-workspace-target]').forEach((button) => {
+          if (button.dataset.bound) return;
+          button.dataset.bound = 'true';
+          button.addEventListener('click', () => {
+            const target = button.dataset.adminWorkspaceTarget;
+            const view = button.dataset.adminWorkspaceView;
+            const body = document.querySelector(`[data-admin-workspace-body="${target}"]`);
+            if (body) body.hidden = view !== 'details';
+            document.querySelectorAll(`[data-admin-workspace-target="${target}"]`).forEach((peer) => {
+              peer.dataset.active = String(peer === button);
+            });
+          });
+        });
+      };
+
       const loadAuthorizedDashboardTools = (user) => {
+        bindAdminWorkspaceViewToggles();
         if (user.permissions?.canViewClientTools) {
           bindClientRequestForm();
           bindClientRequestEditActions();
