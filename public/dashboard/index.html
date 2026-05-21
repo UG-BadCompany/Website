@@ -32,12 +32,16 @@
     }
 
 
-    [data-admin-pipeline-summary] {
+    [data-admin-pipeline-summary],
+    [data-admin-invoice-kpi-summary],
+    [data-admin-activity-summary] {
       grid-template-columns: repeat(3,minmax(0,1fr));
       align-items: stretch;
     }
 
-    [data-admin-pipeline-summary] .admin-request {
+    [data-admin-pipeline-summary] .admin-request,
+    [data-admin-invoice-kpi-summary] .admin-request,
+    [data-admin-activity-summary] .admin-request {
       text-align: center;
       min-height: 128px;
       display: grid;
@@ -162,7 +166,9 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
     @media(max-width:760px) {
-      [data-admin-pipeline-summary] { grid-template-columns: 1fr; }
+      [data-admin-pipeline-summary],
+    [data-admin-invoice-kpi-summary],
+    [data-admin-activity-summary] { grid-template-columns: 1fr; }
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
