@@ -1734,6 +1734,78 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       background: rgba(255,238,216,.76);
     }
 
+  
+
+    /* Final dark-mode unification pass to remove bright white patches across dashboard workspaces */
+    html:not([data-theme="light"]) .card,
+    html:not([data-theme="light"]) .client-request-form,
+    html:not([data-theme="light"]) .admin-request,
+    html:not([data-theme="light"]) .client-request,
+    html:not([data-theme="light"]) .client-quote,
+    html:not([data-theme="light"]) .client-property,
+    html:not([data-theme="light"]) .worker-job,
+    html:not([data-theme="light"]) .admin-assignment,
+    html:not([data-theme="light"]) .admin-request-modal-panel {
+      background: linear-gradient(180deg,rgba(15,23,42,.86),rgba(30,41,59,.66));
+      border-color: rgba(251,146,60,.24);
+      color: #f8fafc;
+      box-shadow: 0 18px 44px rgba(0,0,0,.22);
+    }
+
+    html:not([data-theme="light"]) .client-request-form input,
+    html:not([data-theme="light"]) .client-request-form select,
+    html:not([data-theme="light"]) .client-request-form textarea,
+    html:not([data-theme="light"]) .worker-filter-toolbar select {
+      background: rgba(2,6,23,.72);
+      border-color: rgba(148,163,184,.35);
+      color: #f8fafc;
+    }
+
+    html:not([data-theme="light"]) .admin-request-badge,
+    html:not([data-theme="light"]) .client-request-badge,
+    html:not([data-theme="light"]) .client-quote-badge,
+    html:not([data-theme="light"]) .client-property-badge,
+    html:not([data-theme="light"]) .worker-job-badge,
+    html:not([data-theme="light"]) .admin-assignment-badge {
+      background: rgba(255,248,235,.95);
+      color: #9a3412;
+      border-color: rgba(255,255,255,.25);
+    }
+
+    html:not([data-theme="light"]) .btn-soft,
+    html:not([data-theme="light"]) .btn-danger,
+    html:not([data-theme="light"]) .account-status {
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.25);
+      color: #f8fafc;
+    }
+
+    html:not([data-theme="light"]) .admin-access-panel,
+    html:not([data-theme="light"]) .dashboard-tool-modal .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-admin-role-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-admin-user-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) .client-profile .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-client-property-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-client-request-modal] .admin-request-modal-panel,
+    html:not([data-theme="light"]) [data-admin-request-detail] .admin-request-modal-panel {
+      background: linear-gradient(180deg,rgba(15,23,42,.94),rgba(30,41,59,.78));
+      border-color: rgba(251,146,60,.28);
+      color: #f8fafc;
+    }
+
+    html:not([data-theme="light"]) .worker-filter-toolbar,
+    html:not([data-theme="light"]) .profile-summary div,
+    html:not([data-theme="light"]) .worker-evidence-grid div,
+    html:not([data-theme="light"]) .tool-list li,
+    html:not([data-theme="light"]) .dashboard-empty-state,
+    html:not([data-theme="light"]) [data-dashboard-tool-list] .admin-request,
+    html:not([data-theme="light"]) .card .btn-soft,
+    html:not([data-theme="light"]) .admin-request-modal .btn-soft {
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.24);
+      color: #f8fafc;
+    }
+
   </style>
 </head>
 <body>
