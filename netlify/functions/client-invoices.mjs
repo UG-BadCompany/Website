@@ -1,6 +1,7 @@
 import {
   clean,
   getPermissionKeysForRoles,
+  getSiteUrl,
   getSessionToken,
   hashToken,
   json,
@@ -160,7 +161,7 @@ const createSquareLinkForInvoice = async ({ invoice, request }) => {
     checkout_options: {
       ask_for_shipping_address: false,
       accepted_payment_methods: { card: true, square_gift_card: false, bank_account: true },
-      redirect_url: new URL('/dashboard/?workspace=invoices', request.url).toString(),
+      redirect_url: new URL('/dashboard/?workspace=invoices', getSiteUrl(request)).toString(),
     },
   };
   const response = await fetch(`${squareApiBase()}/v2/online-checkout/payment-links`, {

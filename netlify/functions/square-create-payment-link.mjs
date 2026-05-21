@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   clean,
   getPermissionKeysForRoles,
+  getSiteUrl,
   getSessionToken,
   hashToken,
   json,
@@ -83,7 +84,7 @@ const createSquareLink = async ({ invoice, request }) => {
         square_gift_card: false,
         bank_account: true,
       },
-      redirect_url: new URL('/dashboard/?workspace=invoices', request.url).toString(),
+      redirect_url: new URL('/dashboard/?workspace=invoices', getSiteUrl(request)).toString(),
     },
   };
 
