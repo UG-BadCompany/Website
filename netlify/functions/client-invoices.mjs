@@ -1,4 +1,5 @@
 import {
+  clean,
   getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
@@ -6,6 +7,15 @@ import {
   loadDatabase,
   loadRolePermissionKeys,
 } from './auth-utils.mjs';
+
+const SQUARE_API_VERSION = clean(process.env.SQUARE_API_VERSION, 40) || '2026-01-22';
+const SQUARE_ENVIRONMENT = (clean(process.env.SQUARE_ENVIRONMENT, 20) || 'sandbox').toLowerCase();
+const SQUARE_ACCESS_TOKEN = clean(process.env.SQUARE_ACCESS_TOKEN, 400);
+const SQUARE_LOCATION_ID = clean(process.env.SQUARE_LOCATION_ID, 120);
+
+const squareApiBase = () => SQUARE_ENVIRONMENT === 'production'
+  ? 'https://connect.squareup.com'
+  : 'https://connect.squareupsandbox.com';
 
 const mapDate = (value) => {
   if (!value) return null;
@@ -136,6 +146,69 @@ const listClientInvoices = async (db, userId) => {
   };
 };
 
+const createSquareLinkForInvoice = async ({ invoice, request }) => {
+  if (!SQUARE_ACCESS_TOKEN || !SQUARE_LOCATION_ID) return null;
+  const payload = {
+    idempotency_key: `client-invoice-${invoice.id}-${invoice.amount_cents}`,
+    quick_pay: {
+      name: invoice.title || `Invoice ${invoice.id}`,
+      price_money: { amount: invoice.amount_cents, currency: 'USD' },
+      location_id: SQUARE_LOCATION_ID,
+      reference_id: invoice.id,
+      note: `Portal invoice ${invoice.id}`,
+    },
+    checkout_options: {
+      ask_for_shipping_address: false,
+      accepted_payment_methods: { card: true, square_gift_card: false, bank_account: true },
+      redirect_url: new URL('/dashboard/?workspace=invoices', request.url).toString(),
+    },
+  };
+  const response = await fetch(`${squareApiBase()}/v2/online-checkout/payment-links`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
+      'content-type': 'application/json',
+      'square-version': SQUARE_API_VERSION,
+    },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = result?.errors?.map((error) => error.detail).filter(Boolean).join('; ') || 'Square request failed.';
+    throw new Error(detail);
+  }
+  return {
+    checkoutId: clean(result?.payment_link?.id, 120),
+    checkoutUrl: clean(result?.payment_link?.url, 500),
+    providerStatus: clean(result?.payment_link?.version ? 'pending' : 'created', 40) || 'created',
+  };
+};
+
+const ensureClientInvoiceLinks = async (db, request, invoices = []) => {
+  for (const invoice of invoices) {
+    if (invoice.status !== 'open' || invoice.provider_checkout_url || invoice.amount_cents <= 0) continue;
+    try {
+      const link = await createSquareLinkForInvoice({ invoice, request });
+      if (!link?.checkoutUrl) continue;
+      await db.sql`
+        update invoices
+        set payment_provider = coalesce(payment_provider, 'square'),
+            provider_checkout_id = ${link.checkoutId || null},
+            provider_checkout_url = ${link.checkoutUrl},
+            provider_status = ${link.providerStatus || 'created'},
+            updated_at = now()
+        where id = ${invoice.id}
+      `;
+      invoice.payment_provider = 'square';
+      invoice.provider_checkout_id = link.checkoutId || null;
+      invoice.provider_checkout_url = link.checkoutUrl;
+      invoice.provider_status = link.providerStatus || 'created';
+    } catch (error) {
+      console.error('Failed to auto-create Square link for client invoice', invoice.id, error);
+    }
+  }
+};
+
 export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (request.method !== 'GET') {
     return json(405, { ok: false, message: 'Method not allowed.' });
@@ -161,6 +234,14 @@ export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {})
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client invoice permission is required.' });
     }
 
+    const invoiceData = await listClientInvoices(db, session.user_id);
+    await ensureClientInvoiceLinks(db, request, invoiceData.invoices.map((invoice) => ({
+      id: invoice.id,
+      title: invoice.title,
+      status: invoice.status,
+      amount_cents: invoice.amountCents,
+      provider_checkout_url: invoice.provider?.checkoutUrl,
+    })));
     return json(200, {
       ok: true,
       authenticated: true,
@@ -171,7 +252,7 @@ export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {})
         fullName: session.full_name,
         roles: roleKeys,
       },
-      ...(await listClientInvoices(db, session.user_id)),
+      ...invoiceData,
     });
   } catch (error) {
     console.error('Failed to load client invoices', error);
