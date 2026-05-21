@@ -11,7 +11,7 @@ import {
 } from './auth-utils.mjs';
 
 const SQUARE_API_VERSION = clean(process.env.SQUARE_API_VERSION, 40) || '2026-01-22';
-const SQUARE_ENVIRONMENT = clean(process.env.SQUARE_ENVIRONMENT, 20) || 'sandbox';
+const SQUARE_ENVIRONMENT = (clean(process.env.SQUARE_ENVIRONMENT, 20) || 'sandbox').toLowerCase();
 const SQUARE_ACCESS_TOKEN = clean(process.env.SQUARE_ACCESS_TOKEN, 400);
 const SQUARE_LOCATION_ID = clean(process.env.SQUARE_LOCATION_ID, 120);
 
