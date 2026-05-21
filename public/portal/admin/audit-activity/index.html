@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit activity | Admin Workspace</title>
+<style>
+:root{--line:rgba(255,255,255,.16);--text:#f8fafc;--muted:#cbd5e1;--accent:#f97316;}
+body{margin:0;font-family:Inter,system-ui;background:linear-gradient(135deg,#070a0f,#111827);color:var(--text)}
+.wrap{width:min(1100px,calc(100% - 32px));margin:28px auto}
+.card{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.08);backdrop-filter:blur(10px)}
+.list{display:grid;gap:10px;margin-top:14px} .item{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,23,42,.55)}
+.meta{color:var(--muted);font-size:.9rem} .status{color:var(--muted);margin:10px 0} a{color:#fdba74}
+</style></head><body>
+<main class="wrap">
+  <p><a href="/dashboard/">← Back to dashboard</a></p>
+  <section class="card">
+    <h1>Audit activity</h1>
+    <p>Search recent admin and account events.</p>
+    <p class="status" data-status>Loading audit activity…</p>
+    <div class="list" data-list></div>
+  </section>
+</main>
+<script>
+(async()=>{
+  const status=document.querySelector('[data-status]'); const list=document.querySelector('[data-list]');
+  const render=(rows)=>{
+    if(!rows.length){list.innerHTML='<div class="item">No records yet.</div>'; return;}
+    list.innerHTML=rows.map((r)=>`<article class="item"><strong>${r.title||r.requestTitle||r.name||r.type||'Item'}<\/strong><div class="meta">${[r.status,r.priority,r.propertyName,r.eventType,r.createdAt].filter(Boolean).join(' • ')}<\/div><p>${r.description||r.notes||r.summary||r.email||''}<\/p><\/article>`).join('');
+  };
+  try{
+    const response=await fetch('/api/admin/activity?limit=50',{headers:{accept:'application/json'}});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok || result.ok===false) throw new Error(result.message||'Unable to load data.');
+    const rows=result.events||[];
+    status.textContent=`Loaded ${rows.length} audit activity item${rows.length===1?'':'s'}.`;
+    render(rows);
+  }catch(error){status.textContent=error.message; render([]);}
+})();
+</script>
+</body></html>
