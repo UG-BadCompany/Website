@@ -5124,6 +5124,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const renderAdminInvoiceData = (result) => {
         const status = document.querySelector('[data-admin-invoices-status]');
         const list = document.querySelector('[data-admin-invoice-list]');
+        const summaryCards = document.querySelector('[data-admin-invoice-kpi-summary]');
         const invoices = result.invoices || [];
         const amountDue = result.summary?.amountDueCents || 0;
 
