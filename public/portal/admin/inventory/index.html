@@ -4,3 +4,38 @@
 <style>body{margin:0;font-family:Inter,system-ui;background:linear-gradient(135deg,#070a0f,#111827);color:#f8fafc;display:grid;place-items:center;min-height:100vh}.card{padding:24px;border:1px solid rgba(255,255,255,.2);border-radius:18px;background:rgba(255,255,255,.08);max-width:640px}a{color:#fdba74}</style>
 </head><body><section class="card"><h1>Opening Inventory workspace…</h1><p>Loading the full interactive admin workspace with all tools enabled.</p><p><a id="open" href="/dashboard/?workspace=inventory">Continue if not redirected</a></p></section>
 <script>window.location.replace('/dashboard/?workspace=inventory');</script></body></html>
+<style>
+:root{--line:rgba(255,255,255,.16);--text:#f8fafc;--muted:#cbd5e1;--accent:#f97316;}
+body{margin:0;font-family:Inter,system-ui;background:linear-gradient(135deg,#070a0f,#111827);color:var(--text)}
+.wrap{width:min(1100px,calc(100% - 32px));margin:28px auto}
+.card{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.08);backdrop-filter:blur(10px)}
+.list{display:grid;gap:10px;margin-top:14px} .item{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,23,42,.55)}
+.meta{color:var(--muted);font-size:.9rem} .status{color:var(--muted);margin:10px 0} a{color:#fdba74}
+</style></head><body>
+<main class="wrap">
+  <p><a href="/dashboard/">← Back to dashboard</a></p>
+  <section class="card">
+    <h1>Inventory</h1>
+    <p>Track stock levels, usage, and materials.</p>
+    <p class="status" data-status>Loading inventory…</p>
+    <div class="list" data-list></div>
+  </section>
+</main>
+<script>
+(async()=>{
+  const status=document.querySelector('[data-status]'); const list=document.querySelector('[data-list]');
+  const render=(rows)=>{
+    if(!rows.length){list.innerHTML='<div class="item">No records yet.</div>'; return;}
+    list.innerHTML=rows.map((r)=>`<article class="item"><strong>${r.title||r.requestTitle||r.name||r.type||'Item'}<\/strong><div class="meta">${[r.status,r.priority,r.propertyName,r.eventType,r.createdAt].filter(Boolean).join(' • ')}<\/div><p>${r.description||r.notes||r.summary||r.email||''}<\/p><\/article>`).join('');
+  };
+  try{
+    const response=await fetch('/api/admin/inventory',{headers:{accept:'application/json'}});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok || result.ok===false) throw new Error(result.message||'Unable to load data.');
+    const rows=result.items||[];
+    status.textContent=`Loaded ${rows.length} inventory item${rows.length===1?'':'s'}.`;
+    render(rows);
+  }catch(error){status.textContent=error.message; render([]);}
+})();
+</script>
+</body></html>

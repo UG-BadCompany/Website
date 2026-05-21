@@ -5700,45 +5700,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
   
 
     
-
-    (function applyWorkspaceRoute() {
-      const params = new URLSearchParams(window.location.search);
-      const workspace = (params.get('workspace') || '').trim();
-      if (!workspace) return;
-
-      const root = document.querySelector('[data-dashboard-root]');
-      if (root) root.removeAttribute('data-dashboard-root');
-
-      const revealOne = (selector) => {
-        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
-          section.hidden = true;
-        });
-        const target = document.querySelector(selector);
-        if (target) {
-          target.hidden = false;
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      };
-
-      const activate = () => {
-        if (typeof window.taSetDashboardView === 'function') {
-          window.taSetDashboardView('admin');
-        }
-        if (workspace === 'work-orders') revealOne('#admin-work-orders');
-        if (workspace === 'invoices') revealOne('[data-admin-invoices]');
-        if (workspace === 'audit-activity') {
-          revealOne('[data-admin-activity]');
-          document.querySelector('[data-admin-activity-refresh]')?.click();
-        }
-        if (workspace === 'inventory') {
-          revealOne('#admin-work-orders');
-          document.querySelector('[data-inventory-item-select]')?.focus({ preventScroll: true });
-        }
-      };
-
-      window.addEventListener('load', () => setTimeout(activate, 120));
-    })();
-
 </script>
 
 </body>
