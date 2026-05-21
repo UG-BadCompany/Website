@@ -4031,7 +4031,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               if (!payButton) return;
               const checkoutUrl = payButton.dataset.clientPayInvoice;
               if (!checkoutUrl) return;
-              window.open(checkoutUrl, '_blank', 'noopener');
+              const popup = window.open(checkoutUrl, '_blank', 'noopener');
+              if (!popup) window.location.href = checkoutUrl;
             });
           }
         }
