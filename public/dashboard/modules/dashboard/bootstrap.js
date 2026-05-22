@@ -1662,22 +1662,50 @@
       const renderClientInvoiceData = (result) => {
         const panelStatus = document.querySelector('[data-client-invoices-status]');
         const invoiceList = document.querySelector('[data-client-invoice-list]');
+        const queueFilter = document.querySelector('[data-client-invoice-queue-filter]')?.value || 'open';
+        const searchTerm = (document.querySelector('[data-client-invoice-search]')?.value || '').trim().toLowerCase();
         const invoices = result.invoices || [];
+        const queueFilteredInvoices = invoices.filter((invoice) => {
+          const status = String(invoice.status || '').toLowerCase();
+          if (queueFilter === 'all') return true;
+          if (queueFilter === 'paid') return status === 'paid';
+          return status === 'open';
+        });
+        const filteredInvoices = searchTerm
+          ? queueFilteredInvoices.filter((invoice) => [
+            invoice.title,
+            invoice.status,
+            invoice.jobRequest?.serviceType,
+            invoice.jobRequest?.streetAddress,
+            invoice.jobRequest?.city,
+          ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm))
+          : queueFilteredInvoices;
         const amountDue = result.summary?.amountDueCents || 0;
         const paidCount = Number(result.summary?.paid || 0);
 
         if (panelStatus) {
           panelStatus.dataset.state = 'ready';
-          panelStatus.textContent = invoices.length
-            ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} loaded (${paidCount} paid). Balance due: ${formatMoney(amountDue)}.`
-            : 'No invoices right now.';
+          panelStatus.textContent = filteredInvoices.length
+            ? `${filteredInvoices.length} invoice${filteredInvoices.length === 1 ? '' : 's'} in this queue (${paidCount} paid total). Balance due: ${formatMoney(amountDue)}.`
+            : 'No invoices match this queue or search.';
         }
         if (invoiceList) {
-          invoiceList.innerHTML = invoices.length
-            ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
+          invoiceList.innerHTML = filteredInvoices.length
+            ? filteredInvoices.map((invoice) => renderInvoiceCard(invoice)).join('')
             : renderDashboardEmptyState('No invoices yet.', 'When an invoice is ready for one of your jobs, payment status (open or paid) will appear here.');
           window.taInvoiceActions?.attachClientInvoiceActions(invoiceList, { renderClientInvoiceData });
         }
+      };
+
+      const bindClientInvoiceFilters = () => {
+        const queueFilter = document.querySelector('[data-client-invoice-queue-filter]');
+        const search = document.querySelector('[data-client-invoice-search]');
+        [queueFilter, search].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', () => loadClientInvoices());
+          control.addEventListener('change', () => loadClientInvoices());
+        });
       };
 
       const loadClientInvoices = async () => {
@@ -1698,6 +1726,7 @@
           }
 
           renderClientInvoiceData(result);
+          bindClientInvoiceFilters();
         } catch (error) {
           panelStatus.dataset.state = 'error';
           panelStatus.textContent = error.message;

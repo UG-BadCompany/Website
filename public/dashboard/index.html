@@ -2400,6 +2400,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <strong>My invoices &amp; payments</strong>
       <p>Open invoices connected to your jobs appear here so you can track balances and payment status.</p>
       <p class="session-status" data-client-invoices-status role="status" aria-live="polite">Loading your invoices…</p>
+      <div class="client-request-form-grid" data-client-invoice-filters>
+        <label>Queue view
+          <select data-client-invoice-queue-filter>
+            <option value="open">Unpaid invoices</option>
+            <option value="paid">Paid invoices</option>
+            <option value="all">All invoices</option>
+          </select>
+        </label>
+        <label>Search invoices
+          <input type="search" data-client-invoice-search placeholder="Service, title, address, city, or status">
+        </label>
+      </div>
       <div class="client-quote-list" data-client-invoice-list></div>
     </section>
 
