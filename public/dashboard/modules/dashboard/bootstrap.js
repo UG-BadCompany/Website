@@ -549,6 +549,7 @@
       let currentAdminActivity = [];
       let currentAdminInventoryItems = [];
       let currentAdminInventoryUsage = [];
+      let currentWorkerInventoryItems = [];
       let currentProfileUser = null;
       let currentDashboardView = '';
       let availableDashboardViews = [];
@@ -1399,6 +1400,18 @@
               </label>
               <label class="full">Worker notes
                 <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
+              </label>
+              <label>Inventory part used
+                <select name="inventoryItemId">
+                  <option value="">No part used in this update</option>
+                  ${currentWorkerInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('')}
+                </select>
+              </label>
+              <label>Quantity used
+                <input name="inventoryQuantityUsed" type="number" min="0" step="0.01" placeholder="0">
+              </label>
+              <label class="full">Inventory note
+                <input name="inventoryNote" placeholder="Optional part usage note for this work order">
               </label>
               <label class="full client-request-attachments">Attachments
                 <input name="files" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-worker-files>
@@ -3006,6 +3019,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Assigned jobs are not available.');
           const assignments = result.assignments || [];
+          currentWorkerInventoryItems = result.inventoryItems || [];
           const filteredAssignments = filterWorkerAssignments(assignments);
           renderWorkerJobSummary(assignments);
           panelStatus.dataset.state = 'ready';
