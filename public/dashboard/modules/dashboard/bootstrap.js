@@ -954,7 +954,7 @@
             <span>${escapeHtml(invoice.jobRequest?.streetAddress || 'No address')}</span>
             <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
           </div>
-          <p>Payment is waiting for admin confirmation. Paid invoices stay in your records but leave this dashboard.</p>
+          <p>${invoice.status === 'paid' ? 'Payment confirmed and saved in your billing history.' : 'Payment is waiting for admin confirmation.'}</p>
         </article>
       `;
 
@@ -1632,15 +1632,18 @@
         const invoiceList = document.querySelector('[data-client-invoice-list]');
         const invoices = result.invoices || [];
         const amountDue = result.summary?.amountDueCents || 0;
+        const paidCount = Number(result.summary?.paid || 0);
 
         if (panelStatus) {
           panelStatus.dataset.state = 'ready';
-          panelStatus.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} loaded. Balance due: ${formatMoney(amountDue)}.` : 'No open invoices right now.';
+          panelStatus.textContent = invoices.length
+            ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} loaded (${paidCount} paid). Balance due: ${formatMoney(amountDue)}.`
+            : 'No invoices right now.';
         }
         if (invoiceList) {
           invoiceList.innerHTML = invoices.length
             ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
-            : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
+            : renderDashboardEmptyState('No invoices yet.', 'When an invoice is ready for one of your jobs, payment status (open or paid) will appear here.');
           window.taInvoiceActions?.attachClientInvoiceActions(invoiceList, { renderClientInvoiceData });
         }
       };

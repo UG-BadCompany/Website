@@ -121,9 +121,9 @@ const listClientInvoices = async (db, userId) => {
     left join job_requests on job_requests.id = invoices.job_request_id
       and job_requests.client_id = ${userId}
     where invoices.client_id = ${userId}
-      and invoices.status <> 'paid'
+      and invoices.status <> 'void'
     order by invoices.created_at desc
-    limit 25
+    limit 50
   `;
 
   const mappedInvoices = invoices.map(mapInvoice);
@@ -133,6 +133,7 @@ const listClientInvoices = async (db, userId) => {
     summary: {
       total: mappedInvoices.length,
       open: mappedInvoices.filter((invoice) => invoice.status === 'open').length,
+      paid: mappedInvoices.filter((invoice) => invoice.status === 'paid').length,
       amountDueCents: mappedInvoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
     },
   };
