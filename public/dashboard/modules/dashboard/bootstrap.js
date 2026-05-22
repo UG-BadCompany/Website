@@ -2880,10 +2880,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (status) {
           status.dataset.state = 'ready';
-          const label = filter === 'paid' ? 'paid invoice' : filter === 'all' ? 'invoice' : 'open invoice';
+          const label = window.TADashboardInvoices?.formatInvoiceStatusLabel?.(filter)
+            || (filter === 'paid' ? 'paid invoice' : filter === 'all' ? 'invoice' : 'open invoice');
           status.textContent = invoices.length
             ? `${invoices.length} ${label}${invoices.length === 1 ? '' : 's'} loaded. Open balance: ${formatMoney(amountDue)}.`
-            : `No ${filter === 'paid' ? 'paid' : filter === 'all' ? '' : 'open '}invoices found.`;
+            : (window.TADashboardInvoices?.formatInvoiceEmptyLabel?.(filter)
+              || `No ${filter === 'paid' ? 'paid' : filter === 'all' ? '' : 'open '}invoices found.`);
         }
         if (summaryCards) {
           summaryCards.innerHTML = renderAdminInvoiceSummaryCards(invoices);
