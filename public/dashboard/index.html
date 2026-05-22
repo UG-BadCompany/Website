@@ -1855,6 +1855,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+        <button class="admin-command-card" type="button" data-admin-alerts-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Alerts</strong><span>View low stock, pending review jobs, and unpaid invoice counts.</span></button>
         <button class="admin-command-card" type="button" data-client-requests-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></button>
         <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
         <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
@@ -2239,6 +2240,13 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       </form>
       <div class="admin-request-list" data-admin-activity-list></div>
       </div>
+    </section>
+
+    <section class="card admin-activity" data-admin-alerts data-dashboard-section data-views="admin" hidden>
+      <strong>Operational alerts</strong>
+      <p class="session-status" data-admin-alerts-status role="status" aria-live="polite">Loading alerts…</p>
+      <div class="grid" data-admin-alerts-summary aria-label="Operational alert summary cards"></div>
+      <div class="admin-request-list" data-admin-alerts-list></div>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
