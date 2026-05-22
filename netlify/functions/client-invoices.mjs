@@ -8,6 +8,7 @@ import {
   loadDatabase,
   loadRolePermissionKeys,
 } from './auth-utils.mjs';
+import { createSquarePaymentLink } from './square-utils.mjs';
 
 const SQUARE_API_VERSION = clean(process.env.SQUARE_API_VERSION, 40) || '2026-01-22';
 const SQUARE_ENVIRONMENT = (clean(process.env.SQUARE_ENVIRONMENT, 20) || 'production').toLowerCase();

@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from 'node:crypto';
 import {
   clean,
   getPermissionKeysForRoles,
@@ -169,7 +168,11 @@ export default async (request) => {
       return json(422, { ok: false, message: 'Invoice amount must be a positive number of cents.' });
     }
 
-    const link = await createSquareLink({ invoice: { ...invoice, amount_cents: desiredAmount }, request });
+    const link = await createSquarePaymentLink({
+      invoice: { ...invoice, amount_cents: desiredAmount },
+      request,
+      includeMetadata: true,
+    });
 
     await db.sql`
       update invoices
