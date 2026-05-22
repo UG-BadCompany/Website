@@ -39,7 +39,7 @@ _Last updated: 2026-05-13_
   - `GET/PATCH /api/client/quotes`
   - `GET /api/client/invoices`
 - Worker workflows:
-  - `GET/PATCH /api/worker/jobs`
+  - `GET/POST/PATCH /api/worker/jobs`
 - Admin workflows:
   - `GET/PATCH /api/admin/job-requests`
   - `GET/POST/PATCH /api/admin/quotes`
@@ -56,9 +56,26 @@ _Last updated: 2026-05-13_
 ## Payment and invoice status
 
 - Invoice and payment tables are available for manual/admin-confirmed payment tracking.
-- Clients can view their unpaid invoices through `/api/client/invoices`.
+- Clients can view active invoice history (open + paid, excluding void) through `/api/client/invoices`.
 - Admins can list unpaid invoices and confirm payments through `/api/admin/invoices`; payment confirmation records a payment, marks the invoice paid, completes the linked job request, and writes an audit event.
-- Square/hosted checkout integration is not yet implemented in the current codebase.
+- Square payment-link integration is implemented and shared by:
+  - `netlify/functions/square-create-payment-link.mjs`
+  - `netlify/functions/client-invoices.mjs`
+  via `netlify/functions/square-utils.mjs`.
+
+## Inventory and worker job updates
+
+- Admin inventory now supports create/update/archive/delete/adjust flows with audit events.
+- Inventory deletion is blocked when usage history exists; users are instructed to archive instead.
+- Inventory adjustments include negative-stock prevention for safer stock control.
+- Worker job updates can record inventory part consumption (`inventoryItemId`, `inventoryQuantityUsed`, `inventoryNote`), which writes `inventory_adjustments` and reduces stock.
+- Worker jobs API includes inventory item options in GET responses for worker UI part selection.
+
+## Dashboard frontend architecture
+
+- Large inline dashboard behavior has been moved into modular JS files under `public/dashboard/modules/dashboard/`.
+- Worker jobs section now includes queue filters, search/sort controls, summary cards, click-to-open work orders, and unified multi-file attachment uploads.
+- Client quote/invoice sections now include queue/search controls and improved status presentation.
 
 ## Recent auth repair
 
