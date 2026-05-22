@@ -10,9 +10,18 @@ import {
 const WAITING_QUOTE_STATUSES = new Set(['sent', 'viewed']);
 const DECISION_ACTIONS = new Set(['accept', 'decline']);
 
+const deriveClientQuoteStatus = (quote = {}) => {
+  const quoteStatus = String(quote.status || '').toLowerCase();
+  const requestStatus = String(quote.job_request_status || '').toLowerCase();
+  if (quoteStatus === 'accepted' && ['completed', 'pending_review', 'waiting_payment'].includes(requestStatus)) {
+    return 'completed';
+  }
+  return quoteStatus || 'draft';
+};
+
 const mapQuote = (quote) => ({
   id: quote.id,
-  status: quote.status,
+  status: deriveClientQuoteStatus(quote),
   title: quote.title,
   summary: quote.summary,
   amountCents: quote.amount_cents,
