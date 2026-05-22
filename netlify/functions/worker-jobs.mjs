@@ -17,6 +17,16 @@ const normalizeWorkerUpdatePayload = (body = {}) => ({
   workerNotes: clean(body.workerNotes, 4000),
 });
 
+const normalizeWorkerCreatePayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId, 80),
+  workerId: clean(body.workerId, 80),
+  status: clean(body.status, 40) || 'assigned',
+  scheduledDate: clean(body.scheduledDate, 20),
+  startTime: clean(body.startTime, 20),
+  endTime: clean(body.endTime, 20),
+  notes: clean(body.notes, 2000),
+});
+
 const mapDate = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
@@ -273,8 +283,61 @@ const handlePatch = async ({ request, db, context }) => {
   });
 };
 
+const handlePost = async ({ request, db, context }) => {
+  const body = await parseJsonBody(request);
+  if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+
+  const payload = normalizeWorkerCreatePayload(body);
+  if (!payload.jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
+  if (!WORKER_ASSIGNMENT_STATUSES.has(payload.status)) return json(422, { ok: false, message: 'Choose a valid assignment status.' });
+
+  const isAdmin = context.roleKeys.includes('admin');
+  const workerId = isAdmin ? (payload.workerId || context.session.user_id) : context.session.user_id;
+
+  const [jobRequest] = await db.sql`select id from job_requests where id = ${payload.jobRequestId} limit 1`;
+  if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
+
+  const [existingAssignment] = await db.sql`
+    select id, status
+    from worker_assignments
+    where job_request_id = ${payload.jobRequestId}
+      and worker_id = ${workerId}
+      and status <> 'cancelled'
+    order by created_at desc
+    limit 1
+  `;
+  if (existingAssignment) {
+    return json(409, { ok: false, message: 'This worker already has an active assignment for that job request.' });
+  }
+
+  const [assignment] = await db.sql`
+    insert into worker_assignments (job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes)
+    values (${payload.jobRequestId}, ${workerId}, ${payload.status}, ${payload.scheduledDate || null}, ${payload.startTime || null}, ${payload.endTime || null}, ${payload.notes || null}, ${null})
+    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
+  `;
+
+  return json(201, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    assignment: {
+      id: assignment.id,
+      jobRequestId: assignment.job_request_id,
+      workerId: assignment.worker_id,
+      status: assignment.status,
+      scheduledDate: mapDate(assignment.scheduled_date),
+      startTime: assignment.start_time,
+      endTime: assignment.end_time,
+      notes: assignment.notes,
+      workerNotes: assignment.worker_notes,
+      createdAt: assignment.created_at,
+      updatedAt: assignment.updated_at,
+    },
+  });
+};
+
 export const createWorkerJobsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'PATCH', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -298,6 +361,9 @@ export const createWorkerJobsHandler = ({ getDatabase = loadDatabase } = {}) => 
 
     if (request.method === 'PATCH') {
       return await handlePatch({ request, db, context });
+    }
+    if (request.method === 'POST') {
+      return await handlePost({ request, db, context });
     }
 
     const assignments = await listAssignments(db, context);

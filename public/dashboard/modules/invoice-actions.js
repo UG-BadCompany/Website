@@ -30,7 +30,7 @@
         const refreshedInvoice = (result.invoices || []).find((invoice) => invoice.id === invoiceId);
         const checkoutUrl = refreshedInvoice?.provider?.checkoutUrl || '';
         if (checkoutUrl) {
-          window.location.href = checkoutUrl;
+          openClientPaymentLink(checkoutUrl);
           return;
         }
         window.alert('This invoice still does not have a payment link yet. Please contact support to request the link.');
