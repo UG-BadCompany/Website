@@ -1258,7 +1258,7 @@
             </div>
             ${job.streetAddress ? `<p>${escapeHtml(job.streetAddress)}</p>` : ''}
             ${admin && invoice.status === 'open' ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${escapeHtml(invoice.amountCents || 0)}">Confirm payment</button></div>` : ''}
-            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_self" rel="noopener" data-client-pay-invoice="${escapeHtml(invoice.provider.checkoutUrl)}">Pay invoice</a>` : `<button class="btn btn-soft" type="button" data-client-payment-link-pending data-client-invoice-id="${escapeHtml(invoice.id || '')}">Payment link pending</button>`}</div>` : ''}
+            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_blank" rel="noopener" data-client-pay-invoice="${escapeHtml(invoice.provider.checkoutUrl)}">Pay invoice</a>` : `<button class="btn btn-soft" type="button" data-client-payment-link-pending data-client-invoice-id="${escapeHtml(invoice.id || '')}">Payment link pending</button>`}</div>` : ''}
           </article>
         `;
       };
