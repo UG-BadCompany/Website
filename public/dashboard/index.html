@@ -2406,7 +2406,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     </section>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
-  <script>
+<script src="/dashboard/modules/invoice-actions.js"></script>
+<script>
     (async () => {
       window.taSetDashboardView = (view) => { window.taPendingDashboardView = view; };
       const sessionCard = document.querySelector('[data-session-card]');
@@ -3393,9 +3394,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
       const renderAdminInvoiceCard = (invoice) => {
         const amountDollars = (Number(invoice.amountCents || 0) / 100).toFixed(2);
+        const hasCheckoutUrl = Boolean(invoice.provider?.checkoutUrl);
         const paymentDetails = invoice.payment ? `
           <p><strong>Payment confirmed</strong> ${formatMoney(invoice.payment.amountCents || invoice.amountCents)}${invoice.payment.method ? ` via ${escapeHtml(invoice.payment.method)}` : ''}${invoice.payment.confirmedAt ? ` on ${escapeHtml(formatDate(String(invoice.payment.confirmedAt).slice(0, 10)))}` : ''}</p>
           ${invoice.payment.reference ? `<p><strong>Reference</strong> ${escapeHtml(invoice.payment.reference)}</p>` : ''}
+        ` : '';
+        const linkActions = invoice.status === 'open' ? `
+          <div class="client-quote-actions">
+            ${hasCheckoutUrl
+              ? `<a class="btn btn-soft" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_blank" rel="noopener">Open payment link</a>`
+              : `<button class="btn btn-soft" type="button" data-admin-create-payment-link="${escapeHtml(invoice.id)}">Create payment link</button>`
+            }
+          </div>
         ` : '';
         return `
           <article class="client-quote">
@@ -3408,6 +3418,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               <span>${escapeHtml(invoice.jobRequest?.city || 'No city')}</span>
             </div>
             ${paymentDetails}
+            ${linkActions}
             ${invoice.status === 'open' ? `
               <form class="client-request-form" data-admin-payment-form data-admin-invoice-id="${escapeHtml(invoice.id)}">
                 <div class="client-request-form-grid">
@@ -3641,7 +3652,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
             </div>
             ${job.streetAddress ? `<p>${escapeHtml(job.streetAddress)}</p>` : ''}
             ${admin && invoice.status === 'open' ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-confirm-payment="${escapeHtml(invoice.id)}" data-admin-payment-amount="${escapeHtml(invoice.amountCents || 0)}">Confirm payment</button></div>` : ''}
-            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_self" rel="noopener" data-client-pay-invoice-link>Pay invoice</a>` : `<button class="btn btn-soft" type="button" disabled>Payment link pending</button>`}</div>` : ''}
+            ${!admin && invoice.status === 'open' ? `<div class="client-quote-actions">${invoice.provider?.checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(invoice.provider.checkoutUrl)}" target="_self" rel="noopener" data-client-pay-invoice="${escapeHtml(invoice.provider.checkoutUrl)}">Pay invoice</a>` : `<button class="btn btn-soft" type="button" data-client-payment-link-pending data-client-invoice-id="${escapeHtml(invoice.id || '')}">Payment link pending</button>`}</div>` : ''}
           </article>
         `;
       };
@@ -4024,17 +4035,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           invoiceList.innerHTML = invoices.length
             ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
             : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
-          if (!invoiceList.dataset.boundPayLink) {
-            invoiceList.dataset.boundPayLink = 'true';
-            invoiceList.addEventListener('click', (event) => {
-              const payButton = event.target.closest('[data-client-pay-invoice]');
-              if (!payButton) return;
-              const checkoutUrl = payButton.dataset.clientPayInvoice;
-              if (!checkoutUrl) return;
-              const popup = window.open(checkoutUrl, '_blank', 'noopener');
-              if (!popup) window.location.href = checkoutUrl;
-            });
-          }
+          window.taInvoiceActions?.attachClientInvoiceActions(invoiceList, { renderClientInvoiceData });
         }
       };
 
@@ -5304,6 +5305,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-invoices]');
         if (!panel || panel.dataset.invoiceActionsBound) return;
         panel.dataset.invoiceActionsBound = 'true';
+        window.taInvoiceActions?.attachAdminInvoiceActions(panel, {
+          loadAdminInvoices: window.taDashboardActions.loadAdminInvoices,
+        });
         panel.addEventListener('click', async (event) => {
           const button = event.target.closest('[data-admin-confirm-payment]');
           if (!button) return;
