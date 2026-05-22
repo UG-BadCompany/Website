@@ -5309,6 +5309,31 @@ Additional info from client: ${payload.additionalInfo}` : '';
           loadAdminInvoices: window.taDashboardActions.loadAdminInvoices,
         });
         panel.addEventListener('click', async (event) => {
+          const linkButton = event.target.closest('[data-admin-create-payment-link]');
+          if (linkButton) {
+            linkButton.disabled = true;
+            const status = document.querySelector('[data-admin-invoices-status]');
+            try {
+              if (status) status.textContent = 'Creating Square payment link…';
+              const response = await fetch('/api/admin/square/payment-link', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ invoiceId: linkButton.dataset.adminCreatePaymentLink }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not create payment link.');
+              await window.taDashboardActions.loadAdminInvoices();
+              if (status) status.textContent = 'Payment link created.';
+            } catch (error) {
+              if (status) {
+                status.dataset.state = 'error';
+                status.textContent = error.message;
+              }
+            } finally {
+              linkButton.disabled = false;
+            }
+            return;
+          }
           const button = event.target.closest('[data-admin-confirm-payment]');
           if (!button) return;
           button.disabled = true;
