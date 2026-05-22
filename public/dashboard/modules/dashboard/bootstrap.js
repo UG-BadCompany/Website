@@ -11,6 +11,7 @@
       }
       const authDebugEnabled = false;
       if (sessionCard) sessionCard.hidden = false;
+      document.querySelectorAll('.admin-command-actions [data-admin-alerts-shortcut]').forEach((button) => button.remove());
 
       const ensureAuthDebugPanel = () => {
         let panel = document.querySelector('[data-auth-debug-panel]');
