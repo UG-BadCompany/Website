@@ -2420,6 +2420,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <strong>Assigned jobs</strong>
       <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
+      <form class="client-request-form" data-worker-create-job-form>
+        <strong>Create assigned job</strong>
+        <div class="client-request-form-grid">
+          <label>Job request ID<input name="jobRequestId" required placeholder="Paste job request ID"></label>
+          <label>Status<select name="status"><option value="assigned">Assigned</option><option value="accepted">Accepted</option><option value="in_progress">In progress</option></select></label>
+          <label>Scheduled date<input name="scheduledDate" type="date"></label>
+          <label>Start time<input name="startTime" type="time"></label>
+          <label>End time<input name="endTime" type="time"></label>
+          <label class="full">Notes<input name="notes" placeholder="Access notes, tools, scope, or kickoff context"></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Create assigned job</button><span data-worker-create-job-status aria-live="polite"></span></div>
+      </form>
       <div class="client-request-form-grid" data-worker-job-filters>
         <label>Queue view
           <select data-worker-job-queue-filter>

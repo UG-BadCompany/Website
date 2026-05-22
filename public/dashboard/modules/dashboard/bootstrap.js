@@ -2896,6 +2896,26 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-worker-jobs]');
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
+        const createForm = panel.querySelector('[data-worker-create-job-form]');
+        if (createForm && !createForm.dataset.bound) {
+          createForm.dataset.bound = 'true';
+          createForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const statusEl = panel.querySelector('[data-worker-create-job-status]');
+            const payload = Object.fromEntries(new FormData(createForm).entries());
+            try {
+              if (statusEl) statusEl.textContent = 'Creating assigned job…';
+              const response = await fetch('/api/worker/jobs', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not create assigned job.');
+              createForm.reset();
+              if (statusEl) statusEl.textContent = 'Assigned job created.';
+              await loadWorkerJobs();
+            } catch (error) {
+              if (statusEl) statusEl.textContent = error.message;
+            }
+          });
+        }
         panel.addEventListener('change', (event) => {
           if (event.target.matches('[data-worker-before-files]')) {
             const list = event.target.closest('form')?.querySelector('[data-worker-before-file-list]');
