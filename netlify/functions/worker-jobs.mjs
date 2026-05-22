@@ -30,6 +30,16 @@ const normalizeWorkerCreatePayload = (body = {}) => ({
   notes: clean(body.notes, 2000),
 });
 
+const normalizeWorkerCreatePayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId, 80),
+  workerId: clean(body.workerId, 80),
+  status: clean(body.status, 40) || 'assigned',
+  scheduledDate: clean(body.scheduledDate, 20),
+  startTime: clean(body.startTime, 20),
+  endTime: clean(body.endTime, 20),
+  notes: clean(body.notes, 2000),
+});
+
 const mapDate = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
