@@ -1058,6 +1058,22 @@
         invoiceList.innerHTML = filteredInvoices.length ? filteredInvoices.map(renderAdminInvoiceCard).join('') : '<p class="session-status">No invoices match this view.</p>';
       };
 
+      const bindAdminInvoiceFilters = () => {
+        const statusFilter = document.querySelector('[data-admin-invoice-status-filter]');
+        const search = document.querySelector('[data-admin-invoice-search]');
+        if (statusFilter && !statusFilter.dataset.bound) {
+          statusFilter.dataset.bound = 'true';
+          statusFilter.addEventListener('change', () => {
+            window.taDashboardActions.loadAdminInvoices();
+          });
+        }
+        if (search && !search.dataset.bound) {
+          search.dataset.bound = 'true';
+          search.addEventListener('input', () => renderAdminInvoiceList());
+          search.addEventListener('change', () => renderAdminInvoiceList());
+        }
+      };
+
       const formatActivityType = (eventType = '') => eventType.replaceAll('_', ' ').replaceAll('.', ' · ');
 
       const getAdminActivityType = (event = {}) => {
@@ -2857,18 +2873,27 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const status = document.querySelector('[data-admin-invoices-status]');
         const list = document.querySelector('[data-admin-invoice-list]');
         const summaryCards = document.querySelector('[data-admin-invoice-kpi-summary]');
+        const totalsSummary = document.querySelector('[data-admin-invoice-summary]');
         const invoices = result.invoices || [];
-        const amountDue = result.summary?.amountDueCents || 0;
+        const amountDue = Number(result.summary?.amountDueCents || 0);
+        const filter = document.querySelector('[data-admin-invoice-status-filter]')?.value || 'open';
 
         if (status) {
           status.dataset.state = 'ready';
-          status.textContent = invoices.length ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} need follow-up. Open balance: ${formatMoney(amountDue)}.` : 'No open invoices need payment follow-up.';
+          const label = filter === 'paid' ? 'paid invoice' : filter === 'all' ? 'invoice' : 'open invoice';
+          status.textContent = invoices.length
+            ? `${invoices.length} ${label}${invoices.length === 1 ? '' : 's'} loaded. Open balance: ${formatMoney(amountDue)}.`
+            : `No ${filter === 'paid' ? 'paid' : filter === 'all' ? '' : 'open '}invoices found.`;
         }
         if (summaryCards) {
           summaryCards.innerHTML = renderAdminInvoiceSummaryCards(invoices);
         }
+        if (totalsSummary) {
+          totalsSummary.innerHTML = renderAdminInvoiceSummary(result.summary || {});
+        }
         if (list) {
-          list.innerHTML = invoices.length ? invoices.map((invoice) => renderInvoiceCard(invoice, { admin: true })).join('') : '<p class="session-status">No unpaid invoices found.</p>';
+          currentAdminInvoices = invoices;
+          renderAdminInvoiceList();
         }
       };
 
@@ -3023,10 +3048,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || !status || !list) return;
 
         try {
-          const response = await fetch('/api/admin/invoices', { headers: { accept: 'application/json' } });
+          const statusFilter = document.querySelector('[data-admin-invoice-status-filter]')?.value || 'open';
+          const response = await fetch(`/api/admin/invoices?status=${encodeURIComponent(statusFilter)}`, { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Admin invoices are not available.');
           renderAdminInvoiceData(result);
+          bindAdminInvoiceFilters();
           window.taDashboardActions.bindAdminInvoiceActions();
         } catch (error) {
           status.dataset.state = 'error';
