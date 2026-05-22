@@ -699,6 +699,13 @@
       };
 
       const normalizeDashboardViewName = (view = '') => String(view || '').trim().toLowerCase();
+      const getPortalLockedView = () => {
+        const path = String(window.location.pathname || '').toLowerCase();
+        if (path.startsWith('/portal/admin')) return 'admin';
+        if (path.startsWith('/portal/worker')) return 'worker';
+        if (path.startsWith('/portal/client')) return 'client';
+        return '';
+      };
       const getAvailableDashboardViews = (user = {}) => {
         const permissions = user.permissions || {};
         const normalizedRoles = (user.roles || []).map(normalizeDashboardViewName);
@@ -720,12 +727,13 @@
         currentProfileUser = user;
         dedupeDashboardSingletons();
         const permissions = user.permissions || {};
-        const availableViews = getAvailableDashboardViews(user);
+        const portalLockedView = getPortalLockedView();
+        const availableViews = portalLockedView ? [portalLockedView] : getAvailableDashboardViews(user);
         availableDashboardViews = availableViews;
         const switcher = document.querySelector('[data-view-switcher]');
 
         if (switcher) {
-          switcher.hidden = availableViews.length <= 1;
+          switcher.hidden = true;
           if (!switcher.dataset.boundViewSwitcher) {
             switcher.dataset.boundViewSwitcher = 'true';
             switcher.addEventListener('click', (event) => {
@@ -735,7 +743,7 @@
             });
           }
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
-            const canView = availableViews.includes(button.dataset.viewButton);
+            const canView = !portalLockedView && availableViews.includes(button.dataset.viewButton);
             button.hidden = !canView;
             button.disabled = !canView;
           });
@@ -743,7 +751,8 @@
 
         const requestedView = normalizeDashboardViewName(window.taPendingDashboardView || currentDashboardView);
         const defaultView = normalizeDashboardViewName(permissions.defaultView);
-        const preferredView = availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]);
+        const preferredView = portalLockedView
+          || (availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]));
         configureMainDashboardActions(user, preferredView || 'client');
         setDashboardView(preferredView || 'client');
       };
