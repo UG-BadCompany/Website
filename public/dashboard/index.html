@@ -2169,6 +2169,11 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
       <div class="grid" data-admin-inventory-summary aria-label="Inventory summary cards"></div>
       <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="inventory" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="inventory">Manage inventory</button></div>
+      <div class="client-request-form-grid" data-admin-inventory-filters>
+        <label>Stock view<select data-admin-inventory-stock-filter><option value="all">All items</option><option value="low">Low stock only</option></select></label>
+        <label>Sort<select data-admin-inventory-sort><option value="name_asc">Name (A-Z)</option><option value="qty_asc">Quantity (low-high)</option><option value="qty_desc">Quantity (high-low)</option></select></label>
+        <label class="full">Search<input type="search" data-admin-inventory-search placeholder="Name, SKU, category, supplier, location"></label>
+      </div>
       <div data-admin-workspace-body="inventory" hidden>
       <section class="client-request-form" data-admin-inventory-manager>
         <strong>Inventory management</strong>

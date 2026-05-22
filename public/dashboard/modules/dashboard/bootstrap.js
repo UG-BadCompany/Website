@@ -3134,7 +3134,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
           `;
         }
         if (!list) return;
-        list.innerHTML = currentAdminInventoryItems.length ? currentAdminInventoryItems.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items yet.</p>';
+        const stockFilter = document.querySelector('[data-admin-inventory-stock-filter]')?.value || 'all';
+        const sort = document.querySelector('[data-admin-inventory-sort]')?.value || 'name_asc';
+        const search = (document.querySelector('[data-admin-inventory-search]')?.value || '').trim().toLowerCase();
+        const filtered = currentAdminInventoryItems.filter((item) => {
+          const isLow = String(item.stockStatus || '').toLowerCase() === 'low' || Number(item.quantityOnHand || 0) <= Number(item.reorderPoint || 0);
+          if (stockFilter === 'low' && !isLow) return false;
+          if (!search) return true;
+          return [item.name, item.sku, item.category, item.supplier, item.storageLocation].filter(Boolean).join(' ').toLowerCase().includes(search);
+        });
+        const sorted = [...filtered].sort((a, b) => {
+          if (sort === 'qty_asc') return Number(a.quantityOnHand || 0) - Number(b.quantityOnHand || 0);
+          if (sort === 'qty_desc') return Number(b.quantityOnHand || 0) - Number(a.quantityOnHand || 0);
+          return String(a.name || '').localeCompare(String(b.name || ''));
+        });
+        list.innerHTML = sorted.length ? sorted.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items match current filters.</p>';
       };
 
       const loadAdminInventoryWorkspace = async () => {
@@ -3177,6 +3191,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
           setMode('create');
         }
+        ['[data-admin-inventory-stock-filter]','[data-admin-inventory-sort]','[data-admin-inventory-search]'].forEach((selector) => {
+          const control = document.querySelector(selector);
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', () => renderAdminInventoryWorkspace());
+          control.addEventListener('change', () => renderAdminInventoryWorkspace());
+        });
         if (createForm && !createForm.dataset.bound) {
           createForm.dataset.bound = 'true';
           createForm.addEventListener('submit', async (event) => {
