@@ -1356,6 +1356,11 @@
       const renderWorkerJobCard = (assignment) => {
         const completionPhotoNames = assignment.completionPhotoNames || [];
         const checklistItems = assignment.checklistItems || [];
+        const status = String(assignment.status || 'assigned').toLowerCase();
+        const statusTone = status === 'completed' ? 'completed'
+          : status === 'blocked' ? 'blocked'
+            : status === 'in_progress' ? 'in-progress'
+              : 'active';
         const activeEvidence = [
           assignment.workerNotes ? 'notes' : '',
           assignment.materialNotes ? 'materials' : '',
@@ -1364,15 +1369,16 @@
         ].filter(Boolean).join(' • ') || 'No worker evidence yet';
 
         return `
-        <article class="worker-job">
-          <span class="worker-job-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
+        <article class="client-quote worker-job" data-worker-status="${escapeHtml(statusTone)}">
+          <span class="client-quote-badge worker-job-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
           <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Assigned job')}</strong>
-          <div class="worker-job-meta">
+          <div class="client-quote-meta worker-job-meta">
             <span>${escapeHtml(assignment.scheduledDate ? formatDate(assignment.scheduledDate) : 'No scheduled date')}</span>
             <span>${escapeHtml([assignment.startTime, assignment.endTime].filter(Boolean).join('–') || 'No time window')}</span>
             <span>${escapeHtml(assignment.jobRequest?.city || 'No city')}</span>
             <span>${escapeHtml(assignment.jobRequest?.property?.street || assignment.jobRequest?.streetAddress || 'No address')}</span>
           </div>
+          <p><strong>Evidence:</strong> ${escapeHtml(activeEvidence)}</p>
           <p>${escapeHtml(assignment.jobRequest?.description || 'No job details yet.')}</p>
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
