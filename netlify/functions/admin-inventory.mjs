@@ -251,6 +251,40 @@ const archiveInventoryItem = async ({ db, session, payload }) => {
   return json(200, { ok: true, item: mapInventoryItem(item) });
 };
 
+const deleteInventoryItem = async ({ db, session, payload }) => {
+  if (!payload.itemId) {
+    return json(400, { ok: false, message: 'Inventory item ID is required.' });
+  }
+
+  const [hasUsage] = await db.sql`
+    select id
+    from inventory_adjustments
+    where inventory_item_id = ${payload.itemId}
+    limit 1
+  `;
+  if (hasUsage) {
+    return json(409, { ok: false, message: 'This item has usage history. Archive it instead of deleting.' });
+  }
+
+  const [item] = await db.sql`
+    delete from inventory_items
+    where id = ${payload.itemId}
+      and is_active = true
+    returning id, name, sku, category, unit, quantity_on_hand, reorder_point, supplier, storage_location, notes, is_active, created_at, updated_at
+  `;
+
+  if (!item) {
+    return json(404, { ok: false, message: 'Inventory item not found.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (${session.user_id}, ${'inventory.deleted'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name })}::jsonb)
+  `;
+
+  return json(200, { ok: true, item: mapInventoryItem(item) });
+};
+
 const loadWorkOrderForInventoryUsage = async (db, jobRequestId) => {
   if (!jobRequestId) return null;
 
@@ -384,6 +418,9 @@ export const createAdminInventoryHandler = ({ getDatabase = loadDatabase } = {})
 
     if (payload.action === 'archive') {
       return await archiveInventoryItem({ db, session, payload });
+    }
+    if (payload.action === 'delete') {
+      return await deleteInventoryItem({ db, session, payload });
     }
 
     return await adjustInventoryItem({ db, session, payload });

@@ -3148,7 +3148,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (sort === 'qty_desc') return Number(b.quantityOnHand || 0) - Number(a.quantityOnHand || 0);
           return String(a.name || '').localeCompare(String(b.name || ''));
         });
-        list.innerHTML = sorted.length ? sorted.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p></article>`).join('') : '<p class="session-status">No inventory items match current filters.</p>';
+        list.innerHTML = sorted.length ? sorted.map((item) => `<article class="admin-request"><strong>${escapeHtml(item.name)}</strong><div class="admin-request-meta"><span class="admin-request-badge">${escapeHtml(item.stockStatus || 'ok')}</span><span>${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</span><span>Reorder: ${Number(item.reorderPoint || 0)}</span></div><p>${escapeHtml(item.category || 'General')}</p><div class="client-quote-actions"><button class="btn btn-danger" type="button" data-admin-inventory-delete="${escapeHtml(item.id)}">Delete item</button></div></article>`).join('') : '<p class="session-status">No inventory items match current filters.</p>';
       };
 
       const loadAdminInventoryWorkspace = async () => {
@@ -3237,6 +3237,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (status) status.textContent = 'Adjustment recorded.';
               await loadAdminInventoryWorkspace();
             } catch (error) { if (status) status.textContent = error.message; }
+          });
+        }
+        const list = document.querySelector('[data-admin-inventory-list]');
+        if (list && !list.dataset.boundDelete) {
+          list.dataset.boundDelete = 'true';
+          list.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-admin-inventory-delete]');
+            if (!button) return;
+            const status = document.querySelector('[data-admin-inventory-status]');
+            button.disabled = true;
+            try {
+              if (status) status.textContent = 'Deleting inventory item…';
+              const response = await fetch('/api/admin/inventory', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ action: 'delete', itemId: button.dataset.adminInventoryDelete }) });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not delete inventory item.');
+              if (status) status.textContent = 'Inventory item deleted.';
+              await loadAdminInventoryWorkspace();
+            } catch (error) {
+              if (status) status.textContent = error.message;
+            } finally {
+              button.disabled = false;
+            }
           });
         }
       };
