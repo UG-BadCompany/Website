@@ -2406,7 +2406,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     </section>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
-  <script>
+<script src="/dashboard/modules/invoice-actions.js"></script>
+<script>
     (async () => {
       window.taSetDashboardView = (view) => { window.taPendingDashboardView = view; };
       const sessionCard = document.querySelector('[data-session-card]');
@@ -4034,44 +4035,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           invoiceList.innerHTML = invoices.length
             ? invoices.map((invoice) => renderInvoiceCard(invoice)).join('')
             : renderDashboardEmptyState('No open invoices yet.', 'When an invoice is ready for one of your jobs, the balance and payment status will appear here.');
-          if (!invoiceList.dataset.boundPayLink) {
-            invoiceList.dataset.boundPayLink = 'true';
-            invoiceList.addEventListener('click', async (event) => {
-              const payButton = event.target.closest('[data-client-pay-invoice]');
-              if (payButton) {
-                const checkoutUrl = payButton.dataset.clientPayInvoice;
-                if (!checkoutUrl) return;
-                const popup = window.open(checkoutUrl, '_blank', 'noopener');
-                if (!popup) window.location.href = checkoutUrl;
-                return;
-              }
-              const pendingButton = event.target.closest('[data-client-payment-link-pending]');
-              if (pendingButton) {
-                pendingButton.disabled = true;
-                const priorText = pendingButton.textContent;
-                pendingButton.textContent = 'Checking for payment link…';
-                try {
-                  const response = await fetch('/api/client/invoices', { headers: { accept: 'application/json' } });
-                  const result = await response.json().catch(() => ({}));
-                  if (!response.ok || !result.ok) throw new Error(result.message || 'Your invoices are not available.');
-                  renderClientInvoiceData(result);
-                  const invoiceId = pendingButton.dataset.clientInvoiceId;
-                  const refreshedInvoice = (result.invoices || []).find((invoice) => invoice.id === invoiceId);
-                  const checkoutUrl = refreshedInvoice?.provider?.checkoutUrl || '';
-                  if (checkoutUrl) {
-                    window.location.href = checkoutUrl;
-                    return;
-                  }
-                  window.alert('This invoice still does not have a payment link yet. Please contact support to request the link.');
-                } catch (error) {
-                  window.alert(error.message || 'We could not check for a payment link right now.');
-                } finally {
-                  pendingButton.disabled = false;
-                  pendingButton.textContent = priorText;
-                }
-              }
-            });
-          }
+          window.taInvoiceActions?.attachClientInvoiceActions(invoiceList, { renderClientInvoiceData });
         }
       };
 
@@ -5341,6 +5305,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-invoices]');
         if (!panel || panel.dataset.invoiceActionsBound) return;
         panel.dataset.invoiceActionsBound = 'true';
+        window.taInvoiceActions?.attachAdminInvoiceActions(panel, {
+          loadAdminInvoices: window.taDashboardActions.loadAdminInvoices,
+        });
         panel.addEventListener('click', async (event) => {
           const linkButton = event.target.closest('[data-admin-create-payment-link]');
           if (linkButton) {
