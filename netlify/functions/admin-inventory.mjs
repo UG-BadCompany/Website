@@ -14,6 +14,16 @@ const normalizeNumber = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const normalizeAdjustmentType = (value) => {
+  const normalized = clean(value, 40).toLowerCase();
+  if (!normalized) return 'manual';
+  if (['manual', 'manual_adjustment'].includes(normalized)) return 'manual';
+  if (['received', 'restock'].includes(normalized)) return 'received';
+  if (['used', 'usage'].includes(normalized)) return 'used';
+  if (normalized === 'correction') return 'correction';
+  return 'manual';
+};
+
 const normalizeInventoryPayload = (body = {}) => ({
   action: clean(body.action, 40) || 'adjust',
   itemId: clean(body.itemId || body.id, 80),
@@ -26,7 +36,7 @@ const normalizeInventoryPayload = (body = {}) => ({
   supplier: clean(body.supplier, 180),
   storageLocation: clean(body.storageLocation || body.location, 180),
   notes: clean(body.notes, 1000),
-  adjustmentType: clean(body.adjustmentType, 40) || 'manual',
+  adjustmentType: normalizeAdjustmentType(body.adjustmentType),
   quantityDelta: normalizeNumber(body.quantityDelta, 0),
   adjustmentNote: clean(body.adjustmentNote || body.note, 500),
   jobRequestId: clean(body.jobRequestId, 80),
@@ -273,18 +283,32 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
     return json(400, { ok: false, message: 'Work order usage must subtract inventory stock.' });
   }
 
+  const [currentItem] = await db.sql`
+    select id, name, quantity_on_hand
+    from inventory_items
+    where id = ${payload.itemId}
+      and is_active = true
+    limit 1
+  `;
+  if (!currentItem) {
+    return json(404, { ok: false, message: 'Inventory item not found.' });
+  }
+
+  const nextQuantity = Number(currentItem.quantity_on_hand || 0) + Number(payload.quantityDelta || 0);
+  if (nextQuantity < 0) {
+    return json(422, { ok: false, message: `Not enough stock. ${currentItem.name} has ${Number(currentItem.quantity_on_hand || 0)} on hand.` });
+  }
+
   const [item] = await db.sql`
     update inventory_items
-    set quantity_on_hand = quantity_on_hand + ${payload.quantityDelta},
+    set quantity_on_hand = ${nextQuantity},
         updated_at = now()
     where id = ${payload.itemId}
       and is_active = true
     returning id, name, sku, category, unit, quantity_on_hand, reorder_point, supplier, storage_location, notes, is_active, created_at, updated_at
   `;
 
-  if (!item) {
-    return json(404, { ok: false, message: 'Inventory item not found.' });
-  }
+  if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
 
   const [adjustment] = await db.sql`
     insert into inventory_adjustments (inventory_item_id, adjustment_type, quantity_delta, note, job_request_id, created_by)
