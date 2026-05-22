@@ -1532,22 +1532,53 @@
         const panelStatus = document.querySelector('[data-client-quotes-status]');
         const quoteList = document.querySelector('[data-client-quote-list]');
         const quotesMetric = document.querySelector('[data-quotes-metric]');
+        const queueFilter = document.querySelector('[data-client-quote-queue-filter]')?.value || 'active';
+        const searchTerm = (document.querySelector('[data-client-quote-search]')?.value || '').trim().toLowerCase();
         const quotes = result.quotes || [];
+        const activeStatuses = new Set(['sent', 'viewed', 'accepted', 'pending_review']);
+        const queueFilteredQuotes = quotes.filter((quote) => {
+          if (queueFilter === 'all') return true;
+          const isActive = activeStatuses.has(String(quote.status || '').toLowerCase());
+          return queueFilter === 'active' ? isActive : !isActive;
+        });
+        const filteredQuotes = searchTerm
+          ? queueFilteredQuotes.filter((quote) => [
+            quote.title,
+            quote.status,
+            quote.summary,
+            quote.jobRequest?.serviceType,
+            quote.property?.street,
+            quote.property?.city,
+          ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm))
+          : queueFilteredQuotes;
 
         if (!panelStatus || !quoteList) {
           return;
         }
 
         panelStatus.dataset.state = 'ready';
-        panelStatus.textContent = quotes.length ? `${quotes.length} quote${quotes.length === 1 ? '' : 's'} loaded.` : 'No quotes are connected to this account yet.';
+        panelStatus.textContent = filteredQuotes.length
+          ? `${filteredQuotes.length} quote${filteredQuotes.length === 1 ? '' : 's'} in this queue.`
+          : 'No quotes match this queue or search.';
 
         if (quotesMetric && result.summary) {
           quotesMetric.textContent = String(result.summary.waiting || 0);
         }
 
-        quoteList.innerHTML = quotes.length
-          ? quotes.map((quote) => renderQuoteCard(quote)).join('')
+        quoteList.innerHTML = filteredQuotes.length
+          ? filteredQuotes.map((quote) => renderQuoteCard(quote)).join('')
           : renderDashboardEmptyState('No quotes ready yet.', 'Quotes connected to your account will appear here with review and approval controls.');
+      };
+
+      const bindClientQuoteFilters = () => {
+        const queueFilter = document.querySelector('[data-client-quote-queue-filter]');
+        const search = document.querySelector('[data-client-quote-search]');
+        [queueFilter, search].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', () => loadClientQuotes());
+          control.addEventListener('change', () => loadClientQuotes());
+        });
       };
 
       const decideQuote = async (quoteId, action) => {
@@ -1621,6 +1652,7 @@
           }
 
           renderClientQuoteData(result);
+          bindClientQuoteFilters();
         } catch (error) {
           panelStatus.dataset.state = 'error';
           panelStatus.textContent = error.message;

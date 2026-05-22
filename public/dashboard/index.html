@@ -2381,6 +2381,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <strong>My quotes</strong>
       <p>Quotes connected to your account will appear here for review before approvals and payments are added.</p>
       <p class="session-status" data-client-quotes-status role="status" aria-live="polite">Loading your quotes…</p>
+      <div class="client-request-form-grid" data-client-quote-filters>
+        <label>Queue view
+          <select data-client-quote-queue-filter>
+            <option value="active">Active quotes</option>
+            <option value="inactive">Inactive quotes</option>
+            <option value="all">All quotes</option>
+          </select>
+        </label>
+        <label>Search quotes
+          <input type="search" data-client-quote-search placeholder="Service, title, address, city, or status">
+        </label>
+      </div>
       <div class="client-quote-list" data-client-quote-list></div>
     </section>
 
