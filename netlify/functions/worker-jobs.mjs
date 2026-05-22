@@ -20,17 +20,7 @@ const normalizeWorkerUpdatePayload = (body = {}) => ({
   inventoryNote: clean(body.inventoryNote, 500),
 });
 
-const normalizeWorkerCreatePayload = (body = {}) => ({
-  jobRequestId: clean(body.jobRequestId, 80),
-  workerId: clean(body.workerId, 80),
-  status: clean(body.status, 40) || 'assigned',
-  scheduledDate: clean(body.scheduledDate, 20),
-  startTime: clean(body.startTime, 20),
-  endTime: clean(body.endTime, 20),
-  notes: clean(body.notes, 2000),
-});
-
-const normalizeWorkerCreatePayload = (body = {}) => ({
+const buildWorkerCreatePayload = (body = {}) => ({
   jobRequestId: clean(body.jobRequestId, 80),
   workerId: clean(body.workerId, 80),
   status: clean(body.status, 40) || 'assigned',
@@ -345,7 +335,7 @@ const handlePost = async ({ request, db, context }) => {
   const body = await parseJsonBody(request);
   if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
 
-  const payload = normalizeWorkerCreatePayload(body);
+  const payload = buildWorkerCreatePayload(body);
   if (!payload.jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
   if (!WORKER_ASSIGNMENT_STATUSES.has(payload.status)) return json(422, { ok: false, message: 'Choose a valid assignment status.' });
 
