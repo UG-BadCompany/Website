@@ -3003,7 +3003,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             payload.quantityDelta = Number(payload.quantityDelta || 0);
             try {
               if (status) status.textContent = 'Applying adjustment…';
-              const response = await fetch('/api/admin/inventory', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+              const response = await fetch('/api/admin/inventory', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
               const result = await response.json().catch(() => ({}));
               if (!response.ok || !result.ok) throw new Error(result.message || 'Could not apply adjustment.');
               adjustForm.reset();
@@ -3181,4 +3181,3 @@ Additional info from client: ${payload.additionalInfo}` : '';
     
 
     window.taWorkspaceRoute?.applyWorkspaceRoute();
-
