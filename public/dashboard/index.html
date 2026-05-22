@@ -2408,6 +2408,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
 <script src="/dashboard/modules/invoice-actions.js"></script>
 <script src="/dashboard/modules/workspace-route.js"></script>
+<script src="/dashboard/modules/admin-invoice-payments.js"></script>
 <script>
     (async () => {
       window.taSetDashboardView = (view) => { window.taPendingDashboardView = view; };
@@ -5283,24 +5284,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
-      const confirmAdminPayment = async (invoiceId, amountCents) => {
-        const status = document.querySelector('[data-admin-invoices-status]');
-        const method = window.prompt('Payment method (cash, check, card, ACH, etc.)', 'cash');
-        if (method === null) return;
-        const reference = window.prompt('Payment reference or receipt number (optional)', '') || '';
-        if (status) status.textContent = 'Confirming payment…';
-
-        const response = await fetch('/api/admin/invoices', {
-          method: 'PATCH',
-          headers: { accept: 'application/json', 'content-type': 'application/json' },
-          body: JSON.stringify({ invoiceId, amountCents: Number(amountCents), method, reference }),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok) throw new Error(result.message || 'Payment could not be confirmed.');
-        await window.taDashboardActions.loadAdminInvoices();
-        if (status) status.textContent = `Payment confirmed for ${formatMoney(result.payment?.amountCents || amountCents)}.`;
-      };
-
       window.taDashboardActions = window.taDashboardActions || {};
       window.taDashboardActions.bindAdminInvoiceActions = () => {
         const panel = document.querySelector('[data-admin-invoices]');
@@ -5309,46 +5292,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
         window.taInvoiceActions?.attachAdminInvoiceActions(panel, {
           loadAdminInvoices: window.taDashboardActions.loadAdminInvoices,
         });
-        panel.addEventListener('click', async (event) => {
-          const linkButton = event.target.closest('[data-admin-create-payment-link]');
-          if (linkButton) {
-            linkButton.disabled = true;
-            const status = document.querySelector('[data-admin-invoices-status]');
-            try {
-              if (status) status.textContent = 'Creating Square payment link…';
-              const response = await fetch('/api/admin/square/payment-link', {
-                method: 'POST',
-                headers: { accept: 'application/json', 'content-type': 'application/json' },
-                body: JSON.stringify({ invoiceId: linkButton.dataset.adminCreatePaymentLink }),
-              });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not create payment link.');
-              await window.taDashboardActions.loadAdminInvoices();
-              if (status) status.textContent = 'Payment link created.';
-            } catch (error) {
-              if (status) {
-                status.dataset.state = 'error';
-                status.textContent = error.message;
-              }
-            } finally {
-              linkButton.disabled = false;
-            }
-            return;
-          }
-          const button = event.target.closest('[data-admin-confirm-payment]');
-          if (!button) return;
-          button.disabled = true;
-          try {
-            await confirmAdminPayment(button.dataset.adminConfirmPayment, button.dataset.adminPaymentAmount);
-          } catch (error) {
-            const status = document.querySelector('[data-admin-invoices-status]');
-            if (status) {
-              status.dataset.state = 'error';
-              status.textContent = error.message;
-            }
-          } finally {
-            button.disabled = false;
-          }
+        window.taAdminInvoicePayments?.bindAdminConfirmPaymentActions(panel, {
+          formatMoney,
+          loadAdminInvoices: window.taDashboardActions.loadAdminInvoices,
         });
       };
 
