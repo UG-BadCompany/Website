@@ -2420,6 +2420,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <strong>Assigned jobs</strong>
       <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
+      <div class="client-request-form-grid" data-worker-job-filters>
+        <label>Queue view
+          <select data-worker-job-queue-filter>
+            <option value="active">Active jobs</option>
+            <option value="completed">Completed jobs</option>
+            <option value="all">All jobs</option>
+          </select>
+        </label>
+        <label>Search jobs
+          <input type="search" data-worker-job-search placeholder="Service, address, city, status, or notes">
+        </label>
+      </div>
       <div class="worker-job-list" data-worker-job-list></div>
     </section>
 

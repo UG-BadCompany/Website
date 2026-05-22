@@ -1404,6 +1404,41 @@
       `;
       };
 
+      const getWorkerJobSearchText = (assignment = {}) => [
+        assignment.status,
+        assignment.workerNotes,
+        assignment.jobRequest?.serviceType,
+        assignment.jobRequest?.city,
+        assignment.jobRequest?.streetAddress,
+        assignment.jobRequest?.description,
+        assignment.notes,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const filterWorkerAssignments = (assignments = []) => {
+        const queueFilter = document.querySelector('[data-worker-job-queue-filter]')?.value || 'active';
+        const searchTerm = (document.querySelector('[data-worker-job-search]')?.value || '').trim().toLowerCase();
+        const queueFiltered = assignments.filter((assignment) => {
+          const status = String(assignment.status || '').toLowerCase();
+          if (queueFilter === 'all') return true;
+          if (queueFilter === 'completed') return status === 'completed';
+          return status !== 'completed' && status !== 'cancelled';
+        });
+        return searchTerm
+          ? queueFiltered.filter((assignment) => getWorkerJobSearchText(assignment).includes(searchTerm))
+          : queueFiltered;
+      };
+
+      const bindWorkerJobFilters = () => {
+        const queueFilter = document.querySelector('[data-worker-job-queue-filter]');
+        const search = document.querySelector('[data-worker-job-search]');
+        [queueFilter, search].forEach((control) => {
+          if (!control || control.dataset.bound) return;
+          control.dataset.bound = 'true';
+          control.addEventListener('input', () => loadWorkerJobs());
+          control.addEventListener('change', () => loadWorkerJobs());
+        });
+      };
+
       const setClientProfileEditing = (isEditing) => {
         document.querySelectorAll('[data-client-profile-editable]').forEach((field) => {
           field.disabled = !isEditing;
@@ -2916,14 +2951,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Assigned jobs are not available.');
           const assignments = result.assignments || [];
+          const filteredAssignments = filterWorkerAssignments(assignments);
           panelStatus.dataset.state = 'ready';
-          panelStatus.textContent = assignments.length ? `${assignments.length} assigned job${assignments.length === 1 ? '' : 's'} loaded.` : 'No assigned jobs yet.';
-          jobList.innerHTML = assignments.length
-            ? assignments.map(renderWorkerJobCard).join('')
+          panelStatus.textContent = filteredAssignments.length ? `${filteredAssignments.length} job${filteredAssignments.length === 1 ? '' : 's'} in this queue.` : 'No jobs match this queue or search.';
+          jobList.innerHTML = filteredAssignments.length
+            ? filteredAssignments.map(renderWorkerJobCard).join('')
             : renderDashboardEmptyState('No assigned jobs yet.', 'Assigned jobs, schedule notes, access details, and before/after upload controls will appear here.');
           refreshVisibleJobFiles();
           const openMetric = document.querySelector('[data-open-requests-metric]');
           if (openMetric && result.summary) openMetric.textContent = String(result.summary.assigned || 0);
+          bindWorkerJobFilters();
           bindWorkerJobActions();
         } catch (error) {
           panelStatus.dataset.state = 'error';
