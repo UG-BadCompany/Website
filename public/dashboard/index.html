@@ -2407,6 +2407,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
 <script src="/dashboard/modules/invoice-actions.js"></script>
+<script src="/dashboard/modules/workspace-route.js"></script>
 <script>
     (async () => {
       window.taSetDashboardView = (view) => { window.taPendingDashboardView = view; };
@@ -5645,40 +5646,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
     
 
-    (function applyWorkspaceRoute() {
-      const params = new URLSearchParams(window.location.search);
-      const workspace = (params.get('workspace') || '').trim();
-      if (!workspace) return;
-
-      const root = document.querySelector('[data-dashboard-root]');
-      if (root) root.removeAttribute('data-dashboard-root');
-
-      const revealOne = (selector) => {
-        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
-          section.hidden = true;
-        });
-        const target = document.querySelector(selector);
-        if (target) {
-          target.hidden = false;
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      };
-
-      const activate = () => {
-        if (typeof window.taSetDashboardView === 'function') {
-          window.taSetDashboardView('admin');
-        }
-        if (workspace === 'work-orders') revealOne('#admin-work-orders');
-        if (workspace === 'invoices') revealOne('[data-admin-invoices]');
-        if (workspace === 'audit-activity') {
-          revealOne('[data-admin-activity]');
-          document.querySelector('[data-admin-activity-refresh]')?.click();
-        }
-        if (workspace === 'inventory') revealOne('[data-admin-inventory]');
-      };
-
-      window.addEventListener('load', () => setTimeout(activate, 120));
-    })();
+    window.taWorkspaceRoute?.applyWorkspaceRoute();
 
 </script>
 
