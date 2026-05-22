@@ -2876,14 +2876,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const totalsSummary = document.querySelector('[data-admin-invoice-summary]');
         const invoices = result.invoices || [];
         const amountDue = Number(result.summary?.amountDueCents || 0);
+        const amountCollected = Number(result.summary?.amountCollectedCents || 0);
         const filter = document.querySelector('[data-admin-invoice-status-filter]')?.value || 'open';
 
         if (status) {
           status.dataset.state = 'ready';
           const label = window.TADashboardInvoices?.formatInvoiceStatusLabel?.(filter)
             || (filter === 'paid' ? 'paid invoice' : filter === 'all' ? 'invoice' : 'open invoice');
+          const amountLabel = filter === 'paid' ? `Collected total: ${formatMoney(amountCollected)}.` : `Open balance: ${formatMoney(amountDue)}.`;
           status.textContent = invoices.length
-            ? `${invoices.length} ${label}${invoices.length === 1 ? '' : 's'} loaded. Open balance: ${formatMoney(amountDue)}.`
+            ? `${invoices.length} ${label}${invoices.length === 1 ? '' : 's'} loaded. ${amountLabel}`
             : (window.TADashboardInvoices?.formatInvoiceEmptyLabel?.(filter)
               || `No ${filter === 'paid' ? 'paid' : filter === 'all' ? '' : 'open '}invoices found.`);
         }
@@ -3028,6 +3030,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const status = document.querySelector('[data-admin-inventory-adjust-status]');
             const payload = Object.fromEntries(new FormData(adjustForm).entries());
             payload.quantityDelta = Number(payload.quantityDelta || 0);
+            if ((payload.adjustmentType === 'usage' || payload.adjustmentType === 'used') && payload.quantityDelta > 0) {
+              payload.quantityDelta = payload.quantityDelta * -1;
+            }
+            if ((payload.adjustmentType === 'restock' || payload.adjustmentType === 'received') && payload.quantityDelta < 0) {
+              payload.quantityDelta = Math.abs(payload.quantityDelta);
+            }
             try {
               if (status) status.textContent = 'Applying adjustment…';
               const response = await fetch('/api/admin/inventory', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });

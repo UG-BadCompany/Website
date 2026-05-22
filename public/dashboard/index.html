@@ -2189,7 +2189,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           <div class="client-request-form-grid">
             <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
             <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
-            <label>Type<select name="adjustmentType"><option value="manual_adjustment">Manual adjustment</option><option value="restock">Restock</option><option value="usage">Usage</option></select></label>
+            <label>Type<select name="adjustmentType"><option value="manual">Manual adjustment</option><option value="received">Restock</option><option value="used">Usage</option></select></label>
             <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
           </div>
           <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
