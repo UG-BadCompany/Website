@@ -5,20 +5,13 @@
       const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const themeToggle = document.querySelector('[data-theme-toggle]');
-      const debugDashboardLink = document.querySelector('[data-debug-dashboard-link]');
-      const DEBUG_DASHBOARD_EMAIL = 'thomas.debacker.ii@gmail.com';
       const dashboardParams = new URLSearchParams(window.location.search);
       const requestedDashboardView = String(dashboardParams.get('view') || '').trim().toLowerCase();
       if (['admin', 'client', 'worker'].includes(requestedDashboardView)) {
         window.taPendingDashboardView = requestedDashboardView;
       }
-      const authDebugEnabled = dashboardParams.has('auth_debug') || dashboardParams.has('debug');
-      if (sessionCard) sessionCard.hidden = !authDebugEnabled;
-      if (authDebugEnabled && debugDashboardLink) {
-        debugDashboardLink.hidden = false;
-        debugDashboardLink.href = '/dashboard/';
-        debugDashboardLink.textContent = 'Dashboard';
-      }
+      const authDebugEnabled = false;
+      if (sessionCard) sessionCard.hidden = false;
 
       const ensureAuthDebugPanel = () => {
         let panel = document.querySelector('[data-auth-debug-panel]');
@@ -90,25 +83,7 @@
         };
       };
 
-      const normalizeDashboardEmail = (email = '') => String(email || '').trim().toLowerCase();
-      const canOpenDebugDashboard = (user = {}, debugResult = null) => (
-        normalizeDashboardEmail(user.email) === DEBUG_DASHBOARD_EMAIL
-        || Boolean(debugResult?.canOpenDebugDashboard)
-      );
-
-      const updateDebugDashboardLink = (user = {}, debugResult = null) => {
-        if (!debugDashboardLink) return;
-        if (authDebugEnabled) {
-          debugDashboardLink.hidden = false;
-          debugDashboardLink.href = '/dashboard/';
-          debugDashboardLink.textContent = 'Dashboard';
-          return;
-        }
-        const allowed = canOpenDebugDashboard(user, debugResult);
-        debugDashboardLink.hidden = !allowed;
-        debugDashboardLink.href = allowed ? '/dashboard/?auth_debug=1' : '/dashboard/';
-        debugDashboardLink.textContent = allowed ? 'Debug dashboard' : 'Dashboard';
-      };
+      const updateDebugDashboardLink = () => {};
 
       const revealAuthorizedFallbackSections = (user) => {
         const permissions = user.permissions || {};
