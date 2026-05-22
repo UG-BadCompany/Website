@@ -86,7 +86,19 @@ _Last updated: 2026-05-13_
 
 ## Next implementation candidates
 
-1. Add admin activity/audit feed APIs and UI.
-2. Add inventory tracking APIs and schema.
-3. Add job-file metadata APIs and dashboard attachment summaries.
-4. Add Square-hosted checkout provider metadata and webhook handling after manual invoice workflows are stable.
+1. Add automated alerts and digest reporting:
+   - low-stock notifications
+   - pending-review job summaries
+   - unpaid-invoice reminders.
+2. Expand payment lifecycle coverage:
+   - Square webhook reconciliation hardening
+   - payment retry/expired-link handling
+   - richer payment event timelines in activity feed.
+3. Strengthen worker execution workflows:
+   - assignment checklist templates by service type
+   - required completion evidence rules by status
+   - blocked-job escalation workflow to admin.
+4. Add export/reporting tools for operations:
+   - inventory CSV export
+   - invoice aging exports
+   - assignment throughput and completion metrics.
