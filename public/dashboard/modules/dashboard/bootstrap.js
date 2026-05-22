@@ -2787,6 +2787,22 @@ Additional info from client: ${payload.additionalInfo}` : '';
           button.dataset.boundClientLauncher = 'true';
           button.addEventListener('click', () => openClientSection('[data-client-invoices]'));
         });
+        document.querySelectorAll('[data-worker-jobs-shortcut]').forEach((button) => {
+          if (button.dataset.boundClientLauncher) return;
+          button.dataset.boundClientLauncher = 'true';
+          button.addEventListener('click', async () => {
+            const root = document.querySelector('[data-dashboard-root]');
+            if (root) root.removeAttribute('data-dashboard-root');
+            if (typeof window.taSetDashboardView === 'function') window.taSetDashboardView('worker');
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const target = document.querySelector('[data-worker-jobs]');
+            if (target) {
+              target.hidden = false;
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            await loadWorkerJobs();
+          });
+        });
       };
 
       const bindAdminAccessLauncher = () => {
