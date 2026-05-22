@@ -8,6 +8,10 @@
       const debugDashboardLink = document.querySelector('[data-debug-dashboard-link]');
       const DEBUG_DASHBOARD_EMAIL = 'thomas.debacker.ii@gmail.com';
       const dashboardParams = new URLSearchParams(window.location.search);
+      const requestedDashboardView = String(dashboardParams.get('view') || '').trim().toLowerCase();
+      if (['admin', 'client', 'worker'].includes(requestedDashboardView)) {
+        window.taPendingDashboardView = requestedDashboardView;
+      }
       const authDebugEnabled = dashboardParams.has('auth_debug') || dashboardParams.has('debug');
       if (sessionCard) sessionCard.hidden = !authDebugEnabled;
       if (authDebugEnabled && debugDashboardLink) {
@@ -135,7 +139,7 @@
         if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
         if (permissions.canManageInventory) actions.push('<button class="admin-command-card" type="button" data-admin-inventory-shortcut><strong>Inventory</strong><span>Open inventory tools in a quick popup.</span></button>');
         if (permissions.canViewClientTools) actions.push('<button class="admin-command-card" type="button" data-client-requests-shortcut><strong>Client requests</strong><span>Submit or review work requests.</span></button>');
-        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/portal/worker/"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
+        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/dashboard/?view=worker"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
 
         panel.innerHTML = `<strong>Debug session found</strong><p class="session-status">/api/auth/debug confirmed a usable session. Loading the main dashboard with these same permissions now.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
         const debugPanel = document.querySelector('[data-auth-debug-panel]');
@@ -699,13 +703,6 @@
       };
 
       const normalizeDashboardViewName = (view = '') => String(view || '').trim().toLowerCase();
-      const getPortalLockedView = () => {
-        const path = String(window.location.pathname || '').toLowerCase();
-        if (path.startsWith('/portal/admin')) return 'admin';
-        if (path.startsWith('/portal/worker')) return 'worker';
-        if (path.startsWith('/portal/client')) return 'client';
-        return '';
-      };
       const getAvailableDashboardViews = (user = {}) => {
         const permissions = user.permissions || {};
         const normalizedRoles = (user.roles || []).map(normalizeDashboardViewName);
@@ -727,13 +724,12 @@
         currentProfileUser = user;
         dedupeDashboardSingletons();
         const permissions = user.permissions || {};
-        const portalLockedView = getPortalLockedView();
-        const availableViews = portalLockedView ? [portalLockedView] : getAvailableDashboardViews(user);
+        const availableViews = getAvailableDashboardViews(user);
         availableDashboardViews = availableViews;
         const switcher = document.querySelector('[data-view-switcher]');
 
         if (switcher) {
-          switcher.hidden = true;
+          switcher.hidden = availableViews.length <= 1;
           if (!switcher.dataset.boundViewSwitcher) {
             switcher.dataset.boundViewSwitcher = 'true';
             switcher.addEventListener('click', (event) => {
@@ -743,7 +739,7 @@
             });
           }
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
-            const canView = !portalLockedView && availableViews.includes(button.dataset.viewButton);
+            const canView = availableViews.includes(button.dataset.viewButton);
             button.hidden = !canView;
             button.disabled = !canView;
           });
@@ -751,8 +747,7 @@
 
         const requestedView = normalizeDashboardViewName(window.taPendingDashboardView || currentDashboardView);
         const defaultView = normalizeDashboardViewName(permissions.defaultView);
-        const preferredView = portalLockedView
-          || (availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]));
+        const preferredView = availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]);
         configureMainDashboardActions(user, preferredView || 'client');
         setDashboardView(preferredView || 'client');
       };
@@ -2723,10 +2718,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
         };
 
         const launchers = [
-          { selector: '[data-admin-work-orders-shortcut]', key: 'workOrders', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/portal/admin/work-orders/', endpoint: '/api/admin/job-requests' },
-          { selector: '[data-admin-invoices-shortcut]', key: 'invoices', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/portal/admin/invoices/', endpoint: '/api/admin/invoices' },
-          { selector: '[data-admin-inventory-shortcut]', key: 'inventory', label: 'Inventory', description: 'Monitor stock, materials, and usage controls.', href: '/portal/admin/inventory/', endpoint: '/api/admin/inventory' },
-          { selector: '[data-admin-activity-shortcut]', key: 'activity', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/portal/admin/audit-activity/', endpoint: '/api/admin/activity?limit=5' },
+          { selector: '[data-admin-work-orders-shortcut]', key: 'workOrders', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/dashboard/?view=admin&workspace=work-orders', endpoint: '/api/admin/job-requests' },
+          { selector: '[data-admin-invoices-shortcut]', key: 'invoices', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/dashboard/?view=admin&workspace=invoices', endpoint: '/api/admin/invoices' },
+          { selector: '[data-admin-inventory-shortcut]', key: 'inventory', label: 'Inventory', description: 'Monitor stock, materials, and usage controls.', href: '/dashboard/?view=admin&workspace=inventory', endpoint: '/api/admin/inventory' },
+          { selector: '[data-admin-activity-shortcut]', key: 'activity', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/dashboard/?view=admin&workspace=audit-activity', endpoint: '/api/admin/activity?limit=5' },
         ];
 
         launchers.forEach((config) => {
