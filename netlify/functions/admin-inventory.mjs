@@ -14,6 +14,16 @@ const normalizeNumber = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const normalizeAdjustmentType = (value) => {
+  const normalized = clean(value, 40).toLowerCase();
+  if (!normalized) return 'manual';
+  if (['manual', 'manual_adjustment'].includes(normalized)) return 'manual';
+  if (['received', 'restock'].includes(normalized)) return 'received';
+  if (['used', 'usage'].includes(normalized)) return 'used';
+  if (normalized === 'correction') return 'correction';
+  return 'manual';
+};
+
 const normalizeInventoryPayload = (body = {}) => ({
   action: clean(body.action, 40) || 'adjust',
   itemId: clean(body.itemId || body.id, 80),
@@ -26,7 +36,7 @@ const normalizeInventoryPayload = (body = {}) => ({
   supplier: clean(body.supplier, 180),
   storageLocation: clean(body.storageLocation || body.location, 180),
   notes: clean(body.notes, 1000),
-  adjustmentType: clean(body.adjustmentType, 40) || 'manual',
+  adjustmentType: normalizeAdjustmentType(body.adjustmentType),
   quantityDelta: normalizeNumber(body.quantityDelta, 0),
   adjustmentNote: clean(body.adjustmentNote || body.note, 500),
   jobRequestId: clean(body.jobRequestId, 80),
