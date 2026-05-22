@@ -297,6 +297,19 @@ const handlePost = async ({ request, db, context }) => {
   const [jobRequest] = await db.sql`select id from job_requests where id = ${payload.jobRequestId} limit 1`;
   if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
 
+  const [existingAssignment] = await db.sql`
+    select id, status
+    from worker_assignments
+    where job_request_id = ${payload.jobRequestId}
+      and worker_id = ${workerId}
+      and status <> 'cancelled'
+    order by created_at desc
+    limit 1
+  `;
+  if (existingAssignment) {
+    return json(409, { ok: false, message: 'This worker already has an active assignment for that job request.' });
+  }
+
   const [assignment] = await db.sql`
     insert into worker_assignments (job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes)
     values (${payload.jobRequestId}, ${workerId}, ${payload.status}, ${payload.scheduledDate || null}, ${payload.startTime || null}, ${payload.endTime || null}, ${payload.notes || null}, ${null})

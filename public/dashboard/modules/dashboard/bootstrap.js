@@ -1420,6 +1420,7 @@
 
       const filterWorkerAssignments = (assignments = []) => {
         const queueFilter = document.querySelector('[data-worker-job-queue-filter]')?.value || 'active';
+        const sortBy = document.querySelector('[data-worker-job-sort]')?.value || 'scheduled_asc';
         const searchTerm = (document.querySelector('[data-worker-job-search]')?.value || '').trim().toLowerCase();
         const queueFiltered = assignments.filter((assignment) => {
           const status = String(assignment.status || '').toLowerCase();
@@ -1427,15 +1428,40 @@
           if (queueFilter === 'completed') return status === 'completed';
           return status !== 'completed' && status !== 'cancelled';
         });
-        return searchTerm
+        const searched = searchTerm
           ? queueFiltered.filter((assignment) => getWorkerJobSearchText(assignment).includes(searchTerm))
           : queueFiltered;
+        const asDate = (value) => value ? new Date(String(value)).getTime() : null;
+        const sorted = [...searched].sort((a, b) => {
+          if (sortBy === 'updated_desc') return (asDate(b.updatedAt) || 0) - (asDate(a.updatedAt) || 0);
+          const aDate = asDate(a.scheduledDate);
+          const bDate = asDate(b.scheduledDate);
+          if (aDate === null && bDate === null) return 0;
+          if (aDate === null) return 1;
+          if (bDate === null) return -1;
+          return sortBy === 'scheduled_desc' ? bDate - aDate : aDate - bDate;
+        });
+        return sorted;
+      };
+
+      const renderWorkerJobSummary = (assignments = []) => {
+        const summary = document.querySelector('[data-worker-job-summary]');
+        if (!summary) return;
+        const active = assignments.filter((job) => !['completed', 'cancelled'].includes(String(job.status || '').toLowerCase())).length;
+        const completed = assignments.filter((job) => String(job.status || '').toLowerCase() === 'completed').length;
+        const blocked = assignments.filter((job) => String(job.status || '').toLowerCase() === 'blocked').length;
+        summary.innerHTML = `
+          <article class="admin-request"><span class="admin-request-badge">Active jobs</span><strong>${active}</strong><p>currently assigned</p></article>
+          <article class="admin-request"><span class="admin-request-badge">Completed jobs</span><strong>${completed}</strong><p>finished work logs</p></article>
+          <article class="admin-request"><span class="admin-request-badge">Blocked jobs</span><strong>${blocked}</strong><p>need follow-up</p></article>
+        `;
       };
 
       const bindWorkerJobFilters = () => {
         const queueFilter = document.querySelector('[data-worker-job-queue-filter]');
+        const sort = document.querySelector('[data-worker-job-sort]');
         const search = document.querySelector('[data-worker-job-search]');
-        [queueFilter, search].forEach((control) => {
+        [queueFilter, sort, search].forEach((control) => {
           if (!control || control.dataset.bound) return;
           control.dataset.bound = 'true';
           control.addEventListener('input', () => loadWorkerJobs());
@@ -2992,6 +3018,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (!response.ok || !result.ok) throw new Error(result.message || 'Assigned jobs are not available.');
           const assignments = result.assignments || [];
           const filteredAssignments = filterWorkerAssignments(assignments);
+          renderWorkerJobSummary(assignments);
           panelStatus.dataset.state = 'ready';
           panelStatus.textContent = filteredAssignments.length ? `${filteredAssignments.length} job${filteredAssignments.length === 1 ? '' : 's'} in this queue.` : 'No jobs match this queue or search.';
           jobList.innerHTML = filteredAssignments.length

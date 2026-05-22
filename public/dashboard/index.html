@@ -2440,10 +2440,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
             <option value="all">All jobs</option>
           </select>
         </label>
+        <label>Sort by
+          <select data-worker-job-sort>
+            <option value="scheduled_asc">Scheduled date (earliest)</option>
+            <option value="scheduled_desc">Scheduled date (latest)</option>
+            <option value="updated_desc">Recently updated</option>
+          </select>
+        </label>
         <label>Search jobs
           <input type="search" data-worker-job-search placeholder="Service, address, city, status, or notes">
         </label>
       </div>
+      <div class="admin-request-list" data-worker-job-summary></div>
       <div class="worker-job-list" data-worker-job-list></div>
     </section>
 
