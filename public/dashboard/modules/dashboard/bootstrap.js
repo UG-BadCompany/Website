@@ -1381,8 +1381,12 @@
           <p><strong>Evidence:</strong> ${escapeHtml(activeEvidence)}</p>
           <p>${escapeHtml(assignment.jobRequest?.description || 'No job details yet.')}</p>
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
+          <p><strong>Work order:</strong> #${escapeHtml(assignment.jobRequest?.id || assignment.id || 'N/A')}</p>
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
-          <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}" data-job-request-id="${escapeHtml(assignment.jobRequest?.id || '')}">
+          <div class="client-quote-actions">
+            <button class="btn btn-soft" type="button" data-worker-job-toggle="${escapeHtml(assignment.id)}">Open work order</button>
+          </div>
+          <form class="client-request-form" data-worker-job-form data-assignment-id="${escapeHtml(assignment.id)}" data-job-request-id="${escapeHtml(assignment.jobRequest?.id || '')}" hidden>
             <div class="client-request-form-grid">
               <label>Status
                 <select name="status">
@@ -1396,15 +1400,10 @@
               <label class="full">Worker notes
                 <textarea name="workerNotes" placeholder="Progress, materials, blockers, completion notes.">${escapeHtml(assignment.workerNotes || '')}</textarea>
               </label>
-              <label class="full client-request-attachments">Before photos / files
-                <input name="beforeFiles" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-worker-before-files>
-                <small>Attach site condition photos, measurements, or reference documents before work starts.</small>
-                <span class="client-request-attachment-list" data-worker-before-file-list>No files selected yet.</span>
-              </label>
-              <label class="full client-request-attachments">After photos / completion files
-                <input name="afterFiles" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-worker-after-files>
-                <small>Attach after photos, completion proof, or documents for admin/client review.</small>
-                <span class="client-request-attachment-list" data-worker-after-file-list>No files selected yet.</span>
+              <label class="full client-request-attachments">Attachments
+                <input name="files" type="file" accept="image/*,.pdf,.heic,.heif" multiple data-worker-files>
+                <small>Upload one or more files for this work order update.</small>
+                <span class="client-request-attachment-list" data-worker-file-list>No files selected yet.</span>
               </label>
             </div>
             <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
@@ -2949,14 +2948,20 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
         panel.addEventListener('change', (event) => {
-          if (event.target.matches('[data-worker-before-files]')) {
-            const list = event.target.closest('form')?.querySelector('[data-worker-before-file-list]');
+          if (event.target.matches('[data-worker-files]')) {
+            const list = event.target.closest('form')?.querySelector('[data-worker-file-list]');
             if (list) list.textContent = [...event.target.files].map((file) => file.name).join(', ') || 'No files selected yet.';
           }
-          if (event.target.matches('[data-worker-after-files]')) {
-            const list = event.target.closest('form')?.querySelector('[data-worker-after-file-list]');
-            if (list) list.textContent = [...event.target.files].map((file) => file.name).join(', ') || 'No files selected yet.';
-          }
+        });
+        panel.addEventListener('click', (event) => {
+          const toggle = event.target.closest('[data-worker-job-toggle]');
+          if (!toggle) return;
+          const card = toggle.closest('[data-worker-status]');
+          const form = card?.querySelector('[data-worker-job-form]');
+          if (!form) return;
+          const open = form.hidden;
+          form.hidden = !open;
+          toggle.textContent = open ? 'Hide work order' : 'Open work order';
         });
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-worker-job-form]');
@@ -2964,8 +2969,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           event.preventDefault();
           const formStatus = form.querySelector('[data-worker-job-form-status]');
           const formData = new FormData(form);
-          const beforeFiles = fileMetadataFromInput(form.querySelector('[data-worker-before-files]'), 'worker_before');
-          const afterFiles = fileMetadataFromInput(form.querySelector('[data-worker-after-files]'), 'worker_after');
+          const files = fileMetadataFromInput(form.querySelector('[data-worker-files]'), 'worker_attachment');
           const payload = Object.fromEntries([...formData.entries()].filter(([, value]) => !(value && typeof value === 'object' && 'name' in value)));
           payload.assignmentId = form.dataset.assignmentId;
           if (formStatus) formStatus.textContent = 'Saving job update…';
@@ -2977,15 +2981,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.ok) throw new Error(result.message || 'We could not update that assigned job.');
-            const filesToUpload = [...beforeFiles, ...afterFiles];
+            const filesToUpload = [...files];
             if (filesToUpload.length) {
               if (formStatus) formStatus.textContent = 'Job updated. Attaching files…';
               await uploadJobFiles({ jobRequestId: form.dataset.jobRequestId, files: filesToUpload });
             }
             if (formStatus) formStatus.textContent = filesToUpload.length ? `Job updated with ${filesToUpload.length} file${filesToUpload.length === 1 ? '' : 's'}.` : 'Job updated.';
-            form.querySelectorAll('[data-worker-before-files], [data-worker-after-files]').forEach((input) => { input.value = ''; });
-            form.querySelector('[data-worker-before-file-list]') && (form.querySelector('[data-worker-before-file-list]').textContent = 'No files selected yet.');
-            form.querySelector('[data-worker-after-file-list]') && (form.querySelector('[data-worker-after-file-list]').textContent = 'No files selected yet.');
+            form.querySelectorAll('[data-worker-files]').forEach((input) => { input.value = ''; });
+            form.querySelector('[data-worker-file-list]') && (form.querySelector('[data-worker-file-list]').textContent = 'No files selected yet.');
             await loadWorkerJobs();
           } catch (error) {
             if (formStatus) formStatus.textContent = error.message;
