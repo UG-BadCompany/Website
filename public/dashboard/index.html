@@ -34,18 +34,61 @@
 
     [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
-    [data-admin-activity-summary] {
+    [data-admin-activity-summary],
+    [data-admin-alerts-summary] {
       grid-template-columns: repeat(3,minmax(0,1fr));
       align-items: stretch;
     }
 
     [data-admin-pipeline-summary] .admin-request,
     [data-admin-invoice-kpi-summary] .admin-request,
-    [data-admin-activity-summary] .admin-request {
+    [data-admin-activity-summary] .admin-request,
+    [data-admin-alerts-summary] .admin-stat-card {
       text-align: center;
       min-height: 128px;
       display: grid;
       align-content: center;
+    }
+
+    [data-admin-alerts-summary] {
+      grid-template-columns: repeat(4,minmax(0,1fr));
+      gap: 10px;
+    }
+
+    [data-admin-alerts-summary] .admin-stat-card {
+      padding: 10px;
+      border: 1px solid rgba(148,163,184,.28);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(15,23,42,.84), rgba(30,41,59,.72));
+      box-shadow: 0 12px 28px rgba(0,0,0,.25);
+    }
+
+    [data-admin-alerts-summary] .admin-stat-title {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      color: #9a3412;
+      font-size: .88rem;
+      font-weight: 900;
+      letter-spacing: .01em;
+    }
+
+    [data-admin-alerts-summary] .admin-stat-value {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.55rem;
+      font-weight: 950;
+      color: #f8fafc;
+      line-height: 1.1;
+    }
+
+    [data-admin-alerts-summary] .admin-stat-caption {
+      display: block;
+      margin-top: 6px;
+      color: #dbe4ef;
+      font-size: .82rem;
+      font-weight: 800;
     }
 
 
@@ -183,6 +226,17 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
     [data-admin-activity-summary] { grid-template-columns: 1fr; }
+    [data-admin-alerts-summary] {
+      grid-template-columns: repeat(4,minmax(0,1fr));
+      gap: 8px;
+    }
+    [data-admin-alerts-summary] .admin-stat-card {
+      padding: 8px;
+      min-height: 108px;
+    }
+    [data-admin-alerts-summary] .admin-stat-title { font-size: .8rem; padding: 5px 8px; }
+    [data-admin-alerts-summary] .admin-stat-value { font-size: 1.2rem; margin-top: 6px; }
+    [data-admin-alerts-summary] .admin-stat-caption { font-size: .72rem; margin-top: 4px; }
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
@@ -1855,7 +1909,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <button class="admin-command-card" type="button" data-admin-alerts-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Alerts</strong><span>View low stock, pending review jobs, unpaid invoices, and new requests.</span></button>
         <button class="admin-command-card" type="button" data-client-requests-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></button>
         <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
         <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
