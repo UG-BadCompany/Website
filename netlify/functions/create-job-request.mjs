@@ -6,6 +6,7 @@ import {
   minutesFromNow,
   sendMagicLinkEmail,
 } from './auth-utils.mjs';
+import { verifyRecaptchaToken } from './recaptcha-utils.mjs';
 
 const REQUIRED_FIELDS = ['name', 'phone', 'email', 'city', 'streetAddress', 'service', 'description'];
 const MAX_FIELD_LENGTHS = {
@@ -17,6 +18,7 @@ const MAX_FIELD_LENGTHS = {
   service: 120,
   timeframe: 80,
   description: 4000,
+  recaptchaToken: 4000,
 };
 
 const json = (status, body) => Response.json(body, {
@@ -100,6 +102,11 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
 
   if (payload.botField) {
     return json(200, { ok: true, message: 'Request received.' });
+  }
+
+  const recaptchaCheck = await verifyRecaptchaToken({ token: payload.recaptchaToken, request, action: 'request_work' });
+  if (!recaptchaCheck.ok) {
+    return json(403, { ok: false, message: 'reCAPTCHA verification failed. Please try again.' });
   }
 
   const validationError = validatePayload(payload);
