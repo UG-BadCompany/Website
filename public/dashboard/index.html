@@ -52,11 +52,11 @@
 
     [data-admin-alerts-summary] {
       grid-template-columns: repeat(4,minmax(0,1fr));
-      gap: 14px;
+      gap: 10px;
     }
 
     [data-admin-alerts-summary] .admin-stat-card {
-      padding: 14px;
+      padding: 10px;
       border: 1px solid rgba(148,163,184,.28);
       border-radius: 18px;
       background: linear-gradient(145deg, rgba(15,23,42,.84), rgba(30,41,59,.72));
@@ -69,15 +69,15 @@
       border-radius: 999px;
       background: rgba(255,255,255,.9);
       color: #9a3412;
-      font-size: .95rem;
+      font-size: .88rem;
       font-weight: 900;
       letter-spacing: .01em;
     }
 
     [data-admin-alerts-summary] .admin-stat-value {
       display: block;
-      margin-top: 10px;
-      font-size: 1.9rem;
+      margin-top: 8px;
+      font-size: 1.55rem;
       font-weight: 950;
       color: #f8fafc;
       line-height: 1.1;
@@ -85,9 +85,9 @@
 
     [data-admin-alerts-summary] .admin-stat-caption {
       display: block;
-      margin-top: 8px;
+      margin-top: 6px;
       color: #dbe4ef;
-      font-size: .95rem;
+      font-size: .82rem;
       font-weight: 800;
     }
 
@@ -225,8 +225,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     @media(max-width:760px) {
       [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
-    [data-admin-activity-summary],
-    [data-admin-alerts-summary] { grid-template-columns: 1fr; }
+    [data-admin-activity-summary] { grid-template-columns: 1fr; }
+    [data-admin-alerts-summary] {
+      grid-template-columns: repeat(4,minmax(0,1fr));
+      gap: 8px;
+    }
+    [data-admin-alerts-summary] .admin-stat-card {
+      padding: 8px;
+      min-height: 108px;
+    }
+    [data-admin-alerts-summary] .admin-stat-title { font-size: .8rem; padding: 5px 8px; }
+    [data-admin-alerts-summary] .admin-stat-value { font-size: 1.2rem; margin-top: 6px; }
+    [data-admin-alerts-summary] .admin-stat-caption { font-size: .72rem; margin-top: 4px; }
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
