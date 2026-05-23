@@ -1,28 +1,13 @@
 import {
   clean,
   getPermissionKeysForRoles,
-  getSiteUrl,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
   loadRolePermissionKeys,
 } from './auth-utils.mjs';
-
-const SQUARE_API_VERSION = clean(process.env.SQUARE_API_VERSION, 40) || '2026-01-22';
-const SQUARE_ENVIRONMENT = (clean(process.env.SQUARE_ENVIRONMENT, 20) || 'production').toLowerCase();
-const SQUARE_ACCESS_TOKEN = clean(process.env.SQUARE_ACCESS_TOKEN, 400);
-const SQUARE_LOCATION_ID = clean(process.env.SQUARE_LOCATION_ID, 120);
-const SQUARE_REDIRECT_BASE_URL = clean(process.env.SQUARE_REDIRECT_BASE_URL, 500).replace(/\/$/, '');
-
-const squareApiBase = () => SQUARE_ENVIRONMENT === 'production'
-  ? 'https://connect.squareup.com'
-  : 'https://connect.squareupsandbox.com';
-
-const getSquareRedirectBaseUrl = (request) => {
-  if (SQUARE_REDIRECT_BASE_URL) return SQUARE_REDIRECT_BASE_URL;
-  return getSiteUrl(request);
-};
+import { createSquarePaymentLink } from './square-utils.mjs';
 
 const mapDate = (value) => {
   if (!value) return null;
@@ -136,9 +121,9 @@ const listClientInvoices = async (db, userId) => {
     left join job_requests on job_requests.id = invoices.job_request_id
       and job_requests.client_id = ${userId}
     where invoices.client_id = ${userId}
-      and invoices.status <> 'paid'
+      and invoices.status <> 'void'
     order by invoices.created_at desc
-    limit 25
+    limit 50
   `;
 
   const mappedInvoices = invoices.map(mapInvoice);
@@ -148,47 +133,20 @@ const listClientInvoices = async (db, userId) => {
     summary: {
       total: mappedInvoices.length,
       open: mappedInvoices.filter((invoice) => invoice.status === 'open').length,
+      paid: mappedInvoices.filter((invoice) => invoice.status === 'paid').length,
       amountDueCents: mappedInvoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
     },
   };
 };
 
 const createSquareLinkForInvoice = async ({ invoice, request }) => {
-  if (!SQUARE_ACCESS_TOKEN || !SQUARE_LOCATION_ID) return null;
-  const payload = {
-    idempotency_key: `client-invoice-${invoice.id}-${invoice.amount_cents}`,
-    quick_pay: {
-      name: invoice.title || `Invoice ${invoice.id}`,
-      price_money: { amount: invoice.amount_cents, currency: 'USD' },
-      location_id: SQUARE_LOCATION_ID,
-      reference_id: invoice.id,
-      note: `Portal invoice ${invoice.id}`,
-    },
-    checkout_options: {
-      ask_for_shipping_address: false,
-      accepted_payment_methods: { card: true, square_gift_card: false, bank_account: true },
-      redirect_url: new URL('/dashboard/?workspace=invoices', getSquareRedirectBaseUrl(request)).toString(),
-    },
-  };
-  const response = await fetch(`${squareApiBase()}/v2/online-checkout/payment-links`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
-      'content-type': 'application/json',
-      'square-version': SQUARE_API_VERSION,
-    },
-    body: JSON.stringify(payload),
+  if (!invoice || Number(invoice.amount_cents || 0) <= 0) return null;
+  return createSquarePaymentLink({
+    invoice,
+    request,
+    idempotencyKey: `client-invoice-${invoice.id}-${invoice.amount_cents}`,
+    includeMetadata: false,
   });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const detail = result?.errors?.map((error) => error.detail).filter(Boolean).join('; ') || 'Square request failed.';
-    throw new Error(detail);
-  }
-  return {
-    checkoutId: clean(result?.payment_link?.id, 120),
-    checkoutUrl: clean(result?.payment_link?.url, 500),
-    providerStatus: clean(result?.payment_link?.version ? 'pending' : 'created', 40) || 'created',
-  };
 };
 
 const ensureClientInvoiceLinks = async (db, request, invoices = []) => {
