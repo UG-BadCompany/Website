@@ -11,16 +11,6 @@
       }
       const authDebugEnabled = false;
       if (sessionCard) sessionCard.hidden = false;
-      const keepOnlyHeaderAlertsLauncher = () => {
-        const launchers = [...document.querySelectorAll('[data-admin-alerts-shortcut]')];
-        if (!launchers.length) return;
-        const preferredLauncher = document.querySelector('.dashboard-nav-row [data-admin-alerts-shortcut]');
-        launchers.forEach((launcher) => {
-          if (preferredLauncher && launcher === preferredLauncher) return;
-          launcher.remove();
-        });
-      };
-      keepOnlyHeaderAlertsLauncher();
 
       const ensureAuthDebugPanel = () => {
         let panel = document.querySelector('[data-auth-debug-panel]');
