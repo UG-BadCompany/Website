@@ -1246,6 +1246,7 @@
   <script>
     (() => {
       const form = document.querySelector('[data-job-request-form]');
+      let resolvedRecaptchaSiteKey = '';
 
       if (!form || !window.fetch) {
         return;
@@ -1267,11 +1268,28 @@
         HTMLFormElement.prototype.submit.call(form);
       };
 
+      const resolveRecaptchaSiteKey = async () => {
+        if (resolvedRecaptchaSiteKey) return resolvedRecaptchaSiteKey;
+        const metaValue = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim() || '';
+        if (metaValue) {
+          resolvedRecaptchaSiteKey = metaValue;
+          return resolvedRecaptchaSiteKey;
+        }
+        try {
+          const response = await fetch('/api/public-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
+          const result = await response.json().catch(() => ({}));
+          resolvedRecaptchaSiteKey = (result?.recaptchaSiteKey || '').trim();
+          return resolvedRecaptchaSiteKey;
+        } catch {
+          return '';
+        }
+      };
+
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(form);
-        const recaptchaSiteKey = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim();
+        const recaptchaSiteKey = await resolveRecaptchaSiteKey();
         if (recaptchaSiteKey && window.grecaptcha?.execute) {
           try {
             const recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'request_work' });
@@ -1319,7 +1337,7 @@
       });
     })();
   </script>
-  <script src="https://www.google.com/recaptcha/api.js?render=explicit" defer></script>
+  <script src="https://www.google.com/recaptcha/api.js" defer></script>
 
   <script>
     (() => {

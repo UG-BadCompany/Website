@@ -1,4 +1,23 @@
 (() => {
+  let resolvedRecaptchaSiteKey = '';
+
+  const resolveRecaptchaSiteKey = async () => {
+    if (resolvedRecaptchaSiteKey) return resolvedRecaptchaSiteKey;
+    const metaValue = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim() || '';
+    if (metaValue) {
+      resolvedRecaptchaSiteKey = metaValue;
+      return resolvedRecaptchaSiteKey;
+    }
+    try {
+      const response = await fetch('/api/public-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
+      const result = await response.json().catch(() => ({}));
+      resolvedRecaptchaSiteKey = (result?.recaptchaSiteKey || '').trim();
+      return resolvedRecaptchaSiteKey;
+    } catch {
+      return '';
+    }
+  };
+
   const queryMessages = {
     'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
     expired: ['That magic link is expired. Request a fresh sign-in link.', 'error'],
@@ -76,7 +95,7 @@
       event.preventDefault();
 
       const payload = Object.fromEntries(new FormData(form).entries());
-      const recaptchaSiteKey = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim();
+      const recaptchaSiteKey = await resolveRecaptchaSiteKey();
       if (recaptchaSiteKey && window.grecaptcha?.execute) {
         try {
           payload.recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'login_magic_link' });
