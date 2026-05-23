@@ -1,4 +1,73 @@
 (() => {
+  let resolvedRecaptchaSiteKey = '';
+  let recaptchaReadyPromise = null;
+
+  const resolveRecaptchaSiteKey = async () => {
+    if (resolvedRecaptchaSiteKey) return resolvedRecaptchaSiteKey;
+    const metaValue = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim() || '';
+    if (metaValue) {
+      resolvedRecaptchaSiteKey = metaValue;
+      return resolvedRecaptchaSiteKey;
+    }
+    try {
+      const response = await fetch('/api/public-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
+      const result = await response.json().catch(() => ({}));
+      resolvedRecaptchaSiteKey = (result?.recaptchaSiteKey || '').trim();
+      return resolvedRecaptchaSiteKey;
+    } catch {
+      return '';
+    }
+  };
+
+  const ensureRecaptchaReady = async (siteKey) => {
+    if (!siteKey) return false;
+    if (!recaptchaReadyPromise) {
+      recaptchaReadyPromise = new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-recaptcha-loader="true"]');
+        const onReady = () => {
+          if (!window.grecaptcha?.ready) {
+            reject(new Error('reCAPTCHA library unavailable.'));
+            return;
+          }
+          window.grecaptcha.ready(() => resolve(true));
+        };
+        if (existing) {
+          onReady();
+          return;
+        }
+        const scriptSources = [
+          `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`,
+          `https://www.recaptcha.net/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`,
+        ];
+        let attempt = 0;
+        const loadNext = () => {
+          if (attempt >= scriptSources.length) {
+            reject(new Error('reCAPTCHA script failed to load from Google and fallback CDN.'));
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = scriptSources[attempt];
+          script.async = true;
+          script.defer = true;
+          script.dataset.recaptchaLoader = 'true';
+          script.onload = onReady;
+          script.onerror = () => {
+            script.remove();
+            attempt += 1;
+            loadNext();
+          };
+          document.head.appendChild(script);
+        };
+        loadNext();
+      });
+      recaptchaReadyPromise = recaptchaReadyPromise.catch((error) => {
+        recaptchaReadyPromise = null;
+        throw error;
+      });
+    }
+    return recaptchaReadyPromise;
+  };
+
   const queryMessages = {
     'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
     expired: ['That magic link is expired. Request a fresh sign-in link.', 'error'],
@@ -76,6 +145,16 @@
       event.preventDefault();
 
       const payload = Object.fromEntries(new FormData(form).entries());
+      const recaptchaSiteKey = await resolveRecaptchaSiteKey();
+      if (recaptchaSiteKey) {
+        try {
+          await ensureRecaptchaReady(recaptchaSiteKey);
+          payload.recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'login_magic_link' });
+        } catch (error) {
+          setStatus(`reCAPTCHA could not be completed (${error?.message || 'unknown error'}).`, 'error');
+          return;
+        }
+      }
       button.disabled = true;
       setStatus('Sending secure sign-in link…');
 
