@@ -76,6 +76,15 @@
       event.preventDefault();
 
       const payload = Object.fromEntries(new FormData(form).entries());
+      const recaptchaSiteKey = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim();
+      if (recaptchaSiteKey && window.grecaptcha?.execute) {
+        try {
+          payload.recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'login_magic_link' });
+        } catch {
+          setStatus('reCAPTCHA could not be completed. Please refresh and try again.', 'error');
+          return;
+        }
+      }
       button.disabled = true;
       setStatus('Sending secure sign-in link…');
 
