@@ -18,6 +18,10 @@ const normalizeWorkerUpdatePayload = (body = {}) => ({
   inventoryItemId: clean(body.inventoryItemId, 80),
   inventoryQuantityUsed: Number(body.inventoryQuantityUsed || 0),
   inventoryNote: clean(body.inventoryNote, 500),
+  blockedReason: clean(body.blockedReason, 500),
+  blockedNeedsAdminHelp: Boolean(body.blockedNeedsAdminHelp),
+  completionChecklist: Array.isArray(body.completionChecklist) ? body.completionChecklist.map((item) => clean(item, 140)).filter(Boolean).slice(0, 20) : [],
+  completionEvidenceFiles: Array.isArray(body.completionEvidenceFiles) ? body.completionEvidenceFiles.map((item) => clean(item, 240)).filter(Boolean).slice(0, 20) : [],
 });
 
 const buildWorkerCreatePayload = (body = {}) => ({
@@ -77,6 +81,22 @@ const mapAssignment = (row) => ({
     } : null,
   },
 });
+
+const SERVICE_CHECKLIST_TEMPLATES = {
+  plumbing: ['Shutoff verified', 'Leak check completed', 'Fixtures tested', 'Work area cleaned'],
+  electrical: ['Breaker/power safety check', 'Connections secured', 'Function test completed', 'Work area cleaned'],
+  hvac: ['Filter/airflow checked', 'Thermostat test completed', 'Drain/condensate check', 'Work area cleaned'],
+  general: ['Scope completed', 'Quality check completed', 'Client access area cleaned'],
+};
+
+const getChecklistTemplateForServiceType = (serviceType = '') => {
+  const normalized = String(serviceType || '').trim().toLowerCase();
+  if (!normalized) return SERVICE_CHECKLIST_TEMPLATES.general;
+  if (normalized.includes('plumb')) return SERVICE_CHECKLIST_TEMPLATES.plumbing;
+  if (normalized.includes('elect')) return SERVICE_CHECKLIST_TEMPLATES.electrical;
+  if (normalized.includes('hvac') || normalized.includes('air') || normalized.includes('heating')) return SERVICE_CHECKLIST_TEMPLATES.hvac;
+  return SERVICE_CHECKLIST_TEMPLATES.general;
+};
 
 const loadSessionContext = async (db, sessionToken) => {
   const [session] = await db.sql`
@@ -239,6 +259,33 @@ const handlePatch = async ({ request, db, context }) => {
     return json(422, { ok: false, message: 'Choose a valid assignment status.' });
   }
 
+  const [currentAssignment] = await db.sql`
+    select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, worker_assignments.status, job_requests.service_type
+    from worker_assignments
+    join job_requests on job_requests.id = worker_assignments.job_request_id
+    where worker_assignments.id = ${payload.assignmentId}
+    limit 1
+  `;
+  if (!currentAssignment) {
+    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
+  }
+
+  if (payload.status === 'completed') {
+    const requiredChecklistItems = getChecklistTemplateForServiceType(currentAssignment.service_type);
+    const submittedChecklist = new Set(payload.completionChecklist.map((item) => String(item).toLowerCase()));
+    const missingChecklist = requiredChecklistItems.filter((item) => !submittedChecklist.has(String(item).toLowerCase()));
+    if (missingChecklist.length) {
+      return json(422, { ok: false, message: `Complete required checklist items before marking completed: ${missingChecklist.join(', ')}.` });
+    }
+    if (!payload.completionEvidenceFiles.length) {
+      return json(422, { ok: false, message: 'Attach at least one completion evidence file before marking this job completed.' });
+    }
+  }
+
+  if (payload.status === 'blocked' && !payload.blockedReason) {
+    return json(422, { ok: false, message: 'Blocked reason is required when a job is marked blocked.' });
+  }
+
   const isAdmin = context.roleKeys.includes('admin');
   const [updatedAssignment] = isAdmin ? await db.sql`
     update worker_assignments
@@ -268,6 +315,28 @@ const handlePatch = async ({ request, db, context }) => {
           updated_at = now()
       where id = ${updatedAssignment.job_request_id}
         and status in ('scheduled', 'in_progress', 'accepted')
+    `;
+  }
+
+  if (payload.status === 'blocked') {
+    if (payload.blockedNeedsAdminHelp) {
+      await db.sql`
+        update job_requests
+        set status = 'needs_review',
+            admin_notes = concat(coalesce(admin_notes, ''), case when coalesce(admin_notes, '') = '' then '' else E'\n\n' end, ${`Worker blocked escalation: ${payload.blockedReason}`}),
+            updated_at = now()
+        where id = ${updatedAssignment.job_request_id}
+      `;
+    }
+    await db.sql`
+      insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+      values (
+        ${context.session.user_id},
+        ${'worker_assignment.blocked'},
+        ${'worker_assignment'},
+        ${updatedAssignment.id},
+        ${JSON.stringify({ jobRequestId: updatedAssignment.job_request_id, blockedReason: payload.blockedReason, needsAdminHelp: payload.blockedNeedsAdminHelp })}::jsonb
+      )
     `;
   }
 
@@ -433,6 +502,7 @@ export const createWorkerJobsHandler = ({ getDatabase = loadDatabase } = {}) => 
         assigned: assignments.filter((assignment) => !['completed', 'cancelled'].includes(assignment.status)).length,
         today: assignments.filter((assignment) => assignment.scheduledDate === new Date().toISOString().slice(0, 10)).length,
       },
+      checklistTemplates: SERVICE_CHECKLIST_TEMPLATES,
     });
   } catch (error) {
     console.error('Failed to load worker jobs', error);
