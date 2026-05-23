@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="recaptcha-site-key" content="">
   <title>T&A Contracting | Arizona Maintenance, Repairs & Improvements</title>
   <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quote approvals, client requests, and online payments.">
   <style>
@@ -1174,6 +1175,7 @@
 
           <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
             <input type="hidden" name="form-name" value="estimate-request">
+            <input type="hidden" name="recaptchaToken" value="">
             <p hidden><label>Don’t fill this out: <input name="bot-field"></label></p>
             <div class="form-grid">
               <div class="field">
@@ -1244,6 +1246,8 @@
   <script>
     (() => {
       const form = document.querySelector('[data-job-request-form]');
+      let resolvedRecaptchaSiteKey = '';
+      let recaptchaReadyPromise = null;
 
       if (!form || !window.fetch) {
         return;
@@ -1265,10 +1269,69 @@
         HTMLFormElement.prototype.submit.call(form);
       };
 
+      const resolveRecaptchaSiteKey = async () => {
+        if (resolvedRecaptchaSiteKey) return resolvedRecaptchaSiteKey;
+        const metaValue = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim() || '';
+        if (metaValue) {
+          resolvedRecaptchaSiteKey = metaValue;
+          return resolvedRecaptchaSiteKey;
+        }
+        try {
+          const response = await fetch('/api/public-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
+          const result = await response.json().catch(() => ({}));
+          resolvedRecaptchaSiteKey = (result?.recaptchaSiteKey || '').trim();
+          return resolvedRecaptchaSiteKey;
+        } catch {
+          return '';
+        }
+      };
+
+      const ensureRecaptchaReady = async (siteKey) => {
+        if (!siteKey) return false;
+        if (!recaptchaReadyPromise) {
+          recaptchaReadyPromise = new Promise((resolve, reject) => {
+            const existing = document.querySelector('script[data-recaptcha-loader="true"]');
+            const onReady = () => {
+              if (!window.grecaptcha?.ready) {
+                reject(new Error('reCAPTCHA library unavailable.'));
+                return;
+              }
+              window.grecaptcha.ready(() => resolve(true));
+            };
+            if (existing) {
+              onReady();
+              return;
+            }
+            const script = document.createElement('script');
+            script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+            script.async = true;
+            script.defer = true;
+            script.dataset.recaptchaLoader = 'true';
+            script.onload = onReady;
+            script.onerror = () => reject(new Error('reCAPTCHA script failed to load.'));
+            document.head.appendChild(script);
+          });
+        }
+        return recaptchaReadyPromise;
+      };
+
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(form);
+        const recaptchaSiteKey = await resolveRecaptchaSiteKey();
+        if (recaptchaSiteKey) {
+          try {
+            await ensureRecaptchaReady(recaptchaSiteKey);
+            const recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'request_work' });
+            formData.set('recaptchaToken', recaptchaToken);
+            const recaptchaInput = form.querySelector('input[name="recaptchaToken"]');
+            if (recaptchaInput) recaptchaInput.value = recaptchaToken;
+          } catch {
+            setStatus('reCAPTCHA could not be completed. Please refresh and try again.', 'error');
+            return;
+          }
+        }
         const photo = formData.get('photos');
         const hasUpload = window.File && photo instanceof File && photo.size > 0;
 
@@ -1305,7 +1368,6 @@
       });
     })();
   </script>
-
   <script>
     (() => {
       const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');

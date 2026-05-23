@@ -11,6 +11,7 @@ import {
   sendMagicLinkEmail,
   validateEmail,
 } from './auth-utils.mjs';
+import { verifyRecaptchaToken } from './recaptcha-utils.mjs';
 
 export const createMagicLinkHandler = ({
   getDatabase = loadDatabase,
@@ -28,6 +29,10 @@ export const createMagicLinkHandler = ({
   }
 
   const payload = normalizeAuthEmailPayload(body);
+  const recaptchaCheck = await verifyRecaptchaToken({ token: body?.recaptchaToken, request, action: 'login_magic_link' });
+  if (!recaptchaCheck.ok) {
+    return json(403, { ok: false, message: 'reCAPTCHA verification failed. Please try again.' });
+  }
 
   if (payload.botField) {
     return json(200, { ok: true, message: 'If this email can sign in, a secure link will be sent.' });
