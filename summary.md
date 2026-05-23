@@ -46,12 +46,14 @@ Current migration work includes:
 ## Admin Inventory Management
 
 - Added `netlify/functions/admin-inventory.mjs` for admin inventory operations.
-- Admins can list inventory, create items, update item details, archive items, and record stock adjustments.
+- Admins can list inventory, create items, update item details, archive items, delete items (with usage-history safeguards), and record stock adjustments.
 - Inventory adjustments support work-order usage, including linking used materials to job requests.
+- Stock safeguards now prevent adjustments from driving quantity below zero, with a clear 422 response if stock is insufficient.
 - Inventory events write audit records so changes appear in admin activity.
 - A dedicated `/inventory/` admin page was added and linked from the admin command center.
 - Work-order detail UI can load and render inventory usage tied to a selected job.
-- Tests cover listing, CRUD, adjustments, archive behavior, low-stock summary, work-order usage, and invalid adjustment rejection.
+- Inventory workspace now includes stock filters (all/low), sort options (name/qty), and search.
+- Tests cover listing, CRUD, adjustments, archive/delete behavior, low-stock summary, work-order usage, and invalid adjustment rejection.
 
 ## Invoices and Payments
 
@@ -61,7 +63,9 @@ Current migration work includes:
 - Job requests moved to `waiting_payment` create or update an open invoice from the linked quote/work order.
 - Invoice title normalization prevents dashboard UI copy from appearing as an invoice title in API responses or persisted invoice records.
 - A migration backfills existing reserved invoice titles to service/client-specific invoice labels.
-- Client invoice APIs list unpaid invoices and normalize stale reserved titles for client-facing display.
+- Client invoice APIs list active invoice history (`status <> 'void'`) and normalize stale reserved titles for client-facing display.
+- Client invoice summaries include paid counts and support dashboard queue filtering for unpaid/paid/all views.
+- Square payment-link generation was centralized into `netlify/functions/square-utils.mjs` and reused by admin and client invoice flows.
 - Tests cover admin invoice listing, paid payment history, payment confirmation, invoice title normalization, client invoice listing, and waiting-payment invoice creation.
 
 ## Admin Work Orders and Quotes
@@ -88,8 +92,11 @@ Current migration work includes:
 - Worker job cards display assignment schedule, job request details, property/access notes, admin notes, and worker notes.
 - Workers can update assignment status and notes.
 - Marking work completed moves the related job request to `pending_review` for client/admin review.
-- Worker forms accept before-work files and after/completion files.
-- Tests cover worker authentication, authorization, assigned-job listing, status/note updates, and completed-work transition to pending review.
+- Worker assignment cards now use click-to-open work-order forms with visible work-order number and cleaner top-level cards.
+- Worker forms accept unified multi-file attachments (single attachments input instead of before/after split).
+- Worker job updates can now record inventory part usage (item + quantity + note), which decrements stock and writes inventory adjustments linked to the work order.
+- Worker job list includes queue filtering, sorting, searching, and summary cards.
+- Tests cover worker authentication, authorization, assigned-job listing, status/note updates, inventory usage updates, and completed-work transition to pending review.
 
 ## Job Files and Attachments
 
@@ -104,14 +111,19 @@ Current migration work includes:
 
 - The dashboard was redesigned around command centers for admin, client, and worker roles.
 - Navigation was simplified to reduce duplicate shortcut buttons and old workspace tab elements.
-- The dashboard includes role view switching for admins with multi-role access.
+- The dashboard includes role view switching from hero controls (admin/client/worker), plus query-driven view selection (`?view=`).
 - Dashboard sections are permission-gated and role-view-gated.
 - The admin invoice desk is treated as a singleton panel to avoid duplicate rendering.
 - Invoice cards avoid repeating stale dashboard heading text as row titles.
 - Theme toggle, skip link, focus outlines, improved card styling, and responsive layout refinements were added.
 - Client profile/property editing, request editing, admin access management, admin activity, and request detail flows use modal-style interfaces.
 - Public and generated `out/` files were rebuilt to keep Netlify publish output in sync with `public/` source files.
-- Dashboard script tests parse inline scripts and assert expected hooks, handlers, copy, and removed duplicate UI elements.
+- Dashboard script logic now lives in modular assets:
+  - `public/dashboard/modules/dashboard/bootstrap.js`
+  - `public/dashboard/modules/dashboard/invoices.js`
+  - `public/dashboard/modules/dashboard/work-orders.js`
+  - `public/dashboard/modules/dashboard/inventory.js`
+  - `public/dashboard/modules/dashboard/access.js`
 
 ## Public Site and Assets
 
