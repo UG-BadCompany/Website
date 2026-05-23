@@ -1321,14 +1321,15 @@
             : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
-            { label: 'Low stock', value: Number(counts.lowStock || 0) },
-            { label: 'Pending review', value: Number(counts.pendingReview || 0) },
-            { label: 'Unpaid invoices', value: Number(counts.unpaidInvoices || 0) },
-            { label: 'New requests', value: Number(counts.newRequests || 0) },
+            { label: 'Low stock', value: Number(counts.lowStock || 0), caption: 'items at/under reorder' },
+            { label: 'Pending review', value: Number(counts.pendingReview || 0), caption: 'jobs waiting approval' },
+            { label: 'Unpaid invoices', value: Number(counts.unpaidInvoices || 0), caption: 'awaiting payment' },
+            { label: 'New requests', value: Number(counts.newRequests || 0), caption: 'incoming requests' },
           ].map((item) => `
             <article class="admin-stat-card">
-              <strong>${escapeHtml(item.label)}</strong>
-              <span>${escapeHtml(String(item.value))}</span>
+              <strong class="admin-stat-title">${escapeHtml(item.label)}</strong>
+              <span class="admin-stat-value">${escapeHtml(String(item.value))}</span>
+              <span class="admin-stat-caption">${escapeHtml(item.caption)}</span>
             </article>
           `).join('');
           list.innerHTML = lowStockItems.length ? `
