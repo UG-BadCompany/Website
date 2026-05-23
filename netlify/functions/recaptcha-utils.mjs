@@ -19,8 +19,16 @@ export const verifyRecaptchaToken = async ({ token, request, action }) => {
     body: params.toString(),
   });
   const result = await response.json().catch(() => ({}));
-  const score = Number(result.score || 0);
-  const actionMatches = !action || !result.action || result.action === action;
-  const passed = Boolean(result.success) && actionMatches && score >= 0.5;
-  return { ok: passed, reason: passed ? 'ok' : 'failed', result };
+  const hasScore = typeof result.score === 'number' || (typeof result.score === 'string' && result.score !== '');
+  const score = hasScore ? Number(result.score) : null;
+  const hasAction = typeof result.action === 'string' && result.action.trim() !== '';
+  const actionMatches = !action || !hasAction || result.action === action;
+  const scorePasses = !hasScore || Number.isNaN(score) ? true : score >= 0.3;
+  const passed = Boolean(result.success) && actionMatches && scorePasses;
+  const reason = passed
+    ? 'ok'
+    : (!result.success ? `provider-error:${(result['error-codes'] || []).join(',') || 'unknown'}`
+      : !actionMatches ? `action-mismatch:${result.action || 'missing'}`
+        : `low-score:${score}`);
+  return { ok: passed, reason, result };
 };

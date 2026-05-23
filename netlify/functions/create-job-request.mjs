@@ -106,7 +106,7 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
 
   const recaptchaCheck = await verifyRecaptchaToken({ token: payload.recaptchaToken, request, action: 'request_work' });
   if (!recaptchaCheck.ok) {
-    return json(403, { ok: false, message: 'reCAPTCHA verification failed. Please try again.' });
+    return json(403, { ok: false, message: `reCAPTCHA verification failed. Please try again. (${recaptchaCheck.reason})` });
   }
 
   const validationError = validatePayload(payload);
