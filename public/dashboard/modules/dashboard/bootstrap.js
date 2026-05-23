@@ -1325,13 +1325,16 @@
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
-          const counts = alerts.counts || {};
-          const lowStockItems = Array.isArray(alerts.lowStockItems) ? alerts.lowStockItems : [];
+          const counts = alerts.counts || result.summary || {};
+          const lowStockItems = Array.isArray(alerts.lowStockItems)
+            ? alerts.lowStockItems
+            : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
             { label: 'Low stock', value: Number(counts.lowStock || 0) },
             { label: 'Pending review', value: Number(counts.pendingReview || 0) },
             { label: 'Unpaid invoices', value: Number(counts.unpaidInvoices || 0) },
+            { label: 'New requests', value: Number(counts.newRequests || 0) },
           ].map((item) => `
             <article class="admin-stat-card">
               <strong>${escapeHtml(item.label)}</strong>
@@ -1345,7 +1348,7 @@
                 <span class="admin-request-badge">${escapeHtml(item.unit || 'unit')}</span>
                 <strong>${escapeHtml(item.name || 'Unnamed part')}</strong>
                 <div class="admin-request-meta">
-                  <span>Qty: ${escapeHtml(String(item.quantity ?? 0))}</span>
+                  <span>Qty: ${escapeHtml(String(item.quantityOnHand ?? item.quantity ?? 0))}</span>
                   <span>Reorder at: ${escapeHtml(String(item.reorderPoint ?? 0))}</span>
                 </div>
               </article>
