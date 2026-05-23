@@ -1100,7 +1100,6 @@
         <nav class="nav-links" aria-label="Primary links">
           <a href="#services">Services</a>
           <a href="/login/?next=dashboard" data-dashboard-link>Dashboard</a>
-          <button class="btn btn-secondary" type="button" data-theme-toggle aria-label="Switch to light theme">Light mode</button>
           <a class="btn btn-primary" href="#estimate">Request Estimate</a>
         </nav>
       </div>
@@ -1323,26 +1322,6 @@
             window.location.assign('/login/?next=dashboard');
           }
         });
-      });
-    })();
-  </script>
-
-  <script>
-    (() => {
-      const toggle = document.querySelector('[data-theme-toggle]');
-      const applyTheme = (theme) => {
-        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = normalizedTheme;
-        if (toggle) {
-          toggle.textContent = normalizedTheme === 'light' ? 'Dark mode' : 'Light mode';
-          toggle.setAttribute('aria-label', `Switch to ${normalizedTheme === 'light' ? 'dark' : 'light'} theme`);
-        }
-      };
-      applyTheme(localStorage.getItem('ta-theme') || 'dark');
-      toggle?.addEventListener('click', () => {
-        const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('ta-theme', nextTheme);
-        applyTheme(nextTheme);
       });
     })();
   </script>
