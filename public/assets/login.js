@@ -35,14 +35,34 @@
           onReady();
           return;
         }
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
-        script.async = true;
-        script.defer = true;
-        script.dataset.recaptchaLoader = 'true';
-        script.onload = onReady;
-        script.onerror = () => reject(new Error('reCAPTCHA script failed to load.'));
-        document.head.appendChild(script);
+        const scriptSources = [
+          `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`,
+          `https://www.recaptcha.net/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`,
+        ];
+        let attempt = 0;
+        const loadNext = () => {
+          if (attempt >= scriptSources.length) {
+            reject(new Error('reCAPTCHA script failed to load from Google and fallback CDN.'));
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = scriptSources[attempt];
+          script.async = true;
+          script.defer = true;
+          script.dataset.recaptchaLoader = 'true';
+          script.onload = onReady;
+          script.onerror = () => {
+            script.remove();
+            attempt += 1;
+            loadNext();
+          };
+          document.head.appendChild(script);
+        };
+        loadNext();
+      });
+      recaptchaReadyPromise = recaptchaReadyPromise.catch((error) => {
+        recaptchaReadyPromise = null;
+        throw error;
       });
     }
     return recaptchaReadyPromise;
@@ -130,8 +150,8 @@
         try {
           await ensureRecaptchaReady(recaptchaSiteKey);
           payload.recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'login_magic_link' });
-        } catch {
-          setStatus('reCAPTCHA could not be completed. Please refresh and try again.', 'error');
+        } catch (error) {
+          setStatus(`reCAPTCHA could not be completed (${error?.message || 'unknown error'}).`, 'error');
           return;
         }
       }
