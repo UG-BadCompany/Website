@@ -1,6 +1,8 @@
 const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
 export const verifyRecaptchaToken = async ({ token, request, action }) => {
+  const enforceRecaptcha = String(process.env.RECAPTCHA_ENFORCE || 'true').toLowerCase() !== 'false';
+  if (!enforceRecaptcha) return { ok: true, reason: 'skipped-by-config' };
   const secret = process.env.RECAPTCHA_SECRET_KEY;
   if (!secret) return { ok: false, reason: 'missing-secret' };
   if (!token || typeof token !== 'string') return { ok: false, reason: 'missing-token' };
