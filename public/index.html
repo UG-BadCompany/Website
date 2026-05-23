@@ -1247,6 +1247,7 @@
     (() => {
       const form = document.querySelector('[data-job-request-form]');
       let resolvedRecaptchaSiteKey = '';
+      let recaptchaReadyPromise = null;
 
       if (!form || !window.fetch) {
         return;
@@ -1285,13 +1286,43 @@
         }
       };
 
+      const ensureRecaptchaReady = async (siteKey) => {
+        if (!siteKey) return false;
+        if (!recaptchaReadyPromise) {
+          recaptchaReadyPromise = new Promise((resolve, reject) => {
+            const existing = document.querySelector('script[data-recaptcha-loader="true"]');
+            const onReady = () => {
+              if (!window.grecaptcha?.ready) {
+                reject(new Error('reCAPTCHA library unavailable.'));
+                return;
+              }
+              window.grecaptcha.ready(() => resolve(true));
+            };
+            if (existing) {
+              onReady();
+              return;
+            }
+            const script = document.createElement('script');
+            script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+            script.async = true;
+            script.defer = true;
+            script.dataset.recaptchaLoader = 'true';
+            script.onload = onReady;
+            script.onerror = () => reject(new Error('reCAPTCHA script failed to load.'));
+            document.head.appendChild(script);
+          });
+        }
+        return recaptchaReadyPromise;
+      };
+
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(form);
         const recaptchaSiteKey = await resolveRecaptchaSiteKey();
-        if (recaptchaSiteKey && window.grecaptcha?.execute) {
+        if (recaptchaSiteKey) {
           try {
+            await ensureRecaptchaReady(recaptchaSiteKey);
             const recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'request_work' });
             formData.set('recaptchaToken', recaptchaToken);
             const recaptchaInput = form.querySelector('input[name="recaptchaToken"]');
@@ -1337,8 +1368,6 @@
       });
     })();
   </script>
-  <script src="https://www.google.com/recaptcha/api.js" defer></script>
-
   <script>
     (() => {
       const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');
