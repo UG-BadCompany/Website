@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard | T&A Contracting</title>
+  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico">
   <meta name="description" content="Modern secure dashboard for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
@@ -1870,7 +1871,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
   <main class="wrap" data-dashboard-root>
     <section class="hero">
       <div class="dashboard-hero">
@@ -1885,7 +1886,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
-        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
@@ -2298,7 +2299,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     <section class="card admin-activity" data-admin-alerts data-dashboard-section data-views="admin" hidden>
       <strong>Operational alerts</strong>
       <div class="client-request-form-actions">
-        <button class="btn btn-soft" type="button" data-admin-alerts-enable-notifications>Enable browser notifications</button>
         <span data-admin-alerts-notification-status aria-live="polite"></span>
       </div>
       <p class="session-status" data-admin-alerts-status role="status" aria-live="polite">Loading alerts…</p>
