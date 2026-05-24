@@ -1305,7 +1305,28 @@
         const status = document.querySelector('[data-admin-alerts-status]');
         const summary = document.querySelector('[data-admin-alerts-summary]');
         const list = document.querySelector('[data-admin-alerts-list]');
+        const notificationStatus = document.querySelector('[data-admin-alerts-notification-status]');
         if (!panel || !status || !summary || !list) return;
+        const notificationKey = 'ta_admin_alerts_notifications_enabled';
+        if (!window.taAdminAlertState) {
+          window.taAdminAlertState = {
+            lastCounts: null,
+            pollingId: null,
+            notificationsEnabled: localStorage.getItem(notificationKey) === '1',
+          };
+        }
+        const alertState = window.taAdminAlertState;
+        const updateNotificationStatus = () => {
+          if (!notificationStatus) return;
+          const permission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+          const enabled = alertState.notificationsEnabled && permission === 'granted';
+          notificationStatus.textContent = enabled
+            ? 'Browser notifications are on.'
+            : permission === 'denied'
+              ? 'Browser notifications are blocked in your browser settings.'
+              : 'Browser notifications are off.';
+        };
+        updateNotificationStatus();
 
         status.textContent = 'Loading alerts…';
         summary.innerHTML = '';
@@ -1316,19 +1337,40 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
           const counts = alerts.counts || result.summary || {};
+          const mappedCounts = {
+            lowStock: Number(counts.lowStock || 0),
+            pendingReview: Number(counts.pendingReview || 0),
+            unpaidInvoices: Number(counts.unpaidInvoices || 0),
+            newRequests: Number(counts.newRequests || 0),
+          };
           const lowStockItems = Array.isArray(alerts.lowStockItems)
             ? alerts.lowStockItems
             : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
+          if (alertState.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted' && alertState.lastCounts) {
+            const raised = [];
+            if (mappedCounts.lowStock > Number(alertState.lastCounts.lowStock || 0)) raised.push(`Low stock: ${mappedCounts.lowStock}`);
+            if (mappedCounts.pendingReview > Number(alertState.lastCounts.pendingReview || 0)) raised.push(`Pending review: ${mappedCounts.pendingReview}`);
+            if (mappedCounts.unpaidInvoices > Number(alertState.lastCounts.unpaidInvoices || 0)) raised.push(`Unpaid invoices: ${mappedCounts.unpaidInvoices}`);
+            if (mappedCounts.newRequests > Number(alertState.lastCounts.newRequests || 0)) raised.push(`New requests: ${mappedCounts.newRequests}`);
+            if (raised.length) {
+              new Notification('T&A dashboard alerts updated', {
+                body: raised.join(' • '),
+                tag: 'ta-admin-alerts',
+              });
+            }
+          }
+          alertState.lastCounts = mappedCounts;
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
-            { label: 'Low stock', value: Number(counts.lowStock || 0) },
-            { label: 'Pending review', value: Number(counts.pendingReview || 0) },
-            { label: 'Unpaid invoices', value: Number(counts.unpaidInvoices || 0) },
-            { label: 'New requests', value: Number(counts.newRequests || 0) },
+            { label: 'Low stock', value: mappedCounts.lowStock, caption: 'items at/under reorder' },
+            { label: 'Pending review', value: mappedCounts.pendingReview, caption: 'jobs waiting approval' },
+            { label: 'Unpaid invoices', value: mappedCounts.unpaidInvoices, caption: 'awaiting payment' },
+            { label: 'New requests', value: mappedCounts.newRequests, caption: 'incoming requests' },
           ].map((item) => `
             <article class="admin-stat-card">
-              <strong>${escapeHtml(item.label)}</strong>
-              <span>${escapeHtml(String(item.value))}</span>
+              <strong class="admin-stat-title">${escapeHtml(item.label)}</strong>
+              <span class="admin-stat-value">${escapeHtml(String(item.value))}</span>
+              <span class="admin-stat-caption">${escapeHtml(item.caption)}</span>
             </article>
           `).join('');
           list.innerHTML = lowStockItems.length ? `
@@ -1347,6 +1389,32 @@
         } catch (error) {
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
+        }
+        if (!panel.dataset.notificationBound) {
+          panel.dataset.notificationBound = 'true';
+          panel.querySelector('[data-admin-alerts-enable-notifications]')?.addEventListener('click', async () => {
+            if (typeof Notification === 'undefined') {
+              if (notificationStatus) notificationStatus.textContent = 'This browser does not support notifications.';
+              return;
+            }
+            if (Notification.permission === 'denied') {
+              if (notificationStatus) notificationStatus.textContent = 'Notifications are blocked. Please allow them in browser settings.';
+              return;
+            }
+            const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+            alertState.notificationsEnabled = permission === 'granted';
+            localStorage.setItem(notificationKey, alertState.notificationsEnabled ? '1' : '0');
+            updateNotificationStatus();
+            if (alertState.notificationsEnabled) {
+              new Notification('T&A dashboard alerts enabled', { body: 'You will now receive browser notifications for new alert increases.' });
+            }
+          });
+        }
+        if (!alertState.pollingId) {
+          alertState.pollingId = window.setInterval(() => {
+            const alertsPanelVisible = !panel.hidden;
+            if (alertsPanelVisible) loadAdminAlerts();
+          }, 60000);
         }
       };
 
