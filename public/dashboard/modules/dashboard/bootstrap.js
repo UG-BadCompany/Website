@@ -644,6 +644,22 @@
           const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
           section.hidden = !views.includes(nextView) || !hasRequiredPermission;
         });
+        const workspace = new URLSearchParams(window.location.search).get('workspace');
+        if (nextView === 'admin' && workspace) {
+          const workspaceSelectors = {
+            'work-orders': '#admin-work-orders',
+            invoices: '[data-admin-invoices]',
+            inventory: '[data-admin-inventory]',
+            'audit-activity': '[data-admin-activity]',
+            alerts: '[data-admin-alerts]',
+          };
+          const focusedSelector = workspaceSelectors[workspace];
+          if (focusedSelector) {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const focusedSection = document.querySelector(focusedSelector);
+            if (focusedSection) focusedSection.hidden = false;
+          }
+        }
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
           const isActive = button.dataset.viewButton === nextView;
@@ -741,6 +757,18 @@
           request.estimatedStartDate ? `Est. start: ${formatDate(request.estimatedStartDate)}` : '',
           request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
         ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
+        const requestStatus = String(request.status || 'new');
+        const adminNextAction = ({
+          new: { label: 'Create quote', hint: 'Step 1: Send a quote to client before assignment.' },
+          quote_in_progress: { label: 'Send quote', hint: 'Step 1: Finalize and send quote to client.' },
+          quote_sent: { label: 'Track approval', hint: 'Step 2: Wait for client approval before scheduling.' },
+          accepted: { label: 'Assign worker', hint: 'Step 3: Quote approved — assign a worker.' },
+          scheduled: { label: 'Start job', hint: 'Step 4: Worker can begin in-progress updates.' },
+          in_progress: { label: 'Review progress', hint: 'Step 4: Track updates, notes, and materials.' },
+          pending_review: { label: 'Approve completion', hint: 'Step 5: Review completed work before invoicing.' },
+          waiting_payment: { label: 'Collect payment', hint: 'Step 6: Confirm invoice payment and close job.' },
+          completed: { label: 'View closed order', hint: 'Closed: Work order is complete.' },
+        })[requestStatus] || { label: 'Open workflow', hint: 'Open workflow and continue to next step.' };
 
         return `
           <article class="${className}">
@@ -754,12 +782,34 @@
             </div>
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+            ${admin ? `<p class="request-update-note"><strong>Next step:</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };
 
       const renderAdminWorkOrderSummary = (request, assignments = [], quote = null) => {
+        const status = String(request.status || 'new');
+        const workflowSteps = [
+          { key: 'new', label: 'Request intake' },
+          { key: 'quote_in_progress', label: 'Build quote' },
+          { key: 'quote_sent', label: 'Client review' },
+          { key: 'accepted', label: 'Schedule + assign' },
+          { key: 'in_progress', label: 'Worker in field' },
+          { key: 'pending_review', label: 'Admin/client review' },
+          { key: 'waiting_payment', label: 'Invoice + payment' },
+          { key: 'completed', label: 'Complete' },
+        ];
+        const workflowIndex = Math.max(0, workflowSteps.findIndex((step) => step.key === status));
+        const nextActionLabel = ({
+          new: 'Create or update the quote draft.',
+          quote_in_progress: 'Send quote to client for approval.',
+          quote_sent: 'Follow up and capture quote decision.',
+          accepted: 'Assign worker and confirm schedule.',
+          in_progress: 'Track worker updates and materials.',
+          pending_review: 'Resolve punch items and approve completion.',
+          waiting_payment: 'Send payment link and confirm payment.',
+          completed: 'Archive notes and close the work order.',
+        })[status] || 'Review work order details and continue workflow.';
         const primaryAssignment = assignments[0] || null;
         const timeline = [
           { label: 'Request created', value: request.createdAt ? formatDate(String(request.createdAt).slice(0, 10)) : '' },
@@ -788,10 +838,14 @@
               <span>${escapeHtml(request.city || 'No city')}</span>
             </div>
             <p>${escapeHtml(request.description || 'No work description provided.')}</p>
+            <p class="request-update-note"><strong>Recommended next action:</strong> ${escapeHtml(nextActionLabel)}</p>
             <div class="client-quote-meta">
               <span>${escapeHtml(quoteMeta)}</span>
               <span>${escapeHtml(assignmentMeta)}</span>
               <span>${escapeHtml(request.adminNotes ? 'Internal notes saved' : 'No internal notes')}</span>
+            </div>
+            <div class="client-quote-meta" aria-label="Workflow progress">
+              ${workflowSteps.map((step, stepIndex) => `<span class="admin-request-badge" style="${stepIndex <= workflowIndex ? 'opacity:1;' : 'opacity:.45;'}">${escapeHtml(step.label)}</span>`).join('')}
             </div>
             <div class="client-quote-list">
               ${timeline.map((item) => `
@@ -1300,6 +1354,12 @@
         }
       };
 
+      const setAlertsUnreadIndicator = (show) => {
+        document.querySelectorAll('[data-admin-alerts-shortcut]').forEach((button) => {
+          button.setAttribute('data-has-unread-alert', show ? 'true' : 'false');
+        });
+      };
+
       const loadAdminAlerts = async () => {
         const panel = document.querySelector('[data-admin-alerts]');
         const status = document.querySelector('[data-admin-alerts-status]');
@@ -1337,6 +1397,7 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
           const counts = alerts.counts || result.summary || {};
+          const previousCounts = alertState.lastCounts || null;
           const mappedCounts = {
             lowStock: Number(counts.lowStock || 0),
             pendingReview: Number(counts.pendingReview || 0),
@@ -1359,6 +1420,10 @@
               });
             }
           }
+          const hasRaisedAlert = previousCounts
+            ? Object.keys(mappedCounts).some((key) => mappedCounts[key] > Number(previousCounts[key] || 0))
+            : Object.values(mappedCounts).some((value) => value > 0);
+          if (hasRaisedAlert) setAlertsUnreadIndicator(true);
           alertState.lastCounts = mappedCounts;
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
@@ -1389,26 +1454,6 @@
         } catch (error) {
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
-        }
-        if (!panel.dataset.notificationBound) {
-          panel.dataset.notificationBound = 'true';
-          panel.querySelector('[data-admin-alerts-enable-notifications]')?.addEventListener('click', async () => {
-            if (typeof Notification === 'undefined') {
-              if (notificationStatus) notificationStatus.textContent = 'This browser does not support notifications.';
-              return;
-            }
-            if (Notification.permission === 'denied') {
-              if (notificationStatus) notificationStatus.textContent = 'Notifications are blocked. Please allow them in browser settings.';
-              return;
-            }
-            const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-            alertState.notificationsEnabled = permission === 'granted';
-            localStorage.setItem(notificationKey, alertState.notificationsEnabled ? '1' : '0');
-            updateNotificationStatus();
-            if (alertState.notificationsEnabled) {
-              new Notification('T&A dashboard alerts enabled', { body: 'You will now receive browser notifications for new alert increases.' });
-            }
-          });
         }
         if (!alertState.pollingId) {
           alertState.pollingId = window.setInterval(() => {
@@ -2773,6 +2818,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
         let activeToolConfig = null;
+        const workspaceRouteByKey = {
+          workOrders: 'work-orders',
+          invoices: 'invoices',
+          inventory: 'inventory',
+          activity: 'audit-activity',
+          alerts: 'alerts',
+        };
+        const persistWorkspaceRoute = (config) => {
+          const workspace = workspaceRouteByKey[config?.key];
+          if (!workspace) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', 'admin');
+          url.searchParams.set('workspace', workspace);
+          window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+        };
 
         const openWorkspaceInDashboard = (config, selectedItem = null) => {
           if (!config) return;
@@ -2793,8 +2853,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
           if (config.key === 'alerts') {
             revealOne('[data-admin-alerts]');
+            setAlertsUnreadIndicator(false);
             loadAdminAlerts();
           }
+          persistWorkspaceRoute(config);
           if (selectedItem?.status && config.key === 'workOrders') {
             const statusFilter = document.querySelector('[data-admin-scope-select]');
             if (statusFilter) {
