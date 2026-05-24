@@ -758,6 +758,25 @@
           request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
         ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
         const requestStatus = String(request.status || 'new');
+        const workflowMini = [
+          ['new', 'Quote'],
+          ['quote_sent', 'Approval'],
+          ['accepted', 'Assign'],
+          ['in_progress', 'Work'],
+          ['waiting_payment', 'Pay'],
+        ];
+        const workflowDoneAt = {
+          new: 0,
+          quote_in_progress: 0,
+          quote_sent: 1,
+          accepted: 2,
+          scheduled: 2,
+          in_progress: 3,
+          pending_review: 3,
+          waiting_payment: 4,
+          completed: 4,
+        };
+        const doneIndex = workflowDoneAt[requestStatus] ?? -1;
         const adminNextAction = ({
           new: { label: 'Create quote', hint: 'Step 1: Send a quote to client before assignment.' },
           quote_in_progress: { label: 'Send quote', hint: 'Step 1: Finalize and send quote to client.' },
@@ -780,6 +799,9 @@
               <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
               ${scheduleMeta}
             </div>
+            ${admin ? `<div class="client-quote-meta" aria-label="Quick workflow">
+              ${workflowMini.map(([key, label], idx) => `<span class="admin-request-badge" style="${idx <= doneIndex ? 'opacity:1;' : 'opacity:.45;'}">${escapeHtml(label)}</span>`).join('')}
+            </div>` : ''}
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
             ${admin ? `<p class="request-update-note"><strong>Next step:</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
@@ -884,6 +906,18 @@
       const getFilteredAdminRequests = () => {
         const search = (document.querySelector('[data-admin-request-search]')?.value || '').trim().toLowerCase();
         const statusFilter = document.querySelector('[data-admin-request-status-filter]')?.value || '';
+        const workflowPriority = {
+          new: 1,
+          quote_in_progress: 2,
+          quote_sent: 3,
+          accepted: 4,
+          scheduled: 5,
+          in_progress: 6,
+          pending_review: 7,
+          waiting_payment: 8,
+          completed: 9,
+          cancelled: 10,
+        };
 
         return [...currentAdminRequests.values()].filter((request) => {
           if (statusFilter && request.status !== statusFilter) return false;
@@ -899,6 +933,14 @@
             request.description,
             request.adminNotes,
           ].some((value) => String(value || '').toLowerCase().includes(search));
+        }).sort((a, b) => {
+          const statusA = String(a.status || '').toLowerCase();
+          const statusB = String(b.status || '').toLowerCase();
+          const priorityDelta = (workflowPriority[statusA] || 99) - (workflowPriority[statusB] || 99);
+          if (priorityDelta !== 0) return priorityDelta;
+          const createdA = new Date(a.createdAt || 0).getTime();
+          const createdB = new Date(b.createdAt || 0).getTime();
+          return createdB - createdA;
         });
       };
 
