@@ -1300,6 +1300,12 @@
         }
       };
 
+      const setAlertsUnreadIndicator = (show) => {
+        document.querySelectorAll('[data-admin-alerts-shortcut]').forEach((button) => {
+          button.setAttribute('data-has-unread-alert', show ? 'true' : 'false');
+        });
+      };
+
       const loadAdminAlerts = async () => {
         const panel = document.querySelector('[data-admin-alerts]');
         const status = document.querySelector('[data-admin-alerts-status]');
@@ -1337,6 +1343,7 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
           const counts = alerts.counts || result.summary || {};
+          const previousCounts = alertState.lastCounts || null;
           const mappedCounts = {
             lowStock: Number(counts.lowStock || 0),
             pendingReview: Number(counts.pendingReview || 0),
@@ -1359,6 +1366,10 @@
               });
             }
           }
+          const hasRaisedAlert = previousCounts
+            ? Object.keys(mappedCounts).some((key) => mappedCounts[key] > Number(previousCounts[key] || 0))
+            : Object.values(mappedCounts).some((value) => value > 0);
+          if (hasRaisedAlert) setAlertsUnreadIndicator(true);
           alertState.lastCounts = mappedCounts;
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
@@ -1389,26 +1400,6 @@
         } catch (error) {
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
-        }
-        if (!panel.dataset.notificationBound) {
-          panel.dataset.notificationBound = 'true';
-          panel.querySelector('[data-admin-alerts-enable-notifications]')?.addEventListener('click', async () => {
-            if (typeof Notification === 'undefined') {
-              if (notificationStatus) notificationStatus.textContent = 'This browser does not support notifications.';
-              return;
-            }
-            if (Notification.permission === 'denied') {
-              if (notificationStatus) notificationStatus.textContent = 'Notifications are blocked. Please allow them in browser settings.';
-              return;
-            }
-            const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-            alertState.notificationsEnabled = permission === 'granted';
-            localStorage.setItem(notificationKey, alertState.notificationsEnabled ? '1' : '0');
-            updateNotificationStatus();
-            if (alertState.notificationsEnabled) {
-              new Notification('T&A dashboard alerts enabled', { body: 'You will now receive browser notifications for new alert increases.' });
-            }
-          });
         }
         if (!alertState.pollingId) {
           alertState.pollingId = window.setInterval(() => {
@@ -2793,6 +2784,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
           if (config.key === 'alerts') {
             revealOne('[data-admin-alerts]');
+            setAlertsUnreadIndicator(false);
             loadAdminAlerts();
           }
           if (selectedItem?.status && config.key === 'workOrders') {
