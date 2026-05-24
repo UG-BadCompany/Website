@@ -757,6 +757,18 @@
           request.estimatedStartDate ? `Est. start: ${formatDate(request.estimatedStartDate)}` : '',
           request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
         ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
+        const requestStatus = String(request.status || 'new');
+        const adminNextAction = ({
+          new: { label: 'Create quote', hint: 'Step 1: Send a quote to client before assignment.' },
+          quote_in_progress: { label: 'Send quote', hint: 'Step 1: Finalize and send quote to client.' },
+          quote_sent: { label: 'Track approval', hint: 'Step 2: Wait for client approval before scheduling.' },
+          accepted: { label: 'Assign worker', hint: 'Step 3: Quote approved — assign a worker.' },
+          scheduled: { label: 'Start job', hint: 'Step 4: Worker can begin in-progress updates.' },
+          in_progress: { label: 'Review progress', hint: 'Step 4: Track updates, notes, and materials.' },
+          pending_review: { label: 'Approve completion', hint: 'Step 5: Review completed work before invoicing.' },
+          waiting_payment: { label: 'Collect payment', hint: 'Step 6: Confirm invoice payment and close job.' },
+          completed: { label: 'View closed order', hint: 'Closed: Work order is complete.' },
+        })[requestStatus] || { label: 'Open workflow', hint: 'Open workflow and continue to next step.' };
 
         return `
           <article class="${className}">
@@ -770,7 +782,7 @@
             </div>
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open workflow</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+            ${admin ? `<p class="request-update-note"><strong>Next step:</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };

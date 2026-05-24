@@ -757,6 +757,18 @@
           request.estimatedStartDate ? `Est. start: ${formatDate(request.estimatedStartDate)}` : '',
           request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
         ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
+        const requestStatus = String(request.status || 'new');
+        const adminNextAction = ({
+          new: { label: 'Create quote', hint: 'Step 1: Send a quote to client before assignment.' },
+          quote_in_progress: { label: 'Send quote', hint: 'Step 1: Finalize and send quote to client.' },
+          quote_sent: { label: 'Track approval', hint: 'Step 2: Wait for client approval before scheduling.' },
+          accepted: { label: 'Assign worker', hint: 'Step 3: Quote approved — assign a worker.' },
+          scheduled: { label: 'Start job', hint: 'Step 4: Worker can begin in-progress updates.' },
+          in_progress: { label: 'Review progress', hint: 'Step 4: Track updates, notes, and materials.' },
+          pending_review: { label: 'Approve completion', hint: 'Step 5: Review completed work before invoicing.' },
+          waiting_payment: { label: 'Collect payment', hint: 'Step 6: Confirm invoice payment and close job.' },
+          completed: { label: 'View closed order', hint: 'Closed: Work order is complete.' },
+        })[requestStatus] || { label: 'Open workflow', hint: 'Open workflow and continue to next step.' };
 
         return `
           <article class="${className}">
@@ -770,7 +782,7 @@
             </div>
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open workflow</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+            ${admin ? `<p class="request-update-note"><strong>Next step:</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };
@@ -1353,11 +1365,28 @@
         const status = document.querySelector('[data-admin-alerts-status]');
         const summary = document.querySelector('[data-admin-alerts-summary]');
         const list = document.querySelector('[data-admin-alerts-list]');
+        const notificationStatus = document.querySelector('[data-admin-alerts-notification-status]');
         if (!panel || !status || !summary || !list) return;
+        const notificationKey = 'ta_admin_alerts_notifications_enabled';
         if (!window.taAdminAlertState) {
-          window.taAdminAlertState = { lastCounts: null };
+          window.taAdminAlertState = {
+            lastCounts: null,
+            pollingId: null,
+            notificationsEnabled: localStorage.getItem(notificationKey) === '1',
+          };
         }
         const alertState = window.taAdminAlertState;
+        const updateNotificationStatus = () => {
+          if (!notificationStatus) return;
+          const permission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+          const enabled = alertState.notificationsEnabled && permission === 'granted';
+          notificationStatus.textContent = enabled
+            ? 'Browser notifications are on.'
+            : permission === 'denied'
+              ? 'Browser notifications are blocked in your browser settings.'
+              : 'Browser notifications are off.';
+        };
+        updateNotificationStatus();
 
         status.textContent = 'Loading alerts…';
         summary.innerHTML = '';
@@ -1375,24 +1404,38 @@
             unpaidInvoices: Number(counts.unpaidInvoices || 0),
             newRequests: Number(counts.newRequests || 0),
           };
+          const lowStockItems = Array.isArray(alerts.lowStockItems)
+            ? alerts.lowStockItems
+            : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
+          if (alertState.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted' && alertState.lastCounts) {
+            const raised = [];
+            if (mappedCounts.lowStock > Number(alertState.lastCounts.lowStock || 0)) raised.push(`Low stock: ${mappedCounts.lowStock}`);
+            if (mappedCounts.pendingReview > Number(alertState.lastCounts.pendingReview || 0)) raised.push(`Pending review: ${mappedCounts.pendingReview}`);
+            if (mappedCounts.unpaidInvoices > Number(alertState.lastCounts.unpaidInvoices || 0)) raised.push(`Unpaid invoices: ${mappedCounts.unpaidInvoices}`);
+            if (mappedCounts.newRequests > Number(alertState.lastCounts.newRequests || 0)) raised.push(`New requests: ${mappedCounts.newRequests}`);
+            if (raised.length) {
+              new Notification('T&A dashboard alerts updated', {
+                body: raised.join(' • '),
+                tag: 'ta-admin-alerts',
+              });
+            }
+          }
           const hasRaisedAlert = previousCounts
             ? Object.keys(mappedCounts).some((key) => mappedCounts[key] > Number(previousCounts[key] || 0))
             : Object.values(mappedCounts).some((value) => value > 0);
           if (hasRaisedAlert) setAlertsUnreadIndicator(true);
           alertState.lastCounts = mappedCounts;
-          const lowStockItems = Array.isArray(alerts.lowStockItems)
-            ? alerts.lowStockItems
-            : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
-            { label: 'Low stock', value: mappedCounts.lowStock },
-            { label: 'Pending review', value: mappedCounts.pendingReview },
-            { label: 'Unpaid invoices', value: mappedCounts.unpaidInvoices },
-            { label: 'New requests', value: mappedCounts.newRequests },
+            { label: 'Low stock', value: mappedCounts.lowStock, caption: 'items at/under reorder' },
+            { label: 'Pending review', value: mappedCounts.pendingReview, caption: 'jobs waiting approval' },
+            { label: 'Unpaid invoices', value: mappedCounts.unpaidInvoices, caption: 'awaiting payment' },
+            { label: 'New requests', value: mappedCounts.newRequests, caption: 'incoming requests' },
           ].map((item) => `
             <article class="admin-stat-card">
-              <strong>${escapeHtml(item.label)}</strong>
-              <span>${escapeHtml(String(item.value))}</span>
+              <strong class="admin-stat-title">${escapeHtml(item.label)}</strong>
+              <span class="admin-stat-value">${escapeHtml(String(item.value))}</span>
+              <span class="admin-stat-caption">${escapeHtml(item.caption)}</span>
             </article>
           `).join('');
           list.innerHTML = lowStockItems.length ? `
@@ -1411,6 +1454,12 @@
         } catch (error) {
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
+        }
+        if (!alertState.pollingId) {
+          alertState.pollingId = window.setInterval(() => {
+            const alertsPanelVisible = !panel.hidden;
+            if (alertsPanelVisible) loadAdminAlerts();
+          }, 60000);
         }
       };
 
