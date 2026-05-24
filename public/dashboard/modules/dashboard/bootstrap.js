@@ -644,6 +644,22 @@
           const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
           section.hidden = !views.includes(nextView) || !hasRequiredPermission;
         });
+        const workspace = new URLSearchParams(window.location.search).get('workspace');
+        if (nextView === 'admin' && workspace) {
+          const workspaceSelectors = {
+            'work-orders': '#admin-work-orders',
+            invoices: '[data-admin-invoices]',
+            inventory: '[data-admin-inventory]',
+            'audit-activity': '[data-admin-activity]',
+            alerts: '[data-admin-alerts]',
+          };
+          const focusedSelector = workspaceSelectors[workspace];
+          if (focusedSelector) {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const focusedSection = document.querySelector(focusedSelector);
+            if (focusedSection) focusedSection.hidden = false;
+          }
+        }
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
           const isActive = button.dataset.viewButton === nextView;
@@ -1300,6 +1316,12 @@
         }
       };
 
+      const setAlertsUnreadIndicator = (show) => {
+        document.querySelectorAll('[data-admin-alerts-shortcut]').forEach((button) => {
+          button.setAttribute('data-has-unread-alert', show ? 'true' : 'false');
+        });
+      };
+
       const loadAdminAlerts = async () => {
         const panel = document.querySelector('[data-admin-alerts]');
         const status = document.querySelector('[data-admin-alerts-status]');
@@ -1337,6 +1359,7 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
           const counts = alerts.counts || result.summary || {};
+          const previousCounts = alertState.lastCounts || null;
           const mappedCounts = {
             lowStock: Number(counts.lowStock || 0),
             pendingReview: Number(counts.pendingReview || 0),
@@ -1359,6 +1382,10 @@
               });
             }
           }
+          const hasRaisedAlert = previousCounts
+            ? Object.keys(mappedCounts).some((key) => mappedCounts[key] > Number(previousCounts[key] || 0))
+            : Object.values(mappedCounts).some((value) => value > 0);
+          if (hasRaisedAlert) setAlertsUnreadIndicator(true);
           alertState.lastCounts = mappedCounts;
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
@@ -1389,26 +1416,6 @@
         } catch (error) {
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
-        }
-        if (!panel.dataset.notificationBound) {
-          panel.dataset.notificationBound = 'true';
-          panel.querySelector('[data-admin-alerts-enable-notifications]')?.addEventListener('click', async () => {
-            if (typeof Notification === 'undefined') {
-              if (notificationStatus) notificationStatus.textContent = 'This browser does not support notifications.';
-              return;
-            }
-            if (Notification.permission === 'denied') {
-              if (notificationStatus) notificationStatus.textContent = 'Notifications are blocked. Please allow them in browser settings.';
-              return;
-            }
-            const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-            alertState.notificationsEnabled = permission === 'granted';
-            localStorage.setItem(notificationKey, alertState.notificationsEnabled ? '1' : '0');
-            updateNotificationStatus();
-            if (alertState.notificationsEnabled) {
-              new Notification('T&A dashboard alerts enabled', { body: 'You will now receive browser notifications for new alert increases.' });
-            }
-          });
         }
         if (!alertState.pollingId) {
           alertState.pollingId = window.setInterval(() => {
@@ -2773,6 +2780,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
         let activeToolConfig = null;
+        const workspaceRouteByKey = {
+          workOrders: 'work-orders',
+          invoices: 'invoices',
+          inventory: 'inventory',
+          activity: 'audit-activity',
+          alerts: 'alerts',
+        };
+        const persistWorkspaceRoute = (config) => {
+          const workspace = workspaceRouteByKey[config?.key];
+          if (!workspace) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', 'admin');
+          url.searchParams.set('workspace', workspace);
+          window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+        };
 
         const openWorkspaceInDashboard = (config, selectedItem = null) => {
           if (!config) return;
@@ -2793,8 +2815,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
           if (config.key === 'alerts') {
             revealOne('[data-admin-alerts]');
+            setAlertsUnreadIndicator(false);
             loadAdminAlerts();
           }
+          persistWorkspaceRoute(config);
           if (selectedItem?.status && config.key === 'workOrders') {
             const statusFilter = document.querySelector('[data-admin-scope-select]');
             if (statusFilter) {
