@@ -644,6 +644,22 @@
           const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
           section.hidden = !views.includes(nextView) || !hasRequiredPermission;
         });
+        const workspace = new URLSearchParams(window.location.search).get('workspace');
+        if (nextView === 'admin' && workspace) {
+          const workspaceSelectors = {
+            'work-orders': '#admin-work-orders',
+            invoices: '[data-admin-invoices]',
+            inventory: '[data-admin-inventory]',
+            'audit-activity': '[data-admin-activity]',
+            alerts: '[data-admin-alerts]',
+          };
+          const focusedSelector = workspaceSelectors[workspace];
+          if (focusedSelector) {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const focusedSection = document.querySelector(focusedSelector);
+            if (focusedSection) focusedSection.hidden = false;
+          }
+        }
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
           const isActive = button.dataset.viewButton === nextView;
