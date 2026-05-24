@@ -2318,6 +2318,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteSend = document.querySelector('[data-admin-quote-form] [name="sendToClient"]');
         const quoteFormTitle = document.querySelector('[data-admin-quote-form-title]');
         const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
+        const quoteMaterialItem = document.querySelector('[data-admin-quote-material-item]');
+        const quoteMaterialQty = document.querySelector('[data-admin-quote-material-qty]');
+        const quoteMaterialStatus = document.querySelector('[data-admin-quote-material-status]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
         const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
@@ -2353,10 +2356,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
         if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
         if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
+        if (quoteMaterialItem) {
+          quoteMaterialItem.innerHTML = '<option value="">Select inventory item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
+        }
+        if (quoteMaterialQty) quoteMaterialQty.value = '1';
+        if (quoteMaterialStatus) quoteMaterialStatus.textContent = 'Use this to build the quote from inventory parts before sending to the client.';
         const quoteApproved = ['accepted'].includes(savedQuote?.status || '') || ['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
         if (statusForm) statusForm.hidden = !quoteApproved;
         if (assignmentForm) assignmentForm.hidden = !quoteApproved;
-        if (inventoryForm) inventoryForm.hidden = !quoteApproved;
+        if (inventoryForm) inventoryForm.hidden = true;
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
         if (workOrderSummary) {
@@ -2548,6 +2556,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
+          quoteForm.querySelector('[data-admin-quote-material-add]')?.addEventListener('click', () => {
+            const summaryField = quoteForm.querySelector('[name="summary"]');
+            const itemSelect = quoteForm.querySelector('[data-admin-quote-material-item]');
+            const qtyInput = quoteForm.querySelector('[data-admin-quote-material-qty]');
+            const status = quoteForm.querySelector('[data-admin-quote-material-status]');
+            if (!summaryField || !itemSelect || !qtyInput) return;
+            const selected = itemSelect.options[itemSelect.selectedIndex];
+            const qty = Number(qtyInput.value || 0);
+            if (!selected || !selected.value) { if (status) status.textContent = 'Pick an inventory item first.'; return; }
+            if (!qty || qty <= 0) { if (status) status.textContent = 'Enter a quantity greater than zero.'; return; }
+            const line = `- ${qty} x ${selected.text.split('—')[0].trim()}`;
+            summaryField.value = summaryField.value ? `${summaryField.value.trim()}\n${line}` : `Materials:\n${line}`;
+            qtyInput.value = '1';
+            if (status) status.textContent = 'Part added to quote details.';
+          });
           quoteForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formStatus = document.querySelector('[data-admin-quote-form-status]');

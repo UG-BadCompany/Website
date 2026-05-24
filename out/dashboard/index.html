@@ -2101,6 +2101,18 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
                 </label>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
+              <div class="field-group">
+                <label>Quote materials / parts (optional)
+                  <select data-admin-quote-material-item>
+                    <option value="">Select inventory item</option>
+                  </select>
+                </label>
+                <label>Qty
+                  <input type="number" min="1" step="1" value="1" data-admin-quote-material-qty>
+                </label>
+                <button class="btn btn-soft" type="button" data-admin-quote-material-add>Add part to quote</button>
+              </div>
+              <p class="session-status" data-admin-quote-material-status>Use this to build the quote from inventory parts before sending to the client.</p>
               <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-assignment-form>
