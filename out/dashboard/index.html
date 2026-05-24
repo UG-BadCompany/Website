@@ -1374,6 +1374,19 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
     html[data-theme="light"] .dashboard-nav-row .btn-soft,
     html[data-theme="light"] .theme-toggle,
+    [data-admin-alerts-shortcut] { position: relative; }
+    [data-admin-alerts-shortcut][data-has-unread-alert="true"]::after {
+      content: "";
+      position: absolute;
+      top: 7px;
+      right: 9px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #ef4444;
+      border: 1.5px solid rgba(255,255,255,.92);
+      box-shadow: 0 0 0 2px rgba(239,68,68,.22);
+    }
     html[data-theme="light"] .account-session-row [data-logout-button] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
