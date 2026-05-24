@@ -1390,26 +1390,6 @@
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
         }
-        if (!panel.dataset.notificationBound) {
-          panel.dataset.notificationBound = 'true';
-          panel.querySelector('[data-admin-alerts-enable-notifications]')?.addEventListener('click', async () => {
-            if (typeof Notification === 'undefined') {
-              if (notificationStatus) notificationStatus.textContent = 'This browser does not support notifications.';
-              return;
-            }
-            if (Notification.permission === 'denied') {
-              if (notificationStatus) notificationStatus.textContent = 'Notifications are blocked. Please allow them in browser settings.';
-              return;
-            }
-            const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-            alertState.notificationsEnabled = permission === 'granted';
-            localStorage.setItem(notificationKey, alertState.notificationsEnabled ? '1' : '0');
-            updateNotificationStatus();
-            if (alertState.notificationsEnabled) {
-              new Notification('T&A dashboard alerts enabled', { body: 'You will now receive browser notifications for new alert increases.' });
-            }
-          });
-        }
         if (!alertState.pollingId) {
           alertState.pollingId = window.setInterval(() => {
             const alertsPanelVisible = !panel.hidden;
