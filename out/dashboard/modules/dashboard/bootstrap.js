@@ -644,6 +644,22 @@
           const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
           section.hidden = !views.includes(nextView) || !hasRequiredPermission;
         });
+        const workspace = new URLSearchParams(window.location.search).get('workspace');
+        if (nextView === 'admin' && workspace) {
+          const workspaceSelectors = {
+            'work-orders': '#admin-work-orders',
+            invoices: '[data-admin-invoices]',
+            inventory: '[data-admin-inventory]',
+            'audit-activity': '[data-admin-activity]',
+            alerts: '[data-admin-alerts]',
+          };
+          const focusedSelector = workspaceSelectors[workspace];
+          if (focusedSelector) {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const focusedSection = document.querySelector(focusedSelector);
+            if (focusedSection) focusedSection.hidden = false;
+          }
+        }
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
           const isActive = button.dataset.viewButton === nextView;
@@ -741,6 +757,39 @@
           request.estimatedStartDate ? `Est. start: ${formatDate(request.estimatedStartDate)}` : '',
           request.completionDate ? `Completed: ${formatDate(request.completionDate)}` : '',
         ].filter(Boolean).map((item) => `<span>${escapeHtml(item)}</span>`).join('');
+        const requestStatus = String(request.status || 'new');
+        const workflowMini = [
+          ['new', 'Quote'],
+          ['quote_sent', 'Approval'],
+          ['accepted', 'Assign'],
+          ['in_progress', 'Work'],
+          ['waiting_payment', 'Pay'],
+        ];
+        const quoteFirstStatuses = new Set(['new', 'quote_in_progress', 'quote_sent']);
+        const workflowDoneAt = {
+          new: 0,
+          quote_in_progress: 0,
+          quote_sent: 1,
+          accepted: 2,
+          scheduled: 2,
+          in_progress: 3,
+          pending_review: 3,
+          waiting_payment: 4,
+          completed: 4,
+        };
+        const doneIndex = workflowDoneAt[requestStatus] ?? -1;
+        const isQuoteFirstPhase = quoteFirstStatuses.has(requestStatus);
+        const adminNextAction = ({
+          new: { label: 'Create quote', hint: 'Step 1: Send a quote to client before assignment.' },
+          quote_in_progress: { label: 'Send quote', hint: 'Step 1: Finalize and send quote to client.' },
+          quote_sent: { label: 'Track approval', hint: 'Step 2: Wait for client approval before scheduling.' },
+          accepted: { label: 'Assign worker', hint: 'Step 3: Quote approved — assign a worker.' },
+          scheduled: { label: 'Start job', hint: 'Step 4: Worker can begin in-progress updates.' },
+          in_progress: { label: 'Review progress', hint: 'Step 4: Track updates, notes, and materials.' },
+          pending_review: { label: 'Approve completion', hint: 'Step 5: Review completed work before invoicing.' },
+          waiting_payment: { label: 'Collect payment', hint: 'Step 6: Confirm invoice payment and close job.' },
+          completed: { label: 'View closed order', hint: 'Closed: Work order is complete.' },
+        })[requestStatus] || { label: 'Open workflow', hint: 'Open workflow and continue to next step.' };
 
         return `
           <article class="${className}">
@@ -752,14 +801,42 @@
               <span>${escapeHtml(request.preferredTimeframe || 'Flexible')}</span>
               ${scheduleMeta}
             </div>
+            ${admin ? `<div class="client-quote-meta" aria-label="Quick workflow">
+              ${workflowMini.map(([key, label], idx) => {
+                const hiddenUntilQuoteApproved = isQuoteFirstPhase && idx > 1;
+                return `<span class="admin-request-badge" style="${hiddenUntilQuoteApproved ? 'opacity:.2;' : (idx <= doneIndex ? 'opacity:1;' : 'opacity:.45;')}">${escapeHtml(label)}</span>`;
+              }).join('')}
+            </div>` : ''}
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
-            ${admin ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">Open request</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+            ${admin ? `<p class="request-update-note"><strong>${isQuoteFirstPhase ? 'Quote phase (required first):' : 'Next step:'}</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };
 
       const renderAdminWorkOrderSummary = (request, assignments = [], quote = null) => {
+        const status = String(request.status || 'new');
+        const workflowSteps = [
+          { key: 'new', label: 'Request intake' },
+          { key: 'quote_in_progress', label: 'Build quote' },
+          { key: 'quote_sent', label: 'Client review' },
+          { key: 'accepted', label: 'Schedule + assign' },
+          { key: 'in_progress', label: 'Worker in field' },
+          { key: 'pending_review', label: 'Admin/client review' },
+          { key: 'waiting_payment', label: 'Invoice + payment' },
+          { key: 'completed', label: 'Complete' },
+        ];
+        const workflowIndex = Math.max(0, workflowSteps.findIndex((step) => step.key === status));
+        const nextActionLabel = ({
+          new: 'Create or update the quote draft.',
+          quote_in_progress: 'Send quote to client for approval.',
+          quote_sent: 'Follow up and capture quote decision.',
+          accepted: 'Assign worker and confirm schedule.',
+          in_progress: 'Track worker updates and materials.',
+          pending_review: 'Resolve punch items and approve completion.',
+          waiting_payment: 'Send payment link and confirm payment.',
+          completed: 'Archive notes and close the work order.',
+        })[status] || 'Review work order details and continue workflow.';
         const primaryAssignment = assignments[0] || null;
         const timeline = [
           { label: 'Request created', value: request.createdAt ? formatDate(String(request.createdAt).slice(0, 10)) : '' },
@@ -788,10 +865,14 @@
               <span>${escapeHtml(request.city || 'No city')}</span>
             </div>
             <p>${escapeHtml(request.description || 'No work description provided.')}</p>
+            <p class="request-update-note"><strong>Recommended next action:</strong> ${escapeHtml(nextActionLabel)}</p>
             <div class="client-quote-meta">
               <span>${escapeHtml(quoteMeta)}</span>
               <span>${escapeHtml(assignmentMeta)}</span>
               <span>${escapeHtml(request.adminNotes ? 'Internal notes saved' : 'No internal notes')}</span>
+            </div>
+            <div class="client-quote-meta" aria-label="Workflow progress">
+              ${workflowSteps.map((step, stepIndex) => `<span class="admin-request-badge" style="${stepIndex <= workflowIndex ? 'opacity:1;' : 'opacity:.45;'}">${escapeHtml(step.label)}</span>`).join('')}
             </div>
             <div class="client-quote-list">
               ${timeline.map((item) => `
@@ -830,6 +911,18 @@
       const getFilteredAdminRequests = () => {
         const search = (document.querySelector('[data-admin-request-search]')?.value || '').trim().toLowerCase();
         const statusFilter = document.querySelector('[data-admin-request-status-filter]')?.value || '';
+        const workflowPriority = {
+          new: 1,
+          quote_in_progress: 2,
+          quote_sent: 3,
+          accepted: 4,
+          scheduled: 5,
+          in_progress: 6,
+          pending_review: 7,
+          waiting_payment: 8,
+          completed: 9,
+          cancelled: 10,
+        };
 
         return [...currentAdminRequests.values()].filter((request) => {
           if (statusFilter && request.status !== statusFilter) return false;
@@ -845,6 +938,14 @@
             request.description,
             request.adminNotes,
           ].some((value) => String(value || '').toLowerCase().includes(search));
+        }).sort((a, b) => {
+          const statusA = String(a.status || '').toLowerCase();
+          const statusB = String(b.status || '').toLowerCase();
+          const priorityDelta = (workflowPriority[statusA] || 99) - (workflowPriority[statusB] || 99);
+          if (priorityDelta !== 0) return priorityDelta;
+          const createdA = new Date(a.createdAt || 0).getTime();
+          const createdB = new Date(b.createdAt || 0).getTime();
+          return createdB - createdA;
         });
       };
 
@@ -1300,12 +1401,39 @@
         }
       };
 
+      const setAlertsUnreadIndicator = (show) => {
+        document.querySelectorAll('[data-admin-alerts-shortcut]').forEach((button) => {
+          button.setAttribute('data-has-unread-alert', show ? 'true' : 'false');
+        });
+      };
+
       const loadAdminAlerts = async () => {
         const panel = document.querySelector('[data-admin-alerts]');
         const status = document.querySelector('[data-admin-alerts-status]');
         const summary = document.querySelector('[data-admin-alerts-summary]');
         const list = document.querySelector('[data-admin-alerts-list]');
+        const notificationStatus = document.querySelector('[data-admin-alerts-notification-status]');
         if (!panel || !status || !summary || !list) return;
+        const notificationKey = 'ta_admin_alerts_notifications_enabled';
+        if (!window.taAdminAlertState) {
+          window.taAdminAlertState = {
+            lastCounts: null,
+            pollingId: null,
+            notificationsEnabled: localStorage.getItem(notificationKey) === '1',
+          };
+        }
+        const alertState = window.taAdminAlertState;
+        const updateNotificationStatus = () => {
+          if (!notificationStatus) return;
+          const permission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+          const enabled = alertState.notificationsEnabled && permission === 'granted';
+          notificationStatus.textContent = enabled
+            ? 'Browser notifications are on.'
+            : permission === 'denied'
+              ? 'Browser notifications are blocked in your browser settings.'
+              : 'Browser notifications are off.';
+        };
+        updateNotificationStatus();
 
         status.textContent = 'Loading alerts…';
         summary.innerHTML = '';
@@ -1316,19 +1444,45 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
           const counts = alerts.counts || result.summary || {};
+          const previousCounts = alertState.lastCounts || null;
+          const mappedCounts = {
+            lowStock: Number(counts.lowStock || 0),
+            pendingReview: Number(counts.pendingReview || 0),
+            unpaidInvoices: Number(counts.unpaidInvoices || 0),
+            newRequests: Number(counts.newRequests || 0),
+          };
           const lowStockItems = Array.isArray(alerts.lowStockItems)
             ? alerts.lowStockItems
             : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
+          if (alertState.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted' && alertState.lastCounts) {
+            const raised = [];
+            if (mappedCounts.lowStock > Number(alertState.lastCounts.lowStock || 0)) raised.push(`Low stock: ${mappedCounts.lowStock}`);
+            if (mappedCounts.pendingReview > Number(alertState.lastCounts.pendingReview || 0)) raised.push(`Pending review: ${mappedCounts.pendingReview}`);
+            if (mappedCounts.unpaidInvoices > Number(alertState.lastCounts.unpaidInvoices || 0)) raised.push(`Unpaid invoices: ${mappedCounts.unpaidInvoices}`);
+            if (mappedCounts.newRequests > Number(alertState.lastCounts.newRequests || 0)) raised.push(`New requests: ${mappedCounts.newRequests}`);
+            if (raised.length) {
+              new Notification('T&A dashboard alerts updated', {
+                body: raised.join(' • '),
+                tag: 'ta-admin-alerts',
+              });
+            }
+          }
+          const hasRaisedAlert = previousCounts
+            ? Object.keys(mappedCounts).some((key) => mappedCounts[key] > Number(previousCounts[key] || 0))
+            : Object.values(mappedCounts).some((value) => value > 0);
+          if (hasRaisedAlert) setAlertsUnreadIndicator(true);
+          alertState.lastCounts = mappedCounts;
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
-            { label: 'Low stock', value: Number(counts.lowStock || 0) },
-            { label: 'Pending review', value: Number(counts.pendingReview || 0) },
-            { label: 'Unpaid invoices', value: Number(counts.unpaidInvoices || 0) },
-            { label: 'New requests', value: Number(counts.newRequests || 0) },
+            { label: 'Low stock', value: mappedCounts.lowStock, caption: 'items at/under reorder' },
+            { label: 'Pending review', value: mappedCounts.pendingReview, caption: 'jobs waiting approval' },
+            { label: 'Unpaid invoices', value: mappedCounts.unpaidInvoices, caption: 'awaiting payment' },
+            { label: 'New requests', value: mappedCounts.newRequests, caption: 'incoming requests' },
           ].map((item) => `
             <article class="admin-stat-card">
-              <strong>${escapeHtml(item.label)}</strong>
-              <span>${escapeHtml(String(item.value))}</span>
+              <strong class="admin-stat-title">${escapeHtml(item.label)}</strong>
+              <span class="admin-stat-value">${escapeHtml(String(item.value))}</span>
+              <span class="admin-stat-caption">${escapeHtml(item.caption)}</span>
             </article>
           `).join('');
           list.innerHTML = lowStockItems.length ? `
@@ -1347,6 +1501,12 @@
         } catch (error) {
           status.textContent = error.message;
           list.innerHTML = '<p class="session-status">Alerts are unavailable right now.</p>';
+        }
+        if (!alertState.pollingId) {
+          alertState.pollingId = window.setInterval(() => {
+            const alertsPanelVisible = !panel.hidden;
+            if (alertsPanelVisible) loadAdminAlerts();
+          }, 60000);
         }
       };
 
@@ -2158,10 +2318,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteSend = document.querySelector('[data-admin-quote-form] [name="sendToClient"]');
         const quoteFormTitle = document.querySelector('[data-admin-quote-form-title]');
         const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
+        const quoteMaterialItem = document.querySelector('[data-admin-quote-material-item]');
+        const quoteMaterialQty = document.querySelector('[data-admin-quote-material-qty]');
+        const quoteMaterialStatus = document.querySelector('[data-admin-quote-material-status]');
         const assignmentDate = document.querySelector('[data-admin-assignment-date]');
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
         const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
+        const statusForm = document.querySelector('[data-admin-status-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
         const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
@@ -2191,6 +2356,15 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
         if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
         if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
+        if (quoteMaterialItem) {
+          quoteMaterialItem.innerHTML = '<option value="">Select inventory item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
+        }
+        if (quoteMaterialQty) quoteMaterialQty.value = '1';
+        if (quoteMaterialStatus) quoteMaterialStatus.textContent = 'Use this to build the quote from inventory parts before sending to the client.';
+        const quoteApproved = ['accepted'].includes(savedQuote?.status || '') || ['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
+        if (statusForm) statusForm.hidden = !quoteApproved;
+        if (assignmentForm) assignmentForm.hidden = !quoteApproved;
+        if (inventoryForm) inventoryForm.hidden = true;
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
         if (workOrderSummary) {
@@ -2382,6 +2556,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
+          quoteForm.querySelector('[data-admin-quote-material-add]')?.addEventListener('click', () => {
+            const summaryField = quoteForm.querySelector('[name="summary"]');
+            const itemSelect = quoteForm.querySelector('[data-admin-quote-material-item]');
+            const qtyInput = quoteForm.querySelector('[data-admin-quote-material-qty]');
+            const status = quoteForm.querySelector('[data-admin-quote-material-status]');
+            if (!summaryField || !itemSelect || !qtyInput) return;
+            const selected = itemSelect.options[itemSelect.selectedIndex];
+            const qty = Number(qtyInput.value || 0);
+            if (!selected || !selected.value) { if (status) status.textContent = 'Pick an inventory item first.'; return; }
+            if (!qty || qty <= 0) { if (status) status.textContent = 'Enter a quantity greater than zero.'; return; }
+            const line = `- ${qty} x ${selected.text.split('—')[0].trim()}`;
+            summaryField.value = summaryField.value ? `${summaryField.value.trim()}\n${line}` : `Materials:\n${line}`;
+            qtyInput.value = '1';
+            if (status) status.textContent = 'Part added to quote details.';
+          });
           quoteForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
@@ -2705,6 +2894,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
         let activeToolConfig = null;
+        const workspaceRouteByKey = {
+          workOrders: 'work-orders',
+          invoices: 'invoices',
+          inventory: 'inventory',
+          activity: 'audit-activity',
+          alerts: 'alerts',
+        };
+        const persistWorkspaceRoute = (config) => {
+          const workspace = workspaceRouteByKey[config?.key];
+          if (!workspace) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', 'admin');
+          url.searchParams.set('workspace', workspace);
+          window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+        };
 
         const openWorkspaceInDashboard = (config, selectedItem = null) => {
           if (!config) return;
@@ -2725,8 +2929,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
           if (config.key === 'alerts') {
             revealOne('[data-admin-alerts]');
+            setAlertsUnreadIndicator(false);
             loadAdminAlerts();
           }
+          persistWorkspaceRoute(config);
           if (selectedItem?.status && config.key === 'workOrders') {
             const statusFilter = document.querySelector('[data-admin-scope-select]');
             if (statusFilter) {
