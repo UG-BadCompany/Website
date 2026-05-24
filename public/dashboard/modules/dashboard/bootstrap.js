@@ -765,6 +765,7 @@
           ['in_progress', 'Work'],
           ['waiting_payment', 'Pay'],
         ];
+        const quoteFirstStatuses = new Set(['new', 'quote_in_progress', 'quote_sent']);
         const workflowDoneAt = {
           new: 0,
           quote_in_progress: 0,
@@ -777,6 +778,7 @@
           completed: 4,
         };
         const doneIndex = workflowDoneAt[requestStatus] ?? -1;
+        const isQuoteFirstPhase = quoteFirstStatuses.has(requestStatus);
         const adminNextAction = ({
           new: { label: 'Create quote', hint: 'Step 1: Send a quote to client before assignment.' },
           quote_in_progress: { label: 'Send quote', hint: 'Step 1: Finalize and send quote to client.' },
@@ -800,11 +802,14 @@
               ${scheduleMeta}
             </div>
             ${admin ? `<div class="client-quote-meta" aria-label="Quick workflow">
-              ${workflowMini.map(([key, label], idx) => `<span class="admin-request-badge" style="${idx <= doneIndex ? 'opacity:1;' : 'opacity:.45;'}">${escapeHtml(label)}</span>`).join('')}
+              ${workflowMini.map(([key, label], idx) => {
+                const hiddenUntilQuoteApproved = isQuoteFirstPhase && idx > 1;
+                return `<span class="admin-request-badge" style="${hiddenUntilQuoteApproved ? 'opacity:.2;' : (idx <= doneIndex ? 'opacity:1;' : 'opacity:.45;')}">${escapeHtml(label)}</span>`;
+              }).join('')}
             </div>` : ''}
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
-            ${admin ? `<p class="request-update-note"><strong>Next step:</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+            ${admin ? `<p class="request-update-note"><strong>${isQuoteFirstPhase ? 'Quote phase (required first):' : 'Next step:'}</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };
