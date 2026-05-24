@@ -2322,6 +2322,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const assignmentList = document.querySelector('[data-admin-assignment-list]');
         const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
+        const statusForm = document.querySelector('[data-admin-status-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
         const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
@@ -2351,6 +2353,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
         if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
         if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
+        const quoteApproved = ['accepted'].includes(savedQuote?.status || '') || ['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
+        if (statusForm) statusForm.hidden = !quoteApproved;
+        if (assignmentForm) assignmentForm.hidden = !quoteApproved;
+        if (inventoryForm) inventoryForm.hidden = !quoteApproved;
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
         if (workOrderSummary) {
