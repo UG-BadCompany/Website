@@ -2727,6 +2727,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
         let activeToolConfig = null;
+        const workspaceRouteByKey = {
+          workOrders: 'work-orders',
+          invoices: 'invoices',
+          inventory: 'inventory',
+          activity: 'audit-activity',
+          alerts: 'alerts',
+        };
+        const persistWorkspaceRoute = (config) => {
+          const workspace = workspaceRouteByKey[config?.key];
+          if (!workspace) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', 'admin');
+          url.searchParams.set('workspace', workspace);
+          window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+        };
 
         const openWorkspaceInDashboard = (config, selectedItem = null) => {
           if (!config) return;
@@ -2750,6 +2765,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             setAlertsUnreadIndicator(false);
             loadAdminAlerts();
           }
+          persistWorkspaceRoute(config);
           if (selectedItem?.status && config.key === 'workOrders') {
             const statusFilter = document.querySelector('[data-admin-scope-select]');
             if (statusFilter) {
