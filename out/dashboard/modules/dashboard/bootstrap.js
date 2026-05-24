@@ -644,6 +644,22 @@
           const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
           section.hidden = !views.includes(nextView) || !hasRequiredPermission;
         });
+        const workspace = new URLSearchParams(window.location.search).get('workspace');
+        if (nextView === 'admin' && workspace) {
+          const workspaceSelectors = {
+            'work-orders': '#admin-work-orders',
+            invoices: '[data-admin-invoices]',
+            inventory: '[data-admin-inventory]',
+            'audit-activity': '[data-admin-activity]',
+            alerts: '[data-admin-alerts]',
+          };
+          const focusedSelector = workspaceSelectors[workspace];
+          if (focusedSelector) {
+            document.querySelectorAll('[data-dashboard-section]').forEach((section) => { section.hidden = true; });
+            const focusedSection = document.querySelector(focusedSelector);
+            if (focusedSection) focusedSection.hidden = false;
+          }
+        }
 
         document.querySelectorAll('[data-view-button]').forEach((button) => {
           const isActive = button.dataset.viewButton === nextView;
@@ -1300,12 +1316,22 @@
         }
       };
 
+      const setAlertsUnreadIndicator = (show) => {
+        document.querySelectorAll('[data-admin-alerts-shortcut]').forEach((button) => {
+          button.setAttribute('data-has-unread-alert', show ? 'true' : 'false');
+        });
+      };
+
       const loadAdminAlerts = async () => {
         const panel = document.querySelector('[data-admin-alerts]');
         const status = document.querySelector('[data-admin-alerts-status]');
         const summary = document.querySelector('[data-admin-alerts-summary]');
         const list = document.querySelector('[data-admin-alerts-list]');
         if (!panel || !status || !summary || !list) return;
+        if (!window.taAdminAlertState) {
+          window.taAdminAlertState = { lastCounts: null };
+        }
+        const alertState = window.taAdminAlertState;
 
         status.textContent = 'Loading alerts…';
         summary.innerHTML = '';
@@ -1316,15 +1342,27 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load alerts.');
           const alerts = result.alerts || {};
           const counts = alerts.counts || result.summary || {};
+          const previousCounts = alertState.lastCounts || null;
+          const mappedCounts = {
+            lowStock: Number(counts.lowStock || 0),
+            pendingReview: Number(counts.pendingReview || 0),
+            unpaidInvoices: Number(counts.unpaidInvoices || 0),
+            newRequests: Number(counts.newRequests || 0),
+          };
+          const hasRaisedAlert = previousCounts
+            ? Object.keys(mappedCounts).some((key) => mappedCounts[key] > Number(previousCounts[key] || 0))
+            : Object.values(mappedCounts).some((value) => value > 0);
+          if (hasRaisedAlert) setAlertsUnreadIndicator(true);
+          alertState.lastCounts = mappedCounts;
           const lowStockItems = Array.isArray(alerts.lowStockItems)
             ? alerts.lowStockItems
             : (Array.isArray(result.lowStockItems) ? result.lowStockItems : []);
           status.textContent = `Updated ${new Date().toLocaleString()}`;
           summary.innerHTML = [
-            { label: 'Low stock', value: Number(counts.lowStock || 0) },
-            { label: 'Pending review', value: Number(counts.pendingReview || 0) },
-            { label: 'Unpaid invoices', value: Number(counts.unpaidInvoices || 0) },
-            { label: 'New requests', value: Number(counts.newRequests || 0) },
+            { label: 'Low stock', value: mappedCounts.lowStock },
+            { label: 'Pending review', value: mappedCounts.pendingReview },
+            { label: 'Unpaid invoices', value: mappedCounts.unpaidInvoices },
+            { label: 'New requests', value: mappedCounts.newRequests },
           ].map((item) => `
             <article class="admin-stat-card">
               <strong>${escapeHtml(item.label)}</strong>
@@ -2705,6 +2743,21 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const description = panel.querySelector('[data-dashboard-tool-description]');
         const openPage = panel.querySelector('[data-dashboard-tool-open-page]');
         let activeToolConfig = null;
+        const workspaceRouteByKey = {
+          workOrders: 'work-orders',
+          invoices: 'invoices',
+          inventory: 'inventory',
+          activity: 'audit-activity',
+          alerts: 'alerts',
+        };
+        const persistWorkspaceRoute = (config) => {
+          const workspace = workspaceRouteByKey[config?.key];
+          if (!workspace) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', 'admin');
+          url.searchParams.set('workspace', workspace);
+          window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+        };
 
         const openWorkspaceInDashboard = (config, selectedItem = null) => {
           if (!config) return;
@@ -2725,8 +2778,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
           if (config.key === 'alerts') {
             revealOne('[data-admin-alerts]');
+            setAlertsUnreadIndicator(false);
             loadAdminAlerts();
           }
+          persistWorkspaceRoute(config);
           if (selectedItem?.status && config.key === 'workOrders') {
             const statusFilter = document.querySelector('[data-admin-scope-select]');
             if (statusFilter) {
