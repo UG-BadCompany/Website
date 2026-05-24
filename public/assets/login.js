@@ -151,8 +151,7 @@
           await ensureRecaptchaReady(recaptchaSiteKey);
           payload.recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'login_magic_link' });
         } catch (error) {
-          setStatus(`reCAPTCHA could not be completed (${error?.message || 'unknown error'}).`, 'error');
-          return;
+          setStatus(`reCAPTCHA unavailable (${error?.message || 'unknown error'}). Continuing without token…`, 'error');
         }
       }
       button.disabled = true;

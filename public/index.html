@@ -1348,8 +1348,7 @@
             const recaptchaInput = form.querySelector('input[name="recaptchaToken"]');
             if (recaptchaInput) recaptchaInput.value = recaptchaToken;
           } catch (error) {
-            setStatus(`reCAPTCHA could not be completed (${error?.message || 'unknown error'}).`, 'error');
-            return;
+            setStatus(`reCAPTCHA unavailable (${error?.message || 'unknown error'}). Continuing without token…`, 'error');
           }
         }
         const photo = formData.get('photos');
