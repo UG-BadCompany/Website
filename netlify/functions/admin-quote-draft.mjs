@@ -50,6 +50,7 @@ const JOB_PLAYBOOKS = [
 
 const slug = (value = '') => String(value).trim().toLowerCase();
 const toMoney = (cents = 0) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+const asRows = (result) => (Array.isArray(result) ? result : (Array.isArray(result?.rows) ? result.rows : []));
 const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'need', 'needs', 'want', 'replace', 'repair', 'install', 'fix', 'service', 'project', 'details']);
 const extractProjectDetailKeywords = (projectDetails = '') => {
   const words = slug(projectDetails).replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean);
@@ -125,7 +126,7 @@ const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, invento
 };
 
 const loadSession = async (db, sessionToken) => {
-  const [session] = await db.sql`
+  const rows = asRows(await db.sql`
     select auth_sessions.id, app_users.id as user_id
     from auth_sessions
     join app_users on app_users.id = auth_sessions.user_id
@@ -134,18 +135,19 @@ const loadSession = async (db, sessionToken) => {
       and auth_sessions.expires_at > now()
       and app_users.is_active = true
     limit 1
-  `;
+  `);
+  const [session] = rows;
   return session || null;
 };
 
 const loadRoleKeys = async (db, userId) => {
-  const roles = await db.sql`
+  const roles = asRows(await db.sql`
     select roles.key
     from user_roles
     join roles on roles.id = user_roles.role_id
     where user_roles.user_id = ${userId}
     order by roles.key
-  `;
+  `);
   return roles.map((role) => role.key);
 };
 
@@ -176,20 +178,20 @@ export default async (request) => {
     const roles = await loadRoleKeys(db, session.user_id);
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
-    const [jobRequest] = await db.sql`
+    const [jobRequest] = asRows(await db.sql`
       select id, service_type, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
-    `;
+    `);
     if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
 
-    const inventory = await db.sql`
+    const inventory = asRows(await db.sql`
       select id, name, unit, quantity_on_hand
       from inventory_items
       where archived_at is null
       order by name asc
-    `;
+    `);
 
     const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
@@ -284,7 +286,7 @@ export default async (request) => {
     });
   } catch (error) {
     console.error('Failed to generate AI quote draft', error);
-    return json(500, { ok: false, message: 'We could not generate an AI quote draft right now.' });
+    return json(500, { ok: false, message: `We could not generate an AI quote draft right now. (${error?.message || 'unknown error'})` });
   }
 };
 
