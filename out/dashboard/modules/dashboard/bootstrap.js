@@ -2567,13 +2567,27 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (aiStatus) aiStatus.textContent = 'Generating AI draft from project details, stock, and pricing…';
             if (formStatus) formStatus.textContent = 'Generating AI draft quote…';
             try {
-              const response = await fetch('/api/admin/quote-draft', {
-                method: 'POST',
-                headers: { accept: 'application/json', 'content-type': 'application/json' },
-                body: JSON.stringify({ jobRequestId: requestId }),
-              });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.ok || !result.draft) throw new Error(result.message || 'Could not generate draft.');
+              const draftUrls = ['/api/admin/quote-draft', '/.netlify/functions/admin-quote-draft'];
+              let result = null;
+              let finalError = '';
+              for (const url of draftUrls) {
+                try {
+                  const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { accept: 'application/json', 'content-type': 'application/json' },
+                    body: JSON.stringify({ jobRequestId: requestId }),
+                  });
+                  const payload = await response.json().catch(() => ({}));
+                  if (response.ok && payload.ok && payload.draft) {
+                    result = payload;
+                    break;
+                  }
+                  finalError = payload.message || `Draft endpoint failed (${response.status}) at ${url}`;
+                } catch (error) {
+                  finalError = error?.message || `Network error calling ${url}`;
+                }
+              }
+              if (!result?.draft) throw new Error(finalError || 'Could not generate draft.');
               const titleField = quoteForm.querySelector('[name="title"]');
               const summaryField = quoteForm.querySelector('[name="summary"]');
               const amountField = quoteForm.querySelector('[name="amount"]');
