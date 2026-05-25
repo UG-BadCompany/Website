@@ -4,6 +4,7 @@ import {
   hashToken,
   json,
   loadDatabase,
+  parseJsonBody,
 } from './auth-utils.mjs';
 
 const COST_CATALOG = [
@@ -166,7 +167,7 @@ export default async (request) => {
   const sessionToken = getSessionToken(request);
   if (!sessionToken) return json(401, { ok: false, authenticated: false, message: 'Sign in required.' });
 
-  const body = await request.json().catch(() => null);
+  const body = await parseJsonBody(request);
   const jobRequestId = clean(body?.jobRequestId, 80);
   const requestContext = body?.requestContext && typeof body.requestContext === 'object' ? body.requestContext : null;
   if (!jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });

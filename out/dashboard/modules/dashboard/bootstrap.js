@@ -2567,7 +2567,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (aiStatus) aiStatus.textContent = 'Generating AI draft from project details, stock, and pricing…';
             if (formStatus) formStatus.textContent = 'Generating AI draft quote…';
             try {
-              const draftUrls = ['/api/admin/quote-draft', '/.netlify/functions/admin-quote-draft'];
+              const draftUrls = ['/api/admin/quote-draft'];
+              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                draftUrls.push('/.netlify/functions/admin-quote-draft');
+              }
               let result = null;
               let finalError = '';
               for (const url of draftUrls) {
