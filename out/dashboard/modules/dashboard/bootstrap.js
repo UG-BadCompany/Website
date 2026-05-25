@@ -2557,11 +2557,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
           quoteForm.dataset.bound = 'true';
           quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
+            const aiStatus = document.querySelector('[data-admin-quote-ai-status]');
             const requestId = quoteForm.querySelector('[data-admin-quote-request-id]')?.value || '';
             if (!requestId) {
+              if (aiStatus) aiStatus.textContent = 'Open a request first, then generate the AI draft.';
               if (formStatus) formStatus.textContent = 'Open a request first.';
               return;
             }
+            if (aiStatus) aiStatus.textContent = 'Generating AI draft from project details, stock, and pricing…';
             if (formStatus) formStatus.textContent = 'Generating AI draft quote…';
             try {
               const response = await fetch('/api/admin/quote-draft', {
@@ -2577,8 +2580,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (titleField) titleField.value = result.draft.title || '';
               if (summaryField) summaryField.value = result.draft.summary || '';
               if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
+              if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
               if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
             } catch (error) {
+              const fallbackSummary = quoteForm.querySelector('[name="summary"]');
+              if (fallbackSummary && !fallbackSummary.value.trim()) {
+                fallbackSummary.value = 'AI draft endpoint was unavailable. Please review this manual draft:\n- Scope: Review project details and confirm full parts list.\n- Materials: Check inventory on hand first; buy missing parts.\n- Labor: Use current Phoenix lower-end rate.\n- Finalize amount before sending.';
+              }
+              if (aiStatus) aiStatus.textContent = `AI draft failed: ${error.message}`;
               if (formStatus) formStatus.textContent = error.message;
             }
           });
