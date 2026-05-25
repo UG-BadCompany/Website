@@ -317,11 +317,21 @@ const inferUnknownScopeRequirements = async ({ descriptionText, inventory, locat
 };
 
 
+const normalizeResearchKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 180);
+
 const queueResearchCandidates = async (db, { jobRequestId, city, sourceText, materials = [] }) => {
   for (const part of materials) {
+    const normalizedKey = normalizeResearchKey(`${part.name || ''} ${sourceText || ''}`);
+    const confidenceScore = part.livePriceEvidence?.length ? Math.min(0.98, 0.55 + (part.livePriceEvidence.length * 0.08)) : 0.35;
     await db.sql`
-      insert into quote_research_queue (job_request_id, city, source_text, candidate_name, candidate_unit_cost_cents, evidence, status)
-      values (${String(jobRequestId || '') || null}, ${city || null}, ${sourceText || ''}, ${part.name || 'Unknown item'}, ${Number(part.estimatedUnitCostCents || 0) || null}, ${JSON.stringify(part.livePriceEvidence || [])}::jsonb, 'new')
+      insert into quote_research_queue (job_request_id, city, source_text, candidate_name, candidate_unit_cost_cents, evidence, status, confidence_score, normalized_key)
+      select ${String(jobRequestId || '') || null}, ${city || null}, ${sourceText || ''}, ${part.name || 'Unknown item'}, ${Number(part.estimatedUnitCostCents || 0) || null}, ${JSON.stringify(part.livePriceEvidence || [])}::jsonb, 'new', ${confidenceScore}, ${normalizedKey}
+      where not exists (
+        select 1 from quote_research_queue
+        where normalized_key = ${normalizedKey}
+          and status in ('new', 'reviewed')
+          and created_at > now() - interval '30 days'
+      )
     `;
   }
 };
