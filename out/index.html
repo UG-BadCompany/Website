@@ -1243,6 +1243,32 @@
                 </select>
               </div>
               <div class="field">
+                <label for="workScope">Work Scope *</label>
+                <select id="workScope" name="workScope" required>
+                  <option value="">Select one</option>
+                  <option>Troubleshooting / repair</option>
+                  <option>Replace existing</option>
+                  <option>New install</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="workCategory">System / Trade *</label>
+                <select id="workCategory" name="workCategory" required>
+                  <option value="">Select one</option>
+                  <option>HVAC</option>
+                  <option>Electrical</option>
+                  <option>Plumbing</option>
+                  <option>Appliance installation</option>
+                  <option>Water heater</option>
+                  <option>Drywall / framing</option>
+                  <option>Painting / finish work</option>
+                  <option>Doors / windows</option>
+                  <option>Exterior / fencing</option>
+                  <option>General handyman</option>
+                  <option>Other / not sure</option>
+                </select>
+              </div>
+              <div class="field">
                 <label for="timeframe">Preferred Timeframe</label>
                 <select id="timeframe" name="timeframe">
                   <option>Flexible</option>
@@ -1254,7 +1280,7 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
-                <textarea id="description" name="description" placeholder="Tell us what needs to be repaired, installed, replaced, maintained, or improved." required></textarea>
+                <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
