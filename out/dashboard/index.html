@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard | T&A Contracting</title>
+  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico">
   <meta name="description" content="Modern secure dashboard for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
@@ -1373,6 +1374,19 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
     html[data-theme="light"] .dashboard-nav-row .btn-soft,
     html[data-theme="light"] .theme-toggle,
+    [data-admin-alerts-shortcut] { position: relative; }
+    [data-admin-alerts-shortcut][data-has-unread-alert="true"]::after {
+      content: "";
+      position: absolute;
+      top: 7px;
+      right: 9px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #ef4444;
+      border: 1.5px solid rgba(255,255,255,.92);
+      box-shadow: 0 0 0 2px rgba(239,68,68,.22);
+    }
     html[data-theme="light"] .account-session-row [data-logout-button] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
@@ -1816,7 +1830,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
   <main class="wrap" data-dashboard-root>
     <section class="hero">
       <div class="dashboard-hero">
@@ -1831,7 +1845,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
-        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
@@ -2087,7 +2101,20 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
                 </label>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+              <div class="field-group">
+                <label>Quote materials / parts (optional)
+                  <select data-admin-quote-material-item>
+                    <option value="">Select inventory item</option>
+                  </select>
+                </label>
+                <label>Qty
+                  <input type="number" min="1" step="1" value="1" data-admin-quote-material-qty>
+                </label>
+                <button class="btn btn-soft" type="button" data-admin-quote-material-add>Add part to quote</button>
+              </div>
+              <p class="session-status" data-admin-quote-material-status>Use this to build the quote from inventory parts before sending to the client.</p>
+              <p class="session-status" data-admin-quote-ai-status aria-live="polite">AI draft is ready when you click “Generate AI draft”.</p>
+              <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-assignment-form>
               <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -2115,26 +2142,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-admin-assignment-form-status aria-live="polite"></span></div>
               <div class="admin-assignment-list" data-admin-assignment-list></div>
             </form>
-            <form data-admin-work-order-inventory-form data-admin-work-order-inventory-panel hidden>
-              <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
-              <strong>Work order inventory usage</strong>
-              <p>Record materials or tools consumed on this work order so stock levels and job history stay accurate. Use the Inventory command-center card for item setup and restocks.</p>
-              <div class="client-request-form-grid">
-                <label>Inventory item
-                  <select name="itemId" data-admin-work-order-inventory-item required>
-                    <option value="">Load inventory first</option>
-                  </select>
-                </label>
-                <label>Quantity used
-                  <input name="quantityUsed" type="number" min="0.01" step="0.01" placeholder="1" required>
-                </label>
-                <label class="full">Usage note
-                  <input name="adjustmentNote" placeholder="Used on drywall patch, installed on site, moved to truck">
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Record inventory usage</button><span data-admin-work-order-inventory-status aria-live="polite"></span></div>
-              <div class="admin-assignment-list" data-admin-work-order-inventory-usage></div>
-            </form>
+            
           </div>
         </section>
       </div>
