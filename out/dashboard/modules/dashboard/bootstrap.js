@@ -2555,6 +2555,33 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
+          quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
+            const formStatus = document.querySelector('[data-admin-quote-form-status]');
+            const requestId = quoteForm.querySelector('[data-admin-quote-request-id]')?.value || '';
+            if (!requestId) {
+              if (formStatus) formStatus.textContent = 'Open a request first.';
+              return;
+            }
+            if (formStatus) formStatus.textContent = 'Generating AI draft quote…';
+            try {
+              const response = await fetch('/api/admin/quote-draft', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ jobRequestId: requestId }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok || !result.draft) throw new Error(result.message || 'Could not generate draft.');
+              const titleField = quoteForm.querySelector('[name="title"]');
+              const summaryField = quoteForm.querySelector('[name="summary"]');
+              const amountField = quoteForm.querySelector('[name="amount"]');
+              if (titleField) titleField.value = result.draft.title || '';
+              if (summaryField) summaryField.value = result.draft.summary || '';
+              if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
+              if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
           quoteForm.querySelector('[data-admin-quote-material-add]')?.addEventListener('click', () => {
             const summaryField = quoteForm.querySelector('[name="summary"]');
             const itemSelect = quoteForm.querySelector('[data-admin-quote-material-item]');
