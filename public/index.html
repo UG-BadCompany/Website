@@ -1205,7 +1205,7 @@
             </ul>
           </div>
 
-          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
+          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you.html" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
             <input type="hidden" name="form-name" value="estimate-request">
             <input type="hidden" name="recaptchaToken" value="">
             <p hidden><label>Don’t fill this out: <input name="bot-field"></label></p>
@@ -1282,7 +1282,11 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
+                <input id="jobStarter" name="jobStarter" type="text" placeholder="Start typing what you need (example: mini split new install)">
+                <p class="form-note">AI quote helper: as you type, we suggest missing details to speed up estimating.</p>
                 <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
+                <p class="form-note" data-description-suggestion hidden></p>
+                <button class="btn" type="button" data-fill-suggestion hidden>Add suggested details</button>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
@@ -1313,6 +1317,13 @@
 
       const status = form.querySelector('[data-job-request-status]');
       const submitButton = form.querySelector('button[type="submit"]');
+      const serviceField = form.querySelector('#service');
+      const workScopeField = form.querySelector('#workScope');
+      const workCategoryField = form.querySelector('#workCategory');
+      const jobStarterField = form.querySelector('#jobStarter');
+      const descriptionField = form.querySelector('#description');
+      const suggestionField = form.querySelector('[data-description-suggestion]');
+      const fillSuggestionButton = form.querySelector('[data-fill-suggestion]');
       const setStatus = (message, state = '') => {
         if (!status) {
           return;
@@ -1343,6 +1354,95 @@
           return '';
         }
       };
+
+      const hasMeasurement = (value) => /(\b\d+\s*(ft|feet|foot|in|inch|inches|sq\s*ft|sqft|gallon|gal|ton|tons|amp|amps|v|volt|volts)\b)/.test(value);
+      let currentSuggestion = '';
+      let suggestionAbortController = null;
+      let suggestionDebounceTimer = null;
+
+      const renderSuggestions = (suggestions = []) => {
+        const uniqueSuggestions = [...new Set(suggestions)].slice(0, 8);
+        const suggestion = uniqueSuggestions.length ? `Suggested follow-up details:
+• ${uniqueSuggestions.join('
+• ')}` : '';
+        currentSuggestion = suggestion;
+        if (!suggestionField || !fillSuggestionButton) return;
+        suggestionField.hidden = !suggestion;
+        fillSuggestionButton.hidden = !suggestion;
+        suggestionField.textContent = suggestion;
+      };
+
+      const fallbackSuggestions = (combined) => {
+        const suggestions = [];
+        if (!/address|street|unit|apt|suite|property/.test(combined)) suggestions.push('Exact job location (address, unit/suite, and gate/access notes).');
+        if (!/asap|urgent|week|date|schedule|timeframe|tomorrow|today|next|flexible/.test(combined)) suggestions.push('Preferred schedule/timeframe (ASAP, this week, or flexible).');
+        if (!hasMeasurement(combined)) suggestions.push('Approximate quantities or measurements (feet, dimensions, count, voltage, etc.).');
+        return suggestions;
+      };
+
+      const suggestDescription = () => {
+        const selectedValues = `${serviceField?.value || ''} ${workScopeField?.value || ''} ${workCategoryField?.value || ''}`.toLowerCase();
+        const textValues = `${jobStarterField?.value || ''} ${descriptionField?.value || ''}`.toLowerCase();
+        const combined = `${selectedValues} ${textValues}`.trim();
+
+        if (!combined) {
+          if (suggestionAbortController) suggestionAbortController.abort();
+          if (suggestionDebounceTimer) clearTimeout(suggestionDebounceTimer);
+          currentSuggestion = '';
+          if (suggestionField) suggestionField.hidden = true;
+          if (fillSuggestionButton) fillSuggestionButton.hidden = true;
+          if (suggestionField) suggestionField.textContent = '';
+          return;
+        }
+
+        renderSuggestions(fallbackSuggestions(combined));
+
+        if (suggestionDebounceTimer) clearTimeout(suggestionDebounceTimer);
+        suggestionDebounceTimer = setTimeout(async () => {
+          if (suggestionAbortController) suggestionAbortController.abort();
+          suggestionAbortController = new AbortController();
+          const params = new URLSearchParams({
+            q: `${jobStarterField?.value || ''} ${descriptionField?.value || ''}`.trim(),
+            service: serviceField?.value || '',
+            scope: workScopeField?.value || '',
+            category: workCategoryField?.value || '',
+          });
+
+          try {
+            const response = await fetch(`/api/estimate-suggestions?${params.toString()}`, {
+              headers: { accept: 'application/json' },
+              cache: 'no-store',
+              signal: suggestionAbortController.signal,
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result?.ok || !Array.isArray(result.suggestions)) {
+              return;
+            }
+            renderSuggestions(result.suggestions);
+          } catch (error) {
+            if (error?.name === 'AbortError') return;
+          }
+        }, 250);
+      };
+
+      [serviceField, workScopeField, workCategoryField, jobStarterField, descriptionField].forEach((field) => {
+        field?.addEventListener('input', suggestDescription);
+        field?.addEventListener('change', suggestDescription);
+      });
+
+      fillSuggestionButton?.addEventListener('click', () => {
+        if (!descriptionField || !currentSuggestion) return;
+        if (descriptionField.value.trim()) {
+          descriptionField.value = `${descriptionField.value.trim()}
+
+${currentSuggestion}`;
+        } else {
+          descriptionField.value = currentSuggestion;
+        }
+        descriptionField.focus();
+      });
+
+      suggestDescription();
 
       const ensureRecaptchaReady = async (siteKey) => {
         if (!siteKey) return false;
@@ -1435,7 +1535,7 @@
           }
 
           setStatus('Request received. Redirecting…', 'success');
-          window.location.assign('/thank-you/');
+          window.location.assign('/thank-you.html');
         } catch (error) {
           console.warn('Database request failed; using Netlify Forms fallback.', error);
           submitWithNetlifyForms();
