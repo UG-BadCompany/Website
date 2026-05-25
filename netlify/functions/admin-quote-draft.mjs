@@ -50,6 +50,14 @@ const JOB_PLAYBOOKS = [
 
 const slug = (value = '') => String(value).trim().toLowerCase();
 const toMoney = (cents = 0) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'need', 'needs', 'want', 'replace', 'repair', 'install', 'fix', 'service', 'project', 'details']);
+const extractProjectDetailKeywords = (projectDetails = '') => {
+  const words = slug(projectDetails).replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean);
+  const filtered = words.filter((word) => word.length > 2 && !STOP_WORDS.has(word));
+  const counts = new Map();
+  filtered.forEach((word) => counts.set(word, (counts.get(word) || 0) + 1));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([word]) => word);
+};
 const phoenixLaborRateByTime = (submittedAt = new Date()) => {
   const date = submittedAt instanceof Date ? submittedAt : new Date(submittedAt);
   const day = date.getUTCDay(); // server UTC; kept deterministic
@@ -83,6 +91,32 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
     }))
     .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
     .slice(0, 5);
+};
+const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, inventory, location }) => {
+  const keywords = extractProjectDetailKeywords(projectDetails);
+  const candidates = [];
+  for (const keyword of keywords.slice(0, 6)) {
+    const label = keyword.split('-').map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1)).join(' ');
+    const livePrices = await fetchSerpApiPrices({ partLabel: `${label} part`, location });
+    if (!livePrices.length) continue;
+    const medianLivePriceCents = livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)];
+    const inventoryMatch = inventory.find((item) => slug(item.name).includes(keyword));
+    const neededQty = 1;
+    const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+    const buyQty = Math.max(0, neededQty - inStock);
+    candidates.push({
+      name: label,
+      estimatedUnitCostCents: medianLivePriceCents,
+      neededQty,
+      inStockQty: inStock,
+      buyQty,
+      estimatedBuyCostCents: buyQty * medianLivePriceCents,
+      source: 'project_details_ai',
+      livePriceEvidence: livePrices,
+      pricingSource: 'live_web',
+    });
+  }
+  return candidates;
 };
 
 const loadSession = async (db, sessionToken) => {
@@ -187,10 +221,14 @@ export default async (request) => {
         source: 'catalog',
       };
     });
-    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : materialsFromCatalog;
+    const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
+    const aiGeneralMaterials = !materialsFromPlaybook.length
+      ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
+      : [];
+    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
     const materials = [];
     for (const part of baseMaterials) {
-      const livePrices = await fetchSerpApiPrices({ partLabel: part.name, location: `${jobRequest.city || 'Phoenix'}, Arizona` });
+      const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
       const medianLivePriceCents = livePrices.length
         ? livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)]
         : null;
@@ -214,7 +252,7 @@ export default async (request) => {
 
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
-      playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request (manual scope review recommended).',
+      playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
       ...(materials.length
