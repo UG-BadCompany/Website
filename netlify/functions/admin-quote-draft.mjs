@@ -27,9 +27,12 @@ const JOB_PLAYBOOKS = [
     laborHours: 3,
     materials: [
       { label: 'Kitchen faucet', unitCostCents: 15900, quantity: 1, aliases: ['faucet'] },
-      { label: 'Supply line set', unitCostCents: 2600, quantity: 1, aliases: ['supply line', 'line'] },
+      { label: 'Supply line set', unitCostCents: 2600, quantity: 2, aliases: ['supply line', 'line'] },
       { label: 'Shutoff valve', unitCostCents: 1700, quantity: 2, aliases: ['valve', 'shutoff'] },
       { label: 'Plumber putty / sealant', unitCostCents: 900, quantity: 1, aliases: ['caulk', 'sealant', 'putty'] },
+      { label: 'P-trap kit (if needed)', unitCostCents: 2200, quantity: 1, aliases: ['p-trap', 'trap'] },
+      { label: 'Escutcheon plates / trim', unitCostCents: 1200, quantity: 1, aliases: ['escutcheon', 'trim plate'] },
+      { label: 'Thread seal tape', unitCostCents: 300, quantity: 1, aliases: ['teflon', 'thread tape'] },
     ],
   },
   {
@@ -47,6 +50,40 @@ const JOB_PLAYBOOKS = [
 
 const slug = (value = '') => String(value).trim().toLowerCase();
 const toMoney = (cents = 0) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+const phoenixLaborRateByTime = (submittedAt = new Date()) => {
+  const date = submittedAt instanceof Date ? submittedAt : new Date(submittedAt);
+  const day = date.getUTCDay(); // server UTC; kept deterministic
+  const hour = date.getUTCHours();
+  const weekend = day === 0 || day === 6;
+  const evening = hour < 6 || hour >= 18;
+  let rate = 8500; // lower-end reasonable Phoenix baseline
+  if (weekend) rate += 1200;
+  if (evening) rate += 800;
+  return Math.min(11500, Math.max(8200, rate));
+};
+const parseUsdToCents = (value = '') => {
+  const match = String(value).replace(/,/g, '').match(/\$?\s*(\d+(?:\.\d{1,2})?)/);
+  if (!match) return null;
+  return Math.round(Number(match[1]) * 100);
+};
+const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
+  const key = process.env.SERPAPI_API_KEY;
+  if (!key) return [];
+  const query = encodeURIComponent(`${partLabel} price ${location}`);
+  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
+  const response = await fetch(url);
+  if (!response.ok) return [];
+  const data = await response.json().catch(() => ({}));
+  const items = Array.isArray(data.shopping_results) ? data.shopping_results : [];
+  return items
+    .map((item) => ({
+      title: item.title || partLabel,
+      source: item.source || item.store || 'web',
+      cents: parseUsdToCents(item.price || item.extracted_price),
+    }))
+    .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
+    .slice(0, 5);
+};
 
 const loadSession = async (db, sessionToken) => {
   const [session] = await db.sql`
@@ -101,7 +138,7 @@ export default async (request) => {
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
     const [jobRequest] = await db.sql`
-      select id, service_type, description, city
+      select id, service_type, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
@@ -150,11 +187,27 @@ export default async (request) => {
         source: 'catalog',
       };
     });
-    const materials = materialsFromPlaybook.length ? materialsFromPlaybook : materialsFromCatalog;
+    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : materialsFromCatalog;
+    const materials = [];
+    for (const part of baseMaterials) {
+      const livePrices = await fetchSerpApiPrices({ partLabel: part.name, location: `${jobRequest.city || 'Phoenix'}, Arizona` });
+      const medianLivePriceCents = livePrices.length
+        ? livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)]
+        : null;
+      const effectiveUnitCostCents = medianLivePriceCents || part.estimatedUnitCostCents;
+      const buyCostCents = part.buyQty * effectiveUnitCostCents;
+      materials.push({
+        ...part,
+        estimatedUnitCostCents: effectiveUnitCostCents,
+        estimatedBuyCostCents: buyCostCents,
+        livePriceEvidence: livePrices,
+        pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
+      });
+    }
 
     const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     const laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
-    const laborRateCents = 9500;
+    const laborRateCents = phoenixLaborRateByTime(jobRequest.created_at || new Date());
     const laborSubtotal = laborHours * laborRateCents;
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
@@ -165,7 +218,7 @@ export default async (request) => {
       '',
       'Estimated materials:',
       ...(materials.length
-        ? materials.map((m) => `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)})`)
+        ? materials.map((m) => `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]`)
         : ['- No direct material match found. Manual material review required.']),
       '',
       `Labor estimate: ${laborHours} hour(s) × ${toMoney(laborRateCents)}/hr = ${toMoney(laborSubtotal)}`,
