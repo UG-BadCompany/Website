@@ -2575,7 +2575,18 @@ Additional info from client: ${payload.additionalInfo}` : '';
                   const response = await fetch(url, {
                     method: 'POST',
                     headers: { accept: 'application/json', 'content-type': 'application/json' },
-                    body: JSON.stringify({ jobRequestId: requestId }),
+                    body: JSON.stringify({
+                      jobRequestId: requestId,
+                      requestContext: (() => {
+                        const req = currentAdminRequests.get(requestId);
+                        return req ? {
+                          serviceType: req.serviceType,
+                          description: req.description,
+                          city: req.city,
+                          createdAt: req.createdAt,
+                        } : null;
+                      })(),
+                    }),
                   });
                   const payload = await response.json().catch(() => ({}));
                   if (response.ok && payload.ok && payload.draft) {

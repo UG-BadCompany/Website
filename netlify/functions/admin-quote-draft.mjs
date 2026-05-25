@@ -168,6 +168,7 @@ export default async (request) => {
 
   const body = await request.json().catch(() => null);
   const jobRequestId = clean(body?.jobRequestId, 80);
+  const requestContext = body?.requestContext && typeof body.requestContext === 'object' ? body.requestContext : null;
   if (!jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
 
   try {
@@ -178,12 +179,21 @@ export default async (request) => {
     const roles = await loadRoleKeys(db, session.user_id);
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
-    const [jobRequest] = asRows(await db.sql`
+    let [jobRequest] = asRows(await db.sql`
       select id, service_type, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
     `);
+    if (!jobRequest && requestContext?.description) {
+      jobRequest = {
+        id: jobRequestId,
+        service_type: clean(requestContext.serviceType, 160) || 'Service request',
+        description: clean(requestContext.description, 4000) || '',
+        city: clean(requestContext.city, 120) || 'Phoenix',
+        created_at: requestContext.createdAt || new Date().toISOString(),
+      };
+    }
     if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
 
     const inventory = asRows(await db.sql`
