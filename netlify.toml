@@ -17,3 +17,13 @@
   for = "/dashboard/*"
   [headers.values]
     Cache-Control = "no-store, max-age=0"
+
+[[redirects]]
+  from = "/thank-you"
+  to = "/thank-you/"
+  status = 301
+
+[[redirects]]
+  from = "/thank-you.html"
+  to = "/thank-you/"
+  status = 301
