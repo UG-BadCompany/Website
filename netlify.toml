@@ -18,18 +18,14 @@
   [headers.values]
     Cache-Control = "no-store, max-age=0"
 
-
 [[redirects]]
   from = "/thank-you"
-  to = "/thank-you/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/thank-you/"
-  to = "/thank-you/index.html"
-  status = 200
+  to = "/thank-you/"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/thank-you.html"
-  to = "/thank-you/index.html"
-  status = 200
+  to = "/thank-you/"
+  status = 301
+  force = true
