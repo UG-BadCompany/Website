@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "public"
+  publish = "out"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -17,15 +17,3 @@
   for = "/dashboard/*"
   [headers.values]
     Cache-Control = "no-store, max-age=0"
-
-[[redirects]]
-  from = "/thank-you"
-  to = "/thank-you/"
-  status = 301
-  force = true
-
-[[redirects]]
-  from = "/thank-you.html"
-  to = "/thank-you/"
-  status = 301
-  force = true
