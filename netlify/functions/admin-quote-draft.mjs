@@ -297,7 +297,34 @@ export default async (request) => {
     });
   } catch (error) {
     console.error('Failed to generate AI quote draft', error);
-    return json(500, { ok: false, message: `We could not generate an AI quote draft right now. (${error?.message || 'unknown error'})` });
+    const fallbackTitle = clean(requestContext?.serviceType, 160) || 'Service request quote draft';
+    const fallbackDescription = clean(requestContext?.description, 4000) || 'Review project details and confirm exact scope.';
+    const fallbackSummary = [
+      `AI draft fallback for ${fallbackTitle}.`,
+      '',
+      'Project details received:',
+      fallbackDescription,
+      '',
+      'Suggested next steps:',
+      '- Confirm materials required from project details.',
+      '- Check inventory on hand and adjust buy list.',
+      '- Apply Phoenix labor rate and finalize quote total.',
+      '',
+      `System note: live AI draft generation failed (${error?.message || 'unknown error'}).`,
+    ].join('\n');
+    return json(200, {
+      ok: true,
+      degraded: true,
+      message: 'AI draft generated in fallback mode. Please review before sending.',
+      draft: {
+        title: fallbackTitle,
+        summary: fallbackSummary,
+        amountCents: 0,
+        laborHours: 2,
+        laborRateCents: phoenixLaborRateByTime(new Date()),
+        materials: [],
+      },
+    });
   }
 };
 
