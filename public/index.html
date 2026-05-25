@@ -1282,7 +1282,10 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
+                <input id="jobStarter" name="jobStarter" type="text" placeholder="Start typing what you need (example: mini split new install)">
                 <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
+                <p class="form-note" style="margin-top:8px;" data-description-suggestion hidden></p>
+                <button class="btn" type="button" data-fill-suggestion hidden>Use this suggestion</button>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
@@ -1313,6 +1316,14 @@
 
       const status = form.querySelector('[data-job-request-status]');
       const submitButton = form.querySelector('button[type="submit"]');
+      const serviceField = form.querySelector('#service');
+      const workScopeField = form.querySelector('#workScope');
+      const workCategoryField = form.querySelector('#workCategory');
+      const jobStarterField = form.querySelector('#jobStarter');
+      const descriptionField = form.querySelector('#description');
+      const suggestionField = form.querySelector('[data-description-suggestion]');
+      const fillSuggestionButton = form.querySelector('[data-fill-suggestion]');
+      let currentSuggestion = '';
       const setStatus = (message, state = '') => {
         if (!status) {
           return;
@@ -1343,6 +1354,79 @@
           return '';
         }
       };
+
+      const hasAny = (value, terms) => terms.some((term) => value.includes(term));
+      const hasMeasurement = (value) => /(\b\d+\s*(ft|feet|foot|in|inch|inches|sq\s*ft|sqft|gallon|gal|ton|tons|amp|amps|v|volt|volts)\b)/.test(value);
+
+      const suggestDescription = () => {
+        const selectedValues = `${serviceField?.value || ''} ${workScopeField?.value || ''} ${workCategoryField?.value || ''}`.toLowerCase();
+        const textValues = `${jobStarterField?.value || ''} ${descriptionField?.value || ''}`.toLowerCase();
+        const combined = `${selectedValues} ${textValues}`;
+        const suggestions = [];
+
+        if (!jobStarterField?.value.trim() && !descriptionField?.value.trim()) {
+          currentSuggestion = '';
+          suggestionField.hidden = true;
+          fillSuggestionButton.hidden = true;
+          suggestionField.textContent = '';
+          return;
+        }
+
+        if (!/address|street|unit|apt|suite/.test(combined)) suggestions.push('Exact job location (address, unit/suite, and gate/access notes).');
+        if (!/asap|urgent|week|date|schedule|timeframe|tomorrow|today|next/.test(combined)) suggestions.push('Preferred schedule/timeframe (ASAP, this week, or flexible).');
+        if (!hasMeasurement(combined)) suggestions.push('Approximate quantities or measurements (feet, size, count, area, voltage, etc.).');
+
+        const isMiniSplitRequest = hasAny(combined, ['mini split', 'minisplit', 'mini-split']);
+        const isNewInstall = hasAny(combined, ['new install', 'installation', 'install']);
+        if (isMiniSplitRequest && isNewInstall) {
+          if (!/(\b\d+\s*(ft|feet|foot)\b)|(electrical run)/.test(combined)) suggestions.push('About how many feet of electrical will need to be run for the mini split install?');
+          if (!/(110|115|120|208|220|230|240)\s*v|voltage/.test(combined)) suggestions.push('Voltage requirement (for example 120V or 240V).');
+          if (!/breaker|amp|amperage|panel/.test(combined)) suggestions.push('Breaker size and whether new panel space/circuit is needed.');
+          if (!/line set|lineset|refrigerant|drain/.test(combined)) suggestions.push('Estimated line-set/drain route and indoor-outdoor unit distance.');
+        }
+
+        if (hasAny(combined, ['water heater', 'hot water heater']) && hasAny(combined, ['replace', 'replacement'])) {
+          if (!/(\b\d+\s*(gal|gallon)\b)|tank size/.test(combined)) suggestions.push('Tank size being replaced (example: 40 or 50 gallon).');
+          if (!/gas|electric/.test(combined)) suggestions.push('Whether the unit is gas or electric.');
+          if (!/pan|drain|vent/.test(combined)) suggestions.push('If drain pan, venting, or drain updates should be included.');
+        }
+
+        if (hasAny(combined, ['paint', 'painting'])) {
+          if (!/interior|exterior/.test(combined)) suggestions.push('Interior or exterior paint scope (rooms/walls/trim/fascia).');
+          if (!/color|finish|sheen/.test(combined)) suggestions.push('Known color/finish preferences and whether materials should be supplied.');
+        }
+
+        const suggestion = suggestions.length
+          ? `Suggested follow-up details:
+• ${suggestions.slice(0, 7).join('
+• ')}`
+          : '';
+
+        currentSuggestion = suggestion;
+        if (!suggestionField || !fillSuggestionButton) return;
+        suggestionField.hidden = !suggestion;
+        fillSuggestionButton.hidden = !suggestion;
+        suggestionField.textContent = suggestion;
+      };
+
+      [serviceField, workScopeField, workCategoryField, jobStarterField, descriptionField].forEach((field) => {
+        field?.addEventListener('input', suggestDescription);
+        field?.addEventListener('change', suggestDescription);
+      });
+
+      fillSuggestionButton?.addEventListener('click', () => {
+        if (!descriptionField || !currentSuggestion) return;
+        if (descriptionField.value.trim()) {
+          descriptionField.value = `${descriptionField.value.trim()}
+
+${currentSuggestion}`;
+        } else {
+          descriptionField.value = currentSuggestion;
+        }
+        descriptionField.focus();
+      });
+
+      suggestDescription();
 
       const ensureRecaptchaReady = async (siteKey) => {
         if (!siteKey) return false;
