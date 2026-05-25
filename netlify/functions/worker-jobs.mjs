@@ -259,29 +259,6 @@ const handlePatch = async ({ request, db, context }) => {
     return json(422, { ok: false, message: 'Choose a valid assignment status.' });
   }
 
-  const [currentAssignment] = await db.sql`
-    select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, worker_assignments.status, job_requests.service_type
-    from worker_assignments
-    join job_requests on job_requests.id = worker_assignments.job_request_id
-    where worker_assignments.id = ${payload.assignmentId}
-    limit 1
-  `;
-  if (!currentAssignment) {
-    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
-  }
-
-  if (payload.status === 'completed') {
-    const requiredChecklistItems = getChecklistTemplateForServiceType(currentAssignment.service_type);
-    const submittedChecklist = new Set(payload.completionChecklist.map((item) => String(item).toLowerCase()));
-    const missingChecklist = requiredChecklistItems.filter((item) => !submittedChecklist.has(String(item).toLowerCase()));
-    if (missingChecklist.length) {
-      return json(422, { ok: false, message: `Complete required checklist items before marking completed: ${missingChecklist.join(', ')}.` });
-    }
-    if (!payload.completionEvidenceFiles.length) {
-      return json(422, { ok: false, message: 'Attach at least one completion evidence file before marking this job completed.' });
-    }
-  }
-
   if (payload.status === 'blocked' && !payload.blockedReason) {
     return json(422, { ok: false, message: 'Blocked reason is required when a job is marked blocked.' });
   }
