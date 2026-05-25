@@ -86,7 +86,8 @@ const toObjects = (rows) => {
 };
 
 const sync = async () => {
-  const db = getDatabase();
+  const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || '';
+  const db = connectionString ? getDatabase({ connectionString }) : getDatabase();
   for (const tab of TABS) {
     const response = await fetch(csvUrl(tab.gid));
     if (!response.ok) throw new Error(`Failed to load ${tab.name}: ${response.status}`);
@@ -106,6 +107,9 @@ const sync = async () => {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   sync().catch((error) => {
+    if (error?.name === 'MissingDatabaseConnectionError') {
+      console.error('Missing Netlify DB connection. Set NETLIFY_DATABASE_URL (or DATABASE_URL) and rerun this importer.');
+    }
     console.error(error);
     process.exitCode = 1;
   });
