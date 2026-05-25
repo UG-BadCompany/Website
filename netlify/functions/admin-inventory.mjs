@@ -317,32 +317,17 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
     return json(400, { ok: false, message: 'Work order usage must subtract inventory stock.' });
   }
 
-  const [currentItem] = await db.sql`
-    select id, name, quantity_on_hand
-    from inventory_items
-    where id = ${payload.itemId}
-      and is_active = true
-    limit 1
-  `;
-  if (!currentItem) {
-    return json(404, { ok: false, message: 'Inventory item not found.' });
-  }
-
-  const nextQuantity = Number(currentItem.quantity_on_hand || 0) + Number(payload.quantityDelta || 0);
-  if (nextQuantity < 0) {
-    return json(422, { ok: false, message: `Not enough stock. ${currentItem.name} has ${Number(currentItem.quantity_on_hand || 0)} on hand.` });
-  }
-
   const [item] = await db.sql`
     update inventory_items
-    set quantity_on_hand = ${nextQuantity},
+    set quantity_on_hand = quantity_on_hand + ${payload.quantityDelta},
         updated_at = now()
     where id = ${payload.itemId}
       and is_active = true
+      and quantity_on_hand + ${payload.quantityDelta} >= 0
     returning id, name, sku, category, unit, quantity_on_hand, reorder_point, supplier, storage_location, notes, is_active, created_at, updated_at
   `;
 
-  if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
+  if (!item) return json(422, { ok: false, message: 'Inventory item not found or not enough stock for this adjustment.' });
 
   const [adjustment] = await db.sql`
     insert into inventory_adjustments (inventory_item_id, adjustment_type, quantity_delta, note, job_request_id, created_by)
@@ -359,13 +344,13 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
     ok: true,
     item: mapInventoryItem(item),
     adjustment: {
-      id: adjustment.id,
-      itemId: adjustment.inventory_item_id,
-      adjustmentType: adjustment.adjustment_type,
-      quantityDelta: Number(adjustment.quantity_delta || 0),
-      note: adjustment.note,
-      jobRequestId: adjustment.job_request_id,
-      createdAt: adjustment.created_at,
+      id: adjustment?.id || null,
+      itemId: adjustment?.inventory_item_id || payload.itemId,
+      adjustmentType: adjustment?.adjustment_type || payload.adjustmentType,
+      quantityDelta: Number(adjustment?.quantity_delta ?? payload.quantityDelta ?? 0),
+      note: adjustment?.note ?? payload.adjustmentNote ?? null,
+      jobRequestId: adjustment?.job_request_id ?? payload.jobRequestId ?? null,
+      createdAt: adjustment?.created_at || null,
     },
   });
 };
