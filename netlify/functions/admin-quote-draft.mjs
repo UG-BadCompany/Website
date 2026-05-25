@@ -197,12 +197,18 @@ export default async (request) => {
     }
     if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
 
-    const inventory = asRows(await db.sql`
-      select id, name, unit, quantity_on_hand
-      from inventory_items
-      where archived_at is null
-      order by name asc
-    `);
+    let inventory = [];
+    try {
+      inventory = asRows(await db.sql`
+        select id, name, unit, quantity_on_hand
+        from inventory_items
+        where archived_at is null
+        order by name asc
+      `);
+    } catch (inventoryError) {
+      console.warn('AI quote draft inventory lookup unavailable; continuing with empty stock context.', inventoryError?.message || inventoryError);
+      inventory = [];
+    }
 
     const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
