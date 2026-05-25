@@ -316,6 +316,16 @@ const inferUnknownScopeRequirements = async ({ descriptionText, inventory, locat
   return { inferred, followUps };
 };
 
+
+const queueResearchCandidates = async (db, { jobRequestId, city, sourceText, materials = [] }) => {
+  for (const part of materials) {
+    await db.sql`
+      insert into quote_research_queue (job_request_id, city, source_text, candidate_name, candidate_unit_cost_cents, evidence, status)
+      values (${String(jobRequestId || '') || null}, ${city || null}, ${sourceText || ''}, ${part.name || 'Unknown item'}, ${Number(part.estimatedUnitCostCents || 0) || null}, ${JSON.stringify(part.livePriceEvidence || [])}::jsonb, 'new')
+    `;
+  }
+};
+
 const loadSession = async (db, sessionToken) => {
   const rows = asRows(await db.sql`
     select auth_sessions.id, app_users.id as user_id
@@ -517,6 +527,20 @@ export default async (request) => {
     const baseMaterials = materialsFromDbCatalog.length
       ? materialsFromDbCatalog
       : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : (inferredScope.inferred.length ? inferredScope.inferred : materialsFromCatalog)));
+
+    if (inferredScope.inferred.length) {
+      try {
+        await queueResearchCandidates(db, {
+          jobRequestId: jobRequest.id,
+          city: jobRequest.city || null,
+          sourceText: descriptionText,
+          materials: inferredScope.inferred,
+        });
+      } catch (queueError) {
+        console.warn('Failed to enqueue research candidates', queueError?.message || queueError);
+      }
+    }
+
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
