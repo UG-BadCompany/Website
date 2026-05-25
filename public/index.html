@@ -1282,7 +1282,17 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
+                <input id="jobStarter" name="jobStarter" type="text" list="jobStarterSuggestions" placeholder="Start typing the request (example: mini split new install)">
+                <datalist id="jobStarterSuggestions">
+                  <option value="Mini split AC new install"></option>
+                  <option value="Electrical run for new mini split"></option>
+                  <option value="Replace ceiling fan"></option>
+                  <option value="Water heater replacement"></option>
+                  <option value="Bathroom plumbing repair"></option>
+                </datalist>
                 <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
+                <p class="form-note" style="margin-top:8px;" data-description-suggestion hidden></p>
+                <button class="btn" type="button" data-fill-suggestion hidden>Use this suggestion</button>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
@@ -1313,6 +1323,14 @@
 
       const status = form.querySelector('[data-job-request-status]');
       const submitButton = form.querySelector('button[type="submit"]');
+      const serviceField = form.querySelector('#service');
+      const workScopeField = form.querySelector('#workScope');
+      const workCategoryField = form.querySelector('#workCategory');
+      const jobStarterField = form.querySelector('#jobStarter');
+      const descriptionField = form.querySelector('#description');
+      const suggestionField = form.querySelector('[data-description-suggestion]');
+      const fillSuggestionButton = form.querySelector('[data-fill-suggestion]');
+      let currentSuggestion = '';
       const setStatus = (message, state = '') => {
         if (!status) {
           return;
@@ -1343,6 +1361,48 @@
           return '';
         }
       };
+
+      const suggestDescription = () => {
+        const combined = `${jobStarterField?.value || ''} ${serviceField?.value || ''} ${workScopeField?.value || ''} ${workCategoryField?.value || ''}`.toLowerCase();
+        let suggestion = '';
+        if (combined.includes('mini split') && combined.includes('new install')) {
+          suggestion = 'Suggested detail: About how many feet of electrical will need to be ran for the mini split install? Include voltage and breaker size if known.';
+        } else if (combined.includes('water heater') && combined.includes('replace')) {
+          suggestion = 'Suggested detail: Tank size, gas or electric, and whether the existing venting/pan/drain needs updates.';
+        }
+
+        currentSuggestion = suggestion;
+        if (!suggestionField || !fillSuggestionButton) return;
+        if (!suggestion) {
+          suggestionField.hidden = true;
+          fillSuggestionButton.hidden = true;
+          suggestionField.textContent = '';
+          return;
+        }
+
+        suggestionField.hidden = false;
+        fillSuggestionButton.hidden = false;
+        suggestionField.textContent = suggestion;
+      };
+
+      [serviceField, workScopeField, workCategoryField, jobStarterField].forEach((field) => {
+        field?.addEventListener('input', suggestDescription);
+        field?.addEventListener('change', suggestDescription);
+      });
+
+      fillSuggestionButton?.addEventListener('click', () => {
+        if (!descriptionField || !currentSuggestion) return;
+        if (descriptionField.value.trim()) {
+          descriptionField.value = `${descriptionField.value.trim()}
+
+${currentSuggestion}`;
+        } else {
+          descriptionField.value = currentSuggestion;
+        }
+        descriptionField.focus();
+      });
+
+      suggestDescription();
 
       const ensureRecaptchaReady = async (siteKey) => {
         if (!siteKey) return false;
