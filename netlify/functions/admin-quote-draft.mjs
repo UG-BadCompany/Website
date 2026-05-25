@@ -314,6 +314,10 @@ const choosePlaybook = (descriptionText) => {
 const detectJobTypeKey = (descriptionText) => {
   const text = slug(descriptionText);
   if (text.includes('sink') && (text.includes('new install') || text.includes('install'))) return 'sink_new_install';
+  if ((text.includes('hvac') || text.includes('ac') || text.includes('air conditioner') || text.includes('heat pump') || text.includes('furnace')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'hvac_troubleshoot_repair';
+  if ((text.includes('water heater') || text.includes('hot water heater')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'water_heater_troubleshoot_repair';
+  if ((text.includes('sink') || text.includes('faucet') || text.includes('drain') || text.includes('garbage disposal')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'sink_troubleshoot_repair';
+  if ((text.includes('electrical') || text.includes('outlet') || text.includes('switch') || text.includes('breaker')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'electrical_troubleshoot_repair';
   return null;
 };
 
