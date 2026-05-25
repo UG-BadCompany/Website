@@ -77,20 +77,25 @@ const parseUsdToCents = (value = '') => {
 const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
   const key = process.env.SERPAPI_API_KEY;
   if (!key) return [];
-  const query = encodeURIComponent(`${partLabel} price ${location}`);
-  const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
-  const response = await fetch(url);
-  if (!response.ok) return [];
-  const data = await response.json().catch(() => ({}));
-  const items = Array.isArray(data.shopping_results) ? data.shopping_results : [];
-  return items
-    .map((item) => ({
-      title: item.title || partLabel,
-      source: item.source || item.store || 'web',
-      cents: parseUsdToCents(item.price || item.extracted_price),
-    }))
-    .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
-    .slice(0, 5);
+  try {
+    const query = encodeURIComponent(`${partLabel} price ${location}`);
+    const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json().catch(() => ({}));
+    const items = Array.isArray(data.shopping_results) ? data.shopping_results : [];
+    return items
+      .map((item) => ({
+        title: item.title || partLabel,
+        source: item.source || item.store || 'web',
+        cents: parseUsdToCents(item.price || item.extracted_price),
+      }))
+      .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
+      .slice(0, 5);
+  } catch (error) {
+    console.warn('SerpApi lookup failed, falling back to local pricing.', { partLabel, message: error?.message || String(error) });
+    return [];
+  }
 };
 const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, inventory, location }) => {
   const keywords = extractProjectDetailKeywords(projectDetails);
