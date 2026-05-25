@@ -17,6 +17,8 @@ const MAX_FIELD_LENGTHS = {
   streetAddress: 240,
   service: 120,
   timeframe: 80,
+  workScope: 120,
+  workCategory: 120,
   description: 4000,
   recaptchaToken: 4000,
 };
@@ -149,6 +151,8 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         street_address,
         service_type,
         preferred_timeframe,
+        work_scope,
+        work_category,
         description
       ) values (
         ${client.id},
@@ -160,6 +164,8 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         ${payload.streetAddress},
         ${payload.service},
         ${payload.timeframe || null},
+        ${payload.workScope || null},
+        ${payload.workCategory || null},
         ${payload.description}
       )
       returning id, created_at
@@ -171,7 +177,7 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         ${'job_request.created'},
         ${'job_request'},
         ${jobRequest.id},
-        ${JSON.stringify({ source: 'public_estimate_form', clientId: client.id, propertyId: property.id, city: payload.city, streetAddress: payload.streetAddress, service: payload.service })}::jsonb
+        ${JSON.stringify({ source: 'public_estimate_form', clientId: client.id, propertyId: property.id, city: payload.city, streetAddress: payload.streetAddress, service: payload.service, workScope: payload.workScope || null, workCategory: payload.workCategory || null })}::jsonb
       )
     `;
 
