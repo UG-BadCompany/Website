@@ -2194,26 +2194,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-admin-assignment-form-status aria-live="polite"></span></div>
               <div class="admin-assignment-list" data-admin-assignment-list></div>
             </form>
-            <form data-admin-work-order-inventory-form data-admin-work-order-inventory-panel hidden>
-              <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
-              <strong>Work order inventory usage</strong>
-              <p>Record materials or tools consumed on this work order so stock levels and job history stay accurate. Use the Inventory command-center card for item setup and restocks.</p>
-              <div class="client-request-form-grid">
-                <label>Inventory item
-                  <select name="itemId" data-admin-work-order-inventory-item required>
-                    <option value="">Load inventory first</option>
-                  </select>
-                </label>
-                <label>Quantity used
-                  <input name="quantityUsed" type="number" min="0.01" step="0.01" placeholder="1" required>
-                </label>
-                <label class="full">Usage note
-                  <input name="adjustmentNote" placeholder="Used on drywall patch, installed on site, moved to truck">
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Record inventory usage</button><span data-admin-work-order-inventory-status aria-live="polite"></span></div>
-              <div class="admin-assignment-list" data-admin-work-order-inventory-usage></div>
-            </form>
+            
           </div>
         </section>
       </div>

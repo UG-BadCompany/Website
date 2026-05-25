@@ -2373,7 +2373,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (assignmentList) {
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
-        loadAdminWorkOrderInventory(request.id);
         if (closeButton) closeButton.focus();
       };
 
