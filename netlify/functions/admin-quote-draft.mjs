@@ -64,6 +64,51 @@ const JOB_PLAYBOOKS = [
       { label: 'Supply line set', unitCostCents: 2600, quantity: 1, aliases: ['line'] },
     ],
   },
+  {
+    key: 'water heater install or replacement',
+    match: ['water', 'heater'],
+    laborHours: 6,
+    materials: [
+      { label: 'Water heater unit', unitCostCents: 89900, quantity: 1, aliases: ['water heater'] },
+      { label: 'Expansion tank', unitCostCents: 5900, quantity: 1, aliases: ['expansion tank'] },
+      { label: 'Shutoff valve', unitCostCents: 1900, quantity: 1, aliases: ['valve'] },
+      { label: 'Gas flex connector / electrical whip', unitCostCents: 3200, quantity: 1, aliases: ['connector', 'whip'] },
+      { label: 'Water connectors + fittings', unitCostCents: 4800, quantity: 1, aliases: ['connector', 'fitting'] },
+      { label: 'Drain pan + drain line materials', unitCostCents: 4200, quantity: 1, aliases: ['pan', 'drain'] },
+    ],
+  },
+  {
+    key: 'ceiling fan install or replacement',
+    match: ['ceiling', 'fan'],
+    laborHours: 3,
+    materials: [
+      { label: 'Ceiling fan fixture', unitCostCents: 12900, quantity: 1, aliases: ['ceiling fan', 'fan'] },
+      { label: 'Fan-rated electrical box', unitCostCents: 1800, quantity: 1, aliases: ['fan box', 'electrical box'] },
+      { label: 'Mounting hardware + wire nuts', unitCostCents: 1200, quantity: 1, aliases: ['mount', 'hardware'] },
+      { label: 'Home-run wire kit (if new install)', unitCostCents: 14500, quantity: 1, aliases: ['wire', 'home run'] },
+    ],
+  },
+  {
+    key: 'exhaust fan install or replacement',
+    match: ['exhaust', 'fan'],
+    laborHours: 4,
+    materials: [
+      { label: 'Exhaust fan unit', unitCostCents: 13900, quantity: 1, aliases: ['exhaust fan', 'bath fan'] },
+      { label: 'Ducting + vent cap materials', unitCostCents: 5900, quantity: 1, aliases: ['duct', 'vent'] },
+      { label: 'Fan-rated box / mounting materials', unitCostCents: 1800, quantity: 1, aliases: ['box', 'mount'] },
+      { label: 'Home-run wire kit (if new install)', unitCostCents: 14500, quantity: 1, aliases: ['wire', 'home run'] },
+    ],
+  },
+  {
+    key: 'microwave install or replacement',
+    match: ['microwave'],
+    laborHours: 2,
+    materials: [
+      { label: 'Microwave unit', unitCostCents: 28900, quantity: 1, aliases: ['microwave'] },
+      { label: 'Mounting bracket/hardware kit', unitCostCents: 2900, quantity: 1, aliases: ['mount', 'bracket'] },
+      { label: 'Vent transition kit (if needed)', unitCostCents: 3500, quantity: 1, aliases: ['vent', 'transition'] },
+    ],
+  },
 ];
 
 const slug = (value = '') => String(value).trim().toLowerCase();
@@ -75,6 +120,8 @@ const extractElectricalFootage = (text = '') => {
   const feet = match ? Number(match[1]) : 0;
   return Number.isFinite(feet) ? feet : 0;
 };
+const isExistingFixtureRequest = (text = '') => /\b(existing|replace|replacement|swap|remove old)\b/i.test(String(text || ''));
+const isNewInstallRequest = (text = '') => /\b(new|new install|install new|fresh install)\b/i.test(String(text || ''));
 const extractProjectDetailKeywords = (projectDetails = '') => {
   const words = slug(projectDetails).replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean);
   const filtered = words.filter((word) => word.length > 2 && !STOP_WORDS.has(word));
@@ -262,6 +309,15 @@ export default async (request) => {
       }
       if (playbook?.key === 'mini split installation' && part.label === 'Conduit and fittings' && electricalFeet > 0) {
         neededQty = Math.max(1, Math.ceil(electricalFeet / 40));
+      }
+      if (playbook?.key === 'ceiling fan install or replacement' && part.label === 'Home-run wire kit (if new install)') {
+        neededQty = isExistingFixtureRequest(descriptionText) && !isNewInstallRequest(descriptionText) ? 0 : 1;
+      }
+      if (playbook?.key === 'exhaust fan install or replacement' && part.label === 'Home-run wire kit (if new install)') {
+        neededQty = isExistingFixtureRequest(descriptionText) && !isNewInstallRequest(descriptionText) ? 0 : 1;
+      }
+      if (electricalFeet > 0 && /wire|conduit/i.test(part.label)) {
+        neededQty = Math.max(neededQty, Math.ceil(electricalFeet / 50));
       }
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
       const toBuy = Math.max(0, neededQty - inStock);
