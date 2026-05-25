@@ -109,6 +109,67 @@ const JOB_PLAYBOOKS = [
       { label: 'Vent transition kit (if needed)', unitCostCents: 3500, quantity: 1, aliases: ['vent', 'transition'] },
     ],
   },
+  {
+    key: 'water softener install or replacement',
+    match: ['water', 'softener'],
+    laborHours: 5,
+    materials: [
+      { label: 'Water softener unit', unitCostCents: 89900, quantity: 1, aliases: ['softener'] },
+      { label: 'Bypass valve + connector kit', unitCostCents: 9800, quantity: 1, aliases: ['bypass', 'connector'] },
+      { label: 'Drain line tubing/fittings', unitCostCents: 4200, quantity: 1, aliases: ['drain line', 'tubing'] },
+      { label: 'Shutoff valves / plumbing fittings', unitCostCents: 4400, quantity: 1, aliases: ['valve', 'fitting'] },
+    ],
+  },
+  {
+    key: 'garbage disposal install or replacement',
+    match: ['garbage', 'disposal'],
+    laborHours: 3,
+    materials: [
+      { label: 'Garbage disposal unit', unitCostCents: 16900, quantity: 1, aliases: ['disposal'] },
+      { label: 'Disposal flange / plumber putty', unitCostCents: 2200, quantity: 1, aliases: ['flange', 'putty'] },
+      { label: 'Discharge tube / trap fittings', unitCostCents: 2600, quantity: 1, aliases: ['tube', 'trap'] },
+      { label: 'Electrical whip/cord kit', unitCostCents: 1900, quantity: 1, aliases: ['cord', 'whip'] },
+    ],
+  },
+  {
+    key: 'hvac troubleshooting and repair',
+    match: ['hvac', 'troubleshoot'],
+    laborHours: 3,
+    materials: [
+      { label: 'Capacitor/contactors/common repair parts allowance', unitCostCents: 14900, quantity: 1, aliases: ['capacitor', 'contactor'] },
+      { label: 'Fuse/relay/electrical consumables', unitCostCents: 3900, quantity: 1, aliases: ['fuse', 'relay'] },
+      { label: 'Refrigerant top-off allowance', unitCostCents: 12900, quantity: 1, aliases: ['refrigerant'] },
+    ],
+  },
+  {
+    key: 'water heater troubleshooting and repair',
+    match: ['water', 'heater', 'troubleshoot'],
+    laborHours: 3,
+    materials: [
+      { label: 'Thermocouple/element/thermostat repair kit', unitCostCents: 9900, quantity: 1, aliases: ['thermocouple', 'element', 'thermostat'] },
+      { label: 'Valve/fitting repair allowance', unitCostCents: 3900, quantity: 1, aliases: ['valve', 'fitting'] },
+    ],
+  },
+  {
+    key: 'plumbing troubleshooting and leak repair',
+    match: ['plumbing', 'leak'],
+    laborHours: 3,
+    materials: [
+      { label: 'Leak repair fittings/couplings set', unitCostCents: 6400, quantity: 1, aliases: ['coupling', 'fitting'] },
+      { label: 'Shutoff valve(s)', unitCostCents: 2400, quantity: 1, aliases: ['valve'] },
+      { label: 'Sealant/tape/consumables', unitCostCents: 1200, quantity: 1, aliases: ['sealant', 'tape'] },
+    ],
+  },
+  {
+    key: 'outlet or switch install/replacement',
+    match: ['outlet'],
+    laborHours: 2,
+    materials: [
+      { label: 'Outlet/switch device', unitCostCents: 800, quantity: 1, aliases: ['outlet', 'switch'] },
+      { label: 'Wall plate + wire nuts', unitCostCents: 500, quantity: 1, aliases: ['plate', 'wire nut'] },
+      { label: 'Wire pigtail material', unitCostCents: 700, quantity: 1, aliases: ['wire'] },
+    ],
+  },
 ];
 
 const slug = (value = '') => String(value).trim().toLowerCase();
