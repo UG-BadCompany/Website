@@ -85,32 +85,40 @@ const toObjects = (rows) => {
   })).filter((row) => Object.values(row.row_payload).some((value) => `${value}`.trim() !== ''));
 };
 
-const sync = async ({ db: injectedDb } = {}) => {
+const sync = async ({ db: injectedDb, failFast = true } = {}) => {
   const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || '';
   const db = injectedDb || (connectionString ? getDatabase({ connectionString }) : getDatabase());
   const stats = [];
 
   for (const tab of TABS) {
-    const response = await fetch(csvUrl(tab.gid));
-    if (!response.ok) throw new Error(`Failed to load ${tab.name}: ${response.status}`);
-    const csv = await response.text();
-    const rowObjects = toObjects(parseCsv(csv));
+    try {
+      const response = await fetch(csvUrl(tab.gid));
+      if (!response.ok) throw new Error(`Failed to load ${tab.name}: ${response.status}`);
+      const csv = await response.text();
+      const rowObjects = toObjects(parseCsv(csv));
 
-    await db.sql`delete from estimate_playbook_entries where sheet_key = ${SHEET_KEY} and source_gid = ${tab.gid}`;
-    for (const row of rowObjects) {
-      await db.sql`
-        insert into estimate_playbook_entries (sheet_key, source_gid, source_tab, row_number, row_payload)
-        values (${SHEET_KEY}, ${tab.gid}, ${tab.name}, ${row.row_number}, ${JSON.stringify(row.row_payload)}::jsonb)
-      `;
+      await db.sql`delete from estimate_playbook_entries where sheet_key = ${SHEET_KEY} and source_gid = ${tab.gid}`;
+      for (const row of rowObjects) {
+        await db.sql`
+          insert into estimate_playbook_entries (sheet_key, source_gid, source_tab, row_number, row_payload)
+          values (${SHEET_KEY}, ${tab.gid}, ${tab.name}, ${row.row_number}, ${JSON.stringify(row.row_payload)}::jsonb)
+        `;
+      }
+      console.log(`Synced ${tab.name}: ${rowObjects.length} rows`);
+      stats.push({ gid: tab.gid, tab: tab.name, rows: rowObjects.length, ok: true });
+    } catch (error) {
+      const item = { gid: tab.gid, tab: tab.name, rows: 0, ok: false, error: error?.message || String(error) };
+      stats.push(item);
+      if (failFast) throw error;
+      console.error(`Sync failed for ${tab.name}:`, item.error);
     }
-    console.log(`Synced ${tab.name}: ${rowObjects.length} rows`);
-    stats.push({ gid: tab.gid, tab: tab.name, rows: rowObjects.length });
   }
 
   return {
     sheetKey: SHEET_KEY,
     tabs: stats,
     totalRows: stats.reduce((sum, item) => sum + item.rows, 0),
+    failedTabs: stats.filter((item) => item.ok === false),
   };
 };
 

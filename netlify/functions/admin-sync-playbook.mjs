@@ -13,19 +13,38 @@ const requireAdmin = async (db, request) => {
   return { ok: true };
 };
 
+const loadSyncStatus = async (db, sheetKey) => {
+  const rows = asRows(await db.sql`
+    select source_gid, source_tab, count(*)::int as rows, max(updated_at) as last_updated
+    from estimate_playbook_entries
+    where sheet_key = ${sheetKey}
+    group by source_gid, source_tab
+    order by source_tab asc
+  `);
+  const total = rows.reduce((sum, row) => sum + Number(row.rows || 0), 0);
+  return { rows, total };
+};
+
 export default async (request) => {
-  if (request.method !== 'POST') return json(405, { ok: false, message: 'Method not allowed.' });
+  if (request.method !== 'POST' && request.method !== 'GET') return json(405, { ok: false, message: 'Method not allowed.' });
   try {
     const db = await loadDatabase();
     const auth = await requireAdmin(db, request);
     if (!auth.ok) return auth.response;
-    const synced = await sync({ db });
-    const [countRow] = asRows(await db.sql`select count(*)::int as count from estimate_playbook_entries where sheet_key = ${synced.sheetKey}`);
+
+    if (request.method === 'GET') {
+      const sheetKey = process.env.ESTIMATOR_PLAYBOOK_SHEET_KEY || '1ndbMbAbD2R4LmB9PUspQsM3eyCyx6QdTiB4Iy36lE-U';
+      const status = await loadSyncStatus(db, sheetKey);
+      return json(200, { ok: true, sheetKey, synced: status.rows, totalRows: status.total });
+    }
+
+    const synced = await sync({ db, failFast: false });
+    const status = await loadSyncStatus(db, synced.sheetKey);
     return json(200, {
       ok: true,
       message: 'Playbook sync completed from Google Sheets.',
       synced,
-      databaseRowCount: Number(countRow?.count || 0),
+      database: { totalRows: status.total, byTab: status.rows },
     });
   } catch (error) {
     console.error('Playbook sync failed', error);
