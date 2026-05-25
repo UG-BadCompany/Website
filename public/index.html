@@ -1282,7 +1282,17 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
+                <input id="jobStarter" name="jobStarter" type="text" list="jobStarterSuggestions" placeholder="Start typing the request (example: mini split new install)">
+                <datalist id="jobStarterSuggestions">
+                  <option value="Mini split AC new install"></option>
+                  <option value="Electrical run for new mini split"></option>
+                  <option value="Replace ceiling fan"></option>
+                  <option value="Water heater replacement"></option>
+                  <option value="Bathroom plumbing repair"></option>
+                </datalist>
                 <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
+                <p class="form-note" style="margin-top:8px;" data-description-suggestion hidden></p>
+                <button class="btn" type="button" data-fill-suggestion hidden>Use this suggestion</button>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
@@ -1313,6 +1323,14 @@
 
       const status = form.querySelector('[data-job-request-status]');
       const submitButton = form.querySelector('button[type="submit"]');
+      const serviceField = form.querySelector('#service');
+      const workScopeField = form.querySelector('#workScope');
+      const workCategoryField = form.querySelector('#workCategory');
+      const jobStarterField = form.querySelector('#jobStarter');
+      const descriptionField = form.querySelector('#description');
+      const suggestionField = form.querySelector('[data-description-suggestion]');
+      const fillSuggestionButton = form.querySelector('[data-fill-suggestion]');
+      let currentSuggestion = '';
       const setStatus = (message, state = '') => {
         if (!status) {
           return;
@@ -1343,6 +1361,73 @@
           return '';
         }
       };
+
+      const hasAny = (value, terms) => terms.some((term) => value.includes(term));
+
+      const suggestDescription = () => {
+        const selectedValues = `${serviceField?.value || ''} ${workScopeField?.value || ''} ${workCategoryField?.value || ''}`.toLowerCase();
+        const textValues = `${jobStarterField?.value || ''} ${descriptionField?.value || ''}`.toLowerCase();
+        const combined = `${selectedValues} ${textValues}`;
+        const suggestions = [];
+
+        const isMiniSplitRequest = hasAny(combined, ['mini split', 'minisplit', 'mini-split']);
+        const isNewInstall = hasAny(combined, ['new install', 'installation', 'install']);
+        if (isMiniSplitRequest && isNewInstall) {
+          const hasElectricalRun = /(\b\d+\s*(ft|feet|foot)\b)|(electrical run)/.test(combined);
+          const hasVoltage = /(110|115|120|208|220|230|240)\s*v|voltage/.test(combined);
+          const hasBreaker = /breaker|amp|amperage|panel/.test(combined);
+
+          if (!hasElectricalRun) suggestions.push('About how many feet of electrical will need to be run for the mini split install?');
+          if (!hasVoltage) suggestions.push('Do you know the voltage requirement (for example 120V or 240V)?');
+          if (!hasBreaker) suggestions.push('Do you know the breaker size or whether a new breaker/panel space is needed?');
+        }
+
+        const isWaterHeaterRequest = hasAny(combined, ['water heater', 'hot water heater']);
+        const isReplacement = hasAny(combined, ['replace', 'replacement']);
+        if (isWaterHeaterRequest && isReplacement) {
+          if (!/(\b\d+\s*(gal|gallon)\b)|tank size/.test(combined)) suggestions.push('What tank size is being replaced (for example 40-gallon or 50-gallon)?');
+          if (!/gas|electric/.test(combined)) suggestions.push('Is the unit gas or electric?');
+          if (!/pan|drain|vent/.test(combined)) suggestions.push('Should we review drain pan, drain line, or venting updates during replacement?');
+        }
+
+        const suggestion = suggestions.length
+          ? `Suggested follow-up details:
+• ${suggestions.join('
+• ')}`
+          : '';
+
+        currentSuggestion = suggestion;
+        if (!suggestionField || !fillSuggestionButton) return;
+        if (!suggestion) {
+          suggestionField.hidden = true;
+          fillSuggestionButton.hidden = true;
+          suggestionField.textContent = '';
+          return;
+        }
+
+        suggestionField.hidden = false;
+        fillSuggestionButton.hidden = false;
+        suggestionField.textContent = suggestion;
+      };
+
+      [serviceField, workScopeField, workCategoryField, jobStarterField, descriptionField].forEach((field) => {
+        field?.addEventListener('input', suggestDescription);
+        field?.addEventListener('change', suggestDescription);
+      });
+
+      fillSuggestionButton?.addEventListener('click', () => {
+        if (!descriptionField || !currentSuggestion) return;
+        if (descriptionField.value.trim()) {
+          descriptionField.value = `${descriptionField.value.trim()}
+
+${currentSuggestion}`;
+        } else {
+          descriptionField.value = currentSuggestion;
+        }
+        descriptionField.focus();
+      });
+
+      suggestDescription();
 
       const ensureRecaptchaReady = async (siteKey) => {
         if (!siteKey) return false;
