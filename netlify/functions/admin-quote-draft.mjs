@@ -76,11 +76,28 @@ const parseUsdToCents = (value = '') => {
   if (!match) return null;
   return Math.round(Number(match[1]) * 100);
 };
+const ALLOWED_PRICE_SOURCES = [
+  'home depot',
+  'lowes',
+  "lowe's",
+  'ace hardware',
+  'amazon',
+  'tractor supply',
+  'harbor freight',
+  'grainger',
+  'fastenal',
+  'floor and decor',
+  'ferguson',
+];
+const isAllowedPriceSource = (source = '', title = '') => {
+  const haystack = `${source} ${title}`.toLowerCase();
+  return ALLOWED_PRICE_SOURCES.some((vendor) => haystack.includes(vendor));
+};
 const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
   const key = process.env.SERPAPI_API_KEY;
   if (!key) return [];
   try {
-    const query = encodeURIComponent(`${partLabel} price ${location}`);
+    const query = encodeURIComponent(`${partLabel} price ${location} Home Depot Lowes Ace Hardware Amazon Phoenix`);
     const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
     const response = await fetch(url);
     if (!response.ok) return [];
@@ -92,6 +109,7 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
         source: item.source || item.store || 'web',
         cents: parseUsdToCents(item.price || item.extracted_price),
       }))
+      .filter((item) => isAllowedPriceSource(item.source, item.title))
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
       .slice(0, 5);
   } catch (error) {
