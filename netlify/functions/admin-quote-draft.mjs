@@ -372,8 +372,8 @@ const choosePlaybook = (descriptionText) => {
 };
 
 
-const detectJobTypeKey = (descriptionText) => {
-  const text = slug(descriptionText);
+const detectJobTypeKey = ({ descriptionText, workScope = '', workCategory = '' }) => {
+  const text = slug(`${workScope} ${workCategory} ${descriptionText}`);
   if (text.includes('sink') && (text.includes('new install') || text.includes('install'))) return 'sink_new_install';
   if ((text.includes('hvac') || text.includes('ac') || text.includes('air conditioner') || text.includes('heat pump') || text.includes('furnace')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'hvac_troubleshoot_repair';
   if ((text.includes('water heater') || text.includes('hot water heater')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'water_heater_troubleshoot_repair';
@@ -440,7 +440,7 @@ export default async (request) => {
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
     let [jobRequest] = asRows(await db.sql`
-      select id, service_type, description, city, created_at
+      select id, service_type, work_scope, work_category, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
@@ -449,6 +449,8 @@ export default async (request) => {
       jobRequest = {
         id: jobRequestId,
         service_type: clean(requestContext.serviceType, 160) || 'Service request',
+        work_scope: clean(requestContext.workScope, 120) || '',
+        work_category: clean(requestContext.workCategory, 120) || '',
         description: clean(requestContext.description, 4000) || '',
         city: clean(requestContext.city, 120) || 'Phoenix',
         created_at: requestContext.createdAt || new Date().toISOString(),
@@ -469,7 +471,7 @@ export default async (request) => {
       inventory = [];
     }
 
-    const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
+    const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
     const electricalFeet = extractElectricalFootage(descriptionText);
     const materialsFromPlaybook = (playbook?.materials || []).map((part) => {
@@ -521,7 +523,9 @@ export default async (request) => {
       };
     });
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
-    const jobTypeKey = detectJobTypeKey(descriptionText);
+    const workScope = slug(jobRequest.work_scope || '');
+    const workCategory = slug(jobRequest.work_category || '');
+    const jobTypeKey = detectJobTypeKey({ descriptionText, workScope, workCategory });
     let materialsFromDbCatalog = [];
     try {
       materialsFromDbCatalog = await loadDbCatalogMaterials(db, { jobTypeKey, descriptionText, inventory, location });
@@ -568,8 +572,23 @@ export default async (request) => {
       });
     }
 
-    const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
+    const scopeBias = workScope.includes('troubleshooting') ? 'troubleshooting' : (workScope.includes('new install') || workScope.includes('install') ? 'install' : 'neutral');
+    const adjustedMaterials = materials.map((part) => {
+      if (scopeBias === 'troubleshooting') {
+        const buyQty = Math.min(part.buyQty, 1);
+        return { ...part, buyQty, estimatedBuyCostCents: buyQty * part.estimatedUnitCostCents };
+      }
+      if (scopeBias === 'install') {
+        const buyQty = Math.max(part.buyQty, part.neededQty);
+        return { ...part, buyQty, estimatedBuyCostCents: buyQty * part.estimatedUnitCostCents };
+      }
+      return part;
+    });
+
+    const materialSubtotal = adjustedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
+    if (scopeBias === 'troubleshooting') laborHours = Math.max(laborHours, 3);
+    if (scopeBias === 'install') laborHours = Math.max(laborHours, 5);
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
     }
@@ -580,6 +599,7 @@ export default async (request) => {
 
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
+      `Scope context: ${jobRequest.work_scope || 'unspecified'} | Trade context: ${jobRequest.work_category || 'unspecified'}.`,
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
@@ -603,7 +623,7 @@ export default async (request) => {
         amountCents: totalCents,
         laborHours,
         laborRateCents,
-        materials,
+        materials: adjustedMaterials,
       },
     });
   } catch (error) {
