@@ -1205,7 +1205,7 @@
             </ul>
           </div>
 
-          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
+          <form class="estimate-form" name="estimate-request" method="POST" action="/thank-you/" data-netlify="true" data-netlify-honeypot="bot-field" enctype="multipart/form-data" data-job-request-form>
             <input type="hidden" name="form-name" value="estimate-request">
             <input type="hidden" name="recaptchaToken" value="">
             <p hidden><label>Don’t fill this out: <input name="bot-field"></label></p>
@@ -1535,7 +1535,7 @@ ${currentSuggestion}`;
           }
 
           setStatus('Request received. Redirecting…', 'success');
-          window.location.assign('/thank-you');
+          window.location.assign('/thank-you/');
         } catch (error) {
           console.warn('Database request failed; using Netlify Forms fallback.', error);
           submitWithNetlifyForms();
