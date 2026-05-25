@@ -85,9 +85,11 @@ const toObjects = (rows) => {
   })).filter((row) => Object.values(row.row_payload).some((value) => `${value}`.trim() !== ''));
 };
 
-const sync = async () => {
+const sync = async ({ db: injectedDb } = {}) => {
   const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || '';
-  const db = connectionString ? getDatabase({ connectionString }) : getDatabase();
+  const db = injectedDb || (connectionString ? getDatabase({ connectionString }) : getDatabase());
+  const stats = [];
+
   for (const tab of TABS) {
     const response = await fetch(csvUrl(tab.gid));
     if (!response.ok) throw new Error(`Failed to load ${tab.name}: ${response.status}`);
@@ -102,7 +104,14 @@ const sync = async () => {
       `;
     }
     console.log(`Synced ${tab.name}: ${rowObjects.length} rows`);
+    stats.push({ gid: tab.gid, tab: tab.name, rows: rowObjects.length });
   }
+
+  return {
+    sheetKey: SHEET_KEY,
+    tabs: stats,
+    totalRows: stats.reduce((sum, item) => sum + item.rows, 0),
+  };
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {

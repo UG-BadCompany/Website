@@ -19,8 +19,14 @@ export default async (request) => {
     const db = await loadDatabase();
     const auth = await requireAdmin(db, request);
     if (!auth.ok) return auth.response;
-    await sync();
-    return json(200, { ok: true, message: 'Playbook sync started and completed from Google Sheets.' });
+    const synced = await sync({ db });
+    const [countRow] = asRows(await db.sql`select count(*)::int as count from estimate_playbook_entries where sheet_key = ${synced.sheetKey}`);
+    return json(200, {
+      ok: true,
+      message: 'Playbook sync completed from Google Sheets.',
+      synced,
+      databaseRowCount: Number(countRow?.count || 0),
+    });
   } catch (error) {
     console.error('Playbook sync failed', error);
     return json(500, { ok: false, message: error?.message || 'Sync failed.' });
