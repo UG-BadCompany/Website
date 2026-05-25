@@ -275,6 +275,47 @@ const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, invento
   return candidates;
 };
 
+
+const inferUnknownScopeRequirements = async ({ descriptionText, inventory, location }) => {
+  const text = slug(descriptionText);
+  const inferred = [];
+  const followUps = [];
+
+  if (text.includes('salt water') || text.includes('water softener') || text.includes('filtration')) {
+    followUps.push('Main line pipe size (3/4" or 1"), available install space, and drain access point.');
+    followUps.push('Current water hardness/TDS (if known) and desired treatment result.');
+    followUps.push('Electrical outlet availability and distance for controller/power supply.');
+    followUps.push('Bypass preference and shutoff valve condition at install location.');
+    const parts = [
+      'Salt-based water treatment system unit',
+      'Bypass valve and union connector kit',
+      'Pre-filter housing and cartridge',
+      'Drain line tubing and air-gap fitting',
+      'Shutoff valves and plumbing fittings',
+      'Startup salt/media allowance',
+    ];
+    for (const partLabel of parts) {
+      const livePrices = await fetchSerpApiPrices({ partLabel, location });
+      const medianLivePriceCents = livePrices.length
+        ? livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)]
+        : 0;
+      inferred.push({
+        name: partLabel,
+        estimatedUnitCostCents: medianLivePriceCents,
+        neededQty: 1,
+        inStockQty: 0,
+        buyQty: 1,
+        estimatedBuyCostCents: medianLivePriceCents,
+        source: 'inferred_scope_research',
+        livePriceEvidence: livePrices,
+        pricingSource: livePrices.length ? 'live_web' : 'research_needed',
+      });
+    }
+  }
+
+  return { inferred, followUps };
+};
+
 const loadSession = async (db, sessionToken) => {
   const rows = asRows(await db.sql`
     select auth_sessions.id, app_users.id as user_id
@@ -470,9 +511,12 @@ export default async (request) => {
     const aiGeneralMaterials = (!materialsFromPlaybook.length && !materialsFromDbCatalog.length)
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
+    const inferredScope = (!materialsFromPlaybook.length && !materialsFromDbCatalog.length && !aiGeneralMaterials.length)
+      ? await inferUnknownScopeRequirements({ descriptionText, inventory, location })
+      : { inferred: [], followUps: [] };
     const baseMaterials = materialsFromDbCatalog.length
       ? materialsFromDbCatalog
-      : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog));
+      : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : (inferredScope.inferred.length ? inferredScope.inferred : materialsFromCatalog)));
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -514,6 +558,7 @@ export default async (request) => {
       `Estimated total: ${toMoney(totalCents)}`,
       '',
       'Review before sending: confirm exact part quantities, tax/shipping, and final labor scope.',
+      ...(inferredScope.followUps.length ? ['', 'Missing info to finalize this scope:', ...inferredScope.followUps.map((item) => `- ${item}`)] : []),
     ];
 
     return json(200, {
