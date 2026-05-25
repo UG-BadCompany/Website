@@ -25,16 +25,18 @@ const JOB_PLAYBOOKS = [
   {
     key: 'mini split installation',
     match: ['mini', 'split'],
-    laborHours: 10,
+    laborHours: 11,
     materials: [
       { label: 'Mini-split condenser + air handler kit', unitCostCents: 159900, quantity: 1, aliases: ['mini split', 'air handler', 'condenser'] },
       { label: 'Line set kit', unitCostCents: 18900, quantity: 1, aliases: ['line set', 'refrigerant line'] },
+      { label: 'Home-run copper wire (THHN/THWN set)', unitCostCents: 32500, quantity: 1, aliases: ['home run', 'wire run', 'electrical run'] },
       { label: 'Communication/control wire spool', unitCostCents: 12900, quantity: 1, aliases: ['control wire', 'thermostat wire'] },
       { label: 'Disconnect box', unitCostCents: 3900, quantity: 1, aliases: ['disconnect'] },
-      { label: 'Breaker + panel parts', unitCostCents: 6800, quantity: 1, aliases: ['breaker', 'panel'] },
+      { label: '2-pole breaker + panel hardware', unitCostCents: 6800, quantity: 1, aliases: ['breaker', 'panel'] },
+      { label: 'Disconnect fuses (pair)', unitCostCents: 2600, quantity: 1, aliases: ['fuse', 'disconnect fuse'] },
       { label: 'Conduit and fittings', unitCostCents: 7200, quantity: 1, aliases: ['conduit', 'fitting'] },
       { label: 'Condensate drain materials', unitCostCents: 2500, quantity: 1, aliases: ['drain', 'condensate'] },
-      { label: 'Mounting pad/bracket kit', unitCostCents: 6400, quantity: 1, aliases: ['mount', 'pad', 'bracket'] },
+      { label: 'Condenser pad / wall bracket kit', unitCostCents: 6400, quantity: 1, aliases: ['mount', 'pad', 'bracket', 'condenser pad'] },
     ],
   },
   {
