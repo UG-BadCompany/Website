@@ -1362,14 +1362,39 @@
         }
       };
 
+      const hasAny = (value, terms) => terms.some((term) => value.includes(term));
+
       const suggestDescription = () => {
-        const combined = `${jobStarterField?.value || ''} ${serviceField?.value || ''} ${workScopeField?.value || ''} ${workCategoryField?.value || ''}`.toLowerCase();
-        let suggestion = '';
-        if (combined.includes('mini split') && combined.includes('new install')) {
-          suggestion = 'Suggested detail: About how many feet of electrical will need to be ran for the mini split install? Include voltage and breaker size if known.';
-        } else if (combined.includes('water heater') && combined.includes('replace')) {
-          suggestion = 'Suggested detail: Tank size, gas or electric, and whether the existing venting/pan/drain needs updates.';
+        const selectedValues = `${serviceField?.value || ''} ${workScopeField?.value || ''} ${workCategoryField?.value || ''}`.toLowerCase();
+        const textValues = `${jobStarterField?.value || ''} ${descriptionField?.value || ''}`.toLowerCase();
+        const combined = `${selectedValues} ${textValues}`;
+        const suggestions = [];
+
+        const isMiniSplitRequest = hasAny(combined, ['mini split', 'minisplit', 'mini-split']);
+        const isNewInstall = hasAny(combined, ['new install', 'installation', 'install']);
+        if (isMiniSplitRequest && isNewInstall) {
+          const hasElectricalRun = /(\b\d+\s*(ft|feet|foot)\b)|(electrical run)/.test(combined);
+          const hasVoltage = /(110|115|120|208|220|230|240)\s*v|voltage/.test(combined);
+          const hasBreaker = /breaker|amp|amperage|panel/.test(combined);
+
+          if (!hasElectricalRun) suggestions.push('About how many feet of electrical will need to be run for the mini split install?');
+          if (!hasVoltage) suggestions.push('Do you know the voltage requirement (for example 120V or 240V)?');
+          if (!hasBreaker) suggestions.push('Do you know the breaker size or whether a new breaker/panel space is needed?');
         }
+
+        const isWaterHeaterRequest = hasAny(combined, ['water heater', 'hot water heater']);
+        const isReplacement = hasAny(combined, ['replace', 'replacement']);
+        if (isWaterHeaterRequest && isReplacement) {
+          if (!/(\b\d+\s*(gal|gallon)\b)|tank size/.test(combined)) suggestions.push('What tank size is being replaced (for example 40-gallon or 50-gallon)?');
+          if (!/gas|electric/.test(combined)) suggestions.push('Is the unit gas or electric?');
+          if (!/pan|drain|vent/.test(combined)) suggestions.push('Should we review drain pan, drain line, or venting updates during replacement?');
+        }
+
+        const suggestion = suggestions.length
+          ? `Suggested follow-up details:
+• ${suggestions.join('
+• ')}`
+          : '';
 
         currentSuggestion = suggestion;
         if (!suggestionField || !fillSuggestionButton) return;
@@ -1385,7 +1410,7 @@
         suggestionField.textContent = suggestion;
       };
 
-      [serviceField, workScopeField, workCategoryField, jobStarterField].forEach((field) => {
+      [serviceField, workScopeField, workCategoryField, jobStarterField, descriptionField].forEach((field) => {
         field?.addEventListener('input', suggestDescription);
         field?.addEventListener('change', suggestDescription);
       });
