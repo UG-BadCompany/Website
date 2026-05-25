@@ -23,6 +23,21 @@ const COST_CATALOG = [
 ];
 const JOB_PLAYBOOKS = [
   {
+    key: 'mini split installation',
+    match: ['mini', 'split'],
+    laborHours: 10,
+    materials: [
+      { label: 'Mini-split condenser + air handler kit', unitCostCents: 159900, quantity: 1, aliases: ['mini split', 'air handler', 'condenser'] },
+      { label: 'Line set kit', unitCostCents: 18900, quantity: 1, aliases: ['line set', 'refrigerant line'] },
+      { label: 'Communication/control wire spool', unitCostCents: 12900, quantity: 1, aliases: ['control wire', 'thermostat wire'] },
+      { label: 'Disconnect box', unitCostCents: 3900, quantity: 1, aliases: ['disconnect'] },
+      { label: 'Breaker + panel parts', unitCostCents: 6800, quantity: 1, aliases: ['breaker', 'panel'] },
+      { label: 'Conduit and fittings', unitCostCents: 7200, quantity: 1, aliases: ['conduit', 'fitting'] },
+      { label: 'Condensate drain materials', unitCostCents: 2500, quantity: 1, aliases: ['drain', 'condensate'] },
+      { label: 'Mounting pad/bracket kit', unitCostCents: 6400, quantity: 1, aliases: ['mount', 'pad', 'bracket'] },
+    ],
+  },
+  {
     key: 'kitchen faucet replacement',
     match: ['kitchen', 'faucet', 'replace'],
     laborHours: 3,
@@ -53,6 +68,11 @@ const slug = (value = '') => String(value).trim().toLowerCase();
 const toMoney = (cents = 0) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 const asRows = (result) => (Array.isArray(result) ? result : (Array.isArray(result?.rows) ? result.rows : []));
 const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'need', 'needs', 'want', 'replace', 'repair', 'install', 'fix', 'service', 'project', 'details']);
+const extractElectricalFootage = (text = '') => {
+  const match = String(text).toLowerCase().match(/(\d{1,4})\s*(?:ft|feet|foot)\b/);
+  const feet = match ? Number(match[1]) : 0;
+  return Number.isFinite(feet) ? feet : 0;
+};
 const extractProjectDetailKeywords = (projectDetails = '') => {
   const words = slug(projectDetails).replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean);
   const filtered = words.filter((word) => word.length > 2 && !STOP_WORDS.has(word));
@@ -121,6 +141,7 @@ const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, invento
   const keywords = extractProjectDetailKeywords(projectDetails);
   const candidates = [];
   for (const keyword of keywords.slice(0, 6)) {
+    if (['mini', 'split', 'air', 'conditioner', 'unit'].includes(keyword)) continue;
     const label = keyword.split('-').map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1)).join(' ');
     const livePrices = await fetchSerpApiPrices({ partLabel: `${label} part`, location });
     if (!livePrices.length) continue;
@@ -230,9 +251,16 @@ export default async (request) => {
 
     const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
+    const electricalFeet = extractElectricalFootage(descriptionText);
     const materialsFromPlaybook = (playbook?.materials || []).map((part) => {
       const inventoryMatch = inventory.find((item) => part.aliases.some((alias) => slug(item.name).includes(alias)));
-      const neededQty = part.quantity;
+      let neededQty = part.quantity;
+      if (playbook?.key === 'mini split installation' && part.label === 'Communication/control wire spool' && electricalFeet > 0) {
+        neededQty = Math.max(1, Math.ceil(electricalFeet / 50));
+      }
+      if (playbook?.key === 'mini split installation' && part.label === 'Conduit and fittings' && electricalFeet > 0) {
+        neededQty = Math.max(1, Math.ceil(electricalFeet / 40));
+      }
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
       const toBuy = Math.max(0, neededQty - inStock);
       const buyCostCents = toBuy * part.unitCostCents;
@@ -286,7 +314,10 @@ export default async (request) => {
     }
 
     const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
-    const laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
+    let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
+    if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
+      laborHours += Math.ceil(electricalFeet / 35);
+    }
     const laborRateCents = phoenixLaborRateByTime(jobRequest.created_at || new Date());
     const laborSubtotal = laborHours * laborRateCents;
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
