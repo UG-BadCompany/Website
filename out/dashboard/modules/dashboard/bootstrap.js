@@ -987,6 +987,18 @@
         });
       };
 
+      const renderQuoteSummary = (summary = '') => {
+        const lines = String(summary || '').split('\n').map((line) => line.trim()).filter(Boolean);
+        if (!lines.length) return '';
+        const bulletLines = lines.filter((line) => line.startsWith('- '));
+        const plainLines = lines.filter((line) => !line.startsWith('- '));
+        return `
+          <div class="client-quote-list">
+            ${plainLines.length ? `<p>${plainLines.map((line) => escapeHtml(line)).join('<br>')}</p>` : ''}
+            ${bulletLines.length ? `<ul>${bulletLines.map((line) => `<li>${escapeHtml(line.slice(2))}</li>`).join('')}</ul>` : ''}
+          </div>
+        `;
+      };
       const renderQuoteCard = (quote) => `
         <article class="client-quote">
           <span class="client-quote-badge">${escapeHtml(quote.status.replaceAll('_', ' '))}</span>
@@ -996,7 +1008,7 @@
             <span>${escapeHtml(quote.property?.street || 'No property')}</span>
             <span>${escapeHtml(quote.property?.city || 'No city')}</span>
           </div>
-          ${quote.summary ? `<p>${escapeHtml(quote.summary)}</p>` : ''}
+          ${quote.summary ? renderQuoteSummary(quote.summary) : ''}
           ${['sent', 'viewed'].includes(quote.status) ? `<div class="client-quote-actions"><button class="btn btn-primary" type="button" data-quote-action="accept" data-quote-id="${escapeHtml(quote.id)}">Approve quote</button><button class="btn btn-danger" type="button" data-quote-action="decline" data-quote-id="${escapeHtml(quote.id)}">Deny quote</button></div>` : ''}
         </article>
       `;
