@@ -310,6 +310,51 @@ const choosePlaybook = (descriptionText) => {
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
 };
 
+
+const detectJobTypeKey = (descriptionText) => {
+  const text = slug(descriptionText);
+  if (text.includes('sink') && (text.includes('new install') || text.includes('install'))) return 'sink_new_install';
+  return null;
+};
+
+const loadDbCatalogMaterials = async (db, { jobTypeKey, descriptionText, inventory, location }) => {
+  if (!jobTypeKey) return [];
+  const rows = asRows(await db.sql`
+    select item_key, item_name, default_unit_cost_cents, default_quantity, aliases
+    from quote_catalog_items
+    where job_type_key = ${jobTypeKey} and is_active = true
+    order by id asc
+  `);
+  const materials = [];
+  for (const row of rows) {
+    const aliases = String(row.aliases || '').toLowerCase().split(',').map((v) => v.trim()).filter(Boolean);
+    const inventoryMatch = inventory.find((item) => aliases.some((alias) => slug(item.name).includes(alias)));
+    const [recentPrice] = asRows(await db.sql`
+      select unit_cost_cents
+      from supplier_prices
+      where item_key = ${row.item_key}
+      order by fetched_at desc
+      limit 1
+    `);
+    const livePrices = recentPrice ? [{ title: row.item_name, source: 'supplier_cache', cents: Number(recentPrice.unit_cost_cents || 0) }] : await fetchSerpApiPrices({ partLabel: row.item_name, location });
+    const effectiveUnit = recentPrice?.unit_cost_cents || (livePrices[0]?.cents) || Number(row.default_unit_cost_cents || 0);
+    const neededQty = Math.max(1, Number(row.default_quantity || 1));
+    const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+    const buyQty = Math.max(0, neededQty - inStock);
+    materials.push({
+      name: row.item_name,
+      estimatedUnitCostCents: effectiveUnit,
+      neededQty,
+      inStockQty: inStock,
+      buyQty,
+      estimatedBuyCostCents: buyQty * effectiveUnit,
+      source: 'db_catalog',
+      livePriceEvidence: livePrices,
+      pricingSource: recentPrice ? 'supplier_cache' : (livePrices.length ? 'live_web' : 'db_default'),
+    });
+  }
+  return materials;
+};
 export default async (request) => {
   if (request.method !== 'POST') return json(405, { ok: false, message: 'Method not allowed.' });
 
@@ -411,10 +456,19 @@ export default async (request) => {
       };
     });
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
-    const aiGeneralMaterials = !materialsFromPlaybook.length
+    const jobTypeKey = detectJobTypeKey(descriptionText);
+    let materialsFromDbCatalog = [];
+    try {
+      materialsFromDbCatalog = await loadDbCatalogMaterials(db, { jobTypeKey, descriptionText, inventory, location });
+    } catch (catalogError) {
+      console.warn('DB catalog lookup unavailable; falling back to playbook/AI.', catalogError?.message || catalogError);
+    }
+    const aiGeneralMaterials = (!materialsFromPlaybook.length && !materialsFromDbCatalog.length)
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
+    const baseMaterials = materialsFromDbCatalog.length
+      ? materialsFromDbCatalog
+      : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog));
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
