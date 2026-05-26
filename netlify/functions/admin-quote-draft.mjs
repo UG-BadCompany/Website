@@ -375,6 +375,37 @@ const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory
   }
 };
 
+
+const buildMiniSplitComprehensiveBundle = ({ jobRequest, inventory, descriptionText }) => {
+  const feet = Math.max(25, extractElectricalFootage(descriptionText) || 30);
+  const lineSetQty = Math.max(1, Math.ceil(feet / 25));
+  const conduitSticks = Math.max(3, Math.ceil(feet / 10));
+  const fittingsPacks = Math.max(2, Math.ceil(feet / 25));
+  const base = [
+    { name: 'Mini-split complete system package (outdoor condenser + indoor air handler)', neededQty: 1 },
+    { name: 'Insulated copper line set kit (25ft)', neededQty: lineSetQty },
+    { name: 'Line-hide / lineset cover kit', neededQty: lineSetQty },
+    { name: 'Communication/control wire spool', neededQty: 1 },
+    { name: 'Electrical disconnect box (fusible/non-fusible as required)', neededQty: 1 },
+    { name: '2-pole breaker matched to equipment MCA/MOCP', neededQty: 1 },
+    { name: 'Outdoor-rated electrical whip', neededQty: 1 },
+    { name: 'EMT/PVC conduit sticks (10ft)', neededQty: conduitSticks },
+    { name: 'Conduit fittings assortment (connectors/couplings/90 elbows/straps)', neededQty: fittingsPacks },
+    { name: 'Condenser mounting pad or wall bracket kit', neededQty: 1 },
+    { name: 'Condensate drain kit (tubing, fittings, trap)', neededQty: 1 },
+    { name: 'Condensate pump (if gravity drain is not viable)', neededQty: 1 },
+    { name: 'Line-set insulation sealing tape and UV protection wrap', neededQty: 1 },
+    { name: 'Refrigerant flare nuts, seals, and commissioning consumables', neededQty: 1 },
+    { name: 'Equipment surge protector (HVAC)', neededQty: 1 },
+  ];
+  return base.map((m) => {
+    const inv = (inventory || []).find((item) => slug(item.name).includes(slug(m.name)) || slug(m.name).includes(slug(item.name)));
+    const inStock = Number(inv?.quantity_on_hand || 0);
+    const buyQty = Math.max(0, Number(m.neededQty || 1) - inStock);
+    return { name: m.name, estimatedUnitCostCents: 0, neededQty: Number(m.neededQty || 1), inStockQty: inStock, buyQty, estimatedBuyCostCents: 0, source: 'openai_mini_split_bundle' };
+  });
+};
+
 const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, inventory }) => {
   const apiKey = clean(process.env.OPENAI_API_KEY, 200);
   if (!apiKey) return [];
@@ -864,16 +895,21 @@ export default async (request) => {
         baseMaterials.push(...aiRecoveryMaterials);
         strictRecoveryUsed = true;
       } else {
-        const emergencyLine = clean(jobRequest.work_category || jobRequest.service_type || 'Service materials', 120) || 'Service materials';
-        baseMaterials.push({
-          name: `${emergencyLine} - material allowance`,
-          estimatedUnitCostCents: 0,
-          neededQty: 1,
-          inStockQty: 0,
-          buyQty: 1,
-          estimatedBuyCostCents: 0,
-          source: 'openai_emergency_allowance',
-        });
+        const contextText = `${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${descriptionText || ''}`;
+        if (/mini[-\s]?split|ductless/i.test(contextText)) {
+          baseMaterials.push(...buildMiniSplitComprehensiveBundle({ jobRequest, inventory, descriptionText }));
+        } else {
+          const emergencyLine = clean(jobRequest.work_category || jobRequest.service_type || 'Service materials', 120) || 'Service materials';
+          baseMaterials.push({
+            name: `${emergencyLine} - material allowance`,
+            estimatedUnitCostCents: 0,
+            neededQty: 1,
+            inStockQty: 0,
+            buyQty: 1,
+            estimatedBuyCostCents: 0,
+            source: 'openai_emergency_allowance',
+          });
+        }
         strictRecoveryUsed = true;
       }
     }
@@ -1042,6 +1078,7 @@ export default async (request) => {
           openAiStrictOnly: OPENAI_STRICT_ONLY,
           strictRecoveryUsed,
           strictEmergencyAllowanceUsed: baseMaterials.some((m) => m.source === 'openai_emergency_allowance'),
+          miniSplitBundleUsed: baseMaterials.some((m) => m.source === 'openai_mini_split_bundle'),
         },
       },
     });
