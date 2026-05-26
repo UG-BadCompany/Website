@@ -579,6 +579,23 @@ export default async (request) => {
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
 
+    const sourcingLines = [];
+    bufferedMaterials.forEach((m) => {
+      const links = (m.livePriceEvidence || [])
+        .map((e) => clean(e.link || '', 500))
+        .filter(Boolean)
+        .slice(0, 3);
+      const sources = (m.livePriceEvidence || [])
+        .map((e) => clean(e.source || '', 80))
+        .filter(Boolean)
+        .slice(0, 3);
+      if (links.length || sources.length) {
+        sourcingLines.push(`- ${m.name}`);
+        if (sources.length) sourcingLines.push(`  Sources: ${sources.join(', ')}`);
+        links.forEach((link, idx) => sourcingLines.push(`  Link ${idx + 1}: ${link}`));
+      }
+    });
+
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
@@ -586,15 +603,8 @@ export default async (request) => {
       'Estimated materials:',
       ...(bufferedMaterials.length
         ? bufferedMaterials.map((m) => {
-          const links = (m.livePriceEvidence || [])
-            .map((e) => clean(e.link || '', 500))
-            .filter(Boolean)
-            .slice(0, 2);
-          const brandHint = (m.livePriceEvidence || []).map((e) => clean(e.source || '', 60)).filter(Boolean).slice(0, 2).join(', ');
-          const linksText = links.length ? ` | links: ${links.join(' , ')}` : '';
-          const sourceText = brandHint ? ` | sources: ${brandHint}` : '';
           const extraText = Number(m.extraQty || 0) > 0 ? ` | extra parts buffer: +${m.extraQty}` : '';
-          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${extraText}${sourceText}${linksText}`;
+          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${extraText}`;
         })
         : ['- No direct material match found. Manual material review required.']),
       '',
@@ -614,6 +624,7 @@ export default async (request) => {
         laborHours,
         laborRateCents,
         materials: bufferedMaterials,
+        adminSourcingNotes: sourcingLines.join('\n'),
       },
     });
   } catch (error) {
