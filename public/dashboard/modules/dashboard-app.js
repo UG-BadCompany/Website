@@ -2245,13 +2245,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
-          quoteForm.querySelector('[data-admin-quote-sourcing-links]')?.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-open-link]');
-            if (!button) return;
-            const url = button.dataset.openLink || '';
-            if (!url) return;
-            window.open(url, '_blank', 'noopener');
-          });
           quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
             const aiStatus = document.querySelector('[data-admin-quote-ai-status]');
@@ -2309,7 +2302,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (quoteSourcingLinks) {
                 const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
                 quoteSourcingLinks.innerHTML = links.length
-                  ? links.slice(0, 10).map((item, index) => `<button class="btn btn-soft" type="button" data-open-link="${escapeHtml(item.url || '')}">Click link ${index + 1}</button>`).join('')
+                  ? links.slice(0, 10).map((item, index) => `<a class="btn btn-soft" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer">URL ${index + 1}</a>`).join('')
                   : '<span class="session-status">No quick links available.</span>';
               }
               if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
