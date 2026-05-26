@@ -2308,11 +2308,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
               }
               if (amountField) {
                 let amountCents = Number(result.draft.amountCents || 0);
-                if (!amountCents && summaryField?.value) {
-                  const totalMatch = summaryField.value.match(/Estimated total:\s*\$([0-9,]+(?:\.[0-9]{1,2})?)/i);
-                  if (totalMatch) {
-                    amountCents = Math.round(Number(String(totalMatch[1]).replace(/,/g, '')) * 100);
-                  }
+                const totalMatch = summaryField?.value?.match(/Estimated total:\s*\$([0-9,]+(?:\.[0-9]{1,2})?)/i);
+                if (totalMatch) {
+                  amountCents = Math.round(Number(String(totalMatch[1]).replace(/,/g, '')) * 100);
                 }
                 amountField.value = ((Number(amountCents || 0)) / 100).toFixed(2);
               }
