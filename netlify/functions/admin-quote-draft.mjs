@@ -245,6 +245,27 @@ const confidenceFromEvidence = (evidence = []) => {
   if (count === 1) return 0.58;
   return 0.25;
 };
+const withExtraPartsBuffer = (part, { requestText = '' } = {}) => {
+  const text = slug(requestText);
+  const installHeavy = /\b(new|install|installation|replace|replacement|upgrade)\b/.test(text);
+  const smallPart = /\b(fitting|union|coupling|elbow|strap|clamp|screw|anchor|nut|bolt|wire nut|connector|tape|sealant|caulk|fastener)\b/i.test(part.name || '');
+  const baseQty = Number(part.neededQty || 0);
+  if (!Number.isFinite(baseQty) || baseQty <= 0) return part;
+  const bufferRate = smallPart ? 0.35 : (installHeavy ? 0.2 : 0.12);
+  const extraQty = Math.max(1, Math.ceil(baseQty * bufferRate));
+  const bufferedQty = baseQty + extraQty;
+  const inStock = Number(part.inStockQty || 0);
+  const buyQty = Math.max(0, bufferedQty - inStock);
+  const unitCost = Number(part.estimatedUnitCostCents || 0);
+  return {
+    ...part,
+    neededQty: bufferedQty,
+    extraQty,
+    buyQty,
+    estimatedBuyCostCents: buyQty * unitCost,
+    bufferStrategy: smallPart ? 'small-parts-overage' : (installHeavy ? 'install-overage' : 'standard-overage'),
+  };
+};
 const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
   for (const part of materials) {
     const evidence = Array.isArray(part.livePriceEvidence) ? part.livePriceEvidence : [];
@@ -545,9 +566,10 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
-    await persistLivePriceEvidence({ db, jobRequest, materials, descriptionText });
+    const bufferedMaterials = materials.map((part) => withExtraPartsBuffer(part, { requestText: descriptionText }));
+    await persistLivePriceEvidence({ db, jobRequest, materials: bufferedMaterials, descriptionText });
 
-    const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
+    const materialSubtotal = bufferedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
@@ -562,8 +584,8 @@ export default async (request) => {
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
-      ...(materials.length
-        ? materials.map((m) => {
+      ...(bufferedMaterials.length
+        ? bufferedMaterials.map((m) => {
           const links = (m.livePriceEvidence || [])
             .map((e) => clean(e.link || '', 500))
             .filter(Boolean)
@@ -571,7 +593,8 @@ export default async (request) => {
           const brandHint = (m.livePriceEvidence || []).map((e) => clean(e.source || '', 60)).filter(Boolean).slice(0, 2).join(', ');
           const linksText = links.length ? ` | links: ${links.join(' , ')}` : '';
           const sourceText = brandHint ? ` | sources: ${brandHint}` : '';
-          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${sourceText}${linksText}`;
+          const extraText = Number(m.extraQty || 0) > 0 ? ` | extra parts buffer: +${m.extraQty}` : '';
+          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${extraText}${sourceText}${linksText}`;
         })
         : ['- No direct material match found. Manual material review required.']),
       '',
@@ -590,7 +613,7 @@ export default async (request) => {
         amountCents: totalCents,
         laborHours,
         laborRateCents,
-        materials,
+        materials: bufferedMaterials,
       },
     });
   } catch (error) {
