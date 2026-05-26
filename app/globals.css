@@ -18,7 +18,7 @@ a { color: inherit; text-decoration: none; }
 .site-header { align-items: center; background: rgba(255, 250, 241, 0.94); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); display: flex; gap: 1rem; justify-content: space-between; padding: 0.9rem clamp(1rem, 4vw, 4rem); position: sticky; top: 0; z-index: 10; }
 .brand { align-items: center; display: flex; gap: 0.8rem; min-width: 230px; }
 .brand small { color: var(--muted); display: block; font-size: 0.74rem; margin-top: 0.1rem; }
-.brand-badge { align-items: center; background: var(--black); border: 3px solid var(--rust); border-radius: 50%; color: var(--tan); display: inline-flex; font-weight: 900; height: 54px; justify-content: center; width: 54px; }
+.brand-logo { display: block; height: 48px; object-fit: contain; width: 72px; }
 .nav-links { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
 .nav-links a { color: var(--muted); font-size: 0.93rem; font-weight: 700; }
 .nav-links a:hover { color: var(--rust); }
