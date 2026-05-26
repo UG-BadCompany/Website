@@ -289,6 +289,27 @@ const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
 };
 
 
+
+const buildAiCoverageRequirements = (jobRequest = {}, descriptionText = '') => {
+  const text = slug(`${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${descriptionText || ''}`);
+  const isMiniSplit = /mini[-\s]?split|ductless/.test(text);
+  const isRepair = /repair|troubleshoot|maintenance|service/.test(text);
+  const isReplace = /replace|replacement/.test(text);
+  const isInstall = /new install|install|new/.test(text);
+  const checklist = [
+    'Include core equipment/components first, then rough-in, then consumables/finishing items.',
+    'Include safety/protection items, connectors/fittings, supports/hardware, and commissioning/startup necessities.',
+    'Avoid duplicate line items; prefer package/system-level equipment when appropriate.',
+  ];
+  if (isMiniSplit) {
+    checklist.push('For mini-split jobs include full system package + electrical path (disconnect, breaker, whip/conduit/fittings, control wire, mounting hardware) + refrigerant/condensate path.');
+  }
+  if (isRepair) checklist.push('For maintenance/repair include likely diagnosis replacements, consumables, and common failure parts.');
+  if (isReplace) checklist.push('For replacement include removal/disposal accessories and transition/adaptation fittings as needed.');
+  if (isInstall) checklist.push('For new install include permitting/inspection-adjacent materials and complete install accessories.');
+  return checklist;
+};
+
 const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory, learningExamples }) => {
   const apiKey = clean(process.env.OPENAI_API_KEY, 200);
   if (!apiKey) return [];
@@ -309,8 +330,9 @@ const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory
           },
           inventory: (inventory || []).slice(0, 80).map((i) => ({ name: clean(i.name, 120), unit: clean(i.unit, 40), quantityOnHand: Number(i.quantity_on_hand || 0) })),
           learningExamples,
+          coverageRequirements: buildAiCoverageRequirements(jobRequest, descriptionText),
           outputSchema: {
-            materials: [{ name: 'string', neededQty: 'integer >=1', preferredBrands: 'array of strings' }],
+            materials: [{ name: 'string', neededQty: 'integer >=1', category: 'equipment|electrical|mechanical|plumbing|controls|hardware|consumable|safety', preferredBrands: 'array of strings', reason: 'short string' }],
           },
         }) },
       ],
@@ -369,7 +391,8 @@ const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, i
             projectDetails: clean(jobRequest.description, 2000),
             city: clean(jobRequest.city, 120),
           },
-          outputSchema: { materials: [{ name: 'string', neededQty: 'integer >=1' }] },
+          coverageRequirements: buildAiCoverageRequirements(jobRequest, descriptionText),
+          outputSchema: { materials: [{ name: 'string', neededQty: 'integer >=1', category: 'string' }] },
         }) },
       ],
       text: { format: { type: 'json_object' } },
