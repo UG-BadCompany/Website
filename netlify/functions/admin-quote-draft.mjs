@@ -596,8 +596,19 @@ export default async (request) => {
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
 
-    const sourcingLines = [];
-    pricedMaterials.forEach((m) => {
+    const sourcingLines = [
+      'AI SOURCING NOTES (INTERNAL)',
+      `Generated: ${new Date().toISOString()}`,
+      `Service: ${clean(jobRequest.service_type, 160) || 'Service request'}`,
+      `City: ${clean(jobRequest.city, 120) || 'N/A'}`,
+      '',
+      'How to use:',
+      '- Verify part compatibility/spec before purchase.',
+      '- Prioritize first listed source unless lead time/pricing requires alternatives.',
+      '- Save approved items into catalog when recurring.',
+      '',
+    ];
+    pricedMaterials.forEach((m, materialIndex) => {
       const links = (m.livePriceEvidence || [])
         .map((e) => clean(e.link || '', 500))
         .filter(Boolean)
@@ -606,11 +617,19 @@ export default async (request) => {
         .map((e) => clean(e.source || '', 80))
         .filter(Boolean)
         .slice(0, 3);
-      if (links.length || sources.length) {
-        sourcingLines.push(`- ${m.name}`);
-        if (sources.length) sourcingLines.push(`  Sources: ${sources.join(', ')}`);
-        links.forEach((link, idx) => sourcingLines.push(`  Link ${idx + 1}: ${link}`));
+      const unitCost = toMoney(m.estimatedUnitCostCents || 0);
+      const totalCost = toMoney(m.estimatedBuyCostCents || 0);
+      const surchargePct = Math.round(Number(m.partsSurchargeRate || 0) * 100);
+      sourcingLines.push(`${materialIndex + 1}. ${m.name}`);
+      sourcingLines.push(`   Qty to buy: ${m.buyQty} | Unit est: ${unitCost} | Line est: ${totalCost} | Surcharge: ${surchargePct}%`);
+      sourcingLines.push(`   Source type: ${m.pricingSource || 'n/a'}`);
+      if (sources.length) sourcingLines.push(`   Supplier shortlist: ${sources.join(' | ')}`);
+      if (links.length) {
+        links.forEach((link, idx) => sourcingLines.push(`   Link ${idx + 1}: ${link}`));
+      } else {
+        sourcingLines.push('   Link: not available (manual lookup recommended)');
       }
+      sourcingLines.push('');
     });
 
     const summaryLines = [
