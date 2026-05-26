@@ -1,18 +1,8 @@
-# Add/keep these redirects in netlify.toml
+# Add these to netlify.toml
 
 [[redirects]]
-  from = "/api/job-requests"
-  to = "/.netlify/functions/job-requests"
-  status = 200
-
-[[redirects]]
-  from = "/api/ai-quote-draft"
-  to = "/.netlify/functions/ai-quote-draft"
-  status = 200
-
-[[redirects]]
-  from = "/api/ai-quote-drafts"
-  to = "/.netlify/functions/ai-quote-drafts"
+  from = "/api/auth/magic-link"
+  to = "/.netlify/functions/auth-magic-link"
   status = 200
 
 [[redirects]]
@@ -23,4 +13,9 @@
 [[redirects]]
   from = "/api/logout"
   to = "/.netlify/functions/logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/job-requests"
+  to = "/.netlify/functions/job-requests"
   status = 200

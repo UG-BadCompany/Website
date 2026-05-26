@@ -1,9 +1,8 @@
 // public/js/request-form.js
 // Unified Request Estimate flow.
-// IMPORTANT: Request Estimate IS the AI quoting flow now.
-// The frontend submits only to /api/job-requests.
-// The job-requests function saves the request, generates the AI draft, and stores it.
-// No second separate AI submit system.
+// Request Estimate is the AI quoting flow.
+// The form calls only /api/job-requests.
+// The server saves request + generates/stores AI quote draft.
 
 (() => {
   const form = document.querySelector('[data-job-request-form]');
@@ -32,6 +31,11 @@
       throw new Error(result.message || result.error || `Request failed: ${url}`);
     }
     return result;
+  };
+
+  const submitWithNetlifyForms = () => {
+    setStatus('Saving with form fallback so the attachment is not lost…');
+    HTMLFormElement.prototype.submit.call(form);
   };
 
   const buildPayload = (formData) => {
@@ -66,11 +70,6 @@
     `;
   };
 
-  const submitWithNetlifyForms = () => {
-    setStatus('Saving with the standard form fallback so the attachment is not lost…');
-    HTMLFormElement.prototype.submit.call(form);
-  };
-
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -80,14 +79,11 @@
 
     try {
       if (payload.hasUpload) {
-        // Current safe behavior: file attachments still use Netlify Forms.
-        // This prevents file loss. The text-only request flow is unified AI quoting.
         submitWithNetlifyForms();
         return;
       }
 
       setStatus('Saving request and building AI quote draft…');
-
       const result = await postJson('/api/job-requests', payload);
 
       saveBrowserBackup(result);
@@ -97,7 +93,7 @@
       setTimeout(() => window.location.assign('/thank-you/'), 850);
     } catch (error) {
       console.warn('Unified request/AI quote flow failed; using Netlify Forms fallback.', error);
-      setStatus('Something failed while saving. Using standard form fallback…', 'error');
+      setStatus('Something failed while saving. Using form fallback…', 'error');
       submitWithNetlifyForms();
     } finally {
       submitButton.disabled = false;

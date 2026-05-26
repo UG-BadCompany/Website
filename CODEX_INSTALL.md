@@ -1,76 +1,83 @@
-# T&A Contracting Full Website Rewrite
+# Real Magic Link + Unified AI Request Fix
 
-This is a full static Netlify rewrite, not just the AI files.
+You were right: the login should use your real magic-link page, not a demo login.
 
-## What it includes
+This patch keeps your uploaded login page as the source of truth:
 
-- Full homepage replacement
-- Shared CSS design system
-- Client request form
-- AI quote draft generation
-- Live material sourcing through SerpApi if configured
-- Draft storage through Netlify Blobs if available
-- Job request storage through Netlify Blobs if available
-- Admin AI quote review page
-- Dashboard shell
-- Login shell
-- Thank-you page
-- Netlify redirects
-- Build scripts
-
-## Install
-
-Copy everything into the repo root.
-
-Important: Back up your current repo first.
-
-Then run:
-
-```bash
-npm install
-npm run build
+```html
+<form class="form" data-auth-form data-endpoint="/api/auth/magic-link">
+<script src="/assets/login.js" defer></script>
 ```
 
-Set Netlify env variables:
+## What this patch fixes
+
+1. Restores your real login page.
+2. Keeps `/api/auth/magic-link`.
+3. Adds `/assets/login.js`.
+4. Adds real Netlify functions for:
+   - `auth-magic-link`
+   - `verify-magic-link`
+   - `me`
+   - `logout`
+5. Removes dev magic link behavior.
+6. Keeps Request Estimate as the single AI quote flow through `/api/job-requests`.
+
+## Required files
+
+Copy these:
+
+```text
+public/login/index.html
+public/assets/login.js
+public/js/request-form.js
+
+netlify/functions/auth-magic-link.mjs
+netlify/functions/verify-magic-link.mjs
+netlify/functions/me.mjs
+netlify/functions/logout.mjs
+```
+
+## Keep your existing quote functions
+
+Also keep your current:
+
+```text
+netlify/functions/job-requests.mjs
+netlify/functions/ai-quote-draft.mjs
+netlify/functions/ai-quote-drafts.mjs
+```
+
+or use the unified versions from the last patch.
+
+## Required dependency
+
+```json
+"@netlify/blobs": "latest"
+```
+
+## Required Netlify env variables for real email
 
 ```env
-OPENAI_API_KEY=your_key
-OPENAI_QUOTE_MODEL=gpt-5-mini
-SERPAPI_API_KEY=your_serpapi_key
-
-AI_LABOR_RATE=95
-AI_TRIP_CHARGE=75
-AI_MATERIAL_MARKUP_PERCENT=25
-AI_MINIMUM_CHARGE=175
-AI_CONTINGENCY_PERCENT=10
+RESEND_API_KEY=your_resend_key
+MAGIC_LINK_FROM=T&A Contracting <noreply@ta-contracting.org>
 ```
 
-## Pages
+Optional reCAPTCHA:
 
-```text
-/
- /login/
- /dashboard/
- /admin/
- /admin/ai-quotes/
- /thank-you/
+```env
+RECAPTCHA_SECRET_KEY=your_recaptcha_secret
 ```
 
-## API routes
+## Required netlify.toml redirects
 
-Configured through Netlify redirects:
+See:
 
 ```text
-/api/job-requests -> /.netlify/functions/job-requests
-/api/ai-quote-draft -> /.netlify/functions/ai-quote-draft
-/api/ai-quote-drafts -> /.netlify/functions/ai-quote-drafts
-/api/me -> /.netlify/functions/me
+snippets/netlify-redirects.toml
 ```
 
 ## Important
 
-This does not auto-send quotes.
+There is no devMagicLink in this version.
 
-AI drafts are for admin review.
-
-Photo uploads still fall back to Netlify Forms so attachments are not lost. The next advanced upgrade is storing uploaded files in Netlify Blobs and giving AI image URLs.
+If email is not configured, the login will fail with a real error telling you to configure `RESEND_API_KEY` and `MAGIC_LINK_FROM`.

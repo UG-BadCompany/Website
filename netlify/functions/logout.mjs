@@ -1,16 +1,12 @@
 // netlify/functions/logout.mjs
-const json = (statusCode, body, headers = {}) => ({
-  statusCode,
+export const handler = async () => ({
+  statusCode: 200,
   headers: {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
-    ...headers,
+    'set-cookie': 'ta_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
   },
-  body: JSON.stringify(body),
-});
-
-export const handler = async () => json(200, { ok: true }, {
-  'set-cookie': 'ta_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
+  body: JSON.stringify({ ok: true }),
 });
 
 export default handler;

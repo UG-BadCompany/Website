@@ -1,179 +1,76 @@
+// public/assets/login.js
+// Real magic-link login for T&A Contracting.
+// Matches login page form:
+// <form data-auth-form data-endpoint="/api/auth/magic-link">
+
 (() => {
-  let resolvedRecaptchaSiteKey = '';
-  let recaptchaReadyPromise = null;
+  const form = document.querySelector('[data-auth-form]');
+  if (!form || !window.fetch) return;
 
-  const resolveRecaptchaSiteKey = async () => {
-    if (resolvedRecaptchaSiteKey) return resolvedRecaptchaSiteKey;
-    const metaValue = document.querySelector('meta[name="recaptcha-site-key"]')?.content?.trim() || '';
-    if (metaValue) {
-      resolvedRecaptchaSiteKey = metaValue;
-      return resolvedRecaptchaSiteKey;
-    }
-    try {
-      const response = await fetch('/api/public-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
-      const result = await response.json().catch(() => ({}));
-      resolvedRecaptchaSiteKey = (result?.recaptchaSiteKey || '').trim();
-      return resolvedRecaptchaSiteKey;
-    } catch {
-      return '';
-    }
+  const endpoint = form.dataset.endpoint || '/api/auth/magic-link';
+  const status = form.querySelector('.status');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const siteKey = document.querySelector('meta[name="recaptcha-site-key"]')?.content || '';
+
+  const setStatus = (message, state = '') => {
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = state;
   };
 
-  const ensureRecaptchaReady = async (siteKey) => {
-    if (!siteKey) return false;
-    if (!recaptchaReadyPromise) {
-      recaptchaReadyPromise = new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[data-recaptcha-loader="true"]');
-        const onReady = () => {
-          if (!window.grecaptcha?.ready) {
-            reject(new Error('reCAPTCHA library unavailable.'));
-            return;
-          }
-          window.grecaptcha.ready(() => resolve(true));
-        };
-        if (existing) {
-          onReady();
-          return;
-        }
-        const scriptSources = [
-          `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`,
-          `https://www.recaptcha.net/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`,
-        ];
-        let attempt = 0;
-        const loadNext = () => {
-          if (attempt >= scriptSources.length) {
-            reject(new Error('reCAPTCHA script failed to load from Google and fallback CDN.'));
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = scriptSources[attempt];
-          script.async = true;
-          script.defer = true;
-          script.dataset.recaptchaLoader = 'true';
-          script.onload = onReady;
-          script.onerror = () => {
-            script.remove();
-            attempt += 1;
-            loadNext();
-          };
-          document.head.appendChild(script);
-        };
-        loadNext();
-      });
-      recaptchaReadyPromise = recaptchaReadyPromise.catch((error) => {
-        recaptchaReadyPromise = null;
-        throw error;
-      });
-    }
-    return recaptchaReadyPromise;
+  const getRecaptchaToken = async () => {
+    if (!siteKey || !window.grecaptcha?.execute) return '';
+    await new Promise((resolve) => window.grecaptcha.ready(resolve));
+    return window.grecaptcha.execute(siteKey, { action: 'magic_link' });
   };
 
-  const queryMessages = {
-    'missing-token': ['That magic link is missing its token. Request a new sign-in link.', 'error'],
-    expired: ['That magic link is expired. Request a fresh sign-in link.', 'error'],
-    used: ['That magic link was already used. Request a fresh link, then open the newest email only once.', 'error'],
-    error: ['We could not complete that sign-in link. Request a new link or contact T&A Contracting.', 'error'],
+  const getNext = () => {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next') || '/dashboard/';
+    return next.startsWith('/') ? next : '/dashboard/';
   };
 
-  const getParams = () => new URLSearchParams(window.location.search);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
 
-  const isSignedOutReturn = () => getParams().has('signed-out');
+    const formData = new FormData(form);
+    const email = String(formData.get('email') || '').trim();
+    const botField = String(formData.get('bot-field') || '').trim();
 
-  const applyInitialStatus = (setStatus) => {
-    const params = getParams();
-
-    if (params.has('signed-out')) {
-      setStatus('Signed out. Request a new magic link when you are ready to return.', 'success');
+    if (!email) {
+      setStatus('Enter your email first.', 'error');
       return;
     }
 
-    const authState = params.get('auth');
-    if (queryMessages[authState]) {
-      setStatus(...queryMessages[authState]);
-    }
-  };
-
-  const appendMagicLink = (status, magicLinkUrl) => {
-    if (!magicLinkUrl) return;
-
-    const link = document.createElement('a');
-    link.href = magicLinkUrl;
-    link.textContent = 'Open secure sign-in link';
-    link.style.display = 'block';
-    link.style.marginTop = '8px';
-    link.rel = 'nofollow noopener';
-    status.appendChild(link);
-  };
-
-  const redirectExistingSession = async () => {
-    if (isSignedOutReturn()) return;
+    submitButton.disabled = true;
+    setStatus('Sending secure sign-in link…');
 
     try {
-      const response = await fetch('/api/me?optional=1', {
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { accept: 'application/json' },
+      const recaptchaToken = await getRecaptchaToken();
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          email,
+          next: getNext(),
+          botField,
+          recaptchaToken,
+        }),
       });
+
       const result = await response.json().catch(() => ({}));
 
-      if (response.ok && result.authenticated) {
-        window.location.replace('/dashboard/');
+      if (!response.ok || result.ok === false) {
+        throw new Error(result.message || 'We could not send the magic link.');
       }
-    } catch {
-      // Stay on the login form when the session check is unavailable.
+
+      setStatus('Secure link sent. Check your email and open the link to sign in.', 'success');
+      form.reset();
+    } catch (error) {
+      setStatus(error.message || 'We could not send the magic link.', 'error');
+    } finally {
+      submitButton.disabled = false;
     }
-  };
-
-  const bindMagicLinkForm = (form) => {
-    const status = form.querySelector('.status');
-    const button = form.querySelector('button[type="submit"]');
-
-    if (!status || !button || form.dataset.bound) {
-      return;
-    }
-
-    form.dataset.bound = 'true';
-
-    const setStatus = (message, state = '') => {
-      status.textContent = message;
-      status.dataset.state = state;
-    };
-
-    applyInitialStatus(setStatus);
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const payload = Object.fromEntries(new FormData(form).entries());
-      const recaptchaSiteKey = await resolveRecaptchaSiteKey();
-      if (recaptchaSiteKey) {
-        try {
-          await ensureRecaptchaReady(recaptchaSiteKey);
-          payload.recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'login_magic_link' });
-        } catch (error) {
-          setStatus(`reCAPTCHA unavailable (${error?.message || 'unknown error'}). Continuing without token…`, 'error');
-        }
-      }
-      button.disabled = true;
-      setStatus('Sending secure sign-in link…');
-
-      try {
-        const response = await fetch(form.dataset.endpoint, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const result = await response.json().catch(() => ({}));
-        setStatus(result.message || 'If that email is on file, a secure sign-in link will be sent shortly.', response.ok && result.ok ? 'success' : 'error');
-        appendMagicLink(status, result.devMagicLink);
-      } catch {
-        setStatus('We could not request a sign-in link right now. Please try again or contact T&A Contracting.', 'error');
-      } finally {
-        button.disabled = false;
-      }
-    });
-  };
-
-  redirectExistingSession();
-  document.querySelectorAll('[data-auth-form]').forEach(bindMagicLinkForm);
+  });
 })();
