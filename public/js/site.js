@@ -1,19 +1,14 @@
+// public/js/site.js
+// Hotfix: light mode removed. Site stays in dark mode only.
+
 (() => {
-  const themeKey = 'ta-theme';
-  const root = document.documentElement;
-  const stored = localStorage.getItem(themeKey);
-  if (stored) root.dataset.theme = stored;
+  document.documentElement.removeAttribute('data-theme');
+  try {
+    localStorage.removeItem('ta-theme');
+  } catch {}
 
   document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
-    const update = () => {
-      button.textContent = root.dataset.theme === 'light' ? 'Dark Mode' : 'Light Mode';
-    };
-    update();
-    button.addEventListener('click', () => {
-      root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem(themeKey, root.dataset.theme);
-      update();
-    });
+    button.remove();
   });
 
   document.querySelectorAll('[data-dashboard-link]').forEach((link) => {
