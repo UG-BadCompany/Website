@@ -207,17 +207,25 @@ const ALLOWED_PRICE_SOURCES = [
   'graybar',
   'fastenal',
 ];
+const SERP_TIMEOUT_MS = 3500;
+const MAX_WEB_PRICE_LOOKUPS = 8;
+let webLookupCount = 0;
 const isAllowedPriceSource = (source = '', title = '') => {
   const haystack = `${source} ${title}`.toLowerCase();
   return ALLOWED_PRICE_SOURCES.some((vendor) => haystack.includes(vendor));
 };
 const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
+  if (webLookupCount >= MAX_WEB_PRICE_LOOKUPS) return [];
   const key = process.env.SERPAPI_API_KEY;
   if (!key) return [];
   try {
+    webLookupCount += 1;
     const query = encodeURIComponent(`${partLabel} price ${location} Home Depot Lowes Ace Hardware Amazon Phoenix`);
     const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SERP_TIMEOUT_MS);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
     if (!response.ok) return [];
     const data = await response.json().catch(() => ({}));
     const items = Array.isArray(data.shopping_results) ? data.shopping_results : [];
@@ -264,14 +272,14 @@ const withPartsSurcharge = (part, { requestText = '' } = {}) => {
   };
 };
 const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
-  for (const part of materials) {
+  for (const part of materials.slice(0, 6)) {
     const evidence = Array.isArray(part.livePriceEvidence) ? part.livePriceEvidence : [];
     if (!evidence.length) continue;
     const itemKey = normalizeKey(part.name || 'unknown_item');
     const confidence = confidenceFromEvidence(evidence);
     const candidateUnitCostCents = Number(part.estimatedUnitCostCents || 0);
 
-    for (const price of evidence) {
+    for (const price of evidence.slice(0, 3)) {
       await db.sql`
         insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at)
         values (
@@ -449,6 +457,7 @@ export default async (request) => {
   if (!jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
 
   try {
+    webLookupCount = 0;
     const db = await loadDatabase();
     const session = await loadSession(db, sessionToken);
     if (!session) return json(401, { ok: false, authenticated: false, message: 'Session expired.' });
@@ -564,7 +573,11 @@ export default async (request) => {
       });
     }
     const pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
-    await persistLivePriceEvidence({ db, jobRequest, materials: pricedMaterials, descriptionText });
+    try {
+      await persistLivePriceEvidence({ db, jobRequest, materials: pricedMaterials, descriptionText });
+    } catch (persistError) {
+      console.warn('Quote evidence persistence skipped due to timeout/safety guard.', persistError?.message || persistError);
+    }
 
     const materialSubtotal = pricedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
