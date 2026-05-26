@@ -242,6 +242,7 @@ const MAX_WEB_PRICE_LOOKUPS = 8;
 
 const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
 const OPENAI_TIMEOUT_MS = 4500;
+const OPENAI_STRICT_ONLY = clean(process.env.OPENAI_STRICT_ONLY || 'true', 10).toLowerCase() !== 'false';
 
 const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
   try {
@@ -743,15 +744,23 @@ export default async (request) => {
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
     const learningExamples = await fetchLearningExamples(db, jobRequest, 8);
     const aiPrimaryMaterials = await maybeGenerateAiMaterials({ jobRequest, descriptionText, inventory, learningExamples });
-    const aiGeneralMaterials = !aiPrimaryMaterials.length
+    const aiGeneralMaterials = !aiPrimaryMaterials.length && !OPENAI_STRICT_ONLY
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const internetFallbackMaterials = (!materialsFromPlaybook.length && !aiPrimaryMaterials.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
+    const internetFallbackMaterials = (!OPENAI_STRICT_ONLY && !materialsFromPlaybook.length && !aiPrimaryMaterials.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
       ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
       : [];
-    const baseMaterials = aiPrimaryMaterials.length
+    const baseMaterials = OPENAI_STRICT_ONLY
       ? aiPrimaryMaterials
-      : (materialsFromCatalog.length ? materialsFromCatalog : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : internetFallbackMaterials)));
+      : (aiPrimaryMaterials.length
+        ? aiPrimaryMaterials
+        : (materialsFromCatalog.length ? materialsFromCatalog : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : internetFallbackMaterials))));
+    if (OPENAI_STRICT_ONLY && !baseMaterials.length) {
+      return json(503, {
+        ok: false,
+        message: 'OpenAI strict mode is enabled and no AI materials were generated. Disable OPENAI_STRICT_ONLY to allow fallbacks.',
+      });
+    }
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -903,6 +912,7 @@ export default async (request) => {
           learningExamplesUsed: learningExamples.length,
           aiLearningApplied: Boolean(aiAdjustments),
           aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
+          openAiStrictOnly: OPENAI_STRICT_ONLY,
         },
       },
     });
