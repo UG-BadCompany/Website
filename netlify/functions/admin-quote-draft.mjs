@@ -227,6 +227,16 @@ const ALLOWED_PRICE_SOURCES = [
   'graybar',
   'fastenal',
 ];
+const PREMIUM_BRAND_HINTS = [
+  'mitsubishi',
+  'daikin',
+  'fujitsu',
+  'lg',
+  'tosot',
+  'carrier',
+  'trane',
+  'mr cool',
+];
 const SERP_TIMEOUT_MS = 3500;
 const MAX_WEB_PRICE_LOOKUPS = 8;
 let webLookupCount = 0;
@@ -243,7 +253,10 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
   if (!key) return [];
   try {
     webLookupCount += 1;
-    const query = encodeURIComponent(`${partLabel} price ${location} Home Depot Lowes Ace Hardware Amazon Phoenix`);
+    const miniSplitPackageQuery = /mini[-\s]?split|condenser|air handler/i.test(partLabel)
+      ? `${partLabel} complete system outdoor condenser + indoor air handler kit price ${location}`
+      : `${partLabel} price ${location} Home Depot Lowes Ace Hardware Amazon Phoenix`;
+    const query = encodeURIComponent(miniSplitPackageQuery);
     const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), SERP_TIMEOUT_MS);
@@ -260,6 +273,14 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
         link: normalizeProductLink(item.product_link || item.link || ''),
       }))
       .filter((item) => isAllowedPriceSource(item.source, item.title))
+      .filter((item) => {
+        if (!/mini[-\s]?split|condenser|air handler/i.test(partLabel)) return true;
+        const t = slug(item.title || '');
+        const hasPackage = (t.includes('condenser') && t.includes('air handler')) || t.includes('system') || t.includes('kit');
+        const hasGoodBrand = PREMIUM_BRAND_HINTS.some((brand) => t.includes(brand));
+        const splitOnly = t.includes('air handler') && !t.includes('condenser');
+        return hasPackage && hasGoodBrand && !splitOnly;
+      })
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
       .filter((item) => Boolean(item.link))
       .slice(0, 5);
