@@ -242,7 +242,7 @@ const MAX_WEB_PRICE_LOOKUPS = 8;
 
 const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
 const OPENAI_TIMEOUT_MS = 4500;
-const OPENAI_STRICT_ONLY = clean(process.env.OPENAI_STRICT_ONLY || 'true', 10).toLowerCase() !== 'false';
+const OPENAI_STRICT_ONLY = true;
 
 
 const deriveMissingInfoQuestions = ({ jobRequest, descriptionText, materials = [] }) => {
@@ -319,7 +319,7 @@ const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory
       input: [
         { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
         { role: 'user', content: JSON.stringify({
-          task: 'Generate a practical materials list for this job. Prefer premium/pro-grade products. Include package-level equipment where applicable.',
+          task: 'Generate a complete professional contractor bill of materials for this job. Include all required equipment, electrical, mechanical, controls, fittings, mounting, safety, startup/commissioning, and likely incidentals.',
           request: {
             workScope: clean(jobRequest.work_scope, 120),
             typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
@@ -415,7 +415,7 @@ const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, i
       input: [
         { role: 'system', content: 'Return strict JSON only.' },
         { role: 'user', content: JSON.stringify({
-          task: 'Return at least 3 practical material line items for this job.',
+          task: 'Return a complete contractor-grade materials list for this job with no omissions.',
           request: {
             workScope: clean(jobRequest.work_scope, 120),
             typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
@@ -429,20 +429,30 @@ const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, i
       text: { format: { type: 'json_object' } },
       max_output_tokens: 500,
     };
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!response.ok) return [];
-    const data = await response.json();
-    const raw = clean(data?.output_text || '', 16000);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    let parsed = null;
+    for (const maxTokens of [500, 900, 1300]) {
+      payload.max_output_tokens = maxTokens;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS + 1200);
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!response.ok) continue;
+      const data = await response.json();
+      const raw = clean(data?.output_text || '', 24000);
+      if (!raw) continue;
+      try {
+        parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.materials) && parsed.materials.length) break;
+      } catch {
+        parsed = null;
+      }
+    }
+    if (!parsed) return [];
     const mats = Array.isArray(parsed?.materials) ? parsed.materials : [];
     return mats.slice(0, 12).map((m) => {
       const name = clean(m?.name, 140);
@@ -857,62 +867,19 @@ export default async (request) => {
         source: 'playbook',
       };
     });
-    const dbCatalogCandidates = await chooseDbCatalogMatches(db, descriptionText);
-    const materialsFromCatalog = dbCatalogCandidates.map((candidate) => {
-      const inventoryMatch = inventory.find((item) => slug(item.name).includes(candidate.key));
-      const neededQty = Number(candidate.quantity || 1);
-      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
-      const toBuy = Math.max(0, neededQty - inStock);
-      const buyCostCents = toBuy * candidate.unitCostCents;
-      return {
-        name: candidate.label,
-        estimatedUnitCostCents: candidate.unitCostCents,
-        neededQty,
-        inStockQty: inStock,
-        buyQty: toBuy,
-        estimatedBuyCostCents: buyCostCents,
-        source: 'catalog',
-      };
-    });
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
     const learningExamples = await fetchLearningExamples(db, jobRequest, 8);
     const aiPrimaryMaterials = await maybeGenerateAiMaterials({ jobRequest, descriptionText, inventory, learningExamples });
-    const aiGeneralMaterials = !aiPrimaryMaterials.length && !OPENAI_STRICT_ONLY
-      ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
-      : [];
-    const internetFallbackMaterials = (!OPENAI_STRICT_ONLY && !materialsFromPlaybook.length && !aiPrimaryMaterials.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
-      ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
-      : [];
-    const baseMaterials = OPENAI_STRICT_ONLY
-      ? aiPrimaryMaterials
-      : (aiPrimaryMaterials.length
-        ? aiPrimaryMaterials
-        : (materialsFromCatalog.length ? materialsFromCatalog : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : internetFallbackMaterials))));
-    let strictRecoveryUsed = false;
-    if (OPENAI_STRICT_ONLY && !baseMaterials.length) {
-      const aiRecoveryMaterials = await maybeGenerateAiFallbackMaterials({ jobRequest, descriptionText, inventory });
-      if (aiRecoveryMaterials.length) {
-        baseMaterials.push(...aiRecoveryMaterials);
-        strictRecoveryUsed = true;
-      } else {
-        const contextText = `${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${descriptionText || ''}`;
-        if (/mini[-\s]?split|ductless/i.test(contextText)) {
-          baseMaterials.push(...buildMiniSplitComprehensiveBundle({ jobRequest, inventory, descriptionText }));
-        } else {
-          const emergencyLine = clean(jobRequest.work_category || jobRequest.service_type || 'Service materials', 120) || 'Service materials';
-          baseMaterials.push({
-            name: `${emergencyLine} - material allowance`,
-            estimatedUnitCostCents: 0,
-            neededQty: 1,
-            inStockQty: 0,
-            buyQty: 1,
-            estimatedBuyCostCents: 0,
-            source: 'openai_emergency_allowance',
-          });
-        }
-        strictRecoveryUsed = true;
-      }
+    const aiRecoveryMaterials = aiPrimaryMaterials.length ? [] : await maybeGenerateAiFallbackMaterials({ jobRequest, descriptionText, inventory });
+    const baseMaterials = aiPrimaryMaterials.length ? aiPrimaryMaterials : aiRecoveryMaterials;
+    const strictRecoveryUsed = Boolean(!aiPrimaryMaterials.length && aiRecoveryMaterials.length);
+    if (!baseMaterials.length) {
+      return json(503, {
+        ok: false,
+        message: 'OpenAI could not produce a usable materials list for this request. Add more project details/specs/photos and retry.',
+      });
     }
+
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -1077,8 +1044,6 @@ export default async (request) => {
           aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
           openAiStrictOnly: OPENAI_STRICT_ONLY,
           strictRecoveryUsed,
-          strictEmergencyAllowanceUsed: baseMaterials.some((m) => m.source === 'openai_emergency_allowance'),
-          miniSplitBundleUsed: baseMaterials.some((m) => m.source === 'openai_mini_split_bundle'),
         },
       },
     });
