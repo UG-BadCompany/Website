@@ -267,6 +267,67 @@ const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
   }
 };
 
+
+const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory, learningExamples }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey) return [];
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Generate a practical materials list for this job. Prefer premium/pro-grade products. Include package-level equipment where applicable.',
+          request: {
+            serviceType: clean(jobRequest.service_type, 160),
+            description: clean(descriptionText, 2400),
+            city: clean(jobRequest.city, 120),
+          },
+          inventory: (inventory || []).slice(0, 80).map((i) => ({ name: clean(i.name, 120), unit: clean(i.unit, 40), quantityOnHand: Number(i.quantity_on_hand || 0) })),
+          learningExamples,
+          outputSchema: {
+            materials: [{ name: 'string', neededQty: 'integer >=1', preferredBrands: 'array of strings' }],
+          },
+        }) },
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 900,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const raw = clean(data?.output_text || '', 28000);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const mats = Array.isArray(parsed?.materials) ? parsed.materials : [];
+    return mats.map((m) => {
+      const name = clean(m?.name, 140);
+      const neededQty = Math.max(1, Math.min(50, Math.trunc(Number(m?.neededQty || 1))));
+      const inventoryMatch = (inventory || []).find((item) => slug(item.name).includes(slug(name)) || slug(name).includes(slug(item.name)));
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      return {
+        name,
+        estimatedUnitCostCents: 0,
+        neededQty,
+        inStockQty: inStock,
+        buyQty,
+        estimatedBuyCostCents: 0,
+        source: 'openai_materials',
+      };
+    }).filter((m) => m.name);
+  } catch {
+    return [];
+  }
+};
 const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, materials, laborHours, laborRateCents, learningExamples }) => {
   const apiKey = clean(process.env.OPENAI_API_KEY, 200);
   if (!apiKey || !Array.isArray(materials) || !materials.length) return null;
@@ -680,15 +741,17 @@ export default async (request) => {
       };
     });
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
-    const aiGeneralMaterials = !materialsFromPlaybook.length
+    const learningExamples = await fetchLearningExamples(db, jobRequest, 8);
+    const aiPrimaryMaterials = await maybeGenerateAiMaterials({ jobRequest, descriptionText, inventory, learningExamples });
+    const aiGeneralMaterials = !aiPrimaryMaterials.length
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const internetFallbackMaterials = (!materialsFromPlaybook.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
+    const internetFallbackMaterials = (!materialsFromPlaybook.length && !aiPrimaryMaterials.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
       ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
       : [];
-    const baseMaterials = materialsFromPlaybook.length
-      ? materialsFromPlaybook
-      : (aiGeneralMaterials.length ? aiGeneralMaterials : (materialsFromCatalog.length ? materialsFromCatalog : internetFallbackMaterials));
+    const baseMaterials = aiPrimaryMaterials.length
+      ? aiPrimaryMaterials
+      : (materialsFromCatalog.length ? materialsFromCatalog : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : internetFallbackMaterials)));
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -707,7 +770,6 @@ export default async (request) => {
     }
     let pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
-    const learningExamples = await fetchLearningExamples(db, jobRequest, 8);
     const aiAdjustments = await maybeApplyAiLearningAdjustments({
       jobRequest,
       descriptionText,
