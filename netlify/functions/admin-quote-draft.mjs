@@ -691,18 +691,18 @@ export default async (request) => {
           });
           sourcingLines.push(`   Option ${idx + 1}: ${link.source}${link.domain ? ` (${link.domain})` : ''} | ${link.price}`);
           sourcingLines.push(`   Product: ${link.title}`);
-          sourcingLines.push(`   Click link ${idx + 1}: ${link.url}`);
+          sourcingLines.push(`   Open from "Quick product links" panel: Option ${idx + 1}`);
         });
       } else {
         const fallback1 = buildSearchLink(`${m.name} ${jobRequest.city || 'Arizona'} supplier`);
         const fallback2 = buildSearchLink(`${m.name} ${jobRequest.city || 'Arizona'} buy online`);
         if (fallback1) {
           sourcingLinks.push({ part: m.name, label: `${m.name} — Search option 1`, url: fallback1 });
-          sourcingLines.push(`   Click link 1: ${fallback1}`);
+          sourcingLines.push('   Open from "Quick product links" panel: Search option 1');
         }
         if (fallback2) {
           sourcingLinks.push({ part: m.name, label: `${m.name} — Search option 2`, url: fallback2 });
-          sourcingLines.push(`   Click link 2: ${fallback2}`);
+          sourcingLines.push('   Open from "Quick product links" panel: Search option 2');
         }
       }
       sourcingLines.push('');
