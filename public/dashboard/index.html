@@ -2152,6 +2152,15 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
                 <label class="full">Quote summary
                   <textarea name="summary" required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
                 </label>
+                <label class="full">Admin sourcing notes (internal only)
+                  <textarea data-admin-quote-sourcing-notes readonly rows="12" placeholder="AI sourcing links and supplier notes will appear here for admin review."></textarea>
+                  <small>Internal use only. Keep this section out of client-facing quote summary.</small>
+                </label>
+                <div class="full">
+                  <strong>Quick product links</strong>
+                  <small>Use these clickable buttons (opens new tab). Links in notes are reference-only.</small>
+                  <div class="client-quote-actions" data-admin-quote-sourcing-links></div>
+                </div>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
               
@@ -2437,7 +2446,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               </label>
             </div>
             <p class="request-update-note">Saved changes stay on this open request and alert the team in the audit trail.</p>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request update</button><span data-client-request-edit-status aria-live="polite"></span></div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request update</button><button class="btn btn-danger" type="button" data-client-request-delete>Permanently delete</button><span data-client-request-edit-status aria-live="polite"></span></div>
           </form>
         </section>
       </div>
