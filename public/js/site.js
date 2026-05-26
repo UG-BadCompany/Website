@@ -1,26 +1,14 @@
 // public/js/site.js
-// Hotfix: light mode removed. Site stays in dark mode only.
+// Dark-mode-only site helper.
+// IMPORTANT: This does NOT replace or remove magic-link auth.
+// It only removes theme/light-mode controls if they still exist.
 
 (() => {
   document.documentElement.removeAttribute('data-theme');
+
   try {
     localStorage.removeItem('ta-theme');
   } catch {}
 
-  document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
-    button.remove();
-  });
-
-  document.querySelectorAll('[data-dashboard-link]').forEach((link) => {
-    link.addEventListener('click', async (event) => {
-      event.preventDefault();
-      try {
-        const response = await fetch('/api/me', { headers: { accept: 'application/json' } });
-        const result = await response.json().catch(() => ({}));
-        window.location.assign(response.ok && result.authenticated ? '/dashboard/' : '/login/?next=dashboard');
-      } catch {
-        window.location.assign('/login/?next=dashboard');
-      }
-    });
-  });
+  document.querySelectorAll('[data-theme-toggle]').forEach((el) => el.remove());
 })();

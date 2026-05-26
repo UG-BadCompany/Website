@@ -1,3 +1,10 @@
+// public/js/request-form.js
+// Unified Request Estimate flow.
+// IMPORTANT: Request Estimate IS the AI quoting flow now.
+// The frontend submits only to /api/job-requests.
+// The job-requests function saves the request, generates the AI draft, and stores it.
+// No second separate AI submit system.
+
 (() => {
   const form = document.querySelector('[data-job-request-form]');
   if (!form || !window.fetch) return;
@@ -37,21 +44,21 @@
     return payload;
   };
 
-  const saveBrowserBackup = (aiDraft) => {
+  const saveBrowserBackup = (result) => {
     try {
-      sessionStorage.setItem('lastAiQuoteDraft', JSON.stringify(aiDraft));
+      if (result?.aiDraft) sessionStorage.setItem('lastAiQuoteDraft', JSON.stringify(result.aiDraft));
       const existing = JSON.parse(localStorage.getItem('aiQuoteDraftBackups') || '[]');
-      existing.unshift({ savedAt: new Date().toISOString(), aiDraft });
+      if (result?.aiDraft) existing.unshift({ savedAt: new Date().toISOString(), aiDraft: result.aiDraft });
       localStorage.setItem('aiQuoteDraftBackups', JSON.stringify(existing.slice(0, 25)));
     } catch {}
   };
 
   const renderPreview = (draft) => {
-    if (!preview) return;
+    if (!preview || !draft) return;
     preview.dataset.visible = 'true';
     preview.innerHTML = `
       <div class="draft-card">
-        <h3>AI draft created for admin review</h3>
+        <h3>AI quote draft created for admin review</h3>
         <p><strong>${escapeHtml(draft.job_summary || 'Quote draft')}</strong></p>
         <p>Estimated total: <strong>$${Number(draft?.totals?.total_low || 0).toFixed(2)}–$${Number(draft?.totals?.total_high || 0).toFixed(2)}</strong></p>
         <p>${draft.quote_ready ? 'The draft has enough information for admin review.' : 'The draft needs more information before a final quote.'}</p>
@@ -60,7 +67,7 @@
   };
 
   const submitWithNetlifyForms = () => {
-    setStatus('Saving with the standard form fallback…');
+    setStatus('Saving with the standard form fallback so the attachment is not lost…');
     HTMLFormElement.prototype.submit.call(form);
   };
 
@@ -73,39 +80,23 @@
 
     try {
       if (payload.hasUpload) {
-        setStatus('Saving file upload with form fallback so the attachment is not lost…');
+        // Current safe behavior: file attachments still use Netlify Forms.
+        // This prevents file loss. The text-only request flow is unified AI quoting.
         submitWithNetlifyForms();
         return;
       }
 
-      setStatus('Saving request…');
-      let savedRequest = null;
-      try {
-        savedRequest = await postJson('/api/job-requests', payload);
-      } catch (requestError) {
-        console.warn('Primary /api/job-requests failed. Continuing with AI quote draft only.', requestError);
-      }
+      setStatus('Saving request and building AI quote draft…');
 
-      setStatus('Building AI quote draft…');
-      const aiDraft = await postJson('/api/ai-quote-draft', { ...payload, savedRequest });
+      const result = await postJson('/api/job-requests', payload);
 
-      saveBrowserBackup(aiDraft);
-      renderPreview(aiDraft);
-
-      try {
-        await postJson('/api/ai-quote-drafts', {
-          requestPayload: payload,
-          savedRequest,
-          aiDraft,
-        });
-      } catch (saveDraftError) {
-        console.warn('AI draft storage unavailable. Browser backup saved.', saveDraftError);
-      }
+      saveBrowserBackup(result);
+      renderPreview(result.aiDraft);
 
       setStatus('Request received. AI quote draft created for admin review. Redirecting…', 'success');
       setTimeout(() => window.location.assign('/thank-you/'), 850);
     } catch (error) {
-      console.warn('AI request flow failed; using Netlify Forms fallback.', error);
+      console.warn('Unified request/AI quote flow failed; using Netlify Forms fallback.', error);
       setStatus('Something failed while saving. Using standard form fallback…', 'error');
       submitWithNetlifyForms();
     } finally {

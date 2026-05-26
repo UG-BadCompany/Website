@@ -1,91 +1,93 @@
-import {
-  createMagicLinkUrl,
-  createToken,
-  hashToken,
-  json,
-  loadDatabase,
-  MAGIC_LINK_TTL_MINUTES,
-  minutesFromNow,
-  normalizeAuthEmailPayload,
-  parseJsonBody,
-  sendMagicLinkEmail,
-  validateEmail,
-} from './auth-utils.mjs';
-import { verifyRecaptchaToken } from './recaptcha-utils.mjs';
+// netlify/functions/request-magic-link.mjs
+// Magic-link login request.
+// If RESEND_API_KEY and MAGIC_LINK_FROM are set, sends email through Resend.
+// If not set, returns devMagicLink so you can test.
 
-export const createMagicLinkHandler = ({
-  getDatabase = loadDatabase,
-  makeToken = createToken,
-  sendEmail = sendMagicLinkEmail,
-} = {}) => async (request) => {
-  if (request.method !== 'POST') {
-    return json(405, { ok: false, message: 'Method not allowed.' });
-  }
+const json = (statusCode, body) => ({
+  statusCode,
+  headers: {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'POST, OPTIONS',
+    'access-control-allow-headers': 'content-type, authorization',
+  },
+  body: JSON.stringify(body),
+});
 
-  const body = await parseJsonBody(request);
+const clean = (value, max = 1000) => String(value ?? '').trim().slice(0, max);
+const emailOk = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const token = () => crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
 
-  if (!body) {
-    return json(400, { ok: false, message: 'Request body must be valid JSON.' });
-  }
-
-  const payload = normalizeAuthEmailPayload(body);
-  const recaptchaCheck = await verifyRecaptchaToken({ token: body?.recaptchaToken, request, action: 'login_magic_link' });
-  if (!recaptchaCheck.ok) {
-    return json(403, { ok: false, message: `reCAPTCHA verification failed. Please try again. (${recaptchaCheck.reason})` });
-  }
-
-  if (payload.botField) {
-    return json(200, { ok: true, message: 'If this email can sign in, a secure link will be sent.' });
-  }
-
-  const validationError = validateEmail(payload.email);
-
-  if (validationError) {
-    return json(422, { ok: false, message: validationError });
-  }
-
+async function getStore() {
   try {
-    const db = await getDatabase();
-    const token = makeToken();
-    const magicLinkUrl = createMagicLinkUrl(request, token);
+    const blobs = await import('@netlify/blobs');
+    if (blobs?.getStore) return blobs.getStore('magic-link-tokens');
+  } catch {}
+  return null;
+}
 
-    await db.sql`
-      insert into auth_magic_links (email, token_hash, purpose, expires_at)
-      values (${payload.email}, ${hashToken(token)}, 'sign_in', ${minutesFromNow(MAGIC_LINK_TTL_MINUTES)}::timestamptz)
-    `;
+function originFromEvent(event) {
+  const proto = event.headers['x-forwarded-proto'] || 'https';
+  const host = event.headers.host || process.env.URL || 'localhost:8888';
+  if (String(host).startsWith('http')) return host;
+  return `${proto}://${host}`;
+}
 
-    let emailResult;
+async function sendResendEmail({ to, link }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.MAGIC_LINK_FROM;
+  if (!apiKey || !from) return false;
 
-    try {
-      emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'sign_in' });
-    } catch (emailError) {
-      console.error('Magic-link email delivery failed', emailError);
-      emailResult = {
-        sent: false,
-        reason: 'Email delivery failed. Check RESEND_API_KEY, MAGIC_LINK_FROM_EMAIL, and the verified sender domain in Resend.',
-      };
-    }
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject: 'Your T&A Contracting login link',
+      html: `<p>Click the secure link below to sign in:</p><p><a href="${link}">${link}</a></p><p>This link expires soon. If you did not request it, ignore this email.</p>`,
+    }),
+  });
 
-    return json(200, {
-      ok: true,
-      emailSent: emailResult.sent,
-      message: emailResult.sent
-        ? 'Check your email for a secure sign-in link.'
-        : `${emailResult.reason || 'Email delivery is off.'} The magic link was still created; use the secure sign-in link below while email is being fixed.`,
-      ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
-    });
-  } catch (error) {
-    console.error('Failed to create magic link', error);
+  return response.ok;
+}
 
-    return json(500, {
-      ok: false,
-      message: 'We could not create a secure sign-in link right now. Please try again shortly.',
-    });
+export const handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return json(204, {});
+  if (event.httpMethod !== 'POST') return json(405, { ok: false, message: 'Method not allowed' });
+
+  let body;
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return json(400, { ok: false, message: 'Invalid JSON body' }); }
+
+  const email = clean(body.email, 180).toLowerCase();
+  const next = clean(body.next || '/dashboard/', 300);
+  if (!emailOk(email)) return json(400, { ok: false, message: 'Enter a valid email address.' });
+
+  const store = await getStore();
+  const magicToken = token();
+  const createdAt = Date.now();
+  const expiresAt = createdAt + 1000 * 60 * 20;
+  const safeNext = next.startsWith('/') ? next : '/dashboard/';
+  const origin = originFromEvent(event);
+  const link = `${origin}/.netlify/functions/verify-magic-link?token=${encodeURIComponent(magicToken)}&next=${encodeURIComponent(safeNext)}`;
+
+  if (store) {
+    await store.setJSON(magicToken, { email, createdAt, expiresAt, used: false });
   }
+
+  const sent = await sendResendEmail({ to: email, link }).catch(() => false);
+
+  return json(200, {
+    ok: true,
+    sent,
+    message: sent ? 'Magic link sent.' : 'Magic link created in dev mode. Configure RESEND_API_KEY and MAGIC_LINK_FROM to send email.',
+    devMagicLink: sent ? undefined : link,
+  });
 };
 
-export default createMagicLinkHandler();
-
-export const config = {
-  path: '/api/auth/magic-link',
-};
+export default handler;
