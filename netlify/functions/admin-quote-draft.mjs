@@ -679,8 +679,7 @@ export default async (request) => {
       const totalCost = toMoney(m.estimatedBuyCostCents || 0);
       const surchargePct = Math.round(Number(m.partsSurchargeRate || 0) * 100);
       sourcingLines.push(`${materialIndex + 1}. ${m.name}`);
-      sourcingLines.push(`   Qty to buy: ${m.buyQty} | Unit est: ${unitCost} | Line est: ${totalCost} | Surcharge: ${surchargePct}%`);
-      sourcingLines.push(`   Source type: ${m.pricingSource || 'n/a'}`);
+      sourcingLines.push(`   Qty: ${m.neededQty} | Unit est: ${unitCost} | Line est: ${totalCost} | Surcharge: ${surchargePct}%`);
       if (sources.length) sourcingLines.push(`   Supplier shortlist: ${sources.join(' | ')}`);
       if (links.length) {
         links.forEach((link, idx) => {
@@ -715,11 +714,7 @@ export default async (request) => {
       'Estimated materials:',
       ...(pricedMaterials.length
         ? pricedMaterials.map((m) => {
-          const surchargePct = Math.round(Number(m.partsSurchargeRate || 0) * 100);
-          const surchargeText = Number(m.partsSurchargeCents || 0) > 0
-            ? ` | base ${toMoney(m.partsBaseCostCents || 0)} + ${surchargePct}% (${toMoney(m.partsSurchargeCents || 0)})`
-            : '';
-          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${surchargeText}`;
+          return `- ${m.name}: Qty ${m.neededQty} — ${toMoney(m.estimatedBuyCostCents)}`;
         })
         : ['- No direct material match found. Manual material review required.']),
       '',
