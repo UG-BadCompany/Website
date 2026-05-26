@@ -239,6 +239,80 @@ const PREMIUM_BRAND_HINTS = [
 ];
 const SERP_TIMEOUT_MS = 3500;
 const MAX_WEB_PRICE_LOOKUPS = 8;
+
+const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
+
+const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
+  try {
+    const rows = asRows(await db.sql`
+      select q.title, q.summary, q.amount_cents, jr.service_type, jr.city
+      from quotes q
+      left join job_requests jr on jr.id = q.job_request_id
+      where q.amount_cents is not null
+        and q.status in ('accepted', 'sent', 'viewed')
+        and (${clean(jobRequest.service_type, 160)} = '' or jr.service_type ilike ${`%${clean(jobRequest.service_type, 160)}%`})
+      order by coalesce(q.accepted_at, q.sent_at, q.created_at) desc
+      limit ${Math.max(3, Math.min(20, Number(limit) || 8))}
+    `);
+    return rows.map((r) => ({
+      title: clean(r.title, 180),
+      serviceType: clean(r.service_type, 160),
+      city: clean(r.city, 120),
+      amountCents: Number(r.amount_cents || 0),
+      summary: clean(r.summary, 600),
+    }));
+  } catch {
+    return [];
+  }
+};
+
+const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, materials, laborHours, laborRateCents, learningExamples }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey || !Array.isArray(materials) || !materials.length) return null;
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Improve quote draft with realistic parts and calibrated labor using historical examples.',
+          request: {
+            serviceType: clean(jobRequest.service_type, 160),
+            description: clean(descriptionText, 2400),
+            city: clean(jobRequest.city, 120),
+          },
+          currentEstimate: {
+            laborHours,
+            laborRateCents,
+            materials: materials.map((m) => ({ name: m.name, neededQty: m.neededQty, estimatedUnitCostCents: m.estimatedUnitCostCents })),
+          },
+          learningExamples,
+          outputSchema: {
+            laborHoursDelta: 'integer between -4 and 8',
+            materialAdjustments: [{ name: 'string', qtyDelta: 'integer', unitCostMultiplier: 'number 0.9-1.35' }],
+            confidence: 'number 0..1',
+            rationale: 'short string',
+          },
+        }) },
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 700,
+    };
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const raw = clean(data?.output_text || '', 20000);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
 let webLookupCount = 0;
 let webLookupCache = new Map();
 const isAllowedPriceSource = (source = '', title = '') => {
@@ -621,7 +695,36 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
-    const pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
+    let pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
+    let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
+    const learningExamples = await fetchLearningExamples(db, jobRequest, 8);
+    const aiAdjustments = await maybeApplyAiLearningAdjustments({
+      jobRequest,
+      descriptionText,
+      materials: pricedMaterials,
+      laborHours,
+      laborRateCents: phoenixLaborRateByTime(jobRequest.created_at || new Date()),
+      learningExamples,
+    });
+    if (aiAdjustments && Array.isArray(aiAdjustments.materialAdjustments)) {
+      const adjustmentsByName = new Map(aiAdjustments.materialAdjustments
+        .map((item) => [slug(item?.name), item])
+        .filter(([k]) => Boolean(k)));
+      pricedMaterials = pricedMaterials.map((part) => {
+        const adj = adjustmentsByName.get(slug(part.name));
+        if (!adj) return part;
+        const qtyDelta = Number.isFinite(Number(adj.qtyDelta)) ? Number(adj.qtyDelta) : 0;
+        const unitMultRaw = Number(adj.unitCostMultiplier || 1);
+        const unitMultiplier = Number.isFinite(unitMultRaw) ? Math.min(1.35, Math.max(0.9, unitMultRaw)) : 1;
+        const neededQty = Math.max(0, Number(part.neededQty || 0) + Math.trunc(qtyDelta));
+        const buyQty = Math.max(0, neededQty - Number(part.inStockQty || 0));
+        const unit = Math.max(1, Math.round(Number(part.estimatedUnitCostCents || 0) * unitMultiplier));
+        return withPartsSurcharge({ ...part, neededQty, buyQty, estimatedUnitCostCents: unit, estimatedBuyCostCents: buyQty * unit }, { requestText: descriptionText });
+      });
+    }
+    if (aiAdjustments && Number.isFinite(Number(aiAdjustments.laborHoursDelta))) {
+      laborHours = Math.max(1, Math.min(36, laborHours + Math.trunc(Number(aiAdjustments.laborHoursDelta))));
+    }
     try {
       await persistLivePriceEvidence({ db, jobRequest, materials: pricedMaterials, descriptionText });
     } catch (persistError) {
@@ -629,7 +732,6 @@ export default async (request) => {
     }
 
     const materialSubtotal = pricedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
-    let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
     }
@@ -726,6 +828,8 @@ export default async (request) => {
           webLookupsUsed: webLookupCount,
           cachedLookups: webLookupCache.size,
           evidencePartsCaptured: pricedMaterials.filter((part) => Array.isArray(part.livePriceEvidence) && part.livePriceEvidence.length).length,
+          learningExamplesUsed: learningExamples.length,
+          aiLearningApplied: Boolean(aiAdjustments),
         },
       },
     });
