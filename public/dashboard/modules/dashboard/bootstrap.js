@@ -2601,6 +2601,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
+          quoteForm.querySelector('[data-admin-quote-sourcing-links]')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-open-link]');
+            if (!button) return;
+            const url = button.dataset.openLink || '';
+            if (!url) return;
+            window.open(url, '_blank', 'noopener');
+          });
           quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
             const aiStatus = document.querySelector('[data-admin-quote-ai-status]');
