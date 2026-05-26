@@ -275,67 +275,6 @@ const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, invento
   return candidates;
 };
 
-
-const inferUnknownScopeRequirements = async ({ descriptionText, inventory, location }) => {
-  const text = slug(descriptionText);
-  const inferred = [];
-  const followUps = [];
-
-  if (text.includes('salt water') || text.includes('water softener') || text.includes('filtration')) {
-    followUps.push('Main line pipe size (3/4" or 1"), available install space, and drain access point.');
-    followUps.push('Current water hardness/TDS (if known) and desired treatment result.');
-    followUps.push('Electrical outlet availability and distance for controller/power supply.');
-    followUps.push('Bypass preference and shutoff valve condition at install location.');
-    const parts = [
-      'Salt-based water treatment system unit',
-      'Bypass valve and union connector kit',
-      'Pre-filter housing and cartridge',
-      'Drain line tubing and air-gap fitting',
-      'Shutoff valves and plumbing fittings',
-      'Startup salt/media allowance',
-    ];
-    for (const partLabel of parts) {
-      const livePrices = await fetchSerpApiPrices({ partLabel, location });
-      const medianLivePriceCents = livePrices.length
-        ? livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)]
-        : 0;
-      inferred.push({
-        name: partLabel,
-        estimatedUnitCostCents: medianLivePriceCents,
-        neededQty: 1,
-        inStockQty: 0,
-        buyQty: 1,
-        estimatedBuyCostCents: medianLivePriceCents,
-        source: 'inferred_scope_research',
-        livePriceEvidence: livePrices,
-        pricingSource: livePrices.length ? 'live_web' : 'research_needed',
-      });
-    }
-  }
-
-  return { inferred, followUps };
-};
-
-
-const normalizeResearchKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 180);
-
-const queueResearchCandidates = async (db, { jobRequestId, city, sourceText, materials = [] }) => {
-  for (const part of materials) {
-    const normalizedKey = normalizeResearchKey(`${part.name || ''} ${sourceText || ''}`);
-    const confidenceScore = part.livePriceEvidence?.length ? Math.min(0.98, 0.55 + (part.livePriceEvidence.length * 0.08)) : 0.35;
-    await db.sql`
-      insert into quote_research_queue (job_request_id, city, source_text, candidate_name, candidate_unit_cost_cents, evidence, status, confidence_score, normalized_key)
-      select ${String(jobRequestId || '') || null}, ${city || null}, ${sourceText || ''}, ${part.name || 'Unknown item'}, ${Number(part.estimatedUnitCostCents || 0) || null}, ${JSON.stringify(part.livePriceEvidence || [])}::jsonb, 'new', ${confidenceScore}, ${normalizedKey}
-      where not exists (
-        select 1 from quote_research_queue
-        where normalized_key = ${normalizedKey}
-          and status in ('new', 'reviewed')
-          and created_at > now() - interval '30 days'
-      )
-    `;
-  }
-};
-
 const loadSession = async (db, sessionToken) => {
   const rows = asRows(await db.sql`
     select auth_sessions.id, app_users.id as user_id
@@ -371,55 +310,6 @@ const choosePlaybook = (descriptionText) => {
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
 };
 
-
-const detectJobTypeKey = ({ descriptionText, workScope = '', workCategory = '' }) => {
-  const text = slug(`${workScope} ${workCategory} ${descriptionText}`);
-  if (text.includes('sink') && (text.includes('new install') || text.includes('install'))) return 'sink_new_install';
-  if ((text.includes('hvac') || text.includes('ac') || text.includes('air conditioner') || text.includes('heat pump') || text.includes('furnace')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'hvac_troubleshoot_repair';
-  if ((text.includes('water heater') || text.includes('hot water heater')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'water_heater_troubleshoot_repair';
-  if ((text.includes('sink') || text.includes('faucet') || text.includes('drain') || text.includes('garbage disposal')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'sink_troubleshoot_repair';
-  if ((text.includes('electrical') || text.includes('outlet') || text.includes('switch') || text.includes('breaker')) && (text.includes('troubleshoot') || text.includes('repair'))) return 'electrical_troubleshoot_repair';
-  return null;
-};
-
-const loadDbCatalogMaterials = async (db, { jobTypeKey, descriptionText, inventory, location }) => {
-  if (!jobTypeKey) return [];
-  const rows = asRows(await db.sql`
-    select item_key, item_name, default_unit_cost_cents, default_quantity, aliases
-    from quote_catalog_items
-    where job_type_key = ${jobTypeKey} and is_active = true
-    order by id asc
-  `);
-  const materials = [];
-  for (const row of rows) {
-    const aliases = String(row.aliases || '').toLowerCase().split(',').map((v) => v.trim()).filter(Boolean);
-    const inventoryMatch = inventory.find((item) => aliases.some((alias) => slug(item.name).includes(alias)));
-    const [recentPrice] = asRows(await db.sql`
-      select unit_cost_cents
-      from supplier_prices
-      where item_key = ${row.item_key}
-      order by fetched_at desc
-      limit 1
-    `);
-    const livePrices = recentPrice ? [{ title: row.item_name, source: 'supplier_cache', cents: Number(recentPrice.unit_cost_cents || 0) }] : await fetchSerpApiPrices({ partLabel: row.item_name, location });
-    const effectiveUnit = recentPrice?.unit_cost_cents || (livePrices[0]?.cents) || Number(row.default_unit_cost_cents || 0);
-    const neededQty = Math.max(1, Number(row.default_quantity || 1));
-    const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
-    const buyQty = Math.max(0, neededQty - inStock);
-    materials.push({
-      name: row.item_name,
-      estimatedUnitCostCents: effectiveUnit,
-      neededQty,
-      inStockQty: inStock,
-      buyQty,
-      estimatedBuyCostCents: buyQty * effectiveUnit,
-      source: 'db_catalog',
-      livePriceEvidence: livePrices,
-      pricingSource: recentPrice ? 'supplier_cache' : (livePrices.length ? 'live_web' : 'db_default'),
-    });
-  }
-  return materials;
-};
 export default async (request) => {
   if (request.method !== 'POST') return json(405, { ok: false, message: 'Method not allowed.' });
 
@@ -440,7 +330,7 @@ export default async (request) => {
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
     let [jobRequest] = asRows(await db.sql`
-      select id, service_type, work_scope, work_category, description, city, created_at
+      select id, service_type, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
@@ -449,8 +339,6 @@ export default async (request) => {
       jobRequest = {
         id: jobRequestId,
         service_type: clean(requestContext.serviceType, 160) || 'Service request',
-        work_scope: clean(requestContext.workScope, 120) || '',
-        work_category: clean(requestContext.workCategory, 120) || '',
         description: clean(requestContext.description, 4000) || '',
         city: clean(requestContext.city, 120) || 'Phoenix',
         created_at: requestContext.createdAt || new Date().toISOString(),
@@ -471,7 +359,7 @@ export default async (request) => {
       inventory = [];
     }
 
-    const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.description || ''}`;
+    const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
     const electricalFeet = extractElectricalFootage(descriptionText);
     const materialsFromPlaybook = (playbook?.materials || []).map((part) => {
@@ -523,38 +411,10 @@ export default async (request) => {
       };
     });
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
-    const workScope = slug(jobRequest.work_scope || '');
-    const workCategory = slug(jobRequest.work_category || '');
-    const jobTypeKey = detectJobTypeKey({ descriptionText, workScope, workCategory });
-    let materialsFromDbCatalog = [];
-    try {
-      materialsFromDbCatalog = await loadDbCatalogMaterials(db, { jobTypeKey, descriptionText, inventory, location });
-    } catch (catalogError) {
-      console.warn('DB catalog lookup unavailable; falling back to playbook/AI.', catalogError?.message || catalogError);
-    }
-    const aiGeneralMaterials = (!materialsFromPlaybook.length && !materialsFromDbCatalog.length)
+    const aiGeneralMaterials = !materialsFromPlaybook.length
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const inferredScope = (!materialsFromPlaybook.length && !materialsFromDbCatalog.length && !aiGeneralMaterials.length)
-      ? await inferUnknownScopeRequirements({ descriptionText, inventory, location })
-      : { inferred: [], followUps: [] };
-    const baseMaterials = materialsFromDbCatalog.length
-      ? materialsFromDbCatalog
-      : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : (inferredScope.inferred.length ? inferredScope.inferred : materialsFromCatalog)));
-
-    if (inferredScope.inferred.length) {
-      try {
-        await queueResearchCandidates(db, {
-          jobRequestId: jobRequest.id,
-          city: jobRequest.city || null,
-          sourceText: descriptionText,
-          materials: inferredScope.inferred,
-        });
-      } catch (queueError) {
-        console.warn('Failed to enqueue research candidates', queueError?.message || queueError);
-      }
-    }
-
+    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -572,23 +432,8 @@ export default async (request) => {
       });
     }
 
-    const scopeBias = workScope.includes('troubleshooting') ? 'troubleshooting' : (workScope.includes('new install') || workScope.includes('install') ? 'install' : 'neutral');
-    const adjustedMaterials = materials.map((part) => {
-      if (scopeBias === 'troubleshooting') {
-        const buyQty = Math.min(part.buyQty, 1);
-        return { ...part, buyQty, estimatedBuyCostCents: buyQty * part.estimatedUnitCostCents };
-      }
-      if (scopeBias === 'install') {
-        const buyQty = Math.max(part.buyQty, part.neededQty);
-        return { ...part, buyQty, estimatedBuyCostCents: buyQty * part.estimatedUnitCostCents };
-      }
-      return part;
-    });
-
-    const materialSubtotal = adjustedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
+    const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
-    if (scopeBias === 'troubleshooting') laborHours = Math.max(laborHours, 3);
-    if (scopeBias === 'install') laborHours = Math.max(laborHours, 5);
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
     }
@@ -599,7 +444,6 @@ export default async (request) => {
 
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
-      `Scope context: ${jobRequest.work_scope || 'unspecified'} | Trade context: ${jobRequest.work_category || 'unspecified'}.`,
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
@@ -612,7 +456,6 @@ export default async (request) => {
       `Estimated total: ${toMoney(totalCents)}`,
       '',
       'Review before sending: confirm exact part quantities, tax/shipping, and final labor scope.',
-      ...(inferredScope.followUps.length ? ['', 'Missing info to finalize this scope:', ...inferredScope.followUps.map((item) => `- ${item}`)] : []),
     ];
 
     return json(200, {
@@ -623,7 +466,7 @@ export default async (request) => {
         amountCents: totalCents,
         laborHours,
         laborRateCents,
-        materials: adjustedMaterials,
+        materials,
       },
     });
   } catch (error) {
