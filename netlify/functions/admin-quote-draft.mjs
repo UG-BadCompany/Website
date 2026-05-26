@@ -20,7 +20,10 @@ const JOB_PLAYBOOKS = [
       { label: 'Disconnect box', unitCostCents: 3900, quantity: 1, aliases: ['disconnect'] },
       { label: '2-pole breaker + panel hardware', unitCostCents: 6800, quantity: 1, aliases: ['breaker', 'panel'] },
       { label: 'Disconnect fuses (pair)', unitCostCents: 2600, quantity: 1, aliases: ['fuse', 'disconnect fuse'] },
-      { label: 'Conduit and fittings', unitCostCents: 7200, quantity: 1, aliases: ['conduit', 'fitting'] },
+      { label: 'EMT conduit sticks', unitCostCents: 5200, quantity: 2, aliases: ['conduit', 'emt'] },
+      { label: 'Conduit 90° elbows', unitCostCents: 1800, quantity: 2, aliases: ['90', 'elbow', 'conduit elbow'] },
+      { label: 'Conduit couplings/unions', unitCostCents: 1400, quantity: 3, aliases: ['union', 'coupling'] },
+      { label: 'Conduit straps/clamps', unitCostCents: 900, quantity: 1, aliases: ['strap', 'clamp'] },
       { label: 'Condensate drain materials', unitCostCents: 2500, quantity: 1, aliases: ['drain', 'condensate'] },
       { label: 'Condenser pad / wall bracket kit', unitCostCents: 6400, quantity: 1, aliases: ['mount', 'pad', 'bracket', 'condenser pad'] },
     ],
@@ -193,17 +196,16 @@ const parseUsdToCents = (value = '') => {
   return Math.round(Number(match[1]) * 100);
 };
 const ALLOWED_PRICE_SOURCES = [
+  'grainger',
+  'ferguson',
+  'supplyhouse',
+  'homedepot',
   'home depot',
   'lowes',
   "lowe's",
-  'ace hardware',
-  'amazon',
-  'tractor supply',
-  'harbor freight',
-  'grainger',
+  'platt',
+  'graybar',
   'fastenal',
-  'floor and decor',
-  'ferguson',
 ];
 const isAllowedPriceSource = (source = '', title = '') => {
   const haystack = `${source} ${title}`.toLowerCase();
@@ -224,6 +226,7 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
         title: item.title || partLabel,
         source: item.source || item.store || 'web',
         cents: parseUsdToCents(item.price || item.extracted_price),
+        link: item.link || item.product_link || item.thumbnail || '',
       }))
       .filter((item) => isAllowedPriceSource(item.source, item.title))
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
@@ -474,9 +477,9 @@ export default async (request) => {
       if (playbook?.key === 'mini split installation' && part.label === 'Communication/control wire spool' && electricalFeet > 0) {
         neededQty = Math.max(1, Math.ceil(electricalFeet / 50));
       }
-      if (playbook?.key === 'mini split installation' && part.label === 'Conduit and fittings' && electricalFeet > 0) {
-        neededQty = Math.max(1, Math.ceil(electricalFeet / 40));
-      }
+      if (playbook?.key === 'mini split installation' && /EMT conduit sticks/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(2, Math.ceil(electricalFeet / 10));
+      if (playbook?.key === 'mini split installation' && /90° elbows/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(2, Math.ceil(electricalFeet / 30));
+      if (playbook?.key === 'mini split installation' && /couplings\/unions/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(3, Math.ceil(electricalFeet / 20));
       if (playbook?.key === 'ceiling fan install or replacement' && part.label === 'Home-run wire kit (if new install)') {
         neededQty = isExistingFixtureRequest(descriptionText) && !isNewInstallRequest(descriptionText) ? 0 : 1;
       }
@@ -560,7 +563,16 @@ export default async (request) => {
       '',
       'Estimated materials:',
       ...(materials.length
-        ? materials.map((m) => `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]`)
+        ? materials.map((m) => {
+          const links = (m.livePriceEvidence || [])
+            .map((e) => clean(e.link || '', 500))
+            .filter(Boolean)
+            .slice(0, 2);
+          const brandHint = (m.livePriceEvidence || []).map((e) => clean(e.source || '', 60)).filter(Boolean).slice(0, 2).join(', ');
+          const linksText = links.length ? ` | links: ${links.join(' , ')}` : '';
+          const sourceText = brandHint ? ` | sources: ${brandHint}` : '';
+          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${sourceText}${linksText}`;
+        })
         : ['- No direct material match found. Manual material review required.']),
       '',
       `Labor estimate: ${laborHours} hour(s) × ${toMoney(laborRateCents)}/hr = ${toMoney(laborSubtotal)}`,
