@@ -244,6 +244,26 @@ const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_
 const OPENAI_TIMEOUT_MS = 4500;
 const OPENAI_STRICT_ONLY = clean(process.env.OPENAI_STRICT_ONLY || 'true', 10).toLowerCase() !== 'false';
 
+
+const deriveMissingInfoQuestions = ({ jobRequest, descriptionText, materials = [] }) => {
+  const text = slug(descriptionText);
+  const questions = [];
+  if (!clean(jobRequest.work_scope, 80)) questions.push('What is the work scope (Troubleshooting/Repair, Replace Existing, or New Install)?');
+  if (!clean(jobRequest.work_category, 80) && !clean(jobRequest.service_type, 80)) questions.push('What type of work is this (HVAC, Electrical, Plumbing, etc.)?');
+  if (!/(volt|amp|btu|ton|gallon|inch|size|model)/.test(text)) questions.push('Do you have equipment specs (size/model/BTU/voltage) for exact part matching?');
+  if (!/(indoor|outdoor|attic|garage|panel|roof|bathroom|kitchen)/.test(text)) questions.push('Where is the work area located on site (indoor/outdoor/room/location)?');
+  if (!/(replace|new|existing|repair|troubleshoot|install)/.test(text)) questions.push('Is this a new install, replacement, or repair/troubleshooting?');
+  if (materials.length < 2) questions.push('Can you share photos or a model number so AI can build a fuller parts list?');
+  return questions.slice(0, 5);
+};
+
+const buildScopeSummary = (jobRequest = {}) => {
+  const scope = clean(jobRequest.work_scope, 120) || 'Not provided';
+  const type = clean(jobRequest.work_category || jobRequest.service_type, 160) || 'Not provided';
+  const details = clean(jobRequest.description, 2400) || 'Not provided';
+  return { scope, type, details };
+};
+
 const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
   try {
     const rows = asRows(await db.sql`
@@ -949,6 +969,14 @@ export default async (request) => {
       sourcingLines.push('');
     });
 
+    const scopeSummary = buildScopeSummary(jobRequest);
+    const missingInfoQuestions = deriveMissingInfoQuestions({ jobRequest, descriptionText, materials: pricedMaterials });
+    const assumptions = [
+      scopeSummary.scope === 'Not provided' ? 'Work Scope inferred from project details.' : `Work Scope used: ${scopeSummary.scope}.`,
+      scopeSummary.type === 'Not provided' ? 'Type of Work inferred from service + keywords.' : `Type of Work used: ${scopeSummary.type}.`,
+      'Pricing uses live supplier evidence when available and model-adjusted estimate when not available.',
+    ];
+
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
@@ -978,6 +1006,9 @@ export default async (request) => {
         materials: pricedMaterials,
         adminSourcingNotes: sourcingLines.join('\n'),
         adminSourcingLinks: sourcingLinks,
+        assumptions,
+        missingInfoQuestions,
+        intakeContext: scopeSummary,
         meta: {
           webLookupsUsed: webLookupCount,
           cachedLookups: webLookupCache.size,
@@ -1019,6 +1050,13 @@ export default async (request) => {
         laborHours: 2,
         laborRateCents: phoenixLaborRateByTime(new Date()),
         materials: [],
+        assumptions: ['Fallback mode used due to AI generation failure.'],
+        missingInfoQuestions: ['Please provide Work Scope, Type of Work, and detailed project notes/photos.'],
+        intakeContext: {
+          scope: clean(requestContext?.workScope, 120) || 'Not provided',
+          type: clean(requestContext?.typeOfWork || requestContext?.serviceType, 160) || 'Not provided',
+          details: fallbackDescription,
+        },
       },
     });
   }
