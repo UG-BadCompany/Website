@@ -681,6 +681,77 @@ const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, invento
   return candidates;
 };
 
+
+const generateStructuredAiQuote = async ({ jobRequest, descriptionText, pricedMaterials, laborHours, laborRateCents, totalCents, missingInfoQuestions }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey) return null;
+  const materialLow = Math.round(pricedMaterials.reduce((sum, p) => sum + Number(p.estimatedBuyCostCents || 0), 0) * 0.92);
+  const materialHigh = Math.round(pricedMaterials.reduce((sum, p) => sum + Number(p.estimatedBuyCostCents || 0), 0) * 1.15);
+  const laborLowHours = Math.max(1, Math.round(laborHours * 0.9 * 10) / 10);
+  const laborHighHours = Math.max(laborLowHours, Math.round(laborHours * 1.25 * 10) / 10);
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'You are a senior handyman estimator. Return strict JSON only and follow output schema exactly.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Create complete structured estimate JSON including scope, risks, labor phases, materials, permit/license flags, customer quote, internal notes, checklist, and change order triggers.',
+          context: {
+            work_scope: clean(jobRequest.work_scope, 120),
+            type_of_work: clean(jobRequest.work_category || jobRequest.service_type, 160),
+            service_type: clean(jobRequest.service_type, 160),
+            project_details: clean(jobRequest.description, 2600),
+            city: clean(jobRequest.city, 120),
+            merged_description: clean(descriptionText, 2600),
+          },
+          inputs: {
+            missing_required_info: missingInfoQuestions,
+            material_candidates: pricedMaterials.map((m) => ({ name: m.name, quantity: m.neededQty, est_cost: Number(m.estimatedBuyCostCents || 0) / 100 })),
+            labor_seed_hours: laborHours,
+            labor_rate: laborRateCents / 100,
+          },
+          rules: {
+            quote_readiness_rule: 'if key info missing then is_quote_ready=false',
+            labor_phases_required: ['Travel/setup','Inspection/diagnosis','Protect work area','Shut off utilities','Remove old item','Prep area','Modify opening/surface if needed','Install/repair','Fasten/support','Connect utilities','Seal/caulk','Patch/paint/finish','Test','Cleanup','Haul away','Customer walkthrough'],
+          },
+          output_schema: {
+            job_summary: 'string', category: 'string', subcategory: 'string', work_scope: 'string', confidence: 'number', is_quote_ready: 'boolean',
+            missing_required_info: ['string'], questions_to_customer: ['string'], assumptions: ['string'],
+            labor_items: [{ name: 'string', description: 'string', low_hours: 'number', high_hours: 'number', skill_level: 'string', notes: 'string' }],
+            materials: [{ name: 'string', quantity: 'number', required: 'boolean', customer_supplied: 'boolean', estimated_cost_low: 'number', estimated_cost_high: 'number', notes: 'string' }],
+            difficulty_factors: ['string'], risk_flags: ['string'], licensed_trade_flags: ['string'], permit_flags: ['string'], exclusions: ['string'], customer_responsibilities: ['string'],
+            estimate: { labor_hours_low: 'number', labor_hours_high: 'number', labor_cost_low: 'number', labor_cost_high: 'number', material_cost_low: 'number', material_cost_high: 'number', trip_charge: 'number', disposal_fee: 'number', permit_allowance: 'number', contingency: 'number', total_low: 'number', total_high: 'number' },
+            customer_facing_quote: 'string', internal_technician_notes: 'string', technician_checklist: ['string'], shopping_list: ['string'], change_order_triggers: ['string']
+          }
+        }) }
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 2600,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS + 2500);
+    const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` }, body: JSON.stringify(payload), signal: controller.signal });
+    clearTimeout(timer);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const raw = clean(data?.output_text || '', 50000);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed.estimate || typeof parsed.estimate !== 'object') {
+      parsed.estimate = {
+        labor_hours_low: laborLowHours, labor_hours_high: laborHighHours,
+        labor_cost_low: Math.round(laborLowHours * laborRateCents) / 100,
+        labor_cost_high: Math.round(laborHighHours * laborRateCents) / 100,
+        material_cost_low: materialLow / 100, material_cost_high: materialHigh / 100,
+        trip_charge: 0, disposal_fee: 0, permit_allowance: 0, contingency: Math.round(totalCents * 0.08) / 100,
+        total_low: Math.round(totalCents * 0.9) / 100, total_high: Math.round(totalCents * 1.2) / 100,
+      };
+    }
+    return parsed;
+  } catch { return null; }
+};
+
 const loadSession = async (db, sessionToken) => {
   const rows = asRows(await db.sql`
     select auth_sessions.id, app_users.id as user_id
@@ -997,6 +1068,9 @@ export default async (request) => {
 
     const scopeSummary = buildScopeSummary(jobRequest);
     const missingInfoQuestions = deriveMissingInfoQuestions({ jobRequest, descriptionText, materials: pricedMaterials });
+    const structuredAiQuote = await generateStructuredAiQuote({
+      jobRequest, descriptionText, pricedMaterials, laborHours, laborRateCents, totalCents, missingInfoQuestions,
+    });
     const assumptions = [
       scopeSummary.scope === 'Not provided' ? 'Work Scope inferred from project details.' : `Work Scope used: ${scopeSummary.scope}.`,
       scopeSummary.type === 'Not provided' ? 'Type of Work inferred from service + keywords.' : `Type of Work used: ${scopeSummary.type}.`,
@@ -1035,6 +1109,7 @@ export default async (request) => {
         assumptions,
         missingInfoQuestions,
         intakeContext: scopeSummary,
+        aiStructuredQuote: structuredAiQuote,
         meta: {
           webLookupsUsed: webLookupCount,
           cachedLookups: webLookupCache.size,
