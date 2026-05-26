@@ -2015,6 +2015,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteAmount = document.querySelector('[data-admin-quote-form] [name="amount"]');
         const quoteSummary = document.querySelector('[data-admin-quote-form] [name="summary"]');
         const quoteSourcingNotes = document.querySelector('[data-admin-quote-sourcing-notes]');
+        const quoteSourcingLinks = document.querySelector('[data-admin-quote-sourcing-links]');
         const quoteSend = document.querySelector('[data-admin-quote-form] [name="sendToClient"]');
         const quoteFormTitle = document.querySelector('[data-admin-quote-form-title]');
         const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
@@ -2049,6 +2050,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteAmount) quoteAmount.value = savedQuote ? String((savedQuote.amountCents || 0) / 100) : '';
         if (quoteSummary) quoteSummary.value = savedQuote?.summary || '';
         if (quoteSourcingNotes) quoteSourcingNotes.value = '';
+        if (quoteSourcingLinks) quoteSourcingLinks.innerHTML = '';
         if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
         if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
         if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
@@ -2297,6 +2299,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (titleField) titleField.value = result.draft.title || '';
               if (summaryField) summaryField.value = result.draft.summary || '';
               if (sourcingField) sourcingField.value = result.draft.adminSourcingNotes || '';
+              if (quoteSourcingLinks) {
+                const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
+                quoteSourcingLinks.innerHTML = links.length
+                  ? links.slice(0, 10).map((item) => `<a class="btn btn-soft" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener">${escapeHtml(item.label || 'Click link')}</a>`).join('')
+                  : '<span class="session-status">No quick links available.</span>';
+              }
               if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
               if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
               if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';

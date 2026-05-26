@@ -215,6 +215,11 @@ const domainFromUrl = (value = '') => {
     return '';
   }
 };
+const buildSearchLink = (query = '') => {
+  const q = clean(query, 180);
+  if (!q) return '';
+  return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+};
 const ALLOWED_PRICE_SOURCES = [
   'grainger',
   'ferguson',
@@ -638,6 +643,7 @@ export default async (request) => {
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
 
+    const sourcingLinks = [];
     const sourcingLines = [
       'AI SOURCING NOTES (INTERNAL)',
       `Generated: ${new Date().toISOString()}`,
@@ -678,12 +684,26 @@ export default async (request) => {
       if (sources.length) sourcingLines.push(`   Supplier shortlist: ${sources.join(' | ')}`);
       if (links.length) {
         links.forEach((link, idx) => {
+          sourcingLinks.push({
+            part: m.name,
+            label: `${m.name} — Option ${idx + 1} (${link.source}${link.domain ? ` / ${link.domain}` : ''})`,
+            url: link.url,
+          });
           sourcingLines.push(`   Option ${idx + 1}: ${link.source}${link.domain ? ` (${link.domain})` : ''} | ${link.price}`);
           sourcingLines.push(`   Product: ${link.title}`);
-          sourcingLines.push(`   URL: ${link.url}`);
+          sourcingLines.push(`   Click link ${idx + 1}: ${link.url}`);
         });
       } else {
-        sourcingLines.push('   Link: not available (manual lookup recommended)');
+        const fallback1 = buildSearchLink(`${m.name} ${jobRequest.city || 'Arizona'} supplier`);
+        const fallback2 = buildSearchLink(`${m.name} ${jobRequest.city || 'Arizona'} buy online`);
+        if (fallback1) {
+          sourcingLinks.push({ part: m.name, label: `${m.name} — Search option 1`, url: fallback1 });
+          sourcingLines.push(`   Click link 1: ${fallback1}`);
+        }
+        if (fallback2) {
+          sourcingLinks.push({ part: m.name, label: `${m.name} — Search option 2`, url: fallback2 });
+          sourcingLines.push(`   Click link 2: ${fallback2}`);
+        }
       }
       sourcingLines.push('');
     });
@@ -720,6 +740,7 @@ export default async (request) => {
         laborRateCents,
         materials: pricedMaterials,
         adminSourcingNotes: sourcingLines.join('\n'),
+        adminSourcingLinks: sourcingLinks,
         meta: {
           webLookupsUsed: webLookupCount,
           cachedLookups: webLookupCache.size,
