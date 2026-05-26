@@ -7,20 +7,6 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const COST_CATALOG = [
-  { key: 'drywall', label: 'Drywall panel (4x8)', unitCostCents: 1800 },
-  { key: 'paint', label: 'Interior paint (gallon)', unitCostCents: 4200 },
-  { key: 'primer', label: 'Primer (gallon)', unitCostCents: 3000 },
-  { key: 'ceiling fan', label: 'Ceiling fan', unitCostCents: 12900 },
-  { key: 'outlet', label: 'Electrical outlet', unitCostCents: 600 },
-  { key: 'switch', label: 'Switch', unitCostCents: 500 },
-  { key: 'pvc', label: 'PVC fitting/pipe set', unitCostCents: 2400 },
-  { key: 'valve', label: 'Shutoff valve', unitCostCents: 1700 },
-  { key: 'caulk', label: 'Sealant/caulk tube', unitCostCents: 700 },
-  { key: 'lumber', label: 'Framing lumber bundle', unitCostCents: 5500 },
-  { key: 'hinge', label: 'Door hinge set', unitCostCents: 1200 },
-  { key: 'screw', label: 'Fastener pack', unitCostCents: 900 },
-];
 const JOB_PLAYBOOKS = [
   {
     key: 'mini split installation',
@@ -301,10 +287,6 @@ const loadRoleKeys = async (db, userId) => {
   return roles.map((role) => role.key);
 };
 
-const chooseCatalogMatches = (descriptionText) => {
-  const text = slug(descriptionText);
-  return COST_CATALOG.filter((item) => text.includes(item.key)).slice(0, 6);
-};
 const chooseDbCatalogMatches = async (db, descriptionText) => {
   const text = slug(descriptionText);
   const rows = asRows(await db.sql`
@@ -329,6 +311,50 @@ const chooseDbCatalogMatches = async (db, descriptionText) => {
     }))
     .filter((item) => item.unitCostCents > 0);
 };
+const buildInternetFallbackMaterials = async ({ descriptionText, inventory, location }) => {
+  const queryBase = clean(descriptionText, 220) || 'general home repair';
+  const searchSeeds = [
+    `${queryBase} required materials list`,
+    `${queryBase} install kit`,
+    `${queryBase} parts`,
+  ];
+  const candidates = [];
+  for (const seed of searchSeeds) {
+    const livePrices = await fetchSerpApiPrices({ partLabel: seed, location });
+    livePrices.forEach((item) => {
+      const name = clean(item.title, 120) || seed;
+      if (!name) return;
+      const firstToken = slug(name).split(' ')[0] || '';
+      const inventoryMatch = inventory.find((stock) => firstToken && slug(stock.name).includes(firstToken));
+      const neededQty = 1;
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      candidates.push({
+        name,
+        estimatedUnitCostCents: item.cents,
+        neededQty,
+        inStockQty: inStock,
+        buyQty,
+        estimatedBuyCostCents: buyQty * item.cents,
+        source: 'internet_search',
+        livePriceEvidence: [item],
+        pricingSource: 'live_web',
+      });
+    });
+    if (candidates.length >= 6) break;
+  }
+  const unique = [];
+  const seen = new Set();
+  for (const part of candidates) {
+    const key = slug(part.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(part);
+    if (unique.length >= 6) break;
+  }
+  return unique;
+};
+
 const choosePlaybook = (descriptionText) => {
   const text = slug(descriptionText);
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
@@ -418,10 +444,7 @@ export default async (request) => {
       };
     });
     const dbCatalogCandidates = await chooseDbCatalogMatches(db, descriptionText);
-    const candidates = dbCatalogCandidates.length
-      ? dbCatalogCandidates
-      : chooseCatalogMatches(descriptionText);
-    const materialsFromCatalog = candidates.map((candidate) => {
+    const materialsFromCatalog = dbCatalogCandidates.map((candidate) => {
       const inventoryMatch = inventory.find((item) => slug(item.name).includes(candidate.key));
       const neededQty = Number(candidate.quantity || 1);
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
@@ -441,7 +464,12 @@ export default async (request) => {
     const aiGeneralMaterials = !materialsFromPlaybook.length
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
+    const internetFallbackMaterials = (!materialsFromPlaybook.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
+      ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
+      : [];
+    const baseMaterials = materialsFromPlaybook.length
+      ? materialsFromPlaybook
+      : (aiGeneralMaterials.length ? aiGeneralMaterials : (materialsFromCatalog.length ? materialsFromCatalog : internetFallbackMaterials));
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
