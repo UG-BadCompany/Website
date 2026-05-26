@@ -211,6 +211,19 @@ const updateClientJobRequest = async (db, userId, payload) => {
   return jobRequest || null;
 };
 
+
+const deleteClientJobRequest = async (db, userId, payload) => {
+  const [jobRequest] = await db.sql`
+    delete from job_requests
+    where id = ${payload.jobRequestId}
+      and client_id = ${userId}
+      and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent')
+    returning id, status, service_type, requester_email
+  `;
+
+  return jobRequest || null;
+};
+
 const updateClientProperty = async (db, userId, payload) => {
   const [property] = await db.sql`
     update properties
@@ -420,6 +433,51 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
   });
 };
 
+
+const handleDelete = async ({ request, db, session, roleKeys }) => {
+  const body = await parseJsonBody(request);
+  const payload = normalizePayload(body);
+
+  if (!payload.jobRequestId) {
+    return json(422, { ok: false, message: 'Job request is required.' });
+  }
+
+  if (clean(body.confirmation, 20).toUpperCase() !== 'DELETE') {
+    return json(422, { ok: false, message: 'Type DELETE to permanently delete this request.' });
+  }
+
+  const deletedRequest = await deleteClientJobRequest(db, session.user_id, payload);
+
+  if (!deletedRequest) {
+    return json(404, { ok: false, authenticated: true, authorized: false, message: 'Only open requests can be permanently deleted.' });
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (
+      ${session.user_id},
+      ${'client_job_request.permanently_deleted'},
+      ${'job_request'},
+      ${deletedRequest.id},
+      ${JSON.stringify({ source: 'client_dashboard', status: deletedRequest.status, serviceType: deletedRequest.service_type })}::jsonb
+    )
+  `;
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    deleted: true,
+    requestId: deletedRequest.id,
+    user: {
+      id: session.user_id,
+      email: session.email,
+      fullName: session.full_name,
+      roles: roleKeys,
+    },
+  });
+};
+
 const handlePatch = async ({ request, db, session, roleKeys }) => {
   const body = await parseJsonBody(request);
 
@@ -546,7 +604,7 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
 };
 
 export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -576,6 +634,10 @@ export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = 
 
     if (request.method === 'PATCH') {
       return await handlePatch({ request, db, session, roleKeys });
+    }
+
+    if (request.method === 'DELETE') {
+      return await handleDelete({ request, db, session, roleKeys });
     }
 
     return await handleGet({ db, session, roleKeys });

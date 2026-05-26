@@ -7,20 +7,6 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const COST_CATALOG = [
-  { key: 'drywall', label: 'Drywall panel (4x8)', unitCostCents: 1800 },
-  { key: 'paint', label: 'Interior paint (gallon)', unitCostCents: 4200 },
-  { key: 'primer', label: 'Primer (gallon)', unitCostCents: 3000 },
-  { key: 'ceiling fan', label: 'Ceiling fan', unitCostCents: 12900 },
-  { key: 'outlet', label: 'Electrical outlet', unitCostCents: 600 },
-  { key: 'switch', label: 'Switch', unitCostCents: 500 },
-  { key: 'pvc', label: 'PVC fitting/pipe set', unitCostCents: 2400 },
-  { key: 'valve', label: 'Shutoff valve', unitCostCents: 1700 },
-  { key: 'caulk', label: 'Sealant/caulk tube', unitCostCents: 700 },
-  { key: 'lumber', label: 'Framing lumber bundle', unitCostCents: 5500 },
-  { key: 'hinge', label: 'Door hinge set', unitCostCents: 1200 },
-  { key: 'screw', label: 'Fastener pack', unitCostCents: 900 },
-];
 const JOB_PLAYBOOKS = [
   {
     key: 'mini split installation',
@@ -34,7 +20,10 @@ const JOB_PLAYBOOKS = [
       { label: 'Disconnect box', unitCostCents: 3900, quantity: 1, aliases: ['disconnect'] },
       { label: '2-pole breaker + panel hardware', unitCostCents: 6800, quantity: 1, aliases: ['breaker', 'panel'] },
       { label: 'Disconnect fuses (pair)', unitCostCents: 2600, quantity: 1, aliases: ['fuse', 'disconnect fuse'] },
-      { label: 'Conduit and fittings', unitCostCents: 7200, quantity: 1, aliases: ['conduit', 'fitting'] },
+      { label: 'EMT conduit sticks', unitCostCents: 5200, quantity: 2, aliases: ['conduit', 'emt'] },
+      { label: 'Conduit 90° elbows', unitCostCents: 1800, quantity: 2, aliases: ['90', 'elbow', 'conduit elbow'] },
+      { label: 'Conduit couplings/unions', unitCostCents: 1400, quantity: 3, aliases: ['union', 'coupling'] },
+      { label: 'Conduit straps/clamps', unitCostCents: 900, quantity: 1, aliases: ['strap', 'clamp'] },
       { label: 'Condensate drain materials', unitCostCents: 2500, quantity: 1, aliases: ['drain', 'condensate'] },
       { label: 'Condenser pad / wall bracket kit', unitCostCents: 6400, quantity: 1, aliases: ['mount', 'pad', 'bracket', 'condenser pad'] },
     ],
@@ -206,45 +195,398 @@ const parseUsdToCents = (value = '') => {
   if (!match) return null;
   return Math.round(Number(match[1]) * 100);
 };
+const normalizeProductLink = (value = '') => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    const blocked = ['google.com/imgres', 'gstatic.com', 'encrypted-tbn0.gstatic.com'];
+    if (blocked.some((token) => url.href.includes(token))) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+};
+const domainFromUrl = (value = '') => {
+  try {
+    return new URL(value).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+};
 const ALLOWED_PRICE_SOURCES = [
+  'grainger',
+  'ferguson',
+  'supplyhouse',
+  'homedepot',
   'home depot',
   'lowes',
   "lowe's",
-  'ace hardware',
-  'amazon',
-  'tractor supply',
-  'harbor freight',
-  'grainger',
+  'platt',
+  'graybar',
   'fastenal',
-  'floor and decor',
-  'ferguson',
 ];
+const PREMIUM_BRAND_HINTS = [
+  'mitsubishi',
+  'daikin',
+  'fujitsu',
+  'lg',
+  'tosot',
+  'carrier',
+  'trane',
+  'mr cool',
+];
+const SERP_TIMEOUT_MS = 3500;
+const MAX_WEB_PRICE_LOOKUPS = 8;
+
+const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
+const OPENAI_TIMEOUT_MS = 4500;
+const OPENAI_STRICT_ONLY = clean(process.env.OPENAI_STRICT_ONLY || 'true', 10).toLowerCase() !== 'false';
+
+
+const deriveMissingInfoQuestions = ({ jobRequest, descriptionText, materials = [] }) => {
+  const text = slug(descriptionText);
+  const questions = [];
+  if (!clean(jobRequest.work_scope, 80)) questions.push('What is the work scope (Troubleshooting/Repair, Replace Existing, or New Install)?');
+  if (!clean(jobRequest.work_category, 80) && !clean(jobRequest.service_type, 80)) questions.push('What type of work is this (HVAC, Electrical, Plumbing, etc.)?');
+  if (!/(volt|amp|btu|ton|gallon|inch|size|model)/.test(text)) questions.push('Do you have equipment specs (size/model/BTU/voltage) for exact part matching?');
+  if (!/(indoor|outdoor|attic|garage|panel|roof|bathroom|kitchen)/.test(text)) questions.push('Where is the work area located on site (indoor/outdoor/room/location)?');
+  if (!/(replace|new|existing|repair|troubleshoot|install)/.test(text)) questions.push('Is this a new install, replacement, or repair/troubleshooting?');
+  if (materials.length < 2) questions.push('Can you share photos or a model number so AI can build a fuller parts list?');
+  return questions.slice(0, 5);
+};
+
+const buildScopeSummary = (jobRequest = {}) => {
+  const scope = clean(jobRequest.work_scope, 120) || 'Not provided';
+  const type = clean(jobRequest.work_category || jobRequest.service_type, 160) || 'Not provided';
+  const details = clean(jobRequest.description, 2400) || 'Not provided';
+  return { scope, type, details };
+};
+
+const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
+  try {
+    const rows = asRows(await db.sql`
+      select q.title, q.summary, q.amount_cents, jr.service_type, jr.city
+      from quotes q
+      left join job_requests jr on jr.id = q.job_request_id
+      where q.amount_cents is not null
+        and q.status in ('accepted', 'sent', 'viewed')
+        and (${clean(jobRequest.service_type, 160)} = '' or jr.service_type ilike ${`%${clean(jobRequest.service_type, 160)}%`})
+      order by coalesce(q.accepted_at, q.sent_at, q.created_at) desc
+      limit ${Math.max(3, Math.min(20, Number(limit) || 8))}
+    `);
+    return rows.map((r) => ({
+      title: clean(r.title, 180),
+      serviceType: clean(r.service_type, 160),
+      city: clean(r.city, 120),
+      amountCents: Number(r.amount_cents || 0),
+      summary: clean(r.summary, 600),
+    }));
+  } catch {
+    return [];
+  }
+};
+
+
+const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory, learningExamples }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey) return [];
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Generate a practical materials list for this job. Prefer premium/pro-grade products. Include package-level equipment where applicable.',
+          request: {
+            workScope: clean(jobRequest.work_scope, 120),
+            typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
+            serviceType: clean(jobRequest.service_type, 160),
+            projectDetails: clean(jobRequest.description, 2400),
+            description: clean(descriptionText, 2400),
+            city: clean(jobRequest.city, 120),
+          },
+          inventory: (inventory || []).slice(0, 80).map((i) => ({ name: clean(i.name, 120), unit: clean(i.unit, 40), quantityOnHand: Number(i.quantity_on_hand || 0) })),
+          learningExamples,
+          outputSchema: {
+            materials: [{ name: 'string', neededQty: 'integer >=1', preferredBrands: 'array of strings' }],
+          },
+        }) },
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 900,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const raw = clean(data?.output_text || '', 28000);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const mats = Array.isArray(parsed?.materials) ? parsed.materials : [];
+    return mats.map((m) => {
+      const name = clean(m?.name, 140);
+      const neededQty = Math.max(1, Math.min(50, Math.trunc(Number(m?.neededQty || 1))));
+      const inventoryMatch = (inventory || []).find((item) => slug(item.name).includes(slug(name)) || slug(name).includes(slug(item.name)));
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      return {
+        name,
+        estimatedUnitCostCents: 0,
+        neededQty,
+        inStockQty: inStock,
+        buyQty,
+        estimatedBuyCostCents: 0,
+        source: 'openai_materials',
+      };
+    }).filter((m) => m.name);
+  } catch {
+    return [];
+  }
+};
+
+const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, inventory }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey) return [];
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'Return strict JSON only.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Return at least 3 practical material line items for this job.',
+          request: {
+            workScope: clean(jobRequest.work_scope, 120),
+            typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
+            projectDetails: clean(jobRequest.description, 2000),
+            city: clean(jobRequest.city, 120),
+          },
+          outputSchema: { materials: [{ name: 'string', neededQty: 'integer >=1' }] },
+        }) },
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 500,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const raw = clean(data?.output_text || '', 16000);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const mats = Array.isArray(parsed?.materials) ? parsed.materials : [];
+    return mats.slice(0, 12).map((m) => {
+      const name = clean(m?.name, 140);
+      const neededQty = Math.max(1, Math.min(50, Math.trunc(Number(m?.neededQty || 1))));
+      const inventoryMatch = (inventory || []).find((item) => slug(item.name).includes(slug(name)) || slug(name).includes(slug(item.name)));
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      return { name, estimatedUnitCostCents: 0, neededQty, inStockQty: inStock, buyQty, estimatedBuyCostCents: 0, source: 'openai_fallback_materials' };
+    }).filter((m) => m.name);
+  } catch {
+    return [];
+  }
+};
+
+const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, materials, laborHours, laborRateCents, learningExamples }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey || !Array.isArray(materials) || !materials.length) return null;
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Improve quote draft with realistic parts and calibrated labor using historical examples.',
+          request: {
+            workScope: clean(jobRequest.work_scope, 120),
+            typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
+            serviceType: clean(jobRequest.service_type, 160),
+            projectDetails: clean(jobRequest.description, 2400),
+            description: clean(descriptionText, 2400),
+            city: clean(jobRequest.city, 120),
+          },
+          currentEstimate: {
+            laborHours,
+            laborRateCents,
+            materials: materials.map((m) => ({ name: m.name, neededQty: m.neededQty, estimatedUnitCostCents: m.estimatedUnitCostCents })),
+          },
+          learningExamples,
+          outputSchema: {
+            laborHoursDelta: 'integer between -4 and 8',
+            materialAdjustments: [{ name: 'string', qtyDelta: 'integer', unitCostMultiplier: 'number 0.9-1.35' }],
+            confidence: 'number 0..1',
+            rationale: 'short string',
+          },
+        }) },
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 700,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const rawText = clean(data?.output_text || '', 20000);
+    const altText = clean((Array.isArray(data?.output) ? data.output.map((o) => o?.content?.map?.((c) => c?.text || '').join(' ') || '').join(' ') : ''), 20000);
+    const raw = rawText || altText;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const confidence = Number(parsed.confidence);
+    if (Number.isFinite(confidence) && confidence < 0.35) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+let webLookupCount = 0;
+let webLookupCache = new Map();
 const isAllowedPriceSource = (source = '', title = '') => {
   const haystack = `${source} ${title}`.toLowerCase();
   return ALLOWED_PRICE_SOURCES.some((vendor) => haystack.includes(vendor));
 };
 const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
+  const cacheKey = `${slug(partLabel)}|${slug(location)}`;
+  if (webLookupCache.has(cacheKey)) return webLookupCache.get(cacheKey);
+  if (webLookupCount >= MAX_WEB_PRICE_LOOKUPS) return [];
   const key = process.env.SERPAPI_API_KEY;
   if (!key) return [];
   try {
-    const query = encodeURIComponent(`${partLabel} price ${location} Home Depot Lowes Ace Hardware Amazon Phoenix`);
+    webLookupCount += 1;
+    const miniSplitPackageQuery = /mini[-\s]?split|condenser|air handler/i.test(partLabel)
+      ? `${partLabel} complete system outdoor condenser + indoor air handler kit price ${location}`
+      : `${partLabel} price ${location} Home Depot Lowes Ace Hardware Amazon Phoenix`;
+    const query = encodeURIComponent(miniSplitPackageQuery);
     const url = `https://serpapi.com/search.json?engine=google_shopping&q=${query}&api_key=${encodeURIComponent(key)}`;
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SERP_TIMEOUT_MS);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
     if (!response.ok) return [];
     const data = await response.json().catch(() => ({}));
     const items = Array.isArray(data.shopping_results) ? data.shopping_results : [];
-    return items
+    const priced = items
       .map((item) => ({
         title: item.title || partLabel,
         source: item.source || item.store || 'web',
         cents: parseUsdToCents(item.price || item.extracted_price),
+        link: normalizeProductLink(item.product_link || item.link || ''),
       }))
       .filter((item) => isAllowedPriceSource(item.source, item.title))
+      .filter((item) => {
+        if (!/mini[-\s]?split|condenser|air handler/i.test(partLabel)) return true;
+        const t = slug(item.title || '');
+        const hasPackage = (t.includes('condenser') && t.includes('air handler')) || t.includes('system') || t.includes('kit');
+        const hasGoodBrand = PREMIUM_BRAND_HINTS.some((brand) => t.includes(brand));
+        const splitOnly = t.includes('air handler') && !t.includes('condenser');
+        return hasPackage && hasGoodBrand && !splitOnly;
+      })
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
+      .filter((item) => Boolean(item.link))
       .slice(0, 5);
+    webLookupCache.set(cacheKey, priced);
+    return priced;
   } catch (error) {
     console.warn('SerpApi lookup failed, falling back to local pricing.', { partLabel, message: error?.message || String(error) });
+    webLookupCache.set(cacheKey, []);
     return [];
+  }
+};
+const normalizeKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+const confidenceFromEvidence = (evidence = []) => {
+  const count = Array.isArray(evidence) ? evidence.length : 0;
+  if (count >= 4) return 0.9;
+  if (count === 3) return 0.82;
+  if (count === 2) return 0.72;
+  if (count === 1) return 0.58;
+  return 0.25;
+};
+const withPartsSurcharge = (part, { requestText = '' } = {}) => {
+  const text = slug(requestText);
+  const installHeavy = /\b(new|install|installation|replace|replacement|upgrade)\b/.test(text);
+  const smallPart = /\b(fitting|union|coupling|elbow|strap|clamp|screw|anchor|nut|bolt|wire nut|connector|tape|sealant|caulk|fastener)\b/i.test(part.name || '');
+  const baseCost = Number(part.estimatedBuyCostCents || 0);
+  if (!Number.isFinite(baseCost) || baseCost <= 0) return part;
+  // Standard contractor-style parts markup to cover incidentals, logistics, and margin.
+  const surchargeRate = smallPart ? 0.32 : (installHeavy ? 0.27 : 0.22);
+  const surchargeCents = Math.round(baseCost * surchargeRate);
+  const sellCostCents = baseCost + surchargeCents;
+  return {
+    ...part,
+    partsBaseCostCents: baseCost,
+    partsSurchargeRate: surchargeRate,
+    partsSurchargeCents: surchargeCents,
+    estimatedBuyCostCents: sellCostCents,
+  };
+};
+const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
+  for (const part of materials.slice(0, 6)) {
+    const evidence = Array.isArray(part.livePriceEvidence) ? part.livePriceEvidence : [];
+    if (!evidence.length) continue;
+    const itemKey = normalizeKey(part.name || 'unknown_item');
+    const confidence = confidenceFromEvidence(evidence);
+    const candidateUnitCostCents = Number(part.estimatedUnitCostCents || 0);
+
+    for (const price of evidence.slice(0, 3)) {
+      await db.sql`
+        insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at)
+        values (
+          ${itemKey},
+          ${clean(price.source, 160) || 'web'},
+          ${Number(price.cents || 0)},
+          ${clean(price.link || '', 600) || null},
+          now()
+        )
+      `;
+    }
+
+    await db.sql`
+      insert into quote_research_queue (
+        job_request_id,
+        city,
+        source_text,
+        candidate_name,
+        candidate_unit_cost_cents,
+        evidence,
+        status,
+        confidence_score,
+        normalized_key
+      )
+      values (
+        ${jobRequest.id},
+        ${clean(jobRequest.city, 120) || null},
+        ${clean(descriptionText, 2000) || 'AI quote draft evidence'},
+        ${clean(part.name, 180) || 'Unknown part'},
+        ${candidateUnitCostCents || null},
+        ${JSON.stringify(evidence)}::jsonb,
+        ${'new'},
+        ${confidence},
+        ${itemKey}
+      )
+    `;
   }
 };
 const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, inventory, location }) => {
@@ -301,10 +643,74 @@ const loadRoleKeys = async (db, userId) => {
   return roles.map((role) => role.key);
 };
 
-const chooseCatalogMatches = (descriptionText) => {
+const chooseDbCatalogMatches = async (db, descriptionText) => {
   const text = slug(descriptionText);
-  return COST_CATALOG.filter((item) => text.includes(item.key)).slice(0, 6);
+  const rows = asRows(await db.sql`
+    select item_name, item_key, default_unit_cost_cents, default_quantity, aliases
+    from quote_catalog_items
+    where is_active = true
+    order by updated_at desc
+    limit 250
+  `);
+  return rows
+    .filter((item) => {
+      const keys = [item.item_key, item.item_name, ...(String(item.aliases || '').split(',').map((part) => part.trim()).filter(Boolean))]
+        .map((part) => slug(part));
+      return keys.some((part) => part && text.includes(part));
+    })
+    .slice(0, 8)
+    .map((item) => ({
+      label: item.item_name,
+      unitCostCents: Number(item.default_unit_cost_cents || 0),
+      quantity: Math.max(1, Number(item.default_quantity || 1)),
+      key: item.item_key,
+    }))
+    .filter((item) => item.unitCostCents > 0);
 };
+const buildInternetFallbackMaterials = async ({ descriptionText, inventory, location }) => {
+  const queryBase = clean(descriptionText, 220) || 'general home repair';
+  const searchSeeds = [
+    `${queryBase} required materials list`,
+    `${queryBase} install kit`,
+    `${queryBase} parts`,
+  ];
+  const candidates = [];
+  for (const seed of searchSeeds) {
+    const livePrices = await fetchSerpApiPrices({ partLabel: seed, location });
+    livePrices.forEach((item) => {
+      const name = clean(item.title, 120) || seed;
+      if (!name) return;
+      const firstToken = slug(name).split(' ')[0] || '';
+      const inventoryMatch = inventory.find((stock) => firstToken && slug(stock.name).includes(firstToken));
+      const neededQty = 1;
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      candidates.push({
+        name,
+        estimatedUnitCostCents: item.cents,
+        neededQty,
+        inStockQty: inStock,
+        buyQty,
+        estimatedBuyCostCents: buyQty * item.cents,
+        source: 'internet_search',
+        livePriceEvidence: [item],
+        pricingSource: 'live_web',
+      });
+    });
+    if (candidates.length >= 6) break;
+  }
+  const unique = [];
+  const seen = new Set();
+  for (const part of candidates) {
+    const key = slug(part.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(part);
+    if (unique.length >= 6) break;
+  }
+  return unique;
+};
+
 const choosePlaybook = (descriptionText) => {
   const text = slug(descriptionText);
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
@@ -322,6 +728,8 @@ export default async (request) => {
   if (!jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
 
   try {
+    webLookupCount = 0;
+    webLookupCache = new Map();
     const db = await loadDatabase();
     const session = await loadSession(db, sessionToken);
     if (!session) return json(401, { ok: false, authenticated: false, message: 'Session expired.' });
@@ -330,7 +738,7 @@ export default async (request) => {
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
     let [jobRequest] = asRows(await db.sql`
-      select id, service_type, description, city, created_at
+      select id, service_type, work_scope, work_category, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
@@ -338,8 +746,10 @@ export default async (request) => {
     if (!jobRequest && requestContext?.description) {
       jobRequest = {
         id: jobRequestId,
-        service_type: clean(requestContext.serviceType, 160) || 'Service request',
-        description: clean(requestContext.description, 4000) || '',
+        service_type: clean(requestContext.serviceType || requestContext.typeOfWork, 160) || 'Service request',
+        work_scope: clean(requestContext.workScope, 120) || '',
+        work_category: clean(requestContext.typeOfWork || requestContext.serviceType, 120) || '',
+        description: clean(requestContext.description || requestContext.projectDetails, 4000) || '',
         city: clean(requestContext.city, 120) || 'Phoenix',
         created_at: requestContext.createdAt || new Date().toISOString(),
       };
@@ -359,7 +769,7 @@ export default async (request) => {
       inventory = [];
     }
 
-    const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
+    const descriptionText = `${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
     const electricalFeet = extractElectricalFootage(descriptionText);
     const materialsFromPlaybook = (playbook?.materials || []).map((part) => {
@@ -368,9 +778,9 @@ export default async (request) => {
       if (playbook?.key === 'mini split installation' && part.label === 'Communication/control wire spool' && electricalFeet > 0) {
         neededQty = Math.max(1, Math.ceil(electricalFeet / 50));
       }
-      if (playbook?.key === 'mini split installation' && part.label === 'Conduit and fittings' && electricalFeet > 0) {
-        neededQty = Math.max(1, Math.ceil(electricalFeet / 40));
-      }
+      if (playbook?.key === 'mini split installation' && /EMT conduit sticks/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(2, Math.ceil(electricalFeet / 10));
+      if (playbook?.key === 'mini split installation' && /90° elbows/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(2, Math.ceil(electricalFeet / 30));
+      if (playbook?.key === 'mini split installation' && /couplings\/unions/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(3, Math.ceil(electricalFeet / 20));
       if (playbook?.key === 'ceiling fan install or replacement' && part.label === 'Home-run wire kit (if new install)') {
         neededQty = isExistingFixtureRequest(descriptionText) && !isNewInstallRequest(descriptionText) ? 0 : 1;
       }
@@ -393,10 +803,10 @@ export default async (request) => {
         source: 'playbook',
       };
     });
-    const candidates = chooseCatalogMatches(descriptionText);
-    const materialsFromCatalog = candidates.map((candidate) => {
+    const dbCatalogCandidates = await chooseDbCatalogMatches(db, descriptionText);
+    const materialsFromCatalog = dbCatalogCandidates.map((candidate) => {
       const inventoryMatch = inventory.find((item) => slug(item.name).includes(candidate.key));
-      const neededQty = 1;
+      const neededQty = Number(candidate.quantity || 1);
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
       const toBuy = Math.max(0, neededQty - inStock);
       const buyCostCents = toBuy * candidate.unitCostCents;
@@ -411,10 +821,39 @@ export default async (request) => {
       };
     });
     const location = `${jobRequest.city || 'Phoenix'}, Arizona`;
-    const aiGeneralMaterials = !materialsFromPlaybook.length
+    const learningExamples = await fetchLearningExamples(db, jobRequest, 8);
+    const aiPrimaryMaterials = await maybeGenerateAiMaterials({ jobRequest, descriptionText, inventory, learningExamples });
+    const aiGeneralMaterials = !aiPrimaryMaterials.length && !OPENAI_STRICT_ONLY
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
+    const internetFallbackMaterials = (!OPENAI_STRICT_ONLY && !materialsFromPlaybook.length && !aiPrimaryMaterials.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
+      ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
+      : [];
+    const baseMaterials = OPENAI_STRICT_ONLY
+      ? aiPrimaryMaterials
+      : (aiPrimaryMaterials.length
+        ? aiPrimaryMaterials
+        : (materialsFromCatalog.length ? materialsFromCatalog : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : internetFallbackMaterials))));
+    let strictRecoveryUsed = false;
+    if (OPENAI_STRICT_ONLY && !baseMaterials.length) {
+      const aiRecoveryMaterials = await maybeGenerateAiFallbackMaterials({ jobRequest, descriptionText, inventory });
+      if (aiRecoveryMaterials.length) {
+        baseMaterials.push(...aiRecoveryMaterials);
+        strictRecoveryUsed = true;
+      } else {
+        const emergencyLine = clean(jobRequest.work_category || jobRequest.service_type || 'Service materials', 120) || 'Service materials';
+        baseMaterials.push({
+          name: `${emergencyLine} - material allowance`,
+          estimatedUnitCostCents: 0,
+          neededQty: 1,
+          inStockQty: 0,
+          buyQty: 1,
+          estimatedBuyCostCents: 0,
+          source: 'openai_emergency_allowance',
+        });
+        strictRecoveryUsed = true;
+      }
+    }
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -431,9 +870,42 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
-
-    const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
+    let pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
+    const aiAdjustments = await maybeApplyAiLearningAdjustments({
+      jobRequest,
+      descriptionText,
+      materials: pricedMaterials,
+      laborHours,
+      laborRateCents: phoenixLaborRateByTime(jobRequest.created_at || new Date()),
+      learningExamples,
+    });
+    if (aiAdjustments && Array.isArray(aiAdjustments.materialAdjustments)) {
+      const adjustmentsByName = new Map(aiAdjustments.materialAdjustments
+        .map((item) => [slug(item?.name), item])
+        .filter(([k]) => Boolean(k)));
+      pricedMaterials = pricedMaterials.map((part) => {
+        const adj = adjustmentsByName.get(slug(part.name));
+        if (!adj) return part;
+        const qtyDelta = Number.isFinite(Number(adj.qtyDelta)) ? Number(adj.qtyDelta) : 0;
+        const unitMultRaw = Number(adj.unitCostMultiplier || 1);
+        const unitMultiplier = Number.isFinite(unitMultRaw) ? Math.min(1.35, Math.max(0.9, unitMultRaw)) : 1;
+        const neededQty = Math.max(0, Number(part.neededQty || 0) + Math.trunc(qtyDelta));
+        const buyQty = Math.max(0, neededQty - Number(part.inStockQty || 0));
+        const unit = Math.max(1, Math.round(Number(part.estimatedUnitCostCents || 0) * unitMultiplier));
+        return withPartsSurcharge({ ...part, neededQty, buyQty, estimatedUnitCostCents: unit, estimatedBuyCostCents: buyQty * unit }, { requestText: descriptionText });
+      });
+    }
+    if (aiAdjustments && Number.isFinite(Number(aiAdjustments.laborHoursDelta))) {
+      laborHours = Math.max(1, Math.min(36, laborHours + Math.trunc(Number(aiAdjustments.laborHoursDelta))));
+    }
+    try {
+      await persistLivePriceEvidence({ db, jobRequest, materials: pricedMaterials, descriptionText });
+    } catch (persistError) {
+      console.warn('Quote evidence persistence skipped due to timeout/safety guard.', persistError?.message || persistError);
+    }
+
+    const materialSubtotal = pricedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
     }
@@ -442,13 +914,78 @@ export default async (request) => {
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
 
+    const sourcingLinks = [];
+    const sourcingLines = [
+      'AI SOURCING NOTES (INTERNAL)',
+      `Generated: ${new Date().toISOString()}`,
+      `Service: ${clean(jobRequest.service_type, 160) || 'Service request'}`,
+      `City: ${clean(jobRequest.city, 120) || 'N/A'}`,
+      '',
+      'How to use:',
+      '- Verify part compatibility/spec before purchase.',
+      '- Prioritize first listed source unless lead time/pricing requires alternatives.',
+      '- Save approved items into catalog when recurring.',
+      '',
+    ];
+    pricedMaterials.forEach((m, materialIndex) => {
+      const links = [];
+      const seenLinks = new Set();
+      (m.livePriceEvidence || []).forEach((e) => {
+        const url = clean(e.link || '', 500);
+        if (!url || seenLinks.has(url) || links.length >= 3) return;
+        seenLinks.add(url);
+        links.push({
+          url,
+          source: clean(e.source || '', 80) || domainFromUrl(url) || 'supplier',
+          price: Number.isFinite(Number(e.cents)) ? toMoney(Number(e.cents)) : 'n/a',
+          domain: domainFromUrl(url),
+          title: clean(e.title || '', 120) || m.name,
+        });
+      });
+      const sources = (m.livePriceEvidence || [])
+        .map((e) => clean(e.source || '', 80))
+        .filter(Boolean)
+        .slice(0, 3);
+      const unitCost = toMoney(m.estimatedUnitCostCents || 0);
+      const totalCost = toMoney(m.estimatedBuyCostCents || 0);
+      const surchargePct = Math.round(Number(m.partsSurchargeRate || 0) * 100);
+      sourcingLines.push(`${materialIndex + 1}. ${m.name}`);
+      sourcingLines.push(`   Qty: ${m.neededQty} | Unit est: ${unitCost} | Line est: ${totalCost} | Surcharge: ${surchargePct}%`);
+      if (sources.length) sourcingLines.push(`   Supplier shortlist: ${sources.join(' | ')}`);
+      if (links.length) {
+        links.forEach((link, idx) => {
+          sourcingLinks.push({
+            part: m.name,
+            label: `${m.name} — Option ${idx + 1} (${link.source}${link.domain ? ` / ${link.domain}` : ''})`,
+            url: link.url,
+          });
+          sourcingLines.push(`   Option ${idx + 1}: ${link.source}${link.domain ? ` (${link.domain})` : ''} | ${link.price}`);
+          sourcingLines.push(`   Product: ${link.title}`);
+          sourcingLines.push(`   Open from "Quick product links" panel: Option ${idx + 1}`);
+        });
+      } else {
+        sourcingLines.push('   No validated product links found from approved suppliers for this part.');
+      }
+      sourcingLines.push('');
+    });
+
+    const scopeSummary = buildScopeSummary(jobRequest);
+    const missingInfoQuestions = deriveMissingInfoQuestions({ jobRequest, descriptionText, materials: pricedMaterials });
+    const assumptions = [
+      scopeSummary.scope === 'Not provided' ? 'Work Scope inferred from project details.' : `Work Scope used: ${scopeSummary.scope}.`,
+      scopeSummary.type === 'Not provided' ? 'Type of Work inferred from service + keywords.' : `Type of Work used: ${scopeSummary.type}.`,
+      'Pricing uses live supplier evidence when available and model-adjusted estimate when not available.',
+    ];
+
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
-      ...(materials.length
-        ? materials.map((m) => `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]`)
+      ...(pricedMaterials.length
+        ? pricedMaterials.map((m) => {
+          return `- ${m.name}: Qty ${m.neededQty} — ${toMoney(m.estimatedBuyCostCents)}`;
+        })
         : ['- No direct material match found. Manual material review required.']),
       '',
       `Labor estimate: ${laborHours} hour(s) × ${toMoney(laborRateCents)}/hr = ${toMoney(laborSubtotal)}`,
@@ -466,13 +1003,29 @@ export default async (request) => {
         amountCents: totalCents,
         laborHours,
         laborRateCents,
-        materials,
+        materials: pricedMaterials,
+        adminSourcingNotes: sourcingLines.join('\n'),
+        adminSourcingLinks: sourcingLinks,
+        assumptions,
+        missingInfoQuestions,
+        intakeContext: scopeSummary,
+        meta: {
+          webLookupsUsed: webLookupCount,
+          cachedLookups: webLookupCache.size,
+          evidencePartsCaptured: pricedMaterials.filter((part) => Array.isArray(part.livePriceEvidence) && part.livePriceEvidence.length).length,
+          learningExamplesUsed: learningExamples.length,
+          aiLearningApplied: Boolean(aiAdjustments),
+          aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
+          openAiStrictOnly: OPENAI_STRICT_ONLY,
+          strictRecoveryUsed,
+          strictEmergencyAllowanceUsed: baseMaterials.some((m) => m.source === 'openai_emergency_allowance'),
+        },
       },
     });
   } catch (error) {
     console.error('Failed to generate AI quote draft', error);
     const fallbackTitle = clean(requestContext?.serviceType, 160) || 'Service request quote draft';
-    const fallbackDescription = clean(requestContext?.description, 4000) || 'Review project details and confirm exact scope.';
+    const fallbackDescription = clean(requestContext?.projectDetails || requestContext?.description, 4000) || 'Review project details and confirm exact scope.';
     const fallbackSummary = [
       `AI draft fallback for ${fallbackTitle}.`,
       '',
@@ -497,6 +1050,13 @@ export default async (request) => {
         laborHours: 2,
         laborRateCents: phoenixLaborRateByTime(new Date()),
         materials: [],
+        assumptions: ['Fallback mode used due to AI generation failure.'],
+        missingInfoQuestions: ['Please provide Work Scope, Type of Work, and detailed project notes/photos.'],
+        intakeContext: {
+          scope: clean(requestContext?.workScope, 120) || 'Not provided',
+          type: clean(requestContext?.typeOfWork || requestContext?.serviceType, 160) || 'Not provided',
+          details: fallbackDescription,
+        },
       },
     });
   }
