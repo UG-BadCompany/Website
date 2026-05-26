@@ -2659,7 +2659,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (quoteSourcingLinks) {
                 const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
                 quoteSourcingLinks.innerHTML = links.length
-                  ? links.slice(0, 10).map((item, index) => `<a class="btn btn-soft" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer">URL ${index + 1}</a>`).join('')
+                  ? links.slice(0, 10).map((item) => `<a class=\"btn btn-soft\" href=\"${escapeHtml(item.url || '#')}\" target=\"_blank\" rel=\"noopener noreferrer\">${escapeHtml(item.label || item.part || item.url || 'Open product')}</a>`).join('')
                   : '<span class="session-status">No quick links available.</span>';
               }
               if (amountField) {

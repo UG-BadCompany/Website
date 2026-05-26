@@ -215,11 +215,6 @@ const domainFromUrl = (value = '') => {
     return '';
   }
 };
-const buildSearchLink = (query = '') => {
-  const q = clean(query, 180);
-  if (!q) return '';
-  return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
-};
 const ALLOWED_PRICE_SOURCES = [
   'grainger',
   'ferguson',
@@ -693,16 +688,7 @@ export default async (request) => {
           sourcingLines.push(`   Open from "Quick product links" panel: Option ${idx + 1}`);
         });
       } else {
-        const fallback1 = buildSearchLink(`${m.name} ${jobRequest.city || 'Arizona'} supplier`);
-        const fallback2 = buildSearchLink(`${m.name} ${jobRequest.city || 'Arizona'} buy online`);
-        if (fallback1) {
-          sourcingLinks.push({ part: m.name, label: `${m.name} — Search option 1`, url: fallback1 });
-          sourcingLines.push('   Open from "Quick product links" panel: Search option 1');
-        }
-        if (fallback2) {
-          sourcingLinks.push({ part: m.name, label: `${m.name} — Search option 2`, url: fallback2 });
-          sourcingLines.push('   Open from "Quick product links" panel: Search option 2');
-        }
+        sourcingLines.push('   No validated product links found from approved suppliers for this part.');
       }
       sourcingLines.push('');
     });
