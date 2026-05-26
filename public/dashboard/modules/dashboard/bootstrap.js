@@ -2668,7 +2668,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
                   ? links.slice(0, 10).map((item, index) => `<a class="btn btn-soft" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer">URL ${index + 1}</a>`).join('')
                   : '<span class="session-status">No quick links available.</span>';
               }
-              if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
+              if (amountField) {
+                let amountCents = Number(result.draft.amountCents || 0);
+                if (!amountCents && summaryField?.value) {
+                  const totalMatch = summaryField.value.match(/Estimated total:\s*\$([0-9,]+(?:\.[0-9]{1,2})?)/i);
+                  if (totalMatch) {
+                    amountCents = Math.round(Number(String(totalMatch[1]).replace(/,/g, '')) * 100);
+                  }
+                }
+                amountField.value = ((Number(amountCents || 0)) / 100).toFixed(2);
+              }
               if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
               if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
             } catch (error) {
