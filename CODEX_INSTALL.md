@@ -1,83 +1,41 @@
-# Real Magic Link + Unified AI Request Fix
+# Update: Remove AI Quote Buttons + Make Request Estimate the Only Public Quote Flow
 
-You were right: the login should use your real magic-link page, not a demo login.
+This patch keeps the AI engine but removes visible AI Quote buttons/pages.
 
-This patch keeps your uploaded login page as the source of truth:
-
-```html
-<form class="form" data-auth-form data-endpoint="/api/auth/magic-link">
-<script src="/assets/login.js" defer></script>
-```
-
-## What this patch fixes
-
-1. Restores your real login page.
-2. Keeps `/api/auth/magic-link`.
-3. Adds `/assets/login.js`.
-4. Adds real Netlify functions for:
-   - `auth-magic-link`
-   - `verify-magic-link`
-   - `me`
-   - `logout`
-5. Removes dev magic link behavior.
-6. Keeps Request Estimate as the single AI quote flow through `/api/job-requests`.
-
-## Required files
-
-Copy these:
+## Install these files
 
 ```text
-public/login/index.html
-public/assets/login.js
+public/js/site.js
 public/js/request-form.js
-
-netlify/functions/auth-magic-link.mjs
-netlify/functions/verify-magic-link.mjs
-netlify/functions/me.mjs
-netlify/functions/logout.mjs
-```
-
-## Keep your existing quote functions
-
-Also keep your current:
-
-```text
+public/js/admin-ai-quotes.js
 netlify/functions/job-requests.mjs
-netlify/functions/ai-quote-draft.mjs
-netlify/functions/ai-quote-drafts.mjs
 ```
 
-or use the unified versions from the last patch.
+## What changes
 
-## Required dependency
+- Public users only see **Request Estimate**
+- Request Estimate submits to `/api/job-requests`
+- `/api/job-requests` creates the estimate draft behind the scenes
+- No separate visible AI quote system
+- Existing `/api/ai-quote-draft` remains as hidden backend engine
+- Admin labels become “Estimate Drafts” instead of “AI Quote Drafts”
 
-```json
-"@netlify/blobs": "latest"
-```
+## Manual cleanup
 
-## Required Netlify env variables for real email
-
-```env
-RESEND_API_KEY=your_resend_key
-MAGIC_LINK_FROM=T&A Contracting <noreply@ta-contracting.org>
-```
-
-Optional reCAPTCHA:
-
-```env
-RECAPTCHA_SECRET_KEY=your_recaptcha_secret
-```
-
-## Required netlify.toml redirects
-
-See:
+Use:
 
 ```text
-snippets/netlify-redirects.toml
+snippets/remove-ai-quote-buttons.md
 ```
 
-## Important
+Search/remove any leftover visible “AI Quote” buttons or pages.
 
-There is no devMagicLink in this version.
+## Do not delete
 
-If email is not configured, the login will fail with a real error telling you to configure `RESEND_API_KEY` and `MAGIC_LINK_FROM`.
+Do not delete:
+
+```text
+netlify/functions/ai-quote-draft.mjs
+```
+
+That file is still needed, but it should not be linked directly from the customer UI.
