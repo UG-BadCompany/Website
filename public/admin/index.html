@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Request Received | T&A Contracting</title><link rel="stylesheet" href="/styles/site.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Admin | T&A Contracting</title><link rel="stylesheet" href="/styles/site.css"></head>
 <body>
 <header class="nav" aria-label="Main navigation">
   <div class="nav-inner">
@@ -18,15 +18,16 @@
   </div>
 </header>
 <main class="wrap page-shell">
-  <section class="hero">
-    <div>
-      <div class="eyebrow">Request Received</div>
-      <h1>We got it.</h1>
-      <p class="hero-copy">Your request was received. T&A Contracting will review the details, verify the scope, and follow up before scheduling or sending a final quote.</p>
-      <div class="hero-actions"><a class="btn btn-primary" href="/">Back Home</a><a class="btn" href="/dashboard/">Open Dashboard</a></div>
-    </div>
-    <div class="hero-media"><img class="hero-logo" src="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/logo3.png" alt="T&A Contracting logo"></div>
+  <section class="page-header">
+    <div class="eyebrow">Admin</div>
+    <h1>Admin command center.</h1>
+    <p>Review AI quote drafts, customer requests, materials, labor ranges, and technician notes before anything is sent.</p>
   </section>
+  <div class="grid">
+    <a class="dashboard-card" href="/admin/ai-quotes/"><h3>AI Quote Drafts</h3><p>Review generated quote drafts and missing customer questions.</p></a>
+    <a class="dashboard-card" href="/#estimate"><h3>Test Request Form</h3><p>Submit a sample request and generate a draft.</p></a>
+    <a class="dashboard-card" href="/dashboard/"><h3>Dashboard</h3><p>Open the dashboard shell.</p></a>
+  </div>
 </main>
 <script src="/js/site.js" defer></script>
 </body></html>
