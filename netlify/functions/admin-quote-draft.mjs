@@ -305,6 +305,30 @@ const chooseCatalogMatches = (descriptionText) => {
   const text = slug(descriptionText);
   return COST_CATALOG.filter((item) => text.includes(item.key)).slice(0, 6);
 };
+const chooseDbCatalogMatches = async (db, descriptionText) => {
+  const text = slug(descriptionText);
+  const rows = asRows(await db.sql`
+    select item_name, item_key, default_unit_cost_cents, default_quantity, aliases
+    from quote_catalog_items
+    where is_active = true
+    order by updated_at desc
+    limit 250
+  `);
+  return rows
+    .filter((item) => {
+      const keys = [item.item_key, item.item_name, ...(String(item.aliases || '').split(',').map((part) => part.trim()).filter(Boolean))]
+        .map((part) => slug(part));
+      return keys.some((part) => part && text.includes(part));
+    })
+    .slice(0, 8)
+    .map((item) => ({
+      label: item.item_name,
+      unitCostCents: Number(item.default_unit_cost_cents || 0),
+      quantity: Math.max(1, Number(item.default_quantity || 1)),
+      key: item.item_key,
+    }))
+    .filter((item) => item.unitCostCents > 0);
+};
 const choosePlaybook = (descriptionText) => {
   const text = slug(descriptionText);
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
@@ -393,10 +417,13 @@ export default async (request) => {
         source: 'playbook',
       };
     });
-    const candidates = chooseCatalogMatches(descriptionText);
+    const dbCatalogCandidates = await chooseDbCatalogMatches(db, descriptionText);
+    const candidates = dbCatalogCandidates.length
+      ? dbCatalogCandidates
+      : chooseCatalogMatches(descriptionText);
     const materialsFromCatalog = candidates.map((candidate) => {
       const inventoryMatch = inventory.find((item) => slug(item.name).includes(candidate.key));
-      const neededQty = 1;
+      const neededQty = Number(candidate.quantity || 1);
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
       const toBuy = Math.max(0, neededQty - inStock);
       const buyCostCents = toBuy * candidate.unitCostCents;

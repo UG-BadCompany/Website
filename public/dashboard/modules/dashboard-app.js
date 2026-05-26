@@ -1794,6 +1794,28 @@
         document.querySelector('[data-client-request-edit-service]')?.focus();
       };
 
+      const deleteClientRequest = async (requestId) => {
+        const editStatus = document.querySelector('[data-client-request-edit-status]');
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const confirmation = window.prompt('This permanently deletes your open request. Type DELETE to continue.');
+        if (confirmation !== 'DELETE') {
+          if (editStatus) editStatus.textContent = 'Delete cancelled.';
+          return;
+        }
+        if (editStatus) editStatus.textContent = 'Deleting request…';
+        const response = await fetch('/api/client/job-requests', {
+          method: 'DELETE',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ jobRequestId: requestId, confirmation }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
+        closeClientRequestModal();
+        if (panelStatus) panelStatus.textContent = 'Request permanently deleted.';
+        await loadClientRequests();
+        await loadClientQuotes();
+      };
+
       const saveClientRequestUpdate = async (form) => {
         const editStatus = document.querySelector('[data-client-request-edit-status]');
         const payload = Object.fromEntries(new FormData(form).entries());
@@ -1845,6 +1867,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const editStatus = document.querySelector('[data-client-request-edit-status]');
           try {
             await saveClientRequestUpdate(form);
+          } catch (error) {
+            if (editStatus) editStatus.textContent = error.message;
+          }
+        });
+        modal?.querySelector('[data-client-request-delete]')?.addEventListener('click', async () => {
+          const editStatus = document.querySelector('[data-client-request-edit-status]');
+          try {
+            await deleteClientRequest(document.querySelector('[data-client-request-edit-id]').value);
           } catch (error) {
             if (editStatus) editStatus.textContent = error.message;
           }
@@ -2211,6 +2241,70 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
+          quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
+            const formStatus = document.querySelector('[data-admin-quote-form-status]');
+            const aiStatus = document.querySelector('[data-admin-quote-ai-status]');
+            const requestId = quoteForm.querySelector('[data-admin-quote-request-id]')?.value || '';
+            if (!requestId) {
+              if (aiStatus) aiStatus.textContent = 'Open a request first, then generate the AI draft.';
+              if (formStatus) formStatus.textContent = 'Open a request first.';
+              return;
+            }
+            if (aiStatus) aiStatus.textContent = 'Generating AI draft from project details, stock, and pricing…';
+            if (formStatus) formStatus.textContent = 'Generating AI draft quote…';
+            try {
+              const draftUrls = ['/api/admin/quote-draft'];
+              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                draftUrls.push('/.netlify/functions/admin-quote-draft');
+              }
+              let result = null;
+              let finalError = '';
+              for (const url of draftUrls) {
+                try {
+                  const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { accept: 'application/json', 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                      jobRequestId: requestId,
+                      requestContext: (() => {
+                        const req = currentAdminRequests.get(requestId);
+                        return req ? {
+                          serviceType: req.serviceType,
+                          description: req.description,
+                          city: req.city,
+                          createdAt: req.createdAt,
+                        } : null;
+                      })(),
+                    }),
+                  });
+                  const payload = await response.json().catch(() => ({}));
+                  if (response.ok && payload.ok && payload.draft) {
+                    result = payload;
+                    break;
+                  }
+                  finalError = payload.message || `Draft endpoint failed (${response.status}) at ${url}`;
+                } catch (error) {
+                  finalError = error?.message || `Network error calling ${url}`;
+                }
+              }
+              if (!result?.draft) throw new Error(finalError || 'Could not generate draft.');
+              const titleField = quoteForm.querySelector('[name="title"]');
+              const summaryField = quoteForm.querySelector('[name="summary"]');
+              const amountField = quoteForm.querySelector('[name="amount"]');
+              if (titleField) titleField.value = result.draft.title || '';
+              if (summaryField) summaryField.value = result.draft.summary || '';
+              if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
+              if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
+              if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
+            } catch (error) {
+              const fallbackSummary = quoteForm.querySelector('[name="summary"]');
+              if (fallbackSummary && !fallbackSummary.value.trim()) {
+                fallbackSummary.value = 'AI draft endpoint was unavailable. Please review this manual draft:\n- Scope: Review project details and confirm full parts list.\n- Materials: Check inventory on hand first; buy missing parts.\n- Labor: Use current Phoenix lower-end rate.\n- Finalize amount before sending.';
+              }
+              if (aiStatus) aiStatus.textContent = `AI draft failed: ${error.message}`;
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
           quoteForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
@@ -3181,4 +3275,3 @@ Additional info from client: ${payload.additionalInfo}` : '';
     
 
     window.taWorkspaceRoute?.applyWorkspaceRoute();
-
