@@ -332,6 +332,57 @@ const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory
     return [];
   }
 };
+
+const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, inventory }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey) return [];
+  try {
+    const payload = {
+      model: OPENAI_MODEL || 'gpt-5-mini',
+      input: [
+        { role: 'system', content: 'Return strict JSON only.' },
+        { role: 'user', content: JSON.stringify({
+          task: 'Return at least 3 practical material line items for this job.',
+          request: {
+            workScope: clean(jobRequest.work_scope, 120),
+            typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
+            projectDetails: clean(jobRequest.description, 2000),
+            city: clean(jobRequest.city, 120),
+          },
+          outputSchema: { materials: [{ name: 'string', neededQty: 'integer >=1' }] },
+        }) },
+      ],
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 500,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const raw = clean(data?.output_text || '', 16000);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const mats = Array.isArray(parsed?.materials) ? parsed.materials : [];
+    return mats.slice(0, 12).map((m) => {
+      const name = clean(m?.name, 140);
+      const neededQty = Math.max(1, Math.min(50, Math.trunc(Number(m?.neededQty || 1))));
+      const inventoryMatch = (inventory || []).find((item) => slug(item.name).includes(slug(name)) || slug(name).includes(slug(item.name)));
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      return { name, estimatedUnitCostCents: 0, neededQty, inStockQty: inStock, buyQty, estimatedBuyCostCents: 0, source: 'openai_fallback_materials' };
+    }).filter((m) => m.name);
+  } catch {
+    return [];
+  }
+};
+
 const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, materials, laborHours, laborRateCents, learningExamples }) => {
   const apiKey = clean(process.env.OPENAI_API_KEY, 200);
   if (!apiKey || !Array.isArray(materials) || !materials.length) return null;
@@ -763,11 +814,18 @@ export default async (request) => {
       : (aiPrimaryMaterials.length
         ? aiPrimaryMaterials
         : (materialsFromCatalog.length ? materialsFromCatalog : (materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : internetFallbackMaterials))));
+    let strictRecoveryUsed = false;
     if (OPENAI_STRICT_ONLY && !baseMaterials.length) {
-      return json(503, {
-        ok: false,
-        message: 'OpenAI strict mode is enabled and no AI materials were generated. Disable OPENAI_STRICT_ONLY to allow fallbacks.',
-      });
+      const aiRecoveryMaterials = await maybeGenerateAiFallbackMaterials({ jobRequest, descriptionText, inventory });
+      if (aiRecoveryMaterials.length) {
+        baseMaterials.push(...aiRecoveryMaterials);
+        strictRecoveryUsed = true;
+      } else {
+        return json(503, {
+          ok: false,
+          message: 'OpenAI strict mode is enabled and no AI materials were generated. Try adding more project details or set OPENAI_STRICT_ONLY=false temporarily.',
+        });
+      }
     }
     const materials = [];
     for (const part of baseMaterials) {
@@ -921,6 +979,7 @@ export default async (request) => {
           aiLearningApplied: Boolean(aiAdjustments),
           aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
           openAiStrictOnly: OPENAI_STRICT_ONLY,
+          strictRecoveryUsed,
         },
       },
     });
