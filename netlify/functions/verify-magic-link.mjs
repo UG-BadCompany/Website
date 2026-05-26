@@ -1,113 +1,174 @@
-// netlify/functions/verify-magic-link.mjs
-// Verifies real magic-link tokens and sets HttpOnly session cookie.
+import {
+  createOrUpdateMagicLinkUser,
+  createSessionCookie,
+  createToken,
+  getSessionTtlMinutesForRoles,
+  hashToken,
+  json,
+  loadDatabase,
+  minutesFromNow,
+} from './auth-utils.mjs';
 
-const json = (statusCode, body, headers = {}) => ({
-  statusCode,
-  headers: {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store',
-    ...headers,
-  },
-  body: JSON.stringify(body),
-});
+const SESSION_TTL_DAYS = Number(process.env.AUTH_SESSION_TTL_DAYS || 14);
 
-const clean = (value, max = 1000) => String(value ?? '').trim().slice(0, max);
-const makeSession = () => `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-async function getStore(name) {
-  try {
-    const blobs = await import('@netlify/blobs');
-    if (blobs?.getStore) return blobs.getStore(name);
-  } catch {}
-  return null;
-}
 
-function sessionCookie(sessionId) {
-  const secure = process.env.CONTEXT === 'dev' ? '' : '; Secure';
-  return `ta_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 14}${secure}`;
-}
 
-function htmlPage(title, message) {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body style="font-family:system-ui;padding:32px;line-height:1.6"><h1>${title}</h1><p>${message}</p><p><a href="/login/?next=dashboard">Request a new link</a></p></body></html>`;
-}
+const getMagicLinkStatus = (magicLink) => {
+  if (!magicLink) return 'not-found';
+  if (magicLink.consumed_at) return 'used';
 
-async function verify(token) {
-  const tokenStore = await getStore('magic-link-tokens');
-  const sessionStore = await getStore('auth-sessions');
+  const expiresAt = new Date(magicLink.expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return 'expired';
 
-  if (!tokenStore || !sessionStore) {
-    return { ok: false, status: 500, message: 'Auth storage is not configured.' };
+  return 'active';
+};
+
+const wantsJsonResponse = (request) => (request.headers.get('accept') || '').includes('application/json');
+
+const getInactiveRedirect = (status, request) => {
+  const authState = status === 'used' ? 'used' : 'expired';
+
+  if (wantsJsonResponse(request)) {
+    return json(authState === 'used' ? 409 : 410, {
+      ok: false,
+      auth: authState,
+      message: authState === 'used'
+        ? 'This magic link has already been used. Request a new secure link.'
+        : 'This magic link expired. Request a new secure link.',
+    });
   }
 
-  const record = await tokenStore.get(token, { type: 'json' }).catch(() => null);
+  return new Response(null, { status: 302, headers: { location: `/login/?auth=${authState}` } });
+};
 
-  if (!record) return { ok: false, status: 400, message: 'Magic link is invalid or expired.' };
-  if (record.used) return { ok: false, status: 400, message: 'Magic link was already used.' };
-  if (Date.now() > Number(record.expiresAt || 0)) return { ok: false, status: 400, message: 'Magic link expired.' };
+const getTokenFromRequest = async (request) => {
+  const url = new URL(request.url);
+  const queryToken = url.searchParams.get('token');
 
-  record.used = true;
-  record.usedAt = Date.now();
-  await tokenStore.setJSON(token, record);
-
-  const sessionId = makeSession();
-  const user = { email: record.email };
-  await sessionStore.setJSON(sessionId, {
-    sessionId,
-    user,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 14,
-  });
-
-  return { ok: true, sessionId, user, next: record.next || '/dashboard/' };
-}
-
-export const handler = async (event) => {
-  if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-    return json(405, { ok: false, message: 'Method not allowed' });
+  if (queryToken || request.method === 'GET') {
+    return queryToken || '';
   }
 
-  let token = '';
+  const contentType = request.headers.get('content-type') || '';
+  const bodyText = await request.text().catch(() => '');
 
-  if (event.httpMethod === 'GET') {
-    const params = new URLSearchParams(event.rawQuery || '');
-    token = clean(params.get('token'), 300);
-  } else {
+  if (!bodyText) return '';
+
+  if (contentType.includes('application/json')) {
     try {
-      const body = JSON.parse(event.body || '{}');
-      token = clean(body.token, 300);
+      const body = JSON.parse(bodyText);
+      return typeof body.token === 'string' ? body.token : '';
     } catch {
-      return json(400, { ok: false, message: 'Invalid request body.' });
+      return '';
     }
   }
 
-  if (!token) {
-    return event.httpMethod === 'GET'
-      ? { statusCode: 400, headers: { 'content-type': 'text/html; charset=utf-8' }, body: htmlPage('Magic link failed', 'Missing token.') }
-      : json(400, { ok: false, message: 'Missing token.' });
-  }
-
-  const result = await verify(token);
-
-  if (!result.ok) {
-    return event.httpMethod === 'GET'
-      ? { statusCode: result.status || 400, headers: { 'content-type': 'text/html; charset=utf-8' }, body: htmlPage('Magic link failed', result.message) }
-      : json(result.status || 400, { ok: false, message: result.message });
-  }
-
-  if (event.httpMethod === 'GET') {
-    const safeNext = String(result.next || '/dashboard/').startsWith('/') ? result.next : '/dashboard/';
-    return {
-      statusCode: 302,
-      headers: {
-        'set-cookie': sessionCookie(result.sessionId),
-        location: safeNext,
-        'cache-control': 'no-store',
-      },
-      body: '',
-    };
-  }
-
-  return json(200, { ok: true, user: result.user }, { 'set-cookie': sessionCookie(result.sessionId) });
+  return new URLSearchParams(bodyText).get('token') || '';
 };
 
-export default handler;
+export const createVerifyMagicLinkHandler = ({
+  getDatabase = loadDatabase,
+  makeSessionToken = createToken,
+} = {}) => async (request) => {
+  if (!['GET', 'POST'].includes(request.method)) {
+    return json(405, { ok: false, message: 'Method not allowed.' });
+  }
+
+  const token = await getTokenFromRequest(request);
+
+  if (!token) {
+    if (wantsJsonResponse(request)) {
+      return json(400, { ok: false, auth: 'missing-token', message: 'Magic-link token is missing.' });
+    }
+
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=missing-token' } });
+  }
+
+  try {
+    const db = await getDatabase();
+    const tokenHash = hashToken(token);
+    const [magicLink] = await db.sql`
+      select id, email, expires_at, consumed_at,
+        case when token_hash = ${tokenHash} then 'token' else 'id' end as matched_by
+      from auth_magic_links
+      where token_hash = ${tokenHash}
+        or id::text = ${token}
+      order by created_at desc
+      limit 1
+    `;
+    const magicLinkStatus = getMagicLinkStatus(magicLink);
+
+    if (magicLinkStatus !== 'active') {
+      console.error('Magic link verification did not find an active link', {
+        status: magicLinkStatus,
+        matchedBy: magicLink?.matched_by || null,
+        magicLinkId: magicLink?.id || null,
+        hasConsumedAt: Boolean(magicLink?.consumed_at),
+        expiresAt: magicLink?.expires_at || null,
+      });
+
+      return getInactiveRedirect(magicLinkStatus, request);
+    }
+
+    const user = await createOrUpdateMagicLinkUser(db, {
+      email: magicLink.email,
+    });
+
+    const sessionToken = makeSessionToken();
+    const sessionRoleRows = await db.sql`
+      select roles.key
+      from user_roles
+      join roles on roles.id = user_roles.role_id
+      where user_roles.user_id = ${user.id}
+      order by roles.key
+    `;
+    const verifySessionTtlMinutes = getSessionTtlMinutesForRoles(sessionRoleRows.map((role) => role.key));
+
+    await db.sql`
+      insert into auth_sessions (user_id, session_hash, expires_at)
+      values (${user.id}, ${hashToken(sessionToken)}, ${minutesFromNow(verifySessionTtlMinutes)}::timestamptz)
+    `;
+
+    if (request.method === 'POST') {
+      try {
+        await db.sql`
+          update auth_magic_links
+          set consumed_at = now()
+          where id = ${magicLink.id}
+        `;
+      } catch (consumeError) {
+        console.error('Failed to mark magic link consumed after session creation', consumeError);
+      }
+    }
+
+    const sessionCookie = createSessionCookie(sessionToken, request, verifySessionTtlMinutes);
+
+    if (wantsJsonResponse(request)) {
+      return json(200, { ok: true, location: '/dashboard/' }, { 'set-cookie': sessionCookie });
+    }
+
+    return new Response(null, {
+      status: request.method === 'POST' ? 303 : 302,
+      headers: {
+        location: '/dashboard/',
+        'set-cookie': sessionCookie,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to verify magic link', error);
+
+    if (wantsJsonResponse(request)) {
+      return json(500, { ok: false, auth: 'error', message: 'We could not verify this magic link. Request a new secure link.' });
+    }
+
+    return new Response(null, { status: 302, headers: { location: '/login/?auth=error' } });
+  }
+};
+
+export default createVerifyMagicLinkHandler();
+
+export const config = {
+  path: '/api/auth/verify',
+};

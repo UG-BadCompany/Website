@@ -1,12 +1,15 @@
-// netlify/functions/logout.mjs
-export const handler = async () => ({
-  statusCode: 200,
-  headers: {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store',
-    'set-cookie': 'ta_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
-  },
-  body: JSON.stringify({ ok: true }),
-});
+import { createExpiredSessionCookie, json } from './auth-utils.mjs';
 
-export default handler;
+export default async (request) => {
+  if (request.method !== 'POST' && request.method !== 'GET') {
+    return json(405, { ok: false, message: 'Method not allowed.' });
+  }
+
+  return json(200, { ok: true, message: 'Signed out.' }, {
+    'set-cookie': createExpiredSessionCookie(request),
+  });
+};
+
+export const config = {
+  path: '/api/auth/logout',
+};

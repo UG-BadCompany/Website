@@ -6,29 +6,6 @@
   NODE_VERSION = "20"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
-[functions]
-  node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/api/job-requests"
-  to = "/.netlify/functions/job-requests"
-  status = 200
-
-[[redirects]]
-  from = "/api/ai-quote-draft"
-  to = "/.netlify/functions/ai-quote-draft"
-  status = 200
-
-[[redirects]]
-  from = "/api/ai-quote-drafts"
-  to = "/.netlify/functions/ai-quote-drafts"
-  status = 200
-
-[[redirects]]
-  from = "/api/me"
-  to = "/.netlify/functions/me"
-  status = 200
-
 [[headers]]
   for = "/*"
   [headers.values]
@@ -41,7 +18,46 @@
   [headers.values]
     Cache-Control = "no-store, max-age=0"
 
-[[headers]]
-  for = "/admin/*"
-  [headers.values]
-    Cache-Control = "no-store, max-age=0"
+
+# API routes required for the static build.
+# These keep the existing magic-link auth functions working on Netlify.
+[[redirects]]
+  from = "/api/auth/magic-link"
+  to = "/.netlify/functions/request-magic-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/verify"
+  to = "/.netlify/functions/verify-magic-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/me"
+  to = "/.netlify/functions/me"
+  status = 200
+
+[[redirects]]
+  from = "/api/public-config"
+  to = "/.netlify/functions/public-config"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/logout"
+  to = "/.netlify/functions/logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/job-requests"
+  to = "/.netlify/functions/job-requests"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin-quote-draft"
+  to = "/.netlify/functions/admin-quote-draft"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin-quotes"
+  to = "/.netlify/functions/admin-quotes"
+  status = 200
+
