@@ -7,20 +7,6 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const COST_CATALOG = [
-  { key: 'drywall', label: 'Drywall panel (4x8)', unitCostCents: 1800 },
-  { key: 'paint', label: 'Interior paint (gallon)', unitCostCents: 4200 },
-  { key: 'primer', label: 'Primer (gallon)', unitCostCents: 3000 },
-  { key: 'ceiling fan', label: 'Ceiling fan', unitCostCents: 12900 },
-  { key: 'outlet', label: 'Electrical outlet', unitCostCents: 600 },
-  { key: 'switch', label: 'Switch', unitCostCents: 500 },
-  { key: 'pvc', label: 'PVC fitting/pipe set', unitCostCents: 2400 },
-  { key: 'valve', label: 'Shutoff valve', unitCostCents: 1700 },
-  { key: 'caulk', label: 'Sealant/caulk tube', unitCostCents: 700 },
-  { key: 'lumber', label: 'Framing lumber bundle', unitCostCents: 5500 },
-  { key: 'hinge', label: 'Door hinge set', unitCostCents: 1200 },
-  { key: 'screw', label: 'Fastener pack', unitCostCents: 900 },
-];
 const JOB_PLAYBOOKS = [
   {
     key: 'mini split installation',
@@ -247,6 +233,62 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
     return [];
   }
 };
+const normalizeKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+const confidenceFromEvidence = (evidence = []) => {
+  const count = Array.isArray(evidence) ? evidence.length : 0;
+  if (count >= 4) return 0.9;
+  if (count === 3) return 0.82;
+  if (count === 2) return 0.72;
+  if (count === 1) return 0.58;
+  return 0.25;
+};
+const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
+  for (const part of materials) {
+    const evidence = Array.isArray(part.livePriceEvidence) ? part.livePriceEvidence : [];
+    if (!evidence.length) continue;
+    const itemKey = normalizeKey(part.name || 'unknown_item');
+    const confidence = confidenceFromEvidence(evidence);
+    const candidateUnitCostCents = Number(part.estimatedUnitCostCents || 0);
+
+    for (const price of evidence) {
+      await db.sql`
+        insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at)
+        values (
+          ${itemKey},
+          ${clean(price.source, 160) || 'web'},
+          ${Number(price.cents || 0)},
+          ${clean(price.link || '', 600) || null},
+          now()
+        )
+      `;
+    }
+
+    await db.sql`
+      insert into quote_research_queue (
+        job_request_id,
+        city,
+        source_text,
+        candidate_name,
+        candidate_unit_cost_cents,
+        evidence,
+        status,
+        confidence_score,
+        normalized_key
+      )
+      values (
+        ${jobRequest.id},
+        ${clean(jobRequest.city, 120) || null},
+        ${clean(descriptionText, 2000) || 'AI quote draft evidence'},
+        ${clean(part.name, 180) || 'Unknown part'},
+        ${candidateUnitCostCents || null},
+        ${JSON.stringify(evidence)}::jsonb,
+        ${'new'},
+        ${confidence},
+        ${itemKey}
+      )
+    `;
+  }
+};
 const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, inventory, location }) => {
   const keywords = extractProjectDetailKeywords(projectDetails);
   const candidates = [];
@@ -301,10 +343,74 @@ const loadRoleKeys = async (db, userId) => {
   return roles.map((role) => role.key);
 };
 
-const chooseCatalogMatches = (descriptionText) => {
+const chooseDbCatalogMatches = async (db, descriptionText) => {
   const text = slug(descriptionText);
-  return COST_CATALOG.filter((item) => text.includes(item.key)).slice(0, 6);
+  const rows = asRows(await db.sql`
+    select item_name, item_key, default_unit_cost_cents, default_quantity, aliases
+    from quote_catalog_items
+    where is_active = true
+    order by updated_at desc
+    limit 250
+  `);
+  return rows
+    .filter((item) => {
+      const keys = [item.item_key, item.item_name, ...(String(item.aliases || '').split(',').map((part) => part.trim()).filter(Boolean))]
+        .map((part) => slug(part));
+      return keys.some((part) => part && text.includes(part));
+    })
+    .slice(0, 8)
+    .map((item) => ({
+      label: item.item_name,
+      unitCostCents: Number(item.default_unit_cost_cents || 0),
+      quantity: Math.max(1, Number(item.default_quantity || 1)),
+      key: item.item_key,
+    }))
+    .filter((item) => item.unitCostCents > 0);
 };
+const buildInternetFallbackMaterials = async ({ descriptionText, inventory, location }) => {
+  const queryBase = clean(descriptionText, 220) || 'general home repair';
+  const searchSeeds = [
+    `${queryBase} required materials list`,
+    `${queryBase} install kit`,
+    `${queryBase} parts`,
+  ];
+  const candidates = [];
+  for (const seed of searchSeeds) {
+    const livePrices = await fetchSerpApiPrices({ partLabel: seed, location });
+    livePrices.forEach((item) => {
+      const name = clean(item.title, 120) || seed;
+      if (!name) return;
+      const firstToken = slug(name).split(' ')[0] || '';
+      const inventoryMatch = inventory.find((stock) => firstToken && slug(stock.name).includes(firstToken));
+      const neededQty = 1;
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      candidates.push({
+        name,
+        estimatedUnitCostCents: item.cents,
+        neededQty,
+        inStockQty: inStock,
+        buyQty,
+        estimatedBuyCostCents: buyQty * item.cents,
+        source: 'internet_search',
+        livePriceEvidence: [item],
+        pricingSource: 'live_web',
+      });
+    });
+    if (candidates.length >= 6) break;
+  }
+  const unique = [];
+  const seen = new Set();
+  for (const part of candidates) {
+    const key = slug(part.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(part);
+    if (unique.length >= 6) break;
+  }
+  return unique;
+};
+
 const choosePlaybook = (descriptionText) => {
   const text = slug(descriptionText);
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
@@ -393,10 +499,10 @@ export default async (request) => {
         source: 'playbook',
       };
     });
-    const candidates = chooseCatalogMatches(descriptionText);
-    const materialsFromCatalog = candidates.map((candidate) => {
+    const dbCatalogCandidates = await chooseDbCatalogMatches(db, descriptionText);
+    const materialsFromCatalog = dbCatalogCandidates.map((candidate) => {
       const inventoryMatch = inventory.find((item) => slug(item.name).includes(candidate.key));
-      const neededQty = 1;
+      const neededQty = Number(candidate.quantity || 1);
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
       const toBuy = Math.max(0, neededQty - inStock);
       const buyCostCents = toBuy * candidate.unitCostCents;
@@ -414,7 +520,12 @@ export default async (request) => {
     const aiGeneralMaterials = !materialsFromPlaybook.length
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
+    const internetFallbackMaterials = (!materialsFromPlaybook.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
+      ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
+      : [];
+    const baseMaterials = materialsFromPlaybook.length
+      ? materialsFromPlaybook
+      : (aiGeneralMaterials.length ? aiGeneralMaterials : (materialsFromCatalog.length ? materialsFromCatalog : internetFallbackMaterials));
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -431,6 +542,7 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
+    await persistLivePriceEvidence({ db, jobRequest, materials, descriptionText });
 
     const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
