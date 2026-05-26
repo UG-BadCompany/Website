@@ -210,11 +210,14 @@ const ALLOWED_PRICE_SOURCES = [
 const SERP_TIMEOUT_MS = 3500;
 const MAX_WEB_PRICE_LOOKUPS = 8;
 let webLookupCount = 0;
+let webLookupCache = new Map();
 const isAllowedPriceSource = (source = '', title = '') => {
   const haystack = `${source} ${title}`.toLowerCase();
   return ALLOWED_PRICE_SOURCES.some((vendor) => haystack.includes(vendor));
 };
 const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
+  const cacheKey = `${slug(partLabel)}|${slug(location)}`;
+  if (webLookupCache.has(cacheKey)) return webLookupCache.get(cacheKey);
   if (webLookupCount >= MAX_WEB_PRICE_LOOKUPS) return [];
   const key = process.env.SERPAPI_API_KEY;
   if (!key) return [];
@@ -229,7 +232,7 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
     if (!response.ok) return [];
     const data = await response.json().catch(() => ({}));
     const items = Array.isArray(data.shopping_results) ? data.shopping_results : [];
-    return items
+    const priced = items
       .map((item) => ({
         title: item.title || partLabel,
         source: item.source || item.store || 'web',
@@ -239,8 +242,11 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
       .filter((item) => isAllowedPriceSource(item.source, item.title))
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
       .slice(0, 5);
+    webLookupCache.set(cacheKey, priced);
+    return priced;
   } catch (error) {
     console.warn('SerpApi lookup failed, falling back to local pricing.', { partLabel, message: error?.message || String(error) });
+    webLookupCache.set(cacheKey, []);
     return [];
   }
 };
@@ -458,6 +464,7 @@ export default async (request) => {
 
   try {
     webLookupCount = 0;
+    webLookupCache = new Map();
     const db = await loadDatabase();
     const session = await loadSession(db, sessionToken);
     if (!session) return json(401, { ok: false, authenticated: false, message: 'Session expired.' });
@@ -638,6 +645,11 @@ export default async (request) => {
         laborRateCents,
         materials: pricedMaterials,
         adminSourcingNotes: sourcingLines.join('\n'),
+        meta: {
+          webLookupsUsed: webLookupCount,
+          cachedLookups: webLookupCache.size,
+          evidencePartsCaptured: pricedMaterials.filter((part) => Array.isArray(part.livePriceEvidence) && part.livePriceEvidence.length).length,
+        },
       },
     });
   } catch (error) {
