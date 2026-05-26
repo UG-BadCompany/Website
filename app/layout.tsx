@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   },
   description: "More than a handyman. Arizona-native contracting, repairs, maintenance, installations, improvements, and property support.",
   keywords: ["T&A Contracting", "Arizona contractor", "Phoenix home repairs", "property maintenance Arizona", "handyman alternative"],
+  icons: {
+    icon: "https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico",
+  },
   openGraph: {
     title: "T&A Contracting | Maintenance. Anything. Everything.",
     description: "Arizona-native maintenance, repairs, and improvements done right.",
