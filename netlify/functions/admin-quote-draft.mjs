@@ -233,6 +233,62 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
     return [];
   }
 };
+const normalizeKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+const confidenceFromEvidence = (evidence = []) => {
+  const count = Array.isArray(evidence) ? evidence.length : 0;
+  if (count >= 4) return 0.9;
+  if (count === 3) return 0.82;
+  if (count === 2) return 0.72;
+  if (count === 1) return 0.58;
+  return 0.25;
+};
+const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
+  for (const part of materials) {
+    const evidence = Array.isArray(part.livePriceEvidence) ? part.livePriceEvidence : [];
+    if (!evidence.length) continue;
+    const itemKey = normalizeKey(part.name || 'unknown_item');
+    const confidence = confidenceFromEvidence(evidence);
+    const candidateUnitCostCents = Number(part.estimatedUnitCostCents || 0);
+
+    for (const price of evidence) {
+      await db.sql`
+        insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at)
+        values (
+          ${itemKey},
+          ${clean(price.source, 160) || 'web'},
+          ${Number(price.cents || 0)},
+          ${clean(price.link || '', 600) || null},
+          now()
+        )
+      `;
+    }
+
+    await db.sql`
+      insert into quote_research_queue (
+        job_request_id,
+        city,
+        source_text,
+        candidate_name,
+        candidate_unit_cost_cents,
+        evidence,
+        status,
+        confidence_score,
+        normalized_key
+      )
+      values (
+        ${jobRequest.id},
+        ${clean(jobRequest.city, 120) || null},
+        ${clean(descriptionText, 2000) || 'AI quote draft evidence'},
+        ${clean(part.name, 180) || 'Unknown part'},
+        ${candidateUnitCostCents || null},
+        ${JSON.stringify(evidence)}::jsonb,
+        ${'new'},
+        ${confidence},
+        ${itemKey}
+      )
+    `;
+  }
+};
 const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, inventory, location }) => {
   const keywords = extractProjectDetailKeywords(projectDetails);
   const candidates = [];
@@ -486,6 +542,7 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
+    await persistLivePriceEvidence({ db, jobRequest, materials, descriptionText });
 
     const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
