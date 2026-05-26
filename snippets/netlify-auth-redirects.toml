@@ -1,0 +1,17 @@
+# Add this to netlify.toml
+# This fixes: /api/auth/magic-link 404
+
+[[redirects]]
+  from = "/api/auth/magic-link"
+  to = "/.netlify/functions/auth-magic-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/me"
+  to = "/.netlify/functions/me"
+  status = 200
+
+[[redirects]]
+  from = "/api/logout"
+  to = "/.netlify/functions/logout"
+  status = 200

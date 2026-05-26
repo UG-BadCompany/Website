@@ -1,11 +1,6 @@
 // netlify/functions/auth-magic-link.mjs
-// REAL magic-link email sender. No dev login links.
-// Required for production:
-// - @netlify/blobs dependency
-// - RESEND_API_KEY
-// - MAGIC_LINK_FROM, example: "T&A Contracting <noreply@ta-contracting.org>"
-// Optional:
-// - RECAPTCHA_SECRET_KEY
+// Handles POST /api/auth/magic-link through netlify.toml redirect.
+// Real production magic-link sender. No dev login link.
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -37,26 +32,6 @@ function originFromEvent(event) {
   return String(host).startsWith('http') ? host : `${proto}://${host}`;
 }
 
-async function verifyRecaptcha(token) {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-  if (!secret) return { ok: true, skipped: true };
-  if (!token) return { ok: false, message: 'reCAPTCHA verification missing.' };
-
-  const params = new URLSearchParams();
-  params.set('secret', secret);
-  params.set('response', token);
-
-  const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  });
-
-  const result = await response.json().catch(() => ({}));
-  if (!result.success) return { ok: false, message: 'reCAPTCHA verification failed.' };
-  return { ok: true, score: result.score };
-}
-
 async function sendResendEmail({ to, link }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAGIC_LINK_FROM;
@@ -84,8 +59,7 @@ async function sendResendEmail({ to, link }) {
           <h2>Sign in to T&A Contracting</h2>
           <p>Use this secure one-time link to access your portal:</p>
           <p><a href="${link}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#f97316;color:#fff;text-decoration:none;font-weight:700">Open Client Portal</a></p>
-          <p>This link expires in 20 minutes. If you did not request it, you can ignore this email.</p>
-          <p style="color:#6b7280;font-size:13px">Link: ${link}</p>
+          <p>This link expires in 20 minutes. If you did not request it, ignore this email.</p>
         </div>
       `,
     }),
@@ -114,7 +88,7 @@ export const handler = async (event) => {
     return json(400, { ok: false, message: 'Invalid request body.' });
   }
 
-  if (clean(body.botField, 200)) {
+  if (clean(body.botField || body['bot-field'], 200)) {
     return json(200, { ok: true, message: 'Request accepted.' });
   }
 
@@ -124,11 +98,6 @@ export const handler = async (event) => {
 
   if (!emailOk(email)) {
     return json(400, { ok: false, message: 'Enter a valid email address.' });
-  }
-
-  const recaptcha = await verifyRecaptcha(clean(body.recaptchaToken, 3000));
-  if (!recaptcha.ok) {
-    return json(400, { ok: false, message: recaptcha.message });
   }
 
   const store = await getStore();
