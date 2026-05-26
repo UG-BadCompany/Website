@@ -2137,6 +2137,28 @@
         document.querySelector('[data-client-request-edit-service]')?.focus();
       };
 
+      const deleteClientRequest = async (requestId) => {
+        const editStatus = document.querySelector('[data-client-request-edit-status]');
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const confirmation = window.prompt('This permanently deletes your open request. Type DELETE to continue.');
+        if (confirmation !== 'DELETE') {
+          if (editStatus) editStatus.textContent = 'Delete cancelled.';
+          return;
+        }
+        if (editStatus) editStatus.textContent = 'Deleting request…';
+        const response = await fetch('/api/client/job-requests', {
+          method: 'DELETE',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ jobRequestId: requestId, confirmation }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
+        closeClientRequestModal();
+        if (panelStatus) panelStatus.textContent = 'Request permanently deleted.';
+        await loadClientRequests();
+        await loadClientQuotes();
+      };
+
       const saveClientRequestUpdate = async (form) => {
         const editStatus = document.querySelector('[data-client-request-edit-status]');
         const payload = Object.fromEntries(new FormData(form).entries());
@@ -2188,6 +2210,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const editStatus = document.querySelector('[data-client-request-edit-status]');
           try {
             await saveClientRequestUpdate(form);
+          } catch (error) {
+            if (editStatus) editStatus.textContent = error.message;
+          }
+        });
+        modal?.querySelector('[data-client-request-delete]')?.addEventListener('click', async () => {
+          const editStatus = document.querySelector('[data-client-request-edit-status]');
+          try {
+            await deleteClientRequest(document.querySelector('[data-client-request-edit-id]').value);
           } catch (error) {
             if (editStatus) editStatus.textContent = error.message;
           }
