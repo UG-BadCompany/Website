@@ -821,10 +821,17 @@ export default async (request) => {
         baseMaterials.push(...aiRecoveryMaterials);
         strictRecoveryUsed = true;
       } else {
-        return json(503, {
-          ok: false,
-          message: 'OpenAI strict mode is enabled and no AI materials were generated. Try adding more project details or set OPENAI_STRICT_ONLY=false temporarily.',
+        const emergencyLine = clean(jobRequest.work_category || jobRequest.service_type || 'Service materials', 120) || 'Service materials';
+        baseMaterials.push({
+          name: `${emergencyLine} - material allowance`,
+          estimatedUnitCostCents: 0,
+          neededQty: 1,
+          inStockQty: 0,
+          buyQty: 1,
+          estimatedBuyCostCents: 0,
+          source: 'openai_emergency_allowance',
         });
+        strictRecoveryUsed = true;
       }
     }
     const materials = [];
@@ -980,6 +987,7 @@ export default async (request) => {
           aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
           openAiStrictOnly: OPENAI_STRICT_ONLY,
           strictRecoveryUsed,
+          strictEmergencyAllowanceUsed: baseMaterials.some((m) => m.source === 'openai_emergency_allowance'),
         },
       },
     });
