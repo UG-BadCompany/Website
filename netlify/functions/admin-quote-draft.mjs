@@ -280,7 +280,10 @@ const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory
         { role: 'user', content: JSON.stringify({
           task: 'Generate a practical materials list for this job. Prefer premium/pro-grade products. Include package-level equipment where applicable.',
           request: {
+            workScope: clean(jobRequest.work_scope, 120),
+            typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
             serviceType: clean(jobRequest.service_type, 160),
+            projectDetails: clean(jobRequest.description, 2400),
             description: clean(descriptionText, 2400),
             city: clean(jobRequest.city, 120),
           },
@@ -340,7 +343,10 @@ const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, ma
         { role: 'user', content: JSON.stringify({
           task: 'Improve quote draft with realistic parts and calibrated labor using historical examples.',
           request: {
+            workScope: clean(jobRequest.work_scope, 120),
+            typeOfWork: clean(jobRequest.work_category || jobRequest.service_type, 160),
             serviceType: clean(jobRequest.service_type, 160),
+            projectDetails: clean(jobRequest.description, 2400),
             description: clean(descriptionText, 2400),
             city: clean(jobRequest.city, 120),
           },
@@ -661,7 +667,7 @@ export default async (request) => {
     if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
 
     let [jobRequest] = asRows(await db.sql`
-      select id, service_type, description, city, created_at
+      select id, service_type, work_scope, work_category, description, city, created_at
       from job_requests
       where id = ${jobRequestId}
       limit 1
@@ -669,8 +675,10 @@ export default async (request) => {
     if (!jobRequest && requestContext?.description) {
       jobRequest = {
         id: jobRequestId,
-        service_type: clean(requestContext.serviceType, 160) || 'Service request',
-        description: clean(requestContext.description, 4000) || '',
+        service_type: clean(requestContext.serviceType || requestContext.typeOfWork, 160) || 'Service request',
+        work_scope: clean(requestContext.workScope, 120) || '',
+        work_category: clean(requestContext.typeOfWork || requestContext.serviceType, 120) || '',
+        description: clean(requestContext.description || requestContext.projectDetails, 4000) || '',
         city: clean(requestContext.city, 120) || 'Phoenix',
         created_at: requestContext.createdAt || new Date().toISOString(),
       };
@@ -690,7 +698,7 @@ export default async (request) => {
       inventory = [];
     }
 
-    const descriptionText = `${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
+    const descriptionText = `${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
     const playbook = choosePlaybook(descriptionText);
     const electricalFeet = extractElectricalFootage(descriptionText);
     const materialsFromPlaybook = (playbook?.materials || []).map((part) => {
@@ -919,7 +927,7 @@ export default async (request) => {
   } catch (error) {
     console.error('Failed to generate AI quote draft', error);
     const fallbackTitle = clean(requestContext?.serviceType, 160) || 'Service request quote draft';
-    const fallbackDescription = clean(requestContext?.description, 4000) || 'Review project details and confirm exact scope.';
+    const fallbackDescription = clean(requestContext?.projectDetails || requestContext?.description, 4000) || 'Review project details and confirm exact scope.';
     const fallbackSummary = [
       `AI draft fallback for ${fallbackTitle}.`,
       '',
