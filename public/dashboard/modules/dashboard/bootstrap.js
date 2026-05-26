@@ -2137,6 +2137,28 @@
         document.querySelector('[data-client-request-edit-service]')?.focus();
       };
 
+      const deleteClientRequest = async (requestId) => {
+        const editStatus = document.querySelector('[data-client-request-edit-status]');
+        const panelStatus = document.querySelector('[data-client-requests-status]');
+        const confirmation = window.prompt('This permanently deletes your open request. Type DELETE to continue.');
+        if (confirmation !== 'DELETE') {
+          if (editStatus) editStatus.textContent = 'Delete cancelled.';
+          return;
+        }
+        if (editStatus) editStatus.textContent = 'Deleting request…';
+        const response = await fetch('/api/client/job-requests', {
+          method: 'DELETE',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({ jobRequestId: requestId, confirmation }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'We could not delete that request.');
+        closeClientRequestModal();
+        if (panelStatus) panelStatus.textContent = 'Request permanently deleted.';
+        await loadClientRequests();
+        await loadClientQuotes();
+      };
+
       const saveClientRequestUpdate = async (form) => {
         const editStatus = document.querySelector('[data-client-request-edit-status]');
         const payload = Object.fromEntries(new FormData(form).entries());
@@ -2188,6 +2210,14 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const editStatus = document.querySelector('[data-client-request-edit-status]');
           try {
             await saveClientRequestUpdate(form);
+          } catch (error) {
+            if (editStatus) editStatus.textContent = error.message;
+          }
+        });
+        modal?.querySelector('[data-client-request-delete]')?.addEventListener('click', async () => {
+          const editStatus = document.querySelector('[data-client-request-edit-status]');
+          try {
+            await deleteClientRequest(document.querySelector('[data-client-request-edit-id]').value);
           } catch (error) {
             if (editStatus) editStatus.textContent = error.message;
           }
@@ -2327,6 +2357,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteId = document.querySelector('[data-admin-quote-id]');
         const quoteAmount = document.querySelector('[data-admin-quote-form] [name="amount"]');
         const quoteSummary = document.querySelector('[data-admin-quote-form] [name="summary"]');
+        const quoteSourcingNotes = document.querySelector('[data-admin-quote-sourcing-notes]');
+        const quoteSourcingLinks = document.querySelector('[data-admin-quote-sourcing-links]');
         const quoteSend = document.querySelector('[data-admin-quote-form] [name="sendToClient"]');
         const quoteFormTitle = document.querySelector('[data-admin-quote-form-title]');
         const quoteSubmit = document.querySelector('[data-admin-quote-submit]');
@@ -2365,6 +2397,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteTitle) quoteTitle.value = savedQuote?.title || `${request.serviceType || 'Service'} quote`;
         if (quoteAmount) quoteAmount.value = savedQuote ? String((savedQuote.amountCents || 0) / 100) : '';
         if (quoteSummary) quoteSummary.value = savedQuote?.summary || '';
+        if (quoteSourcingNotes) quoteSourcingNotes.value = '';
+        if (quoteSourcingLinks) quoteSourcingLinks.innerHTML = '';
         if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
         if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
         if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
@@ -2616,9 +2650,17 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (!result?.draft) throw new Error(finalError || 'Could not generate draft.');
               const titleField = quoteForm.querySelector('[name="title"]');
               const summaryField = quoteForm.querySelector('[name="summary"]');
+              const sourcingField = quoteForm.querySelector('[data-admin-quote-sourcing-notes]');
               const amountField = quoteForm.querySelector('[name="amount"]');
               if (titleField) titleField.value = result.draft.title || '';
               if (summaryField) summaryField.value = result.draft.summary || '';
+              if (sourcingField) sourcingField.value = result.draft.adminSourcingNotes || '';
+              if (quoteSourcingLinks) {
+                const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
+                quoteSourcingLinks.innerHTML = links.length
+                  ? links.slice(0, 10).map((item) => `<a class="btn btn-soft" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener">${escapeHtml(item.label || 'Click link')}</a>`).join('')
+                  : '<span class="session-status">No quick links available.</span>';
+              }
               if (amountField) amountField.value = ((Number(result.draft.amountCents || 0)) / 100).toFixed(2);
               if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
               if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
