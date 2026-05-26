@@ -241,6 +241,7 @@ const SERP_TIMEOUT_MS = 3500;
 const MAX_WEB_PRICE_LOOKUPS = 8;
 
 const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
+const OPENAI_TIMEOUT_MS = 4500;
 
 const fetchLearningExamples = async (db, jobRequest, limit = 8) => {
   try {
@@ -298,17 +299,26 @@ const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, ma
       text: { format: { type: 'json_object' } },
       max_output_tokens: 700,
     };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
     if (!response.ok) return null;
     const data = await response.json();
-    const raw = clean(data?.output_text || '', 20000);
+    const rawText = clean(data?.output_text || '', 20000);
+    const altText = clean((Array.isArray(data?.output) ? data.output.map((o) => o?.content?.map?.((c) => c?.text || '').join(' ') || '').join(' ') : ''), 20000);
+    const raw = rawText || altText;
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const confidence = Number(parsed.confidence);
+    if (Number.isFinite(confidence) && confidence < 0.35) return null;
+    return parsed;
   } catch {
     return null;
   }
@@ -830,6 +840,7 @@ export default async (request) => {
           evidencePartsCaptured: pricedMaterials.filter((part) => Array.isArray(part.livePriceEvidence) && part.livePriceEvidence.length).length,
           learningExamplesUsed: learningExamples.length,
           aiLearningApplied: Boolean(aiAdjustments),
+          aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
         },
       },
     });
