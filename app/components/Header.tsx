@@ -12,7 +12,7 @@ export function Header() {
   return (
     <header className="site-header">
       <Link className="brand" href="/" aria-label="T&A Contracting home">
-        <span className="brand-badge">T&A</span>
+        <img className="brand-logo" src="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/logo3.png" alt="T&A Contracting logo" />
         <span>
           <strong>T&A Contracting</strong>
           <small>Maintenance. Anything. Everything.</small>
