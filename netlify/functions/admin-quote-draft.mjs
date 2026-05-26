@@ -245,25 +245,22 @@ const confidenceFromEvidence = (evidence = []) => {
   if (count === 1) return 0.58;
   return 0.25;
 };
-const withExtraPartsBuffer = (part, { requestText = '' } = {}) => {
+const withPartsSurcharge = (part, { requestText = '' } = {}) => {
   const text = slug(requestText);
   const installHeavy = /\b(new|install|installation|replace|replacement|upgrade)\b/.test(text);
   const smallPart = /\b(fitting|union|coupling|elbow|strap|clamp|screw|anchor|nut|bolt|wire nut|connector|tape|sealant|caulk|fastener)\b/i.test(part.name || '');
-  const baseQty = Number(part.neededQty || 0);
-  if (!Number.isFinite(baseQty) || baseQty <= 0) return part;
-  const bufferRate = smallPart ? 0.35 : (installHeavy ? 0.2 : 0.12);
-  const extraQty = Math.max(1, Math.ceil(baseQty * bufferRate));
-  const bufferedQty = baseQty + extraQty;
-  const inStock = Number(part.inStockQty || 0);
-  const buyQty = Math.max(0, bufferedQty - inStock);
-  const unitCost = Number(part.estimatedUnitCostCents || 0);
+  const baseCost = Number(part.estimatedBuyCostCents || 0);
+  if (!Number.isFinite(baseCost) || baseCost <= 0) return part;
+  // Standard contractor-style parts markup to cover incidentals, logistics, and margin.
+  const surchargeRate = smallPart ? 0.32 : (installHeavy ? 0.27 : 0.22);
+  const surchargeCents = Math.round(baseCost * surchargeRate);
+  const sellCostCents = baseCost + surchargeCents;
   return {
     ...part,
-    neededQty: bufferedQty,
-    extraQty,
-    buyQty,
-    estimatedBuyCostCents: buyQty * unitCost,
-    bufferStrategy: smallPart ? 'small-parts-overage' : (installHeavy ? 'install-overage' : 'standard-overage'),
+    partsBaseCostCents: baseCost,
+    partsSurchargeRate: surchargeRate,
+    partsSurchargeCents: surchargeCents,
+    estimatedBuyCostCents: sellCostCents,
   };
 };
 const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
@@ -566,10 +563,10 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
-    const bufferedMaterials = materials.map((part) => withExtraPartsBuffer(part, { requestText: descriptionText }));
-    await persistLivePriceEvidence({ db, jobRequest, materials: bufferedMaterials, descriptionText });
+    const pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
+    await persistLivePriceEvidence({ db, jobRequest, materials: pricedMaterials, descriptionText });
 
-    const materialSubtotal = bufferedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
+    const materialSubtotal = pricedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
@@ -580,7 +577,7 @@ export default async (request) => {
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
 
     const sourcingLines = [];
-    bufferedMaterials.forEach((m) => {
+    pricedMaterials.forEach((m) => {
       const links = (m.livePriceEvidence || [])
         .map((e) => clean(e.link || '', 500))
         .filter(Boolean)
@@ -601,10 +598,13 @@ export default async (request) => {
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
-      ...(bufferedMaterials.length
-        ? bufferedMaterials.map((m) => {
-          const extraText = Number(m.extraQty || 0) > 0 ? ` | extra parts buffer: +${m.extraQty}` : '';
-          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${extraText}`;
+      ...(pricedMaterials.length
+        ? pricedMaterials.map((m) => {
+          const surchargePct = Math.round(Number(m.partsSurchargeRate || 0) * 100);
+          const surchargeText = Number(m.partsSurchargeCents || 0) > 0
+            ? ` | base ${toMoney(m.partsBaseCostCents || 0)} + ${surchargePct}% (${toMoney(m.partsSurchargeCents || 0)})`
+            : '';
+          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${surchargeText}`;
         })
         : ['- No direct material match found. Manual material review required.']),
       '',
@@ -623,7 +623,7 @@ export default async (request) => {
         amountCents: totalCents,
         laborHours,
         laborRateCents,
-        materials: bufferedMaterials,
+        materials: pricedMaterials,
         adminSourcingNotes: sourcingLines.join('\n'),
       },
     });
