@@ -195,6 +195,26 @@ const parseUsdToCents = (value = '') => {
   if (!match) return null;
   return Math.round(Number(match[1]) * 100);
 };
+const normalizeProductLink = (value = '') => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    const blocked = ['google.com/imgres', 'gstatic.com', 'encrypted-tbn0.gstatic.com'];
+    if (blocked.some((token) => url.href.includes(token))) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+};
+const domainFromUrl = (value = '') => {
+  try {
+    return new URL(value).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+};
 const ALLOWED_PRICE_SOURCES = [
   'grainger',
   'ferguson',
@@ -237,10 +257,11 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
         title: item.title || partLabel,
         source: item.source || item.store || 'web',
         cents: parseUsdToCents(item.price || item.extracted_price),
-        link: item.link || item.product_link || item.thumbnail || '',
+        link: normalizeProductLink(item.product_link || item.link || ''),
       }))
       .filter((item) => isAllowedPriceSource(item.source, item.title))
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
+      .filter((item) => Boolean(item.link))
       .slice(0, 5);
     webLookupCache.set(cacheKey, priced);
     return priced;
@@ -609,10 +630,20 @@ export default async (request) => {
       '',
     ];
     pricedMaterials.forEach((m, materialIndex) => {
-      const links = (m.livePriceEvidence || [])
-        .map((e) => clean(e.link || '', 500))
-        .filter(Boolean)
-        .slice(0, 3);
+      const links = [];
+      const seenLinks = new Set();
+      (m.livePriceEvidence || []).forEach((e) => {
+        const url = clean(e.link || '', 500);
+        if (!url || seenLinks.has(url) || links.length >= 3) return;
+        seenLinks.add(url);
+        links.push({
+          url,
+          source: clean(e.source || '', 80) || domainFromUrl(url) || 'supplier',
+          price: Number.isFinite(Number(e.cents)) ? toMoney(Number(e.cents)) : 'n/a',
+          domain: domainFromUrl(url),
+          title: clean(e.title || '', 120) || m.name,
+        });
+      });
       const sources = (m.livePriceEvidence || [])
         .map((e) => clean(e.source || '', 80))
         .filter(Boolean)
@@ -625,7 +656,11 @@ export default async (request) => {
       sourcingLines.push(`   Source type: ${m.pricingSource || 'n/a'}`);
       if (sources.length) sourcingLines.push(`   Supplier shortlist: ${sources.join(' | ')}`);
       if (links.length) {
-        links.forEach((link, idx) => sourcingLines.push(`   Link ${idx + 1}: ${link}`));
+        links.forEach((link, idx) => {
+          sourcingLines.push(`   Option ${idx + 1}: ${link.source}${link.domain ? ` (${link.domain})` : ''} | ${link.price}`);
+          sourcingLines.push(`   Product: ${link.title}`);
+          sourcingLines.push(`   URL: ${link.url}`);
+        });
       } else {
         sourcingLines.push('   Link: not available (manual lookup recommended)');
       }
