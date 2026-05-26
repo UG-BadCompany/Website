@@ -6,7 +6,6 @@ import {
   minutesFromNow,
   sendMagicLinkEmail,
 } from './auth-utils.mjs';
-import { verifyRecaptchaToken } from './recaptcha-utils.mjs';
 
 const REQUIRED_FIELDS = ['name', 'phone', 'email', 'city', 'streetAddress', 'service', 'description'];
 const MAX_FIELD_LENGTHS = {
@@ -17,10 +16,7 @@ const MAX_FIELD_LENGTHS = {
   streetAddress: 240,
   service: 120,
   timeframe: 80,
-  workScope: 120,
-  workCategory: 120,
   description: 4000,
-  recaptchaToken: 4000,
 };
 
 const json = (status, body) => Response.json(body, {
@@ -106,11 +102,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
     return json(200, { ok: true, message: 'Request received.' });
   }
 
-  const recaptchaCheck = await verifyRecaptchaToken({ token: payload.recaptchaToken, request, action: 'request_work' });
-  if (!recaptchaCheck.ok) {
-    return json(403, { ok: false, message: `reCAPTCHA verification failed. Please try again. (${recaptchaCheck.reason})` });
-  }
-
   const validationError = validatePayload(payload);
 
   if (validationError) {
@@ -151,8 +142,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         street_address,
         service_type,
         preferred_timeframe,
-        work_scope,
-        work_category,
         description
       ) values (
         ${client.id},
@@ -164,8 +153,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         ${payload.streetAddress},
         ${payload.service},
         ${payload.timeframe || null},
-        ${payload.workScope || null},
-        ${payload.workCategory || null},
         ${payload.description}
       )
       returning id, created_at
@@ -177,7 +164,7 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         ${'job_request.created'},
         ${'job_request'},
         ${jobRequest.id},
-        ${JSON.stringify({ source: 'public_estimate_form', clientId: client.id, propertyId: property.id, city: payload.city, streetAddress: payload.streetAddress, service: payload.service, workScope: payload.workScope || null, workCategory: payload.workCategory || null })}::jsonb
+        ${JSON.stringify({ source: 'public_estimate_form', clientId: client.id, propertyId: property.id, city: payload.city, streetAddress: payload.streetAddress, service: payload.service })}::jsonb
       )
     `;
 

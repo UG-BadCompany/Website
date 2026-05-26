@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard | T&A Contracting</title>
-  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico">
   <meta name="description" content="Modern secure dashboard for T&A Contracting clients, workers, and admins.">
   <style>
     :root { --ink:#111; --rust:#ad3f18; --rust-dark:#7d2b13; --copper:#d88734; --muted:#706760; --line:rgba(17,17,17,.1); --cream:#fff8ee; --white:#fff; --shadow:0 22px 70px rgba(45,27,13,.12); --green:#287a4b; --blue:#265e9d; }
@@ -35,61 +34,18 @@
 
     [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
-    [data-admin-activity-summary],
-    [data-admin-alerts-summary] {
+    [data-admin-activity-summary] {
       grid-template-columns: repeat(3,minmax(0,1fr));
       align-items: stretch;
     }
 
     [data-admin-pipeline-summary] .admin-request,
     [data-admin-invoice-kpi-summary] .admin-request,
-    [data-admin-activity-summary] .admin-request,
-    [data-admin-alerts-summary] .admin-stat-card {
+    [data-admin-activity-summary] .admin-request {
       text-align: center;
       min-height: 128px;
       display: grid;
       align-content: center;
-    }
-
-    [data-admin-alerts-summary] {
-      grid-template-columns: repeat(4,minmax(0,1fr));
-      gap: 10px;
-    }
-
-    [data-admin-alerts-summary] .admin-stat-card {
-      padding: 10px;
-      border: 1px solid rgba(148,163,184,.28);
-      border-radius: 18px;
-      background: linear-gradient(145deg, rgba(15,23,42,.84), rgba(30,41,59,.72));
-      box-shadow: 0 12px 28px rgba(0,0,0,.25);
-    }
-
-    [data-admin-alerts-summary] .admin-stat-title {
-      display: block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.9);
-      color: #9a3412;
-      font-size: .88rem;
-      font-weight: 900;
-      letter-spacing: .01em;
-    }
-
-    [data-admin-alerts-summary] .admin-stat-value {
-      display: block;
-      margin-top: 8px;
-      font-size: 1.55rem;
-      font-weight: 950;
-      color: #f8fafc;
-      line-height: 1.1;
-    }
-
-    [data-admin-alerts-summary] .admin-stat-caption {
-      display: block;
-      margin-top: 6px;
-      color: #dbe4ef;
-      font-size: .82rem;
-      font-weight: 800;
     }
 
 
@@ -227,17 +183,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
     [data-admin-activity-summary] { grid-template-columns: 1fr; }
-    [data-admin-alerts-summary] {
-      grid-template-columns: repeat(4,minmax(0,1fr));
-      gap: 8px;
-    }
-    [data-admin-alerts-summary] .admin-stat-card {
-      padding: 8px;
-      min-height: 108px;
-    }
-    [data-admin-alerts-summary] .admin-stat-title { font-size: .8rem; padding: 5px 8px; }
-    [data-admin-alerts-summary] .admin-stat-value { font-size: 1.2rem; margin-top: 6px; }
-    [data-admin-alerts-summary] .admin-stat-caption { font-size: .72rem; margin-top: 4px; }
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
@@ -1428,19 +1373,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
     html[data-theme="light"] .dashboard-nav-row .btn-soft,
     html[data-theme="light"] .theme-toggle,
-    [data-admin-alerts-shortcut] { position: relative; }
-    [data-admin-alerts-shortcut][data-has-unread-alert="true"]::after {
-      content: "";
-      position: absolute;
-      top: 7px;
-      right: 9px;
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #ef4444;
-      border: 1.5px solid rgba(255,255,255,.92);
-      box-shadow: 0 0 0 2px rgba(239,68,68,.22);
-    }
     html[data-theme="light"] .account-session-row [data-logout-button] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
@@ -1884,7 +1816,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
   <main class="wrap" data-dashboard-root>
     <section class="hero">
       <div class="dashboard-hero">
@@ -1899,7 +1831,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
-        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
@@ -1923,6 +1855,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
         <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
         <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
+        <button class="admin-command-card" type="button" data-admin-alerts-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Alerts</strong><span>View low stock, pending review jobs, and unpaid invoice counts.</span></button>
         <button class="admin-command-card" type="button" data-client-requests-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></button>
         <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
         <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
@@ -2154,9 +2087,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
                 </label>
                 <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
               </div>
-              
-                            <p class="request-update-note" data-admin-quote-ai-status aria-live="polite">AI draft is ready when you click “Generate AI draft”.</p>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
             </form>
             <form data-admin-assignment-form>
               <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -2184,7 +2115,26 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-admin-assignment-form-status aria-live="polite"></span></div>
               <div class="admin-assignment-list" data-admin-assignment-list></div>
             </form>
-            
+            <form data-admin-work-order-inventory-form data-admin-work-order-inventory-panel hidden>
+              <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
+              <strong>Work order inventory usage</strong>
+              <p>Record materials or tools consumed on this work order so stock levels and job history stay accurate. Use the Inventory command-center card for item setup and restocks.</p>
+              <div class="client-request-form-grid">
+                <label>Inventory item
+                  <select name="itemId" data-admin-work-order-inventory-item required>
+                    <option value="">Load inventory first</option>
+                  </select>
+                </label>
+                <label>Quantity used
+                  <input name="quantityUsed" type="number" min="0.01" step="0.01" placeholder="1" required>
+                </label>
+                <label class="full">Usage note
+                  <input name="adjustmentNote" placeholder="Used on drywall patch, installed on site, moved to truck">
+                </label>
+              </div>
+              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Record inventory usage</button><span data-admin-work-order-inventory-status aria-live="polite"></span></div>
+              <div class="admin-assignment-list" data-admin-work-order-inventory-usage></div>
+            </form>
           </div>
         </section>
       </div>
@@ -2294,9 +2244,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
     <section class="card admin-activity" data-admin-alerts data-dashboard-section data-views="admin" hidden>
       <strong>Operational alerts</strong>
-      <div class="client-request-form-actions">
-        <span data-admin-alerts-notification-status aria-live="polite"></span>
-      </div>
       <p class="session-status" data-admin-alerts-status role="status" aria-live="polite">Loading alerts…</p>
       <div class="grid" data-admin-alerts-summary aria-label="Operational alert summary cards"></div>
       <div class="admin-request-list" data-admin-alerts-list></div>
