@@ -7,20 +7,6 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const COST_CATALOG = [
-  { key: 'drywall', label: 'Drywall panel (4x8)', unitCostCents: 1800 },
-  { key: 'paint', label: 'Interior paint (gallon)', unitCostCents: 4200 },
-  { key: 'primer', label: 'Primer (gallon)', unitCostCents: 3000 },
-  { key: 'ceiling fan', label: 'Ceiling fan', unitCostCents: 12900 },
-  { key: 'outlet', label: 'Electrical outlet', unitCostCents: 600 },
-  { key: 'switch', label: 'Switch', unitCostCents: 500 },
-  { key: 'pvc', label: 'PVC fitting/pipe set', unitCostCents: 2400 },
-  { key: 'valve', label: 'Shutoff valve', unitCostCents: 1700 },
-  { key: 'caulk', label: 'Sealant/caulk tube', unitCostCents: 700 },
-  { key: 'lumber', label: 'Framing lumber bundle', unitCostCents: 5500 },
-  { key: 'hinge', label: 'Door hinge set', unitCostCents: 1200 },
-  { key: 'screw', label: 'Fastener pack', unitCostCents: 900 },
-];
 const JOB_PLAYBOOKS = [
   {
     key: 'mini split installation',
@@ -34,7 +20,10 @@ const JOB_PLAYBOOKS = [
       { label: 'Disconnect box', unitCostCents: 3900, quantity: 1, aliases: ['disconnect'] },
       { label: '2-pole breaker + panel hardware', unitCostCents: 6800, quantity: 1, aliases: ['breaker', 'panel'] },
       { label: 'Disconnect fuses (pair)', unitCostCents: 2600, quantity: 1, aliases: ['fuse', 'disconnect fuse'] },
-      { label: 'Conduit and fittings', unitCostCents: 7200, quantity: 1, aliases: ['conduit', 'fitting'] },
+      { label: 'EMT conduit sticks', unitCostCents: 5200, quantity: 2, aliases: ['conduit', 'emt'] },
+      { label: 'Conduit 90° elbows', unitCostCents: 1800, quantity: 2, aliases: ['90', 'elbow', 'conduit elbow'] },
+      { label: 'Conduit couplings/unions', unitCostCents: 1400, quantity: 3, aliases: ['union', 'coupling'] },
+      { label: 'Conduit straps/clamps', unitCostCents: 900, quantity: 1, aliases: ['strap', 'clamp'] },
       { label: 'Condensate drain materials', unitCostCents: 2500, quantity: 1, aliases: ['drain', 'condensate'] },
       { label: 'Condenser pad / wall bracket kit', unitCostCents: 6400, quantity: 1, aliases: ['mount', 'pad', 'bracket', 'condenser pad'] },
     ],
@@ -207,17 +196,16 @@ const parseUsdToCents = (value = '') => {
   return Math.round(Number(match[1]) * 100);
 };
 const ALLOWED_PRICE_SOURCES = [
+  'grainger',
+  'ferguson',
+  'supplyhouse',
+  'homedepot',
   'home depot',
   'lowes',
   "lowe's",
-  'ace hardware',
-  'amazon',
-  'tractor supply',
-  'harbor freight',
-  'grainger',
+  'platt',
+  'graybar',
   'fastenal',
-  'floor and decor',
-  'ferguson',
 ];
 const isAllowedPriceSource = (source = '', title = '') => {
   const haystack = `${source} ${title}`.toLowerCase();
@@ -238,6 +226,7 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
         title: item.title || partLabel,
         source: item.source || item.store || 'web',
         cents: parseUsdToCents(item.price || item.extracted_price),
+        link: item.link || item.product_link || item.thumbnail || '',
       }))
       .filter((item) => isAllowedPriceSource(item.source, item.title))
       .filter((item) => Number.isInteger(item.cents) && item.cents > 0)
@@ -245,6 +234,80 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
   } catch (error) {
     console.warn('SerpApi lookup failed, falling back to local pricing.', { partLabel, message: error?.message || String(error) });
     return [];
+  }
+};
+const normalizeKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+const confidenceFromEvidence = (evidence = []) => {
+  const count = Array.isArray(evidence) ? evidence.length : 0;
+  if (count >= 4) return 0.9;
+  if (count === 3) return 0.82;
+  if (count === 2) return 0.72;
+  if (count === 1) return 0.58;
+  return 0.25;
+};
+const withPartsSurcharge = (part, { requestText = '' } = {}) => {
+  const text = slug(requestText);
+  const installHeavy = /\b(new|install|installation|replace|replacement|upgrade)\b/.test(text);
+  const smallPart = /\b(fitting|union|coupling|elbow|strap|clamp|screw|anchor|nut|bolt|wire nut|connector|tape|sealant|caulk|fastener)\b/i.test(part.name || '');
+  const baseCost = Number(part.estimatedBuyCostCents || 0);
+  if (!Number.isFinite(baseCost) || baseCost <= 0) return part;
+  // Standard contractor-style parts markup to cover incidentals, logistics, and margin.
+  const surchargeRate = smallPart ? 0.32 : (installHeavy ? 0.27 : 0.22);
+  const surchargeCents = Math.round(baseCost * surchargeRate);
+  const sellCostCents = baseCost + surchargeCents;
+  return {
+    ...part,
+    partsBaseCostCents: baseCost,
+    partsSurchargeRate: surchargeRate,
+    partsSurchargeCents: surchargeCents,
+    estimatedBuyCostCents: sellCostCents,
+  };
+};
+const persistLivePriceEvidence = async ({ db, jobRequest, materials, descriptionText }) => {
+  for (const part of materials) {
+    const evidence = Array.isArray(part.livePriceEvidence) ? part.livePriceEvidence : [];
+    if (!evidence.length) continue;
+    const itemKey = normalizeKey(part.name || 'unknown_item');
+    const confidence = confidenceFromEvidence(evidence);
+    const candidateUnitCostCents = Number(part.estimatedUnitCostCents || 0);
+
+    for (const price of evidence) {
+      await db.sql`
+        insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at)
+        values (
+          ${itemKey},
+          ${clean(price.source, 160) || 'web'},
+          ${Number(price.cents || 0)},
+          ${clean(price.link || '', 600) || null},
+          now()
+        )
+      `;
+    }
+
+    await db.sql`
+      insert into quote_research_queue (
+        job_request_id,
+        city,
+        source_text,
+        candidate_name,
+        candidate_unit_cost_cents,
+        evidence,
+        status,
+        confidence_score,
+        normalized_key
+      )
+      values (
+        ${jobRequest.id},
+        ${clean(jobRequest.city, 120) || null},
+        ${clean(descriptionText, 2000) || 'AI quote draft evidence'},
+        ${clean(part.name, 180) || 'Unknown part'},
+        ${candidateUnitCostCents || null},
+        ${JSON.stringify(evidence)}::jsonb,
+        ${'new'},
+        ${confidence},
+        ${itemKey}
+      )
+    `;
   }
 };
 const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, inventory, location }) => {
@@ -301,10 +364,74 @@ const loadRoleKeys = async (db, userId) => {
   return roles.map((role) => role.key);
 };
 
-const chooseCatalogMatches = (descriptionText) => {
+const chooseDbCatalogMatches = async (db, descriptionText) => {
   const text = slug(descriptionText);
-  return COST_CATALOG.filter((item) => text.includes(item.key)).slice(0, 6);
+  const rows = asRows(await db.sql`
+    select item_name, item_key, default_unit_cost_cents, default_quantity, aliases
+    from quote_catalog_items
+    where is_active = true
+    order by updated_at desc
+    limit 250
+  `);
+  return rows
+    .filter((item) => {
+      const keys = [item.item_key, item.item_name, ...(String(item.aliases || '').split(',').map((part) => part.trim()).filter(Boolean))]
+        .map((part) => slug(part));
+      return keys.some((part) => part && text.includes(part));
+    })
+    .slice(0, 8)
+    .map((item) => ({
+      label: item.item_name,
+      unitCostCents: Number(item.default_unit_cost_cents || 0),
+      quantity: Math.max(1, Number(item.default_quantity || 1)),
+      key: item.item_key,
+    }))
+    .filter((item) => item.unitCostCents > 0);
 };
+const buildInternetFallbackMaterials = async ({ descriptionText, inventory, location }) => {
+  const queryBase = clean(descriptionText, 220) || 'general home repair';
+  const searchSeeds = [
+    `${queryBase} required materials list`,
+    `${queryBase} install kit`,
+    `${queryBase} parts`,
+  ];
+  const candidates = [];
+  for (const seed of searchSeeds) {
+    const livePrices = await fetchSerpApiPrices({ partLabel: seed, location });
+    livePrices.forEach((item) => {
+      const name = clean(item.title, 120) || seed;
+      if (!name) return;
+      const firstToken = slug(name).split(' ')[0] || '';
+      const inventoryMatch = inventory.find((stock) => firstToken && slug(stock.name).includes(firstToken));
+      const neededQty = 1;
+      const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
+      const buyQty = Math.max(0, neededQty - inStock);
+      candidates.push({
+        name,
+        estimatedUnitCostCents: item.cents,
+        neededQty,
+        inStockQty: inStock,
+        buyQty,
+        estimatedBuyCostCents: buyQty * item.cents,
+        source: 'internet_search',
+        livePriceEvidence: [item],
+        pricingSource: 'live_web',
+      });
+    });
+    if (candidates.length >= 6) break;
+  }
+  const unique = [];
+  const seen = new Set();
+  for (const part of candidates) {
+    const key = slug(part.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(part);
+    if (unique.length >= 6) break;
+  }
+  return unique;
+};
+
 const choosePlaybook = (descriptionText) => {
   const text = slug(descriptionText);
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
@@ -368,9 +495,9 @@ export default async (request) => {
       if (playbook?.key === 'mini split installation' && part.label === 'Communication/control wire spool' && electricalFeet > 0) {
         neededQty = Math.max(1, Math.ceil(electricalFeet / 50));
       }
-      if (playbook?.key === 'mini split installation' && part.label === 'Conduit and fittings' && electricalFeet > 0) {
-        neededQty = Math.max(1, Math.ceil(electricalFeet / 40));
-      }
+      if (playbook?.key === 'mini split installation' && /EMT conduit sticks/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(2, Math.ceil(electricalFeet / 10));
+      if (playbook?.key === 'mini split installation' && /90° elbows/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(2, Math.ceil(electricalFeet / 30));
+      if (playbook?.key === 'mini split installation' && /couplings\/unions/i.test(part.label) && electricalFeet > 0) neededQty = Math.max(3, Math.ceil(electricalFeet / 20));
       if (playbook?.key === 'ceiling fan install or replacement' && part.label === 'Home-run wire kit (if new install)') {
         neededQty = isExistingFixtureRequest(descriptionText) && !isNewInstallRequest(descriptionText) ? 0 : 1;
       }
@@ -393,10 +520,10 @@ export default async (request) => {
         source: 'playbook',
       };
     });
-    const candidates = chooseCatalogMatches(descriptionText);
-    const materialsFromCatalog = candidates.map((candidate) => {
+    const dbCatalogCandidates = await chooseDbCatalogMatches(db, descriptionText);
+    const materialsFromCatalog = dbCatalogCandidates.map((candidate) => {
       const inventoryMatch = inventory.find((item) => slug(item.name).includes(candidate.key));
-      const neededQty = 1;
+      const neededQty = Number(candidate.quantity || 1);
       const inStock = Number(inventoryMatch?.quantity_on_hand || 0);
       const toBuy = Math.max(0, neededQty - inStock);
       const buyCostCents = toBuy * candidate.unitCostCents;
@@ -414,7 +541,12 @@ export default async (request) => {
     const aiGeneralMaterials = !materialsFromPlaybook.length
       ? await buildGeneralMaterialsFromProjectDetails({ projectDetails: jobRequest.description || descriptionText, inventory, location })
       : [];
-    const baseMaterials = materialsFromPlaybook.length ? materialsFromPlaybook : (aiGeneralMaterials.length ? aiGeneralMaterials : materialsFromCatalog);
+    const internetFallbackMaterials = (!materialsFromPlaybook.length && !aiGeneralMaterials.length && !materialsFromCatalog.length)
+      ? await buildInternetFallbackMaterials({ descriptionText, inventory, location })
+      : [];
+    const baseMaterials = materialsFromPlaybook.length
+      ? materialsFromPlaybook
+      : (aiGeneralMaterials.length ? aiGeneralMaterials : (materialsFromCatalog.length ? materialsFromCatalog : internetFallbackMaterials));
     const materials = [];
     for (const part of baseMaterials) {
       const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
@@ -431,8 +563,10 @@ export default async (request) => {
         pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
       });
     }
+    const pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
+    await persistLivePriceEvidence({ db, jobRequest, materials: pricedMaterials, descriptionText });
 
-    const materialSubtotal = materials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
+    const materialSubtotal = pricedMaterials.reduce((sum, part) => sum + part.estimatedBuyCostCents, 0);
     let laborHours = playbook?.laborHours || Math.max(2, Math.min(24, Math.ceil((descriptionText.length || 40) / 55)));
     if (playbook?.key === 'mini split installation' && electricalFeet > 0) {
       laborHours += Math.ceil(electricalFeet / 35);
@@ -442,13 +576,36 @@ export default async (request) => {
     const overheadCents = Math.round((materialSubtotal + laborSubtotal) * 0.15);
     const totalCents = materialSubtotal + laborSubtotal + overheadCents;
 
+    const sourcingLines = [];
+    pricedMaterials.forEach((m) => {
+      const links = (m.livePriceEvidence || [])
+        .map((e) => clean(e.link || '', 500))
+        .filter(Boolean)
+        .slice(0, 3);
+      const sources = (m.livePriceEvidence || [])
+        .map((e) => clean(e.source || '', 80))
+        .filter(Boolean)
+        .slice(0, 3);
+      if (links.length || sources.length) {
+        sourcingLines.push(`- ${m.name}`);
+        if (sources.length) sourcingLines.push(`  Sources: ${sources.join(', ')}`);
+        links.forEach((link, idx) => sourcingLines.push(`  Link ${idx + 1}: ${link}`));
+      }
+    });
+
     const summaryLines = [
       `AI-assisted quote draft for ${jobRequest.service_type || 'requested service'} (${jobRequest.city || 'service area'}).`,
       playbook ? `Detected job type: ${playbook.key}.` : 'Detected job type: general service request from project details using AI keyword extraction.',
       '',
       'Estimated materials:',
-      ...(materials.length
-        ? materials.map((m) => `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]`)
+      ...(pricedMaterials.length
+        ? pricedMaterials.map((m) => {
+          const surchargePct = Math.round(Number(m.partsSurchargeRate || 0) * 100);
+          const surchargeText = Number(m.partsSurchargeCents || 0) > 0
+            ? ` | base ${toMoney(m.partsBaseCostCents || 0)} + ${surchargePct}% (${toMoney(m.partsSurchargeCents || 0)})`
+            : '';
+          return `- ${m.name}: need ${m.neededQty}, in stock ${m.inStockQty}, buy ${m.buyQty} (${toMoney(m.estimatedBuyCostCents)}) [${m.pricingSource}]${surchargeText}`;
+        })
         : ['- No direct material match found. Manual material review required.']),
       '',
       `Labor estimate: ${laborHours} hour(s) × ${toMoney(laborRateCents)}/hr = ${toMoney(laborSubtotal)}`,
@@ -466,7 +623,8 @@ export default async (request) => {
         amountCents: totalCents,
         laborHours,
         laborRateCents,
-        materials,
+        materials: pricedMaterials,
+        adminSourcingNotes: sourcingLines.join('\n'),
       },
     });
   } catch (error) {
