@@ -2245,6 +2245,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
+          const quoteSourcingLinks = quoteForm.querySelector('[data-admin-quote-sourcing-links]');
           quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
             const aiStatus = document.querySelector('[data-admin-quote-ai-status]');
