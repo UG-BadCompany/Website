@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>T&A Contracting | Arizona Maintenance, Repairs & Improvements</title>
-  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico">
   <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quote approvals, client requests, and online payments.">
   <style>
     :root {
@@ -1087,18 +1086,6 @@
       background: rgba(255,255,255,.88);
     }
 
-
-    .job-slideshow { margin-top: 28px; }
-    .slideshow-shell { display: grid; gap: 16px; }
-    .slideshow-frame { position: relative; height: clamp(260px, 42vw, 440px); border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.22); background: rgba(10,14,20,.55); box-shadow: 0 18px 40px rgba(0,0,0,.24); }
-    .slideshow-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .slideshow-caption { position: absolute; left: 14px; bottom: 14px; padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-weight: 800; font-size: .85rem; letter-spacing: .03em; }
-    .slideshow-controls { display: flex; gap: 10px; align-items: center; }
-    .slideshow-controls button { min-height: 42px; min-width: 42px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; font-weight: 900; cursor: pointer; }
-    .slideshow-dots { display: flex; gap: 8px; flex-wrap: wrap; }
-    .slideshow-dots button { width: 10px; height: 10px; border-radius: 999px; border: 0; background: rgba(255,255,255,.35); padding: 0; }
-    .slideshow-dots button[aria-current="true"] { background: #f1a64a; }
-
   </style>
 </head>
 <body>
@@ -1107,7 +1094,7 @@
     <header class="nav" aria-label="Main navigation">
       <div class="nav-inner">
         <a class="brand" href="/" aria-label="T&A Contracting home">
-          <img class="brand-logo" src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo">
+          <img class="brand-logo" src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo">
           <span>T&A Contracting</span>
         </a>
         <nav class="nav-links" aria-label="Primary links">
@@ -1135,26 +1122,7 @@
           </div>
         </div>
         <div class="hero-media" aria-label="T&A Contracting logo showcase">
-          <img class="hero-logo" src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo">
-        </div>
-      </section>
-
-
-      <section class="section job-slideshow" id="job-gallery">
-        <div class="section-heading">
-          <h2>Recent job photos.</h2>
-          <p>A rotating preview from our Job pictures gallery so clients can quickly see real project examples.</p>
-        </div>
-        <div class="slideshow-shell" data-job-slideshow>
-          <div class="slideshow-frame">
-            <img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting job photo preview" data-slide-image>
-            <span class="slideshow-caption" data-slide-caption>Loading job photos…</span>
-          </div>
-          <div class="slideshow-controls">
-            <button type="button" aria-label="Previous photo" data-slide-prev>‹</button>
-            <button type="button" aria-label="Next photo" data-slide-next>›</button>
-            <div class="slideshow-dots" data-slide-dots aria-label="Slide navigation"></div>
-          </div>
+          <img class="hero-logo" src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo">
         </div>
       </section>
 
@@ -1243,32 +1211,6 @@
                 </select>
               </div>
               <div class="field">
-                <label for="workScope">Work Scope *</label>
-                <select id="workScope" name="workScope" required>
-                  <option value="">Select one</option>
-                  <option>Troubleshooting / repair</option>
-                  <option>Replace existing</option>
-                  <option>New install</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="workCategory">System / Trade *</label>
-                <select id="workCategory" name="workCategory" required>
-                  <option value="">Select one</option>
-                  <option>HVAC</option>
-                  <option>Electrical</option>
-                  <option>Plumbing</option>
-                  <option>Appliance installation</option>
-                  <option>Water heater</option>
-                  <option>Drywall / framing</option>
-                  <option>Painting / finish work</option>
-                  <option>Doors / windows</option>
-                  <option>Exterior / fencing</option>
-                  <option>General handyman</option>
-                  <option>Other / not sure</option>
-                </select>
-              </div>
-              <div class="field">
                 <label for="timeframe">Preferred Timeframe</label>
                 <select id="timeframe" name="timeframe">
                   <option>Flexible</option>
@@ -1280,7 +1222,7 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
-                <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
+                <textarea id="description" name="description" placeholder="Tell us what needs to be repaired, installed, replaced, maintained, or improved." required></textarea>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
@@ -1383,78 +1325,6 @@
       });
     })();
   </script>
-
-  <script>
-    (() => {
-      const shell = document.querySelector('[data-job-slideshow]');
-      if (!shell) return;
-
-      const imageEl = shell.querySelector('[data-slide-image]');
-      const captionEl = shell.querySelector('[data-slide-caption]');
-      const prevBtn = shell.querySelector('[data-slide-prev]');
-      const nextBtn = shell.querySelector('[data-slide-next]');
-      const dotsEl = shell.querySelector('[data-slide-dots]');
-      const apiUrl = 'https://api.github.com/repos/UG-BadCompany/images/contents/Job%20pictures';
-      let slides = [];
-      let index = 0;
-      let timer = null;
-
-      const show = (nextIndex) => {
-        if (!slides.length) return;
-        index = (nextIndex + slides.length) % slides.length;
-        const slide = slides[index];
-        imageEl.src = slide.src;
-        imageEl.alt = slide.alt;
-        captionEl.textContent = slide.caption;
-        [...dotsEl.querySelectorAll('button')].forEach((dot, dotIndex) => {
-          dot.setAttribute('aria-current', dotIndex === index ? 'true' : 'false');
-        });
-      };
-
-      const start = () => {
-        if (timer) clearInterval(timer);
-        timer = setInterval(() => show(index + 1), 4800);
-      };
-
-      const mountDots = () => {
-        dotsEl.innerHTML = '';
-        slides.forEach((slide, dotIndex) => {
-          const dot = document.createElement('button');
-          dot.type = 'button';
-          dot.setAttribute('aria-label', `Show ${slide.caption}`);
-          dot.addEventListener('click', () => {
-            show(dotIndex);
-            start();
-          });
-          dotsEl.appendChild(dot);
-        });
-      };
-
-      prevBtn.addEventListener('click', () => { show(index - 1); start(); });
-      nextBtn.addEventListener('click', () => { show(index + 1); start(); });
-
-      fetch(apiUrl, { headers: { accept: 'application/vnd.github+json' } })
-        .then((response) => response.ok ? response.json() : Promise.reject(new Error('GitHub folder unavailable')))
-        .then((items) => {
-          slides = (Array.isArray(items) ? items : [])
-            .filter((item) => item.type === 'file' && /\.(png|jpe?g|webp|gif)$/i.test(item.name))
-            .map((item) => ({
-              src: item.download_url,
-              caption: item.name.replace(/[-_]/g, ' ').replace(/\.[a-z0-9]+$/i, ''),
-              alt: `Job photo: ${item.name}`,
-            }));
-
-          if (!slides.length) throw new Error('No image files found in Job pictures');
-          mountDots();
-          show(0);
-          start();
-        })
-        .catch(() => {
-          captionEl.textContent = 'Job photos will appear here soon.';
-        });
-    })();
-  </script>
-
 
 </body>
 </html>

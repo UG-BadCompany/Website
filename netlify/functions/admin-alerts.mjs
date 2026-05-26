@@ -61,12 +61,7 @@ export default async (request) => {
     const [pendingReview] = await db.sql`
       select count(*)::int as count
       from job_requests
-      where status in ('pending_review', 'needs_review')
-    `;
-    const [newRequests] = await db.sql`
-      select count(*)::int as count
-      from job_requests
-      where status = 'new'
+      where status = 'pending_review'
     `;
     const [unpaidInvoices] = await db.sql`
       select count(*)::int as count
@@ -83,35 +78,20 @@ export default async (request) => {
       limit 10
     `;
 
-    const mappedLowStockItems = lowStockItems.map((item) => ({
-      id: item.id,
-      name: item.name,
-      unit: item.unit || 'each',
-      quantityOnHand: Number(item.quantity_on_hand || 0),
-      quantity: Number(item.quantity_on_hand || 0),
-      reorderPoint: Number(item.reorder_point || 0),
-    }));
-    const counts = {
-      lowStock: Number(lowStock?.count || 0),
-      pendingReview: Number(pendingReview?.count || 0),
-      unpaidInvoices: Number(unpaidInvoices?.count || 0),
-      newRequests: Number(newRequests?.count || 0),
-    };
-
     return json(200, {
       ok: true,
-      summary: counts,
-      lowStockItems: mappedLowStockItems,
-      alerts: {
-        counts,
-        lowStockItems: mappedLowStockItems,
-        notifications: [
-          { type: 'low_stock', count: counts.lowStock },
-          { type: 'pending_review', count: counts.pendingReview },
-          { type: 'unpaid_invoices', count: counts.unpaidInvoices },
-          { type: 'new_requests', count: counts.newRequests },
-        ],
+      summary: {
+        lowStock: Number(lowStock?.count || 0),
+        pendingReview: Number(pendingReview?.count || 0),
+        unpaidInvoices: Number(unpaidInvoices?.count || 0),
       },
+      lowStockItems: lowStockItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        unit: item.unit || 'each',
+        quantityOnHand: Number(item.quantity_on_hand || 0),
+        reorderPoint: Number(item.reorder_point || 0),
+      })),
     });
   } catch (error) {
     console.error('Failed to load admin alerts', error);
