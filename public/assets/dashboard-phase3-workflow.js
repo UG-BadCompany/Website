@@ -191,6 +191,24 @@
     return ['', ''];
   };
 
+
+  const renderAutomationPlan = (automation = {}) => {
+    const priority = automation.priority || {};
+    const level = priority.level || 'normal';
+    const actions = Array.isArray(automation.actions) ? automation.actions : [];
+    const warnings = Array.isArray(automation.warnings) ? automation.warnings : [];
+    return `
+      <div class="work-order-automation-box automation-priority-${escapeHtml(level)}">
+        <strong>Automation: ${escapeHtml(level)} priority (${Number(priority.score || 0)}/100)</strong>
+        <p>Suggested schedule: ${escapeHtml(automation.suggestedScheduleWindow || 'next available')}</p>
+        ${automation.assignmentNeeded ? '<p>Assignment needed before dispatch.</p>' : ''}
+        ${automation.overdue ? '<p>Overdue/escalation review needed.</p>' : ''}
+        ${actions.length ? `<ul>${actions.slice(0, 3).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+        ${warnings.length ? `<ul>${warnings.slice(0, 2).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+      </div>
+    `;
+  };
+
   const renderWorkOrderCard = (item) => {
     const [nextStatus, nextLabel] = nextStepFor(item.status);
     const blocked = item.assignmentStatus === 'blocked';
@@ -206,6 +224,7 @@
           ${item.scheduledDate ? `<span class="workflow-pill">${escapeHtml(item.scheduledDate)}</span>` : ''}
         </div>
         <p>${escapeHtml((item.description || '').slice(0, 160))}${(item.description || '').length > 160 ? '…' : ''}</p>
+        ${renderAutomationPlan(item.automation || {})}
         <div class="work-order-actions">
           ${nextStatus ? `<button class="btn btn-primary" type="button" data-work-order-next="${escapeHtml(item.jobRequestId)}" data-next-status="${nextStatus}">${nextLabel}</button>` : ''}
           <a class="btn btn-soft" href="#admin-requests">Open request</a>

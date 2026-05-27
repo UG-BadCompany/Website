@@ -28,5 +28,6 @@
   "audit:phase17": "node scripts/audit-phase17-ai-accuracy.mjs",
   "audit:phase18": "node scripts/audit-phase18-supplier-pricing.mjs",
   "audit:phase19": "node scripts/audit-phase19-worker-mobile.mjs",
-  "audit:phase20": "node scripts/audit-phase20-troubleshooting.mjs"
+  "audit:phase20": "node scripts/audit-phase20-troubleshooting.mjs",
+  "audit:phase21": "node scripts/audit-phase21-work-order-automation.mjs"
 }

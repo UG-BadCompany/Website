@@ -9,8 +9,128 @@ import {
 
 const WORK_ORDER_STATUSES = new Set(['accepted', 'scheduled', 'in_progress', 'pending_review', 'completed', 'cancelled']);
 
+const WORK_ORDER_AUTOMATION_VERSION = 'phase21-work-order-automation-v1';
+
+const daysBetween = (dateValue) => {
+  if (!dateValue) return null;
+  const time = new Date(dateValue).getTime();
+  if (!Number.isFinite(time)) return null;
+  const now = Date.now();
+  return Math.floor((time - now) / (1000 * 60 * 60 * 24));
+};
+
+const inferDispatchPriority = (row) => {
+  const text = `${row.service_type || ''} ${row.work_scope || ''} ${row.description || ''}`.toLowerCase();
+  let score = 50;
+  const reasons = [];
+
+  if (/leak|no cooling|no heat|electrical|breaker|sparking|water|urgent|asap|same day|emergency/.test(text)) {
+    score += 25;
+    reasons.push('Request text indicates urgent or safety-sensitive issue.');
+  }
+
+  if (/commercial|business|rental|tenant|property manager/.test(text)) {
+    score += 8;
+    reasons.push('Managed/commercial property coordination may require faster follow-up.');
+  }
+
+  if (!row.worker_id) {
+    score += 10;
+    reasons.push('No worker is assigned yet.');
+  }
+
+  if (row.job_status === 'pending_review') {
+    score += 12;
+    reasons.push('Job is waiting for completion review.');
+  }
+
+  if (row.assignment_status === 'blocked') {
+    score += 20;
+    reasons.push('Worker marked job as blocked.');
+  }
+
+  const createdAgeDays = row.created_at ? Math.max(0, Math.floor((Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60 * 24))) : 0;
+  if (createdAgeDays >= 3 && !['completed', 'cancelled'].includes(row.job_status)) {
+    score += Math.min(20, createdAgeDays * 2);
+    reasons.push(`Open for ${createdAgeDays} day(s).`);
+  }
+
+  if (row.scheduled_date) {
+    const scheduleDelta = daysBetween(row.scheduled_date);
+    if (scheduleDelta !== null && scheduleDelta < 0 && !['completed', 'cancelled'].includes(row.job_status)) {
+      score += 18;
+      reasons.push('Scheduled date appears overdue.');
+    }
+    if (scheduleDelta === 0) {
+      score += 12;
+      reasons.push('Scheduled for today.');
+    }
+  }
+
+  const level = score >= 85 ? 'critical' : score >= 70 ? 'high' : score >= 52 ? 'normal' : 'low';
+
+  return {
+    score: Math.max(0, Math.min(100, score)),
+    level,
+    reasons,
+  };
+};
+
+const buildAutomationPlan = (row) => {
+  const priority = inferDispatchPriority(row);
+  const text = `${row.service_type || ''} ${row.work_scope || ''} ${row.description || ''}`.toLowerCase();
+  const actions = [];
+  const warnings = [];
+
+  if (!row.worker_id) {
+    actions.push('Assign a worker before scheduling is considered complete.');
+  }
+
+  if (row.job_status === 'accepted') {
+    actions.push('Move accepted work into scheduled status once date/time is confirmed.');
+  }
+
+  if (row.job_status === 'scheduled' && !row.scheduled_date) {
+    actions.push('Add scheduled date/time so client and worker have a clear appointment.');
+  }
+
+  if (row.job_status === 'in_progress') {
+    actions.push('Ask worker for completion photos, materials used, and closeout notes.');
+  }
+
+  if (row.job_status === 'pending_review') {
+    actions.push('Admin should review completion notes and decide invoice/closeout.');
+  }
+
+  if (/leak|water|electrical|sparking|gas|no cooling|no heat/.test(text)) {
+    warnings.push('Consider same-day follow-up or safety escalation.');
+  }
+
+  if (/permit|inspection|new circuit|mini split|hvac|gas|panel|water heater/.test(text)) {
+    warnings.push('Verify permit/licensed trade requirements before dispatch.');
+  }
+
+  const suggestedScheduleWindow =
+    priority.level === 'critical' ? 'same day / urgent review' :
+    priority.level === 'high' ? '24–48 hours' :
+    priority.level === 'normal' ? '2–5 business days' :
+    'next available';
+
+  return {
+    version: WORK_ORDER_AUTOMATION_VERSION,
+    priority,
+    suggestedScheduleWindow,
+    assignmentNeeded: !row.worker_id,
+    overdue: priority.reasons.some((reason) => reason.toLowerCase().includes('overdue')),
+    actions,
+    warnings,
+  };
+};
+
+
 const mapWorkOrder = (row) => ({
   jobRequestId: row.job_request_id,
+  automation: buildAutomationPlan(row),
   status: row.job_status,
   requesterName: row.requester_name,
   requesterEmail: row.requester_email,
