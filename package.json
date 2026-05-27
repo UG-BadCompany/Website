@@ -37,5 +37,6 @@
   "audit:phase26": "node scripts/audit-phase26-smart-scheduling.mjs",
   "audit:phase27": "node scripts/audit-phase27-maintenance-plans.mjs",
   "audit:phase28": "node scripts/audit-phase28-cleanup.mjs",
-  "audit:phase29": "node scripts/audit-phase29-full-project.mjs"
+  "audit:phase29": "node scripts/audit-phase29-full-project.mjs",
+  "audit:phase30": "node scripts/audit-phase30-sidebar.mjs"
 }
