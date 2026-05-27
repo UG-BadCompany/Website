@@ -118,9 +118,12 @@
     header.querySelector('h2').textContent = workspaces[workspace].title;
     header.querySelector('p').textContent = workspaces[workspace].description;
 
+    // Keep the dashboard URL clean. Old ?workspace=... links are no longer used.
     const url = new URL(window.location.href);
-    url.searchParams.set('workspace', workspace);
-    window.history.replaceState({}, '', url);
+    if (url.searchParams.has('workspace')) {
+      url.searchParams.delete('workspace');
+      window.history.replaceState({}, '', url);
+    }
   };
 
   document.addEventListener('click', (event) => {
@@ -138,7 +141,7 @@
     if (backdrop) backdrop.dataset.open = 'false';
   }, true);
 
-  const initial = new URLSearchParams(window.location.search).get('workspace') || 'overview';
+  const initial = document.body.dataset.sidebarWorkspace || 'overview';
 
   const boot = () => {
     normalizeSidebarButtons();

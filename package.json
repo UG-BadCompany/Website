@@ -42,5 +42,6 @@
   "audit:phase31": "node scripts/audit-phase31-strict-role-views.mjs",
   "audit:phase33": "node scripts/audit-phase33-workspace-routes.mjs",
   "audit:phase34": "node scripts/audit-phase34-sidebar-only-workspaces.mjs",
-  "audit:phase35": "node scripts/audit-phase35-remove-top-tabs.mjs"
+  "audit:phase35": "node scripts/audit-phase35-remove-top-tabs.mjs",
+  "audit:phase36": "node scripts/audit-phase36-remove-old-workspace.mjs"
 }
