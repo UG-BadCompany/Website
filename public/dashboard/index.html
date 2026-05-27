@@ -1905,9 +1905,11 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
   <link rel="stylesheet" href="/assets/dashboard-phase25-inventory-assets.css">
   <link rel="stylesheet" href="/assets/dashboard-phase26-smart-scheduling.css">
   <link rel="stylesheet" href="/assets/dashboard-phase27-maintenance-plans.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase28-cleanup.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase29-full-cleanup.css">
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div><div class="dashboard-quick-nav" aria-label="Dashboard quick links">
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div><div class="dashboard-quick-nav" aria-label="Dashboard quick links">
         <a class="header-chip" href="#executive-overview">Owner View</a>
         <a class="header-chip" href="#estimate-review">Estimate Review</a>
         <a class="header-chip" href="#finance-command-center">Finance</a>
@@ -1915,6 +1917,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
         <a class="header-chip" href="#worker-jobs">Worker Jobs</a>
       </div></div></header>
   <main class="wrap" data-dashboard-root>
+    <span id="admin-quotes" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="hero">
       <div class="dashboard-hero">
         <div>
@@ -2083,6 +2086,8 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
     </section>
 
 
+    <span id="admin-access" class="dashboard-anchor-alias" aria-hidden="true"></span>
+    <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
       <strong>Admin request inbox</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
@@ -2246,7 +2251,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
     </section>
 
 
-    <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
+    <section class="card admin-inventory" id="admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
       <strong>Inventory workspace</strong><p><a href="/inventory/">Open full inventory page</a></p>
       <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
       <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
@@ -2287,7 +2292,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
       </div>
     </section>
 
-    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
+    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
       <strong>Activity audit trail</strong>
       <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
       <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
@@ -2400,7 +2405,8 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
       </section>
     </section>
 
-    <section class="card client-requests" id="submit-request" data-client-requests-anchor data-client-requests data-dashboard-section data-views="client" hidden>
+    <span id="submit-request-anchor" class="dashboard-anchor-alias" aria-hidden="true"></span>
+    <section class="card client-requests" id="client-requests" data-client-requests-anchor data-client-requests data-dashboard-section data-views="client" hidden>
       <strong>My job requests</strong>
       <p>Signed-in clients can see the estimate requests connected to their account.</p>
       <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
@@ -2571,5 +2577,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
   <script src="/assets/dashboard-phase25-inventory-assets.js" defer></script>
   <script src="/assets/dashboard-phase26-smart-scheduling.js" defer></script>
   <script src="/assets/dashboard-phase27-maintenance-plans.js" defer></script>
+  <script src="/assets/dashboard-phase28-cleanup.js" defer></script>
+  <script src="/assets/dashboard-phase29-action-guard.js" defer></script>
 </body>
 </html>

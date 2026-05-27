@@ -131,8 +131,8 @@
         const actions = [];
         if (permissions.canViewAdminTools) actions.push('<a class="btn btn-soft" href="#admin-requests">Requests</a><a class="btn btn-soft" href="#estimate-review">Estimate Review</a><a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>');
         if (permissions.canManageInvoices) actions.push('<a class="btn btn-soft" href="#finance-command-center">Finance Center</a><a class="btn btn-soft" href="#admin-invoices">Invoices</a>');
-        if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<a class="btn btn-soft" href="#admin-access">Roles & Users</a>');
-        if (permissions.canViewAdminActivity) actions.push('<a class="btn btn-soft" href="#admin-activity">Audit Activity</a>');
+        if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="btn btn-soft" type="button" data-admin-access-shortcut>Roles & Users</button>');
+        if (permissions.canViewAdminActivity) actions.push('<button class="btn btn-soft" type="button" data-admin-activity-shortcut>Audit Activity</button>');
         if (permissions.canManageInventory) actions.push('<a class="btn btn-soft" href="#admin-inventory">Inventory</a>');
         if (permissions.canViewClientTools) actions.push('<a class="btn btn-soft" href="#client-requests">Client Requests</a><a class="btn btn-soft" href="#client-quotes">Client Quotes</a><a class="btn btn-soft" href="#client-invoices">Client Invoices</a>');
         if (permissions.canViewWorkerTools) actions.push('<a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>');

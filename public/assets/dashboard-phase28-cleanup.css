@@ -1,0 +1,10 @@
+/* Phase 28 cleanup polish */
+.phase-cleanup-note{border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:18px;background:rgba(15,23,42,.86);color:#f8fafc;margin:24px 0}
+.phase-cleanup-note h2{margin:0 0 8px;color:#fff}
+.phase-cleanup-note p{color:#dbeafe;margin:0}
+.dashboard-phase-group{display:grid;gap:18px}
+.photo-doc-suite,.inventory-suite,.smart-schedule-suite,.maintenance-suite{margin-top:18px;margin-bottom:18px}
+.photo-doc-card,.inventory-card,.smart-schedule-card,.maintenance-card{background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(15,23,42,.78))!important;border-color:rgba(255,255,255,.18)!important}
+.photo-doc-card h2,.inventory-card h2,.smart-schedule-card h2,.maintenance-card h2{color:#fff!important}
+.photo-doc-card p,.inventory-card p,.smart-schedule-card p,.maintenance-card p{color:#dbeafe!important}
+@media(max-width:780px){.photo-doc-suite,.inventory-suite,.smart-schedule-suite,.maintenance-suite{margin:14px 0}}
