@@ -47,5 +47,6 @@
   "audit:phase37": "node scripts/audit-phase37-estimate-review-editing.mjs",
   "audit:phase38": "node scripts/audit-phase38-finance-fix.mjs",
   "audit:phase39": "node scripts/audit-phase39-dollarsfromcents-fix.mjs",
-  "audit:phase40": "node scripts/audit-phase40-finance-fix.mjs"
+  "audit:phase40": "node scripts/audit-phase40-finance-fix.mjs",
+  "audit:phase41": "node scripts/audit-phase41-finance-line75-fix.mjs"
 }
