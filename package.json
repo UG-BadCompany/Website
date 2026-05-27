@@ -1,9 +1,8 @@
 {
   "name": "ta-contracting-website",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Full rewritten T&A Contracting website with AI quote drafting for Netlify.",
-  "type": "module",
+  "description": "Deployable T&A Contracting website shell for Netlify.",
   "scripts": {
     "build": "node scripts/build-static-site.mjs",
     "postbuild": "node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs",
@@ -15,7 +14,6 @@
     "node": ">=20.12.2"
   },
   "dependencies": {
-    "@netlify/database": "latest",
-    "@netlify/blobs": "latest"
+    "@netlify/database": "latest"
   }
 }

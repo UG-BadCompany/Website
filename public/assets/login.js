@@ -93,9 +93,16 @@
     }
   };
 
-  const appendMagicLink = () => {
-    // Production login: never show a dev sign-in link in the browser.
-    // If email is not configured, the server returns a clear error instead.
+  const appendMagicLink = (status, magicLinkUrl) => {
+    if (!magicLinkUrl) return;
+
+    const link = document.createElement('a');
+    link.href = magicLinkUrl;
+    link.textContent = 'Open secure sign-in link';
+    link.style.display = 'block';
+    link.style.marginTop = '8px';
+    link.rel = 'nofollow noopener';
+    status.appendChild(link);
   };
 
   const redirectExistingSession = async () => {

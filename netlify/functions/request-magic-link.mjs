@@ -70,7 +70,7 @@ export const createMagicLinkHandler = ({
       return json(503, {
         ok: false,
         emailSent: false,
-        message: emailResult.reason || 'Magic-link email delivery is not configured. Set RESEND_API_KEY and MAGIC_LINK_FROM_EMAIL in Netlify.',
+        message: emailResult.reason || 'Magic-link email is not configured. Check RESEND_API_KEY, MAGIC_LINK_FROM_EMAIL, and the verified sender domain in Resend.',
       });
     }
 

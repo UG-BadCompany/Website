@@ -9,10 +9,11 @@ const indexFile = path.join(sourceDir, 'index.html');
 try {
   await access(indexFile);
 } catch {
-  throw new Error('Build failed: public/index.html is required.');
+  throw new Error('Build failed: public/index.html is required to create the Netlify out publish directory.');
 }
 
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
 await cp(sourceDir, outputDir, { recursive: true });
+
 console.log('Static site built successfully. Netlify will publish ./out');

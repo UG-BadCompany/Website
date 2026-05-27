@@ -1,22 +1,48 @@
-import http from 'node:http';
+import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-const root = path.join(process.cwd(), 'public');
-const port = Number(process.env.PORT || 4173);
-const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml' };
+const preferredRoot = path.join(process.cwd(), 'out');
+const fallbackRoot = path.join(process.cwd(), 'public');
+const root = existsSync(path.join(preferredRoot, 'index.html')) ? preferredRoot : fallbackRoot;
+const port = Number(process.env.PORT || 3000);
+const types = new Map([
+  ['.html', 'text/html; charset=utf-8'],
+  ['.css', 'text/css; charset=utf-8'],
+  ['.js', 'text/javascript; charset=utf-8'],
+  ['.svg', 'image/svg+xml'],
+  ['.png', 'image/png'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.webp', 'image/webp']
+]);
 
-http.createServer(async (req, res) => {
-  try {
-    const url = new URL(req.url, `http://localhost:${port}`);
-    let filePath = path.join(root, decodeURIComponent(url.pathname));
-    if (url.pathname.endsWith('/')) filePath = path.join(filePath, 'index.html');
-    const ext = path.extname(filePath);
-    const data = await readFile(filePath);
-    res.writeHead(200, { 'content-type': types[ext] || 'application/octet-stream' });
-    res.end(data);
-  } catch {
-    res.writeHead(404, { 'content-type': 'text/plain' });
-    res.end('Not found');
+if (!existsSync(path.join(root, 'index.html'))) {
+  console.error('Missing site entrypoint. Run npm run build or confirm public/index.html exists.');
+  process.exit(1);
+}
+
+createServer(async (request, response) => {
+  const url = new URL(request.url || '/', `http://${request.headers.host}`);
+  const safePath = url.pathname.endsWith('/') ? `${url.pathname}index.html` : url.pathname;
+  const filePath = path.normalize(path.join(root, safePath));
+
+  if (!filePath.startsWith(root)) {
+    response.writeHead(403);
+    response.end('Forbidden');
+    return;
   }
-}).listen(port, () => console.log(`Serving public on http://localhost:${port}`));
+
+  try {
+    const body = await readFile(filePath);
+    response.writeHead(200, { 'Content-Type': types.get(path.extname(filePath)) || 'application/octet-stream' });
+    response.end(body);
+  } catch {
+    const body = await readFile(path.join(root, 'index.html'));
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.end(body);
+  }
+}).listen(port, () => {
+  console.log(`T&A Contracting site available at http://localhost:${port} from ${path.relative(process.cwd(), root)}`);
+});

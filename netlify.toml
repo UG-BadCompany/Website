@@ -19,16 +19,17 @@
     Cache-Control = "no-store, max-age=0"
 
 
-# API routes required for the static build.
-# These keep the existing magic-link auth functions working on Netlify.
+# API route mappings for Netlify Functions.
+# These make local/dev/prod routing explicit even when function path config is not picked up.
+
 [[redirects]]
-  from = "/api/auth/magic-link"
-  to = "/.netlify/functions/request-magic-link"
+  from = "/api/job-requests"
+  to = "/.netlify/functions/create-job-request"
   status = 200
 
 [[redirects]]
-  from = "/api/auth/verify"
-  to = "/.netlify/functions/verify-magic-link"
+  from = "/api/auth/magic-link"
+  to = "/.netlify/functions/request-magic-link"
   status = 200
 
 [[redirects]]
@@ -37,27 +38,33 @@
   status = 200
 
 [[redirects]]
-  from = "/api/public-config"
-  to = "/.netlify/functions/public-config"
-  status = 200
-
-[[redirects]]
-  from = "/api/auth/logout"
+  from = "/api/logout"
   to = "/.netlify/functions/logout"
   status = 200
 
 [[redirects]]
-  from = "/api/job-requests"
-  to = "/.netlify/functions/job-requests"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin-quote-draft"
+  from = "/api/admin/quote-draft"
   to = "/.netlify/functions/admin-quote-draft"
   status = 200
 
 [[redirects]]
-  from = "/api/admin-quotes"
+  from = "/api/admin/job-requests"
+  to = "/.netlify/functions/admin-job-requests"
+  status = 200
+
+# API route mappings for Netlify Functions.
+
+[[redirects]]
+  from = "/api/admin/quotes"
   to = "/.netlify/functions/admin-quotes"
   status = 200
 
+[[redirects]]
+  from = "/api/client/quotes"
+  to = "/.netlify/functions/client-quotes"
+  status = 200
+
+[[redirects]]
+  from = "/api/client/job-requests"
+  to = "/.netlify/functions/client-job-requests"
+  status = 200
