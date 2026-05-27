@@ -22,5 +22,6 @@
   "audit:phase11": "node scripts/audit-phase11-finish.mjs",
   "audit:phase12": "node scripts/audit-phase12-client-worker.mjs",
   "audit:phase13": "node scripts/audit-phase13-public-style.mjs",
-  "audit:phase14": "node scripts/audit-phase14-readability.mjs"
+  "audit:phase14": "node scripts/audit-phase14-readability.mjs",
+  "audit:phase15": "node scripts/audit-phase15-home-style.mjs"
 }

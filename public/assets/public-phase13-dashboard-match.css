@@ -197,3 +197,158 @@ td {
     border-radius: 22px !important;
   }
 }
+
+
+/* Phase 15: force remaining homepage white blocks into dashboard dark/copper style. */
+#portal,
+#estimate,
+[id*="portal"],
+[id*="estimate"],
+section:has(.portal-card),
+section:has([data-job-request-form]),
+section:has(form[name="job-request"]),
+.portal-preview,
+.portal-section,
+.estimate-section,
+.request-section,
+.quote-section,
+.form-section {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(249,115,22,.14), transparent 24rem),
+    linear-gradient(180deg, rgba(15,23,42,.88), rgba(15,23,42,.74)) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+#portal *,
+#estimate *,
+.portal-preview *,
+.portal-section *,
+.estimate-section *,
+.request-section *,
+.quote-section *,
+.form-section * {
+  color: inherit;
+}
+
+#portal h1,
+#portal h2,
+#portal h3,
+#portal strong,
+#estimate h1,
+#estimate h2,
+#estimate h3,
+#estimate strong,
+.portal-preview h1,
+.portal-preview h2,
+.portal-preview h3,
+.estimate-section h1,
+.estimate-section h2,
+.estimate-section h3,
+.request-section h1,
+.request-section h2,
+.request-section h3 {
+  color: #ffffff !important;
+}
+
+#portal p,
+#portal li,
+#portal span,
+#estimate p,
+#estimate li,
+#estimate span,
+.portal-preview p,
+.portal-preview li,
+.portal-preview span,
+.estimate-section p,
+.estimate-section li,
+.estimate-section span,
+.request-section p,
+.request-section li,
+.request-section span {
+  color: #dbeafe !important;
+}
+
+#portal .card,
+#portal .panel,
+#portal .portal-card,
+#portal .portal-preview-card,
+#estimate .card,
+#estimate .panel,
+#estimate .estimate-card,
+#estimate .form-card,
+#estimate form,
+.portal-card,
+.portal-preview-card,
+.estimate-card,
+.request-card,
+.form-card,
+form[data-job-request-form],
+form[name="job-request"] {
+  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(15,23,42,.78)) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,.32) !important;
+}
+
+#portal .muted,
+#portal .section-copy,
+#portal .portal-copy,
+#estimate .muted,
+#estimate .section-copy,
+#estimate .form-help,
+#estimate .estimate-copy {
+  color: #dbeafe !important;
+}
+
+#estimate input,
+#estimate textarea,
+#estimate select,
+form[data-job-request-form] input,
+form[data-job-request-form] textarea,
+form[data-job-request-form] select,
+form[name="job-request"] input,
+form[name="job-request"] textarea,
+form[name="job-request"] select {
+  background: rgba(2,6,23,.72) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,.26) !important;
+}
+
+#estimate label,
+form[data-job-request-form] label,
+form[name="job-request"] label {
+  color: #f8fafc !important;
+}
+
+/* Text-specific backup for the two white homepage blocks reported by user. */
+body * {
+  --force-home-panel-bg: linear-gradient(180deg, rgba(15,23,42,.92), rgba(15,23,42,.78));
+}
+
+.home-dark-panel-fix,
+.home-dark-panel-fix-parent {
+  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(15,23,42,.78)) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+.home-dark-panel-fix h1,
+.home-dark-panel-fix h2,
+.home-dark-panel-fix h3,
+.home-dark-panel-fix strong,
+.home-dark-panel-fix-parent h1,
+.home-dark-panel-fix-parent h2,
+.home-dark-panel-fix-parent h3,
+.home-dark-panel-fix-parent strong {
+  color: #ffffff !important;
+}
+
+.home-dark-panel-fix p,
+.home-dark-panel-fix span,
+.home-dark-panel-fix li,
+.home-dark-panel-fix-parent p,
+.home-dark-panel-fix-parent span,
+.home-dark-panel-fix-parent li {
+  color: #dbeafe !important;
+}
