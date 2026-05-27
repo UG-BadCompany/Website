@@ -1,0 +1,49 @@
+/* Phase 37: finished Estimate Review editing */
+.estimate-edit-form {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 18px;
+  background: rgba(2,6,23,.48);
+}
+.estimate-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 170px;
+  gap: 10px;
+}
+.estimate-edit-form label {
+  display: grid;
+  gap: 6px;
+  color: #e2e8f0 !important;
+  font-weight: 900;
+}
+.estimate-edit-form input,
+.estimate-edit-form textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 12px;
+  background: rgba(15,23,42,.82);
+  color: #fff;
+  padding: 10px 12px;
+  font: inherit;
+}
+.estimate-edit-form textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+.estimate-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.estimate-edit-status {
+  min-height: 20px;
+  color: #dbeafe !important;
+  font-weight: 800;
+}
+@media (max-width:760px){
+  .estimate-edit-grid{grid-template-columns:1fr}
+}

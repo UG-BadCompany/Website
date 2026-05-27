@@ -53,8 +53,8 @@
           <div class="dashboard-action-strip">
             <a class="btn btn-primary" href="/#estimate">New Request Estimate</a>
             <button class="btn btn-soft" type="button" data-phase2-refresh>Refresh Dashboard</button>
-            <a class="btn btn-soft" href="#admin-requests">Open Requests</a>
-            <a class="btn btn-soft" href="#admin-quotes">Open Quotes</a>
+            <button class="btn btn-soft" type="button" data-open-requests-workspace>Open Requests</button>
+            <button class="btn btn-soft" type="button" data-open-quotes-workspace>Open Quotes</button>
           </div>
         </section>
 
@@ -214,13 +214,32 @@
             </div>
             <div class="estimate-draft-actions">
               <button class="btn btn-soft" type="button" data-copy-estimate="${escapeHtml(draft.quoteId)}">Copy summary</button>
-              <a class="btn btn-soft" href="#admin-quotes">Edit in Quotes</a>
+              <button class="btn btn-soft" type="button" data-edit-estimate="${escapeHtml(draft.quoteId)}">Edit draft</button>
               <button class="btn btn-primary" type="button" data-send-estimate="${escapeHtml(draft.quoteId)}">Mark/send</button>
             </div>
           </div>
           <p><strong>${escapeHtml(draft.requesterName || 'Customer')}</strong> • ${escapeHtml(draft.requesterPhone || '')} • ${escapeHtml(draft.requesterEmail || '')}</p>
           <p>${escapeHtml(draft.streetAddress || '')} ${escapeHtml(draft.city || '')}</p>
           <pre class="estimate-draft-summary">${escapeHtml(summary || draft.requestDescription || 'No summary available.')}</pre>
+          <form class="estimate-edit-form" data-estimate-edit-form="${escapeHtml(draft.quoteId)}" hidden>
+            <div class="estimate-edit-grid">
+              <label>Quote title
+                <input data-estimate-title value="${escapeHtml(draft.title || 'Estimate draft')}">
+              </label>
+              <label>Amount
+                <input data-estimate-amount inputmode="decimal" value="${escapeHtml(dollarsFromCents(draft.amountCents || 0))}">
+              </label>
+            </div>
+            <label>Customer/admin quote summary
+              <textarea data-estimate-summary>${escapeHtml(draft.summary || '')}</textarea>
+            </label>
+            <div class="estimate-edit-actions">
+              <button class="btn btn-primary" type="submit">Save draft</button>
+              <button class="btn btn-soft" type="button" data-cancel-estimate-edit="${escapeHtml(draft.quoteId)}">Cancel</button>
+              <button class="btn btn-soft" type="button" data-save-send-estimate="${escapeHtml(draft.quoteId)}">Save & send</button>
+            </div>
+            <p class="estimate-edit-status" data-estimate-edit-status="${escapeHtml(draft.quoteId)}"></p>
+          </form>
           <div class="estimate-draft-detail-grid">
             ${renderAccuracyReview(draft.accuracyReview || [])}
             ${renderQuoteOptions(draft.quoteOptions || [])}
@@ -250,6 +269,76 @@
         }
       });
     });
+
+
+    list.querySelectorAll('[data-edit-estimate]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(button.dataset.editEstimate)}"]`);
+        if (!form) return;
+        form.hidden = !form.hidden;
+        if (!form.hidden) form.querySelector('[data-estimate-title]')?.focus();
+      });
+    });
+
+    list.querySelectorAll('[data-cancel-estimate-edit]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(button.dataset.cancelEstimateEdit)}"]`);
+        if (form) form.hidden = true;
+      });
+    });
+
+    const saveDraft = async (quoteId, action = 'save') => {
+      const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(quoteId)}"]`);
+      if (!form) return;
+      const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
+      const title = form.querySelector('[data-estimate-title]')?.value || '';
+      const summaryValue = form.querySelector('[data-estimate-summary]')?.value || '';
+      const amountCents = centsFromInput(form.querySelector('[data-estimate-amount]')?.value || '0');
+
+      if (status) status.textContent = action === 'send' ? 'Saving and sending…' : 'Saving…';
+
+      await fetchJson('/api/admin/estimate-review', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ quoteId, action, title, summary: summaryValue, amountCents }),
+      });
+
+      if (status) status.textContent = action === 'send' ? 'Saved and sent.' : 'Saved.';
+      window.TAUX?.toast?.({
+        title: action === 'send' ? 'Estimate saved and sent' : 'Estimate saved',
+        message: 'The estimate review queue was updated.',
+        type: 'success',
+      });
+      setTimeout(loadEstimateReview, 450);
+    };
+
+    list.querySelectorAll('[data-estimate-edit-form]').forEach((form) => {
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const quoteId = form.dataset.estimateEditForm;
+        try {
+          await saveDraft(quoteId, 'save');
+        } catch (error) {
+          const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
+          if (status) status.textContent = error.message || 'Could not save estimate.';
+          window.TAUX?.toast?.({ title: 'Save failed', message: error.message || 'Could not save estimate.', type: 'error' });
+        }
+      });
+    });
+
+    list.querySelectorAll('[data-save-send-estimate]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const quoteId = button.dataset.saveSendEstimate;
+        const confirmed = window.TAUX ? await window.TAUX.confirm({ title: 'Save and send estimate?', message: 'This saves your edits and moves the estimate forward.', confirmText: 'Save & send' }) : window.confirm('Save and send this estimate?');
+        if (!confirmed) return;
+        try {
+          await saveDraft(quoteId, 'send');
+        } catch (error) {
+          window.TAUX?.toast?.({ title: 'Send failed', message: error.message || 'Could not send estimate.', type: 'error' });
+        }
+      });
+    });
+
 
     list.querySelectorAll('[data-send-estimate]').forEach((button) => {
       button.addEventListener('click', async () => {
@@ -311,6 +400,14 @@
       loadEstimateReview();
       window.dispatchEvent(new CustomEvent('ta:dashboard-refresh'));
     });
+  });
+
+  document.querySelectorAll('[data-open-requests-workspace]').forEach((button) => {
+    button.addEventListener('click', () => switchWorkspace('requests'));
+  });
+
+  document.querySelectorAll('[data-open-quotes-workspace]').forEach((button) => {
+    button.addEventListener('click', () => switchWorkspace('quotes'));
   });
 
   // Wait briefly so the original dashboard auth/rendering can finish first.
