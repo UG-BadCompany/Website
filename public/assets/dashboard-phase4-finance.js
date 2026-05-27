@@ -23,7 +23,12 @@
     return result;
   };
 
-  const mount = () => {
+  // Phase 38 finance fix
+const mount = () => {
+  const safeInvoices = Array.isArray(window.__taFinanceInvoices)
+    ? window.__taFinanceInvoices
+    : [];
+
     if (document.querySelector('[data-phase4-finance-suite]')) return;
 
     const phase3 = document.querySelector('[data-phase3-workflow-suite]');
@@ -109,21 +114,21 @@
 
   const renderInvoiceCard = (invoice, type = 'open') => {
     const isOverdue = type === 'overdue';
-    const missingCheckout = !invoice.provider?.checkoutUrl && invoice.status === 'open';
+    const missingCheckout = !invoice.provider?.checkoutUrl && (invoice?.status || 'draft') === 'open';
     const checkoutUrl = invoice.provider?.checkoutUrl;
     return `
       <article class="finance-card">
-        <h4>${escapeHtml(invoice.title || 'Invoice')}</h4>
+        <h4>${escapeHtml((invoice?.title || 'Invoice') || 'Invoice')}</h4>
         <p><strong>${escapeHtml(invoice.client?.fullName || invoice.client?.email || 'Client')}</strong><br>${escapeHtml(invoice.jobRequest?.serviceType || '')} • ${escapeHtml(invoice.jobRequest?.streetAddress || '')} ${escapeHtml(invoice.jobRequest?.city || '')}</p>
         <div class="finance-meta">
-          <span class="finance-pill ${invoice.status === 'paid' ? 'good' : isOverdue ? 'hot' : 'warn'}">${escapeHtml(invoice.status || 'open')}</span>
-          <span class="finance-pill">${money(invoice.amountCents)}</span>
+          <span class="finance-pill ${(invoice?.status || 'draft') === 'paid' ? 'good' : isOverdue ? 'hot' : 'warn'}">${escapeHtml((invoice?.status || 'draft') || 'open')}</span>
+          <span class="finance-pill">${money((invoice?.amountCents || 0))}</span>
           ${invoice.dueAt ? `<span class="finance-pill ${isOverdue ? 'hot' : ''}">Due ${escapeHtml(String(invoice.dueAt).slice(0, 10))}</span>` : ''}
           ${missingCheckout ? '<span class="finance-pill warn">needs checkout link</span>' : ''}
         </div>
         <div class="finance-actions">
           ${checkoutUrl ? `<a class="btn btn-primary" href="${escapeHtml(checkoutUrl)}" target="_blank" rel="noopener">Open payment link</a>` : `<button class="btn btn-primary" type="button" data-create-checkout="${escapeHtml(invoice.id)}">Create checkout link</button>`}
-          <button class="btn btn-soft" type="button" data-mark-paid="${escapeHtml(invoice.id)}" data-amount="${Number(invoice.amountCents || 0)}">Mark paid</button>
+          <button class="btn btn-soft" type="button" data-mark-paid="${escapeHtml(invoice.id)}" data-amount="${Number((invoice?.amountCents || 0) || 0)}">Mark paid</button>
           <a class="btn btn-soft" href="#admin-invoices">Open invoices</a>
         </div>
       </article>

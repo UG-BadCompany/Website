@@ -4,6 +4,13 @@
 // Preserves the existing dashboard app and API logic.
 
 (() => {
+
+  const dollarsFromCents = (cents) => {
+    const amount = Number(cents || 0);
+    return (amount / 100).toFixed(2);
+  };
+
+
   const root = document.querySelector('[data-dashboard-root]');
   if (!root || window.__taDashboardPhase2Loaded) return;
   window.__taDashboardPhase2Loaded = true;
@@ -227,7 +234,9 @@
                 <input data-estimate-title value="${escapeHtml(draft.title || 'Estimate draft')}">
               </label>
               <label>Amount
-                <input data-estimate-amount inputmode="decimal" value="${escapeHtml(dollarsFromCents(draft.amountCents || 0))}">
+                <input data-estimate-amount inputmode="decimal" value="${escapeHtml((typeof dollarsFromCents === 'function'
+? dollarsFromCents(draft.amountCents || 0)
+: ((Number(draft.amountCents || 0) / 100).toFixed(2))))}" >
               </label>
             </div>
             <label>Customer/admin quote summary
