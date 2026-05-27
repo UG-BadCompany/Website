@@ -72,7 +72,6 @@ const mount = () => {
               <div class="payment-step" data-state="active"><strong>Invoice open</strong><span>Checkout link or manual payment.</span></div>
               <div class="payment-step"><strong>Paid</strong><span>Receipt and closeout.</span></div>
             </div>
-            ${renderPaymentPlan(invoice.paymentPlan || {})}
         <div class="finance-actions">
               <a class="btn btn-primary" href="#client-invoices">Client invoices</a>
               <a class="btn btn-soft" href="#admin-invoices">Admin invoices</a>
