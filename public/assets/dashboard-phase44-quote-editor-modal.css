@@ -1,0 +1,74 @@
+/* Phase 44: dedicated quote editor modal */
+.quote-editor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: none;
+  background: rgba(2, 6, 23, .72);
+  backdrop-filter: blur(10px);
+  padding: 16px;
+  overflow: auto;
+}
+.quote-editor-modal-backdrop[data-open="true"] {
+  display: grid !important;
+  place-items: start center;
+}
+.quote-editor-modal {
+  width: min(980px, 100%);
+  margin: 40px auto;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(15,23,42,.94));
+  color: #f8fafc;
+  box-shadow: 0 30px 90px rgba(0,0,0,.48);
+  padding: clamp(16px, 3vw, 28px);
+}
+.quote-editor-modal h2 { margin: 0 0 4px; color: #fff !important; }
+.quote-editor-modal p { color: #dbeafe !important; }
+.quote-editor-fields { display: grid; gap: 12px; margin-top: 14px; }
+.quote-editor-grid { display: grid; grid-template-columns: 1fr 180px; gap: 12px; }
+.quote-editor-fields label {
+  display: grid;
+  gap: 6px;
+  color: #e2e8f0 !important;
+  font-weight: 900;
+}
+.quote-editor-fields input,
+.quote-editor-fields textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 14px;
+  background: rgba(2,6,23,.62);
+  color: #fff;
+  padding: 10px 12px;
+  font: inherit;
+}
+.quote-editor-fields textarea { min-height: 220px; resize: vertical; }
+.quote-editor-fields textarea[data-modal-missing-info] { min-height: 110px; }
+.quote-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+.quote-editor-notes {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid rgba(96,165,250,.28);
+  border-radius: 14px;
+  background: rgba(37,99,235,.10);
+  color: #dbeafe !important;
+  padding: 10px 12px;
+  margin: 0;
+}
+.quote-editor-status {
+  color: #dbeafe !important;
+  min-height: 22px;
+  font-weight: 800;
+}
+@media (max-width: 760px) {
+  .quote-editor-grid { grid-template-columns: 1fr; }
+  .quote-editor-modal { margin: 8px auto; }
+}

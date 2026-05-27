@@ -176,6 +176,166 @@
     `;
   };
 
+
+  const ensureQuoteEditorModal = () => {
+    let backdrop = document.querySelector('[data-quote-editor-backdrop]');
+    if (backdrop) return backdrop;
+
+    backdrop = document.createElement('div');
+    backdrop.className = 'quote-editor-modal-backdrop';
+    backdrop.dataset.quoteEditorBackdrop = 'true';
+    backdrop.innerHTML = `
+      <section class="quote-editor-modal" role="dialog" aria-modal="true" aria-labelledby="quote-editor-title">
+        <h2 id="quote-editor-title">Edit quote</h2>
+        <p>Review, rewrite, save, or send the final quote.</p>
+        <form class="quote-editor-fields" data-quote-editor-form>
+          <input type="hidden" data-modal-quote-id>
+          <div class="quote-editor-grid">
+            <label>Quote title
+              <input data-modal-title>
+            </label>
+            <label>Amount
+              <input data-modal-amount inputmode="decimal">
+            </label>
+          </div>
+          <label>Final customer quote / admin summary
+            <textarea data-modal-summary></textarea>
+          </label>
+          <label>Missing items / updated information for AI rewrite
+            <textarea data-modal-missing-info placeholder="Add anything missing or corrected before AI rewrites the quote."></textarea>
+          </label>
+          <div class="quote-editor-actions">
+            <button class="btn btn-soft" type="button" data-modal-ai-rewrite>AI rewrite quote</button>
+            <button class="btn btn-primary" type="submit">Save draft</button>
+            <button class="btn btn-soft" type="button" data-modal-save-send>Save & send</button>
+            <button class="btn btn-soft" type="button" data-modal-close>Close</button>
+          </div>
+          <pre class="quote-editor-notes" data-modal-notes></pre>
+          <p class="quote-editor-status" data-modal-status></p>
+        </form>
+      </section>
+    `;
+    document.body.appendChild(backdrop);
+
+    const setModalStatus = (message) => {
+      const status = backdrop.querySelector('[data-modal-status]');
+      if (status) status.textContent = message || '';
+    };
+
+    const getModalPayload = () => ({
+      quoteId: backdrop.querySelector('[data-modal-quote-id]')?.value || '',
+      title: backdrop.querySelector('[data-modal-title]')?.value || '',
+      summary: backdrop.querySelector('[data-modal-summary]')?.value || '',
+      amountCents: centsFromInput(backdrop.querySelector('[data-modal-amount]')?.value || '0'),
+      missingInfo: backdrop.querySelector('[data-modal-missing-info]')?.value || '',
+      rewriteStyle: 'customer_ready',
+    });
+
+    const saveModalQuote = async (action = 'save') => {
+      const payload = getModalPayload();
+      if (!payload.quoteId) return;
+
+      setModalStatus(action === 'send' ? 'Saving and sending…' : 'Saving draft…');
+
+      await fetchJson('/api/admin/estimate-review', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...payload, action }),
+      });
+
+      setModalStatus(action === 'send' ? 'Saved and sent.' : 'Saved.');
+      window.TAUX?.toast?.({
+        title: action === 'send' ? 'Quote saved and sent' : 'Quote saved',
+        message: 'Estimate Review was updated.',
+        type: 'success',
+      });
+      setTimeout(loadEstimateReview, 450);
+    };
+
+    const rewriteModalQuote = async () => {
+      const button = backdrop.querySelector('[data-modal-ai-rewrite]');
+      const notes = backdrop.querySelector('[data-modal-notes]');
+      const payload = getModalPayload();
+
+      if (!payload.quoteId) return;
+
+      button.disabled = true;
+      const oldText = button.textContent;
+      button.textContent = 'Rewriting…';
+      setModalStatus('AI is rewriting the quote…');
+
+      try {
+        const result = await fetchJson('/api/admin/estimate-rewrite', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const rewrite = result.rewrite || {};
+        backdrop.querySelector('[data-modal-title]').value = rewrite.title || payload.title;
+        backdrop.querySelector('[data-modal-amount]').value = Number.isFinite(Number(rewrite.amountCents))
+          ? dollarsFromCents(rewrite.amountCents)
+          : dollarsFromCents(payload.amountCents);
+        backdrop.querySelector('[data-modal-summary]').value = rewrite.summary || payload.summary;
+
+        const noteLines = [
+          rewrite.aiEnhanced ? 'AI rewrite applied.' : 'Fallback rewrite applied.',
+          ...(rewrite.rewriteNotes || []),
+          ...(rewrite.missingInfoResolved?.length ? ['Missing info resolved:', ...rewrite.missingInfoResolved.map((item) => `- ${item}`)] : []),
+          ...(rewrite.remainingQuestions?.length ? ['Remaining questions:', ...rewrite.remainingQuestions.map((item) => `- ${item}`)] : []),
+          ...(rewrite.riskFlags?.length ? ['Risk flags:', ...rewrite.riskFlags.map((item) => `- ${item}`)] : []),
+          ...(rewrite.exclusions?.length ? ['Exclusions:', ...rewrite.exclusions.map((item) => `- ${item}`)] : []),
+        ];
+
+        if (notes) notes.textContent = noteLines.join('\n');
+        setModalStatus('Rewrite ready. Review it, then save or save & send.');
+      } catch (error) {
+        setModalStatus(error.message || 'Could not rewrite quote.');
+        window.TAUX?.toast?.({ title: 'Rewrite failed', message: error.message || 'Could not rewrite quote.', type: 'error' });
+      } finally {
+        button.disabled = false;
+        button.textContent = oldText;
+      }
+    };
+
+    backdrop.addEventListener('click', (event) => {
+      if (event.target === backdrop || event.target.closest('[data-modal-close]')) {
+        backdrop.dataset.open = 'false';
+      }
+    });
+
+    backdrop.querySelector('[data-quote-editor-form]').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await saveModalQuote('save');
+    });
+
+    backdrop.querySelector('[data-modal-save-send]')?.addEventListener('click', async () => {
+      const confirmed = window.TAUX ? await window.TAUX.confirm({
+        title: 'Save and send quote?',
+        message: 'This saves your final edits and moves the quote forward.',
+        confirmText: 'Save & send',
+      }) : window.confirm('Save and send this quote?');
+      if (confirmed) await saveModalQuote('send');
+    });
+
+    backdrop.querySelector('[data-modal-ai-rewrite]')?.addEventListener('click', rewriteModalQuote);
+
+    return backdrop;
+  };
+
+  const openQuoteEditorModal = (draft = {}) => {
+    const modal = ensureQuoteEditorModal();
+    modal.querySelector('[data-modal-quote-id]').value = draft.quoteId || '';
+    modal.querySelector('[data-modal-title]').value = draft.title || 'Estimate draft';
+    modal.querySelector('[data-modal-amount]').value = dollarsFromCents(draft.amountCents || 0);
+    modal.querySelector('[data-modal-summary]').value = draft.summary || '';
+    modal.querySelector('[data-modal-missing-info]').value = '';
+    modal.querySelector('[data-modal-notes]').textContent = '';
+    modal.querySelector('[data-modal-status]').textContent = '';
+    modal.dataset.open = 'true';
+    setTimeout(() => modal.querySelector('[data-modal-title]')?.focus(), 30);
+  };
+
   const renderDrafts = (drafts = []) => {
     const list = document.querySelector('[data-phase2-estimate-list]');
     const status = document.querySelector('[data-phase2-estimate-status]');
@@ -268,6 +428,47 @@
       `;
     }).join('');
 
+
+    if (!list.dataset.estimateEditDelegated) {
+      list.dataset.estimateEditDelegated = 'true';
+      list.addEventListener('click', (event) => {
+        const editButton = event.target.closest('[data-edit-estimate]');
+        if (editButton) {
+          event.preventDefault();
+          const form = findEstimateForm(editButton);
+          if (!form) return;
+          if (form.hidden || form.hasAttribute('hidden')) openEstimateForm(form);
+          else closeEstimateForm(form);
+          return;
+        }
+
+        const cancelButton = event.target.closest('[data-cancel-estimate-edit]');
+        if (cancelButton) {
+          event.preventDefault();
+          closeEstimateForm(findEstimateForm(cancelButton));
+        }
+      });
+    }
+
+
+    if (!list.dataset.quoteModalDelegated) {
+      list.dataset.quoteModalDelegated = 'true';
+      list.addEventListener('click', (event) => {
+        const editButton = event.target.closest('[data-edit-estimate]');
+        if (!editButton) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const draft = (window.__latestEstimateDrafts || []).find((item) => item.quoteId === editButton.dataset.editEstimate)
+          || drafts.find((item) => item.quoteId === editButton.dataset.editEstimate);
+
+        if (draft) openQuoteEditorModal(draft);
+      }, true);
+    }
+
+    window.__latestEstimateDrafts = drafts;
+
     list.querySelectorAll('[data-copy-estimate]').forEach((button) => {
       button.addEventListener('click', async () => {
         const draft = drafts.find((item) => item.quoteId === button.dataset.copyEstimate);
@@ -287,22 +488,19 @@
 
     list.querySelectorAll('[data-edit-estimate]').forEach((button) => {
       button.addEventListener('click', () => {
-        const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(button.dataset.editEstimate)}"]`);
-        if (!form) return;
-        form.hidden = !form.hidden;
-        if (!form.hidden) form.querySelector('[data-estimate-title]')?.focus();
+        const draft = drafts.find((item) => item.quoteId === button.dataset.editEstimate);
+        if (draft) openQuoteEditorModal(draft);
       });
     });
 
     list.querySelectorAll('[data-cancel-estimate-edit]').forEach((button) => {
       button.addEventListener('click', () => {
-        const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(button.dataset.cancelEstimateEdit)}"]`);
-        if (form) form.hidden = true;
+        closeEstimateForm(findEstimateForm(button));
       });
     });
 
     const saveDraft = async (quoteId, action = 'save') => {
-      const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(quoteId)}"]`);
+      const form = list.querySelector(`[data-estimate-edit-form="${quoteId}"]`) || document.querySelector(`[data-estimate-edit-form="${quoteId}"]`);
       if (!form) return;
       const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
       const title = form.querySelector('[data-estimate-title]')?.value || '';
@@ -330,7 +528,7 @@
     list.querySelectorAll('[data-ai-rewrite-estimate]').forEach((button) => {
       button.addEventListener('click', async () => {
         const quoteId = button.dataset.aiRewriteEstimate;
-        const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(quoteId)}"]`);
+        const form = list.querySelector(`[data-estimate-edit-form="${quoteId}"]`) || document.querySelector(`[data-estimate-edit-form="${quoteId}"]`);
         if (!form) return;
 
         const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
