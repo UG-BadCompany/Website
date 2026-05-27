@@ -1,0 +1,196 @@
+/* public/assets/dashboard-phase19-worker-mobile.css */
+/* Phase 19: worker mobile field experience. */
+
+.worker-mobile-suite {
+  display: none;
+  gap: 14px;
+  margin: 18px 0 32px;
+}
+
+.worker-mobile-panel {
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(249,115,22,.18), transparent 20rem),
+    linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.80));
+  box-shadow: 0 24px 76px rgba(0,0,0,.34);
+  color: #f8fafc;
+  padding: 18px;
+}
+
+.worker-mobile-panel h2 {
+  margin: 0;
+  color: #fff !important;
+  letter-spacing: -.04em;
+}
+
+.worker-mobile-panel p {
+  color: #dbeafe !important;
+}
+
+.worker-mobile-toolbar {
+  position: sticky;
+  top: 88px;
+  z-index: 50;
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 22px;
+  background: rgba(15,23,42,.94);
+  backdrop-filter: blur(16px);
+  padding: 12px;
+}
+
+.worker-mobile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.worker-mobile-actions .btn {
+  min-height: 46px;
+  padding-inline: 10px;
+  font-size: .9rem;
+}
+
+.worker-mobile-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 8px;
+}
+
+.worker-mobile-kpi {
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 16px;
+  background: rgba(2,6,23,.52);
+  padding: 10px;
+}
+
+.worker-mobile-kpi span {
+  display: block;
+  color: #bfdbfe !important;
+  font-size: .7rem;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.worker-mobile-kpi strong {
+  display: block;
+  color: #fff !important;
+  font-size: 1.4rem;
+}
+
+.worker-mobile-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.worker-mobile-card {
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 22px;
+  background: rgba(15,23,42,.82);
+  padding: 14px;
+}
+
+.worker-mobile-card h3 {
+  margin: 0 0 6px;
+  color: #fff !important;
+}
+
+.worker-mobile-card p,
+.worker-mobile-card span {
+  color: #dbeafe !important;
+}
+
+.worker-mobile-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0;
+}
+
+.worker-mobile-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(251,146,60,.34);
+  background: rgba(249,115,22,.12);
+  color: #fff7ed !important;
+  font-weight: 900;
+  font-size: .76rem;
+}
+
+.worker-mobile-checklist {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.worker-mobile-checklist label {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  color: #dbeafe !important;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.worker-mobile-checklist input {
+  margin-top: 3px;
+  transform: scale(1.15);
+}
+
+.worker-mobile-bottom-bar {
+  display: none;
+}
+
+.worker-mobile-empty {
+  border: 1px dashed rgba(255,255,255,.22);
+  border-radius: 18px;
+  padding: 14px;
+  color: #dbeafe !important;
+  background: rgba(255,255,255,.06);
+}
+
+@media (max-width: 780px) {
+  .worker-mobile-suite {
+    display: grid;
+  }
+
+  #worker-tools-upgrade,
+  [data-workflow-panel="worker"] {
+    display: none !important;
+  }
+
+  .worker-mobile-bottom-bar {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 9990;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 20px;
+    background: rgba(15,23,42,.94);
+    backdrop-filter: blur(16px);
+    padding: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.36);
+  }
+
+  .worker-mobile-bottom-bar a,
+  .worker-mobile-bottom-bar button {
+    min-height: 42px;
+    border-radius: 14px;
+    font-size: .78rem;
+  }
+
+  body {
+    padding-bottom: 78px;
+  }
+}

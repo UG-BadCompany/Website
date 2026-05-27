@@ -1,0 +1,19 @@
+/* public/assets/dashboard-phase20-troubleshooting.css */
+.troubleshooting-box {
+  border: 1px solid rgba(34,197,94,.32);
+  border-radius: 16px;
+  background: rgba(22,163,74,.11);
+  padding: 12px;
+}
+.troubleshooting-box h4 {
+  margin: 0 0 8px;
+  color: #dcfce7 !important;
+}
+.troubleshooting-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.troubleshooting-box li {
+  color: #dcfce7 !important;
+  margin: 4px 0;
+}

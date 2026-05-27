@@ -117,6 +117,58 @@
     `;
   };
 
+
+  const renderAccuracyReview = (items = []) => {
+    if (!Array.isArray(items) || !items.length) return '';
+    return `
+      <div class="estimate-accuracy-box">
+        <h4>Accuracy review</h4>
+        <ul>${items.slice(0, 10).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+      </div>
+    `;
+  };
+
+  const renderQuoteOptions = (items = []) => {
+    if (!Array.isArray(items) || !items.length) return '';
+    return `
+      <div class="estimate-options-box">
+        <h4>Quote options</h4>
+        <ul>${items.slice(0, 5).map((item) => `<li>${escapeHtml(item.name || 'Option')}: ${item.lowAmountCents ? `${money(item.lowAmountCents)}–${money(item.highAmountCents)}` : money(item.amountCents || 0)} — ${escapeHtml(item.notes || '')}</li>`).join('')}</ul>
+      </div>
+    `;
+  };
+
+
+  const renderSupplierPricing = (plan = {}) => {
+    const items = Array.isArray(plan.supplierItems) ? plan.supplierItems : [];
+    if (!items.length) return '';
+    return `
+      <div class="supplier-pricing-box">
+        <h4>Supplier / pricing review</h4>
+        <ul>
+          <li>${escapeHtml(plan.summary || 'Verify supplier pricing before sending if needed.')}</li>
+          ${items.slice(0, 8).map((item) => `<li>${escapeHtml(item.name || 'Material')}: ${escapeHtml(item.preferredSupplier || 'verify')} | fallback: ${escapeHtml((item.fallbackSuppliers || []).join(', '))} | ${escapeHtml(item.priceFreshness || '')}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  };
+
+
+  const renderTroubleshootingPlan = (plan = {}) => {
+    const issues = Array.isArray(plan.issues) ? plan.issues : [];
+    if (!issues.length) return '';
+    return `
+      <div class="troubleshooting-box">
+        <h4>Troubleshooting / diagnostic review</h4>
+        <ul>
+          <li>Mode: ${escapeHtml(plan.recommendedMode || 'review')}</li>
+          ${issues.slice(0, 5).map((issue) => `<li>${escapeHtml(issue.cause || 'Possible cause')} | probability: ${escapeHtml(issue.probability || 'unknown')} | tests: ${escapeHtml((issue.tests || []).join('; '))} | ${escapeHtml(issue.repairRange || '')}</li>`).join('')}
+          ${(plan.safetyStopFlags || []).map((flag) => `<li>Safety/licensed flag: ${escapeHtml(flag)}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  };
+
   const renderDrafts = (drafts = []) => {
     const list = document.querySelector('[data-phase2-estimate-list]');
     const status = document.querySelector('[data-phase2-estimate-status]');
@@ -170,6 +222,10 @@
           <p>${escapeHtml(draft.streetAddress || '')} ${escapeHtml(draft.city || '')}</p>
           <pre class="estimate-draft-summary">${escapeHtml(summary || draft.requestDescription || 'No summary available.')}</pre>
           <div class="estimate-draft-detail-grid">
+            ${renderAccuracyReview(draft.accuracyReview || [])}
+            ${renderQuoteOptions(draft.quoteOptions || [])}
+            ${renderSupplierPricing(draft.supplierPricingPlan || {})}
+            ${renderTroubleshootingPlan(draft.troubleshootingPlan || {})}
             ${renderLaborList(draft.laborItems || [])}
             ${renderMaterialList(draft.materials || [])}
             ${renderDetailList('Missing questions', draft.missingInfoQuestions || [], 'estimate-question-list')}

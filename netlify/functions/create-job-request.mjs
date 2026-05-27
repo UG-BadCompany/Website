@@ -43,6 +43,379 @@ const clampMoney = (value) => Math.max(0, Math.round(Number(value || 0)));
 const slug = (value) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 const dollars = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 
+const ACCURACY_RULES_VERSION = 'phase17-ai-quote-accuracy-v1';
+
+const findNumber = (text, pattern, fallback = null) => {
+  const match = text.match(pattern);
+  return match ? Number(match[1]) : fallback;
+};
+
+const detectEstimateFactors = (payload, job) => {
+  const text = job.text;
+  const factors = {
+    access: 'normal',
+    urgency: 'normal',
+    complexity: 'standard',
+    propertyType: 'residential',
+    customerSupplied: /customer supplied|i bought|already have|have the part|supplied by customer/.test(text) || Boolean(payload.customerSupplied),
+    photosProvided: Boolean(payload.photosProvided),
+    measurementQuality: 'low',
+    permitReview: false,
+    licensedTradeReview: false,
+    afterHours: false,
+    roofOrHeight: false,
+    longRun: false,
+    corrosionRisk: false,
+    hiddenDamageRisk: false,
+    multiVisitLikely: false,
+    modifiers: [],
+  };
+
+  const addModifier = (name, laborMultiplier, materialMultiplier, reason) => {
+    factors.modifiers.push({ name, laborMultiplier, materialMultiplier, reason });
+  };
+
+  if (/commercial|business|office|restaurant|retail|property manager|tenant|rental/.test(text)) {
+    factors.propertyType = 'commercial_or_managed';
+    addModifier('managed/commercial coordination', 1.08, 1.02, 'Extra coordination, access, and documentation may be needed.');
+  }
+
+  if (/attic|crawl|tight|confined|behind|inside wall|stucco|block|masonry|second story|ladder|roof|high|vaulted/.test(text)) {
+    factors.access = 'difficult';
+    addModifier('difficult access', 1.18, 1.05, 'Access conditions increase setup, labor, and consumables.');
+  }
+
+  if (/roof|second story|ladder|high wall|two story|vaulted/.test(text)) {
+    factors.roofOrHeight = true;
+    addModifier('height/ladder work', 1.15, 1.02, 'Height work adds setup and safety time.');
+  }
+
+  if (/same day|urgent|asap|emergency|today|tonight|after hours|weekend/.test(text)) {
+    factors.urgency = 'urgent';
+    factors.afterHours = /after hours|tonight|weekend/.test(text);
+    addModifier('urgent scheduling', 1.12, 1, 'Rush work may disrupt schedule and increase coordination cost.');
+  }
+
+  if (/rust|corrosion|stuck|old|brittle|broken off|stripped|rotted|water damage|leak damage|termite/.test(text)) {
+    factors.corrosionRisk = true;
+    factors.hiddenDamageRisk = true;
+    addModifier('corrosion/hidden damage risk', 1.22, 1.08, 'Old/corroded/damaged conditions often increase time and parts.');
+  }
+
+  if (/patch|drywall|texture|paint|mud|joint compound/.test(text)) {
+    factors.multiVisitLikely = true;
+    addModifier('multi-visit finish work', 1.10, 1.03, 'Dry time and finish matching can require more than one trip.');
+  }
+
+  const feet = findNumber(text, /\b(\d{1,3})\s*(?:ft|feet|foot)\b/);
+  if (feet && feet >= 40) {
+    factors.longRun = true;
+    addModifier('long material run', 1.12, 1.22, `Request mentions about ${feet} ft; long runs increase material and labor.`);
+  }
+
+  if (/(model|brand|size|measurement|rough in|btu|ton|amp|volt|voltage|mca|mocp|\d+\s*(?:ft|feet|inch|in|amp|volt|btu))/.test(text)) {
+    factors.measurementQuality = 'medium';
+  }
+  if (/(model number|serial|photo|picture|uploaded|spec sheet|nameplate|data plate)/.test(text) || payload.photosProvided) {
+    factors.measurementQuality = 'high';
+  }
+
+  if (/permit|inspection|new circuit|dedicated circuit|panel|breaker|disconnect|mini split|hvac|water heater|gas|structural/.test(text)) {
+    factors.permitReview = true;
+  }
+
+  if (/panel|breaker|new circuit|dedicated circuit|disconnect|gas|propane|hvac|refrigerant|mini split|water heater|roof|structural/.test(text)) {
+    factors.licensedTradeReview = true;
+  }
+
+  if (factors.customerSupplied) {
+    addModifier('customer-supplied material risk', 1.06, 0.75, 'Customer-supplied items may lower material cost but increase compatibility/warranty risk.');
+  }
+
+  const totalLaborModifier = factors.modifiers.reduce((value, item) => value * Number(item.laborMultiplier || 1), 1);
+  const totalMaterialModifier = factors.modifiers.reduce((value, item) => value * Number(item.materialMultiplier || 1), 1);
+
+  return {
+    ...factors,
+    totalLaborModifier: Number(totalLaborModifier.toFixed(3)),
+    totalMaterialModifier: Number(totalMaterialModifier.toFixed(3)),
+  };
+};
+
+const applyEstimateAccuracyModifiers = ({ laborItems, materials, factors }) => {
+  const adjustedLaborItems = laborItems.map((item) => ({
+    ...item,
+    baseLowHours: item.lowHours,
+    baseHighHours: item.highHours,
+    lowHours: Number((Number(item.lowHours || 0) * factors.totalLaborModifier).toFixed(2)),
+    highHours: Number((Number(item.highHours || item.lowHours || 0) * factors.totalLaborModifier).toFixed(2)),
+    accuracyNotes: factors.modifiers.map((modifier) => modifier.name),
+  }));
+
+  const adjustedMaterials = materials.map((item) => ({
+    ...item,
+    baseLowCents: item.lowCents,
+    baseHighCents: item.highCents,
+    lowCents: clampMoney(Number(item.lowCents || 0) * factors.totalMaterialModifier),
+    highCents: clampMoney(Number(item.highCents || item.lowCents || 0) * factors.totalMaterialModifier),
+    accuracyNotes: factors.modifiers.map((modifier) => modifier.name),
+  }));
+
+  return { laborItems: adjustedLaborItems, materials: adjustedMaterials };
+};
+
+const buildAccuracyReview = ({ payload, job, factors, questions, riskFlags, totals }) => {
+  const review = [];
+  review.push(`Accuracy rules: ${ACCURACY_RULES_VERSION}`);
+  review.push(`Detected trade/scope: ${job.trade} / ${job.scope}`);
+  review.push(`Access: ${factors.access}; urgency: ${factors.urgency}; property type: ${factors.propertyType}; measurement quality: ${factors.measurementQuality}`);
+  review.push(`Labor modifier: ${factors.totalLaborModifier}x; material modifier: ${factors.totalMaterialModifier}x`);
+  if (factors.modifiers.length) {
+    review.push('Applied modifiers:');
+    factors.modifiers.forEach((modifier) => review.push(`- ${modifier.name}: labor ${modifier.laborMultiplier}x, material ${modifier.materialMultiplier}x — ${modifier.reason}`));
+  } else {
+    review.push('Applied modifiers: none beyond base trade/scope rules.');
+  }
+  review.push(`Range spread: ${dollars(totals.totalLowCents)} – ${dollars(totals.totalHighCents)}`);
+  review.push(`Questions remaining: ${questions.length}; risk flags: ${riskFlags.length}`);
+  return review;
+};
+
+const calculateQuoteConfidence = ({ payload, questions, riskFlags, factors }) => {
+  let confidence = 84;
+  confidence -= questions.length * 4;
+  confidence -= riskFlags.length * 3;
+  if (factors.photosProvided) confidence += 8;
+  if (factors.measurementQuality === 'medium') confidence += 4;
+  if (factors.measurementQuality === 'high') confidence += 8;
+  if (factors.access === 'difficult') confidence -= 7;
+  if (factors.hiddenDamageRisk) confidence -= 8;
+  if (factors.licensedTradeReview) confidence -= 6;
+  if (factors.customerSupplied) confidence -= 4;
+  if (factors.urgency === 'urgent') confidence -= 3;
+  return Math.max(25, Math.min(94, Math.round(confidence)));
+};
+
+const buildQuoteOptions = ({ totals, job }) => {
+  const diagnostic = {
+    name: 'Diagnostic / site verification',
+    amountCents: Math.max(MINIMUM_CHARGE_CENTS, Math.round(totals.laborLowCents + TRIP_CHARGE_CENTS)),
+    notes: 'Use when the request lacks enough information or hidden conditions are likely.',
+  };
+
+  const base = {
+    name: 'Recommended working estimate',
+    amountCents: totals.totalHighCents,
+    notes: 'Use as admin starting point before sending final quote.',
+  };
+
+  const range = {
+    name: 'Low-to-high range',
+    lowAmountCents: totals.totalLowCents,
+    highAmountCents: totals.totalHighCents,
+    notes: 'Use when admin needs customer approval for a range or site verification.',
+  };
+
+  if (job.scope === 'troubleshooting_repair') return [diagnostic, range, base];
+  return [range, base, diagnostic];
+};
+
+
+
+const TROUBLESHOOTING_ENGINE_VERSION = 'phase20-ai-troubleshooting-v1';
+
+const buildTroubleshootingPlan = ({ payload, job, factors }) => {
+  const text = job.text;
+  const issues = [];
+
+  const addIssue = ({ cause, probability, tests, parts, repairRange, replaceTrigger, notes }) => {
+    issues.push({ cause, probability, tests, parts, repairRange, replaceTrigger, notes });
+  };
+
+  if (job.trade === 'hvac' && /not cooling|not heating|no cool|warm air|mini split|ac|hvac/.test(text)) {
+    addIssue({
+      cause: 'Dirty filters/coil, airflow restriction, or clogged blower wheel',
+      probability: 'medium-high',
+      tests: ['Inspect filters and coil face', 'Check indoor blower speed and airflow', 'Inspect return/supply restrictions'],
+      parts: ['Filter/cleaning supplies', 'Coil cleaner if appropriate'],
+      repairRange: '$175–$450 diagnostic/cleaning allowance',
+      replaceTrigger: 'Only replace equipment if major sealed-system or board failure is confirmed.',
+      notes: 'Common no-cool cause and often repairable without major parts.',
+    });
+    addIssue({
+      cause: 'Low refrigerant, leak, or improper line-set/startup issue',
+      probability: 'medium',
+      tests: ['Check temperature split', 'Inspect flare joints/line set oil staining', 'Licensed HVAC pressure/charge verification'],
+      parts: ['Leak repair materials', 'Refrigerant/flare fittings if licensed scope'],
+      repairRange: '$350–$1,500+ depending on leak location and licensed refrigerant work',
+      replaceTrigger: 'Replace if coil/compressor failure or repair exceeds practical equipment value.',
+      notes: 'Requires licensed HVAC review before final quote.',
+    });
+    addIssue({
+      cause: 'Control board, sensor, or communication fault',
+      probability: 'medium',
+      tests: ['Check error codes', 'Inspect communication wiring', 'Verify voltage and polarity per manufacturer'],
+      parts: ['Sensor', 'Control board', 'Communication wire'],
+      repairRange: '$250–$900 depending on part and access',
+      replaceTrigger: 'Replace if discontinued boards/parts are unavailable.',
+      notes: 'Model/serial is needed for part pricing.',
+    });
+  } else if (job.trade === 'plumbing' && /leak|drip|water|toilet|faucet|sink|drain|clog/.test(text)) {
+    addIssue({
+      cause: 'Failed seal, supply line, cartridge, wax ring, or loose connection',
+      probability: 'high',
+      tests: ['Identify active leak source', 'Check shutoff valves', 'Dry area and test under use'],
+      parts: ['Supply line', 'Cartridge/seal kit', 'Wax ring', 'Angle stop as needed'],
+      repairRange: '$175–$650 depending on access and failed part',
+      replaceTrigger: 'Replace fixture if corrosion, cracks, or unavailable parts are found.',
+      notes: 'Hidden water damage can change scope.',
+    });
+    addIssue({
+      cause: 'Drain restriction, trap issue, or disposal/tailpiece leak',
+      probability: 'medium',
+      tests: ['Run fixture under load', 'Inspect trap/tailpiece/disposal connection', 'Snake/clear if accessible'],
+      parts: ['Trap kit', 'Slip nuts/washers', 'Disposal flange parts'],
+      repairRange: '$175–$550',
+      replaceTrigger: 'Replace disposal or drain assembly if cracked/corroded.',
+      notes: 'Do not quote concealed drain repair without inspection.',
+    });
+  } else if (job.trade === 'electrical' && /not working|tripping|outlet|switch|light|fan|breaker|gfci/.test(text)) {
+    addIssue({
+      cause: 'Tripped GFCI/breaker, loose connection, failed device, or overloaded circuit',
+      probability: 'medium-high',
+      tests: ['Test voltage', 'Check upstream GFCI', 'Inspect device wiring', 'Load test if safe'],
+      parts: ['GFCI/outlet/switch', 'Wire nuts/pigtails', 'Cover plate'],
+      repairRange: '$175–$650 for device/circuit diagnosis and basic repair',
+      replaceTrigger: 'Panel/circuit problems require licensed electrician review.',
+      notes: 'Safety first; stop if overheating, arcing, or panel defect is found.',
+    });
+  } else if (job.trade === 'appliance') {
+    addIssue({
+      cause: 'Install connection issue, failed hose/cord/vent, leveling, or appliance fault',
+      probability: 'medium',
+      tests: ['Verify power/water/gas/vent connection', 'Check error codes', 'Inspect leveling and clearances'],
+      parts: ['Install kit', 'Hose/cord/vent', 'Mounting hardware'],
+      repairRange: '$175–$550 before appliance-specific parts',
+      replaceTrigger: 'Replace if internal appliance part exceeds repair value.',
+      notes: 'Manufacturer warranty may apply.',
+    });
+  } else {
+    addIssue({
+      cause: 'Unknown issue requiring site diagnosis',
+      probability: 'medium',
+      tests: ['Verify symptoms in person', 'Inspect access and existing conditions', 'Confirm exact materials/model/measurements'],
+      parts: ['Diagnostic-only until cause is confirmed'],
+      repairRange: '$175–$450 diagnostic/site verification allowance',
+      replaceTrigger: 'Replace only after failure cause and part availability are confirmed.',
+      notes: 'Use diagnostic quote option if customer details are incomplete.',
+    });
+  }
+
+  const diagnosticQuestions = [
+    'When did the problem start and did anything change right before it happened?',
+    'Is the issue constant or intermittent?',
+    'Do you have photos/video of the problem and model/serial labels?',
+  ];
+
+  if (job.trade === 'hvac') diagnosticQuestions.push('Any error codes, blinking lights, ice, water leaks, or outdoor unit behavior?');
+  if (job.trade === 'plumbing') diagnosticQuestions.push('Can water be shut off locally, and is there visible water damage?');
+  if (job.trade === 'electrical') diagnosticQuestions.push('Is anything hot, buzzing, sparking, tripping repeatedly, or affecting multiple rooms?');
+
+  return {
+    version: TROUBLESHOOTING_ENGINE_VERSION,
+    recommendedMode: job.scope === 'troubleshooting_repair' ? 'diagnostic-first' : 'standard estimate with diagnostic notes',
+    issues,
+    diagnosticQuestions,
+    safetyStopFlags: [
+      factors.licensedTradeReview ? 'Licensed trade review may be required before repair.' : '',
+      /sparking|burning|smoke|gas|sewage|flood|major leak/.test(text) ? 'Potential urgent safety condition; stop and escalate.' : '',
+    ].filter(Boolean),
+    repairVsReplaceGuidance: issues.map((issue) => `${issue.cause}: ${issue.replaceTrigger}`),
+  };
+};
+
+
+const SUPPLIER_INTELLIGENCE_VERSION = 'phase18-supplier-pricing-v1';
+
+const inferSupplierCategory = (name = '') => {
+  const value = slug(name);
+  if (/mini split|line set|communication|condenser|condensate|disconnect|whip|hvac/.test(value)) return 'hvac';
+  if (/faucet|toilet|wax|supply line|angle stop|drain|plumbing|shutoff/.test(value)) return 'plumbing';
+  if (/breaker|conduit|wire|gfci|outlet|switch|fixture|electrical|box/.test(value)) return 'electrical';
+  if (/drywall|compound|tape|texture|paint|primer/.test(value)) return 'drywall_paint';
+  if (/wood|trim|cabinet|door|hardware|fastener|anchor/.test(value)) return 'building_materials';
+  if (/appliance|dishwasher|microwave|range|washer|dryer/.test(value)) return 'appliance';
+  return 'general';
+};
+
+const supplierOptionsForCategory = (category) => {
+  const catalog = {
+    hvac: ['Johnstone Supply', 'Ferguson HVAC', 'Grainger', 'SupplyHouse', 'Home Depot', 'Lowe’s'],
+    plumbing: ['Ferguson', 'SupplyHouse', 'Home Depot', 'Lowe’s', 'Grainger'],
+    electrical: ['Home Depot', 'Lowe’s', 'Grainger', 'Graybar', 'CED'],
+    drywall_paint: ['Home Depot', 'Lowe’s', 'Sherwin-Williams', 'Dunn-Edwards'],
+    building_materials: ['Home Depot', 'Lowe’s', '84 Lumber', 'local lumber yard'],
+    appliance: ['Home Depot', 'Lowe’s', 'Best Buy', 'manufacturer parts source'],
+    general: ['Home Depot', 'Lowe’s', 'Grainger', 'Amazon Business'],
+  };
+  return catalog[category] || catalog.general;
+};
+
+const buildSupplierPricingPlan = ({ materials, job, factors }) => {
+  const supplierItems = materials.map((item) => {
+    const category = inferSupplierCategory(item.name);
+    const suppliers = supplierOptionsForCategory(category);
+    const shouldVerifyLive =
+      item.highCents >= 10000 ||
+      category === 'hvac' ||
+      category === 'appliance' ||
+      /equipment|breaker|disconnect|faucet|toilet|fixture|line set|wire|conduit/.test(slug(item.name));
+
+    return {
+      name: item.name,
+      category,
+      suppliers,
+      preferredSupplier: suppliers[0],
+      fallbackSuppliers: suppliers.slice(1, 4),
+      shouldVerifyLive,
+      priceFreshness: shouldVerifyLive ? 'verify before sending quote' : 'allowance acceptable unless customer requests fixed quote',
+      sourcingNotes: [
+        shouldVerifyLive ? 'Admin should verify live price/stock before quote is sent.' : 'Allowance can be used for early estimate draft.',
+        factors.customerSupplied ? 'Customer-supplied materials need compatibility/warranty review.' : 'Company-supplied item can include markup and pickup time.',
+        category === 'hvac' ? 'HVAC equipment/materials may require brand/spec compatibility and licensed startup review.' : '',
+      ].filter(Boolean),
+    };
+  });
+
+  const liveVerificationCount = supplierItems.filter((item) => item.shouldVerifyLive).length;
+
+  return {
+    version: SUPPLIER_INTELLIGENCE_VERSION,
+    liveVerificationCount,
+    supplierItems,
+    summary: liveVerificationCount
+      ? `${liveVerificationCount} material line(s) should be price/stock verified before sending.`
+      : 'Material allowances are acceptable for draft review unless admin wants fixed supplier pricing.',
+    preferredSuppliers: [...new Set(supplierItems.flatMap((item) => item.suppliers).slice(0, 8))],
+  };
+};
+
+const appendSupplierNotesToMaterials = ({ materials, supplierPricingPlan }) => materials.map((item) => {
+  const supplierItem = supplierPricingPlan.supplierItems.find((entry) => entry.name === item.name);
+  if (!supplierItem) return item;
+
+  return {
+    ...item,
+    supplierCategory: supplierItem.category,
+    preferredSupplier: supplierItem.preferredSupplier,
+    fallbackSuppliers: supplierItem.fallbackSuppliers,
+    shouldVerifyLivePrice: supplierItem.shouldVerifyLive,
+    priceFreshness: supplierItem.priceFreshness,
+    sourcingNotes: supplierItem.sourcingNotes,
+  };
+});
+
+
 export const normalizePayload = (payload) => {
   const normalized = {};
 
@@ -353,13 +726,22 @@ const calculateEstimate = ({ laborItems, materials }) => {
 
 const estimateFromPayload = (payload) => {
   const job = detectJobType(payload);
-  const materials = buildMaterialItems(payload, job);
-  const laborItems = buildLaborItems(payload, job);
+  const baseMaterials = buildMaterialItems(payload, job);
+  const baseLaborItems = buildLaborItems(payload, job);
+  const factors = detectEstimateFactors(payload, job);
+  const adjusted = applyEstimateAccuracyModifiers({ laborItems: baseLaborItems, materials: baseMaterials, factors });
+  const materials = adjusted.materials;
+  const laborItems = adjusted.laborItems;
   const questions = buildQuestions(payload, job);
   const riskFlags = buildRiskFlags(payload, job);
   const exclusions = buildExclusions(job);
   const totals = calculateEstimate({ laborItems, materials });
-  const confidence = Math.max(35, Math.min(90, 82 - (questions.length * 5) - (riskFlags.length * 3) + (payload.photosProvided ? 8 : 0)));
+  const supplierPricingPlan = buildSupplierPricingPlan({ materials, job, factors });
+  const pricedMaterials = appendSupplierNotesToMaterials({ materials, supplierPricingPlan });
+  const troubleshootingPlan = buildTroubleshootingPlan({ payload, job, factors });
+  const confidence = calculateQuoteConfidence({ payload, questions, riskFlags, factors });
+  const accuracyReview = buildAccuracyReview({ payload, job, factors, questions, riskFlags, totals });
+  const quoteOptions = buildQuoteOptions({ totals, job });
 
   const title = `${payload.service || 'Service'} ${job.scope.replaceAll('_', ' ')} estimate draft`;
   const summary = [
@@ -372,12 +754,28 @@ const estimateFromPayload = (payload) => {
     '',
     `Recommended estimate range: ${dollars(totals.totalLowCents)} – ${dollars(totals.totalHighCents)}`,
     `Confidence: ${confidence}/100`,
+    `Quote readiness: ${confidence >= 72 && questions.length <= 3 && riskFlags.length <= 4 ? 'review-ready after admin verification' : 'needs admin follow-up before sending'}`,
+    '',
+    'Accuracy review:',
+    ...accuracyReview.map((line) => `- ${line}`),
+    '',
+    'Quote options:',
+    ...quoteOptions.map((option) => option.lowAmountCents ? `- ${option.name}: ${dollars(option.lowAmountCents)} – ${dollars(option.highAmountCents)} | ${option.notes}` : `- ${option.name}: ${dollars(option.amountCents)} | ${option.notes}`),
     '',
     `Labor range: ${totals.laborHoursLow.toFixed(2)} – ${totals.laborHoursHigh.toFixed(2)} hours @ ${dollars(DEFAULT_LABOR_RATE_CENTS)}/hr`,
-    ...laborItems.map((item) => `- ${item.name}: ${item.lowHours}-${item.highHours} hrs | ${item.notes}`),
+    ...laborItems.map((item) => `- ${item.name}: ${item.lowHours}-${item.highHours} hrs | ${item.notes}${item.accuracyNotes?.length ? ` | modifiers: ${item.accuracyNotes.join(', ')}` : ''}`),
     '',
     `Materials/allowances before markup: ${dollars(totals.materialLowCents)} – ${dollars(totals.materialHighCents)}`,
-    ...materials.map((item) => `- ${item.name}: qty ${item.quantity} ${item.unit || ''} | ${dollars(item.lowCents)} – ${dollars(item.highCents)} | ${item.notes}`),
+    ...pricedMaterials.map((item) => `- ${item.name}: qty ${item.quantity} ${item.unit || ''} | ${dollars(item.lowCents)} – ${dollars(item.highCents)} | supplier: ${item.preferredSupplier || 'verify'} | ${item.priceFreshness || ''} | ${item.notes}${item.accuracyNotes?.length ? ` | modifiers: ${item.accuracyNotes.join(', ')}` : ''}`),
+    '',
+    'Supplier/pricing review:',
+    `- ${supplierPricingPlan.summary}`,
+    ...supplierPricingPlan.supplierItems.slice(0, 10).map((item) => `- ${item.name}: ${item.preferredSupplier}; fallbacks: ${item.fallbackSuppliers.join(', ')}; ${item.priceFreshness}`),
+    '',
+    'Troubleshooting / diagnostic review:',
+    `- Mode: ${troubleshootingPlan.recommendedMode}`,
+    ...troubleshootingPlan.issues.slice(0, 5).map((issue) => `- ${issue.cause} | probability: ${issue.probability} | tests: ${issue.tests.join('; ')} | range: ${issue.repairRange}`),
+    ...troubleshootingPlan.safetyStopFlags.map((flag) => `- Safety/licensed flag: ${flag}`),
     '',
     `Trip charge: ${dollars(totals.tripChargeCents)}`,
     `Material markup: ${Math.round(MATERIAL_MARKUP * 100)}%`,
@@ -396,6 +794,7 @@ const estimateFromPayload = (payload) => {
     '- Verify photos/specs/model numbers.',
     '- Confirm customer-supplied vs company-supplied materials.',
     '- Confirm whether permit/licensed trade involvement is required.',
+    '- Choose diagnostic, range, or fixed quote option before sending.',
     '- Adjust final price before sending quote.',
   ].join('\n');
 
@@ -406,15 +805,23 @@ const estimateFromPayload = (payload) => {
     lowAmountCents: totals.totalLowCents,
     laborHours: totals.laborHoursHigh,
     laborRateCents: DEFAULT_LABOR_RATE_CENTS,
-    materials,
+    materials: pricedMaterials,
     laborItems,
+    baseMaterials,
+    baseLaborItems,
     missingInfoQuestions: questions,
     riskFlags,
     exclusions,
     job,
+    factors,
+    supplierPricingPlan,
+    troubleshootingPlan,
+    accuracyReview,
+    quoteOptions,
     totals,
     confidence,
-    quoteReady: questions.length <= 2 && riskFlags.length <= 3,
+    quoteReady: confidence >= 72 && questions.length <= 3 && riskFlags.length <= 4,
+    accuracyRulesVersion: ACCURACY_RULES_VERSION,
   };
 };
 
@@ -524,9 +931,17 @@ const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload })
         job: draft.job || null,
         confidence: draft.confidence || null,
         quoteReady: Boolean(draft.quoteReady),
+        accuracyRulesVersion: draft.accuracyRulesVersion || ACCURACY_RULES_VERSION,
+        factors: draft.factors || {},
+        accuracyReview: draft.accuracyReview || [],
+        quoteOptions: draft.quoteOptions || [],
         aiEnhanced: Boolean(draft.aiEnhanced),
         laborItems: draft.laborItems || [],
         materials: draft.materials || [],
+        supplierPricingPlan: draft.supplierPricingPlan || {},
+        troubleshootingPlan: draft.troubleshootingPlan || {},
+        baseLaborItems: draft.baseLaborItems || [],
+        baseMaterials: draft.baseMaterials || [],
         missingInfoQuestions: draft.missingInfoQuestions || [],
         riskFlags: draft.riskFlags || [],
         exclusions: draft.exclusions || [],
@@ -678,9 +1093,15 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         lowAmountCents: estimateDraftResult.draft.lowAmountCents || null,
         confidence: estimateDraftResult.draft.confidence || null,
         quoteReady: Boolean(estimateDraftResult.draft.quoteReady),
+        accuracyRulesVersion: estimateDraftResult.draft.accuracyRulesVersion || ACCURACY_RULES_VERSION,
+        factors: estimateDraftResult.draft.factors || {},
+        accuracyReview: estimateDraftResult.draft.accuracyReview || [],
+        quoteOptions: estimateDraftResult.draft.quoteOptions || [],
         missingInfoQuestions: estimateDraftResult.draft.missingInfoQuestions || [],
         riskFlags: estimateDraftResult.draft.riskFlags || [],
         materials: estimateDraftResult.draft.materials || [],
+        supplierPricingPlan: estimateDraftResult.draft.supplierPricingPlan || {},
+        troubleshootingPlan: estimateDraftResult.draft.troubleshootingPlan || {},
         laborItems: estimateDraftResult.draft.laborItems || [],
         totals: estimateDraftResult.draft.totals || {},
       } : null,
