@@ -30,5 +30,6 @@
   "audit:phase19": "node scripts/audit-phase19-worker-mobile.mjs",
   "audit:phase20": "node scripts/audit-phase20-troubleshooting.mjs",
   "audit:phase21": "node scripts/audit-phase21-work-order-automation.mjs",
-  "audit:phase22": "node scripts/audit-phase22-payments.mjs"
+  "audit:phase22": "node scripts/audit-phase22-payments.mjs",
+  "audit:phase23": "node scripts/audit-phase23-customer-experience.mjs"
 }

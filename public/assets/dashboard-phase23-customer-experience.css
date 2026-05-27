@@ -1,0 +1,136 @@
+/* public/assets/dashboard-phase23-customer-experience.css */
+/* Phase 23: customer experience polish. */
+
+.customer-experience-suite {
+  display: grid;
+  gap: 18px;
+  margin: 22px 0 36px;
+}
+
+.customer-experience-panel {
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(249,115,22,.16), transparent 24rem),
+    linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.78));
+  box-shadow: 0 28px 80px rgba(0,0,0,.32);
+  color: #f8fafc;
+  padding: clamp(18px, 3vw, 30px);
+}
+
+.customer-experience-panel h2,
+.customer-experience-panel h3,
+.customer-experience-panel strong {
+  color: #fff !important;
+}
+
+.customer-experience-panel p,
+.customer-experience-panel span,
+.customer-experience-panel li {
+  color: #dbeafe !important;
+}
+
+.customer-status-grid {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.customer-next-step-card,
+.customer-update-card {
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 22px;
+  background: rgba(15,23,42,.78);
+  padding: 16px;
+}
+
+.customer-next-step-card {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(34,197,94,.16), transparent 18rem),
+    rgba(15,23,42,.82);
+}
+
+.customer-timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.customer-timeline-step {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  background: rgba(2,6,23,.48);
+  padding: 12px;
+}
+
+.customer-step-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.18);
+  color: #fff;
+  font-weight: 950;
+}
+
+.customer-timeline-step[data-state="done"] .customer-step-dot {
+  background: rgba(34,197,94,.18);
+  border-color: rgba(34,197,94,.38);
+  color: #bbf7d0;
+}
+
+.customer-timeline-step[data-state="active"] .customer-step-dot {
+  background: rgba(249,115,22,.18);
+  border-color: rgba(249,115,22,.38);
+  color: #fed7aa;
+}
+
+.customer-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.customer-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.customer-kpi {
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  background: rgba(2,6,23,.48);
+  padding: 13px;
+}
+
+.customer-kpi span {
+  display: block;
+  color: #bfdbfe !important;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .72rem;
+  font-weight: 950;
+}
+
+.customer-kpi strong {
+  display: block;
+  font-size: 1.55rem;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .customer-status-grid,
+  .customer-kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
