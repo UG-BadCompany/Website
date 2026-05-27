@@ -1,0 +1,49 @@
+/* Phase 34: sidebar-only workspace views */
+.workspace-route-tabs,
+.workspace-route-note {
+  display: none !important;
+}
+
+body[data-sidebar-workspace] [data-sidebar-workspace-section] {
+  display: none !important;
+}
+
+body[data-sidebar-workspace="overview"] [data-sidebar-workspace-section~="overview"],
+body[data-sidebar-workspace="requests"] [data-sidebar-workspace-section~="requests"],
+body[data-sidebar-workspace="quotes"] [data-sidebar-workspace-section~="quotes"],
+body[data-sidebar-workspace="work-orders"] [data-sidebar-workspace-section~="work-orders"],
+body[data-sidebar-workspace="invoices"] [data-sidebar-workspace-section~="invoices"],
+body[data-sidebar-workspace="workers"] [data-sidebar-workspace-section~="workers"],
+body[data-sidebar-workspace="settings"] [data-sidebar-workspace-section~="settings"] {
+  display: block !important;
+}
+
+.sidebar-workspace-header {
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(15,23,42,.9), rgba(15,23,42,.72));
+  color: #f8fafc;
+  padding: 16px;
+  margin: 14px 0 18px;
+}
+
+.sidebar-workspace-header h2 {
+  margin: 0 0 4px;
+  color: #fff !important;
+  letter-spacing: -.035em;
+}
+
+.sidebar-workspace-header p {
+  margin: 0;
+  color: #dbeafe !important;
+}
+
+.sidebar-nav-link[aria-current="true"] {
+  background: linear-gradient(135deg, #fb923c, #f59e0b) !important;
+  color: #21120a !important;
+  border-color: transparent !important;
+}
+
+.sidebar-nav-link[aria-current="true"] small {
+  color: #431407 !important;
+}
