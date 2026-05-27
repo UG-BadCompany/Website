@@ -8,7 +8,8 @@
     "postbuild": "node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs",
     "start": "node scripts/serve-static-site.mjs",
     "test": "node --test",
-    "prebuild": "node scripts/prebuild-netlify-migrations.cjs"
+    "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
+    "audit:phase8": "node scripts/audit-phase8.cjs"
   },
   "engines": {
     "node": ">=20.12.2"
