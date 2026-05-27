@@ -239,14 +239,19 @@
 : ((Number(draft.amountCents || 0) / 100).toFixed(2))))}" >
               </label>
             </div>
-            <label>Customer/admin quote summary
+            <label>Final customer quote / admin summary
               <textarea data-estimate-summary>${escapeHtml(draft.summary || '')}</textarea>
             </label>
+            <label>Missing items / updated information for AI rewrite
+              <textarea data-estimate-missing-info placeholder="Example: customer already has the mini split; electrical run is about 100 ft; attic access is tight; include disconnect, whip, breaker, conduit, fittings, line hide, condensate, startup/testing."></textarea>
+            </label>
             <div class="estimate-edit-actions">
+              <button class="btn btn-soft" type="button" data-ai-rewrite-estimate="${escapeHtml(draft.quoteId)}">AI rewrite quote</button>
               <button class="btn btn-primary" type="submit">Save draft</button>
               <button class="btn btn-soft" type="button" data-cancel-estimate-edit="${escapeHtml(draft.quoteId)}">Cancel</button>
               <button class="btn btn-soft" type="button" data-save-send-estimate="${escapeHtml(draft.quoteId)}">Save & send</button>
             </div>
+            <pre class="estimate-rewrite-notes" data-estimate-rewrite-notes="${escapeHtml(draft.quoteId)}"></pre>
             <p class="estimate-edit-status" data-estimate-edit-status="${escapeHtml(draft.quoteId)}"></p>
           </form>
           <div class="estimate-draft-detail-grid">
@@ -320,6 +325,49 @@
       });
       setTimeout(loadEstimateReview, 450);
     };
+
+
+    list.querySelectorAll('[data-ai-rewrite-estimate]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const quoteId = button.dataset.aiRewriteEstimate;
+        const form = list.querySelector(`[data-estimate-edit-form="${CSS.escape(quoteId)}"]`);
+        if (!form) return;
+
+        const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
+        const payload = {
+          quoteId,
+          title: form.querySelector('[data-estimate-title]')?.value || '',
+          summary: form.querySelector('[data-estimate-summary]')?.value || '',
+          amountCents: centsFromInput(form.querySelector('[data-estimate-amount]')?.value || '0'),
+          missingInfo: form.querySelector('[data-estimate-missing-info]')?.value || '',
+          rewriteStyle: 'customer_ready',
+        };
+
+        button.disabled = true;
+        const previousText = button.textContent;
+        button.textContent = 'Rewriting…';
+        if (status) status.textContent = 'AI is rewriting the quote with your updated information…';
+
+        try {
+          const result = await fetchJson('/api/admin/estimate-rewrite', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          applyRewriteToForm(form, result.rewrite || {});
+          if (status) status.textContent = 'Rewrite ready. Review it, then save or save & send.';
+          window.TAUX?.toast?.({ title: 'Quote rewritten', message: 'Review the rewritten quote before saving or sending.', type: 'success' });
+        } catch (error) {
+          if (status) status.textContent = error.message || 'Could not rewrite quote.';
+          window.TAUX?.toast?.({ title: 'Rewrite failed', message: error.message || 'Could not rewrite quote.', type: 'error' });
+        } finally {
+          button.disabled = false;
+          button.textContent = previousText;
+        }
+      });
+    });
+
 
     list.querySelectorAll('[data-estimate-edit-form]').forEach((form) => {
       form.addEventListener('submit', async (event) => {
