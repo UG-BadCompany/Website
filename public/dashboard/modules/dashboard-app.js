@@ -129,13 +129,13 @@
 
         const permissions = user.permissions || {};
         const actions = [];
-        if (permissions.canViewAdminTools) actions.push('<button class="admin-command-card" type="button" data-admin-work-orders-shortcut><strong>Work orders</strong><span>Open work-order tools in a quick popup.</span></button>');
-        if (permissions.canManageInvoices) actions.push('<button class="admin-command-card" type="button" data-admin-invoices-shortcut><strong>Invoices</strong><span>Open invoice tools in a quick popup.</span></button>');
-        if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles & users</strong><span>Manage dashboard users and access.</span></button>');
-        if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
-        if (permissions.canManageInventory) actions.push('<button class="admin-command-card" type="button" data-admin-inventory-shortcut><strong>Inventory</strong><span>Open inventory tools in a quick popup.</span></button>');
-        if (permissions.canViewClientTools) actions.push('<button class="admin-command-card" type="button" data-client-requests-shortcut><strong>Client requests</strong><span>Submit or review work requests.</span></button>');
-        if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/portal/worker/"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
+        if (permissions.canViewAdminTools) actions.push('<a class="btn btn-soft" href="#admin-requests">Requests</a><a class="btn btn-soft" href="#estimate-review">Estimate Review</a><a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>');
+        if (permissions.canManageInvoices) actions.push('<a class="btn btn-soft" href="#finance-command-center">Finance Center</a><a class="btn btn-soft" href="#admin-invoices">Invoices</a>');
+        if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<a class="btn btn-soft" href="#admin-access">Roles & Users</a>');
+        if (permissions.canViewAdminActivity) actions.push('<a class="btn btn-soft" href="#admin-activity">Audit Activity</a>');
+        if (permissions.canManageInventory) actions.push('<a class="btn btn-soft" href="#admin-inventory">Inventory</a>');
+        if (permissions.canViewClientTools) actions.push('<a class="btn btn-soft" href="#client-requests">Client Requests</a><a class="btn btn-soft" href="#client-quotes">Client Quotes</a><a class="btn btn-soft" href="#client-invoices">Client Invoices</a>');
+        if (permissions.canViewWorkerTools) actions.push('<a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>');
 
         panel.innerHTML = `<strong>Debug session found</strong><p class="session-status">/api/auth/debug confirmed a usable session. Loading the main dashboard with these same permissions now.</p><div class="admin-command-actions">${actions.join('') || '<a class="admin-command-card" href="/login/"><strong>Request a new magic link</strong><span>Refresh your dashboard session.</span></a>'}</div>`;
         const debugPanel = document.querySelector('[data-auth-debug-panel]');

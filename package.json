@@ -9,7 +9,8 @@
     "start": "node scripts/serve-static-site.mjs",
     "test": "node --test",
     "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
-    "audit:phase8": "node scripts/audit-phase8.cjs"
+    "audit:phase8": "node scripts/audit-phase8.cjs",
+    "audit:phase9": "node scripts/audit-phase9-routes.mjs"
   },
   "engines": {
     "node": ">=20.12.2"

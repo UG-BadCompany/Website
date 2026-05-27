@@ -115,14 +115,36 @@
     }
   }, true);
 
-  // Smooth anchor scroll for dashboard jumps.
+  // Smooth anchor scroll for dashboard jumps, including sections mounted by later dashboard scripts.
   document.addEventListener('click', (event) => {
     const link = event.target.closest('a[href^="#"]');
     if (!link) return;
-    const target = document.querySelector(link.getAttribute('href'));
-    if (!target) return;
+
+    const href = link.getAttribute('href');
+    if (!href || href === '#') return;
+
+    const scrollToTarget = (attempt = 0) => {
+      const target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+      }
+
+      if (attempt < 8) {
+        setTimeout(() => scrollToTarget(attempt + 1), 120);
+        return false;
+      }
+
+      toast({
+        title: 'Section not ready',
+        message: 'That dashboard section is still loading or is hidden for your account permissions.',
+        type: 'warn',
+      });
+      return false;
+    };
+
     event.preventDefault();
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToTarget();
   });
 
   // Replace native confirm/prompt only after dashboard assets load.

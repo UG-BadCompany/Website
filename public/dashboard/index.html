@@ -1925,18 +1925,12 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="btn btn-soft" type="button" data-dashboard-show-all>Show all sections</button>
       </div>
 
-      <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
-        <button class="admin-command-card" type="button" data-admin-work-orders-shortcut data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></button>
-        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-scroll-target="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
-        <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
-        <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
-        <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <button class="admin-command-card" type="button" data-client-requests-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></button>
-        <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
-        <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <button class="admin-command-card" type="button" data-worker-jobs-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker" data-scroll-target="#worker-jobs"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></button>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
+      <div class="dashboard-action-strip" aria-label="Main dashboard shortcuts">
+        <a class="btn btn-primary" href="#estimate-review">Estimate Review</a>
+        <a class="btn btn-soft" href="#finance-command-center">Finance Center</a>
+        <a class="btn btn-soft" href="#admin-requests">Requests</a>
+        <a class="btn btn-soft" href="#admin-quotes">Quotes</a>
+        <a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>
       </div>
     </section>
 
