@@ -18,5 +18,7 @@
   },
   "dependencies": {
     "@netlify/database": "latest"
-  }
+  },
+  "audit:phase11": "node scripts/audit-phase11-finish.mjs",
+  "audit:phase12": "node scripts/audit-phase12-client-worker.mjs"
 }
