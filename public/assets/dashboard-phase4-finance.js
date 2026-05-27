@@ -66,7 +66,8 @@
               <div class="payment-step" data-state="active"><strong>Invoice open</strong><span>Checkout link or manual payment.</span></div>
               <div class="payment-step"><strong>Paid</strong><span>Receipt and closeout.</span></div>
             </div>
-            <div class="finance-actions">
+            ${renderPaymentPlan(invoice.paymentPlan || {})}
+        <div class="finance-actions">
               <a class="btn btn-primary" href="#client-invoices">Client invoices</a>
               <a class="btn btn-soft" href="#admin-invoices">Admin invoices</a>
               <button class="btn btn-soft" type="button" data-finance-refresh>Refresh finance</button>
@@ -81,6 +82,29 @@
     suite.querySelectorAll('[data-finance-refresh]').forEach((button) => {
       button.addEventListener('click', loadFinanceOverview);
     });
+  };
+
+
+  const renderPaymentPlan = (plan = {}) => {
+    const score = Number(plan.readinessScore || 0);
+    const level = plan.overdue ? 'hot' : score < 75 ? 'warn' : '';
+    const structure = plan.paymentStructure || {};
+    const actions = Array.isArray(plan.actions) ? plan.actions : [];
+    const warnings = Array.isArray(plan.warnings) ? plan.warnings : [];
+
+    return `
+      <div class="payment-intel-box ${level}">
+        <strong>Payment readiness: ${score}/100</strong>
+        <p>Status: ${escapeHtml(plan.closeoutStatus || 'review')} ${plan.dueInDays !== null && plan.dueInDays !== undefined ? `• Due in ${escapeHtml(plan.dueInDays)} day(s)` : ''}</p>
+        <div class="finance-meta">
+          <span class="payment-structure-pill">${escapeHtml(structure.recommended || 'single_payment')}</span>
+          ${plan.hasCheckout ? '<span class="payment-structure-pill">checkout ready</span>' : '<span class="payment-structure-pill">needs checkout link</span>'}
+          ${plan.depositRecommended ? '<span class="payment-structure-pill">deposit suggested</span>' : ''}
+        </div>
+        ${actions.length ? `<ul>${actions.slice(0, 3).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+        ${warnings.length ? `<ul>${warnings.slice(0, 2).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+      </div>
+    `;
   };
 
   const renderInvoiceCard = (invoice, type = 'open') => {

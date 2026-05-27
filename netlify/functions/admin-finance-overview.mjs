@@ -9,6 +9,83 @@ import {
 
 const cents = (value) => Number(value || 0);
 
+const PAYMENT_INTELLIGENCE_VERSION = 'phase22-payment-accounting-v1';
+
+const daysUntil = (dateValue) => {
+  if (!dateValue) return null;
+  const time = new Date(dateValue).getTime();
+  if (!Number.isFinite(time)) return null;
+  return Math.ceil((time - Date.now()) / (1000 * 60 * 60 * 24));
+};
+
+const buildPaymentPlan = (invoice) => {
+  const amount = cents(invoice.amount_cents);
+  const dueInDays = daysUntil(invoice.due_at);
+  const isOpen = invoice.status === 'open';
+  const isPaid = invoice.status === 'paid';
+  const hasCheckout = Boolean(invoice.provider_checkout_url);
+  const overdue = isOpen && dueInDays !== null && dueInDays < 0;
+  const highValue = amount >= 100000;
+  const depositRecommended = amount >= 75000 && isOpen;
+
+  let readinessScore = 100;
+  const actions = [];
+  const warnings = [];
+
+  if (isOpen && !hasCheckout) {
+    readinessScore -= 25;
+    actions.push('Create or attach a payment link before sending/reminding the customer.');
+  }
+  if (isOpen && !invoice.due_at) {
+    readinessScore -= 15;
+    actions.push('Set a due date for payment tracking.');
+  }
+  if (overdue) {
+    readinessScore -= 30;
+    warnings.push(`Invoice is overdue by ${Math.abs(dueInDays)} day(s).`);
+    actions.push('Send payment reminder or follow up with customer.');
+  }
+  if (depositRecommended) {
+    actions.push('Consider deposit + final payment split for larger job.');
+  }
+  if (isPaid && !invoice.paid_at) {
+    readinessScore -= 10;
+    actions.push('Confirm paid timestamp/payment record.');
+  }
+  if (highValue) {
+    warnings.push('High-value invoice: verify scope, tax, deposit/final terms, and payment method fees.');
+  }
+
+  const paymentStructure = depositRecommended
+    ? {
+        recommended: 'deposit_plus_final',
+        depositPercent: 50,
+        depositAmountCents: Math.round(amount * 0.5),
+        finalAmountCents: amount - Math.round(amount * 0.5),
+      }
+    : {
+        recommended: 'single_payment',
+        depositPercent: 0,
+        depositAmountCents: 0,
+        finalAmountCents: amount,
+      };
+
+  return {
+    version: PAYMENT_INTELLIGENCE_VERSION,
+    readinessScore: Math.max(0, Math.min(100, readinessScore)),
+    dueInDays,
+    overdue,
+    hasCheckout,
+    highValue,
+    depositRecommended,
+    paymentStructure,
+    actions,
+    warnings,
+    closeoutStatus: isPaid ? 'paid_closeout_ready' : overdue ? 'overdue_followup' : isOpen ? 'open_payment_pending' : 'review',
+  };
+};
+
+
 const loadSession = async (db, sessionToken) => {
   const [session] = await db.sql`
     select auth_sessions.id, app_users.id as user_id, app_users.email, app_users.full_name
@@ -71,6 +148,7 @@ const mapInvoice = (invoice) => ({
     checkoutUrl: invoice.provider_checkout_url,
     status: invoice.provider_status,
   },
+  paymentPlan: buildPaymentPlan(invoice),
 });
 
 export default async (request) => {
