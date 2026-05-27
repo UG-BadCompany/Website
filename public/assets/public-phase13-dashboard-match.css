@@ -352,3 +352,101 @@ body * {
 .home-dark-panel-fix-parent li {
   color: #dbeafe !important;
 }
+
+
+/* Phase 16: exact portal feature grid white-card fix. */
+.portal-grid,
+.portal-features,
+.portal-feature-grid,
+.portal-benefits,
+.portal-benefit-grid,
+.client-portal-grid,
+.client-portal-features,
+section:has(h3:nth-of-type(1)) {
+  color: #f8fafc !important;
+}
+
+/* Any card/list item inside the portal area must stay dashboard-dark. */
+#portal article,
+#portal .feature,
+#portal .feature-card,
+#portal .benefit,
+#portal .benefit-card,
+#portal .portal-feature,
+#portal .portal-card,
+#portal li,
+.portal-grid > *,
+.portal-features > *,
+.portal-feature-grid > *,
+.portal-benefits > *,
+.portal-benefit-grid > *,
+.client-portal-grid > *,
+.client-portal-features > * {
+  background: linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.80)) !important;
+  border: 1px solid rgba(255,255,255,.20) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 20px 58px rgba(0,0,0,.30) !important;
+}
+
+#portal article h3,
+#portal .feature h3,
+#portal .feature-card h3,
+#portal .benefit h3,
+#portal .benefit-card h3,
+#portal .portal-feature h3,
+#portal .portal-card h3,
+.portal-grid h3,
+.portal-features h3,
+.portal-feature-grid h3,
+.portal-benefits h3,
+.portal-benefit-grid h3,
+.client-portal-grid h3,
+.client-portal-features h3 {
+  color: #ffffff !important;
+}
+
+#portal article p,
+#portal .feature p,
+#portal .feature-card p,
+#portal .benefit p,
+#portal .benefit-card p,
+#portal .portal-feature p,
+#portal .portal-card p,
+.portal-grid p,
+.portal-features p,
+.portal-feature-grid p,
+.portal-benefits p,
+.portal-benefit-grid p,
+.client-portal-grid p,
+.client-portal-features p {
+  color: #dbeafe !important;
+}
+
+/* Marker classes applied by Phase 16 JS to the exact reported cards. */
+.portal-feature-dark-fix,
+.portal-feature-dark-fix-parent {
+  background: linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.80)) !important;
+  border: 1px solid rgba(255,255,255,.20) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 20px 58px rgba(0,0,0,.30) !important;
+}
+
+.portal-feature-dark-fix h1,
+.portal-feature-dark-fix h2,
+.portal-feature-dark-fix h3,
+.portal-feature-dark-fix strong,
+.portal-feature-dark-fix-parent h1,
+.portal-feature-dark-fix-parent h2,
+.portal-feature-dark-fix-parent h3,
+.portal-feature-dark-fix-parent strong {
+  color: #ffffff !important;
+}
+
+.portal-feature-dark-fix p,
+.portal-feature-dark-fix span,
+.portal-feature-dark-fix li,
+.portal-feature-dark-fix-parent p,
+.portal-feature-dark-fix-parent span,
+.portal-feature-dark-fix-parent li {
+  color: #dbeafe !important;
+}
