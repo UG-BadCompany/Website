@@ -10,7 +10,8 @@
     "test": "node --test",
     "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
     "audit:phase8": "node scripts/audit-phase8.cjs",
-    "audit:phase9": "node scripts/audit-phase9-routes.mjs"
+    "audit:phase9": "node scripts/audit-phase9-routes.mjs",
+    "audit:phase10": "node scripts/audit-phase10-header.mjs"
   },
   "engines": {
     "node": ">=20.12.2"
