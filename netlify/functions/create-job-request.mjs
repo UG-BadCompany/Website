@@ -19,15 +19,17 @@ const MAX_FIELD_LENGTHS = {
   service: 120,
   subcategory: 160,
   timeframe: 80,
-  description: 4000,
+  description: 5000,
   recaptchaToken: 4000,
 };
 
 const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
-const OPENAI_TIMEOUT_MS = Number(process.env.AI_REQUEST_ESTIMATE_TIMEOUT_MS || 9000);
+const OPENAI_TIMEOUT_MS = Number(process.env.AI_REQUEST_ESTIMATE_TIMEOUT_MS || 11000);
 const DEFAULT_LABOR_RATE_CENTS = Number(process.env.AI_LABOR_RATE_CENTS || (Number(process.env.AI_LABOR_RATE || 95) * 100));
 const TRIP_CHARGE_CENTS = Number(process.env.AI_TRIP_CHARGE_CENTS || (Number(process.env.AI_TRIP_CHARGE || 75) * 100));
 const MATERIAL_MARKUP = Number(process.env.AI_MATERIAL_MARKUP_PERCENT || 25) / 100;
+const CONTINGENCY = Number(process.env.AI_CONTINGENCY_PERCENT || 10) / 100;
+const MINIMUM_CHARGE_CENTS = Number(process.env.AI_MINIMUM_CHARGE_CENTS || (Number(process.env.AI_MINIMUM_CHARGE || 175) * 100));
 
 const json = (status, body) => Response.json(body, {
   status,
@@ -38,8 +40,8 @@ const json = (status, body) => Response.json(body, {
 
 const clean = (value) => (typeof value === 'string' ? value.trim() : '');
 const clampMoney = (value) => Math.max(0, Math.round(Number(value || 0)));
-
 const slug = (value) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const dollars = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 
 export const normalizePayload = (payload) => {
   const normalized = {};
@@ -50,11 +52,10 @@ export const normalizePayload = (payload) => {
 
   normalized.email = normalized.email.toLowerCase();
   normalized.botField = clean(payload['bot-field']);
-
-  // Backward compatibility: older form has Work Scope dropdown named workScope and Type of Work named service.
   normalized.workCategory = normalized.service;
-  normalized.customerSupplied = clean(payload.customerSupplied || payload.customer_supplied || '').slice(0, 500);
+  normalized.customerSupplied = clean(payload.customerSupplied || payload.customer_supplied || '').slice(0, 800);
   normalized.photoNames = Array.isArray(payload.photoNames) ? payload.photoNames.map((name) => clean(name).slice(0, 160)).filter(Boolean) : [];
+  normalized.photosProvided = Boolean(payload.photosProvided || payload.hasUpload || normalized.photoNames.length);
 
   return normalized;
 };
@@ -90,9 +91,7 @@ const findOrCreateProperty = async (db, clientId, payload) => {
     limit 1
   `;
 
-  if (existingProperty) {
-    return existingProperty;
-  }
+  if (existingProperty) return existingProperty;
 
   const [property] = await db.sql`
     insert into properties (client_id, label, street, city, state)
@@ -103,180 +102,319 @@ const findOrCreateProperty = async (db, clientId, payload) => {
   return property;
 };
 
-const baseMaterials = (payload) => {
+const detectJobType = (payload) => {
   const text = slug(`${payload.workScope} ${payload.service} ${payload.subcategory} ${payload.description}`);
-  const add = (name, quantity, lowCents, highCents, notes = '') => ({ name, quantity, lowCents, highCents, notes });
 
-  if (/mini split|mini-split|ductless/.test(text)) {
-    return [
-      add('Mini split system/package allowance', 1, 65000, 220000, 'Customer supplied equipment may reduce this.'),
-      add('Line set kit', 1, 12000, 32000),
-      add('Line hide kit and fittings', 1, 9000, 32000),
-      add('Communication wire', 1, 4500, 15000),
-      add('Disconnect, whip, breaker, conduit, fittings allowance', 1, 12000, 52500),
-      add('Condenser pad/bracket, anchors, sealants, drain materials', 1, 8500, 32000),
-    ];
-  }
+  const is = (terms) => terms.some((term) => text.includes(term));
+  const electricalKeywords = ['outlet', 'switch', 'gfci', 'breaker', 'panel', 'light fixture', 'ceiling fan', 'dimmer', 'electrical'];
+  const plumbingKeywords = ['faucet', 'toilet', 'sink', 'garbage disposal', 'shutoff', 'angle stop', 'leak', 'drain', 'plumbing'];
+  const hvacKeywords = ['mini split', 'mini-split', 'minisplit', 'ductless', 'thermostat', 'hvac', 'ac', 'condenser'];
+  const drywallKeywords = ['drywall', 'hole', 'patch', 'texture', 'paint', 'wall damage'];
+  const carpentryKeywords = ['door', 'trim', 'baseboard', 'cabinet', 'shelf', 'wood', 'gate', 'fence'];
+  const applianceKeywords = ['dishwasher', 'microwave', 'range', 'oven', 'washer', 'dryer', 'appliance'];
 
-  if (/faucet/.test(text)) {
-    return [
-      add('Faucet allowance', 1, 4500, 28000),
-      add('Supply lines', 1, 1500, 4500),
-      add('Putty/silicone and consumables', 1, 600, 1800),
-      add('Drain/shutoff allowance', 1, 2500, 12000),
-    ];
-  }
+  let trade = 'general';
+  if (is(hvacKeywords)) trade = 'hvac';
+  else if (is(plumbingKeywords)) trade = 'plumbing';
+  else if (is(electricalKeywords)) trade = 'electrical';
+  else if (is(drywallKeywords)) trade = 'drywall_paint';
+  else if (is(carpentryKeywords)) trade = 'carpentry';
+  else if (is(applianceKeywords)) trade = 'appliance';
 
-  if (/toilet/.test(text)) {
-    return [
-      add('Toilet allowance', 1, 12000, 45000),
-      add('Wax ring, bolts, supply line, caulk', 1, 2500, 9000),
-      add('Shutoff valve allowance', 1, 900, 3500),
-    ];
-  }
+  let scope = 'service';
+  if (/troubleshoot|diagnose|not working|issue|problem|leak|clog|trip|tripping|repair|fix/.test(text)) scope = 'troubleshooting_repair';
+  if (/replace|replacement|swap/.test(text)) scope = 'replace_existing';
+  if (/new install|install|installation|mount|add new/.test(text)) scope = 'new_install';
+  if (/maintenance|service|tune|inspect/.test(text)) scope = 'maintenance';
 
-  if (/electrical|outlet|switch|gfci|light|fan|fixture/.test(text)) {
-    return [
-      add('Device/fixture allowance', 1, 800, 20000),
-      add('Cover plate, connectors, pigtails, fasteners', 1, 1200, 6000),
-      add('Box extender/repair allowance', 1, 400, 2500),
-    ];
-  }
-
-  if (/drywall|patch|texture/.test(text)) {
-    return [
-      add('Drywall patch materials', 1, 1000, 5500),
-      add('Joint compound, tape, texture', 1, 1200, 6500),
-      add('Primer/paint touch-up allowance', 1, 2000, 10000),
-    ];
-  }
-
-  return [
-    add(`${payload.service || 'General'} materials allowance`, 1, 2500, 30000),
-    add('Fasteners, anchors, sealants, consumables', 1, 1500, 9000),
-  ];
+  return { trade, scope, text };
 };
 
-const baseLaborItems = (payload) => {
-  const text = slug(`${payload.workScope} ${payload.service} ${payload.subcategory} ${payload.description}`);
+const addItem = (items, item) => {
+  items.push({
+    name: item.name,
+    quantity: Number(item.quantity || 1),
+    unit: item.unit || 'allowance',
+    lowCents: clampMoney(item.lowCents),
+    highCents: Math.max(clampMoney(item.lowCents), clampMoney(item.highCents)),
+    required: item.required !== false,
+    notes: item.notes || '',
+  });
+};
 
-  if (/mini split|mini-split|ductless/.test(text)) {
-    return [
-      { name: 'Layout and site prep', lowHours: 0.75, highHours: 1.5, notes: 'Confirm locations, paths, access, and protection.' },
-      { name: 'Mount and wall penetration', lowHours: 1.25, highHours: 2.5, notes: 'Wall type/access may change scope.' },
-      { name: 'Route line set, drain, communication, and exterior finish', lowHours: 3, highHours: 8, notes: 'Length/access affects estimate.' },
-      { name: 'Electrical/HVAC coordination and startup', lowHours: 2.5, highHours: 8.5, notes: 'Licensed trade/permit review may be required.' },
-    ];
+const buildMaterialItems = (payload, job) => {
+  const items = [];
+  const text = job.text;
+
+  if (job.trade === 'hvac' && /mini split|mini-split|minisplit|ductless/.test(text)) {
+    addItem(items, { name: 'Mini split equipment package', quantity: 1, lowCents: 70000, highCents: 240000, notes: 'Remove if customer supplies correct equipment. Verify BTU, voltage, MCA/MOCP, line-set length, and warranty requirements.' });
+    addItem(items, { name: 'Insulated copper line set kit', quantity: 1, lowCents: 12000, highCents: 36000, notes: 'Size and length must match equipment. Longer/vertical runs increase cost.' });
+    addItem(items, { name: 'Line hide cover and fittings', quantity: 1, lowCents: 9000, highCents: 33000, notes: 'Include elbows, couplers, wall cap, end caps, screws, anchors.' });
+    addItem(items, { name: 'Communication/control wire', quantity: 1, lowCents: 4500, highCents: 16000, notes: 'Usually 14/4 or manufacturer-specified cable. Verify spec.' });
+    addItem(items, { name: 'Outdoor disconnect, whip, fittings', quantity: 1, lowCents: 5500, highCents: 18000, notes: 'Disconnect, liquid-tight whip, connectors, bushings.' });
+    addItem(items, { name: 'Breaker, conduit, wire, straps, LB/fittings allowance', quantity: 1, lowCents: 9000, highCents: 60000, notes: 'Depends on panel brand, run length, attic access, and whether a new circuit is needed.' });
+    addItem(items, { name: 'Condenser pad or wall bracket', quantity: 1, lowCents: 4500, highCents: 24000, notes: 'Verify clearance, anchoring, roof/wall restrictions, and HOA requirements.' });
+    addItem(items, { name: 'Condensate drain materials', quantity: 1, lowCents: 2500, highCents: 12000, notes: 'Tubing/PVC, clips, termination point, pump if gravity drain is not possible.' });
+    addItem(items, { name: 'Sealants, wall sleeve, anchors, consumables', quantity: 1, lowCents: 3500, highCents: 12000, notes: 'Foam, silicone, sleeve, masonry/stucco anchors, touch-up consumables.' });
+    return items;
   }
 
-  const items = [
-    { name: 'Site verification and protection', lowHours: 0.25, highHours: 0.75, notes: 'Confirm scope and protect work area.' },
-    { name: 'Setup and prep/removal', lowHours: 0.25, highHours: 1.5, notes: 'Includes utility shutoff if needed.' },
-    { name: 'Main repair/replacement/install work', lowHours: 1, highHours: 4, notes: 'Depends on access and hidden conditions.' },
-    { name: 'Test, cleanup, and walkthrough', lowHours: 0.25, highHours: 0.75, notes: 'Verify operation and clean area.' },
-  ];
-
-  if (/troubleshoot|repair|not working|leak|clog|trip|tripping|noise/.test(text)) {
-    items[2] = { name: 'Diagnosis and repair attempt', lowHours: 1, highHours: 4.5, notes: 'Final repair cost depends on findings.' };
+  if (job.trade === 'plumbing' && /faucet/.test(text)) {
+    addItem(items, { name: 'Faucet allowance', lowCents: 6000, highCents: 32000, notes: 'Remove if customer-supplied; verify hole count and finish.' });
+    addItem(items, { name: 'Hot/cold faucet supply lines', lowCents: 1800, highCents: 5000, notes: 'Often replaced during faucet work.' });
+    addItem(items, { name: 'Pop-up/drain or disposal connection allowance', lowCents: 1500, highCents: 8000, notes: 'Only if disturbed or incompatible.' });
+    addItem(items, { name: 'Angle stop/shutoff valve allowance', quantity: 2, lowCents: 900, highCents: 3500, notes: 'Use if old valves leak/fail or are corroded.' });
+    addItem(items, { name: 'Putty/silicone/cleaners/consumables', lowCents: 800, highCents: 2500, notes: 'Sealant and finish cleanup.' });
+    return items;
   }
 
+  if (job.trade === 'plumbing' && /toilet/.test(text)) {
+    addItem(items, { name: 'Toilet allowance', lowCents: 14000, highCents: 50000, notes: 'Remove if customer-supplied; verify rough-in and bowl shape.' });
+    addItem(items, { name: 'Wax ring or wax-free seal', lowCents: 800, highCents: 2500, notes: 'Extra-thick if flange height requires.' });
+    addItem(items, { name: 'Closet bolts, caps, shims', lowCents: 800, highCents: 2200, notes: 'Needed for stable set and finish.' });
+    addItem(items, { name: 'Toilet supply line', lowCents: 900, highCents: 2500, notes: 'Usually replaced.' });
+    addItem(items, { name: 'Angle stop/shutoff allowance', lowCents: 900, highCents: 3500, notes: 'Only if existing shutoff leaks or fails.' });
+    addItem(items, { name: 'Caulk/cleanup/disposal allowance', lowCents: 1200, highCents: 5500, notes: 'Includes haul-off allowance if included.' });
+    return items;
+  }
+
+  if (job.trade === 'electrical') {
+    addItem(items, { name: 'Device/fixture/fan allowance', lowCents: 800, highCents: 25000, notes: 'Remove if customer-supplied. Verify ratings, box support, and location.' });
+    addItem(items, { name: 'Cover plate/trim hardware', lowCents: 300, highCents: 1800, notes: 'Match color/style when possible.' });
+    addItem(items, { name: 'Wire nuts, pigtails, screws, grounding parts', lowCents: 700, highCents: 3500, notes: 'Electrical consumables.' });
+    addItem(items, { name: 'Box extender or old-work box allowance', lowCents: 600, highCents: 4500, notes: 'Needed if box is loose, recessed, damaged, or unsupported.' });
+    addItem(items, { name: 'Circuit testing/safety consumables', lowCents: 500, highCents: 2500, notes: 'Labeling, tape, small parts.' });
+    return items;
+  }
+
+  if (job.trade === 'drywall_paint') {
+    addItem(items, { name: 'Drywall patch/backer/materials', lowCents: 1200, highCents: 7000, notes: 'Depends on size and backing needed.' });
+    addItem(items, { name: 'Joint compound and tape', lowCents: 1200, highCents: 4500, notes: 'Multiple coats may require return trip.' });
+    addItem(items, { name: 'Texture match materials', lowCents: 1500, highCents: 6500, notes: 'Orange peel/knockdown matching is approximate.' });
+    addItem(items, { name: 'Primer/paint touch-up allowance', lowCents: 2500, highCents: 14000, notes: 'Exact paint match may require customer paint or color match.' });
+    addItem(items, { name: 'Masking/plastic/sanding consumables', lowCents: 1200, highCents: 4500, notes: 'Dust control and finish prep.' });
+    return items;
+  }
+
+  if (job.trade === 'carpentry') {
+    addItem(items, { name: 'Wood/trim/hardware allowance', lowCents: 2500, highCents: 18000, notes: 'Depends on item, dimensions, finish grade.' });
+    addItem(items, { name: 'Fasteners, anchors, adhesive, shims', lowCents: 1200, highCents: 5500, notes: 'Install consumables.' });
+    addItem(items, { name: 'Caulk/filler/touch-up allowance', lowCents: 1200, highCents: 7500, notes: 'Finish work allowance.' });
+    return items;
+  }
+
+  if (job.trade === 'appliance') {
+    addItem(items, { name: 'Install kit/connection parts allowance', lowCents: 2500, highCents: 16000, notes: 'May include water line, cord, vent, brackets, fittings.' });
+    addItem(items, { name: 'Fasteners, sealant, leveling parts', lowCents: 1000, highCents: 5500, notes: 'Small install materials.' });
+    addItem(items, { name: 'Haul-away/disposal allowance', lowCents: 2500, highCents: 9000, notes: 'Only if included and site access allows.' });
+    return items;
+  }
+
+  addItem(items, { name: `${payload.service || 'General'} materials allowance`, lowCents: 3500, highCents: 35000, notes: 'Admin should verify exact parts, model numbers, measurements, and customer-supplied materials.' });
+  addItem(items, { name: 'Fasteners, anchors, caulk, sealant, consumables', lowCents: 1500, highCents: 9000, notes: 'General install/repair consumables.' });
   return items;
 };
 
-const flagNotes = (payload) => {
-  const text = slug(`${payload.workScope} ${payload.service} ${payload.subcategory} ${payload.description}`);
-  const flags = [];
+const laborPhase = (name, lowHours, highHours, notes, skill = 'handyman') => ({
+  name,
+  lowHours: Number(lowHours),
+  highHours: Math.max(Number(lowHours), Number(highHours)),
+  notes,
+  skill,
+});
 
-  if (/panel|breaker|new circuit|dedicated circuit|disconnect|meter/.test(text)) {
-    flags.push('Electrical panel/new circuit/disconnect scope may require licensed electrician review.');
+const buildLaborItems = (payload, job) => {
+  const phases = [];
+  const text = job.text;
+
+  phases.push(laborPhase('Intake, site verification, and protection', 0.25, 0.75, 'Confirm scope, access, photos, shutoffs/power, and protect work area.'));
+
+  if (job.trade === 'hvac' && /mini split|mini-split|minisplit|ductless/.test(text)) {
+    phases.push(laborPhase('Layout indoor/outdoor locations and line-set path', 0.75, 1.5, 'Confirm clearances, drain path, wall penetration, exterior route, and service access.', 'advanced'));
+    phases.push(laborPhase('Mount indoor head and make wall penetration', 1.25, 2.75, 'Mount plate, drill/sleeve, slope drain/lines, seal penetration.', 'advanced'));
+    phases.push(laborPhase('Set condenser and route line set/drain/control wire', 2.5, 6.5, 'Depends heavily on distance, attic/stucco/block access, height, and line-hide route.', 'advanced'));
+    phases.push(laborPhase('Install line hide and exterior finish details', 1, 3.5, 'Line hide, elbows, couplers, straps, sealant, anchors, finish detail.'));
+    phases.push(laborPhase('Electrical coordination or install allowance', 1.5, 7, 'New circuit/disconnect/conduit/panel work may require licensed electrician and permit.', 'licensed review'));
+    phases.push(laborPhase('Startup, test, cleanup, customer walkthrough', 1, 2.5, 'Vacuum/startup/refrigerant handling may require licensed HVAC. Drain and operation testing required.', 'HVAC review'));
+    return phases;
   }
 
-  if (/gas|propane/.test(text)) {
-    flags.push('Gas work requires licensed trade review.');
+  if (job.scope === 'troubleshooting_repair') {
+    phases.push(laborPhase('Diagnosis and access', 0.75, 2, 'Determine failure cause, open access, test/inspect, identify parts.'));
+    phases.push(laborPhase('Repair attempt or temporary stabilization', 0.75, 3.5, 'Actual repair depends on diagnosis and available parts.'));
+  } else if (job.scope === 'replace_existing') {
+    phases.push(laborPhase('Disconnect/remove existing item', 0.25, 1.5, 'Corrosion, stuck fasteners, old plumbing/electrical, or poor prior install can increase time.'));
+    phases.push(laborPhase('Prep and install replacement', 0.75, 3.5, 'Fit, connect, secure, seal, level, and adjust.'));
+  } else if (job.scope === 'new_install') {
+    phases.push(laborPhase('Layout and mounting/prep', 0.5, 1.5, 'Locate studs/support/utilities and confirm placement.'));
+    phases.push(laborPhase('Install new item/system', 1, 4.5, 'Mount, connect, secure, seal, and finish. Utility availability affects price.'));
+  } else {
+    phases.push(laborPhase('Main service work', 1, 4, 'Perform approved repair/install/maintenance work.'));
   }
 
-  if (/mini split|hvac|refrigerant|condenser/.test(text)) {
-    flags.push('HVAC/refrigerant/startup scope may require licensed HVAC review and permit verification.');
+  if (job.trade === 'drywall_paint') {
+    phases.push(laborPhase('Dry time/return trip allowance', 0.5, 2, 'Drywall compound/texture/paint may need multiple visits.'));
   }
 
-  if (/roof|structural|truss|rafter/.test(text)) {
-    flags.push('Roofing/structural work is excluded or requires specialty contractor review.');
-  }
-
-  if (/mold|asbestos|lead|sewage/.test(text)) {
-    flags.push('Hazardous conditions may stop work until remediated.');
-  }
-
-  if (/leak|water damage|rot|rust|corrosion/.test(text)) {
-    flags.push('Hidden damage or corroded parts may change final pricing.');
-  }
-
-  return flags;
+  phases.push(laborPhase('Test, cleanup, and admin documentation', 0.25, 0.75, 'Verify operation/finish, cleanup, document change orders and next steps.'));
+  return phases;
 };
 
-const missingQuestions = (payload) => {
-  const text = slug(`${payload.workScope} ${payload.service} ${payload.subcategory} ${payload.description}`);
+const buildQuestions = (payload, job) => {
+  const text = job.text;
   const questions = [];
 
-  if (!payload.workScope) questions.push('Is this troubleshooting/repair, replacing existing, or a new install?');
-  if (!payload.subcategory) questions.push('What specific item or system is involved?');
-  if (!/(photo|picture|image|uploaded)/.test(text)) questions.push('Can you provide photos of the work area and existing item?');
-  if (!/(model|brand|size|btu|amp|volt|inch|measurement|feet|ft)/.test(text)) questions.push('Do you have brand, model, size, voltage, measurements, or part information?');
+  if (!payload.workScope) questions.push('Is this troubleshooting/repair, replacing existing, new install, maintenance, or removal?');
+  if (!payload.subcategory) questions.push('What specific item/system is involved?');
+  if (!payload.photosProvided) questions.push('Upload clear photos of the work area, existing item, shutoffs/panel/model tags, and access path.');
+  if (!/(\b\d+\s*(ft|feet|foot|in|inch|sqft|sq ft|gallon|gal|ton|amp|amps|v|volt|volts)\b)|model|brand|size|measurement/.test(text)) {
+    questions.push('Provide brand/model/size/voltage/measurements or approximate quantities if known.');
+  }
 
-  return questions.slice(0, 6);
+  if (job.trade === 'hvac' && /mini split|mini-split|minisplit|ductless/.test(text)) {
+    questions.push('Who is supplying the mini split equipment, and what are the BTU, voltage, MCA/MOCP, and line-set size requirements?');
+    questions.push('Approximate distance from panel to outdoor disconnect and from condenser to indoor head?');
+    questions.push('Is there attic access, stucco/block wall, HOA restriction, roof/wall mount, or condensate pump needed?');
+  }
+
+  if (job.trade === 'electrical') {
+    questions.push('Is there existing power/box at the location, and is the box fan-rated if installing a fan?');
+  }
+
+  if (job.trade === 'plumbing') {
+    questions.push('Do the shutoff valves work, and are there signs of corrosion/leaking under the fixture?');
+  }
+
+  return [...new Set(questions)].slice(0, 9);
 };
 
-const estimateFromPayload = (payload) => {
-  const laborItems = baseLaborItems(payload);
-  const materials = baseMaterials(payload);
-  const flags = flagNotes(payload);
-  const questions = missingQuestions(payload);
+const buildRiskFlags = (payload, job) => {
+  const text = job.text;
+  const risks = [];
 
-  const lowHours = laborItems.reduce((sum, item) => sum + Number(item.lowHours || 0), 0);
-  const highHours = laborItems.reduce((sum, item) => sum + Number(item.highHours || item.lowHours || 0), 0);
+  if (/panel|breaker|new circuit|dedicated circuit|disconnect|meter|service upgrade/.test(text)) risks.push('Electrical panel/new circuit/disconnect work may require licensed electrician review and permit verification.');
+  if (/gas|propane|natural gas/.test(text)) risks.push('Gas work requires licensed trade review.');
+  if (/mini split|hvac|refrigerant|condenser|line set/.test(text)) risks.push('HVAC/refrigerant/startup scope may require licensed HVAC review, startup procedure, and permit verification.');
+  if (/roof|truss|rafter|structural|load bearing/.test(text)) risks.push('Roofing/structural work is excluded or requires specialty contractor review.');
+  if (/mold|asbestos|lead|sewage/.test(text)) risks.push('Hazardous condition may stop work until properly remediated.');
+  if (/leak|water damage|rot|rust|corrosion|termite/.test(text)) risks.push('Hidden damage, corrosion, or rot may require change order after inspection.');
+  if (!payload.photosProvided) risks.push('Estimate confidence is lower without photos.');
+  if (!/brand|model|size|measurement|ft|feet|inch|amp|volt|btu/.test(text)) risks.push('Exact parts/labor may change without model numbers, measurements, or specs.');
 
-  const laborLowCents = Math.round(lowHours * DEFAULT_LABOR_RATE_CENTS);
-  const laborHighCents = Math.round(highHours * DEFAULT_LABOR_RATE_CENTS);
+  return [...new Set(risks)];
+};
+
+const buildExclusions = (job) => {
+  const exclusions = [
+    'Permit fees, engineering, specialty trade work, and code corrections are excluded unless specifically added.',
+    'Hidden damage, inaccessible utilities, unsafe existing conditions, wrong customer-supplied materials, and scope changes require approval before extra work.',
+    'Paint/texture matching is best effort unless exact paint/materials are supplied.',
+  ];
+
+  if (job.trade === 'hvac') {
+    exclusions.push('Refrigerant handling/startup, electrical circuit work, and permit inspections may require licensed trade involvement.');
+  }
+
+  return exclusions;
+};
+
+const calculateEstimate = ({ laborItems, materials }) => {
+  const laborHoursLow = laborItems.reduce((sum, item) => sum + Number(item.lowHours || 0), 0);
+  const laborHoursHigh = laborItems.reduce((sum, item) => sum + Number(item.highHours || item.lowHours || 0), 0);
+  const laborLowCents = Math.round(laborHoursLow * DEFAULT_LABOR_RATE_CENTS);
+  const laborHighCents = Math.round(laborHoursHigh * DEFAULT_LABOR_RATE_CENTS);
 
   const materialLowCents = materials.reduce((sum, item) => sum + clampMoney(item.lowCents) * Number(item.quantity || 1), 0);
   const materialHighCents = materials.reduce((sum, item) => sum + clampMoney(item.highCents) * Number(item.quantity || 1), 0);
-
   const markupLowCents = Math.round(materialLowCents * MATERIAL_MARKUP);
   const markupHighCents = Math.round(materialHighCents * MATERIAL_MARKUP);
 
-  const totalLowCents = Math.max(17500, laborLowCents + materialLowCents + markupLowCents + TRIP_CHARGE_CENTS);
-  const totalHighCents = Math.max(totalLowCents, laborHighCents + materialHighCents + markupHighCents + TRIP_CHARGE_CENTS);
+  const subtotalLow = laborLowCents + materialLowCents + markupLowCents + TRIP_CHARGE_CENTS;
+  const subtotalHigh = laborHighCents + materialHighCents + markupHighCents + TRIP_CHARGE_CENTS;
+  const contingencyLowCents = Math.round(subtotalLow * CONTINGENCY);
+  const contingencyHighCents = Math.round(subtotalHigh * CONTINGENCY);
 
   return {
-    title: `${payload.service || 'Service'} estimate draft`,
-    summary: [
-      `Scope: ${payload.workScope || 'Request Estimate'} - ${payload.service || 'Service request'}${payload.subcategory ? ` (${payload.subcategory})` : ''}.`,
-      '',
-      'Labor:',
-      ...laborItems.map((item) => `- ${item.name}: ${item.lowHours}-${item.highHours} hrs. ${item.notes || ''}`),
-      '',
-      'Materials / allowances:',
-      ...materials.map((item) => `- ${item.name}: qty ${item.quantity}, $${(item.lowCents / 100).toFixed(2)}-$${(item.highCents / 100).toFixed(2)}. ${item.notes || ''}`),
-      ...(questions.length ? ['', 'Missing info / follow-up questions:', ...questions.map((q) => `- ${q}`)] : []),
-      ...(flags.length ? ['', 'Risk / licensed trade notes:', ...flags.map((flag) => `- ${flag}`)] : []),
-      '',
-      'This draft was automatically created from the public Request Estimate form and must be reviewed by admin before sending to the customer.',
-    ].join('\n'),
-    amountCents: totalHighCents,
-    laborHours: highHours,
+    laborHoursLow,
+    laborHoursHigh,
+    laborLowCents,
+    laborHighCents,
+    materialLowCents,
+    materialHighCents,
+    markupLowCents,
+    markupHighCents,
+    tripChargeCents: TRIP_CHARGE_CENTS,
+    contingencyLowCents,
+    contingencyHighCents,
+    totalLowCents: Math.max(MINIMUM_CHARGE_CENTS, subtotalLow + contingencyLowCents),
+    totalHighCents: Math.max(MINIMUM_CHARGE_CENTS, subtotalHigh + contingencyHighCents),
+  };
+};
+
+const estimateFromPayload = (payload) => {
+  const job = detectJobType(payload);
+  const materials = buildMaterialItems(payload, job);
+  const laborItems = buildLaborItems(payload, job);
+  const questions = buildQuestions(payload, job);
+  const riskFlags = buildRiskFlags(payload, job);
+  const exclusions = buildExclusions(job);
+  const totals = calculateEstimate({ laborItems, materials });
+  const confidence = Math.max(35, Math.min(90, 82 - (questions.length * 5) - (riskFlags.length * 3) + (payload.photosProvided ? 8 : 0)));
+
+  const title = `${payload.service || 'Service'} ${job.scope.replaceAll('_', ' ')} estimate draft`;
+  const summary = [
+    `ADMIN REVIEW DRAFT — Do not send without review.`,
+    '',
+    `Customer: ${payload.name} | ${payload.phone} | ${payload.email}`,
+    `Property: ${payload.streetAddress}, ${payload.city}, AZ`,
+    `Scope: ${payload.workScope || job.scope} | Trade: ${job.trade} | Service: ${payload.service}`,
+    `Request details: ${payload.description}`,
+    '',
+    `Recommended estimate range: ${dollars(totals.totalLowCents)} – ${dollars(totals.totalHighCents)}`,
+    `Confidence: ${confidence}/100`,
+    '',
+    `Labor range: ${totals.laborHoursLow.toFixed(2)} – ${totals.laborHoursHigh.toFixed(2)} hours @ ${dollars(DEFAULT_LABOR_RATE_CENTS)}/hr`,
+    ...laborItems.map((item) => `- ${item.name}: ${item.lowHours}-${item.highHours} hrs | ${item.notes}`),
+    '',
+    `Materials/allowances before markup: ${dollars(totals.materialLowCents)} – ${dollars(totals.materialHighCents)}`,
+    ...materials.map((item) => `- ${item.name}: qty ${item.quantity} ${item.unit || ''} | ${dollars(item.lowCents)} – ${dollars(item.highCents)} | ${item.notes}`),
+    '',
+    `Trip charge: ${dollars(totals.tripChargeCents)}`,
+    `Material markup: ${Math.round(MATERIAL_MARKUP * 100)}%`,
+    `Contingency/risk buffer: ${Math.round(CONTINGENCY * 100)}%`,
+    '',
+    questions.length ? 'Missing info / questions:' : 'Missing info / questions: none obvious from current request.',
+    ...questions.map((question) => `- ${question}`),
+    '',
+    riskFlags.length ? 'Risk / licensed trade flags:' : 'Risk / licensed trade flags: none obvious, still verify site conditions.',
+    ...riskFlags.map((flag) => `- ${flag}`),
+    '',
+    'Exclusions / change-order triggers:',
+    ...exclusions.map((item) => `- ${item}`),
+    '',
+    'Admin next steps:',
+    '- Verify photos/specs/model numbers.',
+    '- Confirm customer-supplied vs company-supplied materials.',
+    '- Confirm whether permit/licensed trade involvement is required.',
+    '- Adjust final price before sending quote.',
+  ].join('\n');
+
+  return {
+    title,
+    summary,
+    amountCents: totals.totalHighCents,
+    lowAmountCents: totals.totalLowCents,
+    laborHours: totals.laborHoursHigh,
     laborRateCents: DEFAULT_LABOR_RATE_CENTS,
     materials,
     laborItems,
     missingInfoQuestions: questions,
-    riskFlags: flags,
-    totals: {
-      laborLowCents,
-      laborHighCents,
-      materialLowCents,
-      materialHighCents,
-      totalLowCents,
-      totalHighCents,
-    },
+    riskFlags,
+    exclusions,
+    job,
+    totals,
+    confidence,
+    quoteReady: questions.length <= 2 && riskFlags.length <= 3,
   };
 };
 
@@ -290,34 +428,45 @@ const tryImproveDraftWithOpenAi = async (payload, draft) => {
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${apiKey}`,
-      },
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: OPENAI_MODEL,
         input: [
           {
             role: 'system',
-            content: 'You are a senior handyman estimator. Return strict JSON only. Do not send quotes to customers. Improve the estimate draft for admin review.',
+            content: [
+              'You are a senior handyman estimator for T&A Contracting in Arizona.',
+              'Your job is to make estimates realistic, itemized, and admin-review ready.',
+              'Return strict JSON only.',
+              'Never tell the customer this is final.',
+              'Do not be vague. Break down labor phases and hidden materials.',
+              'Flag licensed trade, permit, safety, inaccessible work, and hidden-condition issues.',
+              'Keep the final high amount realistic and defendable.',
+            ].join(' '),
           },
           {
             role: 'user',
             content: JSON.stringify({
-              task: 'Improve this Request Estimate draft. Keep it practical and handyman-focused. Add missing materials, labor notes, risk notes, and follow-up questions. Return JSON with title, summary, amountCents, missingInfoQuestions, riskFlags.',
+              task: 'Improve this Request Estimate draft. Keep the same JSON structure. Improve labor phases, material allowances, missing questions, risk flags, exclusions, and summary. Return JSON with title, summary, amountCents, lowAmountCents, laborItems, materials, missingInfoQuestions, riskFlags, exclusions, confidence, quoteReady, totals.',
               request: payload,
-              draft,
+              currentDraft: draft,
+              pricingRules: {
+                laborRateCents: DEFAULT_LABOR_RATE_CENTS,
+                tripChargeCents: TRIP_CHARGE_CENTS,
+                materialMarkupPercent: Math.round(MATERIAL_MARKUP * 100),
+                contingencyPercent: Math.round(CONTINGENCY * 100),
+                minimumChargeCents: MINIMUM_CHARGE_CENTS,
+              },
             }),
           },
         ],
         text: { format: { type: 'json_object' } },
-        max_output_tokens: 2200,
+        max_output_tokens: 4200,
       }),
       signal: controller.signal,
     });
 
     clearTimeout(timer);
-
     if (!response.ok) return draft;
 
     const data = await response.json();
@@ -329,8 +478,10 @@ const tryImproveDraftWithOpenAi = async (payload, draft) => {
       ...draft,
       ...parsed,
       amountCents: Number.isInteger(Number(parsed.amountCents)) && Number(parsed.amountCents) > 0 ? Number(parsed.amountCents) : draft.amountCents,
-      summary: clean(parsed.summary).slice(0, 4000) || draft.summary,
+      lowAmountCents: Number.isInteger(Number(parsed.lowAmountCents)) && Number(parsed.lowAmountCents) > 0 ? Number(parsed.lowAmountCents) : draft.lowAmountCents,
+      summary: clean(parsed.summary).slice(0, 9000) || draft.summary,
       title: clean(parsed.title).slice(0, 180) || draft.title,
+      confidence: Number.isFinite(Number(parsed.confidence)) ? Number(parsed.confidence) : draft.confidence,
       aiEnhanced: true,
     };
   } catch {
@@ -363,15 +514,23 @@ const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload })
       ${'quote'},
       ${quote.id},
       ${JSON.stringify({
-        source: 'public_request_estimate_ai',
+        source: 'public_request_estimate_ai_v2',
         jobRequestId: jobRequest.id,
         clientId: client.id,
         amountCents: draft.amountCents || 0,
+        lowAmountCents: draft.lowAmountCents || 0,
         workScope: payload.workScope,
         service: payload.service,
+        job: draft.job || null,
+        confidence: draft.confidence || null,
+        quoteReady: Boolean(draft.quoteReady),
         aiEnhanced: Boolean(draft.aiEnhanced),
+        laborItems: draft.laborItems || [],
+        materials: draft.materials || [],
         missingInfoQuestions: draft.missingInfoQuestions || [],
         riskFlags: draft.riskFlags || [],
+        exclusions: draft.exclusions || [],
+        totals: draft.totals || {},
       })}::jsonb
     )
   `;
@@ -380,35 +539,26 @@ const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload })
 };
 
 export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken = createToken, sendEmail = sendMagicLinkEmail } = {}) => async (request) => {
-  if (request.method !== 'POST') {
-    return json(405, { ok: false, message: 'Method not allowed.' });
-  }
+  if (request.method !== 'POST') return json(405, { ok: false, message: 'Method not allowed.' });
 
   let payload;
-
   try {
     payload = normalizePayload(await request.json());
   } catch {
     return json(400, { ok: false, message: 'Request body must be valid JSON.' });
   }
 
-  if (payload.botField) {
-    return json(200, { ok: true, message: 'Request received.' });
-  }
+  if (payload.botField) return json(200, { ok: true, message: 'Request received.' });
 
   const recaptchaCheck = await verifyRecaptchaToken({ token: payload.recaptchaToken, request, action: 'request_work' });
-  if (!recaptchaCheck.ok) {
-    return json(403, { ok: false, message: `reCAPTCHA verification failed. Please try again. (${recaptchaCheck.reason})` });
-  }
+  if (!recaptchaCheck.ok) return json(403, { ok: false, message: `reCAPTCHA verification failed. Please try again. (${recaptchaCheck.reason})` });
 
   const validationError = validatePayload(payload);
-
-  if (validationError) {
-    return json(422, { ok: false, message: validationError });
-  }
+  if (validationError) return json(422, { ok: false, message: validationError });
 
   try {
     const db = await getDatabase();
+
     const [client] = await db.sql`
       insert into app_users (auth_provider, auth_subject, email, full_name, phone)
       values ('magic_link', ${payload.email}, ${payload.email}, ${payload.name}, ${payload.phone})
@@ -481,7 +631,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
     `;
 
     let estimateDraftResult = null;
-
     try {
       estimateDraftResult = await createAutomaticEstimateDraft({ db, jobRequest, client, payload });
     } catch (draftError) {
@@ -506,7 +655,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
     `;
 
     let emailResult = { sent: false, reason: 'Email delivery is not configured.' };
-
     try {
       emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'client_account' });
     } catch (emailError) {
@@ -527,22 +675,23 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         title: estimateDraftResult.quote.title,
         summary: estimateDraftResult.quote.summary,
         amountCents: estimateDraftResult.quote.amount_cents,
+        lowAmountCents: estimateDraftResult.draft.lowAmountCents || null,
+        confidence: estimateDraftResult.draft.confidence || null,
+        quoteReady: Boolean(estimateDraftResult.draft.quoteReady),
         missingInfoQuestions: estimateDraftResult.draft.missingInfoQuestions || [],
         riskFlags: estimateDraftResult.draft.riskFlags || [],
+        materials: estimateDraftResult.draft.materials || [],
+        laborItems: estimateDraftResult.draft.laborItems || [],
+        totals: estimateDraftResult.draft.totals || {},
       } : null,
       emailSent: emailResult.sent,
       message: emailResult.sent
         ? 'Estimate request saved. We are preparing your estimate, and a secure client portal link was sent to your email.'
-        : 'Estimate request saved. We are preparing your estimate. We could not send the confirmation email yet, but your request is in the portal.',
-      ...(emailResult.sent ? {} : { devMagicLink: magicLinkUrl }),
+        : 'Estimate request saved. We are preparing your estimate. Your request is in the portal, but confirmation email delivery needs configuration.',
     });
   } catch (error) {
     console.error('Failed to create job request', error);
-
-    return json(500, {
-      ok: false,
-      message: 'We could not save the request right now. Please try again or use the standard form fallback.',
-    });
+    return json(500, { ok: false, message: 'We could not save the request right now. Please try again or use the standard form fallback.' });
   }
 };
 

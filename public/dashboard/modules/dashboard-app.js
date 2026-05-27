@@ -4,7 +4,7 @@
       const status = document.querySelector('[data-session-status]');
       const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
-      const themeToggle = document.querySelector('[data-theme-toggle]');
+      const removedThemeToggle = null;
       const debugDashboardLink = document.querySelector('[data-debug-dashboard-link]');
       const DEBUG_DASHBOARD_EMAIL = 'thomas.debacker.ii@gmail.com';
       const dashboardParams = new URLSearchParams(window.location.search);
@@ -486,24 +486,10 @@
           return null;
         }
       };
-
-      const applyTheme = (theme) => {
-        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = normalizedTheme;
-        if (themeToggle) {
-          themeToggle.textContent = normalizedTheme === 'light' ? 'Dark mode' : 'Light mode';
-          themeToggle.setAttribute('aria-label', `Switch to ${normalizedTheme === 'light' ? 'dark' : 'light'} theme`);
-        }
-      };
-
-      applyTheme(localStorage.getItem('ta-theme') || 'dark');
-      themeToggle?.addEventListener('click', () => {
-        const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('ta-theme', nextTheme);
-        applyTheme(nextTheme);
-      });
-
-      if (!status) {
+      document.documentElement.dataset.theme = 'dark';
+      try { localStorage.removeItem('ta-theme'); } catch {}
+      document.querySelectorAll('.theme-toggle').forEach((el) => el.remove());
+if (!status) {
         return;
       }
 

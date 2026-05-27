@@ -18,9 +18,7 @@
   [headers.values]
     Cache-Control = "no-store, max-age=0"
 
-
-# API route mappings for Netlify Functions.
-# These make local/dev/prod routing explicit even when function path config is not picked up.
+# Explicit API route mappings for Netlify Functions.
 
 [[redirects]]
   from = "/api/job-requests"
@@ -33,13 +31,18 @@
   status = 200
 
 [[redirects]]
-  from = "/api/me"
-  to = "/.netlify/functions/me"
+  from = "/api/auth/logout"
+  to = "/.netlify/functions/logout"
   status = 200
 
 [[redirects]]
   from = "/api/logout"
   to = "/.netlify/functions/logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/me"
+  to = "/.netlify/functions/me"
   status = 200
 
 [[redirects]]
@@ -52,11 +55,49 @@
   to = "/.netlify/functions/admin-job-requests"
   status = 200
 
-# API route mappings for Netlify Functions.
-
 [[redirects]]
   from = "/api/admin/quotes"
   to = "/.netlify/functions/admin-quotes"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/invoices"
+  to = "/.netlify/functions/admin-invoices"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/inventory"
+  to = "/.netlify/functions/admin-inventory"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/users"
+  to = "/.netlify/functions/admin-users"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/roles"
+  to = "/.netlify/functions/admin-roles"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/activity"
+  to = "/.netlify/functions/admin-activity"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/reports"
+  to = "/.netlify/functions/admin-reports"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/alerts"
+  to = "/.netlify/functions/admin-alerts"
+  status = 200
+
+[[redirects]]
+  from = "/api/client/job-requests"
+  to = "/.netlify/functions/client-job-requests"
   status = 200
 
 [[redirects]]
@@ -65,6 +106,46 @@
   status = 200
 
 [[redirects]]
-  from = "/api/client/job-requests"
-  to = "/.netlify/functions/client-job-requests"
+  from = "/api/client/invoices"
+  to = "/.netlify/functions/client-invoices"
+  status = 200
+
+[[redirects]]
+  from = "/api/worker/jobs"
+  to = "/.netlify/functions/worker-jobs"
+  status = 200
+
+[[redirects]]
+  from = "/api/public-config"
+  to = "/.netlify/functions/public-config"
+  status = 200
+
+
+[[redirects]]
+  from = "/api/admin/estimate-review"
+  to = "/.netlify/functions/admin-estimate-review"
+  status = 200
+
+
+[[redirects]]
+  from = "/api/admin/work-orders"
+  to = "/.netlify/functions/admin-work-orders"
+  status = 200
+
+
+[[redirects]]
+  from = "/api/admin/finance-overview"
+  to = "/.netlify/functions/admin-finance-overview"
+  status = 200
+
+
+[[redirects]]
+  from = "/api/square/create-payment-link"
+  to = "/.netlify/functions/square-create-payment-link"
+  status = 200
+
+
+[[redirects]]
+  from = "/api/admin/executive-overview"
+  to = "/.netlify/functions/admin-executive-overview"
   status = 200
