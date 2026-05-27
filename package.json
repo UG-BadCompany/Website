@@ -31,5 +31,7 @@
   "audit:phase20": "node scripts/audit-phase20-troubleshooting.mjs",
   "audit:phase21": "node scripts/audit-phase21-work-order-automation.mjs",
   "audit:phase22": "node scripts/audit-phase22-payments.mjs",
-  "audit:phase23": "node scripts/audit-phase23-customer-experience.mjs"
+  "audit:phase23": "node scripts/audit-phase23-customer-experience.mjs",
+  "audit:phase24": "node scripts/audit-phase24-photo-documentation.mjs",
+  "audit:phase25": "node scripts/audit-phase25-inventory-assets.mjs"
 }
