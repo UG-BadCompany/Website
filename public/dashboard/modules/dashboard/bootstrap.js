@@ -2734,9 +2734,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const closeAdminRoleModal = () => setModalOpen(document.querySelector('[data-admin-role-modal]'), false);
       const closeAdminUserModal = () => setModalOpen(document.querySelector('[data-admin-user-modal]'), false);
 
-      const renderCheckboxList = (items, selected, name) => items.map((item) => `
-        <label><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> ${escapeHtml(item.name || item.label || item.key)}</label>
-      `).join('');
+      const renderCheckboxList = (items, selected, name) => items.map((item) => {
+        const title = item.name || item.label || item.key;
+        const detail = item.description || item.key;
+        return `
+          <label class="admin-access-choice"><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> <span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></span></label>
+        `;
+      }).join('');
 
       const renderPermissionInputs = (selected = []) => {
         const list = document.querySelector('[data-admin-permission-list]');
