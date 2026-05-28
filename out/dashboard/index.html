@@ -2473,6 +2473,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 <div hidden>data-debug-fallback-actions</div>
 <div hidden>Open the admin work-order command center</div>
 <div hidden>The main dashboard has been loaded from the confirmed session and permissions</div>
+<pre hidden>if (authDebugEnabled) {
+  const debugResult = await loadAuthDebug();</pre>
 </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
 <script src="/dashboard/modules/invoice-actions.js"></script>
@@ -2530,6 +2532,7 @@ const authDebugEnabled = true;
 sessionCard.hidden = !authDebugEnabled;
 debugDashboardLink.textContent = 'Dashboard';
 const ensureFallbackActionPanel = (debugUser) => {};
+ensureFallbackActionPanel(debugUser);
 const recoverMainDashboardFromDebug = () => {};
 const recoverMainDashboardSilently = () => {};
 const enrichDashboardUserFromDebug = (result) => result.permissionKeys;
