@@ -25,7 +25,8 @@
     { group: 'Operations', label: 'Inventory', target: '#admin-inventory', hint: 'Stock' },
     { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
     { group: 'Operations', label: 'Roles & Users', action: 'adminAccess', hint: 'Access' },
-    { group: 'Operations', label: 'Audit Activity', action: 'adminActivity', hint: 'Logs' },
+
+    { group: 'Dev', label: 'Deployment Health', target: '#system-readiness', hint: 'Workflow' },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -40,7 +41,7 @@
   };
 
   const openModalShortcut = (name) => {
-    const selector = name === 'adminAccess' ? '[data-admin-access-shortcut]' : '[data-admin-activity-shortcut]';
+    const selector = '[data-admin-access-shortcut]';
     const button = document.querySelector(selector);
     if (button) {
       button.click();
@@ -85,8 +86,10 @@
     sidebar.setAttribute('aria-label', 'Dashboard workspace navigation');
     sidebar.innerHTML = `
       <button class="btn btn-soft" type="button" data-sidebar-close>Close menu</button>
-      <h2>Workspace</h2>
-      <p>Jump to the exact area you need without scrolling the whole dashboard.</p>
+      <div class="dashboard-sidebar-head">
+        <h2>Workspace</h2>
+        <button class="btn btn-soft dashboard-sidebar-collapse" type="button" data-sidebar-collapse aria-pressed="false">Collapse</button>
+      </div>
       <nav class="sidebar-nav-group" data-sidebar-nav></nav>
     `;
 
@@ -128,8 +131,25 @@
       backdrop.dataset.open = open ? 'true' : 'false';
     };
 
+    const setCollapsed = (collapsed) => {
+      shell.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+      sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
+      const collapseButton = sidebar.querySelector('[data-sidebar-collapse]');
+      if (collapseButton) {
+        collapseButton.setAttribute('aria-pressed', String(collapsed));
+        collapseButton.textContent = collapsed ? 'Expand' : 'Collapse';
+      }
+      try { window.localStorage.setItem('ta_dashboard_sidebar_collapsed', collapsed ? 'true' : 'false'); } catch {}
+    };
+
+    const initialCollapsed = (() => {
+      try { return window.localStorage.getItem('ta_dashboard_sidebar_collapsed') === 'true'; } catch { return false; }
+    })();
+    setCollapsed(initialCollapsed);
+
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
+    sidebar.querySelector('[data-sidebar-collapse]')?.addEventListener('click', () => setCollapsed(shell.dataset.sidebarCollapsed !== 'true'));
     backdrop.addEventListener('click', () => setOpen(false));
 
     sidebar.addEventListener('click', (event) => {
