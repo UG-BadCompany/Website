@@ -1,0 +1,84 @@
+import { readFile, access } from 'node:fs/promises';
+
+const fail = (message) => { throw new Error(message); };
+const ok = (message) => console.log(`✓ ${message}`);
+
+const requiredPages = [
+  'public/index.html',
+  'public/login/index.html',
+  'public/dashboard/index.html',
+  'public/inventory/index.html',
+];
+
+for (const page of requiredPages) {
+  await access(page).catch(() => fail(`Required page missing: ${page}`));
+}
+ok('Required public pages still exist');
+
+const [home, login, dashboard, inventory, polishCss] = await Promise.all([
+  readFile('public/index.html', 'utf8'),
+  readFile('public/login/index.html', 'utf8'),
+  readFile('public/dashboard/index.html', 'utf8'),
+  readFile('public/inventory/index.html', 'utf8'),
+  readFile('public/assets/ui-polish-2026.css', 'utf8'),
+]);
+
+if (!login.includes('/api/auth/magic-link') && !login.includes('magic-link')) {
+  fail('Magic link login endpoint/reference is missing from login page.');
+}
+ok('Magic link login references still exist');
+
+for (const sidebarAsset of [
+  '/assets/dashboard-phase30-sidebar.css',
+  '/assets/dashboard-phase30-sidebar.js',
+  '/assets/dashboard-phase34-sidebar-only-workspaces.css',
+  '/assets/dashboard-phase34-sidebar-only-workspaces.js',
+]) {
+  if (!dashboard.includes(sidebarAsset)) fail(`Dashboard sidebar asset missing: ${sidebarAsset}`);
+}
+ok('Dashboard sidebar assets are still included');
+
+const forbiddenTopTabs = [
+  'data-admin-command-center',
+  'data-client-command-center',
+  'data-worker-command-center',
+  'workspace-tab-list',
+  'old-workspace-tabs',
+];
+for (const marker of forbiddenTopTabs) {
+  if (dashboard.includes(marker)) fail(`Old workspace top-tab marker restored: ${marker}`);
+}
+ok('Old workspace top tabs were not restored');
+
+for (const [name, html] of Object.entries({ home, login, dashboard, inventory })) {
+  if (!html.includes('/assets/ui-polish-2026.css')) fail(`${name} missing UI polish stylesheet include.`);
+}
+ok('Modern polish CSS is included on target pages');
+
+const requiredCssMarkers = [
+  '2026 UI polish layer',
+  '[data-admin-activity-list]',
+  '[data-admin-user-search-results]',
+  '[data-admin-inventory-list]',
+  '.inventory-card',
+  '.admin-request-modal-panel',
+];
+for (const marker of requiredCssMarkers) {
+  if (!polishCss.includes(marker)) fail(`Polish CSS missing required marker: ${marker}`);
+}
+ok('Inventory/admin/activity polish selectors are present');
+
+const targetPages = { home, login, dashboard, inventory };
+for (const [name, html] of Object.entries(targetPages)) {
+  if (/class="[^"]*(?:workspace-tabs|top-tabs|tab-nav)[^"]*"/i.test(html)) {
+    fail(`${name} contains obvious old top-tab navigation classes.`);
+  }
+}
+ok('No obvious old top-tab navigation classes remain in target pages');
+
+if (/\.nav-links\s+\.btn-soft\s*\{\s*background:\s*(?:#fff|white|rgba\(255,255,255,\.8)/i.test(polishCss)) {
+  fail('Polish CSS reintroduced old white pill nav styling.');
+}
+ok('No obvious old white pill nav styling in polish layer');
+
+console.log('\nUI polish audit passed.');
