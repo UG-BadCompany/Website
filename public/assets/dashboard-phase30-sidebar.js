@@ -25,7 +25,6 @@
     { group: 'Operations', label: 'Inventory', target: '#admin-inventory', hint: 'Stock' },
     { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
     { group: 'Operations', label: 'Roles & Users', action: 'adminAccess', hint: 'Access' },
-    { group: 'Operations', label: 'Audit Activity', action: 'adminActivity', hint: 'Logs' },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -40,7 +39,7 @@
   };
 
   const openModalShortcut = (name) => {
-    const selector = name === 'adminAccess' ? '[data-admin-access-shortcut]' : '[data-admin-activity-shortcut]';
+    const selector = '[data-admin-access-shortcut]';
     const button = document.querySelector(selector);
     if (button) {
       button.click();
