@@ -41,8 +41,13 @@
     },
     settings: {
       title: 'Settings',
-      description: 'Admin settings, roles, users, inventory access, and audit tools.',
-      targets: ['#admin-access', '#admin-activity', '#admin-inventory', '[data-admin-inventory]', '[data-admin-activity]', '[data-admin-alerts]']
+      description: 'Admin settings, roles, users, and inventory access.',
+      targets: ['#admin-access', '#admin-inventory', '[data-admin-inventory]']
+    },
+    deployment: {
+      title: 'Deployment and workflow health',
+      description: 'Developer-focused deployment readiness, environment checks, critical API routes, and workflow health.',
+      targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite']
     }
   };
 
@@ -54,7 +59,8 @@
       ['work-orders', ['work order', 'job']],
       ['invoices', ['invoice', 'finance']],
       ['workers', ['worker', 'field']],
-      ['settings', ['setting', 'roles', 'users', 'audit', 'inventory']]
+      ['settings', ['setting', 'roles', 'users', 'inventory']],
+      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']]
     ];
 
     document.querySelectorAll('.sidebar-nav-link').forEach((button) => {

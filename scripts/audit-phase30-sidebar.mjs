@@ -35,10 +35,12 @@ const js = readFileSync(join(root, 'public/assets/dashboard-phase30-sidebar.js')
   'Finance Center',
   'Worker Mobile',
   'Roles & Users',
+  'Deployment Health',
+  'Dev',
   'dashboard-shell-v2',
   'sidebarToggle',
   'adminAccess',
-  'adminActivity'
+  '#system-readiness'
 ].forEach((needle) => js.includes(needle) ? ok(`${needle} present in js`) : fail(`${needle} missing in js`));
 
 if (failed) process.exit(1);
