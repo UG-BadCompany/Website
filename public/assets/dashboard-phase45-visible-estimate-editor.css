@@ -1,0 +1,35 @@
+/* Phase 45: visible Estimate Draft editor */
+.estimate-visible-editor {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid rgba(249,115,22,.32);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(249,115,22,.14), transparent 18rem),
+    rgba(2,6,23,.48);
+}
+.estimate-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.estimate-editor-heading h4 {
+  margin: 0 0 4px;
+  color: #fff !important;
+}
+.estimate-editor-heading p {
+  margin: 0;
+  color: #fed7aa !important;
+}
+.estimate-visible-editor .estimate-edit-form {
+  display: grid !important;
+}
+.estimate-editor-highlight {
+  animation: estimateEditorPulse 1.3s ease-out;
+}
+@keyframes estimateEditorPulse {
+  0% { outline: 3px solid rgba(249,115,22,.82); outline-offset: 4px; }
+  100% { outline: 0 solid transparent; outline-offset: 0; }
+}

@@ -51,5 +51,6 @@
   "audit:phase41": "node scripts/audit-phase41-finance-line75-fix.mjs",
   "audit:phase42": "node scripts/audit-phase42-full-quote-editor.mjs",
   "audit:phase43": "node scripts/audit-phase43-edit-draft-fix.mjs",
-  "audit:phase44": "node scripts/audit-phase44-modal-quote-editor.mjs"
+  "audit:phase44": "node scripts/audit-phase44-modal-quote-editor.mjs",
+  "audit:phase45": "node scripts/audit-phase45-visible-estimate-editor.mjs"
 }
