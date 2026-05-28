@@ -2639,7 +2639,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const target = document.querySelector(selector);
             if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
           };
-          if (config.key === 'workOrders') revealOne('#admin-work-orders');
+          if (config.key === 'workOrders') revealOne('[data-phase3-workflow-suite]');
           if (config.key === 'inventory') revealOne('[data-admin-inventory]');
           if (config.key === 'invoices') revealOne('[data-admin-invoices]');
           if (config.key === 'activity') {

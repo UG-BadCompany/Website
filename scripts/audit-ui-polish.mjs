@@ -99,6 +99,16 @@ if (!sidebarWorkspaceJs.includes("document.body.dataset.sidebarWorkspace = 'over
 }
 ok('Pipeline and inventory workspace polish checks are present');
 
+for (const removedWorkOrderCopy of [
+  'New estimate requests from the public form appear here for admins after sign-in.',
+  'data-admin-pipeline-summary',
+  'data-admin-requests-status',
+  'data-admin-workspace-target="work-orders"',
+]) {
+  if (dashboard.includes(removedWorkOrderCopy)) fail(`Removed work-order summary UI is still present: ${removedWorkOrderCopy}`);
+}
+ok('Legacy work-order summary panel is removed');
+
 const requiredCssMarkers = [
   '2026 UI polish layer',
   '[data-admin-activity-list]',

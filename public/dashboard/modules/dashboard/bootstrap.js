@@ -641,7 +641,7 @@
         const workspace = new URLSearchParams(window.location.search).get('workspace');
         if (nextView === 'admin' && workspace) {
           const workspaceSelectors = {
-            'work-orders': '#admin-work-orders',
+            'work-orders': '[data-phase3-workflow-suite]',
             invoices: '[data-admin-invoices]',
             inventory: '[data-admin-inventory]',
           };
@@ -3033,7 +3033,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const target = document.querySelector(selector);
             if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
           };
-          if (config.key === 'workOrders') revealOne('#admin-work-orders');
+          if (config.key === 'workOrders') revealOne('[data-phase3-workflow-suite]');
           if (config.key === 'inventory') revealOne('[data-admin-inventory]');
           if (config.key === 'invoices') revealOne('[data-admin-invoices]');
           persistWorkspaceRoute(config);

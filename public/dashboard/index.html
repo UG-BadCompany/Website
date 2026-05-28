@@ -33,7 +33,6 @@
     }
 
 
-    [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
     [data-admin-activity-summary],
     [data-admin-alerts-summary] {
@@ -41,7 +40,6 @@
       align-items: stretch;
     }
 
-    [data-admin-pipeline-summary] .admin-request,
     [data-admin-invoice-kpi-summary] .admin-request,
     [data-admin-activity-summary] .admin-request,
     [data-admin-alerts-summary] .admin-stat-card {
@@ -224,8 +222,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
     }
 
     @media(max-width:760px) {
-      [data-admin-pipeline-summary],
-    [data-admin-invoice-kpi-summary],
+      [data-admin-invoice-kpi-summary],
     [data-admin-activity-summary] { grid-template-columns: 1fr; }
     [data-admin-alerts-summary] {
       grid-template-columns: repeat(4,minmax(0,1fr));
@@ -1913,7 +1910,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 </head>
 <body>
   <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
-  <nav aria-hidden="true" hidden><a href="#admin-work-orders">Work orders</a><a href="#admin-invoices">Invoices</a><a href="/inventory/" data-main-action-permission="canManageInventory">Inventory</a><a href="#worker-jobs">Assigned jobs</a></nav>
+  <nav aria-hidden="true" hidden><a href="#admin-requests">Work orders</a><a href="#admin-invoices">Invoices</a><a href="/inventory/" data-main-action-permission="canManageInventory">Inventory</a><a href="#worker-jobs">Assigned jobs</a></nav>
   <main class="wrap" data-dashboard-root>
     <span id="admin-quotes" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="hero">
@@ -2086,145 +2083,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 
     <span id="admin-access" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
-    <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
-      <strong>Work orders</strong>
-      <p>New estimate requests from the public form appear here for admins after sign-in.</p>
-      <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
-      <div class="admin-request-list" data-admin-pipeline-summary></div>
-      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="work-orders" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="work-orders">Show queue</button></div>
-      <div data-admin-workspace-body="work-orders" hidden>
-      <div class="client-request-form-grid" data-admin-request-filters>
-        <label>Work order view
-          <select data-admin-request-scope-filter>
-            <option value="active">Active work orders</option>
-            <option value="completed">Completed history</option>
-            <option value="all">All work orders</option>
-          </select>
-        </label>
-        <label>Search work orders
-          <input type="search" data-admin-request-search placeholder="Client, service, city, phone, or notes">
-        </label>
-        <label>Status filter
-          <select data-admin-request-status-filter>
-            <option value="">All statuses in view</option>
-            <option value="new">New</option>
-            <option value="needs_review">Needs review</option>
-            <option value="quote_in_progress">Quote in progress</option>
-            <option value="quote_sent">Quote sent</option>
-            <option value="accepted">Accepted</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="in_progress">In progress</option>
-            <option value="pending_review">Pending review</option>
-            <option value="waiting_payment">Waiting payment</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </label>
-      </div>
-      <div class="admin-request-list" data-admin-request-list></div>
-      </div>
-      <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
-        <section class="admin-request-modal-panel">
-          <div class="admin-request-modal-header">
-            <div>
-              <strong id="admin-detail-title" data-admin-detail-title>Select a request to quote</strong>
-              <p data-admin-detail-summary>Open a client request to update status, create a quote, and prepare worker assignment details.</p>
-            </div>
-            <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close request workspace">×</button>
-          </div>
-          <div class="client-quote-list" data-admin-work-order-summary></div>
-          <div class="client-request-form">
-            <form data-admin-status-form>
-              <input type="hidden" name="jobRequestId" data-admin-status-request-id>
-              <div class="client-request-form-grid">
-                <label>Status
-                  <select name="status" data-admin-status-select>
-                    <option value="new">New</option>
-                    <option value="needs_review">Needs review</option>
-                    <option value="quote_in_progress">Quote in progress</option>
-                    <option value="quote_sent">Quote sent</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="pending_review">Pending review</option>
-                    <option value="waiting_payment">Waiting payment</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </label>
-                <label>Estimated start date
-                  <input name="estimatedStartDate" type="date" data-admin-estimated-start-date>
-                </label>
-                <label>Completion date
-                  <input name="completionDate" type="date" data-admin-completion-date>
-                </label>
-                <label class="full">Admin notes
-                  <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Verify complete / waiting payment</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
-            </form>
-            <form data-admin-quote-form>
-              <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
-              <input type="hidden" name="quoteId" data-admin-quote-id>
-              <strong data-admin-quote-form-title>Create quote</strong>
-              <div class="client-request-form-grid">
-                <label>Quote title
-                  <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
-                </label>
-                <label>Amount
-                  <input name="amount" type="number" min="0" step="0.01" required placeholder="250.00">
-                </label>
-                <label class="full">Quote summary
-                  <textarea name="summary" required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
-                </label>
-                <label class="full">Admin sourcing notes (internal only)
-                  <textarea data-admin-quote-sourcing-notes readonly rows="12" placeholder="AI sourcing links and supplier notes will appear here for admin review."></textarea>
-                  <small>Internal use only. Keep this section out of client-facing quote summary.</small>
-                </label>
-                <div class="full">
-                  <strong>Quick product links</strong>
-                  <small>Use these clickable buttons (opens new tab). Links in notes are reference-only.</small>
-                  <div class="client-quote-actions" data-admin-quote-sourcing-links></div>
-                </div>
-                <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
-              </div>
-              
-                            <p class="request-update-note" data-admin-quote-ai-status aria-live="polite">AI draft is ready when you click “Generate AI draft”.</p>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
-            </form>
-            <form data-admin-assignment-form>
-              <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
-              <input type="hidden" name="status" value="scheduled">
-              <strong>Assign worker</strong>
-              <div class="client-request-form-grid">
-                <label>Worker
-                  <select name="workerId" data-admin-assignment-worker required>
-                    <option value="">Select a worker</option>
-                  </select>
-                </label>
-                <label>Scheduled date
-                  <input name="scheduledDate" type="date" data-admin-assignment-date>
-                </label>
-                <label>Start time
-                  <input name="startTime" placeholder="9:00 AM">
-                </label>
-                <label>End time
-                  <input name="endTime" placeholder="11:00 AM">
-                </label>
-                <label class="full">Worker notes
-                  <textarea name="assignmentNotes" placeholder="Access notes, materials, checklist details, or special instructions for the assigned worker."></textarea>
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-admin-assignment-form-status aria-live="polite"></span></div>
-              <div class="admin-assignment-list" data-admin-assignment-list></div>
-            </form>
-            
-          </div>
-        </section>
-      </div>
-    </section>
-
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
       <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>

@@ -36,8 +36,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /data-profile-button/, 'top navigation should not show a duplicate My Profile button');
   assert.match(html, /data-client-profile-form/, 'clients should have an editable profile form');
   assert.match(html, /data-client-request-edit-form/, 'clients should be able to edit open job requests in a modal');
-  assert.match(html, /data-admin-assignment-form/, 'admins should have a worker assignment form');
-  assert.match(html, /#admin-work-orders/, 'admin command center should link to work orders');
+  assert.doesNotMatch(html, /data-admin-assignment-form/, 'legacy work-order assignment form should be removed with the old work-order summary panel');
+  assert.match(html, /#admin-requests/, 'admin command center should link to work orders through the admin request anchor');
   assert.match(html, /#admin-invoices/, 'admin command center should link to invoices');
   assert.match(html, /#worker-jobs/, 'worker command center should link to assigned jobs');
   assert.match(html, /data-main-dashboard-actions/, 'dashboard should use the single shared command center under the hero');
@@ -54,7 +54,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-main-action-permission="canManageInventory"/, 'inventory navigation should be permission-gated');
   assert.doesNotMatch(html, /<section class="card admin-inventory"/, 'inventory management should not render on the main dashboard');
   assert.doesNotMatch(html, /Work order command center/, 'legacy work-order command-center copy should be removed');
-  assert.match(html, /<strong>Work orders<\/strong>/, 'admin work order section should use concise work-order copy');
+  assert.doesNotMatch(html, /<section class="card admin-inbox" id="admin-work-orders"/, 'legacy work-order summary panel should be removed from the dashboard');
+  assert.match(html, /<strong>Work orders<\/strong>/, 'work-order shortcut copy should remain available in the command center');
   assert.match(html, /Invoice &amp; payment desk|Invoice & payment desk/, 'admin invoices should use clearer payment desk copy');
   assert.equal((html.match(/Invoice &amp; payment desk/g) || []).length, 1, 'admin invoice desk should render only one heading');
   assert.equal((html.match(/data-dashboard-singleton=\"admin-invoices\"/g) || []).length, 1, 'admin invoice desk should be marked as a singleton section');

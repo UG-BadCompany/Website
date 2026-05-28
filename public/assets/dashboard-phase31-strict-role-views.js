@@ -14,7 +14,7 @@
   const tagSections = () => {
     const tags = [
       ['.hero', 'admin client worker'],
-      ['.admin-inbox, [data-admin-inbox], #admin-requests, #admin-work-orders', 'admin'],
+      ['#admin-requests, [data-phase3-workflow-suite], .workflow-suite', 'admin'],
       ['#estimate-review, [data-phase2-command-center], .estimate-review-suite', 'admin'],
       ['#finance-command-center, .finance-suite, [data-phase4-finance-suite]', 'admin'],
       ['#executive-overview, .executive-suite, [data-phase5-executive-suite]', 'admin'],

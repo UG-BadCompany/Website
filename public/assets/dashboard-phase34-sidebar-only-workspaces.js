@@ -31,7 +31,7 @@
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: ['#admin-work-orders', '#worker-jobs', '[data-worker-jobs]']
+      targets: ['[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]']
     },
     invoices: {
       title: 'Invoices',
