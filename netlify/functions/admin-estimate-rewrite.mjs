@@ -137,6 +137,15 @@ const fallbackRewrite = ({ quote, job, metadata, payload }) => {
     remainingQuestions: Array.isArray(metadata.missingInfoQuestions) ? metadata.missingInfoQuestions.slice(0, 10) : [],
     riskFlags: Array.isArray(metadata.riskFlags) ? metadata.riskFlags.slice(0, 10) : [],
     exclusions: Array.isArray(metadata.exclusions) ? metadata.exclusions.slice(0, 10) : [],
+    laborBreakdown: Array.isArray(metadata.laborItems) ? metadata.laborItems.slice(0, 16) : [],
+    materialBreakdown: Array.isArray(metadata.materials) ? metadata.materials.slice(0, 24) : [],
+    adminReviewChecklist: [
+      'Verify site access, measurements, and hidden conditions.',
+      'Verify material pricing and availability before sending.',
+      'Verify permit/licensed-trade requirements where applicable.',
+      'Confirm whether this should be quoted as fixed price, range, or site-visit required.',
+    ],
+    customerClarifications: Array.isArray(metadata.missingInfoQuestions) ? metadata.missingInfoQuestions.slice(0, 12) : [],
     aiEnhanced: false,
   };
 };
@@ -172,10 +181,13 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
             content: [
               'You are a senior handyman/contractor estimator for T&A Contracting in Arizona.',
               'Rewrite the quote into a clear admin-review-ready and customer-ready format.',
-              'Use plain language, realistic scope, material allowances, labor phases, verification notes, and exclusions.',
-              'Include admin-provided missing/updated information.',
+              'Think like a real handyman estimator in Arizona.',
+              'The quote must be specific, realistic, itemized, and easy for an admin to review before sending.',
+              'Use the customer request, current quote, estimate metadata, and admin-provided missing/updated information.',
+              'Include labor phases, material allowances, verification notes, risk flags, exclusions, and change-order triggers.',
+              'Do not be vague. Do not invent exact permit/legal claims. Flag permit/licensed-trade verification when relevant.',
               'Do not claim work is guaranteed or final beyond approved scope.',
-              'Return strict JSON only with title, summary, amountCents, rewriteNotes, missingInfoResolved, remainingQuestions, riskFlags, exclusions.',
+              'Return strict JSON only with title, summary, amountCents, rewriteNotes, missingInfoResolved, remainingQuestions, riskFlags, exclusions, laborBreakdown, materialBreakdown, adminReviewChecklist, customerClarifications.',
             ].join(' '),
           },
           {
@@ -213,6 +225,10 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
       remainingQuestions: Array.isArray(rewritten.remainingQuestions) ? rewritten.remainingQuestions.slice(0, 10) : [],
       riskFlags: Array.isArray(rewritten.riskFlags) ? rewritten.riskFlags.slice(0, 10) : [],
       exclusions: Array.isArray(rewritten.exclusions) ? rewritten.exclusions.slice(0, 10) : [],
+      laborBreakdown: Array.isArray(rewritten.laborBreakdown) ? rewritten.laborBreakdown.slice(0, 16) : [],
+      materialBreakdown: Array.isArray(rewritten.materialBreakdown) ? rewritten.materialBreakdown.slice(0, 24) : [],
+      adminReviewChecklist: Array.isArray(rewritten.adminReviewChecklist) ? rewritten.adminReviewChecklist.slice(0, 12) : [],
+      customerClarifications: Array.isArray(rewritten.customerClarifications) ? rewritten.customerClarifications.slice(0, 12) : [],
       aiEnhanced: true,
     };
   } catch (error) {

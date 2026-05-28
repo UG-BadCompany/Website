@@ -1,10 +1,10 @@
 // public/assets/dashboard-phase47-quote-editor-controller.js
-// Independent controller for Estimate Review visible quote editor buttons.
-// This does NOT depend on the older Phase 2 handlers.
+// Phase 48 hardened quote editor controller.
+// Handles visible Estimate Review editor buttons independently from older handlers.
 
 (() => {
-  if (window.__taPhase47QuoteEditorControllerLoaded) return;
-  window.__taPhase47QuoteEditorControllerLoaded = true;
+  if (window.__taPhase48QuoteEditorControllerLoaded) return;
+  window.__taPhase48QuoteEditorControllerLoaded = true;
 
   const moneyFromCents = (cents) => (Number(cents || 0) / 100).toFixed(2);
 
@@ -32,12 +32,8 @@
       headers: { accept: 'application/json', ...(options.headers || {}) },
       ...options,
     });
-
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) {
-      throw new Error(data.message || `Request failed: ${url}`);
-    }
-
+    if (!response.ok || data.ok === false) throw new Error(data.message || `Request failed: ${url}`);
     return data;
   };
 
@@ -49,56 +45,95 @@
     ''
   );
 
-  const formStatus = (form, message = '') => {
-    const status = form?.querySelector?.('[data-estimate-edit-status]');
+  const getStatus = (form) => form?.querySelector?.('[data-estimate-edit-status]');
+  const setStatus = (form, message = '') => {
+    const status = getStatus(form);
     if (status) status.textContent = message;
   };
 
   const setBusy = (form, busy = false) => {
-    form?.querySelectorAll?.('button')?.forEach((button) => {
-      button.disabled = busy;
+    form?.querySelectorAll?.('button, input, textarea')?.forEach((control) => {
+      if (control.matches('[data-cancel-estimate-edit]')) control.disabled = false;
+      else control.disabled = busy;
     });
+    form?.classList?.toggle('is-busy', busy);
   };
 
   const payloadFromForm = (form, action = 'save') => ({
     quoteId: findQuoteId(form),
     action,
-    title: form?.querySelector?.('[data-estimate-title]')?.value || '',
-    summary: form?.querySelector?.('[data-estimate-summary]')?.value || '',
+    title: form?.querySelector?.('[data-estimate-title]')?.value?.trim() || '',
+    summary: form?.querySelector?.('[data-estimate-summary]')?.value?.trim() || '',
     amountCents: centsFromValue(form?.querySelector?.('[data-estimate-amount]')?.value || '0'),
-    missingInfo: form?.querySelector?.('[data-estimate-missing-info]')?.value || '',
+    missingInfo: form?.querySelector?.('[data-estimate-missing-info]')?.value?.trim() || '',
     rewriteStyle: 'customer_ready',
   });
 
-  const restoreFromCard = (form) => {
+  const validatePayload = (payload) => {
+    if (!payload.quoteId) return 'Quote ID missing. Refresh the page and try again.';
+    if (!payload.title) return 'Add a quote title before saving.';
+    if (!payload.summary || payload.summary.length < 20) return 'Add more detail to the final quote summary before saving.';
+    if (!Number.isFinite(payload.amountCents) || payload.amountCents <= 0) return 'Enter a valid quote amount before saving.';
+    return '';
+  };
+
+  const restoreFromDraft = (form) => {
     const quoteId = findQuoteId(form);
     const draft = (window.__latestEstimateDrafts || []).find((item) => item.quoteId === quoteId);
     if (!draft) {
-      formStatus(form, 'Could not restore. Refresh the page to reload this draft.');
+      setStatus(form, 'Could not restore. Refresh the page to reload this draft.');
       return;
     }
 
+    form.querySelector('[data-estimate-title]').value = draft.title || 'Estimate draft';
+    form.querySelector('[data-estimate-amount]').value = moneyFromCents(draft.amountCents || 0);
+    form.querySelector('[data-estimate-summary]').value = draft.summary || '';
+    const missing = form.querySelector('[data-estimate-missing-info]');
+    const notes = form.querySelector('[data-estimate-rewrite-notes]');
+    if (missing) missing.value = '';
+    if (notes) notes.textContent = '';
+    setStatus(form, 'Cancelled. Fields restored to the last loaded draft.');
+  };
+
+  const showRewriteNotes = (form, rewrite = {}) => {
+    const notes = form.querySelector('[data-estimate-rewrite-notes]');
+    if (!notes) return;
+
+    const list = (title, items) => Array.isArray(items) && items.length
+      ? [title, ...items.map((item) => `- ${typeof item === 'string' ? item : item.name || item.label || item.notes || JSON.stringify(item)}`)]
+      : [];
+
+    const lines = [
+      rewrite.aiEnhanced ? 'AI rewrite applied.' : 'Fallback rewrite applied.',
+      ...list('Rewrite notes:', rewrite.rewriteNotes),
+      ...list('Missing info resolved:', rewrite.missingInfoResolved),
+      ...list('Remaining questions:', rewrite.remainingQuestions),
+      ...list('Risk flags:', rewrite.riskFlags),
+      ...list('Exclusions:', rewrite.exclusions),
+      ...list('Admin review checklist:', rewrite.adminReviewChecklist),
+      ...list('Customer clarifications:', rewrite.customerClarifications),
+    ];
+
+    notes.textContent = lines.filter(Boolean).join('\n');
+  };
+
+  const applyRewrite = (form, rewrite = {}) => {
     const title = form.querySelector('[data-estimate-title]');
     const amount = form.querySelector('[data-estimate-amount]');
     const summary = form.querySelector('[data-estimate-summary]');
-    const missing = form.querySelector('[data-estimate-missing-info]');
-    const notes = form.querySelector('[data-estimate-rewrite-notes]');
-
-    if (title) title.value = draft.title || 'Estimate draft';
-    if (amount) amount.value = moneyFromCents(draft.amountCents || 0);
-    if (summary) summary.value = draft.summary || '';
-    if (missing) missing.value = '';
-    if (notes) notes.textContent = '';
-
-    formStatus(form, 'Cancelled. Fields restored to the last loaded draft.');
+    if (title && rewrite.title) title.value = rewrite.title;
+    if (amount && Number.isFinite(Number(rewrite.amountCents))) amount.value = moneyFromCents(rewrite.amountCents);
+    if (summary && rewrite.summary) summary.value = rewrite.summary;
+    showRewriteNotes(form, rewrite);
   };
 
   const saveForm = async (form, action = 'save') => {
     const payload = payloadFromForm(form, action);
-    if (!payload.quoteId) throw new Error('Quote ID missing. Refresh the page and try again.');
+    const validationError = validatePayload(payload);
+    if (validationError) throw new Error(validationError);
 
     setBusy(form, true);
-    formStatus(form, action === 'send' ? 'Saving and sending quote…' : 'Saving draft…');
+    setStatus(form, action === 'send' ? 'Saving and sending quote…' : 'Saving draft…');
 
     try {
       await fetchJson('/api/admin/estimate-review', {
@@ -107,14 +142,9 @@
         body: JSON.stringify(payload),
       });
 
-      formStatus(form, action === 'send' ? 'Saved and sent.' : 'Draft saved.');
+      setStatus(form, action === 'send' ? 'Saved and sent.' : 'Draft saved.');
       toast(action === 'send' ? 'Quote sent' : 'Draft saved', 'Estimate Review was updated.', 'success');
-
-      // Reload queue after a short delay so sent quotes leave the draft queue when applicable.
-      setTimeout(() => {
-        if (typeof window.loadEstimateReview === 'function') window.loadEstimateReview();
-        else window.dispatchEvent(new CustomEvent('ta:dashboard-refresh'));
-      }, 700);
+      setTimeout(() => window.dispatchEvent(new CustomEvent('ta:dashboard-refresh')), 700);
     } finally {
       setBusy(form, false);
     }
@@ -125,7 +155,7 @@
     if (!payload.quoteId) throw new Error('Quote ID missing. Refresh the page and try again.');
 
     setBusy(form, true);
-    formStatus(form, 'AI is rewriting this quote…');
+    setStatus(form, 'AI is rewriting this quote with updated information…');
 
     try {
       const result = await fetchJson('/api/admin/estimate-rewrite', {
@@ -134,27 +164,8 @@
         body: JSON.stringify(payload),
       });
 
-      const rewrite = result.rewrite || {};
-      const title = form.querySelector('[data-estimate-title]');
-      const amount = form.querySelector('[data-estimate-amount]');
-      const summary = form.querySelector('[data-estimate-summary]');
-      const notes = form.querySelector('[data-estimate-rewrite-notes]');
-
-      if (title && rewrite.title) title.value = rewrite.title;
-      if (amount && Number.isFinite(Number(rewrite.amountCents))) amount.value = moneyFromCents(rewrite.amountCents);
-      if (summary && rewrite.summary) summary.value = rewrite.summary;
-
-      const noteLines = [
-        rewrite.aiEnhanced ? 'AI rewrite applied.' : 'Fallback rewrite applied.',
-        ...(rewrite.rewriteNotes || []),
-        ...(rewrite.missingInfoResolved?.length ? ['Missing info resolved:', ...rewrite.missingInfoResolved.map((item) => `- ${item}`)] : []),
-        ...(rewrite.remainingQuestions?.length ? ['Remaining questions:', ...rewrite.remainingQuestions.map((item) => `- ${item}`)] : []),
-        ...(rewrite.riskFlags?.length ? ['Risk flags:', ...rewrite.riskFlags.map((item) => `- ${item}`)] : []),
-        ...(rewrite.exclusions?.length ? ['Exclusions:', ...rewrite.exclusions.map((item) => `- ${item}`)] : []),
-      ];
-
-      if (notes) notes.textContent = noteLines.join('\n');
-      formStatus(form, 'Rewrite ready. Review it, then Save Draft or Save & Send.');
+      applyRewrite(form, result.rewrite || {});
+      setStatus(form, 'Rewrite ready. Review it, then Save Draft or Save & Send.');
       toast('Quote rewritten', 'Review the updated quote before saving or sending.', 'success');
     } finally {
       setBusy(form, false);
@@ -164,9 +175,8 @@
   document.addEventListener('click', async (event) => {
     const aiButton = event.target.closest('[data-ai-rewrite-estimate]');
     const cancelButton = event.target.closest('[data-cancel-estimate-edit]');
-    const saveSendButton = event.target.closest('[data-save-send-estimate]');
-
-    if (!aiButton && !cancelButton && !saveSendButton) return;
+    const sendButton = event.target.closest('[data-save-send-estimate]');
+    if (!aiButton && !cancelButton && !sendButton) return;
 
     const form = findForm(event.target);
     if (!form) return;
@@ -182,17 +192,17 @@
       }
 
       if (cancelButton) {
-        const confirmed = await confirmAction('Cancel edits?', 'This will restore the fields to the last loaded draft.', 'Cancel edits');
-        if (confirmed) restoreFromCard(form);
+        const ok = await confirmAction('Cancel edits?', 'This restores the quote fields to the last loaded draft.', 'Cancel edits');
+        if (ok) restoreFromDraft(form);
         return;
       }
 
-      if (saveSendButton) {
-        const confirmed = await confirmAction('Save and send quote?', 'This saves your edits and moves the quote forward.', 'Save & send');
-        if (confirmed) await saveForm(form, 'send');
+      if (sendButton) {
+        const ok = await confirmAction('Save and send quote?', 'This saves your edits and moves the quote forward.', 'Save & send');
+        if (ok) await saveForm(form, 'send');
       }
     } catch (error) {
-      formStatus(form, error.message || 'Action failed.');
+      setStatus(form, error.message || 'Action failed.');
       toast('Quote editor error', error.message || 'Action failed.', 'error');
     }
   }, true);
@@ -208,7 +218,7 @@
     try {
       await saveForm(form, 'save');
     } catch (error) {
-      formStatus(form, error.message || 'Could not save draft.');
+      setStatus(form, error.message || 'Could not save draft.');
       toast('Save failed', error.message || 'Could not save draft.', 'error');
     }
   }, true);
