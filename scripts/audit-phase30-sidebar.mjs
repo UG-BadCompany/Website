@@ -24,6 +24,7 @@ const css = readFileSync(join(root, 'public/assets/dashboard-phase30-sidebar.css
   'dashboard-mobile-nav-toggle',
   'dashboard-sidebar-backdrop',
   'data-sidebar-collapsed',
+  'dashboard-sidebar-v2[data-collapsed="true"]',
   '@media (max-width: 980px)'
 ].forEach((needle) => css.includes(needle) ? ok(`${needle} present in css`) : fail(`${needle} missing in css`));
 
@@ -44,7 +45,8 @@ const js = readFileSync(join(root, 'public/assets/dashboard-phase30-sidebar.js')
   '#system-readiness',
   'data-sidebar-collapse',
   'sidebar-collapse-icon',
-  'ta_dashboard_sidebar_collapsed'
+  'ta_dashboard_sidebar_collapsed',
+  'document.addEventListener'
 ].forEach((needle) => js.includes(needle) ? ok(`${needle} present in js`) : fail(`${needle} missing in js`));
 
 !js.includes('Jump to the exact area you need without scrolling the whole dashboard.') ? ok('old sidebar helper copy removed') : fail('old sidebar helper copy still present');

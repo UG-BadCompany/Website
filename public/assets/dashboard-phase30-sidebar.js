@@ -134,6 +134,8 @@
     const setCollapsed = (collapsed) => {
       shell.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
       sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
+      root.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+      document.body.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
       const collapseButton = sidebar.querySelector('[data-sidebar-collapse]');
       if (collapseButton) {
         collapseButton.setAttribute('aria-pressed', String(collapsed));
@@ -150,7 +152,13 @@
 
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
-    sidebar.querySelector('[data-sidebar-collapse]')?.addEventListener('click', () => setCollapsed(shell.dataset.sidebarCollapsed !== 'true'));
+    document.addEventListener('click', (event) => {
+      const collapseButton = event.target.closest('[data-sidebar-collapse]');
+      if (!collapseButton || !sidebar.contains(collapseButton)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setCollapsed(shell.dataset.sidebarCollapsed !== 'true');
+    }, true);
     backdrop.addEventListener('click', () => setOpen(false));
 
     sidebar.addEventListener('click', (event) => {

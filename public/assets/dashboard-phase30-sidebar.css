@@ -65,6 +65,10 @@
   background: #64748b;
 }
 
+.dashboard-sidebar-v2[data-collapsed="true"] .sidebar-collapse-icon::before {
+  inset: 2px 3px 2px auto;
+}
+
 .sidebar-nav-group {
   display: grid;
   gap: 7px;
@@ -109,25 +113,47 @@
 }
 
 .dashboard-shell-v2[data-sidebar-collapsed="true"] {
-  grid-template-columns: 178px minmax(0, 1fr);
+  grid-template-columns: 148px minmax(0, 1fr) !important;
 }
 
-.dashboard-shell-v2[data-sidebar-collapsed="true"] .dashboard-sidebar-v2 {
-  padding: 12px;
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .dashboard-sidebar-v2,
+.dashboard-sidebar-v2[data-collapsed="true"] {
+  padding: 10px !important;
 }
 
-.dashboard-shell-v2[data-sidebar-collapsed="true"] .dashboard-sidebar-head {
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .dashboard-sidebar-head,
+.dashboard-sidebar-v2[data-collapsed="true"] .dashboard-sidebar-head {
   display: flex;
 }
 
-.dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-link {
-  justify-content: flex-start;
-  min-height: 38px;
-  padding: 0 10px;
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .dashboard-sidebar-head h2,
+.dashboard-sidebar-v2[data-collapsed="true"] .dashboard-sidebar-head h2 {
+  font-size: .82rem;
 }
 
-.dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-link small {
-  display: none;
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-group,
+.dashboard-sidebar-v2[data-collapsed="true"] .sidebar-nav-group {
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-label,
+.dashboard-sidebar-v2[data-collapsed="true"] .sidebar-nav-label {
+  display: none !important;
+}
+
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-link,
+.dashboard-sidebar-v2[data-collapsed="true"] .sidebar-nav-link {
+  justify-content: flex-start !important;
+  min-height: 38px;
+  padding: 0 9px !important;
+  font-size: .82rem;
+  line-height: 1.05;
+}
+
+.dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-link small,
+.dashboard-sidebar-v2[data-collapsed="true"] .sidebar-nav-link small {
+  display: none !important;
 }
 
 .dashboard-workspace-v2 {

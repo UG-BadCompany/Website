@@ -51,8 +51,8 @@ ok('Developer deployment health sidebar area is present');
 if (sidebarJs.includes('Jump to the exact area you need without scrolling the whole dashboard.')) {
   fail('Removed sidebar helper copy is still present.');
 }
-if (!sidebarJs.includes('data-sidebar-collapse') || !sidebarJs.includes('ta_dashboard_sidebar_collapsed')) {
-  fail('Dashboard sidebar collapse control is missing.');
+if (!sidebarJs.includes('data-sidebar-collapse') || !sidebarJs.includes('ta_dashboard_sidebar_collapsed') || !sidebarJs.includes('document.addEventListener')) {
+  fail('Dashboard sidebar collapse control is missing or not delegated.');
 }
 if (sidebarJs.includes('>Collapse</button>') || sidebarJs.includes("textContent = collapsed ? 'Expand' : 'Collapse'")) {
   fail('Sidebar collapse control still uses text labels instead of the icon button.');
@@ -79,6 +79,10 @@ for (const [name, html] of Object.entries({ home, login, dashboard, inventory })
 }
 ok('Modern polish CSS is included on target pages');
 
+const sidebarCss = await readFile('public/assets/dashboard-phase30-sidebar.css', 'utf8');
+if (!sidebarCss.includes('grid-template-columns: 148px minmax(0, 1fr) !important') || !sidebarCss.includes('.dashboard-sidebar-v2[data-collapsed="true"] .sidebar-nav-link small')) {
+  fail('Collapsed sidebar CSS is not strong enough to visibly collapse the sidebar.');
+}
 const workflowCss = await readFile('public/assets/dashboard-phase3-workflow.css', 'utf8');
 const inventoryJs = await readFile('public/assets/dashboard-phase25-inventory-assets.js', 'utf8');
 if (!workflowCss.includes('overflow-x: visible') || !workflowCss.includes('repeat(4, minmax(0, 1fr))')) {
