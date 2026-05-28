@@ -2909,6 +2909,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
             resetRoleForm();
             openAdminRoleModal();
           }
+          if (event.target.closest('[data-admin-user-create]')) {
+            resetUserForm();
+            openAdminUserModal();
+          }
           if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
           if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
         });
@@ -3174,17 +3178,26 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-access]');
         const openButtons = document.querySelectorAll('[data-admin-access-shortcut]');
         if (!panel || !openButtons.length) return;
+        const openAccessWorkspace = async () => {
+          if (panel.matches('[data-admin-access-workspace]')) {
+            if (typeof window.taSetSidebarWorkspace === 'function') window.taSetSidebarWorkspace('settings');
+            panel.hidden = false;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            await loadAdminAccess();
+            document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+            return;
+          }
+          setModalOpen(panel, true);
+          document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+        };
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
           openButton.dataset.bound = 'true';
-          openButton.addEventListener('click', () => {
-            setModalOpen(panel, true);
-            document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
-          });
+          openButton.addEventListener('click', openAccessWorkspace);
         });
         panel.querySelector('[data-admin-access-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
-          if (event.target === panel) setModalOpen(panel, false);
+          if (!panel.matches('[data-admin-access-workspace]') && event.target === panel) setModalOpen(panel, false);
         });
       };
 

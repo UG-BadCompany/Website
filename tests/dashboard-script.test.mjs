@@ -62,7 +62,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /Activity audit trail|Review recent portal audit events|Operational alerts|Loading alerts…/, 'removed audit and alert dashboard copy should not render');
   assert.match(html, /data-admin-access-shortcut/, 'admin command center should open roles and users');
   assert.match(html, /data-admin-access-workspace/, 'roles and users should have a dedicated settings workspace area');
-  assert.match(html, /Open role\/user manager/, 'roles and users workspace should launch the existing secure manager');
+  assert.match(html, /data-admin-user-search-results/, 'roles and users workspace should include editable user search results');
+  assert.match(html, /data-admin-open-selected-role/, 'roles and users workspace should include an edit selected role action');
   assert.doesNotMatch(html, /data-admin-activity-shortcut/, 'admin command center should not include the removed audit activity shortcut');
   assert.doesNotMatch(html, /<button[^>]+data-admin-access-open/, 'roles and users should no longer render as a duplicate workspace-tab button');
   assert.doesNotMatch(html, /<a href="#admin-work-orders" data-dashboard-section/, 'admin work orders should not render as a duplicate tab above the command center');

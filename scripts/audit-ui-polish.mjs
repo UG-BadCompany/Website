@@ -94,8 +94,8 @@ if (!inventoryJs.includes("section.dataset.sidebarWorkspaceSection='settings'"))
 if (dashboard.includes('data-admin-inventory-list')) {
   fail('Dashboard overview still includes the admin inventory list markup.');
 }
-if (!dashboard.includes('data-admin-access-workspace') || !dashboard.includes('Open role/user manager')) {
-  fail('Dedicated Roles & Users workspace is missing from the dashboard.');
+if (!dashboard.includes('data-admin-access-workspace') || !dashboard.includes('data-admin-role-select') || !dashboard.includes('data-admin-user-search-results')) {
+  fail('Editable Roles & Users workspace is missing from the dashboard.');
 }
 if (!sidebarJs.includes("label: 'Roles & Users', target: '#admin-access'")) {
   fail('Sidebar Roles & Users item does not target the dedicated workspace.');

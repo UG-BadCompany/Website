@@ -1958,32 +1958,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <p class="session-status" data-session-status data-debug-dashboard-link role="status" aria-live="polite">Checking secure session…</p>
     </section>
 
-    <div class="admin-request-modal" data-admin-access role="dialog" aria-modal="true" hidden>
-      <section class="admin-request-modal-panel admin-access-panel">
-      <strong>Roles &amp; users</strong>
-      <p>Manage dashboard access, custom roles, and user assignments from one place.</p>
-      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
-      <div class="client-request-form-grid">
-        <label>Role
-          <select data-admin-role-select>
-            <option value="">Select a role to edit</option>
-          </select>
-        </label>
-        <label>User search
-          <input type="search" data-admin-user-search placeholder="Search users by name, email, phone, or role">
-        </label>
-      </div>
-      <div class="client-request-form-actions">
-        <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit Role</button>
-        <button class="btn btn-soft" type="button" data-admin-new-role>Create Role</button>
-        <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
-        <button class="btn btn-soft" type="button" data-admin-access-close>Done</button>
-      </div>
-      <div class="admin-request-list" data-admin-user-search-results></div>
-          </section>
-    </div>
-
-
     <div class="admin-request-modal dashboard-tool-modal" data-dashboard-tool-modal role="dialog" aria-modal="true" hidden>
       <section class="admin-request-modal-panel admin-access-panel">
         <div class="admin-request-modal-header">
@@ -2081,27 +2055,28 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
 
-    <section class="executive-panel admin-access-workspace" id="admin-access" data-admin-access-workspace data-dashboard-section data-views="admin" hidden>
+    <section class="executive-panel admin-access-workspace" id="admin-access" data-admin-access data-admin-access-workspace data-dashboard-section data-views="admin" hidden>
       <div class="executive-header admin-access-workspace-header">
         <div>
           <span class="eyebrow">Access settings</span>
-          <h2>Roles &amp; users</h2>
-          <p>Manage team members, role templates, permissions, and account access from a dedicated admin workspace.</p>
+          <h2>Access manager</h2>
+          <p>Edit roles, permissions, users, contact details, and account assignments directly from this workspace.</p>
         </div>
         <div class="executive-actions">
-          <button class="btn btn-primary" type="button" data-admin-access-shortcut>Open role/user manager</button>
+          <button class="btn btn-primary" type="button" data-admin-access-shortcut>Refresh access data</button>
         </div>
       </div>
+      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
       <div class="executive-kpi-grid admin-access-workspace-grid" aria-label="Roles and users workspace options">
         <div class="executive-kpi admin-access-workspace-card">
           <span>User directory</span>
-          <strong>Members</strong>
-          <p>Search customers, workers, and admins, then open the manager to create users or update account details.</p>
+          <strong>Search users</strong>
+          <p>Find customers, workers, and admins, then use each result's Edit user button to update profile details or roles.</p>
         </div>
         <div class="executive-kpi admin-access-workspace-card">
           <span>Role permissions</span>
-          <strong>Access</strong>
-          <p>Edit role names, descriptions, and permissions without changing the main dashboard layout.</p>
+          <strong>Edit roles</strong>
+          <p>Select an existing role or create a new one to adjust dashboard permissions.</p>
         </div>
         <div class="executive-kpi admin-access-workspace-card">
           <span>Access review</span>
@@ -2109,15 +2084,24 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <p>Review who can manage quotes, invoices, inventory, workers, and admin tools.</p>
         </div>
       </div>
-      <div class="executive-grid admin-access-workspace-detail">
-        <section class="executive-card">
-          <h3>User access</h3>
-          <p>Open the role/user manager to search existing accounts, create a team member, update contact details, or assign saved properties.</p>
-        </section>
-        <section class="executive-card">
-          <h3>Role controls</h3>
-          <p>Keep permissions centralized in the manager so dashboard roles, quote editor access, invoices, and inventory tools stay secure.</p>
-        </section>
+      <div class="executive-card admin-access-editor-card">
+        <h3>Role and user editor</h3>
+        <div class="client-request-form-grid admin-access-control-grid">
+          <label>Role
+            <select data-admin-role-select>
+              <option value="">Select a role to edit</option>
+            </select>
+          </label>
+          <label>User search
+            <input type="search" data-admin-user-search placeholder="Search users by name, email, phone, company, property, or role">
+          </label>
+        </div>
+        <div class="client-request-form-actions admin-access-actions">
+          <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit selected role</button>
+          <button class="btn btn-soft" type="button" data-admin-new-role>Create role</button>
+          <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
+        </div>
+        <div class="admin-request-list admin-access-results" data-admin-user-search-results></div>
       </div>
       <p class="session-status admin-access-workspace-note">The full editor opens in one controlled manager so role and user updates keep using the existing secure admin handlers.</p>
     </section>
