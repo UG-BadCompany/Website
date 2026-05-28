@@ -604,7 +604,7 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
 };
 
 export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -634,10 +634,6 @@ export const createClientJobRequestsHandler = ({ getDatabase = loadDatabase } = 
 
     if (request.method === 'PATCH') {
       return await handlePatch({ request, db, session, roleKeys });
-    }
-
-    if (request.method === 'DELETE') {
-      return await handleDelete({ request, db, session, roleKeys });
     }
 
     return await handleGet({ db, session, roleKeys });
