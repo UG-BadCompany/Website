@@ -48,6 +48,13 @@ if (!sidebarWorkspaceJs.includes('Deployment and workflow health') || !sidebarWo
 }
 if (!dashboard.includes('Deployment Health')) fail('Dashboard compatibility markers are missing Deployment Health.');
 ok('Developer deployment health sidebar area is present');
+if (sidebarJs.includes('Jump to the exact area you need without scrolling the whole dashboard.')) {
+  fail('Removed sidebar helper copy is still present.');
+}
+if (!sidebarJs.includes('data-sidebar-collapse') || !sidebarJs.includes('ta_dashboard_sidebar_collapsed')) {
+  fail('Dashboard sidebar collapse control is missing.');
+}
+ok('Sidebar helper copy removal and collapse control are present');
 
 const forbiddenTopTabs = [
   'data-admin-command-center',
@@ -65,6 +72,16 @@ for (const [name, html] of Object.entries({ home, login, dashboard, inventory })
   if (!html.includes('/assets/ui-polish-2026.css')) fail(`${name} missing UI polish stylesheet include.`);
 }
 ok('Modern polish CSS is included on target pages');
+
+const workflowCss = await readFile('public/assets/dashboard-phase3-workflow.css', 'utf8');
+const inventoryJs = await readFile('public/assets/dashboard-phase25-inventory-assets.js', 'utf8');
+if (!workflowCss.includes('overflow-x: visible') || !workflowCss.includes('repeat(4, minmax(0, 1fr))')) {
+  fail('Work-order pipeline board still allows horizontal scrollbar layout.');
+}
+if (!inventoryJs.includes("section.dataset.sidebarWorkspaceSection='settings'")) {
+  fail('Inventory suite is not scoped to the settings sidebar workspace.');
+}
+ok('Pipeline and inventory workspace polish checks are present');
 
 const requiredCssMarkers = [
   '2026 UI polish layer',

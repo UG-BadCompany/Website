@@ -42,7 +42,7 @@
     settings: {
       title: 'Settings',
       description: 'Admin settings, roles, users, and inventory access.',
-      targets: ['#admin-access', '#admin-inventory', '[data-admin-inventory]']
+      targets: ['#admin-access', '#admin-inventory', '[data-admin-inventory]', '.inventory-suite']
     },
     deployment: {
       title: 'Deployment and workflow health',

@@ -39,7 +39,8 @@ const css = readFileSync(join(root,'public/assets/dashboard-phase34-sidebar-only
 [
   'workspace-route-tabs',
   'body[data-sidebar-workspace]',
-  '.sidebar-workspace-header'
+  '.sidebar-workspace-header',
+  'body[data-sidebar-workspace="deployment"]'
 ].forEach((needle) => css.includes(needle) ? ok(`${needle} present`) : fail(`${needle} missing`));
 
 if (failed) process.exit(1);
