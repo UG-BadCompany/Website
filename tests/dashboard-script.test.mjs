@@ -75,6 +75,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(bootstrap, /window\.taDashboardActions\.loadAdminAccess = loadAdminAccess/, 'sidebar settings workspace should be able to trigger access data loading');
   assert.match(bootstrap, /class="admin-access-choice"/, 'role and permission choices should render with polished card hooks');
   assert.match(polishCss, /Access manager modal redesign/, 'role and user modals should use the premium Access manager modal redesign');
+  assert.match(polishCss, /\[data-admin-role-modal\],[\s\S]*z-index: 11020 !important/, 'role and user modals should layer above the dashboard sidebar');
   assert.match(polishCss, /\[data-admin-role-modal\] \.admin-access-panel[\s\S]*border-radius: 34px/, 'role modal should have a high-polish rounded panel treatment');
   assert.match(polishCss, /\.admin-access-choice[\s\S]*min-height: 78px/, 'role and permission options should be styled as selectable cards');
   assert.match(bootstrap, /Select a role first, then click Edit selected role\./, 'edit selected role should give visible feedback when no role is selected');

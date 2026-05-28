@@ -455,6 +455,7 @@ tbody td:last-child { border-right: 1px solid rgba(255,255,255,.10); border-radi
 /* Access manager modal redesign: premium role/user editors. */
 [data-admin-role-modal],
 [data-admin-user-modal] {
+  z-index: 11020 !important;
   background:
     radial-gradient(circle at 24% 12%, rgba(249, 115, 22, .26), transparent 28rem),
     radial-gradient(circle at 78% 0%, rgba(59, 130, 246, .18), transparent 30rem),
