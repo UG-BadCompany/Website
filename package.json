@@ -11,7 +11,10 @@
     "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
     "audit:phase8": "node scripts/audit-phase8.cjs",
     "audit:phase9": "node scripts/audit-phase9-routes.mjs",
-    "audit:phase10": "node scripts/audit-phase10-header.mjs"
+    "audit:phase10": "node scripts/audit-phase10-header.mjs",
+    "test:browser": "node --test tests/dashboard-workflow.spec.mjs tests/public-pages.spec.mjs tests/inventory-workflow.spec.mjs tests/quote-editor.spec.mjs",
+    "audit:dead-buttons": "node scripts/audit-dead-buttons.mjs",
+    "audit:phase51": "npm run build && node scripts/check-netlify-functions.mjs && node scripts/audit-dead-buttons.mjs && npm run test:browser"
   },
   "engines": {
     "node": ">=20.12.2"
