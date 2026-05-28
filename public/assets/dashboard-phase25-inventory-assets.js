@@ -7,6 +7,7 @@
 
  const section=document.createElement('section');
  section.className='inventory-suite';
+ section.dataset.sidebarWorkspaceSection='settings';
  section.innerHTML=`
  <section class="inventory-card">
    <span class="eyebrow">Phase 25</span>
