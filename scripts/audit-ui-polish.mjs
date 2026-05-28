@@ -54,7 +54,13 @@ if (sidebarJs.includes('Jump to the exact area you need without scrolling the wh
 if (!sidebarJs.includes('data-sidebar-collapse') || !sidebarJs.includes('ta_dashboard_sidebar_collapsed')) {
   fail('Dashboard sidebar collapse control is missing.');
 }
-ok('Sidebar helper copy removal and collapse control are present');
+if (sidebarJs.includes('>Collapse</button>') || sidebarJs.includes("textContent = collapsed ? 'Expand' : 'Collapse'")) {
+  fail('Sidebar collapse control still uses text labels instead of the icon button.');
+}
+if (!sidebarJs.includes('sidebar-collapse-icon')) {
+  fail('Sidebar collapse icon markup is missing.');
+}
+ok('Sidebar helper copy removal and icon collapse control are present');
 
 const forbiddenTopTabs = [
   'data-admin-command-center',
@@ -80,6 +86,12 @@ if (!workflowCss.includes('overflow-x: visible') || !workflowCss.includes('repea
 }
 if (!inventoryJs.includes("section.dataset.sidebarWorkspaceSection='settings'")) {
   fail('Inventory suite is not scoped to the settings sidebar workspace.');
+}
+if (dashboard.includes('data-admin-inventory-list')) {
+  fail('Dashboard overview still includes the admin inventory list markup.');
+}
+if (!sidebarWorkspaceJs.includes("document.body.dataset.sidebarWorkspace = 'overview'")) {
+  fail('Sidebar workspace script does not initialize Overview before delayed boot.');
 }
 ok('Pipeline and inventory workspace polish checks are present');
 

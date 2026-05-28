@@ -39,9 +39,30 @@
 }
 
 .dashboard-sidebar-collapse {
+  min-width: 40px;
+  width: 40px;
   min-height: 34px;
-  padding: 0 10px;
-  font-size: .78rem;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.sidebar-collapse-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  border: 2px solid #64748b;
+  border-radius: 3px;
+  position: relative;
+  background: rgba(248,250,252,.92);
+}
+
+.sidebar-collapse-icon::before {
+  content: "";
+  position: absolute;
+  inset: 2px auto 2px 3px;
+  width: 4px;
+  border-radius: 1px;
+  background: #64748b;
 }
 
 .sidebar-nav-group {
@@ -96,8 +117,7 @@
 }
 
 .dashboard-shell-v2[data-sidebar-collapsed="true"] .dashboard-sidebar-head {
-  display: grid;
-  gap: 8px;
+  display: flex;
 }
 
 .dashboard-shell-v2[data-sidebar-collapsed="true"] .sidebar-nav-link {

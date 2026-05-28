@@ -8,6 +8,10 @@
   const root = document.querySelector('[data-dashboard-root]');
   if (!root) return;
 
+  if (!document.body.dataset.sidebarWorkspace) {
+    document.body.dataset.sidebarWorkspace = 'overview';
+  }
+
   const workspaces = {
     overview: {
       title: 'Overview',

@@ -88,7 +88,7 @@
       <button class="btn btn-soft" type="button" data-sidebar-close>Close menu</button>
       <div class="dashboard-sidebar-head">
         <h2>Workspace</h2>
-        <button class="btn btn-soft dashboard-sidebar-collapse" type="button" data-sidebar-collapse aria-pressed="false">Collapse</button>
+        <button class="btn btn-soft dashboard-sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" title="Collapse sidebar" aria-pressed="false"><span class="sidebar-collapse-icon" aria-hidden="true"></span></button>
       </div>
       <nav class="sidebar-nav-group" data-sidebar-nav></nav>
     `;
@@ -137,7 +137,8 @@
       const collapseButton = sidebar.querySelector('[data-sidebar-collapse]');
       if (collapseButton) {
         collapseButton.setAttribute('aria-pressed', String(collapsed));
-        collapseButton.textContent = collapsed ? 'Expand' : 'Collapse';
+        collapseButton.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        collapseButton.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
       }
       try { window.localStorage.setItem('ta_dashboard_sidebar_collapsed', collapsed ? 'true' : 'false'); } catch {}
     };

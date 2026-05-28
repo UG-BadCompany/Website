@@ -43,6 +43,7 @@ const js = readFileSync(join(root, 'public/assets/dashboard-phase30-sidebar.js')
   'adminAccess',
   '#system-readiness',
   'data-sidebar-collapse',
+  'sidebar-collapse-icon',
   'ta_dashboard_sidebar_collapsed'
 ].forEach((needle) => js.includes(needle) ? ok(`${needle} present in js`) : fail(`${needle} missing in js`));
 
