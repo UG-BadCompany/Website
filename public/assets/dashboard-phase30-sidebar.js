@@ -24,7 +24,7 @@
 
     { group: 'Operations', label: 'Inventory', target: '#admin-inventory', hint: 'Stock' },
     { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
-    { group: 'Operations', label: 'Roles & Users', action: 'adminAccess', hint: 'Access' },
+    { group: 'Operations', label: 'Roles & Users', target: '#admin-access', hint: 'Access' },
 
     { group: 'Dev', label: 'Deployment Health', target: '#system-readiness', hint: 'Workflow' },
   ];

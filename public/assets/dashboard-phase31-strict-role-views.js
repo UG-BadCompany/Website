@@ -20,6 +20,7 @@
       ['#executive-overview, .executive-suite, [data-phase5-executive-suite]', 'admin'],
       ['#admin-invoices, [data-admin-invoices]', 'admin'],
       ['#admin-inventory, .inventory-suite, [data-admin-inventory]', 'admin'],
+      ['#admin-access, [data-admin-access-workspace]', 'admin'],
       ['#admin-activity, [data-admin-activity], [data-admin-alerts]', 'admin'],
       ['.smart-schedule-suite', 'admin'],
       ['.maintenance-suite', 'admin'],

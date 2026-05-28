@@ -269,6 +269,75 @@ label,
   border: 1px solid rgba(255,255,255,.12) !important;
 }
 
+
+/* Dedicated Roles & Users workspace polish. */
+.admin-access-workspace {
+  overflow: hidden;
+}
+
+.admin-access-workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.admin-access-workspace-header strong {
+  display: block;
+  margin: 4px 0 8px;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  letter-spacing: -.035em;
+}
+
+.admin-access-workspace-header p,
+.admin-access-workspace-card p,
+.admin-access-workspace-note {
+  max-width: 760px;
+}
+
+.admin-access-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.admin-access-workspace-card {
+  min-height: 180px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(145deg, rgba(15,23,42,.82), rgba(30,41,59,.58));
+  box-shadow: 0 18px 42px rgba(0,0,0,.20);
+}
+
+.admin-access-workspace-card strong {
+  display: block;
+  margin: 10px 0 6px;
+}
+
+.admin-access-workspace-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: rgba(249,115,22,.14);
+  border: 1px solid rgba(249,115,22,.28);
+}
+
+@media (max-width: 860px) {
+  .admin-access-workspace-header {
+    flex-direction: column;
+  }
+
+  .admin-access-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Activity/audit: timeline-like cards instead of old plain rows. */
 [data-admin-activity] {
   overflow: hidden;

@@ -41,7 +41,7 @@ const js = readFileSync(join(root, 'public/assets/dashboard-phase30-sidebar.js')
   'Dev',
   'dashboard-shell-v2',
   'sidebarToggle',
-  'adminAccess',
+  '#admin-access',
   '#system-readiness',
   'data-sidebar-collapse',
   'sidebar-collapse-icon',

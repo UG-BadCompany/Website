@@ -94,6 +94,12 @@ if (!inventoryJs.includes("section.dataset.sidebarWorkspaceSection='settings'"))
 if (dashboard.includes('data-admin-inventory-list')) {
   fail('Dashboard overview still includes the admin inventory list markup.');
 }
+if (!dashboard.includes('data-admin-access-workspace') || !dashboard.includes('Open role/user manager')) {
+  fail('Dedicated Roles & Users workspace is missing from the dashboard.');
+}
+if (!sidebarJs.includes("label: 'Roles & Users', target: '#admin-access'")) {
+  fail('Sidebar Roles & Users item does not target the dedicated workspace.');
+}
 if (!sidebarWorkspaceJs.includes("document.body.dataset.sidebarWorkspace = 'overview'")) {
   fail('Sidebar workspace script does not initialize Overview before delayed boot.');
 }
@@ -113,6 +119,8 @@ const requiredCssMarkers = [
   '2026 UI polish layer',
   '[data-admin-activity-list]',
   '[data-admin-user-search-results]',
+  '.admin-access-workspace',
+  '.admin-access-workspace-card',
   '[data-admin-inventory-list]',
   '.inventory-card',
   '.admin-request-modal-panel',

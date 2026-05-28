@@ -2081,7 +2081,35 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
 
-    <span id="admin-access" class="dashboard-anchor-alias" aria-hidden="true"></span>
+    <section class="card admin-access-workspace" id="admin-access" data-admin-access-workspace data-dashboard-section data-views="admin" hidden>
+      <div class="admin-access-workspace-header">
+        <div>
+          <span class="eyebrow">Settings</span>
+          <strong>Roles &amp; users</strong>
+          <p>Manage team members, role templates, permissions, and account access from a dedicated admin workspace.</p>
+        </div>
+        <button class="btn btn-primary" type="button" data-admin-access-shortcut>Open role/user manager</button>
+      </div>
+      <div class="admin-access-workspace-grid" aria-label="Roles and users workspace options">
+        <article class="admin-access-workspace-card">
+          <span class="admin-access-workspace-icon" aria-hidden="true">👥</span>
+          <strong>User directory</strong>
+          <p>Search customers, workers, and admins, then open the manager to create users or update account details.</p>
+        </article>
+        <article class="admin-access-workspace-card">
+          <span class="admin-access-workspace-icon" aria-hidden="true">🔐</span>
+          <strong>Role permissions</strong>
+          <p>Edit role names, descriptions, and permissions without changing the main dashboard layout.</p>
+        </article>
+        <article class="admin-access-workspace-card">
+          <span class="admin-access-workspace-icon" aria-hidden="true">✅</span>
+          <strong>Access review</strong>
+          <p>Use this area as the settings hub for reviewing who can manage quotes, invoices, inventory, workers, and admin tools.</p>
+        </article>
+      </div>
+      <p class="session-status admin-access-workspace-note">The full editor opens in one controlled manager so role and user updates keep using the existing secure admin handlers.</p>
+    </section>
+
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
       <strong>Invoice &amp; payment desk</strong>
