@@ -134,6 +134,11 @@
       url.searchParams.delete('workspace');
       window.history.replaceState({}, '', url);
     }
+
+    if (workspace === 'settings') {
+      window.taDashboardActions?.bindAdminAccessForms?.();
+      window.taDashboardActions?.loadAdminAccess?.();
+    }
   };
 
   document.addEventListener('click', (event) => {
