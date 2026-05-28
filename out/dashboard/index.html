@@ -2081,31 +2081,43 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
 
-    <section class="card admin-access-workspace" id="admin-access" data-admin-access-workspace data-dashboard-section data-views="admin" hidden>
-      <div class="admin-access-workspace-header">
+    <section class="executive-panel admin-access-workspace" id="admin-access" data-admin-access-workspace data-dashboard-section data-views="admin" hidden>
+      <div class="executive-header admin-access-workspace-header">
         <div>
-          <span class="eyebrow">Settings</span>
-          <strong>Roles &amp; users</strong>
+          <span class="eyebrow">Access settings</span>
+          <h2>Roles &amp; users</h2>
           <p>Manage team members, role templates, permissions, and account access from a dedicated admin workspace.</p>
         </div>
-        <button class="btn btn-primary" type="button" data-admin-access-shortcut>Open role/user manager</button>
+        <div class="executive-actions">
+          <button class="btn btn-primary" type="button" data-admin-access-shortcut>Open role/user manager</button>
+        </div>
       </div>
-      <div class="admin-access-workspace-grid" aria-label="Roles and users workspace options">
-        <article class="admin-access-workspace-card">
-          <span class="admin-access-workspace-icon" aria-hidden="true">👥</span>
-          <strong>User directory</strong>
+      <div class="executive-kpi-grid admin-access-workspace-grid" aria-label="Roles and users workspace options">
+        <div class="executive-kpi admin-access-workspace-card">
+          <span>User directory</span>
+          <strong>Members</strong>
           <p>Search customers, workers, and admins, then open the manager to create users or update account details.</p>
-        </article>
-        <article class="admin-access-workspace-card">
-          <span class="admin-access-workspace-icon" aria-hidden="true">🔐</span>
-          <strong>Role permissions</strong>
+        </div>
+        <div class="executive-kpi admin-access-workspace-card">
+          <span>Role permissions</span>
+          <strong>Access</strong>
           <p>Edit role names, descriptions, and permissions without changing the main dashboard layout.</p>
-        </article>
-        <article class="admin-access-workspace-card">
-          <span class="admin-access-workspace-icon" aria-hidden="true">✅</span>
-          <strong>Access review</strong>
-          <p>Use this area as the settings hub for reviewing who can manage quotes, invoices, inventory, workers, and admin tools.</p>
-        </article>
+        </div>
+        <div class="executive-kpi admin-access-workspace-card">
+          <span>Access review</span>
+          <strong>Controls</strong>
+          <p>Review who can manage quotes, invoices, inventory, workers, and admin tools.</p>
+        </div>
+      </div>
+      <div class="executive-grid admin-access-workspace-detail">
+        <section class="executive-card">
+          <h3>User access</h3>
+          <p>Open the role/user manager to search existing accounts, create a team member, update contact details, or assign saved properties.</p>
+        </section>
+        <section class="executive-card">
+          <h3>Role controls</h3>
+          <p>Keep permissions centralized in the manager so dashboard roles, quote editor access, invoices, and inventory tools stay secure.</p>
+        </section>
       </div>
       <p class="session-status admin-access-workspace-note">The full editor opens in one controlled manager so role and user updates keep using the existing secure admin handlers.</p>
     </section>
