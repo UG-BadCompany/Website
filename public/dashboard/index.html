@@ -1427,20 +1427,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
       background: linear-gradient(135deg, #fb923c, #facc15);
     }
     html[data-theme="dark"] .dashboard-nav-row .btn-soft,
-    html[data-theme="dark"] .theme-toggle,
-    [data-admin-alerts-shortcut] { position: relative; }
-    [data-admin-alerts-shortcut][data-has-unread-alert="true"]::after {
-      content: "";
-      position: absolute;
-      top: 7px;
-      right: 9px;
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #ef4444;
-      border: 1.5px solid rgba(255,255,255,.92);
-      box-shadow: 0 0 0 2px rgba(239,68,68,.22);
-    }
+    html[data-theme="dark"] .theme-toggle { position: relative; }
     html[data-theme="dark"] .account-session-row [data-logout-button] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
@@ -1925,7 +1912,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button><button type="button" data-admin-access-shortcut hidden>Roles</button><button type="button" data-admin-activity-shortcut hidden>Activity</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
   <nav aria-hidden="true" hidden><a href="#admin-work-orders">Work orders</a><a href="#admin-invoices">Invoices</a><a href="/inventory/" data-main-action-permission="canManageInventory">Inventory</a><a href="#worker-jobs">Assigned jobs</a></nav>
   <main class="wrap" data-dashboard-root>
     <span id="admin-quotes" class="dashboard-anchor-alias" aria-hidden="true"></span>
@@ -2100,7 +2087,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     <span id="admin-access" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
-      <strong>Work order command center</strong>
+      <strong>Work orders</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-pipeline-summary></div>
@@ -2266,54 +2253,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     
       <div class="admin-request-list" data-admin-inventory-list></div>
       </div>
-    </section>
-
-    <section class="card admin-activity" id="admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Activity audit trail</strong>
-      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
-      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
-      <div class="admin-request-list" data-admin-activity-summary aria-label="Activity summary cards"></div>
-      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="activity" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="activity">Show activity feed</button></div>
-      <div data-admin-workspace-body="activity" hidden>
-      <form class="client-request-form" data-admin-activity-filter-form>
-        <div class="client-request-form-grid">
-          <label>Event type
-            <select name="eventType" data-admin-activity-type-filter>
-              <option value="">All activity</option>
-              <option value="status">Status changes</option>
-              <option value="quote">Quotes</option>
-              <option value="payment">Payments</option>
-              <option value="assignment">Assignments</option>
-              <option value="inventory">Inventory</option>
-              <option value="account">Accounts</option>
-            </select>
-          </label>
-          <label>Search
-            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
-          </label>
-          <button class="btn btn-soft" type="button" data-admin-activity-more>Load more</button>
-          <label>Limit
-            <select name="limit" data-admin-activity-limit>
-              <option value="25">25 events</option>
-              <option value="50">50 events</option>
-              <option value="100">100 events</option>
-            </select>
-          </label>
-        </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-primary" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
-      </form>
-      <div class="admin-request-list" data-admin-activity-list></div>
-      </div>
-    </section>
-
-    <section class="card admin-activity" data-admin-alerts data-dashboard-section data-views="admin" hidden>
-      <strong>Operational alerts</strong>
-      <div class="client-request-form-actions">
-        <span data-admin-alerts-notification-status aria-live="polite"></span>
-      </div>
-      <p class="session-status" data-admin-alerts-status role="status" aria-live="polite">Loading alerts…</p>
-      <div class="grid" data-admin-alerts-summary aria-label="Operational alert summary cards"></div>
-      <div class="admin-request-list" data-admin-alerts-list></div>
     </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
@@ -2546,7 +2485,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 <div hidden>data-debug-fallback-actions</div>
 <div hidden>Open the admin work-order command center</div>
 <div hidden>The main dashboard has been loaded from the confirmed session and permissions</div>
-<div hidden><strong>Work orders</strong><strong>Invoices</strong><strong>Inventory</strong><strong>Roles &amp; users</strong><strong>Audit activity</strong><strong>Requests</strong><strong>Quotes</strong><strong>Client invoices</strong><strong>Profile</strong><strong>Worker jobs</strong></div>
+<div hidden><strong>Work orders</strong><strong>Invoices</strong><strong>Inventory</strong><strong>Roles &amp; users</strong><strong>Requests</strong><strong>Quotes</strong><strong>Client invoices</strong><strong>Profile</strong><strong>Worker jobs</strong></div>
 <pre hidden>if (authDebugEnabled) {
   const debugResult = await loadAuthDebug();</pre>
 <div hidden><input type="file" data-worker-before-files><input type="file" data-worker-after-files></div>
@@ -2610,7 +2549,6 @@ const payload = {};
 payload.attachmentNames = summarizeClientRequestAttachments(formData);
 const uploadJobFiles = async () => fetch('/api/job-files');
 const saveClientRequestUpdate = async () => {};
-const loadAdminActivity = async () => {}; const bindAdminActivityActions = () => {}; const canViewAdminActivity = true;
 const loadClientInvoices = async () => {};
 window.taDashboardActions = window.taDashboardActions || {};
 window.taDashboardActions.loadAdminInvoices = async () => { const canManageInvoices = true; return canManageInvoices; };
