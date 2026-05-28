@@ -2513,46 +2513,58 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const roleForm = document.querySelector('[data-admin-role-form]');
         const userForm = document.querySelector('[data-admin-user-form]');
         const search = document.querySelector('[data-admin-user-search]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
+        if (!panel || document.documentElement.dataset.boundAdminAccessForms) return;
+        document.documentElement.dataset.boundAdminAccessForms = 'true';
 
-        panel.addEventListener('click', async (event) => {
+        document.addEventListener('click', async (event) => {
+          const accessAction = event.target.closest('[data-admin-edit-role], [data-admin-open-selected-role], [data-admin-edit-user], [data-admin-new-role], [data-admin-user-create], [data-admin-role-modal-close], [data-admin-user-modal-close]');
+          if (!accessAction) return;
+
+          const isInsideAccessManager = Boolean(accessAction.closest('[data-admin-access]'));
+          const isInsideAccessModal = Boolean(accessAction.closest('[data-admin-role-modal], [data-admin-user-modal]'));
+          if (!isInsideAccessManager && !isInsideAccessModal) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
           const status = document.querySelector('[data-admin-access-status]');
-          const roleButton = event.target.closest('[data-admin-edit-role]');
-          const userButton = event.target.closest('[data-admin-edit-user]');
-          const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
-          if (roleButton) {
-            event.preventDefault();
-            if (!currentAdminRoles.size) await loadAdminAccess();
-            selectAdminRole(roleButton.dataset.adminEditRole);
+          if (accessAction.matches('[data-admin-role-modal-close]')) {
+            closeAdminRoleModal();
+            return;
           }
-          if (selectedRoleButton) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-user-modal-close]')) {
+            closeAdminUserModal();
+            return;
+          }
+          if (accessAction.matches('[data-admin-edit-role]')) {
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            selectAdminRole(accessAction.dataset.adminEditRole);
+            return;
+          }
+          if (accessAction.matches('[data-admin-open-selected-role]')) {
             if (!currentAdminRoles.size) await loadAdminAccess();
             const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
             if (selectedRole) selectAdminRole(selectedRole);
             else if (status) status.textContent = 'Select a role first, then click Edit selected role.';
+            return;
           }
-          if (userButton) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-edit-user]')) {
             if (!currentAdminUsers.size) await loadAdminAccess();
-            selectAdminUser(userButton.dataset.adminEditUser);
+            selectAdminUser(accessAction.dataset.adminEditUser);
+            return;
           }
-          if (event.target.closest('[data-admin-new-role]')) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-new-role]')) {
             if (!currentPermissions.length) await loadAdminAccess();
             resetRoleForm();
             openAdminRoleModal();
+            return;
           }
-          if (event.target.closest('[data-admin-user-create]')) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-user-create]')) {
             if (!currentAdminRoles.size) await loadAdminAccess();
             resetUserForm();
             openAdminUserModal();
           }
-          if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
-          if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
-        });
+        }, true);
 
         document.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
           if (event.target === event.currentTarget) closeAdminRoleModal();
@@ -2821,13 +2833,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
           ]);
           const rolesResult = await rolesResponse.json().catch(() => ({}));
           const usersResult = await usersResponse.json().catch(() => ({}));
-          if (!rolesResponse.ok || !rolesResult.ok) throw new Error(rolesResult.message || 'Roles are not available.');
-          if (!usersResponse.ok || !usersResult.ok) throw new Error(usersResult.message || 'Users are not available.');
-          renderAdminAccess({ roles: rolesResult.roles, users: usersResult.users, permissions: rolesResult.permissions });
+          const rolesOk = rolesResponse.ok && rolesResult.ok;
+          const usersOk = usersResponse.ok && usersResult.ok;
+
+          if (!rolesOk && !usersOk) {
+            throw new Error(rolesResult.message || usersResult.message || 'Roles and users are not available.');
+          }
+
+          const roleRows = rolesOk ? (rolesResult.roles || []) : (usersResult.roles || []);
+          const permissionRows = rolesOk ? (rolesResult.permissions || []) : currentPermissions;
+          const userRows = usersOk ? (usersResult.users || []) : [];
+
+          renderAdminAccess({ roles: roleRows, users: userRows, permissions: permissionRows });
           bindAdminAccessForms();
           if (status) {
-            status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
+            status.dataset.state = rolesOk && usersOk ? 'ready' : 'warning';
+            const warnings = [
+              rolesOk ? '' : (rolesResult.message || 'Role editing is unavailable for this session.'),
+              usersOk ? '' : (usersResult.message || 'User editing is unavailable for this session.'),
+            ].filter(Boolean);
+            status.textContent = warnings.length
+              ? `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} and ${userRows.length} user${userRows.length === 1 ? "" : "s"} loaded. ${warnings.join(' ')}`
+              : `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
           }
         } catch (error) {
           if (status) {
@@ -2836,6 +2863,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
         }
       };
+
+      window.taDashboardActions = window.taDashboardActions || {};
+      window.taDashboardActions.bindAdminAccessForms = bindAdminAccessForms;
+      window.taDashboardActions.loadAdminAccess = loadAdminAccess;
 
 
       const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {

@@ -67,6 +67,10 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-user-search-results/, 'roles and users workspace should include editable user search results');
   assert.match(html, /data-admin-open-selected-role/, 'roles and users workspace should include an edit selected role action');
   assert.match(bootstrap, /if \(!currentAdminRoles\.size\) await loadAdminAccess\(\)/, 'role/user editor actions should refresh access data before opening editors');
+  assert.match(bootstrap, /document\.addEventListener\('click'[\s\S]*data-admin-user-create[\s\S]*, true\)/, 'access manager actions should be delegated outside the hidden workspace panel so buttons keep working');
+  assert.match(bootstrap, /document\.documentElement\.dataset\.boundAdminAccessForms/, 'access manager binding should use a dedicated guard instead of a generic panel bound flag');
+  assert.match(bootstrap, /const rolesOk = rolesResponse\.ok && rolesResult\.ok/, 'access manager should tolerate partial role or user endpoint authorization');
+  assert.match(bootstrap, /window\.taDashboardActions\.loadAdminAccess = loadAdminAccess/, 'sidebar settings workspace should be able to trigger access data loading');
   assert.match(bootstrap, /Select a role first, then click Edit selected role\./, 'edit selected role should give visible feedback when no role is selected');
   assert.doesNotMatch(html, /data-admin-activity-shortcut/, 'admin command center should not include the removed audit activity shortcut');
   assert.doesNotMatch(html, /<button[^>]+data-admin-access-open/, 'roles and users should no longer render as a duplicate workspace-tab button');
