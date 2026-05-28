@@ -1,0 +1,9 @@
+/* Phase 46: quote editor button reliability */
+.estimate-edit-status {
+  border-radius: 12px;
+  padding: 6px 8px;
+}
+.estimate-edit-form button:disabled {
+  opacity: .62;
+  cursor: wait;
+}

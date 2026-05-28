@@ -336,6 +336,103 @@
     setTimeout(() => modal.querySelector('[data-modal-title]')?.focus(), 30);
   };
 
+
+  const resetEstimateForm = (form) => {
+    if (!form) return;
+    const card = form.closest('[data-estimate-draft-card]');
+    const quoteId = form.dataset.estimateEditForm || card?.dataset.estimateDraftCard || '';
+    const draft = (window.__latestEstimateDrafts || []).find((item) => item.quoteId === quoteId);
+    if (!draft) return;
+
+    const title = form.querySelector('[data-estimate-title]');
+    const amount = form.querySelector('[data-estimate-amount]');
+    const summary = form.querySelector('[data-estimate-summary]');
+    const missing = form.querySelector('[data-estimate-missing-info]');
+    const notes = form.querySelector('[data-estimate-rewrite-notes]');
+    const status = form.querySelector('[data-estimate-edit-status]');
+
+    if (title) title.value = draft.title || 'Estimate draft';
+    if (amount) amount.value = dollarsFromCents(draft.amountCents || 0);
+    if (summary) summary.value = draft.summary || '';
+    if (missing) missing.value = '';
+    if (notes) notes.textContent = '';
+    if (status) status.textContent = 'Changes cancelled. Draft restored from last loaded version.';
+  };
+
+  const setEstimateFormBusy = (form, busy = false) => {
+    if (!form) return;
+    form.querySelectorAll('button').forEach((button) => {
+      button.disabled = busy;
+    });
+  };
+
+  const getEstimateFormPayload = (form, action = 'save') => ({
+    quoteId: form?.dataset?.estimateEditForm || form?.closest?.('[data-estimate-draft-card]')?.dataset?.estimateDraftCard || '',
+    action,
+    title: form?.querySelector?.('[data-estimate-title]')?.value || '',
+    summary: form?.querySelector?.('[data-estimate-summary]')?.value || '',
+    amountCents: centsFromInput(form?.querySelector?.('[data-estimate-amount]')?.value || '0'),
+    missingInfo: form?.querySelector?.('[data-estimate-missing-info]')?.value || '',
+    rewriteStyle: 'customer_ready',
+  });
+
+  const updateEstimateFormStatus = (form, message = '') => {
+    const status = form?.querySelector?.('[data-estimate-edit-status]');
+    if (status) status.textContent = message;
+  };
+
+  const saveEstimateForm = async (form, action = 'save') => {
+    const payload = getEstimateFormPayload(form, action);
+    if (!payload.quoteId) throw new Error('Quote is missing. Refresh and try again.');
+
+    updateEstimateFormStatus(form, action === 'send' ? 'Saving and sending…' : 'Saving draft…');
+    setEstimateFormBusy(form, true);
+
+    try {
+      await fetchJson('/api/admin/estimate-review', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      updateEstimateFormStatus(form, action === 'send' ? 'Saved and sent.' : 'Saved.');
+      window.TAUX?.toast?.({
+        title: action === 'send' ? 'Quote saved and sent' : 'Quote saved',
+        message: 'Estimate Review was updated.',
+        type: 'success',
+      });
+      setTimeout(loadEstimateReview, 500);
+    } finally {
+      setEstimateFormBusy(form, false);
+    }
+  };
+
+  const rewriteEstimateForm = async (form) => {
+    const payload = getEstimateFormPayload(form, 'save');
+    if (!payload.quoteId) throw new Error('Quote is missing. Refresh and try again.');
+
+    updateEstimateFormStatus(form, 'AI is rewriting this quote…');
+    setEstimateFormBusy(form, true);
+
+    try {
+      const result = await fetchJson('/api/admin/estimate-rewrite', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      applyRewriteToForm(form, result.rewrite || {});
+      updateEstimateFormStatus(form, 'Rewrite ready. Review it, then Save Draft or Save & Send.');
+      window.TAUX?.toast?.({
+        title: 'Quote rewritten',
+        message: 'Review the updated quote before saving or sending.',
+        type: 'success',
+      });
+    } finally {
+      setEstimateFormBusy(form, false);
+    }
+  };
+
   const renderDrafts = (drafts = []) => {
     const list = document.querySelector('[data-phase2-estimate-list]');
     const status = document.querySelector('[data-phase2-estimate-status]');
@@ -415,7 +512,7 @@
             <div class="estimate-edit-actions">
               <button class="btn btn-soft" type="button" data-ai-rewrite-estimate="${escapeHtml(draft.quoteId)}">AI rewrite quote</button>
               <button class="btn btn-primary" type="submit">Save draft</button>
-              <button class="btn btn-soft" type="button" data-cancel-estimate-edit="${escapeHtml(draft.quoteId)}">Cancel</button>
+              <button class="btn btn-soft" type="button" data-cancel-estimate-edit="${escapeHtml(draft.quoteId)}">Cancel edits</button>
               <button class="btn btn-soft" type="button" data-save-send-estimate="${escapeHtml(draft.quoteId)}">Save & send</button>
             </div>
             <pre class="estimate-rewrite-notes" data-estimate-rewrite-notes="${escapeHtml(draft.quoteId)}"></pre>
@@ -435,6 +532,68 @@
         </article>
       `;
     }).join('');
+
+
+
+    if (!list.dataset.phase46EditorButtons) {
+      list.dataset.phase46EditorButtons = 'true';
+      list.addEventListener('click', async (event) => {
+        const aiButton = event.target.closest('[data-ai-rewrite-estimate]');
+        const cancelButton = event.target.closest('[data-cancel-estimate-edit]');
+        const saveSendButton = event.target.closest('[data-save-send-estimate]');
+
+        if (!aiButton && !cancelButton && !saveSendButton) return;
+
+        const form = event.target.closest('[data-estimate-edit-form]');
+        if (!form) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        try {
+          if (aiButton) {
+            await rewriteEstimateForm(form);
+            return;
+          }
+
+          if (cancelButton) {
+            const confirmed = window.TAUX ? await window.TAUX.confirm({
+              title: 'Cancel edits?',
+              message: 'This will reset the visible fields back to the last loaded draft.',
+              confirmText: 'Cancel edits',
+            }) : window.confirm('Cancel edits and restore the last loaded draft?');
+            if (confirmed) resetEstimateForm(form);
+            return;
+          }
+
+          if (saveSendButton) {
+            const confirmed = window.TAUX ? await window.TAUX.confirm({
+              title: 'Save and send quote?',
+              message: 'This saves your final edits and moves the quote forward.',
+              confirmText: 'Save & send',
+            }) : window.confirm('Save and send this quote?');
+            if (confirmed) await saveEstimateForm(form, 'send');
+          }
+        } catch (error) {
+          updateEstimateFormStatus(form, error.message || 'Action failed.');
+          window.TAUX?.toast?.({ title: 'Quote editor error', message: error.message || 'Action failed.', type: 'error' });
+        }
+      }, true);
+
+      list.addEventListener('submit', async (event) => {
+        const form = event.target.closest('[data-estimate-edit-form]');
+        if (!form) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        try {
+          await saveEstimateForm(form, 'save');
+        } catch (error) {
+          updateEstimateFormStatus(form, error.message || 'Could not save estimate.');
+          window.TAUX?.toast?.({ title: 'Save failed', message: error.message || 'Could not save estimate.', type: 'error' });
+        }
+      }, true);
+    }
 
 
     if (!list.dataset.estimateEditDelegated) {
