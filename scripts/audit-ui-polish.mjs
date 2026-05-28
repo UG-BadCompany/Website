@@ -38,6 +38,17 @@ for (const sidebarAsset of [
 }
 ok('Dashboard sidebar assets are still included');
 
+const sidebarJs = await readFile('public/assets/dashboard-phase30-sidebar.js', 'utf8');
+const sidebarWorkspaceJs = await readFile('public/assets/dashboard-phase34-sidebar-only-workspaces.js', 'utf8');
+if (!sidebarJs.includes('Deployment Health') || !sidebarJs.includes('#system-readiness')) {
+  fail('Dashboard sidebar is missing the developer Deployment Health link.');
+}
+if (!sidebarWorkspaceJs.includes('Deployment and workflow health') || !sidebarWorkspaceJs.includes('deployment')) {
+  fail('Sidebar workspaces are missing the deployment health workspace.');
+}
+if (!dashboard.includes('Deployment Health')) fail('Dashboard compatibility markers are missing Deployment Health.');
+ok('Developer deployment health sidebar area is present');
+
 const forbiddenTopTabs = [
   'data-admin-command-center',
   'data-client-command-center',

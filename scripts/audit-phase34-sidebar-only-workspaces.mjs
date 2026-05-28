@@ -30,7 +30,9 @@ const js = readFileSync(join(root,'public/assets/dashboard-phase34-sidebar-only-
   'work-orders',
   'invoices',
   'workers',
-  'settings'
+  'settings',
+  'deployment',
+  'Deployment and workflow health'
 ].forEach((needle) => js.includes(needle) ? ok(`${needle} present`) : fail(`${needle} missing`));
 
 const css = readFileSync(join(root,'public/assets/dashboard-phase34-sidebar-only-workspaces.css'),'utf8');
