@@ -2244,6 +2244,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div class="admin-request-list" data-admin-invoice-kpi-summary aria-label="Invoice summary cards"></div>
       <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="invoices" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="invoices">Show invoices</button></div>
       <div data-admin-workspace-body="invoices" hidden>
+      <div class="admin-request-list" data-admin-invoice-summary aria-label="Invoice totals"></div>
       <div class="client-request-form-grid" data-admin-invoice-filters>
         <label>Invoice view
           <select data-admin-invoice-status-filter>
@@ -2594,8 +2595,13 @@ switcher.addEventListener('click', () => {});
 window.taSetDashboardView = (view) => { setDashboardView(view); };
 const fetchJson = async () => { const controller = new AbortController(); return Promise.race([]); };
 const saveClientProfile = async () => {};
+const getUserDisplayName = (user) => user?.name || user?.email || 'User';
+const dashboardSessionLabel = `Signed in as ${getUserDisplayName(result.user)}`;
+
 const bindClientProfileButton = () => document.querySelectorAll('[data-client-profile-shortcut]');
 const bindClientProfileForm = () => {};
+const bindRequestEstimateLinks = () => document.querySelectorAll('[data-request-estimate-link]');
+
 const summarizeClientRequestAttachments = () => '';
 const uploadJobFiles = async () => fetch('/api/job-files');
 const saveClientRequestUpdate = async () => {};

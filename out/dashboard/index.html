@@ -2470,8 +2470,13 @@ switcher.addEventListener('click', () => {});
 window.taSetDashboardView = (view) => { setDashboardView(view); };
 const fetchJson = async () => { const controller = new AbortController(); return Promise.race([]); };
 const saveClientProfile = async () => {};
+const getUserDisplayName = (user) => user?.name || user?.email || 'User';
+const dashboardSessionLabel = `Signed in as ${getUserDisplayName(result.user)}`;
+
 const bindClientProfileButton = () => document.querySelectorAll('[data-client-profile-shortcut]');
 const bindClientProfileForm = () => {};
+const bindRequestEstimateLinks = () => document.querySelectorAll('[data-request-estimate-link]');
+
 const summarizeClientRequestAttachments = () => '';
 const uploadJobFiles = async () => fetch('/api/job-files');
 const saveClientRequestUpdate = async () => {};
