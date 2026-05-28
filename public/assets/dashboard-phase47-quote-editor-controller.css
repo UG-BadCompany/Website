@@ -1,0 +1,5 @@
+/* Phase 47: independent quote editor controller */
+.estimate-edit-status:not(:empty){
+  border:1px solid rgba(96,165,250,.25);
+  background:rgba(37,99,235,.10);
+}

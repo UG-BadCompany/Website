@@ -53,5 +53,6 @@
   "audit:phase43": "node scripts/audit-phase43-edit-draft-fix.mjs",
   "audit:phase44": "node scripts/audit-phase44-modal-quote-editor.mjs",
   "audit:phase45": "node scripts/audit-phase45-visible-estimate-editor.mjs",
-  "audit:phase46": "node scripts/audit-phase46-quote-editor-buttons.mjs"
+  "audit:phase46": "node scripts/audit-phase46-quote-editor-buttons.mjs",
+  "audit:phase47": "node scripts/audit-phase47-quote-editor-controller.mjs"
 }
