@@ -188,6 +188,7 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
               'Do not be vague. Do not invent exact permit/legal claims. Flag permit/licensed-trade verification when relevant.',
               'Do not claim work is guaranteed or final beyond approved scope.',
               'Return strict JSON only with title, summary, amountCents, rewriteNotes, missingInfoResolved, remainingQuestions, riskFlags, exclusions, laborBreakdown, materialBreakdown, adminReviewChecklist, customerClarifications.',
+              'Never include markdown, prose, or code fences.',
             ].join(' '),
           },
           {
@@ -238,6 +239,22 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
     clearTimeout(timer);
   }
 };
+
+const normalizeRewriteShape = (rewrite = {}) => ({
+  title: clean(rewrite.title, 220) || 'Estimate draft',
+  summary: clean(rewrite.summary, 12000) || 'Review and verify project scope before sending.',
+  amountCents: Number.isInteger(Number(rewrite.amountCents)) && Number(rewrite.amountCents) >= 0 ? Number(rewrite.amountCents) : 0,
+  rewriteNotes: Array.isArray(rewrite.rewriteNotes) ? rewrite.rewriteNotes : [],
+  missingInfoResolved: Array.isArray(rewrite.missingInfoResolved) ? rewrite.missingInfoResolved : [],
+  remainingQuestions: Array.isArray(rewrite.remainingQuestions) ? rewrite.remainingQuestions : [],
+  riskFlags: Array.isArray(rewrite.riskFlags) ? rewrite.riskFlags : [],
+  exclusions: Array.isArray(rewrite.exclusions) ? rewrite.exclusions : [],
+  laborBreakdown: Array.isArray(rewrite.laborBreakdown) ? rewrite.laborBreakdown : [],
+  materialBreakdown: Array.isArray(rewrite.materialBreakdown) ? rewrite.materialBreakdown : [],
+  adminReviewChecklist: Array.isArray(rewrite.adminReviewChecklist) ? rewrite.adminReviewChecklist : [],
+  customerClarifications: Array.isArray(rewrite.customerClarifications) ? rewrite.customerClarifications : [],
+  aiEnhanced: Boolean(rewrite.aiEnhanced),
+});
 
 export default async (request) => {
   if (request.method !== 'POST') {
@@ -294,7 +311,7 @@ export default async (request) => {
 
     const metadata = parseMetadata(row.estimate_metadata);
     const aiResult = await aiRewrite({ quote: row, job: row, metadata, payload });
-    const rewrite = aiResult || fallbackRewrite({ quote: row, job: row, metadata, payload });
+    const rewrite = normalizeRewriteShape(aiResult || fallbackRewrite({ quote: row, job: row, metadata, payload }));
 
     await db.sql`
       insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)

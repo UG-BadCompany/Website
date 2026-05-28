@@ -68,18 +68,18 @@
 
 .pipeline-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
-  gap: 14px;
-  overflow-x: auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  overflow-x: visible;
   padding-bottom: 4px;
 }
 
 .pipeline-column {
+  min-width: 0;
   border: 1px solid rgba(255,255,255,.14);
   border-radius: 22px;
   background: rgba(0,0,0,.18);
-  padding: 14px;
-  min-width: 220px;
+  padding: 12px;
 }
 
 .pipeline-column h3 {
@@ -242,5 +242,19 @@
   .pipeline-board,
   .timeline-steps {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1240px) {
+  .pipeline-board {
+    gap: 10px;
+  }
+
+  .pipeline-column {
+    padding: 10px;
+  }
+
+  .work-order-card {
+    padding: 12px;
   }
 }

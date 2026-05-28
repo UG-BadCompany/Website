@@ -1,0 +1,453 @@
+/* 2026 UI polish layer: modernizes legacy panels without changing dashboard structure. */
+:root {
+  --ta-polish-bg: #070a0f;
+  --ta-polish-panel: rgba(15, 23, 42, .82);
+  --ta-polish-panel-strong: rgba(30, 41, 59, .88);
+  --ta-polish-line: rgba(255, 255, 255, .14);
+  --ta-polish-text: #f8fafc;
+  --ta-polish-muted: #cbd5e1;
+  --ta-polish-soft: #94a3b8;
+  --ta-polish-orange: #f97316;
+  --ta-polish-amber: #f59e0b;
+  --ta-polish-green: #22c55e;
+  --ta-polish-red: #fb7185;
+  --ta-polish-shadow: 0 24px 80px rgba(0, 0, 0, .30);
+}
+
+/* Keep existing layout, but make leftover light cards/forms match the dashboard theme. */
+body {
+  background:
+    radial-gradient(circle at 12% -12%, rgba(249, 115, 22, .24), transparent 34rem),
+    radial-gradient(circle at 92% 2%, rgba(96, 165, 250, .13), transparent 30rem),
+    linear-gradient(135deg, #070a0f 0%, #111827 54%, #1c120b 100%) !important;
+}
+
+body,
+.card,
+.login-card,
+.service-card,
+.workflow-card,
+.estimate-form,
+.client-request-form,
+.inventory-card,
+.admin-request,
+.client-request,
+.client-quote,
+.client-property,
+.worker-job,
+.admin-assignment,
+.finance-empty,
+[data-admin-activity-list] > *,
+[data-admin-user-search-results] > *,
+[data-admin-invoice-list] > *,
+[data-admin-request-list] > *,
+[data-admin-inventory-list] > * {
+  color: var(--ta-polish-text);
+}
+
+.card,
+.login-card,
+.service-card,
+.workflow-card,
+.estimate-form,
+.client-request-form,
+.form,
+.inventory-card,
+.admin-request-modal-panel,
+.admin-access-panel,
+[data-admin-access],
+[data-dashboard-tool-modal] .admin-request-modal-panel,
+[data-admin-role-modal] .admin-request-modal-panel,
+[data-admin-user-modal] .admin-request-modal-panel,
+[data-client-profile] .admin-request-modal-panel,
+[data-client-property-modal] .admin-request-modal-panel {
+  border: 1px solid var(--ta-polish-line) !important;
+  background:
+    linear-gradient(145deg, rgba(30, 41, 59, .92), rgba(15, 23, 42, .76)) !important;
+  color: var(--ta-polish-text) !important;
+  box-shadow: var(--ta-polish-shadow) !important;
+}
+
+.card::before,
+.inventory-card::before,
+.service-card::before,
+.workflow-card::before,
+.estimate-form::before,
+.login-card::before {
+  background: linear-gradient(90deg, var(--ta-polish-orange), var(--ta-polish-amber)) !important;
+}
+
+.card p,
+.login-card p,
+.service-card p,
+.workflow-card p,
+.estimate-form p,
+.client-request-form p,
+.form-note,
+.notice,
+.status,
+.session-status,
+.meta,
+[data-admin-access] p,
+[data-admin-activity] p,
+[data-admin-alerts] p,
+.admin-request-modal-panel p {
+  color: var(--ta-polish-muted) !important;
+}
+
+.card strong,
+.login-card strong,
+.service-card strong,
+.workflow-card strong,
+.admin-request-modal-panel strong,
+.inventory-card strong,
+[data-admin-access] strong,
+[data-admin-activity] strong,
+[data-admin-alerts] strong {
+  color: var(--ta-polish-text) !important;
+}
+
+/* Buttons: remove old gray/white pill feel and use one copper/slate system. */
+.btn,
+button,
+input[type="button"],
+input[type="submit"] {
+  border-color: var(--ta-polish-line) !important;
+}
+
+.btn:not(.btn-primary):not(.btn-danger),
+.btn-soft,
+.btn-secondary,
+.admin-workspace-toolbar .btn,
+.dashboard-action-strip .btn:not(.btn-primary),
+.client-request-form-actions .btn:not(.btn-primary):not(.btn-danger),
+.actions .btn:not(.btn-primary):not(.btn-danger) {
+  background: rgba(15, 23, 42, .72) !important;
+  color: var(--ta-polish-text) !important;
+  border-color: rgba(255, 255, 255, .16) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 24px rgba(0,0,0,.16) !important;
+}
+
+.btn-primary,
+button.btn-primary,
+input[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--ta-polish-orange), #c2410c) !important;
+  color: #fff !important;
+  border-color: rgba(249, 115, 22, .24) !important;
+  box-shadow: 0 18px 38px rgba(249, 115, 22, .20) !important;
+}
+
+.btn-danger {
+  background: rgba(127, 29, 29, .42) !important;
+  color: #fecaca !important;
+  border-color: rgba(248, 113, 113, .34) !important;
+}
+
+.btn:hover,
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Forms and legacy popup controls. */
+input,
+select,
+textarea,
+.client-request-form input,
+.client-request-form select,
+.client-request-form textarea,
+.form input,
+.form select,
+.form textarea,
+.estimate-form input,
+.estimate-form select,
+.estimate-form textarea,
+.login-card input,
+.login-card select,
+.login-card textarea {
+  background: rgba(2, 6, 23, .62) !important;
+  color: var(--ta-polish-text) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(203, 213, 225, .64) !important;
+}
+
+label,
+.client-request-form label,
+.form label,
+.estimate-form label {
+  color: var(--ta-polish-muted) !important;
+}
+
+.status,
+.session-status,
+.account-status,
+.form-status,
+[data-estimate-edit-status],
+[data-admin-role-form-status],
+[data-admin-user-form-status],
+[data-admin-activity-filter-status] {
+  border: 1px solid rgba(245, 158, 11, .24) !important;
+  border-left: 4px solid var(--ta-polish-amber) !important;
+  background: rgba(15, 23, 42, .68) !important;
+  color: var(--ta-polish-muted) !important;
+  border-radius: 18px !important;
+}
+
+/* Inventory page polish: cards, stock rows, empty states. */
+.inventory-list,
+[data-admin-inventory-list],
+[data-admin-alerts-list],
+[data-admin-activity-list],
+[data-admin-user-search-results],
+[data-admin-request-list] {
+  gap: 16px !important;
+}
+
+.inventory-card,
+[data-admin-inventory-list] > *,
+[data-admin-alerts-list] > *,
+[data-admin-activity-list] > *,
+[data-admin-user-search-results] > *,
+[data-admin-request-list] > *,
+[data-admin-invoice-list] > * {
+  border-radius: 22px !important;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  background:
+    linear-gradient(145deg, rgba(30, 41, 59, .84), rgba(15, 23, 42, .72)) !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.22) !important;
+}
+
+.badge,
+.meta span,
+.role,
+.estimate-pill,
+.admin-request-badge,
+.client-request-badge,
+.client-quote-badge,
+.client-property-badge,
+.worker-job-badge,
+.admin-assignment-badge,
+[data-admin-user-role-list] label,
+[data-admin-permission-list] label {
+  background: rgba(249, 115, 22, .10) !important;
+  border: 1px solid rgba(249, 115, 22, .26) !important;
+  color: #fdba74 !important;
+  border-radius: 999px !important;
+}
+
+/* Roles/users/admin access: make the modal feel like a current dashboard workspace. */
+[data-admin-access] .admin-access-panel,
+[data-admin-role-modal] .admin-access-panel,
+[data-admin-user-modal] .admin-access-panel {
+  width: min(1040px, calc(100vw - 28px)) !important;
+  padding: clamp(20px, 3vw, 30px) !important;
+}
+
+[data-admin-access] .client-request-form-grid,
+[data-admin-role-form],
+[data-admin-user-form],
+[data-admin-activity-filter-form] {
+  border-radius: 24px !important;
+  padding: 18px !important;
+  background: rgba(2, 6, 23, .22) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+
+[data-admin-user-search-results] .admin-request,
+[data-admin-user-search-results] > article,
+[data-admin-permission-list] > *,
+[data-admin-user-role-list] > *,
+[data-admin-user-property-list] > * {
+  padding: 14px 16px !important;
+  border-radius: 18px !important;
+  background: rgba(15, 23, 42, .64) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+}
+
+
+/* Dedicated Roles & Users workspace polish: mirror the Business health snapshot system. */
+.admin-access-workspace {
+  margin: 22px 0 34px;
+}
+
+.admin-access-workspace.executive-panel {
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(249,115,22,.16), transparent 24rem),
+    linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.055)) !important;
+}
+
+.admin-access-workspace .executive-header h2 {
+  margin: 0;
+  letter-spacing: -.05em;
+}
+
+.admin-access-workspace .executive-header p,
+.admin-access-workspace .executive-card p,
+.admin-access-workspace .executive-kpi p {
+  color: #cbd5e1 !important;
+}
+
+.admin-access-workspace-card,
+.admin-access-workspace .executive-kpi {
+  min-height: 168px;
+}
+
+.admin-access-workspace .executive-kpi strong {
+  font-size: clamp(1.2rem, 2.4vw, 1.65rem);
+}
+
+.admin-access-workspace .executive-kpi p {
+  margin: 8px 0 0;
+  font-size: .86rem;
+  line-height: 1.45;
+}
+
+.admin-access-workspace-grid {
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+}
+
+.admin-access-editor-card {
+  margin-top: 18px;
+}
+
+.admin-access-control-grid {
+  margin-top: 14px;
+}
+
+.admin-access-actions {
+  margin-top: 12px;
+}
+
+.admin-access-results {
+  margin-top: 16px;
+}
+
+@media (max-width: 980px) {
+  .admin-access-workspace-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-access-workspace .executive-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Activity/audit: timeline-like cards instead of old plain rows. */
+[data-admin-activity] {
+  overflow: hidden;
+}
+
+[data-admin-activity-summary] > *,
+[data-admin-activity-list] > * {
+  position: relative;
+  padding-left: 20px !important;
+}
+
+[data-admin-activity-list] > *::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ta-polish-orange);
+  box-shadow: 0 0 0 5px rgba(249, 115, 22, .12);
+}
+
+/* Settings/old tool panels. */
+[data-dashboard-tool-modal] .dashboard-tool-actions,
+.admin-workspace-toolbar,
+.dashboard-detail-toolbar {
+  gap: 10px !important;
+  padding: 10px !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 20px !important;
+  background: rgba(2, 6, 23, .24) !important;
+}
+
+/* Home/login leftover light areas: preserve structure/logo, modernize surfaces. */
+.portal-hero,
+.hero-card,
+.login-logo,
+.access-card,
+.band,
+.estimate-shell {
+  border-color: rgba(255,255,255,.13) !important;
+  background:
+    linear-gradient(145deg, rgba(30,41,59,.84), rgba(15,23,42,.68)) !important;
+  color: var(--ta-polish-text) !important;
+  box-shadow: var(--ta-polish-shadow) !important;
+}
+
+.login-logo img,
+.logo-panel img,
+.brand img {
+  background: rgba(255,255,255,.94) !important;
+  border-radius: 18px !important;
+}
+
+/* Tables/lists if added by modules or future admin pages. */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+}
+
+thead th {
+  color: var(--ta-polish-soft) !important;
+  font-size: .78rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+tbody tr {
+  background: rgba(15, 23, 42, .72) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.16);
+}
+
+tbody td {
+  border-top: 1px solid rgba(255,255,255,.10);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  color: var(--ta-polish-text) !important;
+}
+
+tbody td:first-child { border-left: 1px solid rgba(255,255,255,.10); border-radius: 16px 0 0 16px; }
+tbody td:last-child { border-right: 1px solid rgba(255,255,255,.10); border-radius: 0 16px 16px 0; }
+
+@media (max-width: 760px) {
+  .client-request-form-grid,
+  .form-grid,
+  .grid,
+  [data-admin-access] .client-request-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-request-modal {
+    padding: 12px !important;
+  }
+
+  .admin-request-modal-panel {
+    border-radius: 24px !important;
+  }
+
+  .dashboard-action-strip,
+  .client-request-form-actions,
+  .actions {
+    align-items: stretch !important;
+  }
+
+  .dashboard-action-strip .btn,
+  .client-request-form-actions .btn,
+  .actions .btn {
+    width: 100%;
+  }
+}

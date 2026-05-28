@@ -24,8 +24,9 @@
 
     { group: 'Operations', label: 'Inventory', target: '#admin-inventory', hint: 'Stock' },
     { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
-    { group: 'Operations', label: 'Roles & Users', action: 'adminAccess', hint: 'Access' },
-    { group: 'Operations', label: 'Audit Activity', action: 'adminActivity', hint: 'Logs' },
+    { group: 'Operations', label: 'Roles & Users', target: '#admin-access', hint: 'Access' },
+
+    { group: 'Dev', label: 'Deployment Health', target: '#system-readiness', hint: 'Workflow' },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -40,7 +41,7 @@
   };
 
   const openModalShortcut = (name) => {
-    const selector = name === 'adminAccess' ? '[data-admin-access-shortcut]' : '[data-admin-activity-shortcut]';
+    const selector = '[data-admin-access-shortcut]';
     const button = document.querySelector(selector);
     if (button) {
       button.click();
@@ -85,8 +86,10 @@
     sidebar.setAttribute('aria-label', 'Dashboard workspace navigation');
     sidebar.innerHTML = `
       <button class="btn btn-soft" type="button" data-sidebar-close>Close menu</button>
-      <h2>Workspace</h2>
-      <p>Jump to the exact area you need without scrolling the whole dashboard.</p>
+      <div class="dashboard-sidebar-head">
+        <h2>Workspace</h2>
+        <button class="btn btn-soft dashboard-sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" title="Collapse sidebar" aria-pressed="false"><span class="sidebar-collapse-icon" aria-hidden="true"></span></button>
+      </div>
       <nav class="sidebar-nav-group" data-sidebar-nav></nav>
     `;
 
@@ -128,8 +131,34 @@
       backdrop.dataset.open = open ? 'true' : 'false';
     };
 
+    const setCollapsed = (collapsed) => {
+      shell.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+      sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
+      root.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+      document.body.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+      const collapseButton = sidebar.querySelector('[data-sidebar-collapse]');
+      if (collapseButton) {
+        collapseButton.setAttribute('aria-pressed', String(collapsed));
+        collapseButton.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        collapseButton.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+      }
+      try { window.localStorage.setItem('ta_dashboard_sidebar_collapsed', collapsed ? 'true' : 'false'); } catch {}
+    };
+
+    const initialCollapsed = (() => {
+      try { return window.localStorage.getItem('ta_dashboard_sidebar_collapsed') === 'true'; } catch { return false; }
+    })();
+    setCollapsed(initialCollapsed);
+
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
+    document.addEventListener('click', (event) => {
+      const collapseButton = event.target.closest('[data-sidebar-collapse]');
+      if (!collapseButton || !sidebar.contains(collapseButton)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setCollapsed(shell.dataset.sidebarCollapsed !== 'true');
+    }, true);
     backdrop.addEventListener('click', () => setOpen(false));
 
     sidebar.addEventListener('click', (event) => {

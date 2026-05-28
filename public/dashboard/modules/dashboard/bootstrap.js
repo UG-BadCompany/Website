@@ -110,7 +110,6 @@
         if (permissions.canViewAdminTools) actions.push('<button class="admin-command-card" type="button" data-admin-work-orders-shortcut><strong>Work orders</strong><span>Open work-order tools in a quick popup.</span></button>');
         if (permissions.canManageInvoices) actions.push('<button class="admin-command-card" type="button" data-admin-invoices-shortcut><strong>Invoices</strong><span>Open invoice tools in a quick popup.</span></button>');
         if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="admin-command-card" type="button" data-admin-access-shortcut><strong>Roles & users</strong><span>Manage dashboard users and access.</span></button>');
-        if (permissions.canViewAdminActivity) actions.push('<button class="admin-command-card" type="button" data-admin-activity-shortcut><strong>Audit activity</strong><span>Search recent dashboard events.</span></button>');
         if (permissions.canManageInventory) actions.push('<button class="admin-command-card" type="button" data-admin-inventory-shortcut><strong>Inventory</strong><span>Open inventory tools in a quick popup.</span></button>');
         if (permissions.canViewClientTools) actions.push('<button class="admin-command-card" type="button" data-client-requests-shortcut><strong>Client requests</strong><span>Submit or review work requests.</span></button>');
         if (permissions.canViewWorkerTools) actions.push('<a class="admin-command-card" href="/dashboard/?view=worker"><strong>Worker jobs</strong><span>Open assigned job tools.</span></a>');
@@ -123,7 +122,6 @@
         bindDashboardToolPopupLaunchers();
         bindClientWorkspaceLaunchers();
         bindAdminAccessLauncher();
-        bindAdminActivityLauncher();
         return panel;
       };
 
@@ -266,7 +264,6 @@
         bindDashboardToolPopupLaunchers();
         bindClientWorkspaceLaunchers();
         bindAdminAccessLauncher();
-        bindAdminActivityLauncher();
         bindClientProfileButton();
         bindRequestEstimateLink();
       };
@@ -312,9 +309,6 @@
           loadAdminActivity();
         }
 
-        if (user.permissions?.canViewAdminActivity) {
-          bindAdminActivityLauncher();
-        }
 
         if (user.permissions?.canManageInvoices) {
           window.taDashboardActions.bindAdminInvoiceActions();
@@ -647,11 +641,9 @@
         const workspace = new URLSearchParams(window.location.search).get('workspace');
         if (nextView === 'admin' && workspace) {
           const workspaceSelectors = {
-            'work-orders': '#admin-work-orders',
+            'work-orders': '[data-phase3-workflow-suite]',
             invoices: '[data-admin-invoices]',
             inventory: '[data-admin-inventory]',
-            'audit-activity': '[data-admin-activity]',
-            alerts: '[data-admin-alerts]',
           };
           const focusedSelector = workspaceSelectors[workspace];
           if (focusedSelector) {
@@ -857,7 +849,7 @@
         return `
           <article class="client-quote" data-admin-work-order-summary-card>
             <span class="client-quote-badge">${escapeHtml((request.status || 'new').replaceAll('_', ' '))}</span>
-            <strong>Work order command center</strong>
+            <strong>Work orders</strong>
             <div class="client-quote-meta">
               <span>WO ${escapeHtml(String(request.id || '').slice(0, 8) || 'new')}</span>
               <span>${escapeHtml(request.requesterName || 'Client')}</span>
@@ -1413,11 +1405,7 @@
         }
       };
 
-      const setAlertsUnreadIndicator = (show) => {
-        document.querySelectorAll('[data-admin-alerts-shortcut]').forEach((button) => {
-          button.setAttribute('data-has-unread-alert', show ? 'true' : 'false');
-        });
-      };
+      const setAlertsUnreadIndicator = () => {};
 
       const loadAdminAlerts = async () => {
         const panel = document.querySelector('[data-admin-alerts]');
@@ -1447,7 +1435,7 @@
         };
         updateNotificationStatus();
 
-        status.textContent = 'Loading alerts…';
+        status.textContent = 'Loading…';
         summary.innerHTML = '';
         list.innerHTML = '';
         try {
@@ -2907,19 +2895,39 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
 
-        panel.addEventListener('click', (event) => {
+        panel.addEventListener('click', async (event) => {
+          const status = document.querySelector('[data-admin-access-status]');
           const roleButton = event.target.closest('[data-admin-edit-role]');
           const userButton = event.target.closest('[data-admin-edit-user]');
           const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
-          if (roleButton) selectAdminRole(roleButton.dataset.adminEditRole);
+          if (roleButton) {
+            event.preventDefault();
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            selectAdminRole(roleButton.dataset.adminEditRole);
+          }
           if (selectedRoleButton) {
+            event.preventDefault();
+            if (!currentAdminRoles.size) await loadAdminAccess();
             const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
             if (selectedRole) selectAdminRole(selectedRole);
+            else if (status) status.textContent = 'Select a role first, then click Edit selected role.';
           }
-          if (userButton) selectAdminUser(userButton.dataset.adminEditUser);
+          if (userButton) {
+            event.preventDefault();
+            if (!currentAdminUsers.size) await loadAdminAccess();
+            selectAdminUser(userButton.dataset.adminEditUser);
+          }
           if (event.target.closest('[data-admin-new-role]')) {
+            event.preventDefault();
+            if (!currentPermissions.length) await loadAdminAccess();
             resetRoleForm();
             openAdminRoleModal();
+          }
+          if (event.target.closest('[data-admin-user-create]')) {
+            event.preventDefault();
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            resetUserForm();
+            openAdminUserModal();
           }
           if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
           if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
@@ -3045,18 +3053,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const target = document.querySelector(selector);
             if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
           };
-          if (config.key === 'workOrders') revealOne('#admin-work-orders');
+          if (config.key === 'workOrders') revealOne('[data-phase3-workflow-suite]');
           if (config.key === 'inventory') revealOne('[data-admin-inventory]');
           if (config.key === 'invoices') revealOne('[data-admin-invoices]');
-          if (config.key === 'activity') {
-            revealOne('[data-admin-activity]');
-            document.querySelector('[data-admin-activity-refresh]')?.click();
-          }
-          if (config.key === 'alerts') {
-            revealOne('[data-admin-alerts]');
-            setAlertsUnreadIndicator(false);
-            loadAdminAlerts();
-          }
           persistWorkspaceRoute(config);
           if (selectedItem?.status && config.key === 'workOrders') {
             const statusFilter = document.querySelector('[data-admin-scope-select]');
@@ -3108,8 +3107,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           { selector: '[data-admin-work-orders-shortcut]', key: 'workOrders', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/dashboard/?view=admin&workspace=work-orders', endpoint: '/api/admin/job-requests' },
           { selector: '[data-admin-invoices-shortcut]', key: 'invoices', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/dashboard/?view=admin&workspace=invoices', endpoint: '/api/admin/invoices' },
           { selector: '[data-admin-inventory-shortcut]', key: 'inventory', label: 'Inventory', description: 'Monitor stock, materials, and usage controls.', href: '/dashboard/?view=admin&workspace=inventory', endpoint: '/api/admin/inventory' },
-          { selector: '[data-admin-activity-shortcut]', key: 'activity', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/dashboard/?view=admin&workspace=audit-activity', endpoint: '/api/admin/activity?limit=5' },
-          { selector: '[data-admin-alerts-shortcut]', key: 'alerts', label: 'Alerts', description: 'Check low stock, pending review jobs, and unpaid invoices.', href: '/dashboard/?view=admin&workspace=alerts', endpoint: '/api/admin/alerts' },
         ];
 
         launchers.forEach((config) => {
@@ -3197,22 +3194,33 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-access]');
         const openButtons = document.querySelectorAll('[data-admin-access-shortcut]');
         if (!panel || !openButtons.length) return;
+        const openAccessWorkspace = async () => {
+          bindAdminAccessForms();
+          if (panel.matches('[data-admin-access-workspace]')) {
+            if (typeof window.taSetSidebarWorkspace === 'function') window.taSetSidebarWorkspace('settings');
+            panel.hidden = false;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            await loadAdminAccess();
+            document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+            return;
+          }
+          setModalOpen(panel, true);
+          document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+        };
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
           openButton.dataset.bound = 'true';
-          openButton.addEventListener('click', () => {
-            setModalOpen(panel, true);
-            document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
-          });
+          openButton.addEventListener('click', openAccessWorkspace);
         });
         panel.querySelector('[data-admin-access-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
-          if (event.target === panel) setModalOpen(panel, false);
+          if (!panel.matches('[data-admin-access-workspace]') && event.target === panel) setModalOpen(panel, false);
         });
       };
 
       const loadAdminAccess = async () => {
         const status = document.querySelector('[data-admin-access-status]');
+        bindAdminAccessForms();
         try {
           const [rolesResponse, usersResponse] = await Promise.all([
             fetch('/api/admin/roles', { headers: { accept: 'application/json' } }),
@@ -3453,11 +3461,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }, {});
         const inventoryEvents = Number(typeCounts.inventory || 0);
         const paymentEvents = Number(typeCounts.payment || 0);
-        return `
-          <article class="admin-request"><span class="admin-request-badge">Loaded events</span><strong>${events.length}</strong><p>currently visible</p></article>
-          <article class="admin-request"><span class="admin-request-badge">Inventory events</span><strong>${inventoryEvents}</strong><p>stock and usage updates</p></article>
-          <article class="admin-request"><span class="admin-request-badge">Payment events</span><strong>${paymentEvents}</strong><p>billing confirmations</p></article>
-        `;
+        return '';
       };
 
       const renderAdminInventoryWorkspace = () => {
