@@ -55,5 +55,6 @@
   "audit:phase45": "node scripts/audit-phase45-visible-estimate-editor.mjs",
   "audit:phase46": "node scripts/audit-phase46-quote-editor-buttons.mjs",
   "audit:phase47": "node scripts/audit-phase47-quote-editor-controller.mjs",
-  "audit:phase48": "node scripts/audit-phase48-quoting-hardening.mjs"
+  "audit:phase48": "node scripts/audit-phase48-quoting-hardening.mjs",
+  "audit:phase50": "node scripts/audit-phase50-real-white-area-fix.mjs"
 }
