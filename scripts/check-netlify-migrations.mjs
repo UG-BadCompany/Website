@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 
 const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
 const compatibilityMigrations = new Set(['0004_custom_roles_permissions.sql', '0009_completion_review_status.sql', '0009_quote_payment_completion_controls.sql', '0009_worker_completion_evidence.sql', '0010_invoices_payments.sql', '0010_worker_job_details.sql', '0011_completion_review_status.sql', '0012_quote_payment_completion_controls.sql', '0013_invoices_payments.sql', '0014_worker_completion_evidence.sql']);
-const lockedScheduleSha256 = 'f9cf4dc0988130a124df27bcdee45650b1162d1e555f761a0b8ef5ecbc67fd80';
+const lockedScheduleSha256 = 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1';
 
 const sha256File = async (file) => createHash('sha256')
   .update(await readFile(new URL(file, migrationsDir)))
