@@ -2009,7 +2009,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
 
     <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
-      <strong>Admin request inbox</strong>
+      <strong>Work order command center</strong>
       <p>New estimate requests from the public form appear here for admins after sign-in.</p>
       <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
       <div class="admin-request-list" data-admin-pipeline-summary></div>
@@ -2163,43 +2163,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     </section>
 
 
-    <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
-      <strong>Inventory workspace</strong><p><a href="/inventory/">Open full inventory page</a></p>
-      <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
-      <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
-      <div class="grid" data-admin-inventory-summary aria-label="Inventory summary cards"></div>
-      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="inventory" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="inventory">Manage inventory</button></div>
-      <div class="client-request-form-grid" data-admin-inventory-filters>
-        <label>Stock view<select data-admin-inventory-stock-filter><option value="all">All items</option><option value="low">Low stock only</option></select></label>
-        <label>Sort<select data-admin-inventory-sort><option value="name_asc">Name (A-Z)</option><option value="qty_asc">Quantity (low-high)</option><option value="qty_desc">Quantity (high-low)</option></select></label>
-        <label class="full">Search<input type="search" data-admin-inventory-search placeholder="Name, SKU, category, supplier, location"></label>
-      </div>
-      <div data-admin-workspace-body="inventory" hidden>
-      <section class="client-request-form" data-admin-inventory-manager>
-        <strong>Inventory management</strong>
-        <div class="client-request-form-actions">
-          <button class="btn btn-soft" type="button" data-admin-inventory-mode="create">Add new item</button>
-          <button class="btn btn-soft" type="button" data-admin-inventory-mode="adjust">Adjust existing item</button>
-        </div>
-        <form class="client-request-form" data-admin-inventory-create-form>
-          <div class="client-request-form-grid">
-            <label>Name<input name="name" required placeholder="Item name"></label>
-            <label>Unit<input name="unit" placeholder="each"></label>
-            <label>Quantity on hand<input name="quantityOnHand" type="number" step="1" value="0"></label>
-            <label>Reorder point<input name="reorderPoint" type="number" step="1" value="0"></label>
-          </div>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
-        </form>
-        <form class="client-request-form" data-admin-inventory-adjust-form hidden>
-          <div class="client-request-form-grid">
-            <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
-            <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
-            <label>Type<select name="adjustmentType"><option value="manual">Manual adjustment</option><option value="received">Restock</option><option value="used">Usage</option></select></label>
-            <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
-          </div>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
-        </form>
-      </section>
+    
       <div class="admin-request-list" data-admin-inventory-list></div>
       </div>
     </section>
@@ -2227,6 +2191,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           <label>Search
             <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
           </label>
+          <button class="btn btn-soft" type="button" data-admin-activity-more>Load more</button>
           <label>Limit
             <select name="limit" data-admin-activity-limit>
               <option value="25">25 events</option>
