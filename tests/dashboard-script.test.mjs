@@ -153,6 +153,12 @@ test('inventory page owns inventory UI and API handlers', async () => {
   assert.match(script, /const loadAdminInventory =/, 'inventory page should load inventory records');
   assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'inventory page should use the inventory API');
   assert.match(script, /action: 'archive'/, 'inventory page should send archive actions to the API');
+  assert.match(html, /Job Reservations/, 'inventory page should include job material reservations');
+  assert.match(html, /Cycle Count/, 'inventory page should include cycle count workflow');
+  assert.match(html, /Movement History/, 'inventory page should include movement history');
+  assert.match(html, /data-inventory-reservation-form/, 'inventory page should reserve materials for jobs');
+  assert.match(html, /data-inventory-transfer-form/, 'inventory page should transfer stock to workers and trucks');
+  assert.match(html, /data-inventory-scan-input/, 'inventory page should be SKU\/barcode\/QR-ready');
   assert.doesNotThrow(() => new Function(script));
 });
 
