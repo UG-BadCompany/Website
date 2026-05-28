@@ -22,7 +22,7 @@
       if (typeof window.taSetDashboardView === 'function') {
         window.taSetDashboardView('admin');
       }
-      if (workspace === 'work-orders') revealDashboardSection('#admin-work-orders');
+      if (workspace === 'work-orders') revealDashboardSection('[data-phase3-workflow-suite]');
       if (workspace === 'invoices') revealDashboardSection('[data-admin-invoices]');
       if (workspace === 'audit-activity') {
         revealDashboardSection('[data-admin-activity]');
