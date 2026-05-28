@@ -2608,6 +2608,9 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
 <script>
 /* TEST HOOK COMPAT */
 const tokenFromDashboardUrl = url.searchParams.get('token');
+const cleanPath = '/dashboard/';
+window.history.replaceState(null, document.title, cleanPath || '/dashboard/');
+
 const dedupeDashboardSingletons = () => {};
 const normalizeDashboardViewName = () => 'admin';
 const renderDashboardEmptyState = (title, message) => `<div>${title}${message}</div>`;
