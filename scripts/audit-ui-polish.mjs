@@ -97,6 +97,10 @@ if (dashboard.includes('data-admin-inventory-list')) {
 if (!dashboard.includes('data-admin-access-workspace') || !dashboard.includes('data-admin-role-select') || !dashboard.includes('data-admin-user-search-results')) {
   fail('Editable Roles & Users workspace is missing from the dashboard.');
 }
+const dashboardBootstrap = await readFile('public/dashboard/modules/dashboard/bootstrap.js', 'utf8');
+if (!dashboardBootstrap.includes('Select a role first, then click Edit selected role.') || !dashboardBootstrap.includes('if (!currentAdminUsers.size) await loadAdminAccess()')) {
+  fail('Roles & Users editor actions do not refresh data or show selection guidance.');
+}
 if (!sidebarJs.includes("label: 'Roles & Users', target: '#admin-access'")) {
   fail('Sidebar Roles & Users item does not target the dedicated workspace.');
 }

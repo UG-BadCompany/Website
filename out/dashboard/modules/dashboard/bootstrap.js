@@ -2895,21 +2895,37 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (!panel || panel.dataset.bound) return;
         panel.dataset.bound = 'true';
 
-        panel.addEventListener('click', (event) => {
+        panel.addEventListener('click', async (event) => {
+          const status = document.querySelector('[data-admin-access-status]');
           const roleButton = event.target.closest('[data-admin-edit-role]');
           const userButton = event.target.closest('[data-admin-edit-user]');
           const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
-          if (roleButton) selectAdminRole(roleButton.dataset.adminEditRole);
+          if (roleButton) {
+            event.preventDefault();
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            selectAdminRole(roleButton.dataset.adminEditRole);
+          }
           if (selectedRoleButton) {
+            event.preventDefault();
+            if (!currentAdminRoles.size) await loadAdminAccess();
             const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
             if (selectedRole) selectAdminRole(selectedRole);
+            else if (status) status.textContent = 'Select a role first, then click Edit selected role.';
           }
-          if (userButton) selectAdminUser(userButton.dataset.adminEditUser);
+          if (userButton) {
+            event.preventDefault();
+            if (!currentAdminUsers.size) await loadAdminAccess();
+            selectAdminUser(userButton.dataset.adminEditUser);
+          }
           if (event.target.closest('[data-admin-new-role]')) {
+            event.preventDefault();
+            if (!currentPermissions.length) await loadAdminAccess();
             resetRoleForm();
             openAdminRoleModal();
           }
           if (event.target.closest('[data-admin-user-create]')) {
+            event.preventDefault();
+            if (!currentAdminRoles.size) await loadAdminAccess();
             resetUserForm();
             openAdminUserModal();
           }
@@ -3179,6 +3195,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const openButtons = document.querySelectorAll('[data-admin-access-shortcut]');
         if (!panel || !openButtons.length) return;
         const openAccessWorkspace = async () => {
+          bindAdminAccessForms();
           if (panel.matches('[data-admin-access-workspace]')) {
             if (typeof window.taSetSidebarWorkspace === 'function') window.taSetSidebarWorkspace('settings');
             panel.hidden = false;
@@ -3203,6 +3220,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
       const loadAdminAccess = async () => {
         const status = document.querySelector('[data-admin-access-status]');
+        bindAdminAccessForms();
         try {
           const [rolesResponse, usersResponse] = await Promise.all([
             fetch('/api/admin/roles', { headers: { accept: 'application/json' } }),

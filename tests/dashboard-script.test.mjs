@@ -8,6 +8,7 @@ const loadInventoryHtml = () => readFile(new URL('../public/inventory/index.html
 const loadHomeHtml = () => readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const loadLoginHtml = () => readFile(new URL('../public/login/index.html', import.meta.url), 'utf8');
 const loadLoginScript = () => readFile(new URL('../public/assets/login.js', import.meta.url), 'utf8');
+const loadDashboardBootstrap = () => readFile(new URL('../public/dashboard/modules/dashboard/bootstrap.js', import.meta.url), 'utf8');
 const extractInlineScripts = (html) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
 test('dashboard inline scripts parse without duplicate declarations', async () => {
@@ -21,6 +22,7 @@ test('dashboard inline scripts parse without duplicate declarations', async () =
 test('dashboard user and role controls have their required handlers', async () => {
   const html = await loadDashboardHtml();
   const [script] = extractInlineScripts(html);
+  const bootstrap = await loadDashboardBootstrap();
 
   assert.match(html, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3.png\?raw=true/, 'dashboard should use the real logo asset from the provided URL');
   assert.match(html, /dashboard-nav-cluster/, 'dashboard navigation should group controls separately from login status');
@@ -64,6 +66,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-access-workspace/, 'roles and users should have a dedicated settings workspace area');
   assert.match(html, /data-admin-user-search-results/, 'roles and users workspace should include editable user search results');
   assert.match(html, /data-admin-open-selected-role/, 'roles and users workspace should include an edit selected role action');
+  assert.match(bootstrap, /if \(!currentAdminRoles\.size\) await loadAdminAccess\(\)/, 'role/user editor actions should refresh access data before opening editors');
+  assert.match(bootstrap, /Select a role first, then click Edit selected role\./, 'edit selected role should give visible feedback when no role is selected');
   assert.doesNotMatch(html, /data-admin-activity-shortcut/, 'admin command center should not include the removed audit activity shortcut');
   assert.doesNotMatch(html, /<button[^>]+data-admin-access-open/, 'roles and users should no longer render as a duplicate workspace-tab button');
   assert.doesNotMatch(html, /<a href="#admin-work-orders" data-dashboard-section/, 'admin work orders should not render as a duplicate tab above the command center');
