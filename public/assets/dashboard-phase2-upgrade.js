@@ -38,6 +38,10 @@
     return result;
   };
 
+  // Phase 47+ owns the visible Estimate Review editor controller.
+  // Keep rendering in phase2, but do not attach legacy editor handlers that can conflict.
+  const useUnifiedQuoteEditorController = true;
+
   const buildShell = () => {
     if (document.querySelector('[data-phase2-command-center]')) return;
 
@@ -535,7 +539,7 @@
 
 
 
-    if (!list.dataset.phase46EditorButtons) {
+    if (!useUnifiedQuoteEditorController && !list.dataset.phase46EditorButtons) {
       list.dataset.phase46EditorButtons = 'true';
       list.addEventListener('click', async (event) => {
         const aiButton = event.target.closest('[data-ai-rewrite-estimate]');
@@ -596,7 +600,7 @@
     }
 
 
-    if (!list.dataset.estimateEditDelegated) {
+    if (!useUnifiedQuoteEditorController && !list.dataset.estimateEditDelegated) {
       list.dataset.estimateEditDelegated = 'true';
       list.addEventListener('click', (event) => {
         const editButton = event.target.closest('[data-edit-estimate]');
@@ -618,7 +622,7 @@
     }
 
 
-    if (!list.dataset.quoteModalDelegated) {
+    if (!useUnifiedQuoteEditorController && !list.dataset.quoteModalDelegated) {
       list.dataset.quoteModalDelegated = 'true';
       list.addEventListener('click', (event) => {
         const editButton = event.target.closest('[data-edit-estimate]');
@@ -665,14 +669,14 @@
     });
 
 
-    list.querySelectorAll('[data-edit-estimate]').forEach((button) => {
+    if (!useUnifiedQuoteEditorController) list.querySelectorAll('[data-edit-estimate]').forEach((button) => {
       button.addEventListener('click', () => {
         const draft = drafts.find((item) => item.quoteId === button.dataset.editEstimate);
         if (draft) openQuoteEditorModal(draft);
       });
     });
 
-    list.querySelectorAll('[data-cancel-estimate-edit]').forEach((button) => {
+    if (!useUnifiedQuoteEditorController) list.querySelectorAll('[data-cancel-estimate-edit]').forEach((button) => {
       button.addEventListener('click', () => {
         closeEstimateForm(findEstimateForm(button));
       });
@@ -704,7 +708,7 @@
     };
 
 
-    list.querySelectorAll('[data-ai-rewrite-estimate]').forEach((button) => {
+    if (!useUnifiedQuoteEditorController) list.querySelectorAll('[data-ai-rewrite-estimate]').forEach((button) => {
       button.addEventListener('click', async () => {
         const quoteId = button.dataset.aiRewriteEstimate;
         const form = list.querySelector(`[data-estimate-edit-form="${quoteId}"]`) || document.querySelector(`[data-estimate-edit-form="${quoteId}"]`);
@@ -746,7 +750,7 @@
     });
 
 
-    list.querySelectorAll('[data-estimate-edit-form]').forEach((form) => {
+    if (!useUnifiedQuoteEditorController) list.querySelectorAll('[data-estimate-edit-form]').forEach((form) => {
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const quoteId = form.dataset.estimateEditForm;

@@ -67,10 +67,11 @@ export const createMagicLinkHandler = ({
     }
 
     if (!emailResult.sent) {
-      return json(503, {
-        ok: false,
+      return json(200, {
+        ok: true,
         emailSent: false,
-        message: emailResult.reason || 'Magic-link email is not configured. Check RESEND_API_KEY, MAGIC_LINK_FROM_EMAIL, and the verified sender domain in Resend.',
+        devMagicLink: magicLinkUrl,
+        message: emailResult.reason || 'Magic-link email is not configured. Use devMagicLink for local testing, or configure RESEND_API_KEY, MAGIC_LINK_FROM_EMAIL, and a verified sender domain in Resend.',
       });
     }
 
