@@ -381,14 +381,21 @@
             </div>
             <div class="estimate-draft-actions">
               <button class="btn btn-soft" type="button" data-copy-estimate="${escapeHtml(draft.quoteId)}">Copy summary</button>
-              <button class="btn btn-soft" type="button" data-edit-estimate="${escapeHtml(draft.quoteId)}">Edit draft</button>
+              <button class="btn btn-soft" type="button" data-focus-estimate-editor="${escapeHtml(draft.quoteId)}">Jump to editor</button>
               <button class="btn btn-primary" type="button" data-send-estimate="${escapeHtml(draft.quoteId)}">Mark/send</button>
             </div>
           </div>
           <p><strong>${escapeHtml(draft.requesterName || 'Customer')}</strong> • ${escapeHtml(draft.requesterPhone || '')} • ${escapeHtml(draft.requesterEmail || '')}</p>
           <p>${escapeHtml(draft.streetAddress || '')} ${escapeHtml(draft.city || '')}</p>
           <pre class="estimate-draft-summary">${escapeHtml(summary || draft.requestDescription || 'No summary available.')}</pre>
-          <form class="estimate-edit-form" data-estimate-edit-form="${escapeHtml(draft.quoteId)}" hidden>
+          <section class="estimate-visible-editor" data-estimate-editor-section="${escapeHtml(draft.quoteId)}">
+            <div class="estimate-editor-heading">
+              <div>
+                <h4>Final editable quote</h4>
+                <p>Edit this draft directly, add missing information, rewrite with AI, then save or send.</p>
+              </div>
+            </div>
+            <form class="estimate-edit-form is-open" data-estimate-edit-form="${escapeHtml(draft.quoteId)}">
             <div class="estimate-edit-grid">
               <label>Quote title
                 <input data-estimate-title value="${escapeHtml(draft.title || 'Estimate draft')}">
@@ -414,6 +421,7 @@
             <pre class="estimate-rewrite-notes" data-estimate-rewrite-notes="${escapeHtml(draft.quoteId)}"></pre>
             <p class="estimate-edit-status" data-estimate-edit-status="${escapeHtml(draft.quoteId)}"></p>
           </form>
+          </section>
           <div class="estimate-draft-detail-grid">
             ${renderAccuracyReview(draft.accuracyReview || [])}
             ${renderQuoteOptions(draft.quoteOptions || [])}
@@ -469,6 +477,18 @@
 
     window.__latestEstimateDrafts = drafts;
 
+
+    list.querySelectorAll('[data-focus-estimate-editor]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const section = list.querySelector(`[data-estimate-editor-section="${button.dataset.focusEstimateEditor}"]`);
+        if (!section) return;
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        section.classList.add('estimate-editor-highlight');
+        setTimeout(() => section.classList.remove('estimate-editor-highlight'), 1400);
+        section.querySelector('[data-estimate-title]')?.focus();
+      });
+    });
+
     list.querySelectorAll('[data-copy-estimate]').forEach((button) => {
       button.addEventListener('click', async () => {
         const draft = drafts.find((item) => item.quoteId === button.dataset.copyEstimate);
@@ -502,7 +522,7 @@
     const saveDraft = async (quoteId, action = 'save') => {
       const form = list.querySelector(`[data-estimate-edit-form="${quoteId}"]`) || document.querySelector(`[data-estimate-edit-form="${quoteId}"]`);
       if (!form) return;
-      const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
+      const status = form.querySelector(`[data-estimate-edit-status="${quoteId}"]`);
       const title = form.querySelector('[data-estimate-title]')?.value || '';
       const summaryValue = form.querySelector('[data-estimate-summary]')?.value || '';
       const amountCents = centsFromInput(form.querySelector('[data-estimate-amount]')?.value || '0');
@@ -512,7 +532,7 @@
       await fetchJson('/api/admin/estimate-review', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ quoteId, action, title, summary: summaryValue, amountCents }),
+        body: JSON.stringify({ quoteId, action: action || 'save', title, summary: summaryValue, amountCents }),
       });
 
       if (status) status.textContent = action === 'send' ? 'Saved and sent.' : 'Saved.';
@@ -531,7 +551,7 @@
         const form = list.querySelector(`[data-estimate-edit-form="${quoteId}"]`) || document.querySelector(`[data-estimate-edit-form="${quoteId}"]`);
         if (!form) return;
 
-        const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
+        const status = form.querySelector(`[data-estimate-edit-status="${quoteId}"]`);
         const payload = {
           quoteId,
           title: form.querySelector('[data-estimate-title]')?.value || '',
@@ -574,7 +594,7 @@
         try {
           await saveDraft(quoteId, 'save');
         } catch (error) {
-          const status = form.querySelector(`[data-estimate-edit-status="${CSS.escape(quoteId)}"]`);
+          const status = form.querySelector(`[data-estimate-edit-status="${quoteId}"]`);
           if (status) status.textContent = error.message || 'Could not save estimate.';
           window.TAUX?.toast?.({ title: 'Save failed', message: error.message || 'Could not save estimate.', type: 'error' });
         }
