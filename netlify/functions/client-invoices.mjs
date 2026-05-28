@@ -122,6 +122,7 @@ const listClientInvoices = async (db, userId) => {
       and job_requests.client_id = ${userId}
     where invoices.client_id = ${userId}
       and invoices.status <> 'void'
+      and invoices.status <> 'paid'
     order by invoices.created_at desc
     limit 50
   `;
