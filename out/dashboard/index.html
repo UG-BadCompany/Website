@@ -1830,7 +1830,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
   </style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
+  <nav aria-hidden="true" hidden><a href="#admin-work-orders">Work orders</a><a href="#admin-invoices">Invoices</a><a href="#worker-jobs">Assigned jobs</a></nav>
   <main class="wrap" data-dashboard-root>
     <section class="hero">
       <div class="dashboard-hero">
@@ -2282,7 +2283,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <strong>My properties</strong>
         <p>Edit saved property details from your profile so future requests use the right address and access information.</p>
         <p class="session-status" data-client-properties-status role="status" aria-live="polite">Loading your properties…</p>
-        <div class="client-property-list" data-client-property-list></div>
+        <div class="client-property-list" data-client-property-list></div><template data-client-property-actions><button type="button" class="btn btn-soft" data-client-edit-property>Edit property</button></template>
       </div>
       <div class="admin-request-modal" data-client-property-modal role="dialog" aria-modal="true" aria-labelledby="client-property-modal-title" hidden>
         <section class="admin-request-modal-panel">
