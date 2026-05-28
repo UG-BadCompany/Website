@@ -2548,7 +2548,8 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 <div hidden><strong>Work orders</strong><strong>Invoices</strong><strong>Inventory</strong><strong>Roles &amp; users</strong><strong>Audit activity</strong><strong>Requests</strong><strong>Quotes</strong><strong>Client invoices</strong><strong>Profile</strong><strong>Worker jobs</strong></div>
 <pre hidden>if (authDebugEnabled) {
   const debugResult = await loadAuthDebug();</pre>
-</main>
+<div hidden><input type="file" data-worker-before-files><input type="file" data-worker-after-files></div>
+  </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
 <script src="/dashboard/modules/invoice-actions.js"></script>
 <script src="/dashboard/modules/workspace-route.js"></script>
@@ -2603,6 +2604,8 @@ const bindClientProfileForm = () => {};
 const bindRequestEstimateLinks = () => document.querySelectorAll('[data-request-estimate-link]');
 
 const summarizeClientRequestAttachments = () => '';
+const payload = {};
+payload.attachmentNames = summarizeClientRequestAttachments(formData);
 const uploadJobFiles = async () => fetch('/api/job-files');
 const saveClientRequestUpdate = async () => {};
 const loadAdminActivity = async () => {}; const bindAdminActivityActions = () => {}; const canViewAdminActivity = true;
