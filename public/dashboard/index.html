@@ -2587,6 +2587,7 @@ const cleanPath = '/dashboard/';
 window.history.replaceState(null, document.title, cleanPath || '/dashboard/');
 
 const dedupeDashboardSingletons = () => {};
+const renderAdminInventoryWorkspace = () => {};
 const normalizeDashboardViewName = () => 'admin';
 const renderDashboardEmptyState = (title, message) => `<div>${title}${message}</div>`;
 const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'));
