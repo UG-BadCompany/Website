@@ -28,7 +28,7 @@ test('dashboard places a single all-tools command center directly under the hero
     'Invoices',
     'Inventory',
     'Roles &amp; users',
-    'Audit activity',
+    'Deployment Health',
     'Requests',
     'Quotes',
     'Client invoices',
