@@ -466,7 +466,7 @@
         <div class="meta"><span>${escapeHtml(item.itemType || 'material')}</span><span>${escapeHtml(item.category || 'Uncategorized')}</span><span>${escapeHtml(item.sku || 'No SKU')}</span><span>${escapeHtml(item.locationType || item.storageLocation || 'No location')}</span><span>Available ${Number(item.quantityAvailable ?? item.quantityOnHand ?? 0)}</span><span>Reserved ${Number(item.quantityReserved || 0)}</span><span>Reorder at ${Number(item.reorderPoint || 0)}</span></div>
         <p><span class="inventory-value">${formatMoney(item.inventoryValue || 0)}</span> value • Cost ${formatMoney(item.unitCost || 0)} • Charge ${formatMoney(item.chargePrice || 0)} • Markup ${Number(item.markupPercent || 0)}%</p>
         ${item.supplier ? `<p><strong>Supplier:</strong> ${escapeHtml(item.supplier)} ${item.supplierPartNumber ? `• Part # ${escapeHtml(item.supplierPartNumber)}` : ''}</p>` : ''}
-        ${item.barcodeValue || item.qrValue ? `<p><strong>Label:</strong> ${escapeHtml(item.barcodeValue || 'No barcode')} • QR ${escapeHtml(item.qrValue || 'not set')} <button class="btn" type="button" data-inventory-print-label="${escapeHtml(item.id)}">Print label placeholder</button></p>` : ''}
+        ${item.barcodeValue || item.qrValue ? `<p><strong>Label:</strong> ${escapeHtml(item.barcodeValue || 'No barcode')} • QR ${escapeHtml(item.qrValue || 'not set')} <button class="btn" type="button" data-inventory-print-label="${escapeHtml(item.id)}">Preview label</button></p>` : ''}
         ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ''}
         <div class="inventory-card-grid">
         <form class="form" data-admin-inventory-edit-form data-inventory-item-id="${escapeHtml(item.id)}">
