@@ -81,7 +81,7 @@ const listWorkerInventory = async (db, session) => {
     join inventory_items on inventory_items.id = inventory_reservations.inventory_item_id
     left join worker_assignments on worker_assignments.job_request_id = inventory_reservations.job_request_id
     where inventory_reservations.status in ('reserved', 'partially_used')
-      and (worker_assignments.worker_user_id = ${session.user_id} or inventory_items.worker_assignment = ${session.user_id})
+      and (worker_assignments.worker_id = ${session.user_id} or inventory_items.worker_assignment = ${session.user_id})
     order by inventory_reservations.created_at desc
     limit 100
   `;
@@ -160,7 +160,7 @@ const releaseReservedInventory = async ({ db, session, payload }) => {
     where inventory_item_id = ${payload.itemId}
       and job_request_id = ${payload.jobRequestId}
       and status in ('reserved', 'partially_used')
-      and exists (select 1 from worker_assignments where worker_assignments.job_request_id = inventory_reservations.job_request_id and worker_assignments.worker_user_id = ${session.user_id})
+      and exists (select 1 from worker_assignments where worker_assignments.job_request_id = inventory_reservations.job_request_id and worker_assignments.worker_id = ${session.user_id})
     returning id, inventory_item_id, job_request_id, reserved_quantity, used_quantity, status
   `;
   if (!reservation) return json(404, { ok: false, message: 'No assigned active reservation was found to release.' });

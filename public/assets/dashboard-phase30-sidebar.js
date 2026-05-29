@@ -22,7 +22,7 @@
     { group: 'Field', label: 'Worker Mobile', target: '#worker-mobile-field', hint: 'Phone' },
     { group: 'Field', label: 'Photo Docs', target: '.photo-doc-suite', hint: 'Proof' },
 
-    { group: 'Operations', label: 'Inventory', target: '#admin-inventory', hint: 'Stock' },
+    { group: 'Operations', label: 'Inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory' },
     { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
     { group: 'Operations', label: 'Roles & Users', target: '#admin-access', hint: 'Access' },
 
@@ -97,8 +97,13 @@
     const groups = groupItems();
     nav.innerHTML = Object.entries(groups).map(([group, items]) => `
       <div class="sidebar-nav-label">${group}</div>
-      ${items.map((item) => `
-        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}">
+      ${items.map((item) => item.href ? `
+        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-permission="${item.permission || ''}">
+          <span>${item.label}</span>
+          <small>${item.hint || ''}</small>
+        </a>
+      ` : `
+        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-permission="${item.permission || ''}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </button>
@@ -150,6 +155,19 @@
     })();
     setCollapsed(initialCollapsed);
 
+    const syncPermissionLinks = () => {
+      const view = document.body.dataset.currentDashboardView || document.documentElement.dataset.currentDashboardView || '';
+      nav.querySelectorAll('[data-sidebar-permission="canManageInventory"]').forEach((link) => {
+        link.hidden = Boolean(view && view !== 'admin');
+        link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
+      });
+    };
+    syncPermissionLinks();
+    try {
+      new MutationObserver(syncPermissionLinks).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+      new MutationObserver(syncPermissionLinks).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+    } catch {}
+
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
     document.addEventListener('click', (event) => {
@@ -162,6 +180,14 @@
     backdrop.addEventListener('click', () => setOpen(false));
 
     sidebar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-sidebar-href]');
+      if (link) {
+        sidebar.querySelectorAll('.sidebar-nav-link').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        setOpen(false);
+        return;
+      }
+
       const button = event.target.closest('[data-sidebar-target], [data-sidebar-action]');
       if (!button) return;
 

@@ -137,6 +137,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/worker/jobs/*"
+  to = "/.netlify/functions/worker-jobs"
+  status = 200
+
+[[redirects]]
   from = "/api/public-config"
   to = "/.netlify/functions/public-config"
   status = 200
@@ -150,6 +155,11 @@
 
 [[redirects]]
   from = "/api/admin/work-orders"
+  to = "/.netlify/functions/admin-work-orders"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/work-orders/*"
   to = "/.netlify/functions/admin-work-orders"
   status = 200
 
