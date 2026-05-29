@@ -451,3 +451,306 @@ tbody td:last-child { border-right: 1px solid rgba(255,255,255,.10); border-radi
     width: 100%;
   }
 }
+
+/* Access manager modal redesign: premium role/user editors. */
+[data-admin-role-modal],
+[data-admin-user-modal] {
+  z-index: 11020 !important;
+  background:
+    radial-gradient(circle at 24% 12%, rgba(249, 115, 22, .26), transparent 28rem),
+    radial-gradient(circle at 78% 0%, rgba(59, 130, 246, .18), transparent 30rem),
+    rgba(2, 6, 23, .78) !important;
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  align-items: center !important;
+}
+
+[data-admin-role-modal] .admin-access-panel,
+[data-admin-user-modal] .admin-access-panel {
+  position: relative;
+  width: min(1120px, calc(100vw - 34px)) !important;
+  max-height: min(92vh, 980px);
+  padding: 0 !important;
+  overflow: auto;
+  border-radius: 34px !important;
+  border: 1px solid rgba(255, 255, 255, .18) !important;
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, .98), rgba(30, 41, 59, .94) 48%, rgba(12, 18, 32, .98)) !important;
+  box-shadow:
+    0 34px 120px rgba(0, 0, 0, .58),
+    0 0 0 1px rgba(249, 115, 22, .08),
+    inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+[data-admin-role-modal] .admin-access-panel::before,
+[data-admin-user-modal] .admin-access-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 7px;
+  background: linear-gradient(90deg, #f97316, #f59e0b, #38bdf8);
+  pointer-events: none;
+}
+
+[data-admin-role-modal] .admin-request-modal-header,
+[data-admin-user-modal] .admin-request-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  gap: 18px;
+  align-items: start;
+  padding: clamp(22px, 3vw, 34px);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(249, 115, 22, .20), transparent 24rem),
+    linear-gradient(180deg, rgba(15, 23, 42, .98), rgba(15, 23, 42, .90));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+[data-admin-role-modal] .admin-request-modal-header > div,
+[data-admin-user-modal] .admin-request-modal-header > div {
+  display: grid;
+  gap: 8px;
+}
+
+[data-admin-role-modal] .admin-request-modal-header strong,
+[data-admin-user-modal] .admin-request-modal-header strong {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: #fff !important;
+  font-size: clamp(1.55rem, 2.4vw, 2.35rem) !important;
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+
+[data-admin-role-modal] .admin-request-modal-header strong::before,
+[data-admin-user-modal] .admin-request-modal-header strong::before {
+  content: "";
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(249, 115, 22, .96), rgba(245, 158, 11, .88)),
+    #f97316;
+  box-shadow: 0 14px 34px rgba(249, 115, 22, .30);
+}
+
+[data-admin-user-modal] .admin-request-modal-header strong::before {
+  background:
+    linear-gradient(135deg, rgba(56, 189, 248, .95), rgba(249, 115, 22, .85)),
+    #38bdf8;
+}
+
+[data-admin-role-modal] .admin-request-modal-header p,
+[data-admin-user-modal] .admin-request-modal-header p {
+  max-width: 760px;
+  margin: 0;
+  color: #cbd5e1 !important;
+  font-size: .98rem;
+}
+
+[data-admin-role-modal] .admin-request-modal-close,
+[data-admin-user-modal] .admin-request-modal-close {
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  background: rgba(15, 23, 42, .82) !important;
+  color: #fff !important;
+  font-size: 1.45rem;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 18px 34px rgba(0,0,0,.24) !important;
+}
+
+[data-admin-role-form],
+[data-admin-user-form] {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: clamp(20px, 3vw, 34px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle at 100% 24%, rgba(56, 189, 248, .08), transparent 22rem),
+    rgba(2, 6, 23, .16) !important;
+  box-shadow: none !important;
+}
+
+[data-admin-role-form] > label,
+[data-admin-user-form] > label {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, .72), rgba(15, 23, 42, .48));
+  color: #e2e8f0 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 14px 34px rgba(0,0,0,.14);
+}
+
+[data-admin-role-form] > label.full,
+[data-admin-user-form] > label.full,
+[data-admin-permission-list],
+[data-admin-user-role-list],
+[data-admin-user-property-list],
+[data-admin-role-form] .client-request-form-actions,
+[data-admin-user-form] .client-request-form-actions {
+  grid-column: 1 / -1;
+}
+
+[data-admin-role-form] input,
+[data-admin-role-form] textarea,
+[data-admin-user-form] input,
+[data-admin-user-form] textarea {
+  margin-top: 9px;
+  border-radius: 15px !important;
+  background: rgba(2, 6, 23, .72) !important;
+}
+
+[data-admin-role-form] textarea,
+[data-admin-user-form] textarea {
+  min-height: 118px;
+  resize: vertical;
+}
+
+[data-admin-permission-list],
+[data-admin-user-role-list],
+[data-admin-user-property-list] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(145deg, rgba(2, 6, 23, .54), rgba(15, 23, 42, .42)) !important;
+}
+
+[data-admin-permission-list] > strong,
+[data-admin-user-role-list] > strong,
+[data-admin-user-property-list] > strong {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 2px !important;
+  color: #fff !important;
+  font-size: 1rem !important;
+  letter-spacing: .01em;
+}
+
+.admin-access-choice,
+[data-admin-permission-list] label,
+[data-admin-user-role-list] label {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 78px;
+  margin: 0 !important;
+  padding: 13px 14px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+  background: rgba(15, 23, 42, .66) !important;
+  color: #e2e8f0 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.admin-access-choice:hover,
+[data-admin-permission-list] label:hover,
+[data-admin-user-role-list] label:hover {
+  transform: translateY(-1px);
+  border-color: rgba(249, 115, 22, .42) !important;
+  background: rgba(30, 41, 59, .82) !important;
+}
+
+.admin-access-choice input,
+[data-admin-permission-list] input,
+[data-admin-user-role-list] input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 2px 0 0 !important;
+  accent-color: #f97316;
+}
+
+.admin-access-choice span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-access-choice b {
+  color: #fff;
+  font-size: .96rem;
+  line-height: 1.18;
+}
+
+.admin-access-choice small {
+  color: #94a3b8;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+[data-admin-user-property-list] .admin-request {
+  grid-column: span 1;
+  margin: 0 !important;
+}
+
+[data-admin-role-form] .client-request-form-actions,
+[data-admin-user-form] .client-request-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 8px -34px -34px !important;
+  padding: 18px clamp(20px, 3vw, 34px) !important;
+  border-top: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(15, 23, 42, .92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+[data-admin-role-form] .client-request-form-actions .btn,
+[data-admin-user-form] .client-request-form-actions .btn {
+  min-height: 50px;
+  padding-inline: 22px;
+  border-radius: 16px !important;
+}
+
+[data-admin-role-form-status],
+[data-admin-user-form-status] {
+  min-width: min(320px, 100%);
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  [data-admin-role-form],
+  [data-admin-user-form],
+  [data-admin-permission-list],
+  [data-admin-user-role-list],
+  [data-admin-user-property-list] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-admin-role-modal] .admin-request-modal-header,
+  [data-admin-user-modal] .admin-request-modal-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  [data-admin-role-form] .client-request-form-actions,
+  [data-admin-user-form] .client-request-form-actions {
+    margin: 8px -20px -20px !important;
+    align-items: stretch !important;
+  }
+}
