@@ -77,6 +77,36 @@
     return '';
   };
 
+
+  const setInventoryStatus = (row, message = '') => {
+    const status = row?.querySelector?.('[data-estimate-inventory-status]');
+    if (status) status.textContent = message;
+  };
+
+  const submitInventoryReservation = async ({ button, action }) => {
+    const row = button.closest('[data-inventory-match-row]');
+    const section = button.closest('[data-inventory-match-reservation]');
+    const quantity = Number(row?.querySelector?.('[data-estimate-inventory-quantity]')?.value || 0);
+    const itemId = button.dataset.itemId || '';
+    const jobRequestId = section?.dataset.jobRequestId || '';
+    const quoteId = section?.dataset.quoteId || findQuoteId(findForm(button));
+    if (!itemId) throw new Error('No matched inventory item is available for this material yet.');
+    if (!jobRequestId) throw new Error('No job/work order is attached to this quote yet.');
+    if (!quantity || quantity <= 0) throw new Error('Enter a quantity greater than zero.');
+    setInventoryStatus(row, action === 'release' ? 'Releasing unused reserved material…' : 'Reserving material for this job…');
+    const result = await fetchJson(`/api/admin/inventory/${action}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ itemId, jobRequestId, quoteId, quantity, reservationId: button.dataset.reservationId || '', note: `${action} from Estimate Review Inventory Match & Reservation` }),
+    });
+    const available = result.item?.quantityAvailable;
+    setInventoryStatus(row, action === 'release'
+      ? `Unused material released. Available quantity is now ${available ?? 'updated'}.`
+      : `Material reserved. Available quantity is now ${available ?? 'updated'}; on-hand stock was not reduced.`);
+    toast(action === 'release' ? 'Reservation released' : 'Inventory reserved', 'Inventory Match & Reservation updated the job materials.', 'success');
+    setTimeout(() => window.dispatchEvent(new CustomEvent('ta:dashboard-refresh')), 700);
+  };
+
   const restoreFromDraft = (form) => {
     const quoteId = findQuoteId(form);
     const draft = (window.__latestEstimateDrafts || []).find((item) => item.quoteId === quoteId);
@@ -176,7 +206,9 @@
     const aiButton = event.target.closest('[data-ai-rewrite-estimate]');
     const cancelButton = event.target.closest('[data-cancel-estimate-edit]');
     const sendButton = event.target.closest('[data-save-send-estimate]');
-    if (!aiButton && !cancelButton && !sendButton) return;
+    const reserveButton = event.target.closest('[data-estimate-reserve-inventory]');
+    const releaseButton = event.target.closest('[data-estimate-release-inventory]');
+    if (!aiButton && !cancelButton && !sendButton && !reserveButton && !releaseButton) return;
 
     const form = findForm(event.target);
     if (!form) return;
@@ -186,6 +218,11 @@
     event.stopImmediatePropagation();
 
     try {
+      if (reserveButton || releaseButton) {
+        await submitInventoryReservation({ button: reserveButton || releaseButton, action: reserveButton ? 'reserve' : 'release' });
+        return;
+      }
+
       if (aiButton) {
         await rewriteForm(form);
         return;
