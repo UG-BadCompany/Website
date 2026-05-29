@@ -5,9 +5,10 @@
 // - Finance Center and Invoices are separate.
 // - Work Orders and Scheduling are separate.
 // - Maintenance Plans and Roles & Users are separate.
-// - Photo Docs has its own workspace.
+// - Worker Jobs, Worker Mobile, and Photo Docs are separate.
 // - Inventory stays a real /inventory/ link.
 // - Old/wrong workspace tags are cleared before retagging.
+// - Dynamic modules like Finance Center are retagged after they mount.
 
 (() => {
   if (window.__phase34SidebarOnlyWorkspacesLoaded) return;
@@ -66,7 +67,7 @@
     },
 
     scheduling: {
-      title: 'Scheduling and dispatch',
+      title: 'Scheduling',
       description: 'Schedule board, upcoming jobs, unscheduled work, assigned workers, priority, and dispatch notes.',
       targets: [
         '#smart-schedule-suite',
@@ -90,8 +91,8 @@
 
     invoices: {
       title: 'Invoices',
-      description: 'Invoice workflow, client balances, payment status, and closeout.',
-      // Keep #admin-invoices out of here if you do not want the old Invoice & payment desk.
+      description: 'Modern invoice workflow, client balances, payment status, and closeout.',
+      // Do not include #admin-invoices here unless you want the old Invoice & payment desk.
       targets: [
         '[data-modern-invoices]',
         '.invoice-workspace',
@@ -130,7 +131,7 @@
     },
 
     'photo-docs': {
-      title: 'Photo Documentation',
+      title: 'Photo Docs',
       description: 'Before, progress, after, completion notes, evidence checklist, and admin review status.',
       targets: [
         '.photo-doc-suite',
@@ -199,8 +200,8 @@
     const source = `${label} ${hint} ${target} ${action}`;
 
     if (label === 'overview') return 'overview';
-    if (label === 'estimate review') return 'quotes';
     if (label === 'requests') return 'requests';
+    if (label === 'estimate review') return 'quotes';
 
     if (label === 'work orders') return 'work-orders';
     if (label === 'scheduling') return 'scheduling';
@@ -367,6 +368,25 @@
   };
 
   setTimeout(boot, 1200);
+
+  // Retag dynamic modules after scripts mount them.
+  // This is important for the Finance Center because dashboard-phase4-finance.js
+  // creates #finance-command-center dynamically after load.
+  setTimeout(() => {
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    const current = document.body.dataset.sidebarWorkspace || initial;
+    setWorkspace(current);
+  }, 1800);
+
+  setTimeout(() => {
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    const current = document.body.dataset.sidebarWorkspace || initial;
+    setWorkspace(current);
+  }, 2600);
 
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
