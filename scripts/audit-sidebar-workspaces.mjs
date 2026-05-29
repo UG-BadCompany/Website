@@ -77,6 +77,8 @@ has(phase34Css, /body\[data-sidebar-workspace="finance"\][\s\S]*data-sidebar-wor
 has(phase34Css, /body\[data-sidebar-workspace="worker-mobile"\][\s\S]*data-sidebar-workspace-section~="worker-mobile"/, 'Phase 34 CSS must reveal Worker Mobile workspace.');
 has(phase34Css, /sidebar-nav-link\[aria-current="true"\]/, 'Sidebar CSS must include a single active-state style.');
 has(phase34, /removeAttribute\('aria-current'\)/, 'Workspace routing must remove inactive aria-current values to prevent duplicate highlights.');
+has(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'Sidebar workspace clicks must scroll to the selected module.');
+has(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget/, 'Sidebar click handler must call setWorkspace with scroll enabled.');
 
 const forbiddenCombos = [
   ['finance', '#admin-invoices'],

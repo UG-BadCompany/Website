@@ -43,6 +43,8 @@ test('workspace router clears stale tags and prevents duplicate active sidebar h
   assert.match(phase34, /removeAttribute\('data-sidebar-workspace-section'\)/, 'router should clear old workspace tags before retagging');
   assert.match(phase34, /removeAttribute\('aria-current'\)/, 'router should remove inactive aria-current values');
   assert.match(phase34, /setActiveButton/, 'router should centralize active-state updates');
+  assert.match(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'router should visibly scroll to the selected module');
+  assert.match(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget/, 'sidebar clicks should request scrolling to their target');
   for (const workspace of ['estimate-review', 'work-orders', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
     assert.match(css, new RegExp(`data-sidebar-workspace="${workspace}"[\\s\\S]*${workspace}`), `CSS should reveal ${workspace}`);
   }
@@ -61,6 +63,7 @@ test('required modules exist and key buttons have real status/action wiring', as
 test('mobile quick actions and inventory navigation are preserved', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
   assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Stock[\s\S]*Today[\s\S]*Complete[\s\S]*Profile/, 'mobile quick action bar should keep role-aware actions');
+  assert.match(sidebar, /data-mobile-quick-workspace[\s\S]*taSetSidebarWorkspace/, 'mobile quick actions should use workspace routing when available');
   assert.match(sidebar, /href: '\/inventory\/'/, 'Inventory should remain a page navigation');
 });
 

@@ -36,19 +36,19 @@
   }, {});
 
   const mobileQuickActions = [
-    { label: 'Requests', target: '#admin-requests', views: ['admin'] },
-    { label: 'Quotes', target: '#estimate-review', views: ['admin'] },
-    { label: 'Jobs', target: '#worker-jobs', views: ['admin', 'worker'] },
-    { label: 'Invoices', target: '#admin-invoices', views: ['admin'] },
-    { label: 'Stock', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
-    { label: 'Today', target: '#worker-mobile-field', views: ['worker'] },
-    { label: 'Materials', target: '#worker-jobs', views: ['worker'] },
-    { label: 'Photos', target: '.photo-doc-suite', views: ['worker'] },
-    { label: 'Complete', target: '#worker-mobile-field', views: ['worker'] },
-    { label: 'Request', target: '#client-requests', views: ['client'] },
-    { label: 'Quotes', target: '#client-quotes', views: ['client'] },
-    { label: 'Invoices', target: '#client-invoices', views: ['client'] },
-    { label: 'Profile', target: '#worker-profile', views: ['client'] },
+    { label: 'Requests', workspace: 'work-orders', target: '#admin-requests', views: ['admin'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#estimate-review', views: ['admin'] },
+    { label: 'Jobs', workspace: 'worker-jobs', target: '#worker-jobs', views: ['admin', 'worker'] },
+    { label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', views: ['admin'] },
+    { label: 'Stock', workspace: 'inventory', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
+    { label: 'Today', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Materials', workspace: 'worker-jobs', target: '#worker-jobs', views: ['worker'] },
+    { label: 'Photos', workspace: 'photo-docs', target: '.photo-doc-suite', views: ['worker'] },
+    { label: 'Complete', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Request', workspace: 'work-orders', target: '#client-requests', views: ['client'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#client-quotes', views: ['client'] },
+    { label: 'Invoices', workspace: 'invoices', target: '#client-invoices', views: ['client'] },
+    { label: 'Profile', workspace: 'overview', target: '#worker-profile', views: ['client'] },
   ];
 
   const targetExists = (target) => {
@@ -147,9 +147,9 @@
     quickBar.className = 'mobile-quick-action-bar';
     quickBar.setAttribute('aria-label', 'Mobile quick actions');
     quickBar.innerHTML = mobileQuickActions.map((item) => item.href ? `
-      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
+      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
     ` : `
-      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
+      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
     `).join('');
 
     root.appendChild(toggle);
@@ -224,7 +224,11 @@
       }
       const button = event.target.closest('[data-mobile-quick-target]');
       if (!button) return;
-      scrollToTarget(button.dataset.mobileQuickTarget);
+      if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
       quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
       button.setAttribute('aria-current', 'true');
       setOpen(false);

@@ -86,6 +86,26 @@
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
+    'worker-mobile': {
+      title: 'Worker Mobile',
+      description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
+      targets: ['#worker-mobile-field', '.worker-mobile-suite'],
+    },
+    'photo-docs': {
+      title: 'Photo Documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
+      targets: ['.photo-doc-suite'],
+    },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
+    },
 
     deployment: {
       title: 'Deployment and Readiness',
@@ -125,13 +145,6 @@
       const text = (button.querySelector('span')?.textContent || button.textContent || '').trim().toLowerCase();
       const workspace = labelWorkspace.get(text);
       if (workspace) button.dataset.sidebarWorkspace = workspace;
-    });
-
-    document.querySelectorAll('[data-sidebar-href="/inventory/"], a[href="/inventory/"]').forEach((link) => {
-      link.removeAttribute('data-sidebar-workspace');
-      link.removeAttribute('data-sidebar-target');
-      link.dataset.sidebarHref = '/inventory/';
-      link.setAttribute('href', '/inventory/');
     });
   };
 
@@ -188,7 +201,19 @@
     });
   };
 
-  const setWorkspace = (workspace = 'overview') => {
+  const scrollWorkspaceTarget = (workspace, preferredTarget = '') => {
+    const preferred = preferredTarget ? (() => { try { return document.querySelector(preferredTarget); } catch { return null; } })() : null;
+    const destination = preferred || visibleTargetsFor(workspace)[0] || null;
+    if (!destination) return false;
+    window.requestAnimationFrame(() => {
+      destination.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      destination.classList.add('dashboard-section-highlight');
+      setTimeout(() => destination.classList.remove('dashboard-section-highlight'), 1200);
+    });
+    return true;
+  };
+
+  const setWorkspace = (workspace = 'overview', options = {}) => {
     workspace = resolveWorkspace(workspace);
     if (!workspaces[workspace]) workspace = 'overview';
 
@@ -222,6 +247,8 @@
       window.taDashboardActions?.bindAdminAccessForms?.();
       window.taDashboardActions?.loadAdminAccess?.();
     }
+
+    if (options.scroll) scrollWorkspaceTarget(workspace, options.target || '');
   };
 
   document.addEventListener('click', (event) => {
@@ -242,10 +269,7 @@
     event.preventDefault();
     event.stopPropagation();
 
-    const workspace = button.dataset.sidebarWorkspace;
-
-    clearSidebarActiveStates();
-    button.setAttribute('aria-current', 'true');
+    setWorkspace(button.dataset.sidebarWorkspace, { scroll: true, target: button.dataset.sidebarTarget || '' });
 
     setWorkspace(workspace);
     closeSidebar();
