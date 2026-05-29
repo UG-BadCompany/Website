@@ -23,6 +23,7 @@
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
       targets: ['#estimate-review', '#admin-quotes', '#client-quotes', '[data-client-quotes]', '[data-phase2-command-center]'],
     },
+
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
@@ -38,6 +39,18 @@
       description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center'],
     },
+
+    finance: {
+      title: 'Finance Center',
+      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
+      targets: [
+        '#finance-command-center',
+        '[data-phase4-finance-suite]',
+        '.finance-suite',
+        '.finance-command-panel',
+      ],
+    },
+
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
@@ -73,6 +86,7 @@
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
+
     deployment: {
       title: 'Deployment and Readiness',
       description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
@@ -112,6 +126,13 @@
       const workspace = labelWorkspace.get(text);
       if (workspace) button.dataset.sidebarWorkspace = workspace;
     });
+
+    document.querySelectorAll('[data-sidebar-href="/inventory/"], a[href="/inventory/"]').forEach((link) => {
+      link.removeAttribute('data-sidebar-workspace');
+      link.removeAttribute('data-sidebar-target');
+      link.dataset.sidebarHref = '/inventory/';
+      link.setAttribute('href', '/inventory/');
+    });
   };
 
   const tagWorkspaceSections = () => {
@@ -144,6 +165,7 @@
 
     const shell = document.querySelector('.dashboard-workspace-v2') || root;
     const first = shell.firstElementChild;
+
     if (first) shell.insertBefore(header, first);
     else shell.appendChild(header);
 
@@ -203,18 +225,30 @@
   };
 
   document.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-sidebar-href]');
+
+    if (link) {
+      clearSidebarActiveStates();
+      link.setAttribute('aria-current', 'page');
+      closeSidebar();
+
+      // Let Inventory navigate normally.
+      return;
+    }
+
     const button = event.target.closest('[data-sidebar-workspace]');
     if (!button || button.dataset.sidebarHref) return;
 
     event.preventDefault();
     event.stopPropagation();
 
-    setWorkspace(button.dataset.sidebarWorkspace);
+    const workspace = button.dataset.sidebarWorkspace;
 
-    const sidebar = document.querySelector('.dashboard-sidebar-v2');
-    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
-    if (sidebar) sidebar.dataset.open = 'false';
-    if (backdrop) backdrop.dataset.open = 'false';
+    clearSidebarActiveStates();
+    button.setAttribute('aria-current', 'true');
+
+    setWorkspace(workspace);
+    closeSidebar();
   }, true);
 
   const initial = resolveWorkspace(document.body.dataset.sidebarWorkspace || 'overview');
@@ -228,12 +262,33 @@
 
   setTimeout(boot, 1200);
 
+  // Retag dynamic modules after scripts mount them.
+  // This is important for the Finance Center because dashboard-phase4-finance.js
+  // creates #finance-command-center dynamically after load.
+  setTimeout(() => {
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    const current = document.body.dataset.sidebarWorkspace || initial;
+    setWorkspace(current);
+  }, 1800);
+
+  setTimeout(() => {
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    const current = document.body.dataset.sidebarWorkspace || initial;
+    setWorkspace(current);
+  }, 2600);
+
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
     window.__phase34SidebarWorkspaceTimer = setTimeout(() => {
+      const current = document.body.dataset.sidebarWorkspace || initial;
+
       normalizeSidebarButtons();
       tagWorkspaceSections();
-      setWorkspace(document.body.dataset.sidebarWorkspace || initial);
+      setWorkspace(current);
     }, 200);
   });
 
