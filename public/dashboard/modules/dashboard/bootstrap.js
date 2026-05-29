@@ -505,6 +505,8 @@
       let currentAdminInventoryMovements = [];
       let currentWorkerInventoryItems = [];
       let currentWorkerInventoryReservations = [];
+      let currentWorkerAssignments = [];
+      let currentMaintenancePlans = [];
       let currentProfileUser = null;
       let currentDashboardView = '';
       let availableDashboardViews = [];
@@ -1573,6 +1575,126 @@
           loadAdminActivity();
         });
         panel.querySelector('[data-admin-activity-refresh]')?.addEventListener('click', () => loadAdminActivity());
+      };
+
+      const getAssignmentForJob = (jobRequestId) => [...currentAdminAssignments.values()].find((assignment) => assignment.jobRequestId === jobRequestId) || null;
+
+      const renderPhase54JobMiniCard = (request = {}, assignment = null) => `
+        <article class="phase54-card">
+          <span class="phase54-badge">${escapeHtml((request.status || assignment?.status || 'new').replaceAll('_', ' '))}</span>
+          <strong>${escapeHtml(request.serviceType || assignment?.jobRequest?.serviceType || 'Work order')}</strong>
+          <div class="phase54-meta"><span>${escapeHtml(assignment?.workerName || assignment?.worker?.fullName || assignment?.workerEmail || 'Unassigned')}</span><span>${escapeHtml(assignment?.scheduledDate ? formatDate(assignment.scheduledDate) : (request.estimatedStartDate ? formatDate(request.estimatedStartDate) : 'Unscheduled'))}</span><span>${escapeHtml(request.city || assignment?.jobRequest?.city || 'No city')}</span></div>
+          <p>${escapeHtml(request.description || assignment?.jobRequest?.description || assignment?.notes || 'No dispatch details yet.')}</p>
+        </article>
+      `;
+
+      const populatePhase54Selectors = () => {
+        const jobOptions = '<option value="">Select job</option>' + [...currentAdminRequests.values()].map((request) => `<option value="${escapeHtml(request.id)}">${escapeHtml(request.serviceType || 'Work order')} — ${escapeHtml(request.requesterName || request.city || 'Client')}</option>`).join('');
+        document.querySelectorAll('[data-schedule-job-select]').forEach((select) => { const selected = select.value; select.innerHTML = jobOptions; select.value = [...currentAdminRequests.keys()].includes(selected) ? selected : ''; });
+        const workerOptions = '<option value="">Unassigned / keep current</option>' + [...currentAdminWorkers.values()].map((worker) => `<option value="${escapeHtml(worker.id)}">${escapeHtml(worker.fullName || worker.email || 'Worker')}</option>`).join('');
+        document.querySelectorAll('[data-schedule-worker-select]').forEach((select) => { const selected = select.value; select.innerHTML = workerOptions; select.value = currentAdminWorkers.has(selected) ? selected : ''; });
+        const assignmentOptions = '<option value="">Select assigned job</option>' + [...currentAdminAssignments.values(), ...currentWorkerAssignments]
+          .filter((assignment, index, all) => assignment?.id && all.findIndex((entry) => entry?.id === assignment.id) === index)
+          .map((assignment) => `<option value="${escapeHtml(assignment.id)}">${escapeHtml(assignment.jobRequest?.serviceType || assignment.notes || 'Assigned job')} — ${escapeHtml(assignment.workerName || assignment.worker?.fullName || assignment.workerEmail || assignment.status || 'worker')}</option>`).join('');
+        document.querySelectorAll('[data-photo-doc-assignment]').forEach((select) => { const selected = select.value; select.innerHTML = assignmentOptions; select.value = assignmentOptions.includes(`value="${escapeHtml(selected)}"`) ? selected : ''; });
+      };
+
+      const renderScheduleWorkspace = () => {
+        const status = document.querySelector('[data-schedule-status]');
+        const upcomingList = document.querySelector('[data-schedule-upcoming-list]');
+        const unscheduledList = document.querySelector('[data-schedule-unscheduled-list]');
+        const form = document.querySelector('[data-schedule-dispatch-form]');
+        if (!status || !upcomingList || !unscheduledList) return;
+        const adminRequests = [...currentAdminRequests.values()];
+        const upcoming = adminRequests.filter((request) => ['scheduled', 'in_progress', 'pending_review'].includes(request.status || '') || getAssignmentForJob(request.id)?.scheduledDate);
+        const unscheduled = adminRequests.filter((request) => ['accepted', 'quote_sent', 'new', 'needs_review'].includes(request.status || '') && !getAssignmentForJob(request.id)?.scheduledDate);
+        const workerUpcoming = currentWorkerAssignments.filter((assignment) => assignment.scheduledDate);
+        upcomingList.innerHTML = (currentDashboardView === 'worker' ? workerUpcoming.map((assignment) => renderPhase54JobMiniCard({}, assignment)) : upcoming.map((request) => renderPhase54JobMiniCard(request, getAssignmentForJob(request.id)))).join('') || '<p class="session-status">No upcoming jobs yet.</p>';
+        unscheduledList.innerHTML = currentDashboardView === 'worker' ? '<p class="session-status">Workers see scheduled dispatch only. Admin schedules unscheduled jobs.</p>' : (unscheduled.map((request) => renderPhase54JobMiniCard(request, getAssignmentForJob(request.id))).join('') || '<p class="session-status">No unscheduled accepted jobs.</p>');
+        if (form) form.hidden = currentDashboardView !== 'admin';
+        status.dataset.state = 'ready';
+        status.textContent = currentDashboardView === 'worker' ? `${workerUpcoming.length} scheduled field job${workerUpcoming.length === 1 ? '' : 's'} loaded.` : `${upcoming.length} upcoming and ${unscheduled.length} unscheduled job${unscheduled.length === 1 ? '' : 's'} loaded.`;
+        populatePhase54Selectors();
+      };
+
+      const renderWorkerMobileWorkspace = () => {
+        const status = document.querySelector('[data-worker-mobile-status]');
+        const list = document.querySelector('[data-worker-mobile-list]');
+        if (!status || !list) return;
+        const assignments = currentDashboardView === 'admin' ? [...currentAdminAssignments.values()] : currentWorkerAssignments;
+        list.innerHTML = assignments.length ? assignments.map((assignment) => `
+          <article class="phase54-card" data-mobile-assignment="${escapeHtml(assignment.id)}">
+            <span class="phase54-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
+            <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Assigned job')}</strong>
+            <div class="phase54-meta"><span>${escapeHtml(assignment.scheduledDate ? formatDate(assignment.scheduledDate) : 'No scheduled date')}</span><span>${escapeHtml([assignment.startTime, assignment.endTime].filter(Boolean).join('–') || 'No time window')}</span><span>${escapeHtml(assignment.jobRequest?.city || 'No city')}</span></div>
+            <p>${escapeHtml(assignment.jobRequest?.description || assignment.notes || 'No details yet.')}</p>
+            <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-mobile-start-job data-assignment-id="${escapeHtml(assignment.id)}">Start job</button><button class="btn btn-soft" type="button" data-mobile-progress-job data-assignment-id="${escapeHtml(assignment.id)}">Mark in progress</button><button class="btn btn-primary" type="button" data-mobile-complete-job data-assignment-id="${escapeHtml(assignment.id)}">Mark complete</button></div>
+          </article>
+        `).join('') : renderDashboardEmptyState('No mobile jobs loaded.', 'Assigned field jobs will appear here after admin dispatch or worker assignment loads.');
+        status.dataset.state = 'ready';
+        status.textContent = `${assignments.length} mobile job card${assignments.length === 1 ? '' : 's'} ready.`;
+      };
+
+      const renderPhotoDocsWorkspace = () => {
+        const status = document.querySelector('[data-photo-doc-status]');
+        const list = document.querySelector('[data-photo-doc-list]');
+        if (!status || !list) return;
+        const assignments = currentDashboardView === 'admin' ? [...currentAdminAssignments.values()] : currentWorkerAssignments;
+        list.innerHTML = assignments.length ? assignments.map((assignment) => `
+          <article class="phase54-card">
+            <span class="phase54-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
+            <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Job evidence')}</strong>
+            <p>${escapeHtml(assignment.completionNotes || assignment.workerNotes || 'No completion evidence notes yet.')}</p>
+            <div class="phase54-meta"><span>${escapeHtml((assignment.completionPhotoNames || []).length ? `${assignment.completionPhotoNames.length} evidence file(s)` : 'Before/progress/after placeholders ready')}</span><span>${escapeHtml(assignment.completionSubmittedAt ? formatDate(String(assignment.completionSubmittedAt).slice(0, 10)) : 'Not submitted')}</span></div>
+          </article>
+        `).join('') : '<p class="session-status">No assigned jobs are available for evidence yet.</p>';
+        status.dataset.state = 'ready';
+        status.textContent = `${assignments.length} job${assignments.length === 1 ? '' : 's'} available for photo documentation.`;
+        populatePhase54Selectors();
+      };
+
+      const renderMaintenanceWorkspace = () => {
+        const status = document.querySelector('[data-maintenance-status]');
+        const list = document.querySelector('[data-maintenance-plan-list]');
+        const form = document.querySelector('[data-maintenance-plan-form]');
+        if (!status || !list) return;
+        const isAdminView = currentDashboardView === 'admin';
+        if (form) form.hidden = !isAdminView;
+        list.innerHTML = currentMaintenancePlans.length ? currentMaintenancePlans.map((plan) => `
+          <article class="phase54-card">
+            <span class="phase54-badge">${escapeHtml((plan.status || 'active').replaceAll('_', ' '))}</span>
+            <strong>${escapeHtml(plan.planName || 'Maintenance plan')}</strong>
+            <div class="phase54-meta"><span>${escapeHtml(plan.planType || 'property care')}</span><span>${escapeHtml(plan.frequency || 'quarterly')}</span><span>${escapeHtml(plan.nextDueDate ? formatDate(plan.nextDueDate) : 'No due date')}</span><span>${escapeHtml(plan.propertyLabel || plan.propertyCity || plan.clientName || 'Property')}</span></div>
+            <p>${escapeHtml(plan.notes || 'Recurring maintenance plan ready for scheduling.')}</p>
+          </article>
+        `).join('') : '<p class="session-status">No recurring maintenance plans loaded yet. Admins can create the first HVAC, plumbing, electrical, or property care plan.</p>';
+        status.dataset.state = 'ready';
+        status.textContent = `${currentMaintenancePlans.length} maintenance plan${currentMaintenancePlans.length === 1 ? '' : 's'} loaded.`;
+      };
+
+      const renderReadinessWorkspace = () => {
+        const status = document.querySelector('[data-readiness-status]');
+        const list = document.querySelector('[data-readiness-checklist]');
+        if (!status || !list) return;
+        const checks = [
+          ['API routes', 'Inventory, worker jobs, work-orders, maintenance plans, auth verify, and payment-link redirects are declared.'],
+          ['Function syntax', 'Run node scripts/check-netlify-functions.mjs before deploy.'],
+          ['Build status', 'Run npm run build to refresh ./out and validate migrations.'],
+          ['Environment', 'Verify DATABASE_URL/Netlify Database, Square, Resend, and site URL variables in Netlify. No secrets are displayed here.'],
+          ['Migrations', '0030_maintenance_plans.sql adds recurring plan support safely with if-not-exists guards.'],
+          ['Audits', 'Run npm run audit:dead-buttons, npm run test:browser, and npm run test:sidebar-workspaces.'],
+        ];
+        list.innerHTML = checks.map(([title, message]) => `<article class="phase54-card"><span class="phase54-badge">Ready check</span><strong>${escapeHtml(title)}</strong><p>${escapeHtml(message)}</p></article>`).join('');
+        status.dataset.state = 'ready';
+        status.textContent = `Readiness checklist refreshed at ${new Date().toLocaleTimeString()}.`;
+      };
+
+      const renderPhase54Workspaces = () => {
+        renderScheduleWorkspace();
+        renderWorkerMobileWorkspace();
+        renderPhotoDocsWorkspace();
+        renderMaintenanceWorkspace();
+        renderReadinessWorkspace();
       };
 
       const renderWorkerJobMaterials = (assignment = {}) => {
@@ -3496,6 +3618,156 @@ Additional info from client: ${payload.additionalInfo}` : '';
         panel.querySelector('[data-admin-activity-more]')?.addEventListener('click', () => loadAdminActivityFeed({ append: true }));
       };
 
+      const postWorkerAssignmentUpdate = async (payload = {}, statusNode = null) => {
+        const response = await fetch(payload.complete ? '/api/worker/jobs/complete' : '/api/worker/jobs', {
+          method: payload.complete ? 'POST' : 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Worker job update failed.');
+        if (statusNode) statusNode.textContent = 'Worker job updated.';
+        await loadWorkerJobs();
+        await loadAdminRequests();
+        renderPhase54Workspaces();
+      };
+
+      const loadMaintenancePlans = async () => {
+        const status = document.querySelector('[data-maintenance-status]');
+        const isAdminView = currentProfileUser?.permissions?.canViewAdminTools || currentDashboardView === 'admin';
+        const endpoint = isAdminView ? '/api/admin/maintenance-plans' : '/api/client/maintenance-plans';
+        try {
+          const response = await fetch(endpoint, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Maintenance plans are not available.');
+          currentMaintenancePlans = result.plans || [];
+          renderMaintenanceWorkspace();
+        } catch (error) {
+          currentMaintenancePlans = [];
+          renderMaintenanceWorkspace();
+          if (status) {
+            status.dataset.state = 'error';
+            status.textContent = error.message;
+          }
+        }
+      };
+
+      const bindPhase54Workspaces = () => {
+        const scheduleForm = document.querySelector('[data-schedule-dispatch-form]');
+        if (scheduleForm && !scheduleForm.dataset.bound) {
+          scheduleForm.dataset.bound = 'true';
+          scheduleForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-schedule-form-status]');
+            const payload = Object.fromEntries(new FormData(scheduleForm).entries());
+            if (!payload.jobRequestId) { if (formStatus) formStatus.textContent = 'Choose a job to schedule.'; return; }
+            if (formStatus) formStatus.textContent = 'Scheduling job…';
+            try {
+              const response = await fetch('/api/admin/job-requests', {
+                method: 'PATCH',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ ...payload, status: payload.scheduledDate || payload.workerId ? 'scheduled' : 'accepted' }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not schedule that job.');
+              if (formStatus) formStatus.textContent = 'Job scheduled/assigned.';
+              scheduleForm.reset();
+              await loadAdminRequests(payload.jobRequestId);
+            } catch (error) { if (formStatus) formStatus.textContent = error.message; }
+          });
+        }
+
+        const mobilePanel = document.querySelector('[data-worker-mobile-list]')?.closest('[data-dashboard-section]');
+        if (mobilePanel && !mobilePanel.dataset.bound) {
+          mobilePanel.dataset.bound = 'true';
+          mobilePanel.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-mobile-start-job], [data-mobile-progress-job], [data-mobile-complete-job]');
+            if (!button) return;
+            const statusNode = document.querySelector('[data-worker-mobile-status]');
+            const complete = Boolean(button.dataset.mobileCompleteJob !== undefined);
+            const assignmentId = button.dataset.assignmentId;
+            const statusValue = complete ? 'completed' : 'in_progress';
+            if (statusNode) statusNode.textContent = complete ? 'Marking job complete…' : 'Starting job / marking in progress…';
+            try {
+              await postWorkerAssignmentUpdate({ assignmentId, status: statusValue, workerNotes: complete ? 'Completed from Worker Mobile workspace.' : 'Started from Worker Mobile workspace.', complete }, statusNode);
+            } catch (error) { if (statusNode) statusNode.textContent = error.message; }
+          });
+        }
+
+        const photoForm = document.querySelector('[data-photo-doc-form]');
+        if (photoForm && !photoForm.dataset.bound) {
+          photoForm.dataset.bound = 'true';
+          photoForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-photo-doc-form-status]');
+            const payload = Object.fromEntries(new FormData(photoForm).entries());
+            const evidenceFiles = String(payload.completionEvidenceFiles || '').split(',').map((item) => item.trim()).filter(Boolean);
+            if (!payload.assignmentId) { if (formStatus) formStatus.textContent = 'Choose a job before saving evidence notes.'; return; }
+            if (formStatus) formStatus.textContent = 'Saving evidence notes…';
+            try {
+              await postWorkerAssignmentUpdate({ assignmentId: payload.assignmentId, status: 'in_progress', workerNotes: `${payload.stage || 'evidence'}: ${payload.workerNotes || 'Evidence note saved.'}`, completionEvidenceFiles: evidenceFiles }, formStatus);
+              if (formStatus) formStatus.textContent = 'Evidence notes saved. File upload storage uses the existing job files endpoint when files are attached from the work order form.';
+            } catch (error) { if (formStatus) formStatus.textContent = error.message; }
+          });
+          photoForm.querySelector('[data-photo-doc-upload-note]')?.addEventListener('click', () => {
+            const formStatus = document.querySelector('[data-photo-doc-form-status]');
+            if (formStatus) formStatus.textContent = 'Upload storage is handled by the existing /api/job-files work-order attachment flow; this workspace records evidence notes and filenames for review.';
+          });
+        }
+
+        const maintenanceForm = document.querySelector('[data-maintenance-plan-form]');
+        if (maintenanceForm && !maintenanceForm.dataset.bound) {
+          maintenanceForm.dataset.bound = 'true';
+          maintenanceForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-maintenance-form-status]');
+            const payload = Object.fromEntries(new FormData(maintenanceForm).entries());
+            if (formStatus) formStatus.textContent = 'Saving maintenance plan…';
+            try {
+              const response = await fetch('/api/admin/maintenance-plans', {
+                method: payload.planId ? 'PATCH' : 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save maintenance plan.');
+              if (formStatus) formStatus.textContent = 'Maintenance plan saved.';
+              maintenanceForm.reset();
+              await loadMaintenancePlans();
+            } catch (error) { if (formStatus) formStatus.textContent = error.message; }
+          });
+        }
+
+        const customerStatusButton = document.querySelector('[data-customer-status-refresh]');
+        if (customerStatusButton && !customerStatusButton.dataset.bound) {
+          customerStatusButton.dataset.bound = 'true';
+          customerStatusButton.addEventListener('click', () => {
+            const statusNode = document.querySelector('[data-customer-status-workspace-status]');
+            if (statusNode) {
+              const openRequests = currentAdminRequests.size || document.querySelectorAll('[data-client-request-list] article').length;
+              statusNode.dataset.state = 'ready';
+              statusNode.textContent = `Customer status refreshed. ${openRequests} request/status record${openRequests === 1 ? '' : 's'} currently loaded in this dashboard view.`;
+            }
+          });
+        }
+
+        const readiness = document.querySelector('[data-readiness-refresh]')?.closest('[data-dashboard-section]');
+        if (readiness && !readiness.dataset.bound) {
+          readiness.dataset.bound = 'true';
+          readiness.addEventListener('click', async (event) => {
+            const copyButton = event.target.closest('[data-copy-command]');
+            if (copyButton) {
+              const statusNode = document.querySelector('[data-readiness-status]');
+              const command = copyButton.dataset.copyCommand;
+              try { await navigator.clipboard?.writeText(command); } catch {}
+              if (statusNode) statusNode.textContent = `Command ready: ${command}`;
+              return;
+            }
+            if (event.target.closest('[data-readiness-refresh]')) renderReadinessWorkspace();
+          });
+        }
+      };
+
       const bindWorkerJobActions = () => {
         const panel = document.querySelector('[data-worker-jobs]');
         if (!panel || panel.dataset.bound) return;
@@ -3619,6 +3891,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             .then((inventoryResponse) => inventoryResponse.json().then((json) => inventoryResponse.ok && json.ok ? json : null))
             .catch(() => null);
           const assignments = result.assignments || [];
+          currentWorkerAssignments = assignments;
           currentWorkerInventoryItems = inventoryResult?.items || result.inventoryItems || [];
           currentWorkerInventoryReservations = inventoryResult?.reservations || [];
           const filteredAssignments = filterWorkerAssignments(assignments);
@@ -3633,6 +3906,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           if (openMetric && result.summary) openMetric.textContent = String(result.summary.assigned || 0);
           bindWorkerJobFilters();
           bindWorkerJobActions();
+          renderPhase54Workspaces();
         } catch (error) {
           panelStatus.dataset.state = 'error';
           panelStatus.textContent = error.message;
@@ -3934,6 +4208,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             workerSelect.value = currentAdminWorkers.has(selectedWorker) ? selectedWorker : '';
           }
           applyAdminRequestFilters();
+          renderPhase54Workspaces();
 
           if (selectedRequestId && currentAdminRequests.has(selectedRequestId)) {
             selectAdminRequest(selectedRequestId);
@@ -4007,6 +4282,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
           try {
             loadAuthorizedDashboardTools(dashboardUser);
+            bindPhase54Workspaces();
+            renderPhase54Workspaces();
+            loadMaintenancePlans();
           } catch (toolError) {
             console.error('Dashboard tool loading failed after successful session check', toolError);
           }

@@ -31,7 +31,12 @@
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: ['[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]'],
+      targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]']
+    },
+    scheduling: {
+      title: 'Scheduling and dispatch',
+      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      targets: ['#smart-schedule-suite', '.smart-schedule-suite']
     },
     invoices: {
       title: 'Invoices',
@@ -41,18 +46,22 @@
     workers: {
       title: 'Workers',
       description: 'Worker jobs, field workflow, mobile tools, and job documentation.',
-      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite'],
+      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite', '.photo-doc-suite']
     },
-    inventory: {
-      title: 'Inventory',
-      description: 'Open the full inventory control workspace.',
-      externalUrl: '/inventory/',
-      targets: ['#admin-inventory', '[data-admin-inventory]', '.inventory-suite'],
+    'photo-docs': {
+      title: 'Photo documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, and admin review status.',
+      targets: ['.photo-doc-suite']
     },
     settings: {
       title: 'Settings',
       description: 'Admin settings, roles, users, and access management.',
       targets: ['#admin-access'],
+    },
+    maintenance: {
+      title: 'Maintenance plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite']
     },
     deployment: {
       title: 'Deployment and workflow health',
@@ -67,11 +76,13 @@
       ['requests', ['request']],
       ['quotes', ['quote', 'estimate']],
       ['work-orders', ['work order', 'job']],
+      ['scheduling', ['scheduling', 'schedule', 'dispatch']],
       ['invoices', ['invoice', 'finance']],
-      ['workers', ['worker', 'field']],
-      ['inventory', ['inventory', 'stock', 'warehouse']],
-      ['settings', ['setting', 'roles', 'users', 'access']],
-      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']],
+      ['workers', ['worker mobile', 'worker', 'field']],
+      ['photo-docs', ['photo', 'proof', 'documentation']],
+      ['settings', ['setting', 'roles', 'users', 'inventory']],
+      ['maintenance', ['maintenance', 'recurring', 'plan']],
+      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']]
     ];
 
     document.querySelectorAll('.sidebar-nav-link').forEach((button) => {

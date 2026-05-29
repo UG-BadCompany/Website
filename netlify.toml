@@ -106,6 +106,17 @@
   to = "/.netlify/functions/admin-activity"
   status = 200
 
+
+[[redirects]]
+  from = "/api/admin/maintenance-plans"
+  to = "/.netlify/functions/admin-maintenance-plans"
+  status = 200
+
+[[redirects]]
+  from = "/api/client/maintenance-plans"
+  to = "/.netlify/functions/client-maintenance-plans"
+  status = 200
+
 [[redirects]]
   from = "/api/admin/reports"
   to = "/.netlify/functions/admin-reports"

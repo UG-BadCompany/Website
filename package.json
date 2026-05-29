@@ -18,7 +18,8 @@
     "test:e2e-workflows": "node --test tests/e2e-business-workflows.spec.mjs",
     "audit:phase52": "npm run build && node scripts/check-netlify-functions.mjs && node scripts/audit-dead-buttons.mjs && node scripts/audit-phase52-workflows.mjs && npm run test:e2e-workflows",
     "test:work-order-closeout": "node --test tests/work-order-closeout.spec.mjs",
-    "audit:phase53": "npm run build && node scripts/check-netlify-functions.mjs && node scripts/audit-dead-buttons.mjs && node scripts/audit-phase53-work-order-closeout.mjs && npm run test:work-order-closeout"
+    "audit:phase53": "npm run build && node scripts/check-netlify-functions.mjs && node scripts/audit-dead-buttons.mjs && node scripts/audit-phase53-work-order-closeout.mjs && npm run test:work-order-closeout",
+    "test:sidebar-workspaces": "node --test tests/sidebar-workspaces.spec.mjs"
   },
   "engines": {
     "node": ">=20.12.2"
