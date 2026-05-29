@@ -1,5 +1,5 @@
 // Phase 34: sidebar-only dashboard workspaces.
-// This removes top workspace tabs and makes the existing sidebar the single source of navigation.
+// Updated: Inventory opens the real Inventory workspace/page instead of Settings/Access Manager.
 
 (() => {
   if (window.__phase34SidebarOnlyWorkspacesLoaded) return;
@@ -16,17 +16,17 @@
     overview: {
       title: 'Overview',
       description: 'Quick business snapshot and daily attention items.',
-      targets: ['.hero', '#executive-overview', '.executive-suite', '#customer-experience-center', '.customer-experience-suite']
+      targets: ['.hero', '#executive-overview', '.executive-suite', '#customer-experience-center', '.customer-experience-suite'],
     },
     requests: {
       title: 'Requests',
       description: 'New customer requests and request review workflow.',
-      targets: ['#admin-requests', '#client-requests', '[data-client-requests]', '[data-admin-inbox]']
+      targets: ['#admin-requests', '#client-requests', '[data-client-requests]', '[data-admin-inbox]'],
     },
     quotes: {
       title: 'Quotes',
       description: 'AI estimate review, quote approval, risks, materials, and customer quote status.',
-      targets: ['#estimate-review', '#admin-quotes', '#client-quotes', '[data-client-quotes]', '[data-phase2-command-center]']
+      targets: ['#estimate-review', '#admin-quotes', '#client-quotes', '[data-client-quotes]', '[data-phase2-command-center]'],
     },
     'work-orders': {
       title: 'Work Orders',
@@ -41,7 +41,7 @@
     invoices: {
       title: 'Invoices',
       description: 'Finance center, customer invoices, payment readiness, and closeout.',
-      targets: ['#finance-command-center', '#admin-invoices', '#client-invoices', '[data-admin-invoices]', '[data-client-invoices]', '[data-phase4-finance-suite]']
+      targets: ['#finance-command-center', '#admin-invoices', '#client-invoices', '[data-admin-invoices]', '[data-client-invoices]', '[data-phase4-finance-suite]'],
     },
     workers: {
       title: 'Workers',
@@ -55,8 +55,8 @@
     },
     settings: {
       title: 'Settings',
-      description: 'Admin settings, roles, users, and inventory access.',
-      targets: ['#admin-access', '#admin-inventory', '[data-admin-inventory]', '.inventory-suite']
+      description: 'Admin settings, roles, users, and access management.',
+      targets: ['#admin-access'],
     },
     maintenance: {
       title: 'Maintenance plans',
@@ -66,8 +66,8 @@
     deployment: {
       title: 'Deployment and workflow health',
       description: 'Developer-focused deployment readiness, environment checks, critical API routes, and workflow health.',
-      targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite']
-    }
+      targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite'],
+    },
   };
 
   const normalizeSidebarButtons = () => {
@@ -129,8 +129,23 @@
     return header;
   };
 
+  const closeSidebar = () => {
+    const sidebar = document.querySelector('.dashboard-sidebar-v2');
+    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
+    if (sidebar) sidebar.dataset.open = 'false';
+    if (backdrop) backdrop.dataset.open = 'false';
+  };
+
   const setWorkspace = (workspace = 'overview') => {
     if (!workspaces[workspace]) workspace = 'overview';
+
+    const config = workspaces[workspace];
+
+    if (config.externalUrl) {
+      closeSidebar();
+      window.location.assign(config.externalUrl);
+      return;
+    }
 
     tagWorkspaceSections();
     normalizeSidebarButtons();
@@ -143,10 +158,9 @@
     });
 
     const header = ensureHeader();
-    header.querySelector('h2').textContent = workspaces[workspace].title;
-    header.querySelector('p').textContent = workspaces[workspace].description;
+    header.querySelector('h2').textContent = config.title;
+    header.querySelector('p').textContent = config.description;
 
-    // Keep the dashboard URL clean. Old ?workspace=... links are no longer used.
     const url = new URL(window.location.href);
     if (url.searchParams.has('workspace')) {
       url.searchParams.delete('workspace');
@@ -167,11 +181,7 @@
     event.stopPropagation();
 
     setWorkspace(button.dataset.sidebarWorkspace);
-
-    const sidebar = document.querySelector('.dashboard-sidebar-v2');
-    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
-    if (sidebar) sidebar.dataset.open = 'false';
-    if (backdrop) backdrop.dataset.open = 'false';
+    closeSidebar();
   }, true);
 
   const initial = document.body.dataset.sidebarWorkspace || 'overview';
@@ -190,7 +200,11 @@
     window.__phase34SidebarWorkspaceTimer = setTimeout(() => {
       normalizeSidebarButtons();
       tagWorkspaceSections();
-      setWorkspace(document.body.dataset.sidebarWorkspace || initial);
+
+      const current = document.body.dataset.sidebarWorkspace || initial;
+      if (current !== 'inventory') {
+        setWorkspace(current);
+      }
     }, 200);
   });
 
