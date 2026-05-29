@@ -1,3 +1,6 @@
+/* CLEANUP CANDIDATE
+   Possible legacy overlap: Phase 35 and Phase 36 CSS both hide old workspace tab UI.
+   Keep until cached Phase 33 route-tab markup is confirmed absent from production. */
 /* Phase 36: old dashboard workspace cleanup */
 .workspace-route-tabs,
 [data-workspace-route-tabs],

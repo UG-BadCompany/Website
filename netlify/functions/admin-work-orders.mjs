@@ -7,7 +7,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const WORK_ORDER_STATUSES = new Set(['accepted', 'scheduled', 'in_progress', 'pending_review', 'completed', 'cancelled']);
+const WORK_ORDER_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'scheduled', 'assigned', 'in_progress', 'blocked', 'completed_by_worker', 'admin_review', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'invoiced', 'paid', 'closed', 'cancelled']);
 
 const WORK_ORDER_AUTOMATION_VERSION = 'phase21-work-order-automation-v1';
 
@@ -233,6 +233,69 @@ const normalizePatchPayload = (body = {}) => ({
   notes: clean(body.notes, 1200),
 });
 
+const toStoredWorkOrderStatus = (status = '') => ({
+  quoted: 'quote_sent',
+  assigned: 'scheduled',
+  blocked: 'needs_review',
+  completed_by_worker: 'pending_review',
+  admin_review: 'pending_review',
+  ready_to_invoice: 'waiting_payment',
+  invoiced: 'waiting_payment',
+  paid: 'completed',
+  closed: 'completed',
+}[status] || status);
+
+const appendReviewNote = (existing = '', note = '') => [existing, note].filter(Boolean).join('\n\n');
+
+const handleCompletionReview = async ({ request, db, session }) => {
+  const body = await parseJsonBody(request);
+  if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  const jobRequestId = clean(body.jobRequestId, 80);
+  const decision = clean(body.decision, 40) || 'approve';
+  const reviewNote = clean(body.reviewNote, 2000);
+  if (!jobRequestId) return json(422, { ok: false, message: 'Work order is required for completion review.' });
+  if (!['approve', 'reject'].includes(decision)) return json(422, { ok: false, message: 'Choose approve or reject.' });
+
+  const [job] = await db.sql`select id, status, admin_notes from job_requests where id = ${jobRequestId} limit 1`;
+  if (!job) return json(404, { ok: false, message: 'Work order not found.' });
+
+  const nextStatus = decision === 'approve' ? 'waiting_payment' : 'in_progress';
+  const notePrefix = decision === 'approve' ? 'Completion approved for invoice readiness' : 'Completion rejected/requested changes';
+  const adminNotes = appendReviewNote(job.admin_notes || '', `${notePrefix}${reviewNote ? `: ${reviewNote}` : ''}`);
+
+  const [updatedJob] = await db.sql`
+    update job_requests
+    set status = ${nextStatus},
+        completion_date = case when ${decision} = 'approve' then coalesce(completion_date, current_date) else completion_date end,
+        admin_notes = ${adminNotes},
+        updated_at = now()
+    where id = ${jobRequestId}
+    returning id, status, completion_date, updated_at
+  `;
+
+  if (decision === 'reject') {
+    await db.sql`
+      update worker_assignments
+      set status = 'in_progress', updated_at = now()
+      where job_request_id = ${jobRequestId}
+        and status = 'completed'
+    `;
+  }
+
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (${session.user_id}, ${decision === 'approve' ? 'work_order.completion_approved' : 'work_order.completion_rejected'}, ${'job_request'}, ${jobRequestId}, ${JSON.stringify({ decision, reviewNote, nextStatus })}::jsonb)
+  `;
+
+  return json(200, {
+    ok: true,
+    authenticated: true,
+    authorized: true,
+    workOrder: { jobRequestId: updatedJob.id, status: updatedJob.status, completionDate: updatedJob.completion_date, updatedAt: updatedJob.updated_at },
+    invoiceReadiness: { ready: decision === 'approve', blockingReasons: decision === 'approve' ? [] : ['Admin requested worker changes before invoicing.'] },
+  });
+};
+
 const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => {
   const statuses = status === 'all'
     ? ['accepted', 'scheduled', 'in_progress', 'pending_review', 'completed', 'cancelled']
@@ -309,7 +372,7 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
 };
 
 export default async (request) => {
-  if (!['GET', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'PATCH', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -318,6 +381,10 @@ export default async (request) => {
     if (auth.error) return auth.error;
 
     const { db, session, roleKeys } = auth;
+
+    if (request.method === 'POST' && new URL(request.url).pathname.endsWith('/review')) {
+      return await handleCompletionReview({ request, db, session });
+    }
 
     if (request.method === 'GET') {
       const url = new URL(request.url);
@@ -366,7 +433,7 @@ export default async (request) => {
 
     if (!jobRequest) return json(404, { ok: false, message: 'Work order not found.' });
 
-    const nextStatus = payload.status || jobRequest.status;
+    const nextStatus = toStoredWorkOrderStatus(payload.status || jobRequest.status);
 
     const [updatedJob] = await db.sql`
       update job_requests
