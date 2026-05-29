@@ -9,24 +9,25 @@
   if (!root) return;
 
   const navItems = [
-    { group: 'Daily work', label: 'Overview', target: '.hero', hint: 'Start' },
-    { group: 'Daily work', label: 'Estimate Review', target: '#estimate-review', hint: 'AI quotes' },
-    { group: 'Daily work', label: 'Work Orders', target: '#admin-requests', hint: 'Jobs' },
-    { group: 'Daily work', label: 'Scheduling', target: '.smart-schedule-suite', hint: 'Dispatch' },
+    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.hero', hint: 'Start' },
+    { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes' },
+    { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs' },
+    { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch' },
 
-    { group: 'Money', label: 'Finance Center', target: '#finance-command-center', hint: 'KPIs' },
-    { group: 'Money', label: 'Invoices', target: '#admin-invoices', hint: 'Billing' },
-    { group: 'Money', label: 'Customer Status', target: '#customer-experience-center', hint: 'Client' },
+    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs' },
+    { group: 'Money', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing' },
+    { group: 'Money', label: 'Customer Status', workspace: 'customer-status', target: '#customer-experience-center', hint: 'Client' },
 
-    { group: 'Field', label: 'Worker Jobs', target: '#worker-jobs', hint: 'Field' },
-    { group: 'Field', label: 'Worker Mobile', target: '#worker-mobile-field', hint: 'Phone' },
-    { group: 'Field', label: 'Photo Docs', target: '.photo-doc-suite', hint: 'Proof' },
+    { group: 'Field', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field' },
+    { group: 'Field', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone' },
+    { group: 'Field', label: 'AI Troubleshooting', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', hint: 'AI Help' },
+    { group: 'Field', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof' },
 
-    { group: 'Operations', label: 'Inventory', target: '#admin-inventory', hint: 'Stock' },
-    { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
-    { group: 'Operations', label: 'Roles & Users', target: '#admin-access', hint: 'Access' },
+    { group: 'Operations', label: 'Inventory', workspace: 'inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory' },
+    { group: 'Operations', label: 'Maintenance Plans', workspace: 'maintenance', target: '.maintenance-suite', hint: 'Recurring' },
+    { group: 'Operations', label: 'Roles & Users', workspace: 'roles-users', target: '#admin-access', hint: 'Access' },
 
-    { group: 'Dev', label: 'Deployment Health', target: '#system-readiness', hint: 'Workflow' },
+    { group: 'Dev', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Workflow' },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -34,6 +35,23 @@
     groups[item.group].push(item);
     return groups;
   }, {});
+
+  const mobileQuickActions = [
+    { label: 'Requests', workspace: 'work-orders', target: '#admin-requests', views: ['admin'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#estimate-review', views: ['admin'] },
+    { label: 'Jobs', workspace: 'worker-jobs', target: '#worker-jobs', views: ['admin', 'worker'] },
+    { label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', views: ['admin'] },
+    { label: 'Stock', workspace: 'inventory', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
+    { label: 'Today', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Troubleshoot', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', views: ['worker', 'admin'] },
+    { label: 'Materials', workspace: 'worker-jobs', target: '#worker-jobs', views: ['worker'] },
+    { label: 'Photos', workspace: 'photo-docs', target: '.photo-doc-suite', views: ['worker'] },
+    { label: 'Complete', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Request', workspace: 'work-orders', target: '#client-requests', views: ['client'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#client-quotes', views: ['client'] },
+    { label: 'Invoices', workspace: 'invoices', target: '#client-invoices', views: ['client'] },
+    { label: 'Profile', workspace: 'overview', target: '#worker-profile', views: ['client'] },
+  ];
 
   const targetExists = (target) => {
     try { return Boolean(document.querySelector(target)); }
@@ -97,8 +115,13 @@
     const groups = groupItems();
     nav.innerHTML = Object.entries(groups).map(([group, items]) => `
       <div class="sidebar-nav-label">${group}</div>
-      ${items.map((item) => `
-        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}">
+      ${items.map((item) => item.href ? `
+        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}">
+          <span>${item.label}</span>
+          <small>${item.hint || ''}</small>
+        </a>
+      ` : `
+        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </button>
@@ -122,9 +145,19 @@
     backdrop.className = 'dashboard-sidebar-backdrop';
     backdrop.dataset.sidebarBackdrop = 'true';
 
+    const quickBar = document.createElement('nav');
+    quickBar.className = 'mobile-quick-action-bar';
+    quickBar.setAttribute('aria-label', 'Mobile quick actions');
+    quickBar.innerHTML = mobileQuickActions.map((item) => item.href ? `
+      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
+    ` : `
+      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
+    `).join('');
+
     root.appendChild(toggle);
     root.appendChild(backdrop);
     root.appendChild(shell);
+    root.appendChild(quickBar);
 
     const setOpen = (open) => {
       sidebar.dataset.open = open ? 'true' : 'false';
@@ -150,6 +183,29 @@
     })();
     setCollapsed(initialCollapsed);
 
+    const syncPermissionLinks = () => {
+      const view = document.body.dataset.currentDashboardView || document.documentElement.dataset.currentDashboardView || '';
+      nav.querySelectorAll('[data-sidebar-permission="canManageInventory"]').forEach((link) => {
+        link.hidden = Boolean(view && view !== 'admin');
+        link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
+      });
+      quickBar.querySelectorAll('[data-mobile-quick-views]').forEach((item) => {
+        const views = String(item.dataset.mobileQuickViews || '').split(/\s+/).filter(Boolean);
+        const hidden = Boolean(view && views.length && !views.includes(view));
+        item.hidden = hidden;
+        item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
+      });
+      quickBar.querySelectorAll('[data-sidebar-permission="canManageInventory"]').forEach((link) => {
+        link.hidden = Boolean(view && view !== 'admin');
+        link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
+      });
+    };
+    syncPermissionLinks();
+    try {
+      new MutationObserver(syncPermissionLinks).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+      new MutationObserver(syncPermissionLinks).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+    } catch {}
+
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
     document.addEventListener('click', (event) => {
@@ -161,7 +217,34 @@
     }, true);
     backdrop.addEventListener('click', () => setOpen(false));
 
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+      const button = event.target.closest('[data-mobile-quick-target]');
+      if (!button) return;
+      if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
+
     sidebar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-sidebar-href]');
+      if (link) {
+        sidebar.querySelectorAll('.sidebar-nav-link').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        setOpen(false);
+        return;
+      }
+
       const button = event.target.closest('[data-sidebar-target], [data-sidebar-action]');
       if (!button) return;
 

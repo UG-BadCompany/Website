@@ -9,6 +9,7 @@ const loadHomeHtml = () => readFile(new URL('../public/index.html', import.meta.
 const loadLoginHtml = () => readFile(new URL('../public/login/index.html', import.meta.url), 'utf8');
 const loadLoginScript = () => readFile(new URL('../public/assets/login.js', import.meta.url), 'utf8');
 const loadDashboardBootstrap = () => readFile(new URL('../public/dashboard/modules/dashboard/bootstrap.js', import.meta.url), 'utf8');
+const loadDashboardPolishCss = () => readFile(new URL('../public/assets/ui-polish-2026.css', import.meta.url), 'utf8');
 const extractInlineScripts = (html) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
 test('dashboard inline scripts parse without duplicate declarations', async () => {
@@ -23,6 +24,7 @@ test('dashboard user and role controls have their required handlers', async () =
   const html = await loadDashboardHtml();
   const [script] = extractInlineScripts(html);
   const bootstrap = await loadDashboardBootstrap();
+  const polishCss = await loadDashboardPolishCss();
 
   assert.match(html, /https:\/\/github.com\/UG-BadCompany\/Website\/blob\/main\/images\/logo\/logo3.png\?raw=true/, 'dashboard should use the real logo asset from the provided URL');
   assert.match(html, /dashboard-nav-cluster/, 'dashboard navigation should group controls separately from login status');
@@ -58,8 +60,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /Work order command center/, 'legacy work-order command-center copy should be removed');
   assert.doesNotMatch(html, /<section class="card admin-inbox" id="admin-work-orders"/, 'legacy work-order summary panel should be removed from the dashboard');
   assert.match(html, /<strong>Work orders<\/strong>/, 'work-order shortcut copy should remain available in the command center');
-  assert.match(html, /Invoice &amp; payment desk|Invoice & payment desk/, 'admin invoices should use clearer payment desk copy');
-  assert.equal((html.match(/Invoice &amp; payment desk/g) || []).length, 1, 'admin invoice desk should render only one heading');
+  assert.match(html, /Modern Invoice Command Center/, 'admin invoices should use the modern invoice command center copy');
+  assert.equal((html.match(/Modern Invoice Command Center/g) || []).length, 1, 'admin invoice command center should render only one heading');
   assert.equal((html.match(/data-dashboard-singleton=\"admin-invoices\"/g) || []).length, 1, 'admin invoice desk should be marked as a singleton section');
   assert.doesNotMatch(html, /Activity audit trail|Review recent portal audit events|Operational alerts|Loading alerts…/, 'removed audit and alert dashboard copy should not render');
   assert.match(html, /data-admin-access-shortcut/, 'admin command center should open roles and users');
@@ -67,6 +69,15 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.match(html, /data-admin-user-search-results/, 'roles and users workspace should include editable user search results');
   assert.match(html, /data-admin-open-selected-role/, 'roles and users workspace should include an edit selected role action');
   assert.match(bootstrap, /if \(!currentAdminRoles\.size\) await loadAdminAccess\(\)/, 'role/user editor actions should refresh access data before opening editors');
+  assert.match(bootstrap, /document\.addEventListener\('click'[\s\S]*data-admin-user-create[\s\S]*, true\)/, 'access manager actions should be delegated outside the hidden workspace panel so buttons keep working');
+  assert.match(bootstrap, /document\.documentElement\.dataset\.boundAdminAccessForms/, 'access manager binding should use a dedicated guard instead of a generic panel bound flag');
+  assert.match(bootstrap, /const rolesOk = rolesResponse\.ok && rolesResult\.ok/, 'access manager should tolerate partial role or user endpoint authorization');
+  assert.match(bootstrap, /window\.taDashboardActions\.loadAdminAccess = loadAdminAccess/, 'sidebar settings workspace should be able to trigger access data loading');
+  assert.match(bootstrap, /class="admin-access-choice"/, 'role and permission choices should render with polished card hooks');
+  assert.match(polishCss, /Access manager modal redesign/, 'role and user modals should use the premium Access manager modal redesign');
+  assert.match(polishCss, /\[data-admin-role-modal\],[\s\S]*z-index: 11020 !important/, 'role and user modals should layer above the dashboard sidebar');
+  assert.match(polishCss, /\[data-admin-role-modal\] \.admin-access-panel[\s\S]*border-radius: 34px/, 'role modal should have a high-polish rounded panel treatment');
+  assert.match(polishCss, /\.admin-access-choice[\s\S]*min-height: 78px/, 'role and permission options should be styled as selectable cards');
   assert.match(bootstrap, /Select a role first, then click Edit selected role\./, 'edit selected role should give visible feedback when no role is selected');
   assert.doesNotMatch(html, /data-admin-activity-shortcut/, 'admin command center should not include the removed audit activity shortcut');
   assert.doesNotMatch(html, /<button[^>]+data-admin-access-open/, 'roles and users should no longer render as a duplicate workspace-tab button');
@@ -142,6 +153,12 @@ test('inventory page owns inventory UI and API handlers', async () => {
   assert.match(script, /const loadAdminInventory =/, 'inventory page should load inventory records');
   assert.match(script, /fetch\('\/api\/admin\/inventory'/, 'inventory page should use the inventory API');
   assert.match(script, /action: 'archive'/, 'inventory page should send archive actions to the API');
+  assert.match(html, /Job Reservations/, 'inventory page should include job material reservations');
+  assert.match(html, /Cycle Count/, 'inventory page should include cycle count workflow');
+  assert.match(html, /Movement History/, 'inventory page should include movement history');
+  assert.match(html, /data-inventory-reservation-form/, 'inventory page should reserve materials for jobs');
+  assert.match(html, /data-inventory-transfer-form/, 'inventory page should transfer stock to workers and trucks');
+  assert.match(html, /data-inventory-scan-input/, 'inventory page should be SKU\/barcode\/QR-ready');
   assert.doesNotThrow(() => new Function(script));
 });
 
