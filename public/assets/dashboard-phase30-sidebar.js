@@ -35,6 +35,22 @@
     return groups;
   }, {});
 
+  const mobileQuickActions = [
+    { label: 'Requests', target: '#admin-requests', views: ['admin'] },
+    { label: 'Quotes', target: '#estimate-review', views: ['admin'] },
+    { label: 'Jobs', target: '#worker-jobs', views: ['admin', 'worker'] },
+    { label: 'Invoices', target: '#admin-invoices', views: ['admin'] },
+    { label: 'Stock', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
+    { label: 'Today', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Materials', target: '#worker-jobs', views: ['worker'] },
+    { label: 'Photos', target: '.photo-doc-suite', views: ['worker'] },
+    { label: 'Complete', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Request', target: '#client-requests', views: ['client'] },
+    { label: 'Quotes', target: '#client-quotes', views: ['client'] },
+    { label: 'Invoices', target: '#client-invoices', views: ['client'] },
+    { label: 'Profile', target: '#worker-profile', views: ['client'] },
+  ];
+
   const targetExists = (target) => {
     try { return Boolean(document.querySelector(target)); }
     catch { return false; }
@@ -127,9 +143,19 @@
     backdrop.className = 'dashboard-sidebar-backdrop';
     backdrop.dataset.sidebarBackdrop = 'true';
 
+    const quickBar = document.createElement('nav');
+    quickBar.className = 'mobile-quick-action-bar';
+    quickBar.setAttribute('aria-label', 'Mobile quick actions');
+    quickBar.innerHTML = mobileQuickActions.map((item) => item.href ? `
+      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
+    ` : `
+      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
+    `).join('');
+
     root.appendChild(toggle);
     root.appendChild(backdrop);
     root.appendChild(shell);
+    root.appendChild(quickBar);
 
     const setOpen = (open) => {
       sidebar.dataset.open = open ? 'true' : 'false';
@@ -161,6 +187,16 @@
         link.hidden = Boolean(view && view !== 'admin');
         link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
       });
+      quickBar.querySelectorAll('[data-mobile-quick-views]').forEach((item) => {
+        const views = String(item.dataset.mobileQuickViews || '').split(/\s+/).filter(Boolean);
+        const hidden = Boolean(view && views.length && !views.includes(view));
+        item.hidden = hidden;
+        item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
+      });
+      quickBar.querySelectorAll('[data-sidebar-permission="canManageInventory"]').forEach((link) => {
+        link.hidden = Boolean(view && view !== 'admin');
+        link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
+      });
     };
     syncPermissionLinks();
     try {
@@ -178,6 +214,21 @@
       setCollapsed(shell.dataset.sidebarCollapsed !== 'true');
     }, true);
     backdrop.addEventListener('click', () => setOpen(false));
+
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+      const button = event.target.closest('[data-mobile-quick-target]');
+      if (!button) return;
+      scrollToTarget(button.dataset.mobileQuickTarget);
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
 
     sidebar.addEventListener('click', (event) => {
       const link = event.target.closest('[data-sidebar-href]');
