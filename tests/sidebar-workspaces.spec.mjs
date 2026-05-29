@@ -80,6 +80,29 @@ test('mobile quick actions and inventory navigation are preserved', async () => 
   assert.match(sidebar, /href: '\/inventory\/'/, 'Inventory should remain a page navigation');
 });
 
+
+test('role switcher remains owned by bootstrap and visible after sidebar mounts', async () => {
+  const html = await readText('public/dashboard/index.html');
+  const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
+  const phase31 = await readText('public/assets/dashboard-phase31-strict-role-views.js');
+  const phase34 = await readText('public/assets/dashboard-phase34-sidebar-only-workspaces.js');
+  const phase34Css = await readText('public/assets/dashboard-phase34-sidebar-only-workspaces.css');
+  const sidebarCss = await readText('public/assets/dashboard-phase30-sidebar.css');
+  const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
+
+  assert.match(html, /data-view-switcher[\s\S]*data-view-button="admin"[\s\S]*data-view-button="client"[\s\S]*data-view-button="worker"/, 'role switcher and admin/client/worker buttons should remain in dashboard markup');
+  assert.match(bootstrap, /window\.taSetDashboardView\s*=\s*\(view\)/, 'bootstrap should own taSetDashboardView');
+  assert.doesNotMatch(phase31, /window\.taSetDashboardView\s*=/, 'Phase 31 should not replace taSetDashboardView');
+  assert.match(sidebar, /root\.classList\.add\('dashboard-shell-v2', 'dashboard-workspace-v2'\)/, 'Phase 30 should decorate the existing root instead of wrapping/moving hero');
+  assert.doesNotMatch(sidebar, /originalChildren|workspace\.appendChild|appendChild\(child\)/, 'Phase 30 should not move original dashboard children');
+  assert.doesNotMatch(phase34, /targets:\s*\[[^\]]*\.hero|\['\.hero'/, 'Phase 34 should never target .hero for workspace tagging');
+  assert.match(phase34, /overview:[\s\S]*targets: \['#executive-overview', '\.executive-suite', '\[data-overview-workspace\]'\]/, 'overview workspace should use non-hero overview targets');
+  assert.match(phase34Css, /body\[data-sidebar-workspace\] \.dashboard-workspace-v2 \[data-sidebar-workspace-section\]/, 'Phase 34 CSS should scope hiding inside dashboard workspace');
+  assert.doesNotMatch(phase34Css, /body\[data-sidebar-workspace\] \[data-sidebar-workspace-section\]/, 'Phase 34 CSS should not globally hide workspace sections');
+  assert.match(sidebarCss, /\.dashboard-sidebar-v2 \{[\s\S]*max-height:\s*none;[\s\S]*overflow:\s*visible;/, 'desktop sidebar should not have an inner scrollbar');
+  assert.match(sidebarCss, /@media \(max-width:\s*980px\)[\s\S]*\.dashboard-sidebar-v2 \{[\s\S]*overflow:\s*auto;/, 'mobile sidebar drawer should still be scrollable');
+});
+
 test('dashboard/sidebar workspace files avoid console error strings', async () => {
   const html = await readText('public/dashboard/index.html');
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');

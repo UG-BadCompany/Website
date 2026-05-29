@@ -670,6 +670,11 @@
         });
 
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
+        if (document.body.dataset.sidebarWorkspace && document.body.dataset.sidebarWorkspace !== 'overview') {
+          window.taSetSidebarWorkspace?.('overview', { scroll: false });
+        } else {
+          document.body.dataset.sidebarWorkspace ||= 'overview';
+        }
       };
       window.taSetDashboardView = (view) => {
         window.taPendingDashboardView = view;

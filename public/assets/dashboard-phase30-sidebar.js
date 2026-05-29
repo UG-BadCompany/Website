@@ -19,7 +19,7 @@
     { group: 'Client', label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', hint: 'Payments', views: ['client'] },
     { group: 'Client', label: 'Profile', action: 'client-profile', hint: 'Profile', views: ['client'] },
 
-    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '#finance-command-center', hint: 'KPIs', views: ['admin'] },
+    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs', views: ['admin'] },
     { group: 'Money', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing', views: ['admin'] },
     { group: 'Money', label: 'Customer Status', workspace: 'customer-status', target: '#customer-experience-center', hint: 'Client', views: ['admin', 'client'] },
 
@@ -35,6 +35,12 @@
     { group: 'Dev', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Workflow', views: ['admin'] },
   ];
 
+  const groupItems = () => navItems.reduce((groups, item) => {
+    groups[item.group] ||= [];
+    groups[item.group].push(item);
+    return groups;
+  }, {});
+
   const mobileQuickActions = [
     { label: 'Requests', workspace: 'work-orders', target: '#admin-requests', views: ['admin'] },
     { label: 'Quotes', workspace: 'estimate-review', target: '#estimate-review', views: ['admin'] },
@@ -45,23 +51,20 @@
     { label: 'Troubleshoot', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', views: ['worker', 'admin'] },
     { label: 'Materials', workspace: 'worker-jobs', target: '#worker-jobs', views: ['worker'] },
     { label: 'Photos', workspace: 'photo-docs', target: '.photo-doc-suite', views: ['worker'] },
+    { label: 'Complete', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
     { label: 'Request', workspace: 'client-requests', target: '#client-requests', views: ['client'] },
     { label: 'Quotes', workspace: 'client-quotes', target: '#client-quotes', views: ['client'] },
     { label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', views: ['client'] },
     { label: 'Profile', action: 'client-profile', views: ['client'] },
   ];
 
-  const groupItems = () => navItems.reduce((groups, item) => {
-    groups[item.group] ||= [];
-    groups[item.group].push(item);
-    return groups;
-  }, {});
+  const targetExists = (target) => {
+    try { return Boolean(document.querySelector(target)); }
+    catch { return false; }
+  };
 
   const openModalShortcut = (name) => {
-    const selector = name === 'client-profile'
-      ? '[data-client-profile-shortcut], #client-profile, [data-client-profile]'
-      : '[data-admin-access-shortcut]';
-
+    const selector = name === 'client-profile' ? '[data-client-profile-shortcut]' : '[data-admin-access-shortcut]';
     const button = document.querySelector(selector);
 
     if (button?.click && button.matches('button, a')) {
@@ -110,10 +113,8 @@
   const mount = () => {
     if (document.querySelector('[data-phase30-sidebar]')) return;
 
-    const originalChildren = Array.from(root.children);
-    const shell = document.createElement('div');
-    shell.className = 'dashboard-shell-v2';
-    shell.dataset.phase30Sidebar = 'true';
+    root.classList.add('dashboard-shell-v2', 'dashboard-workspace-v2');
+    root.dataset.phase30Sidebar = 'true';
 
     const sidebar = document.createElement('aside');
     sidebar.className = 'dashboard-sidebar-v2';
@@ -135,35 +136,17 @@
     nav.innerHTML = Object.entries(groups).map(([group, items]) => `
       <div class="sidebar-nav-label">${group}</div>
       ${items.map((item) => item.href ? `
-        <a class="sidebar-nav-link"
-          href="${item.href}"
-          data-sidebar-href="${item.href}"
-          data-sidebar-workspace="${item.workspace || ''}"
-          data-sidebar-permission="${item.permission || ''}"
-          data-sidebar-views="${(item.views || []).join(' ')}">
+        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}" data-sidebar-views="${(item.views || []).join(' ')}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </a>
       ` : `
-        <button class="sidebar-nav-link"
-          type="button"
-          data-sidebar-target="${item.target || ''}"
-          data-sidebar-action="${item.action || ''}"
-          data-sidebar-workspace="${item.workspace || ''}"
-          data-sidebar-permission="${item.permission || ''}"
-          data-sidebar-views="${(item.views || []).join(' ')}">
+        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}" data-sidebar-views="${(item.views || []).join(' ')}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </button>
       `).join('')}
     `).join('');
-
-    const workspace = document.createElement('div');
-    workspace.className = 'dashboard-workspace-v2';
-    originalChildren.forEach((child) => workspace.appendChild(child));
-
-    shell.appendChild(sidebar);
-    shell.appendChild(workspace);
 
     const toggle = document.createElement('button');
     toggle.className = 'btn btn-primary dashboard-mobile-nav-toggle';
@@ -179,28 +162,15 @@
     quickBar.className = 'mobile-quick-action-bar';
     quickBar.setAttribute('aria-label', 'Mobile quick actions');
     quickBar.innerHTML = mobileQuickActions.map((item) => item.href ? `
-      <a class="mobile-quick-action"
-        href="${item.href}"
-        data-mobile-quick-href="${item.href}"
-        data-mobile-quick-workspace="${item.workspace || ''}"
-        data-mobile-quick-views="${item.views.join(' ')}"
-        data-sidebar-permission="${item.permission || ''}">
-        ${item.label}
-      </a>
+      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
     ` : `
-      <button class="mobile-quick-action"
-        type="button"
-        data-mobile-quick-target="${item.target || ''}"
-        data-mobile-quick-action="${item.action || ''}"
-        data-mobile-quick-workspace="${item.workspace || ''}"
-        data-mobile-quick-views="${item.views.join(' ')}">
-        ${item.label}
-      </button>
+      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target || ''}" data-mobile-quick-action="${item.action || ''}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
     `).join('');
 
-    root.appendChild(toggle);
-    root.appendChild(backdrop);
-    root.appendChild(shell);
+    const firstContent = root.firstElementChild;
+    root.insertBefore(toggle, firstContent);
+    root.insertBefore(backdrop, firstContent);
+    root.insertBefore(sidebar, firstContent);
     root.appendChild(quickBar);
 
     const setOpen = (open) => {
@@ -209,9 +179,8 @@
     };
 
     const setCollapsed = (collapsed) => {
-      shell.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
-      sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
       root.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+      sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
       document.body.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
 
       const collapseButton = sidebar.querySelector('[data-sidebar-collapse]');
@@ -236,131 +205,39 @@
 
     setCollapsed(initialCollapsed);
 
-    const getCurrentDashboardView = () => {
-      const direct =
-        document.body.dataset.currentDashboardView ||
-        document.documentElement.dataset.currentDashboardView ||
-        document.body.dataset.dashboardView ||
-        document.documentElement.dataset.dashboardView ||
-        '';
-
-      if (['admin', 'worker', 'client'].includes(direct)) return direct;
-
-      const activeRole =
-        document.querySelector('.role.active-admin') ||
-        document.querySelector('.role.active-worker') ||
-        document.querySelector('.role.active-client') ||
-        document.querySelector('[data-role].active') ||
-        document.querySelector('[data-dashboard-role].active') ||
-        document.querySelector('[aria-pressed="true"][data-role]') ||
-        document.querySelector('[aria-current="true"][data-role]');
-
-      const roleText = String(
-        activeRole?.dataset?.role ||
-        activeRole?.dataset?.dashboardRole ||
-        activeRole?.textContent ||
-        ''
-      ).toLowerCase();
-
-      if (roleText.includes('admin')) return 'admin';
-      if (roleText.includes('worker')) return 'worker';
-      if (roleText.includes('client')) return 'client';
-
-      if (document.body.classList.contains('view-admin')) return 'admin';
-      if (document.body.classList.contains('view-worker')) return 'worker';
-      if (document.body.classList.contains('view-client')) return 'client';
-
-      return 'admin';
-    };
-
-    const setCurrentDashboardView = (view) => {
-      if (!['admin', 'worker', 'client'].includes(view)) return;
-      document.body.dataset.currentDashboardView = view;
-      document.documentElement.dataset.currentDashboardView = view;
-    };
-
     const syncPermissionLinks = () => {
-      const view = getCurrentDashboardView();
-      setCurrentDashboardView(view);
-
+      const view = document.body.dataset.currentDashboardView || document.documentElement.dataset.currentDashboardView || '';
       nav.querySelectorAll('[data-sidebar-views]').forEach((item) => {
         const views = String(item.dataset.sidebarViews || '').split(/\s+/).filter(Boolean);
         const blockedByView = Boolean(view && views.length && !views.includes(view));
-        const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && view !== 'admin';
+        const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && Boolean(view && view !== 'admin');
         const hidden = blockedByView || blockedByPermission;
-
         item.hidden = hidden;
         item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
       });
-
       nav.querySelectorAll('.sidebar-nav-label').forEach((label) => {
         let next = label.nextElementSibling;
         let hasVisibleItem = false;
-
         while (next && !next.classList.contains('sidebar-nav-label')) {
-          if (next.classList.contains('sidebar-nav-link') && !next.hidden) {
-            hasVisibleItem = true;
-          }
+          if (next.classList.contains('sidebar-nav-link') && !next.hidden) hasVisibleItem = true;
           next = next.nextElementSibling;
         }
-
-        label.hidden = !hasVisibleItem;
+        label.hidden = Boolean(view && !hasVisibleItem);
       });
-
       quickBar.querySelectorAll('[data-mobile-quick-views]').forEach((item) => {
         const views = String(item.dataset.mobileQuickViews || '').split(/\s+/).filter(Boolean);
         const blockedByView = Boolean(view && views.length && !views.includes(view));
-        const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && view !== 'admin';
+        const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && Boolean(view && view !== 'admin');
         const hidden = blockedByView || blockedByPermission;
-
         item.hidden = hidden;
         item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
       });
     };
-
     syncPermissionLinks();
-
     try {
-      new MutationObserver(syncPermissionLinks).observe(document.body, {
-        attributes: true,
-        attributeFilter: ['data-current-dashboard-view', 'data-dashboard-view', 'class'],
-      });
-
-      new MutationObserver(syncPermissionLinks).observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-current-dashboard-view', 'data-dashboard-view', 'class'],
-      });
-
-      new MutationObserver(syncPermissionLinks).observe(root, {
-        attributes: true,
-        subtree: true,
-        attributeFilter: ['class', 'aria-pressed', 'aria-current', 'data-role', 'data-dashboard-role'],
-      });
+      new MutationObserver(syncPermissionLinks).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+      new MutationObserver(syncPermissionLinks).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
     } catch {}
-
-    document.addEventListener(
-      'click',
-      (event) => {
-        const roleButton = event.target.closest('.role, [data-role], [data-dashboard-role]');
-        if (!roleButton) return;
-
-        const raw =
-          roleButton.dataset.role ||
-          roleButton.dataset.dashboardRole ||
-          roleButton.textContent ||
-          '';
-
-        const text = String(raw).toLowerCase();
-
-        if (text.includes('admin')) setCurrentDashboardView('admin');
-        else if (text.includes('worker')) setCurrentDashboardView('worker');
-        else if (text.includes('client')) setCurrentDashboardView('client');
-
-        setTimeout(syncPermissionLinks, 50);
-        setTimeout(syncPermissionLinks, 250);
-      },
-      true
-    );
 
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
@@ -372,8 +249,7 @@
 
       event.preventDefault();
       event.stopPropagation();
-
-      setCollapsed(shell.dataset.sidebarCollapsed !== 'true');
+      setCollapsed(root.dataset.sidebarCollapsed !== 'true');
     }, true);
 
     quickBar.addEventListener('click', (event) => {
@@ -400,6 +276,27 @@
         scrollToTarget(button.dataset.mobileQuickTarget);
       }
 
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
+
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+      const button = event.target.closest('[data-mobile-quick-target]');
+      if (!button) return;
+      const action = button.dataset.mobileQuickAction;
+      if (action) openModalShortcut(action);
+      else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
       quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
       button.setAttribute('aria-current', 'true');
       setOpen(false);
