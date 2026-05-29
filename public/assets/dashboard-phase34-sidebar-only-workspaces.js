@@ -53,6 +53,19 @@
       description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
+
+    scheduling: {
+      title: 'Scheduling and Dispatch',
+      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
+    },
+
+    finance: {
+      title: 'Finance Center',
+      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
+      targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-suite', '.finance-command-panel'],
+    },
+
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
@@ -93,6 +106,7 @@
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
+
     deployment: {
       title: 'Deployment and Readiness',
       description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
@@ -212,6 +226,19 @@
     document.body.dataset.sidebarWorkspace = workspace;
     setActiveButton(workspace);
 
+    return true;
+  };
+
+  const setWorkspace = (workspace = 'overview', options = {}) => {
+    workspace = resolveWorkspace(workspace);
+    if (!workspaces[workspace]) workspace = 'overview';
+
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    document.body.dataset.sidebarWorkspace = workspace;
+    setActiveButton(workspace);
+
     const header = ensureHeader();
     header.querySelector('h2').textContent = workspaces[workspace].title;
     header.querySelector('p').textContent = workspaces[workspace].description;
@@ -244,16 +271,15 @@
     const button = event.target.closest('[data-sidebar-workspace]');
     if (!button || button.dataset.sidebarHref || !button.dataset.sidebarWorkspace) return;
 
-    event.preventDefault();
-    event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
 
     setWorkspace(button.dataset.sidebarWorkspace, { scroll: true, target: button.dataset.sidebarTarget || '' });
 
-    const sidebar = document.querySelector('.dashboard-sidebar-v2');
-    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
-    if (sidebar) sidebar.dataset.open = 'false';
-    if (backdrop) backdrop.dataset.open = 'false';
-  }, true);
+      closeSidebar();
+    },
+    true
+  );
 
   const initial = resolveWorkspace(document.body.dataset.sidebarWorkspace || 'overview');
 
@@ -264,15 +290,21 @@
     setWorkspace(initial);
   };
 
+  const retagCurrentWorkspace = () => {
+    const current = document.body.dataset.sidebarWorkspace || initial;
+
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+    setWorkspace(current);
+  };
+
   setTimeout(boot, 1200);
+  setTimeout(retagCurrentWorkspace, 1800);
+  setTimeout(retagCurrentWorkspace, 2600);
 
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
-    window.__phase34SidebarWorkspaceTimer = setTimeout(() => {
-      normalizeSidebarButtons();
-      tagWorkspaceSections();
-      setWorkspace(document.body.dataset.sidebarWorkspace || initial);
-    }, 200);
+    window.__phase34SidebarWorkspaceTimer = setTimeout(retagCurrentWorkspace, 200);
   });
 
   observer.observe(root, { childList: true, subtree: true });

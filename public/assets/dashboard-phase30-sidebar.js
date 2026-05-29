@@ -66,21 +66,35 @@
   const openModalShortcut = (name) => {
     const selector = name === 'client-profile' ? '[data-client-profile-shortcut]' : '[data-admin-access-shortcut]';
     const button = document.querySelector(selector);
-    if (button) {
+
+    if (button?.click && button.matches('button, a')) {
       button.click();
       return true;
     }
+
+    const target = document.querySelector(selector);
+    if (target?.scrollIntoView) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
+
     window.TAUX?.toast?.({
       title: 'Section unavailable',
       message: 'That dashboard tool is not available for this account or has not loaded yet.',
       type: 'warn',
     });
+
     return false;
   };
 
   const scrollToTarget = (target) => {
     let destination = null;
-    try { destination = document.querySelector(target); } catch { destination = null; }
+
+    try {
+      destination = document.querySelector(target);
+    } catch {
+      destination = null;
+    }
 
     if (!destination) {
       window.TAUX?.toast?.({
@@ -109,13 +123,16 @@
       <button class="btn btn-soft" type="button" data-sidebar-close>Close menu</button>
       <div class="dashboard-sidebar-head">
         <h2>Workspace</h2>
-        <button class="btn btn-soft dashboard-sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" title="Collapse sidebar" aria-pressed="false"><span class="sidebar-collapse-icon" aria-hidden="true"></span></button>
+        <button class="btn btn-soft dashboard-sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" title="Collapse sidebar" aria-pressed="false">
+          <span class="sidebar-collapse-icon" aria-hidden="true"></span>
+        </button>
       </div>
       <nav class="sidebar-nav-group" data-sidebar-nav></nav>
     `;
 
     const nav = sidebar.querySelector('[data-sidebar-nav]');
     const groups = groupItems();
+
     nav.innerHTML = Object.entries(groups).map(([group, items]) => `
       <div class="sidebar-nav-label">${group}</div>
       ${items.map((item) => item.href ? `
@@ -165,18 +182,27 @@
       root.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
       sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
       document.body.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+
       const collapseButton = sidebar.querySelector('[data-sidebar-collapse]');
       if (collapseButton) {
         collapseButton.setAttribute('aria-pressed', String(collapsed));
         collapseButton.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
         collapseButton.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
       }
-      try { window.localStorage.setItem('ta_dashboard_sidebar_collapsed', collapsed ? 'true' : 'false'); } catch {}
+
+      try {
+        window.localStorage.setItem('ta_dashboard_sidebar_collapsed', collapsed ? 'true' : 'false');
+      } catch {}
     };
 
     const initialCollapsed = (() => {
-      try { return window.localStorage.getItem('ta_dashboard_sidebar_collapsed') === 'true'; } catch { return false; }
+      try {
+        return window.localStorage.getItem('ta_dashboard_sidebar_collapsed') === 'true';
+      } catch {
+        return false;
+      }
     })();
+
     setCollapsed(initialCollapsed);
 
     const syncPermissionLinks = () => {
@@ -215,14 +241,45 @@
 
     toggle.addEventListener('click', () => setOpen(true));
     sidebar.querySelector('[data-sidebar-close]')?.addEventListener('click', () => setOpen(false));
+    backdrop.addEventListener('click', () => setOpen(false));
+
     document.addEventListener('click', (event) => {
       const collapseButton = event.target.closest('[data-sidebar-collapse]');
       if (!collapseButton || !sidebar.contains(collapseButton)) return;
+
       event.preventDefault();
       event.stopPropagation();
       setCollapsed(root.dataset.sidebarCollapsed !== 'true');
     }, true);
-    backdrop.addEventListener('click', () => setOpen(false));
+
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+
+      const button = event.target.closest('[data-mobile-quick-target], [data-mobile-quick-action]');
+      if (!button) return;
+
+      const action = button.dataset.mobileQuickAction;
+
+      if (action) {
+        openModalShortcut(action);
+      } else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, {
+          scroll: true,
+          target: button.dataset.mobileQuickTarget || '',
+        });
+      } else if (button.dataset.mobileQuickTarget) {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
+
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
 
     quickBar.addEventListener('click', (event) => {
       const link = event.target.closest('[data-mobile-quick-href]');
@@ -259,9 +316,18 @@
 
       const action = button.dataset.sidebarAction;
       const target = button.dataset.sidebarTarget;
+      const workspaceKey = button.dataset.sidebarWorkspace;
 
-      if (action) openModalShortcut(action);
-      else if (target) scrollToTarget(target);
+      if (action) {
+        openModalShortcut(action);
+      } else if (window.taSetSidebarWorkspace && workspaceKey) {
+        window.taSetSidebarWorkspace(workspaceKey, {
+          scroll: true,
+          target: target || '',
+        });
+      } else if (target) {
+        scrollToTarget(target);
+      }
 
       sidebar.querySelectorAll('.sidebar-nav-link').forEach((item) => item.removeAttribute('aria-current'));
       button.setAttribute('aria-current', 'true');
@@ -269,6 +335,5 @@
     });
   };
 
-  // Wait until earlier phase scripts mount dynamic sections.
   setTimeout(mount, 550);
 })();
