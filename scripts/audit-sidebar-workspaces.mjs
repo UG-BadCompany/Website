@@ -30,7 +30,7 @@ const selectorExists = (selector) => {
 };
 
 const expected = [
-  ['Overview', 'overview', '.hero'],
+  ['Overview', 'overview', '.executive-suite'],
   ['Estimate Review', 'estimate-review', '#estimate-review'],
   ['Work Orders', 'work-orders', '#admin-requests'],
   ['Scheduling', 'scheduling', '#smart-schedule-suite'],
@@ -106,7 +106,7 @@ has(phase30Css, /@media \(max-width:\s*980px\)[\s\S]*\.dashboard-sidebar-v2 \{[\
 has(phase34Css, /sidebar-nav-link\[aria-current="true"\]/, 'Sidebar CSS must include a single active-state style.');
 has(phase34, /removeAttribute\('aria-current'\)/, 'Workspace routing must remove inactive aria-current values to prevent duplicate highlights.');
 has(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'Sidebar workspace clicks must scroll to the selected module.');
-has(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget/, 'Sidebar click handler must call setWorkspace with scroll enabled.');
+has(phase34, /setWorkspace\(selectedWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget \|\| button\.dataset\.mobileQuickTarget/, 'Sidebar click handler must call setWorkspace with scroll enabled for sidebar and mobile quick actions.');
 
 const forbiddenCombos = [
   ['finance', '#admin-invoices'],
@@ -138,8 +138,8 @@ has(dashboard, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-for
 has(sidebar, /mobileQuickActions[\s\S]*Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*views: \['worker', 'admin'\]/, 'Worker/admin mobile quick actions must include Troubleshoot.');
 has(sidebar, /label: 'Requests'[\s\S]*workspace: 'client-requests'[\s\S]*views: \['client'\]/, 'Client Requests sidebar item must route to client requests only.');
 has(sidebar, /label: 'Profile'[\s\S]*action: 'client-profile'[\s\S]*views: \['client'\]/, 'Client Profile sidebar item must open the profile modal only.');
-has(phase34, /!button\.dataset\.sidebarWorkspace\) return/, 'Phase 34 must ignore action-only sidebar buttons instead of forcing overview.');
-has(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace/, 'Sidebar click handler must use the selected button workspace.');
+has(phase34, /const selectedWorkspace = button\.dataset\.sidebarWorkspace \|\| button\.dataset\.mobileQuickWorkspace/, 'Phase 34 must derive selected workspace from sidebar or mobile quick action buttons.');
+has(phase34, /setWorkspace\(selectedWorkspace/, 'Sidebar click handler must use the selected button workspace.');
 if (/setWorkspace\(workspace\)/.test(phase34)) fail('Phase 34 must not call setWorkspace(workspace) with an undefined workspace variable.');
 has(dashboard, /data-maintenance-plan-form[\s\S]*Save maintenance plan/, 'Maintenance workspace must include plan form.');
 has(dashboard, /Modern Invoice Command Center[\s\S]*data-admin-invoice-status-filter[\s\S]*data-admin-invoice-search/, 'Invoices module must be the modern invoice command center with filters/search.');

@@ -16,41 +16,49 @@
     overview: {
       title: 'Overview',
       description: 'Quick business snapshot and daily attention items.',
+      views: ['admin', 'client', 'worker'],
       targets: ['#executive-overview', '.executive-suite', '[data-overview-workspace]'],
     },
     'estimate-review': {
       title: 'Estimate Review',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
+      views: ['admin'],
       targets: ['#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
+      views: ['admin'],
       targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite'],
     },
     'client-requests': {
       title: 'Requests',
       description: 'Client request intake, status, updates, files, and property-aware service details.',
+      views: ['client'],
       targets: ['#client-requests', '[data-client-requests]'],
     },
     'client-quotes': {
       title: 'Quotes',
       description: 'Client quote review, approval, decline/request-change actions, and quote history.',
+      views: ['client'],
       targets: ['#client-quotes', '[data-client-quotes]'],
     },
     'client-invoices': {
       title: 'Client Invoices',
       description: 'Client invoice balances, payment status, invoice details, and payment actions.',
+      views: ['client'],
       targets: ['#client-invoices', '[data-client-invoices]'],
     },
     scheduling: {
       title: 'Scheduling and Dispatch',
       description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      views: ['admin', 'worker'],
       targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
     },
     finance: {
       title: 'Financial Command Center',
       description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
+      views: ['admin'],
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
 
@@ -69,27 +77,50 @@
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
+      views: ['admin'],
       targets: ['#admin-invoices', '[data-admin-invoices]'],
     },
     'customer-status': {
       title: 'Customer Status',
       description: 'Client-friendly request, quote, job, invoice/payment, and maintenance timeline status.',
+      views: ['admin', 'client'],
       targets: ['#customer-experience-center', '.customer-experience-suite'],
     },
     'worker-jobs': {
       title: 'Worker Jobs',
       description: 'Assigned jobs, status updates, reserved materials, notes, evidence status, and completion actions.',
+      views: ['admin', 'worker'],
       targets: ['#worker-jobs', '[data-worker-jobs]', '#worker-tools-upgrade'],
     },
     'worker-mobile': {
       title: 'Worker Mobile',
       description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
+      views: ['admin', 'worker'],
       targets: ['#worker-mobile-field', '.worker-mobile-suite'],
     },
     'ai-troubleshooting': {
       title: 'AI Technician',
       description: 'OpenAI-powered field troubleshooting for equipment, error codes, symptoms, readings, and repair recommendations.',
+      views: ['admin', 'worker'],
       targets: ['#worker-ai-troubleshooting', '[data-worker-ai-troubleshooting]', '.ai-troubleshooting-suite'],
+    },
+    'photo-docs': {
+      title: 'Photo Documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
+      views: ['admin', 'worker'],
+      targets: ['.photo-doc-suite'],
+    },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      views: ['admin', 'client'],
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      views: ['admin'],
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
     'photo-docs': {
       title: 'Photo Documentation',
@@ -110,9 +141,12 @@
     deployment: {
       title: 'Deployment and Readiness',
       description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
+      views: ['admin'],
       targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite'],
     },
   };
+
+  window.TASidebarWorkspaceRoutes = workspaces;
 
   const workspaceAliases = {
     quotes: 'estimate-review',
@@ -190,15 +224,47 @@
 
   const resolveWorkspace = (workspace = 'overview') => workspaceAliases[workspace] || workspace;
 
+  const currentView = () => document.body.dataset.currentDashboardView || document.documentElement.dataset.currentDashboardView || 'admin';
+
   const visibleTargetsFor = (workspace) => {
     const config = workspaces[workspace];
     if (!config) return [];
     return config.targets.flatMap((selector) => Array.from(document.querySelectorAll(selector)));
   };
 
+  const actionExists = (action) => {
+    if (action === 'client-profile') return Boolean(document.querySelector('[data-client-profile-shortcut], [data-client-profile]'));
+    return Boolean(document.querySelector('[data-admin-access-shortcut]'));
+  };
+
+  const validateSidebarControls = () => {
+    const view = currentView();
+    document.querySelectorAll('.sidebar-nav-link, .mobile-quick-action').forEach((button) => {
+      if (button.dataset.sidebarHref || button.dataset.mobileQuickHref) return;
+      const action = button.dataset.sidebarAction || button.dataset.mobileQuickAction || '';
+      if (action) {
+        const ok = actionExists(action);
+        button.hidden = button.hidden || !ok;
+        button.setAttribute('aria-disabled', ok ? 'false' : 'true');
+        button.title = ok ? '' : 'This action is unavailable until the matching form loads.';
+        return;
+      }
+      const workspace = resolveWorkspace(button.dataset.sidebarWorkspace || button.dataset.mobileQuickWorkspace || '');
+      const config = workspaces[workspace];
+      if (!config) return;
+      const allowed = !config.views?.length || config.views.includes(view);
+      const hasTarget = visibleTargetsFor(workspace).length > 0;
+      const unavailable = !allowed || !hasTarget;
+      button.hidden = unavailable;
+      button.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+      button.title = hasTarget ? '' : `Missing module target for ${config.title}.`;
+    });
+  };
+
   const setActiveButton = (workspace) => {
-    document.querySelectorAll('[data-sidebar-workspace]').forEach((button) => {
-      const active = resolveWorkspace(button.dataset.sidebarWorkspace) === workspace;
+    document.querySelectorAll('[data-sidebar-workspace], [data-mobile-quick-workspace]').forEach((button) => {
+      const key = button.dataset.sidebarWorkspace || button.dataset.mobileQuickWorkspace || '';
+      const active = resolveWorkspace(key) === workspace;
       if (active) button.setAttribute('aria-current', 'true');
       else button.removeAttribute('aria-current');
     });
@@ -222,19 +288,8 @@
 
     normalizeSidebarButtons();
     tagWorkspaceSections();
-
-    document.body.dataset.sidebarWorkspace = workspace;
-    setActiveButton(workspace);
-
-    return true;
-  };
-
-  const setWorkspace = (workspace = 'overview', options = {}) => {
-    workspace = resolveWorkspace(workspace);
-    if (!workspaces[workspace]) workspace = 'overview';
-
-    normalizeSidebarButtons();
-    tagWorkspaceSections();
+    validateSidebarControls();
+    window.taSyncSidebarVisibility?.();
 
     document.body.dataset.sidebarWorkspace = workspace;
     setActiveButton(workspace);
@@ -268,13 +323,15 @@
   };
 
   document.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-sidebar-workspace]');
-    if (!button || button.dataset.sidebarHref || !button.dataset.sidebarWorkspace) return;
+    const button = event.target.closest('[data-sidebar-workspace], [data-mobile-quick-workspace]');
+    if (!button || button.dataset.sidebarHref || button.dataset.mobileQuickHref) return;
+    const selectedWorkspace = button.dataset.sidebarWorkspace || button.dataset.mobileQuickWorkspace || '';
+    if (!selectedWorkspace || button.hidden || button.getAttribute('aria-disabled') === 'true') return;
 
       event.preventDefault();
       event.stopPropagation();
 
-    setWorkspace(button.dataset.sidebarWorkspace, { scroll: true, target: button.dataset.sidebarTarget || '' });
+    setWorkspace(selectedWorkspace, { scroll: true, target: button.dataset.sidebarTarget || button.dataset.mobileQuickTarget || '' });
 
       closeSidebar();
     },
@@ -304,10 +361,20 @@
 
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
-    window.__phase34SidebarWorkspaceTimer = setTimeout(retagCurrentWorkspace, 200);
+    window.__phase34SidebarWorkspaceTimer = setTimeout(() => {
+      normalizeSidebarButtons();
+      tagWorkspaceSections();
+      validateSidebarControls();
+      window.taSyncSidebarVisibility?.();
+      setWorkspace(document.body.dataset.sidebarWorkspace || initial);
+    }, 200);
   });
 
   observer.observe(root, { childList: true, subtree: true });
+  try {
+    new MutationObserver(() => { validateSidebarControls(); window.taSyncSidebarVisibility?.(); }).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+    new MutationObserver(() => { validateSidebarControls(); window.taSyncSidebarVisibility?.(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+  } catch {}
 
   window.taSetSidebarWorkspace = setWorkspace;
 })();

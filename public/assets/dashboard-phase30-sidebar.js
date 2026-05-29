@@ -9,7 +9,7 @@
   if (!root) return;
 
   const navItems = [
-    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.hero', hint: 'Start', views: ['admin', 'client', 'worker'] },
+    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.executive-suite', hint: 'Start', views: ['admin', 'client', 'worker'] },
     { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes', views: ['admin'] },
     { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs', views: ['admin'] },
     { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch', views: ['admin', 'worker'] },
@@ -61,6 +61,22 @@
   const targetExists = (target) => {
     try { return Boolean(document.querySelector(target)); }
     catch { return false; }
+  };
+
+  const actionExists = (action) => {
+    if (action === 'client-profile') return targetExists('[data-client-profile-shortcut]') || targetExists('[data-client-profile]');
+    return targetExists('[data-admin-access-shortcut]');
+  };
+
+  const controlHasDestination = (item) => {
+    if (item.dataset.sidebarHref || item.dataset.mobileQuickHref) return true;
+    const action = item.dataset.sidebarAction || item.dataset.mobileQuickAction || '';
+    if (action) return actionExists(action);
+    const target = item.dataset.sidebarTarget || item.dataset.mobileQuickTarget || '';
+    if (target && targetExists(target)) return true;
+    const workspace = item.dataset.sidebarWorkspace || item.dataset.mobileQuickWorkspace || '';
+    const route = window.TASidebarWorkspaceRoutes?.[workspace];
+    return Boolean(route?.targets?.some(targetExists));
   };
 
   const openModalShortcut = (name) => {
@@ -211,9 +227,11 @@
         const views = String(item.dataset.sidebarViews || '').split(/\s+/).filter(Boolean);
         const blockedByView = Boolean(view && views.length && !views.includes(view));
         const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && Boolean(view && view !== 'admin');
-        const hidden = blockedByView || blockedByPermission;
+        const missingDestination = !blockedByView && !blockedByPermission && !controlHasDestination(item);
+        const hidden = blockedByView || blockedByPermission || missingDestination;
         item.hidden = hidden;
         item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
+        item.title = missingDestination ? 'This dashboard module has not loaded for this role yet.' : '';
       });
       nav.querySelectorAll('.sidebar-nav-label').forEach((label) => {
         let next = label.nextElementSibling;
@@ -228,15 +246,19 @@
         const views = String(item.dataset.mobileQuickViews || '').split(/\s+/).filter(Boolean);
         const blockedByView = Boolean(view && views.length && !views.includes(view));
         const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && Boolean(view && view !== 'admin');
-        const hidden = blockedByView || blockedByPermission;
+        const missingDestination = !blockedByView && !blockedByPermission && !controlHasDestination(item);
+        const hidden = blockedByView || blockedByPermission || missingDestination;
         item.hidden = hidden;
         item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
+        item.title = missingDestination ? 'This mobile action is unavailable until its module loads.' : '';
       });
     };
     syncPermissionLinks();
     try {
       new MutationObserver(syncPermissionLinks).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
       new MutationObserver(syncPermissionLinks).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+      new MutationObserver(syncPermissionLinks).observe(root, { childList: true, subtree: true });
+      window.taSyncSidebarVisibility = syncPermissionLinks;
     } catch {}
 
     toggle.addEventListener('click', () => setOpen(true));
@@ -302,9 +324,38 @@
       setOpen(false);
     });
 
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        if (link.getAttribute('aria-disabled') === 'true') {
+          event.preventDefault();
+          return;
+        }
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+      const button = event.target.closest('[data-mobile-quick-target]');
+      if (!button || button.getAttribute('aria-disabled') === 'true') return;
+      const action = button.dataset.mobileQuickAction;
+      if (action) openModalShortcut(action);
+      else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
+
     sidebar.addEventListener('click', (event) => {
       const link = event.target.closest('[data-sidebar-href]');
       if (link) {
+        if (link.getAttribute('aria-disabled') === 'true') {
+          event.preventDefault();
+          return;
+        }
         sidebar.querySelectorAll('.sidebar-nav-link').forEach((item) => item.removeAttribute('aria-current'));
         link.setAttribute('aria-current', 'page');
         setOpen(false);
@@ -312,7 +363,7 @@
       }
 
       const button = event.target.closest('[data-sidebar-target], [data-sidebar-action]');
-      if (!button) return;
+      if (!button || button.getAttribute('aria-disabled') === 'true') return;
 
       const action = button.dataset.sidebarAction;
       const target = button.dataset.sidebarTarget;

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { assertHtmlPage, readText } from './browser-qa-utils.mjs';
 
 const expectedRoutes = [
-  ['Overview', 'overview', '.hero'],
+  ['Overview', 'overview', '.executive-suite'],
   ['Estimate Review', 'estimate-review', '#estimate-review'],
   ['Work Orders', 'work-orders', '#admin-requests'],
   ['Scheduling', 'scheduling', '#smart-schedule-suite'],
@@ -32,6 +32,42 @@ test('each sidebar item maps to exactly one correct workspace/module', async () 
   assert.match(sidebar, /label: 'Profile'[\s\S]*action: 'client-profile'[\s\S]*views: \['client'\]/, 'Profile should be a client-only profile modal action');
 });
 
+test('role-specific sidebar routes are visible only for valid roles and targets', async () => {
+  const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
+  const phase34 = await readText('public/assets/dashboard-phase34-sidebar-only-workspaces.js');
+  const html = await readText('public/dashboard/index.html');
+
+  const itemBlock = (label, workspace = '') => {
+    const pattern = workspace
+      ? new RegExp(`\\{ group: '[^']+', label: '${label}'[\\s\\S]*?workspace: '${workspace}'[\\s\\S]*?\\}`)
+      : new RegExp(`\\{ group: '[^']+', label: '${label}'[\\s\\S]*?\\}`);
+    return sidebar.match(pattern)?.[0] || '';
+  };
+
+  const adminOnly = [
+    ['Estimate Review', 'estimate-review'],
+    ['Work Orders', 'work-orders'],
+    ['Finance Center', 'finance'],
+    ['Roles & Users', 'roles-users'],
+    ['Deployment Health', 'deployment'],
+  ];
+  for (const [label, workspace] of adminOnly) {
+    assert.match(itemBlock(label, workspace), /views: \['admin'\]/, `${label} should be admin-only`);
+  }
+  for (const [label, workspace] of [['Worker Jobs', 'worker-jobs'], ['Worker Mobile', 'worker-mobile'], ['AI Troubleshooting', 'ai-troubleshooting'], ['Photo Docs', 'photo-docs']]) {
+    assert.match(itemBlock(label, workspace), /views: \['admin', 'worker'\]/, `${label} should be admin/worker`);
+  }
+  for (const [label, workspace] of [['Requests', 'client-requests'], ['Quotes', 'client-quotes'], ['Invoices', 'client-invoices']]) {
+    assert.match(itemBlock(label, workspace), /views: \['client'\]/, `${label} should be client-only`);
+  }
+  assert.match(sidebar, /label: 'Customer Status'[\s\S]*views: \['admin', 'client'\]/, 'Customer Status should be admin/client only');
+  assert.match(sidebar, /label: 'Maintenance Plans'[\s\S]*views: \['admin', 'client'\]/, 'Maintenance should be admin/client only');
+  assert.match(sidebar, /label: 'Scheduling'[\s\S]*views: \['admin', 'worker'\]/, 'Scheduling should be worker-visible only because the scheduling workspace exists');
+  assert.match(phase34, /const validateSidebarControls[\s\S]*visibleTargetsFor[\s\S]*aria-disabled/, 'Phase 34 should validate visible controls against loaded targets');
+  assert.match(sidebar, /const controlHasDestination[\s\S]*aria-disabled/, 'Phase 30 should hide/disable controls without destinations');
+  assert.match(html, /id="executive-overview"[\s\S]*data-overview-workspace/, 'Overview should have a safe non-hero workspace wrapper');
+});
+
 test('Phase 34 router separates finance, invoices, scheduling, work orders, roles, maintenance, worker, mobile, and photo modules', async () => {
   const phase34 = await readText('public/assets/dashboard-phase34-sidebar-only-workspaces.js');
   assert.match(phase34, /finance:[\s\S]*targets: \['\.finance-suite', '\[data-phase4-finance-suite\]', '#finance-command-center', '\.finance-command-panel'\]/, 'Finance Center should target Financial Command Center only');
@@ -51,7 +87,7 @@ test('workspace router clears stale tags and prevents duplicate active sidebar h
   assert.match(phase34, /removeAttribute\('aria-current'\)/, 'router should remove inactive aria-current values');
   assert.match(phase34, /setActiveButton/, 'router should centralize active-state updates');
   assert.match(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'router should visibly scroll to the selected module');
-  assert.match(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget/, 'sidebar clicks should request scrolling to their target');
+  assert.match(phase34, /setWorkspace\(selectedWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget \|\| button\.dataset\.mobileQuickTarget/, 'sidebar and mobile clicks should request scrolling to their target');
   for (const workspace of ['estimate-review', 'work-orders', 'client-requests', 'client-quotes', 'client-invoices', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
     assert.match(css, new RegExp(`data-sidebar-workspace="${workspace}"[\\s\\S]*${workspace}`), `CSS should reveal ${workspace}`);
   }
