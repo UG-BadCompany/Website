@@ -23,6 +23,7 @@
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
       targets: ['#estimate-review', '#admin-quotes', '#client-quotes', '[data-client-quotes]', '[data-phase2-command-center]'],
     },
+
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
@@ -38,6 +39,18 @@
       description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center'],
     },
+
+    finance: {
+      title: 'Finance Center',
+      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
+      targets: [
+        '#finance-command-center',
+        '[data-phase4-finance-suite]',
+        '.finance-suite',
+        '.finance-command-panel',
+      ],
+    },
+
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
@@ -73,6 +86,27 @@
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
+    'worker-mobile': {
+      title: 'Worker Mobile',
+      description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
+      targets: ['#worker-mobile-field', '.worker-mobile-suite'],
+    },
+    'photo-docs': {
+      title: 'Photo Documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
+      targets: ['.photo-doc-suite'],
+    },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
+    },
+
     deployment: {
       title: 'Deployment and Readiness',
       description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
@@ -144,6 +178,7 @@
 
     const shell = document.querySelector('.dashboard-workspace-v2') || root;
     const first = shell.firstElementChild;
+
     if (first) shell.insertBefore(header, first);
     else shell.appendChild(header);
 
@@ -217,6 +252,17 @@
   };
 
   document.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-sidebar-href]');
+
+    if (link) {
+      clearSidebarActiveStates();
+      link.setAttribute('aria-current', 'page');
+      closeSidebar();
+
+      // Let Inventory navigate normally.
+      return;
+    }
+
     const button = event.target.closest('[data-sidebar-workspace]');
     if (!button || button.dataset.sidebarHref) return;
 
@@ -225,10 +271,8 @@
 
     setWorkspace(button.dataset.sidebarWorkspace, { scroll: true, target: button.dataset.sidebarTarget || '' });
 
-    const sidebar = document.querySelector('.dashboard-sidebar-v2');
-    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
-    if (sidebar) sidebar.dataset.open = 'false';
-    if (backdrop) backdrop.dataset.open = 'false';
+    setWorkspace(workspace);
+    closeSidebar();
   }, true);
 
   const initial = resolveWorkspace(document.body.dataset.sidebarWorkspace || 'overview');
@@ -242,12 +286,33 @@
 
   setTimeout(boot, 1200);
 
+  // Retag dynamic modules after scripts mount them.
+  // This is important for the Finance Center because dashboard-phase4-finance.js
+  // creates #finance-command-center dynamically after load.
+  setTimeout(() => {
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    const current = document.body.dataset.sidebarWorkspace || initial;
+    setWorkspace(current);
+  }, 1800);
+
+  setTimeout(() => {
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+
+    const current = document.body.dataset.sidebarWorkspace || initial;
+    setWorkspace(current);
+  }, 2600);
+
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
     window.__phase34SidebarWorkspaceTimer = setTimeout(() => {
+      const current = document.body.dataset.sidebarWorkspace || initial;
+
       normalizeSidebarButtons();
       tagWorkspaceSections();
-      setWorkspace(document.body.dataset.sidebarWorkspace || initial);
+      setWorkspace(current);
     }, 200);
   });
 
