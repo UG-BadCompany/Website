@@ -501,6 +501,8 @@
       let currentAdminActivity = [];
       let currentAdminInventoryItems = [];
       let currentAdminInventoryUsage = [];
+      let currentAdminInventoryReservations = [];
+      let currentAdminInventoryMovements = [];
       let currentWorkerInventoryItems = [];
       let currentProfileUser = null;
       let currentDashboardView = '';
@@ -1257,6 +1259,35 @@
         `).join('') : '<p class="session-status">No inventory usage recorded for this work order yet.</p>';
       };
 
+
+      const renderAdminWorkOrderMaterials = ({ reservations = [], movements = [] } = {}) => {
+        const materialList = document.querySelector('[data-admin-work-order-material-list]');
+        const readiness = document.querySelector('[data-admin-work-order-invoice-readiness]');
+        if (!materialList && !readiness) return;
+        const openReservations = reservations.filter((item) => ['reserved', 'partially_used'].includes(item.status));
+        const materialChargeTotal = reservations.reduce((sum, item) => sum + Number(item.chargeTotal || 0), 0);
+        if (materialList) {
+          materialList.innerHTML = reservations.length ? reservations.map((entry) => {
+            const unused = Math.max(0, Number(entry.reservedQuantity || 0) - Number(entry.usedQuantity || 0));
+            return `
+              <article class="admin-assignment" data-admin-job-material>
+                <span class="admin-assignment-badge">${escapeHtml(entry.status || 'reserved')}</span>
+                <strong>${escapeHtml(entry.itemName || 'Reserved material')}</strong>
+                <div class="admin-assignment-meta"><span>Reserved ${Number(entry.reservedQuantity || 0)}</span><span>Used ${Number(entry.usedQuantity || 0)}</span><span>Unused ${unused}</span><span>${escapeHtml(entry.itemSku || 'No SKU')}</span></div>
+                ${unused > 0 ? `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-release-job-material data-item-id="${escapeHtml(entry.itemId)}" data-job-request-id="${escapeHtml(entry.jobRequestId)}" data-reservation-id="${escapeHtml(entry.id)}" data-unused-quantity="${escapeHtml(String(unused))}">Release unused</button></div>` : ''}
+              </article>
+            `;
+          }).join('') : '<p class="session-status">No reserved Job Materials yet. Reserve from Estimate Review or the inventory panel before scheduling.</p>';
+        }
+        if (readiness) {
+          readiness.innerHTML = `
+            <strong>Invoice/payment readiness</strong>
+            <p>${openReservations.length ? `${openReservations.length} material reservation${openReservations.length === 1 ? '' : 's'} still need use/release before closeout.` : 'All reserved materials are used or released. Invoice can include material usage totals.'}</p>
+            <div class="admin-request-meta"><span>Material charge total ${escapeHtml(formatMoney(materialChargeTotal * 100))}</span><span>${movements.length} movement${movements.length === 1 ? '' : 's'}</span></div>
+          `;
+        }
+      };
+
       const populateAdminWorkOrderInventoryItems = () => {
         const itemSelect = document.querySelector('[data-admin-work-order-inventory-item]');
         if (!itemSelect) return;
@@ -1278,14 +1309,20 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory usage is not available.');
           currentAdminInventoryItems = result.items || [];
           currentAdminInventoryUsage = result.usage || [];
+          currentAdminInventoryReservations = result.reservations || [];
+          currentAdminInventoryMovements = result.movements || [];
           populateAdminWorkOrderInventoryItems();
           renderAdminWorkOrderInventoryUsage(currentAdminInventoryUsage);
-          if (status) status.textContent = currentAdminInventoryUsage.length ? `${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No inventory usage recorded yet.';
+          renderAdminWorkOrderMaterials({ reservations: currentAdminInventoryReservations, movements: currentAdminInventoryMovements });
+          if (status) status.textContent = currentAdminInventoryUsage.length || currentAdminInventoryReservations.length ? `${currentAdminInventoryReservations.length} reservation${currentAdminInventoryReservations.length === 1 ? '' : 's'} and ${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No job materials recorded yet.';
         } catch (error) {
           currentAdminInventoryItems = [];
           currentAdminInventoryUsage = [];
+          currentAdminInventoryReservations = [];
+          currentAdminInventoryMovements = [];
           populateAdminWorkOrderInventoryItems();
           renderAdminWorkOrderInventoryUsage([]);
+          renderAdminWorkOrderMaterials({ reservations: [], movements: [] });
           if (status) status.textContent = error.message;
         }
       };
@@ -2358,7 +2395,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const statusForm = document.querySelector('[data-admin-status-form]');
-        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form], [data-phase52-admin-assignment-form]');
         const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
@@ -2398,7 +2435,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteApproved = ['accepted'].includes(savedQuote?.status || '') || ['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
         if (statusForm) statusForm.hidden = !quoteApproved;
         if (assignmentForm) assignmentForm.hidden = !quoteApproved;
-        if (inventoryForm) inventoryForm.hidden = true;
+        if (inventoryForm) inventoryForm.hidden = !quoteApproved;
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
         if (workOrderSummary) {
@@ -2407,6 +2444,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (assignmentList) {
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
+        if (quoteApproved) loadAdminWorkOrderInventory(request.id);
         if (closeButton) closeButton.focus();
       };
 
@@ -2424,7 +2462,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inbox = document.querySelector('[data-admin-inbox]');
         const statusForm = document.querySelector('[data-admin-status-form]');
         const quoteForm = document.querySelector('[data-admin-quote-form]');
-        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form], [data-phase52-admin-assignment-form]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const detail = document.querySelector('[data-admin-request-detail]');
 
@@ -2518,7 +2556,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           assignmentForm.dataset.bound = 'true';
           assignmentForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const formStatus = document.querySelector('[data-admin-assignment-form-status]');
+            const formStatus = document.querySelector('[data-admin-assignment-form-status], [data-phase52-admin-assignment-status]');
             const payload = Object.fromEntries(new FormData(assignmentForm).entries());
             if (!payload.workerId) {
               if (formStatus) formStatus.textContent = 'Choose a worker to assign.';
@@ -2536,6 +2574,39 @@ Additional info from client: ${payload.additionalInfo}` : '';
               assignmentForm.reset();
               if (formStatus) formStatus.textContent = 'Worker assigned.';
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
+
+        if (detail && !detail.dataset.materialReleaseBound) {
+          detail.dataset.materialReleaseBound = 'true';
+          detail.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-admin-release-job-material]');
+            if (!button) return;
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-work-order-inventory-status]');
+            const payload = {
+              itemId: button.dataset.itemId,
+              jobRequestId: button.dataset.jobRequestId,
+              reservationId: button.dataset.reservationId,
+              quantity: Number(button.dataset.unusedQuantity || 0),
+              note: 'Released unused material from Job Materials section',
+            };
+            if (formStatus) formStatus.textContent = 'Releasing unused reserved material…';
+            try {
+              const response = await fetch('/api/admin/inventory/release', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not release reserved material.');
+              if (formStatus) formStatus.textContent = 'Unused material released; on-hand quantity was not changed.';
+              await loadAdminWorkOrderInventory(payload.jobRequestId);
               await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
@@ -2734,9 +2805,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const closeAdminRoleModal = () => setModalOpen(document.querySelector('[data-admin-role-modal]'), false);
       const closeAdminUserModal = () => setModalOpen(document.querySelector('[data-admin-user-modal]'), false);
 
-      const renderCheckboxList = (items, selected, name) => items.map((item) => `
-        <label><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> ${escapeHtml(item.name || item.label || item.key)}</label>
-      `).join('');
+      const renderCheckboxList = (items, selected, name) => items.map((item) => {
+        const title = item.name || item.label || item.key;
+        const detail = item.description || item.key;
+        return `
+          <label class="admin-access-choice"><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> <span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></span></label>
+        `;
+      }).join('');
 
       const renderPermissionInputs = (selected = []) => {
         const list = document.querySelector('[data-admin-permission-list]');
@@ -2892,46 +2967,58 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const roleForm = document.querySelector('[data-admin-role-form]');
         const userForm = document.querySelector('[data-admin-user-form]');
         const search = document.querySelector('[data-admin-user-search]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
+        if (!panel || document.documentElement.dataset.boundAdminAccessForms) return;
+        document.documentElement.dataset.boundAdminAccessForms = 'true';
 
-        panel.addEventListener('click', async (event) => {
+        document.addEventListener('click', async (event) => {
+          const accessAction = event.target.closest('[data-admin-edit-role], [data-admin-open-selected-role], [data-admin-edit-user], [data-admin-new-role], [data-admin-user-create], [data-admin-role-modal-close], [data-admin-user-modal-close]');
+          if (!accessAction) return;
+
+          const isInsideAccessManager = Boolean(accessAction.closest('[data-admin-access]'));
+          const isInsideAccessModal = Boolean(accessAction.closest('[data-admin-role-modal], [data-admin-user-modal]'));
+          if (!isInsideAccessManager && !isInsideAccessModal) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
           const status = document.querySelector('[data-admin-access-status]');
-          const roleButton = event.target.closest('[data-admin-edit-role]');
-          const userButton = event.target.closest('[data-admin-edit-user]');
-          const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
-          if (roleButton) {
-            event.preventDefault();
-            if (!currentAdminRoles.size) await loadAdminAccess();
-            selectAdminRole(roleButton.dataset.adminEditRole);
+          if (accessAction.matches('[data-admin-role-modal-close]')) {
+            closeAdminRoleModal();
+            return;
           }
-          if (selectedRoleButton) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-user-modal-close]')) {
+            closeAdminUserModal();
+            return;
+          }
+          if (accessAction.matches('[data-admin-edit-role]')) {
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            selectAdminRole(accessAction.dataset.adminEditRole);
+            return;
+          }
+          if (accessAction.matches('[data-admin-open-selected-role]')) {
             if (!currentAdminRoles.size) await loadAdminAccess();
             const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
             if (selectedRole) selectAdminRole(selectedRole);
             else if (status) status.textContent = 'Select a role first, then click Edit selected role.';
+            return;
           }
-          if (userButton) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-edit-user]')) {
             if (!currentAdminUsers.size) await loadAdminAccess();
-            selectAdminUser(userButton.dataset.adminEditUser);
+            selectAdminUser(accessAction.dataset.adminEditUser);
+            return;
           }
-          if (event.target.closest('[data-admin-new-role]')) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-new-role]')) {
             if (!currentPermissions.length) await loadAdminAccess();
             resetRoleForm();
             openAdminRoleModal();
+            return;
           }
-          if (event.target.closest('[data-admin-user-create]')) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-user-create]')) {
             if (!currentAdminRoles.size) await loadAdminAccess();
             resetUserForm();
             openAdminUserModal();
           }
-          if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
-          if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
-        });
+        }, true);
 
         document.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
           if (event.target === event.currentTarget) closeAdminRoleModal();
@@ -3228,13 +3315,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
           ]);
           const rolesResult = await rolesResponse.json().catch(() => ({}));
           const usersResult = await usersResponse.json().catch(() => ({}));
-          if (!rolesResponse.ok || !rolesResult.ok) throw new Error(rolesResult.message || 'Roles are not available.');
-          if (!usersResponse.ok || !usersResult.ok) throw new Error(usersResult.message || 'Users are not available.');
-          renderAdminAccess({ roles: rolesResult.roles, users: usersResult.users, permissions: rolesResult.permissions });
+          const rolesOk = rolesResponse.ok && rolesResult.ok;
+          const usersOk = usersResponse.ok && usersResult.ok;
+
+          if (!rolesOk && !usersOk) {
+            throw new Error(rolesResult.message || usersResult.message || 'Roles and users are not available.');
+          }
+
+          const roleRows = rolesOk ? (rolesResult.roles || []) : (usersResult.roles || []);
+          const permissionRows = rolesOk ? (rolesResult.permissions || []) : currentPermissions;
+          const userRows = usersOk ? (usersResult.users || []) : [];
+
+          renderAdminAccess({ roles: roleRows, users: userRows, permissions: permissionRows });
           bindAdminAccessForms();
           if (status) {
-            status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
+            status.dataset.state = rolesOk && usersOk ? 'ready' : 'warning';
+            const warnings = [
+              rolesOk ? '' : (rolesResult.message || 'Role editing is unavailable for this session.'),
+              usersOk ? '' : (usersResult.message || 'User editing is unavailable for this session.'),
+            ].filter(Boolean);
+            status.textContent = warnings.length
+              ? `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} and ${userRows.length} user${userRows.length === 1 ? "" : "s"} loaded. ${warnings.join(' ')}`
+              : `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
           }
         } catch (error) {
           if (status) {
@@ -3243,6 +3345,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
         }
       };
+
+      window.taDashboardActions = window.taDashboardActions || {};
+      window.taDashboardActions.bindAdminAccessForms = bindAdminAccessForms;
+      window.taDashboardActions.loadAdminAccess = loadAdminAccess;
 
 
       const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {

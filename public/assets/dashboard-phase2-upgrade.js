@@ -118,6 +118,42 @@
     `;
   };
 
+
+  const renderInventoryReservation = (draft = {}) => {
+    const matches = Array.isArray(draft.inventoryMatches) ? draft.inventoryMatches : [];
+    const rows = matches.length ? matches : (Array.isArray(draft.materialBreakdown) ? draft.materialBreakdown.slice(0, 8).map((material) => ({ material, confidence: 'no_match', matches: [], selectedItem: null, reservedQuantity: 0, reorderWarning: true })) : []);
+    if (!rows.length) return '<section class="estimate-inventory-reservation" data-inventory-match-reservation><h4>Inventory Match & Reservation</h4><p class="session-status">No structured material breakdown is available yet. Use AI rewrite to generate materials before reserving stock.</p></section>';
+    return `
+      <section class="estimate-inventory-reservation" data-inventory-match-reservation data-quote-id="${escapeHtml(draft.quoteId || '')}" data-job-request-id="${escapeHtml(draft.jobRequestId || '')}">
+        <div class="estimate-editor-heading"><div><h4>Inventory Match & Reservation</h4><p>Match quoted materials to stocked inventory, reserve before scheduling, and release unused material after completion.</p></div></div>
+        <div class="estimate-inventory-match-list">
+          ${rows.slice(0, 10).map((entry, index) => {
+            const material = entry.material || {};
+            const selected = entry.selectedItem || (entry.matches || [])[0] || null;
+            const available = Number(selected?.quantityAvailable || 0);
+            const reserved = Number(entry.reservedQuantity || 0);
+            const needed = Math.max(1, Number(material.estimatedQuantity || 1));
+            const status = selected ? (selected.stockStatus || 'in_stock').replaceAll('_', ' ') : 'supplier/reorder needed';
+            return `
+              <article class="estimate-inventory-match" data-inventory-match-row>
+                <div><strong>${escapeHtml(material.name || 'Material')}</strong><p>${escapeHtml(material.category || 'General')} • needed ${escapeHtml(String(needed))} ${escapeHtml(material.unit || 'each')} • confidence ${escapeHtml(entry.confidence || 'no_match')}</p></div>
+                <div><span class="admin-request-badge">${escapeHtml(status)}</span><p>${selected ? `${escapeHtml(selected.name || 'Inventory item')} • SKU ${escapeHtml(selected.sku || 'n/a')}` : 'No catalog match yet'}</p></div>
+                <div class="client-quote-meta"><span>Available ${available}</span><span>Reserved ${reserved}</span><span>Cost ${money(Math.round(Number(selected?.unitCost || 0) * 100))}</span><span>Charge ${money(Math.round(Number(selected?.chargePrice || 0) * 100))}</span></div>
+                ${entry.reorderWarning ? '<p class="session-status">Low/out of stock or no match — check supplier/reorder before promising schedule.</p>' : ''}
+                <label>Qty to reserve<input type="number" min="0" step="0.01" value="${escapeHtml(String(Math.min(needed, Math.max(available, needed))))}" data-estimate-inventory-quantity></label>
+                <div class="estimate-edit-actions">
+                  <button class="btn btn-primary" type="button" data-estimate-reserve-inventory data-item-id="${escapeHtml(selected?.itemId || '')}" data-material-name="${escapeHtml(material.name || '')}" ${selected ? '' : 'disabled title="No inventory match available yet"'}>Reserve</button>
+                  <button class="btn btn-soft" type="button" data-estimate-release-inventory data-item-id="${escapeHtml(selected?.itemId || '')}" data-reservation-id="${escapeHtml(entry.reservationId || '')}" ${reserved > 0 ? '' : 'disabled title="No active reservation to release"'}>Release unused</button>
+                </div>
+                <p class="estimate-edit-status" data-estimate-inventory-status aria-live="polite"></p>
+              </article>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  };
+
   const renderMaterialList = (items = []) => {
     if (!Array.isArray(items) || !items.length) return '';
     return `
@@ -513,6 +549,7 @@
             <label>Missing items / updated information for AI rewrite
               <textarea data-estimate-missing-info placeholder="Example: customer already has the mini split; electrical run is about 100 ft; attic access is tight; include disconnect, whip, breaker, conduit, fittings, line hide, condensate, startup/testing."></textarea>
             </label>
+            ${renderInventoryReservation(draft)}
             <div class="estimate-edit-actions">
               <button class="btn btn-soft" type="button" data-ai-rewrite-estimate="${escapeHtml(draft.quoteId)}">AI rewrite quote</button>
               <button class="btn btn-primary" type="submit">Save draft</button>
