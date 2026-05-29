@@ -22,24 +22,31 @@
     'estimate-review': {
       title: 'Estimate Review',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
-      targets: [
-        '#estimate-review',
-        '#admin-quotes',
-        '#client-quotes',
-        '[data-client-quotes]',
-        '[data-phase2-command-center]',
-      ],
+      targets: ['#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
 
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
-      targets: [
-        '#admin-requests',
-        '[data-admin-inbox]',
-        '[data-phase3-workflow-suite]',
-        '.workflow-suite',
-      ],
+      targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite'],
+    },
+
+    'client-requests': {
+      title: 'Requests',
+      description: 'Client request intake, status, updates, files, and property-aware service details.',
+      targets: ['#client-requests', '[data-client-requests]'],
+    },
+
+    'client-quotes': {
+      title: 'Quotes',
+      description: 'Client quote review, approval, decline/request-change actions, and quote history.',
+      targets: ['#client-quotes', '[data-client-quotes]'],
+    },
+
+    'client-invoices': {
+      title: 'Client Invoices',
+      description: 'Client invoice balances, payment status, invoice details, and payment actions.',
+      targets: ['#client-invoices', '[data-client-invoices]'],
     },
 
     scheduling: {
@@ -51,23 +58,13 @@
     finance: {
       title: 'Finance Center',
       description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
-      targets: [
-        '#finance-command-center',
-        '[data-phase4-finance-suite]',
-        '.finance-suite',
-        '.finance-command-panel',
-      ],
+      targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-suite', '.finance-command-panel'],
     },
 
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
-      targets: [
-        '#admin-invoices',
-        '#client-invoices',
-        '[data-admin-invoices]',
-        '[data-client-invoices]',
-      ],
+      targets: ['#admin-invoices', '[data-admin-invoices]'],
     },
 
     'customer-status': {
@@ -86,6 +83,12 @@
       title: 'Worker Mobile',
       description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
       targets: ['#worker-mobile-field', '.worker-mobile-suite'],
+    },
+
+    'ai-troubleshooting': {
+      title: 'AI Troubleshooting',
+      description: 'Safety-first AI field assistant for equipment details, symptoms, fault codes, readings, and work-order notes.',
+      targets: ['#worker-ai-troubleshooting', '[data-worker-ai-troubleshooting]', '.ai-troubleshooting-suite'],
     },
 
     'photo-docs': {
@@ -124,12 +127,17 @@
     ['overview', 'overview'],
     ['estimate review', 'estimate-review'],
     ['work orders', 'work-orders'],
+    ['requests', 'client-requests'],
+    ['quotes', 'client-quotes'],
+    ['client invoices', 'client-invoices'],
     ['scheduling', 'scheduling'],
     ['finance center', 'finance'],
     ['invoices', 'invoices'],
     ['customer status', 'customer-status'],
     ['worker jobs', 'worker-jobs'],
     ['worker mobile', 'worker-mobile'],
+    ['ai troubleshooting', 'ai-troubleshooting'],
+    ['ai technician', 'ai-troubleshooting'],
     ['photo docs', 'photo-docs'],
     ['maintenance plans', 'maintenance'],
     ['roles & users', 'roles-users'],
@@ -137,25 +145,19 @@
   ]);
 
   const closeSidebar = () => {
-    document
-      .querySelectorAll('[data-sidebar-backdrop], .dashboard-sidebar-backdrop')
-      .forEach((element) => {
-        element.dataset.open = 'false';
-      });
+    document.querySelectorAll('[data-sidebar-backdrop], .dashboard-sidebar-backdrop').forEach((element) => {
+      element.dataset.open = 'false';
+    });
 
-    document
-      .querySelectorAll('.dashboard-sidebar-v2')
-      .forEach((element) => {
-        element.dataset.open = 'false';
-      });
+    document.querySelectorAll('.dashboard-sidebar-v2').forEach((element) => {
+      element.dataset.open = 'false';
+    });
   };
 
   const clearSidebarActiveStates = () => {
-    document
-      .querySelectorAll('.sidebar-nav-link, .mobile-quick-action')
-      .forEach((element) => {
-        element.removeAttribute('aria-current');
-      });
+    document.querySelectorAll('.sidebar-nav-link, .mobile-quick-action').forEach((element) => {
+      element.removeAttribute('aria-current');
+    });
   };
 
   const normalizeSidebarButtons = () => {
@@ -165,11 +167,9 @@
       const existing = button.dataset.sidebarWorkspace;
       if (workspaces[existing]) return;
 
-      const text = (button.querySelector('span')?.textContent || button.textContent || '')
-        .trim()
-        .toLowerCase();
-
+      const text = (button.querySelector('span')?.textContent || button.textContent || '').trim().toLowerCase();
       const workspace = labelWorkspace.get(text);
+
       if (workspace) button.dataset.sidebarWorkspace = workspace;
     });
   };
@@ -181,7 +181,15 @@
 
     Object.entries(workspaces).forEach(([workspace, config]) => {
       config.targets.forEach((selector) => {
-        document.querySelectorAll(selector).forEach((element) => {
+        let matches = [];
+
+        try {
+          matches = Array.from(document.querySelectorAll(selector));
+        } catch {
+          matches = [];
+        }
+
+        matches.forEach((element) => {
           element.setAttribute('data-sidebar-workspace-section', workspace);
         });
       });
@@ -310,13 +318,11 @@
         clearSidebarActiveStates();
         link.setAttribute('aria-current', 'page');
         closeSidebar();
-
-        // Let real links like Inventory navigate normally.
         return;
       }
 
       const button = event.target.closest('[data-sidebar-workspace]');
-      if (!button || button.dataset.sidebarHref) return;
+      if (!button || button.dataset.sidebarHref || !button.dataset.sidebarWorkspace) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -340,8 +346,6 @@
     setWorkspace(initial);
   };
 
-  setTimeout(boot, 1200);
-
   const retagCurrentWorkspace = () => {
     const current = document.body.dataset.sidebarWorkspace || initial;
 
@@ -350,8 +354,7 @@
     setWorkspace(current);
   };
 
-  // Retag dynamic modules after scripts mount them.
-  // Finance Center is created dynamically by dashboard-phase4-finance.js.
+  setTimeout(boot, 1200);
   setTimeout(retagCurrentWorkspace, 1800);
   setTimeout(retagCurrentWorkspace, 2600);
 
