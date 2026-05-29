@@ -138,7 +138,7 @@ const fallbackRewrite = ({ quote, job, metadata, payload }) => {
     riskFlags: Array.isArray(metadata.riskFlags) ? metadata.riskFlags.slice(0, 10) : [],
     exclusions: Array.isArray(metadata.exclusions) ? metadata.exclusions.slice(0, 10) : [],
     laborBreakdown: Array.isArray(metadata.laborItems) ? metadata.laborItems.slice(0, 16) : [],
-    materialBreakdown: Array.isArray(metadata.materials) ? metadata.materials.slice(0, 24) : [],
+    materialBreakdown: normalizeMaterialBreakdown(Array.isArray(metadata.materialBreakdown) ? metadata.materialBreakdown : metadata.materials),
     adminReviewChecklist: [
       'Verify site access, measurements, and hidden conditions.',
       'Verify material pricing and availability before sending.',
@@ -149,6 +149,16 @@ const fallbackRewrite = ({ quote, job, metadata, payload }) => {
     aiEnhanced: false,
   };
 };
+
+
+const normalizeMaterialBreakdown = (items = []) => (Array.isArray(items) ? items : []).slice(0, 24).map((item) => ({
+  name: clean(item.name || item.label || item.part || 'Material', 180),
+  category: clean(item.category || item.trade || item.workCategory || '', 120),
+  estimatedQuantity: Number(item.estimatedQuantity ?? item.quantity ?? item.neededQty ?? 1) || 1,
+  unit: clean(item.unit || 'each', 40),
+  notes: clean(item.notes || item.description || '', 500),
+  inventoryMatchHint: clean(item.inventoryMatchHint || item.sku || item.supplierPartNumber || item.aiQuoteCatalogKey || item.name || '', 180),
+}));
 
 const parseOpenAiJson = (result) => {
   const text = result.output_text ||
@@ -188,6 +198,7 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
               'Do not be vague. Do not invent exact permit/legal claims. Flag permit/licensed-trade verification when relevant.',
               'Do not claim work is guaranteed or final beyond approved scope.',
               'Return strict JSON only with title, summary, amountCents, rewriteNotes, missingInfoResolved, remainingQuestions, riskFlags, exclusions, laborBreakdown, materialBreakdown, adminReviewChecklist, customerClarifications.',
+              'Every materialBreakdown item must include name, category, estimatedQuantity, unit, notes, and inventoryMatchHint so inventory can match by SKU, item name, category/trade, supplier part number, or aiQuoteCatalogKey.',
               'Never include markdown, prose, or code fences.',
             ].join(' '),
           },
@@ -227,7 +238,7 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
       riskFlags: Array.isArray(rewritten.riskFlags) ? rewritten.riskFlags.slice(0, 10) : [],
       exclusions: Array.isArray(rewritten.exclusions) ? rewritten.exclusions.slice(0, 10) : [],
       laborBreakdown: Array.isArray(rewritten.laborBreakdown) ? rewritten.laborBreakdown.slice(0, 16) : [],
-      materialBreakdown: Array.isArray(rewritten.materialBreakdown) ? rewritten.materialBreakdown.slice(0, 24) : [],
+      materialBreakdown: normalizeMaterialBreakdown(rewritten.materialBreakdown),
       adminReviewChecklist: Array.isArray(rewritten.adminReviewChecklist) ? rewritten.adminReviewChecklist.slice(0, 12) : [],
       customerClarifications: Array.isArray(rewritten.customerClarifications) ? rewritten.customerClarifications.slice(0, 12) : [],
       aiEnhanced: true,
@@ -250,7 +261,7 @@ const normalizeRewriteShape = (rewrite = {}) => ({
   riskFlags: Array.isArray(rewrite.riskFlags) ? rewrite.riskFlags : [],
   exclusions: Array.isArray(rewrite.exclusions) ? rewrite.exclusions : [],
   laborBreakdown: Array.isArray(rewrite.laborBreakdown) ? rewrite.laborBreakdown : [],
-  materialBreakdown: Array.isArray(rewrite.materialBreakdown) ? rewrite.materialBreakdown : [],
+  materialBreakdown: normalizeMaterialBreakdown(rewrite.materialBreakdown),
   adminReviewChecklist: Array.isArray(rewrite.adminReviewChecklist) ? rewrite.adminReviewChecklist : [],
   customerClarifications: Array.isArray(rewrite.customerClarifications) ? rewrite.customerClarifications : [],
   aiEnhanced: Boolean(rewrite.aiEnhanced),
