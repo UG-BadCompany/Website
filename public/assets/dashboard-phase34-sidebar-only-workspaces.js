@@ -57,36 +57,12 @@
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: [
-        '[data-phase3-workflow-suite]',
-        '.workflow-suite',
-        '#admin-requests',
-        '#worker-jobs',
-        '[data-worker-jobs]',
-      ],
+      targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]']
     },
-
     scheduling: {
-      title: 'Scheduling',
-      description: 'Dispatch planning, scheduled jobs, worker assignments, and priority routing.',
-      targets: [
-        '#smart-schedule-suite',
-        '.smart-schedule-suite',
-        '[data-smart-schedule-suite]',
-        '[data-scheduling-workspace]',
-        '.scheduling-suite',
-      ],
-    },
-
-    finance: {
-      title: 'Finance Center',
-      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
-      targets: [
-        '#finance-command-center',
-        '[data-phase4-finance-suite]',
-        '.finance-suite',
-        '.finance-command-panel',
-      ],
+      title: 'Scheduling and dispatch',
+      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      targets: ['#smart-schedule-suite', '.smart-schedule-suite']
     },
 
     invoices: {
@@ -107,24 +83,12 @@
     workers: {
       title: 'Workers',
       description: 'Worker jobs, field workflow, mobile tools, and job documentation.',
-      targets: [
-        '#worker-jobs',
-        '#worker-tools-upgrade',
-        '#worker-mobile-field',
-        '.worker-mobile-suite',
-        '.photo-doc-suite',
-      ],
+      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite', '.photo-doc-suite']
     },
-
-    maintenance: {
-      title: 'Maintenance Plans',
-      description: 'Recurring service plans, preventative maintenance, and property care schedules.',
-      targets: [
-        '#maintenance-plans',
-        '.maintenance-suite',
-        '[data-maintenance-plans]',
-        '[data-maintenance-suite]',
-      ],
+    'photo-docs': {
+      title: 'Photo documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, and admin review status.',
+      targets: ['.photo-doc-suite']
     },
 
     settings: {
@@ -136,7 +100,11 @@
         '[data-admin-access-workspace]',
       ],
     },
-
+    maintenance: {
+      title: 'Maintenance plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite']
+    },
     deployment: {
       title: 'Deployment and workflow health',
       description: 'Developer-focused deployment readiness, environment checks, critical API routes, and workflow health.',
@@ -196,14 +164,14 @@
       ['overview', ['overview']],
       ['requests', ['request']],
       ['quotes', ['quote', 'estimate']],
-      ['work-orders', ['work order']],
-      ['scheduling', ['schedule', 'scheduling', 'dispatch']],
-      ['finance', ['finance center', 'finance-command-center', 'financial command center']],
-      ['invoices', ['invoice', 'billing']],
-      ['workers', ['worker', 'field', 'photo docs', 'mobile']],
-      ['maintenance', ['maintenance plan', 'recurring service', 'property care']],
-      ['settings', ['setting', 'roles', 'users', 'access']],
-      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']],
+      ['work-orders', ['work order', 'job']],
+      ['scheduling', ['scheduling', 'schedule', 'dispatch']],
+      ['invoices', ['invoice', 'finance']],
+      ['workers', ['worker mobile', 'worker', 'field']],
+      ['photo-docs', ['photo', 'proof', 'documentation']],
+      ['settings', ['setting', 'roles', 'users', 'inventory']],
+      ['maintenance', ['maintenance', 'recurring', 'plan']],
+      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']]
     ];
 
     const found = map.find(([, words]) => words.some((word) => source.includes(word)));

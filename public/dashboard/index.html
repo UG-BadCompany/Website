@@ -1912,6 +1912,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   .phase54-workspace{border-color:rgba(255,255,255,.18);background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(19,13,9,.78)),radial-gradient(circle at 90% 0,rgba(249,115,22,.18),transparent 24rem);color:#f8fafc;box-shadow:0 28px 80px rgba(0,0,0,.24)}
   .phase54-workspace strong,.phase54-workspace h3{color:#fff}.phase54-workspace p{color:#dbe4ef}.phase54-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.phase54-list{display:grid;gap:12px;margin-top:14px}.phase54-card{padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(15,23,42,.62)}.phase54-card strong{display:block}.phase54-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:#cbd5e1;font-size:.9rem;font-weight:800}.phase54-badge{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.35);color:#fed7aa;font-weight:950;text-transform:capitalize}.phase54-workspace .client-request-form{background:rgba(15,23,42,.68);border-color:rgba(148,163,184,.24)}.phase54-workspace .client-request-form input,.phase54-workspace .client-request-form select,.phase54-workspace .client-request-form textarea{background:rgba(2,6,23,.74);color:#f8fafc;border-color:rgba(148,163,184,.35)}.phase54-command-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.phase54-command-list button{justify-content:flex-start}.phase54-workspace [data-state="ready"]{color:#bbf7d0}.phase54-workspace [data-state="error"]{color:#fecaca}@media(max-width:850px){.phase54-grid,.phase54-command-list{grid-template-columns:1fr}}
 </style>
+  <link rel="stylesheet" href="/assets/mobile-field-ux.css">
 </head>
 <body>
   <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
@@ -2023,11 +2024,11 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <label>Amount<input name="amount" inputmode="decimal"></label>
           <label class="full">Summary<textarea name="summary"></textarea></label>
           <label class="full">AI sourcing notes<textarea data-admin-quote-sourcing-notes readonly></textarea></label>
-          <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
+          <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
           <div data-admin-quote-sourcing-links></div>
           <div class="client-request-form-actions"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>
           <label><input type="checkbox" name="sendToClient" value="true"> Send to client</label>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+          <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
         </form>
         <form class="client-request-form" data-phase52-admin-assignment-form hidden>
           <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -2323,7 +2324,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
             <span class="client-request-attachment-list" data-client-request-attachment-list>No files selected yet.</span>
           </label>
         </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
+        <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
       </form>
       <div class="client-request-list" data-client-request-list></div>
       <div class="admin-request-modal" data-client-request-modal role="dialog" aria-modal="true" aria-labelledby="client-request-modal-title" hidden>

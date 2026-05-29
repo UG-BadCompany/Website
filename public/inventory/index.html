@@ -362,6 +362,7 @@
   <link rel="stylesheet" href="/assets/dashboard-phase49-ui-consistency.css">
   <link rel="stylesheet" href="/assets/dashboard-phase50-real-white-area-fix.css">
   <link rel="stylesheet" href="/assets/ui-polish-2026.css">
+  <link rel="stylesheet" href="/assets/mobile-field-ux.css">
 </head>
 <body>
   <nav class="nav" aria-label="Inventory navigation">
@@ -460,7 +461,7 @@
     `;
 
     const renderAdminInventoryCard = (item) => `
-      <article class="inventory-card" data-inventory-item-card="${escapeHtml(item.id)}">
+      <article class="inventory-card inventory-mobile-card mobile-data-card" data-inventory-item-card="${escapeHtml(item.id)}">
         <span class="badge">${escapeHtml(item.stockStatus === 'out' ? 'out of stock' : (item.stockStatus === 'low' ? 'low stock' : 'in stock'))}</span>
         <strong>${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || 'each')}</strong>
         <div class="meta"><span>${escapeHtml(item.itemType || 'material')}</span><span>${escapeHtml(item.category || 'Uncategorized')}</span><span>${escapeHtml(item.sku || 'No SKU')}</span><span>${escapeHtml(item.locationType || item.storageLocation || 'No location')}</span><span>Available ${Number(item.quantityAvailable ?? item.quantityOnHand ?? 0)}</span><span>Reserved ${Number(item.quantityReserved || 0)}</span><span>Reorder at ${Number(item.reorderPoint || 0)}</span></div>

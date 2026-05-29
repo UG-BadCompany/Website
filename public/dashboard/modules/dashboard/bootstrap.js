@@ -1622,15 +1622,33 @@
         const list = document.querySelector('[data-worker-mobile-list]');
         if (!status || !list) return;
         const assignments = currentDashboardView === 'admin' ? [...currentAdminAssignments.values()] : currentWorkerAssignments;
-        list.innerHTML = assignments.length ? assignments.map((assignment) => `
-          <article class="phase54-card" data-mobile-assignment="${escapeHtml(assignment.id)}">
-            <span class="phase54-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
-            <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Assigned job')}</strong>
-            <div class="phase54-meta"><span>${escapeHtml(assignment.scheduledDate ? formatDate(assignment.scheduledDate) : 'No scheduled date')}</span><span>${escapeHtml([assignment.startTime, assignment.endTime].filter(Boolean).join('–') || 'No time window')}</span><span>${escapeHtml(assignment.jobRequest?.city || 'No city')}</span></div>
-            <p>${escapeHtml(assignment.jobRequest?.description || assignment.notes || 'No details yet.')}</p>
-            <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-mobile-start-job data-assignment-id="${escapeHtml(assignment.id)}">Start job</button><button class="btn btn-soft" type="button" data-mobile-progress-job data-assignment-id="${escapeHtml(assignment.id)}">Mark in progress</button><button class="btn btn-primary" type="button" data-mobile-complete-job data-assignment-id="${escapeHtml(assignment.id)}">Mark complete</button></div>
-          </article>
-        `).join('') : renderDashboardEmptyState('No mobile jobs loaded.', 'Assigned field jobs will appear here after admin dispatch or worker assignment loads.');
+        list.innerHTML = assignments.length ? assignments.map((assignment) => {
+          const jobRequestId = assignment.jobRequest?.id || '';
+          const reservations = currentWorkerInventoryReservations.filter((entry) => String(entry.jobRequestId || '') === String(jobRequestId));
+          const remainingMaterials = reservations.reduce((sum, entry) => sum + Math.max(0, Number(entry.reservedQuantity || 0) - Number(entry.usedQuantity || 0)), 0);
+          const checklist = [
+            assignment.workerNotes ? 'Notes saved' : 'Needs note',
+            reservations.length ? `${reservations.length} material line${reservations.length === 1 ? '' : 's'}` : 'No reserved materials',
+            (assignment.completionPhotoNames || []).length ? 'Evidence attached' : 'Evidence placeholder ready',
+            assignment.status === 'completed' ? 'Completion sent' : 'Open completion',
+          ];
+          return `
+          <article class="phase54-card worker-mobile-card mobile-data-card" data-mobile-assignment="${escapeHtml(assignment.id)}" data-mobile-job-request-id="${escapeHtml(jobRequestId)}">
+            <div class="mobile-job-primary">
+              <span class="phase54-badge">${escapeHtml((assignment.status || 'assigned').replaceAll('_', ' '))}</span>
+              <strong>${escapeHtml(assignment.jobRequest?.serviceType || 'Assigned job')}</strong>
+              <div class="mobile-job-meta"><span>${escapeHtml(assignment.scheduledDate ? formatDate(assignment.scheduledDate) : 'No scheduled date')}</span><span>${escapeHtml([assignment.startTime, assignment.endTime].filter(Boolean).join('–') || 'No time window')}</span><span>${escapeHtml(assignment.jobRequest?.city || 'No city')}</span><span>${escapeHtml(assignment.jobRequest?.property?.street || assignment.jobRequest?.streetAddress || 'No address')}</span></div>
+              <p>${escapeHtml(assignment.jobRequest?.description || assignment.notes || 'No details yet.')}</p>
+              ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access notes:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
+            </div>
+            <div class="mobile-material-summary"><span>${reservations.length} reserved line${reservations.length === 1 ? '' : 's'}</span><span>${remainingMaterials} remaining</span><span>${escapeHtml(assignment.priority || assignment.jobRequest?.priority || 'normal')} priority</span></div>
+            <div class="mobile-completion-checklist">${checklist.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>
+            <div class="mobile-field-actions client-quote-actions"><button class="btn btn-soft" type="button" data-mobile-start-job data-assignment-id="${escapeHtml(assignment.id)}">Start job</button><button class="btn btn-soft" type="button" data-mobile-progress-job data-assignment-id="${escapeHtml(assignment.id)}">Mark in progress</button><button class="btn btn-soft" type="button" data-mobile-add-note data-assignment-id="${escapeHtml(assignment.id)}">Add note</button><button class="btn btn-primary" type="button" data-mobile-complete-job data-assignment-id="${escapeHtml(assignment.id)}">Mark complete</button></div>
+            <div class="mobile-material-actions client-quote-actions"><button class="btn btn-soft" type="button" data-mobile-use-material data-assignment-id="${escapeHtml(assignment.id)}" data-job-request-id="${escapeHtml(jobRequestId)}">Mark material used</button><button class="btn btn-soft" type="button" data-mobile-return-material data-assignment-id="${escapeHtml(assignment.id)}" data-job-request-id="${escapeHtml(jobRequestId)}">Return unused material</button><button class="btn btn-soft" type="button" data-mobile-request-material data-assignment-id="${escapeHtml(assignment.id)}" data-job-request-id="${escapeHtml(jobRequestId)}">Request more material</button></div>
+            <div class="mobile-evidence-actions client-quote-actions"><button class="btn btn-soft" type="button" data-mobile-before-photo data-assignment-id="${escapeHtml(assignment.id)}">Upload before photo</button><button class="btn btn-soft" type="button" data-mobile-after-photo data-assignment-id="${escapeHtml(assignment.id)}">Upload after photo</button></div>
+            <div class="mobile-sticky-actions"><button class="btn btn-soft" type="button" data-mobile-add-note data-assignment-id="${escapeHtml(assignment.id)}">Note</button><button class="btn btn-primary" type="button" data-mobile-complete-job data-assignment-id="${escapeHtml(assignment.id)}">Complete</button></div>
+          </article>`;
+        }).join('') : renderDashboardEmptyState('No mobile jobs loaded.', 'Assigned field jobs will appear here after admin dispatch or worker assignment loads.');
         status.dataset.state = 'ready';
         status.textContent = `${assignments.length} mobile job card${assignments.length === 1 ? '' : 's'} ready.`;
       };
@@ -3681,14 +3699,65 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (mobilePanel && !mobilePanel.dataset.bound) {
           mobilePanel.dataset.bound = 'true';
           mobilePanel.addEventListener('click', async (event) => {
-            const button = event.target.closest('[data-mobile-start-job], [data-mobile-progress-job], [data-mobile-complete-job]');
+            const button = event.target.closest('[data-mobile-start-job], [data-mobile-progress-job], [data-mobile-complete-job], [data-mobile-add-note], [data-mobile-before-photo], [data-mobile-after-photo], [data-mobile-use-material], [data-mobile-return-material], [data-mobile-request-material]');
             if (!button) return;
             const statusNode = document.querySelector('[data-worker-mobile-status]');
-            const complete = Boolean(button.dataset.mobileCompleteJob !== undefined);
             const assignmentId = button.dataset.assignmentId;
-            const statusValue = complete ? 'completed' : 'in_progress';
-            if (statusNode) statusNode.textContent = complete ? 'Marking job complete…' : 'Starting job / marking in progress…';
+            const jobRequestId = button.dataset.jobRequestId || button.closest('[data-mobile-job-request-id]')?.dataset.mobileJobRequestId || '';
             try {
+              if (button.matches('[data-mobile-add-note], [data-mobile-before-photo], [data-mobile-after-photo]')) {
+                const photoForm = document.querySelector('[data-photo-doc-form]');
+                const assignmentSelect = photoForm?.querySelector('[data-photo-doc-assignment]');
+                const stageSelect = photoForm?.querySelector('[name="stage"]');
+                if (assignmentSelect) assignmentSelect.value = assignmentId;
+                if (stageSelect && button.matches('[data-mobile-before-photo]')) stageSelect.value = 'before';
+                if (stageSelect && button.matches('[data-mobile-after-photo]')) stageSelect.value = 'after';
+                if (statusNode) statusNode.textContent = button.matches('[data-mobile-add-note]') ? 'Note form opened in Photo Docs. Save notes there for admin review.' : 'Evidence form opened. Upload storage uses /api/job-files; save evidence notes here.';
+                document.querySelector('.photo-doc-suite')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+              }
+
+              if (button.matches('[data-mobile-request-material]')) {
+                if (statusNode) statusNode.textContent = 'Sending stock request to admin operations…';
+                const response = await fetch('/api/worker/inventory/request', {
+                  method: 'POST',
+                  headers: { accept: 'application/json', 'content-type': 'application/json' },
+                  body: JSON.stringify({ jobRequestId, note: 'Worker requested more material from mobile field mode.' }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.ok) throw new Error(result.message || 'Could not request more material.');
+                if (statusNode) statusNode.textContent = result.message || 'Stock request sent to admin operations.';
+                return;
+              }
+
+              if (button.matches('[data-mobile-use-material], [data-mobile-return-material]')) {
+                const reservation = currentWorkerInventoryReservations.find((entry) => String(entry.jobRequestId || '') === String(jobRequestId));
+                if (!reservation) {
+                  if (statusNode) statusNode.textContent = 'No reserved material is attached to this job yet. Use Request more material or the full worker job material controls.';
+                  return;
+                }
+                const remaining = Math.max(0, Number(reservation.reservedQuantity || 0) - Number(reservation.usedQuantity || 0));
+                if (!remaining) {
+                  if (statusNode) statusNode.textContent = 'Reserved materials for this job are already resolved.';
+                  return;
+                }
+                const action = button.matches('[data-mobile-use-material]') ? 'use' : 'release';
+                if (statusNode) statusNode.textContent = action === 'use' ? 'Recording mobile material usage…' : 'Releasing unused material…';
+                const response = await fetch(`/api/worker/inventory/${action}`, {
+                  method: 'POST',
+                  headers: { accept: 'application/json', 'content-type': 'application/json' },
+                  body: JSON.stringify({ itemId: reservation.itemId, jobRequestId, quantity: remaining, note: action === 'use' ? 'Mobile field mode material usage' : 'Mobile field mode unused material return' }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.ok) throw new Error(result.message || 'Could not update job material.');
+                if (statusNode) statusNode.textContent = action === 'use' ? 'Material usage recorded from mobile.' : 'Unused material released from mobile.';
+                await loadWorkerJobs();
+                return;
+              }
+
+              const complete = Boolean(button.dataset.mobileCompleteJob !== undefined);
+              const statusValue = complete ? 'completed' : 'in_progress';
+              if (statusNode) statusNode.textContent = complete ? 'Marking job complete…' : 'Starting job / marking in progress…';
               await postWorkerAssignmentUpdate({ assignmentId, status: statusValue, workerNotes: complete ? 'Completed from Worker Mobile workspace.' : 'Started from Worker Mobile workspace.', complete }, statusNode);
             } catch (error) { if (statusNode) statusNode.textContent = error.message; }
           });
