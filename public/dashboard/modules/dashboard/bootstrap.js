@@ -635,6 +635,8 @@
         const nextView = availableDashboardViews.includes(view) ? view : fallbackView;
         currentDashboardView = nextView;
         document.documentElement.dataset.dashboardView = nextView;
+        document.documentElement.dataset.currentDashboardView = nextView;
+        document.body.dataset.currentDashboardView = nextView;
         updateDashboardViewChrome(nextView);
 
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
@@ -3670,7 +3672,153 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
       };
 
+
+      const aiTroubleshootingState = { plan: null, payload: null };
+
+      const collectAiTroubleshootingPayload = (form) => {
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.safetyFlags = Array.from(form.querySelectorAll('input[name="safetyFlags"]:checked')).map((input) => input.value);
+        return data;
+      };
+
+      const normalizeAiPlanList = (value) => Array.isArray(value) ? value.filter(Boolean).map((item) => String(item)) : [];
+
+      const formatAiTroubleshootingPlan = (plan = {}) => {
+        const sections = [
+          ['Quick likely causes', normalizeAiPlanList(plan.likelyCauses)],
+          ['Safety warnings', normalizeAiPlanList(plan.safetyWarnings)],
+          ['Step-by-step diagnostic order', normalizeAiPlanList(plan.diagnosticSteps)],
+          ['Tools/meters needed', normalizeAiPlanList(plan.toolsMetersNeeded)],
+          ['Expected readings', normalizeAiPlanList(plan.expectedReadings)],
+          ['Parts likely needed', normalizeAiPlanList(plan.partsLikelyNeeded)],
+          ['Stop and call supervisor if', normalizeAiPlanList(plan.stopAndEscalateIf)],
+        ];
+        return [
+          `AI Troubleshooting Plan\n${plan.summary || 'No summary provided.'}`,
+          ...sections.map(([title, items]) => `${title}:\n${items.map((item, index) => `${index + 1}. ${item}`).join('\n') || '- Not provided.'}`),
+          `Customer-friendly explanation:\n${plan.customerExplanation || 'Not provided.'}`,
+          `Suggested work order notes:\n${plan.workOrderNotes || 'Not provided.'}`,
+          `Suggested estimate/repair recommendation:\n${plan.estimateRecommendation || 'Not provided.'}`,
+        ].join('\n\n');
+      };
+
+      const renderAiTroubleshootingPlan = (plan = {}) => {
+        const container = document.querySelector('[data-ai-troubleshooting-results]');
+        if (!container) return;
+        const card = (title, content) => {
+          const items = normalizeAiPlanList(content);
+          return `<article class="phase54-card ai-troubleshooting-result-card"><span class="phase54-badge">${escapeHtml(title)}</span>${items.length ? `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : `<p>${escapeHtml(String(content || 'Not provided.'))}</p>`}</article>`;
+        };
+        container.innerHTML = `
+          <article class="phase54-card ai-troubleshooting-result-card ai-troubleshooting-summary-card"><span class="phase54-badge">Summary</span><p>${escapeHtml(plan.summary || 'Plan generated.')}</p></article>
+          ${card('Quick likely causes', plan.likelyCauses)}
+          ${card('Safety warnings', plan.safetyWarnings)}
+          ${card('Step-by-step diagnostic order', plan.diagnosticSteps)}
+          ${card('Tools/meters needed', plan.toolsMetersNeeded)}
+          ${card('Expected readings', plan.expectedReadings)}
+          ${card('Parts likely needed', plan.partsLikelyNeeded)}
+          ${card('Stop and call supervisor if', plan.stopAndEscalateIf)}
+          ${card('Customer-friendly explanation', plan.customerExplanation)}
+          ${card('Suggested work order notes', plan.workOrderNotes)}
+          ${card('Suggested estimate/repair recommendation', plan.estimateRecommendation)}
+        `;
+      };
+
+      const updateAiTroubleshootingButtons = () => {
+        const form = document.querySelector('[data-ai-troubleshooting-form]');
+        if (!form) return;
+        const hasPlan = Boolean(aiTroubleshootingState.plan);
+        const workOrderId = form.elements.workOrderId?.value?.trim();
+        const copyButton = form.querySelector('[data-ai-troubleshooting-copy]');
+        const saveButton = form.querySelector('[data-ai-troubleshooting-save]');
+        if (copyButton) {
+          copyButton.disabled = !hasPlan;
+          copyButton.title = hasPlan ? 'Copy the generated troubleshooting plan.' : 'Generate a troubleshooting plan before copying.';
+        }
+        if (saveButton) {
+          saveButton.disabled = !(hasPlan && workOrderId);
+          saveButton.title = hasPlan && workOrderId ? 'Save this plan to the attached work order.' : 'Generate a plan and add a work order ID before saving.';
+        }
+      };
+
+      const bindAiTroubleshootingWorkspace = () => {
+        const form = document.querySelector('[data-ai-troubleshooting-form]');
+        if (!form || form.dataset.bound) return;
+        form.dataset.bound = 'true';
+        const setStatus = (message) => {
+          const status = document.querySelector('[data-ai-troubleshooting-form-status]') || document.querySelector('[data-ai-troubleshooting-status]');
+          if (status) status.textContent = message;
+        };
+        form.addEventListener('input', updateAiTroubleshootingButtons);
+        form.addEventListener('change', updateAiTroubleshootingButtons);
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = collectAiTroubleshootingPayload(form);
+          if (!payload.systemType || !payload.component || !payload.issue) {
+            setStatus('System/trade, equipment/component, and issue/complaint are required.');
+            return;
+          }
+          setStatus('Generating troubleshooting plan…');
+          const submitButton = form.querySelector('[data-ai-troubleshooting-generate]');
+          if (submitButton) submitButton.disabled = true;
+          try {
+            const response = await fetch('/api/worker/ai-troubleshooting', {
+              method: 'POST',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not generate troubleshooting plan.');
+            aiTroubleshootingState.plan = result.troubleshootingPlan;
+            aiTroubleshootingState.payload = payload;
+            renderAiTroubleshootingPlan(result.troubleshootingPlan);
+            setStatus(result.fallbackUsed ? 'Safety-first fallback plan generated because AI service is not configured.' : 'AI troubleshooting plan generated. Review safety warnings before proceeding.');
+          } catch (error) {
+            setStatus(error.message || 'Troubleshooting assistant is unavailable.');
+          } finally {
+            if (submitButton) submitButton.disabled = false;
+            updateAiTroubleshootingButtons();
+          }
+        });
+        form.querySelector('[data-ai-troubleshooting-clear]')?.addEventListener('click', () => {
+          form.reset();
+          aiTroubleshootingState.plan = null;
+          aiTroubleshootingState.payload = null;
+          const container = document.querySelector('[data-ai-troubleshooting-results]');
+          if (container) container.innerHTML = '';
+          setStatus('Troubleshooting form cleared. Enter jobsite symptoms to generate a new plan.');
+          updateAiTroubleshootingButtons();
+        });
+        form.querySelector('[data-ai-troubleshooting-copy]')?.addEventListener('click', async () => {
+          if (!aiTroubleshootingState.plan) { setStatus('Generate a troubleshooting plan before copying.'); return; }
+          const text = formatAiTroubleshootingPlan(aiTroubleshootingState.plan);
+          try {
+            await navigator.clipboard?.writeText(text);
+            setStatus('Troubleshooting plan copied to clipboard.');
+          } catch {
+            setStatus('Clipboard is unavailable; select the generated plan cards to copy manually.');
+          }
+        });
+        form.querySelector('[data-ai-troubleshooting-save]')?.addEventListener('click', async () => {
+          const workOrderId = form.elements.workOrderId?.value?.trim();
+          if (!aiTroubleshootingState.plan || !workOrderId) { setStatus('Generate a plan and add a work order ID before saving notes to a job.'); return; }
+          setStatus('Saving troubleshooting notes to job…');
+          try {
+            const response = await fetch('/api/worker/ai-troubleshooting', {
+              method: 'POST',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({ ...(aiTroubleshootingState.payload || collectAiTroubleshootingPayload(form)), action: 'save_notes', workOrderId, troubleshootingPlan: aiTroubleshootingState.plan }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save troubleshooting notes to job.');
+            setStatus(result.message || 'Troubleshooting notes saved to job.');
+          } catch (error) { setStatus(error.message || 'Could not save troubleshooting notes.'); }
+        });
+        updateAiTroubleshootingButtons();
+      };
+
       const bindPhase54Workspaces = () => {
+        bindAiTroubleshootingWorkspace();
         const scheduleForm = document.querySelector('[data-schedule-dispatch-form]');
         if (scheduleForm && !scheduleForm.dataset.bound) {
           scheduleForm.dataset.bound = 'true';

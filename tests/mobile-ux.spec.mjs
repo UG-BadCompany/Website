@@ -43,9 +43,9 @@ test('mobile sidebar opens/closes and every sidebar item remains tappable', asyn
   assert.match(sidebar, /dataSidebarToggle|sidebarToggle|data-sidebar-toggle/, 'sidebar should create a mobile open control');
   assert.match(sidebar, /data-sidebar-close/, 'sidebar should create a large close control');
   assert.match(sidebar, /sidebarBackdrop|data-sidebar-backdrop/, 'sidebar should create a backdrop that closes the drawer');
-  assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Inventory|mobileQuickActions[\s\S]*Today[\s\S]*Complete/, 'sidebar should define role-aware quick actions');
+  assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Inventory|mobileQuickActions[\s\S]*Today[\s\S]*Troubleshoot[\s\S]*Complete/, 'sidebar should define role-aware quick actions including Troubleshoot');
   assert.match(css, /dashboard-sidebar-v2[\s\S]*position:\s*fixed/, 'sidebar should become a fixed mobile drawer');
-  for (const label of ['Scheduling', 'Worker Mobile', 'Photo Docs', 'Maintenance Plans', 'Deployment Health', 'Inventory']) {
+  for (const label of ['Scheduling', 'Worker Mobile', 'AI Troubleshooting', 'Photo Docs', 'Maintenance Plans', 'Deployment Health', 'Inventory']) {
     assert.ok(sidebar.includes(label), `sidebar should keep ${label} as a tappable item`);
   }
 });
@@ -61,6 +61,22 @@ test('worker mobile field mode supports one-handed job flow', async () => {
   assert.match(bootstrap, /\/api\/worker\/inventory\/use/, 'mark material used should call worker inventory endpoint');
   assert.match(bootstrap, /\/api\/worker\/inventory\/request/, 'request material should call worker inventory request endpoint');
   assert.match(html, /Worker Mobile Field Mode/, 'worker mobile workspace should be present in dashboard markup');
+});
+
+test('AI troubleshooting is mobile-ready for field workers', async () => {
+  const html = await assertHtmlPage('public/dashboard/index.html', ['id="worker-ai-troubleshooting"', 'data-ai-troubleshooting-form']);
+  const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
+  const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
+  const css = await readText('public/assets/mobile-field-ux.css');
+  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting[\s\S]*views: \['worker', 'admin'\]/, 'mobile quick actions should include Troubleshoot for worker and admin');
+  assert.doesNotMatch(html, /id="worker-ai-troubleshooting"[^>]*data-views="client/, 'AI troubleshooting should not be visible to client view');
+  for (const field of ['name="systemType"', 'name="component"', 'name="make"', 'name="model"', 'name="issue"', 'name="errorCode"', 'name="readings"', 'name="checkedAlready"', 'name="urgency"', 'name="workOrderId"']) {
+    assert.match(html, new RegExp(field), `AI troubleshooting field ${field} should exist`);
+  }
+  assert.match(bootstrap, /\/api\/worker\/ai-troubleshooting/, 'Generate button should call worker AI troubleshooting endpoint');
+  assert.match(bootstrap, /data-ai-troubleshooting-copy[\s\S]*navigator\.clipboard/, 'Copy Plan should be wired after a plan exists');
+  assert.match(html, /data-ai-troubleshooting-save disabled title="Generate a plan and add a work order ID before saving\./, 'Save Notes should be disabled with explanation until a work order plan exists');
+  assert.match(css, /worker-ai-troubleshooting-suite[\s\S]*grid-template-columns:\s*1fr !important/, 'AI troubleshooting should collapse to one mobile column');
 });
 
 test('quote editor and client request form expose mobile-friendly critical controls', async () => {
