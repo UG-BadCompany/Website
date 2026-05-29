@@ -31,6 +31,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/auth/verify"
+  to = "/.netlify/functions/verify-magic-link"
+  status = 200
+
+[[redirects]]
   from = "/api/auth/logout"
   to = "/.netlify/functions/logout"
   status = 200
@@ -68,6 +73,22 @@
 [[redirects]]
   from = "/api/admin/inventory"
   to = "/.netlify/functions/admin-inventory"
+  status = 200
+
+
+[[redirects]]
+  from = "/api/admin/inventory/*"
+  to = "/.netlify/functions/admin-inventory"
+  status = 200
+
+[[redirects]]
+  from = "/api/worker/inventory"
+  to = "/.netlify/functions/worker-inventory"
+  status = 200
+
+[[redirects]]
+  from = "/api/worker/inventory/*"
+  to = "/.netlify/functions/worker-inventory"
   status = 200
 
 [[redirects]]
@@ -116,6 +137,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/worker/jobs/*"
+  to = "/.netlify/functions/worker-jobs"
+  status = 200
+
+[[redirects]]
   from = "/api/public-config"
   to = "/.netlify/functions/public-config"
   status = 200
@@ -132,12 +158,22 @@
   to = "/.netlify/functions/admin-work-orders"
   status = 200
 
+[[redirects]]
+  from = "/api/admin/work-orders/*"
+  to = "/.netlify/functions/admin-work-orders"
+  status = 200
+
 
 [[redirects]]
   from = "/api/admin/finance-overview"
   to = "/.netlify/functions/admin-finance-overview"
   status = 200
 
+
+[[redirects]]
+  from = "/api/admin/square/payment-link"
+  to = "/.netlify/functions/square-create-payment-link"
+  status = 200
 
 [[redirects]]
   from = "/api/square/create-payment-link"

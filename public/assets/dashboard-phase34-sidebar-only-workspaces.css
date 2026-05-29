@@ -14,7 +14,8 @@ body[data-sidebar-workspace="quotes"] [data-sidebar-workspace-section~="quotes"]
 body[data-sidebar-workspace="work-orders"] [data-sidebar-workspace-section~="work-orders"],
 body[data-sidebar-workspace="invoices"] [data-sidebar-workspace-section~="invoices"],
 body[data-sidebar-workspace="workers"] [data-sidebar-workspace-section~="workers"],
-body[data-sidebar-workspace="settings"] [data-sidebar-workspace-section~="settings"] {
+body[data-sidebar-workspace="settings"] [data-sidebar-workspace-section~="settings"],
+body[data-sidebar-workspace="deployment"] [data-sidebar-workspace-section~="deployment"] {
   display: block !important;
 }
 

@@ -185,7 +185,7 @@
     .metric { color: #fdba74; }
     .footer { border-top-color: var(--dash-line); }
 
-    html[data-theme="light"] body {
+    html[data-theme="dark"] body {
       color: #111827;
       background:
         radial-gradient(circle at 10% -8%, rgba(249,115,22,.16), transparent 32rem),
@@ -193,41 +193,41 @@
         linear-gradient(135deg, #fffaf2 0%, #ffffff 52%, #f7eadc 100%);
     }
 
-    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
-    html[data-theme="light"] .brand,
-    html[data-theme="light"] .nav-links,
-    html[data-theme="light"] h1,
-    html[data-theme="light"] h2,
-    html[data-theme="light"] h3,
-    html[data-theme="light"] label,
-    html[data-theme="light"] .card strong,
-    html[data-theme="light"] .benefit strong,
-    html[data-theme="light"] .service-card strong,
-    html[data-theme="light"] .workflow-card strong { color: #111827; }
+    html[data-theme="dark"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="dark"] .brand,
+    html[data-theme="dark"] .nav-links,
+    html[data-theme="dark"] h1,
+    html[data-theme="dark"] h2,
+    html[data-theme="dark"] h3,
+    html[data-theme="dark"] label,
+    html[data-theme="dark"] .card strong,
+    html[data-theme="dark"] .benefit strong,
+    html[data-theme="dark"] .service-card strong,
+    html[data-theme="dark"] .workflow-card strong { color: #111827; }
 
-    html[data-theme="light"] p,
-    html[data-theme="light"] .footer,
-    html[data-theme="light"] .session-status,
-    html[data-theme="light"] .account-status,
-    html[data-theme="light"] .card p,
-    html[data-theme="light"] .benefit p,
-    html[data-theme="light"] .service-card p,
-    html[data-theme="light"] .workflow-card p,
-    html[data-theme="light"] .list li,
-    html[data-theme="light"] .form-note,
-    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+    html[data-theme="dark"] p,
+    html[data-theme="dark"] .footer,
+    html[data-theme="dark"] .session-status,
+    html[data-theme="dark"] .account-status,
+    html[data-theme="dark"] .card p,
+    html[data-theme="dark"] .benefit p,
+    html[data-theme="dark"] .service-card p,
+    html[data-theme="dark"] .workflow-card p,
+    html[data-theme="dark"] .list li,
+    html[data-theme="dark"] .form-note,
+    html[data-theme="dark"] .estimate-list li { color: #5f5148; }
 
-    html[data-theme="light"] .hero-card,
-    html[data-theme="light"] .portal-hero,
-    html[data-theme="light"] .dashboard-hero,
-    html[data-theme="light"] .card,
-    html[data-theme="light"] .benefit,
-    html[data-theme="light"] .login-card,
-    html[data-theme="light"] .notice,
-    html[data-theme="light"] .service-card,
-    html[data-theme="light"] .workflow-card,
-    html[data-theme="light"] .estimate-shell,
-    html[data-theme="light"] .estimate-form {
+    html[data-theme="dark"] .hero-card,
+    html[data-theme="dark"] .portal-hero,
+    html[data-theme="dark"] .dashboard-hero,
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .benefit,
+    html[data-theme="dark"] .login-card,
+    html[data-theme="dark"] .notice,
+    html[data-theme="dark"] .service-card,
+    html[data-theme="dark"] .workflow-card,
+    html[data-theme="dark"] .estimate-shell,
+    html[data-theme="dark"] .estimate-form {
       color: #111827;
       border-color: rgba(17,17,17,.12);
       background: rgba(255,255,255,.88);
@@ -324,42 +324,49 @@
       font-weight: 900;
     }
 
-    html[data-theme="light"] .nav-links > a:not(.btn),
-    html[data-theme="light"] .nav-links > button:not(.btn) {
+    html[data-theme="dark"] .nav-links > a:not(.btn),
+    html[data-theme="dark"] .nav-links > button:not(.btn) {
       color: #1f2937;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.82);
     }
 
-    html[data-theme="light"] .nav-links .btn-primary {
+    html[data-theme="dark"] .nav-links .btn-primary {
       color: #21120a;
       background: linear-gradient(135deg, #fb923c, #facc15);
       border-color: transparent;
     }
 
-    html[data-theme="light"] .nav-links .btn-soft,
-    html[data-theme="light"] .nav-links .btn-secondary,
-    html[data-theme="light"] .nav-links .btn:not(.btn-primary),
-    html[data-theme="light"] .nav-links [data-inventory-logout] {
+    html[data-theme="dark"] .nav-links .btn-soft,
+    html[data-theme="dark"] .nav-links .btn-secondary,
+    html[data-theme="dark"] .nav-links .btn:not(.btn-primary),
+    html[data-theme="dark"] .nav-links [data-inventory-logout] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
       background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
       box-shadow: 0 10px 24px rgba(45,27,13,.09);
     }
 
-    html[data-theme="light"] .nav-links .account-status,
-    html[data-theme="light"] .nav-links [data-inventory-account-status] {
+    html[data-theme="dark"] .nav-links .account-status,
+    html[data-theme="dark"] .nav-links [data-inventory-account-status] {
       color: #344054;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.88);
     }
 
+    .inventory-command-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 8px}.inventory-command-tabs button{min-height:42px;border-radius:999px}.inventory-command-tabs button[aria-current="true"]{background:linear-gradient(135deg,var(--rust),var(--rust-dark));color:#fff;border-color:transparent}.inventory-pane{display:grid;gap:16px;margin:18px 0}.inventory-pane[hidden]{display:none}.inventory-dashboard-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.inventory-ops-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.inventory-mini-list{display:grid;gap:10px}.inventory-mini-list article{padding:14px;border:1px solid var(--line);border-radius:18px;background:rgba(15,23,42,.62)}.inventory-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.inventory-card-grid .form{margin:0}.inventory-scan-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.inventory-value{color:#fdba74;font-weight:950}.inventory-empty{padding:18px;border:1px dashed rgba(255,255,255,.22);border-radius:20px;color:var(--muted);background:rgba(255,255,255,.05)}@media(max-width:900px){.inventory-dashboard-grid,.inventory-ops-grid,.inventory-card-grid,.inventory-scan-row{grid-template-columns:1fr}}
+
   </style>
+  <link rel="stylesheet" href="/assets/header-phase10.css">
+  <link rel="stylesheet" href="/assets/public-phase13-dashboard-match.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase49-ui-consistency.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase50-real-white-area-fix.css">
+  <link rel="stylesheet" href="/assets/ui-polish-2026.css">
 </head>
 <body>
   <nav class="nav" aria-label="Inventory navigation">
     <div class="wrap nav-inner">
-      <a class="brand" href="/dashboard/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>Inventory</span></a>
+      <a class="brand" href="/dashboard/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>Inventory</span></a>
       <div class="nav-links"><a class="btn" href="/dashboard/">Back to dashboard</a><span class="account-status" data-inventory-account-status role="status" aria-live="polite">Checking session…</span><button class="btn" type="button" data-inventory-logout hidden>Sign out</button></div>
     </div>
   </nav>
@@ -371,60 +378,126 @@
       </div>
     </section>
     <section class="grid" data-admin-inventory-summary aria-label="Inventory summary"></section>
-    <section class="card" data-inventory-workspace hidden>
-      <strong>Add inventory item</strong>
-      <form class="form" data-admin-inventory-form>
-        <div class="form-grid">
-          <label>Item name<input name="name" required placeholder="Drywall screws"></label>
-          <label>SKU / reference<input name="sku" placeholder="DW-SCREW-1"></label>
-          <label>Category<input name="category" placeholder="Fasteners, paint, tools"></label>
-          <label>Unit<input name="unit" placeholder="each, box, gallon"></label>
-          <label>Quantity on hand<input name="quantityOnHand" type="number" step="0.01" placeholder="10"></label>
-          <label>Reorder point<input name="reorderPoint" type="number" step="0.01" placeholder="3"></label>
-          <label>Supplier<input name="supplier" placeholder="Supplier or store"></label>
-          <label>Location<input name="storageLocation" placeholder="Shop shelf, truck, trailer"></label>
-          <label class="full">Notes<textarea name="notes" placeholder="Size, color, preferred brand, purchase notes"></textarea></label>
+    <section data-inventory-workspace hidden>
+      <nav class="inventory-command-tabs" aria-label="Inventory workspaces">
+        <button class="btn" type="button" data-inventory-pane-tab="overview" aria-current="true">Overview</button>
+        <button class="btn" type="button" data-inventory-pane-tab="items">Items</button>
+        <button class="btn" type="button" data-inventory-pane-tab="low-stock">Low Stock</button>
+        <button class="btn" type="button" data-inventory-pane-tab="locations">Locations</button>
+        <button class="btn" type="button" data-inventory-pane-tab="workers-trucks">Workers/Trucks</button>
+        <button class="btn" type="button" data-inventory-pane-tab="reservations">Job Reservations</button>
+        <button class="btn" type="button" data-inventory-pane-tab="tools">Tools/Equipment</button>
+        <button class="btn" type="button" data-inventory-pane-tab="suppliers">Suppliers</button>
+        <button class="btn" type="button" data-inventory-pane-tab="purchasing">Purchase/Restock</button>
+        <button class="btn" type="button" data-inventory-pane-tab="cycle-count">Cycle Count</button>
+        <button class="btn" type="button" data-inventory-pane-tab="movements">Movement History</button>
+      </nav>
+
+      <section class="inventory-pane" data-inventory-pane="overview">
+        <div class="inventory-dashboard-grid">
+          <article class="card"><strong>Operations snapshot</strong><p>Warehouse, truck, worker, job-reserved, low-stock, purchase, and movement activity from one inventory command center.</p><div class="inventory-mini-list" data-inventory-reorder-list></div></article>
+          <article class="card"><strong>SKU / barcode lookup</strong><p>Scanner-ready lookup by SKU, barcode, QR value, item name, or supplier part number.</p><div class="inventory-scan-row"><label>Scan or search<input data-inventory-scan-input placeholder="Scan barcode / QR or type SKU"></label><button class="btn" type="button" data-inventory-scan-button>Find item</button></div><p class="status" data-inventory-scan-status>Ready for future scanner hardware.</p></article>
         </div>
-        <div class="actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
-      </form>
+      </section>
+
+      <section class="inventory-pane" data-inventory-pane="items" hidden>
+        <section class="card">
+          <strong>Add inventory item</strong>
+          <form class="form" data-admin-inventory-form>
+            <div class="form-grid">
+              <label>Item name<input name="name" required placeholder="Drywall screws"></label>
+              <label>SKU / internal reference<input name="sku" placeholder="DW-SCREW-1"></label>
+              <label>Category<select name="category" data-inventory-category-select></select></label>
+              <label>Trade / type<input name="tradeType" placeholder="Drywall, plumbing, electrical"></label>
+              <label>Item type<select name="itemType"><option value="material">Material</option><option value="consumable">Consumable</option><option value="tool">Tool</option><option value="equipment">Equipment</option><option value="safety">Safety / PPE</option><option value="vehicle_stock">Vehicle stock</option></select></label>
+              <label>Unit<input name="unit" placeholder="each, box, gallon"></label>
+              <label>Quantity on hand<input name="quantityOnHand" type="number" step="0.01" placeholder="10"></label>
+              <label>Quantity reserved<input name="quantityReserved" type="number" step="0.01" placeholder="0"></label>
+              <label>Reorder point<input name="reorderPoint" type="number" step="0.01" placeholder="3"></label>
+              <label>Recommended reorder qty<input name="reorderQuantity" type="number" step="0.01" placeholder="12"></label>
+              <label>Unit cost<input name="unitCost" type="number" step="0.01" placeholder="4.25"></label>
+              <label>Markup %<input name="markupPercent" type="number" step="0.01" placeholder="35"></label>
+              <label>Charge-out price<input name="chargePrice" type="number" step="0.01" placeholder="6.75"></label>
+              <label>Supplier<input name="supplier" placeholder="Supplier or store"></label>
+              <label>Supplier part #<input name="supplierPartNumber" placeholder="Vendor SKU"></label>
+              <label>Location<select name="locationType" data-inventory-location-select></select></label>
+              <label>Truck / vehicle<input name="truckAssignment" placeholder="Truck 1"></label>
+              <label>Barcode value<input name="barcodeValue" placeholder="Barcode / label value"></label>
+              <label>QR value<input name="qrValue" placeholder="QR payload"></label>
+              <label class="full">Notes<textarea name="notes" placeholder="Size, color, preferred brand, purchase notes, asset/service notes"></textarea></label>
+            </div>
+            <div class="actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
+          </form>
+        </section>
+        <section class="inventory-list" data-admin-inventory-list aria-label="Inventory items"></section>
+      </section>
+
+      <section class="inventory-pane" data-inventory-pane="low-stock" hidden><article class="card"><strong>Low stock / reorder board</strong><div class="inventory-mini-list" data-inventory-low-stock-list></div></article></section>
+      <section class="inventory-pane" data-inventory-pane="locations" hidden><article class="card"><strong>Locations</strong><div class="inventory-mini-list" data-inventory-location-list></div></article></section>
+      <section class="inventory-pane" data-inventory-pane="workers-trucks" hidden><article class="card"><strong>Workers / Trucks</strong><p>Assign inventory to trucks or workers and view who has what.</p><form class="form" data-inventory-transfer-form><div class="form-grid"><label>Item<select name="itemId" data-inventory-item-select></select></label><label>Quantity<input name="quantity" type="number" step="0.01" required></label><label>From location<input name="fromLocation" placeholder="main_warehouse"></label><label>To location<select name="toLocation" data-inventory-location-select></select></label><label>Worker ID (optional)<input name="workerUserId" placeholder="Worker user UUID"></label><label>Truck / vehicle<input name="truckAssignment" placeholder="Truck 1"></label><label class="full">Transfer notes<input name="note" placeholder="Assign to truck, worker checkout, return transfer"></label></div><div class="actions"><button class="btn btn-primary" type="submit">Record transfer</button><span data-inventory-transfer-status></span></div></form></article></section>
+      <section class="inventory-pane" data-inventory-pane="reservations" hidden><article class="card"><strong>Job material reservations</strong><p>Reserve stock for approved quotes or scheduled work orders. Reserved quantity reduces available stock without reducing on-hand until consumed.</p><form class="form" data-inventory-reservation-form><div class="form-grid"><label>Item<select name="itemId" data-inventory-item-select></select></label><label>Quantity to reserve<input name="quantity" type="number" step="0.01" required></label><label>Job / work order ID<input name="jobRequestId" required placeholder="Job request UUID"></label><label class="full">Notes<input name="note" placeholder="Material staged for approved quote"></label></div><div class="actions"><button class="btn btn-primary" type="submit">Reserve for job</button><span data-inventory-reservation-status></span></div></form><div class="inventory-mini-list" data-inventory-reservation-list></div></article></section>
+      <section class="inventory-pane" data-inventory-pane="tools" hidden><article class="card"><strong>Tools / Equipment tracking</strong><p>Use item type, barcode/QR, notes, worker assignment, truck assignment, replacement cost, and movement history to track tools/equipment. Service dates and serials are database-ready via asset records.</p><div class="inventory-mini-list" data-inventory-tool-list></div></article></section>
+      <section class="inventory-pane" data-inventory-pane="suppliers" hidden><article class="card"><strong>Suppliers</strong><form class="form" data-inventory-supplier-form><div class="form-grid"><label>Supplier name<input name="supplierName" required></label><label>Contact name<input name="contactName"></label><label>Phone<input name="phone"></label><label>Email<input name="email"></label><label>Website<input name="website"></label><label>Default markup %<input name="markupPercent" type="number" step="0.01"></label><label>Lead time days<input name="leadTimeDays" type="number"></label><label>Preferred supplier<select name="preferred"><option value="">No</option><option value="true">Yes</option></select></label><label class="full">Notes<textarea name="notes"></textarea></label></div><div class="actions"><button class="btn btn-primary" type="submit">Save supplier</button><span data-inventory-supplier-status></span></div></form><div class="inventory-mini-list" data-inventory-supplier-list></div></article></section>
+      <section class="inventory-pane" data-inventory-pane="purchasing" hidden><article class="card"><strong>Purchase / Restock</strong><p>Group reorder needs by supplier, mark order needed, ordered, and received.</p><div class="inventory-mini-list" data-inventory-purchase-list></div></article></section>
+      <section class="inventory-pane" data-inventory-pane="cycle-count" hidden><article class="card"><strong>Cycle count workflow</strong><p>Count selected items repeatedly instead of relying on a single annual count. Variances create an adjustment movement and audit trail.</p><form class="form" data-inventory-count-form><div class="form-grid"><label>Item<select name="itemId" data-inventory-item-select></select></label><label>Counted quantity<input name="countedQuantity" type="number" step="0.01" required></label><label>Location<select name="locationType" data-inventory-location-select></select></label><label class="full">Adjustment reason<input name="countReason" required placeholder="Cycle count variance, shrinkage, found stock"></label></div><div class="actions"><button class="btn btn-primary" type="submit">Complete cycle count</button><span data-inventory-count-status></span></div></form></article></section>
+      <section class="inventory-pane" data-inventory-pane="movements" hidden><article class="card"><strong>Movement History</strong><div class="inventory-mini-list" data-inventory-movement-list></div></article></section>
     </section>
-    <section class="inventory-list" data-admin-inventory-list aria-label="Inventory items"></section>
   </main>
   <script>
     const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
     let currentAdminInventory = [];
+    let currentInventoryData = { items: [], movements: [], reservations: [], suppliers: [], categories: [], locations: [] };
+
+    const formatMoney = (value = 0) => Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 
     const renderAdminInventorySummary = (summary = {}) => `
-      <article class="card"><span class="badge">Inventory items</span><div class="metric">${Number(summary.total || 0)}</div><p>active tracked items</p></article>
-      <article class="card"><span class="badge">Low stock</span><div class="metric">${Number(summary.lowStock || 0)}</div><p>at or under reorder point</p></article>
-      <article class="card"><span class="badge">Categories</span><div class="metric">${Number(summary.categories || 0)}</div><p>organized item groups</p></article>
+      <article class="card"><span class="badge">Inventory value</span><div class="metric">${formatMoney(summary.totalValue || 0)}</div><p>estimated stocked material/tool value</p></article>
+      <article class="card"><span class="badge">Low stock</span><div class="metric">${Number(summary.lowStock || 0)}</div><p>${Number(summary.outOfStock || 0)} out of stock • ${Number(summary.pendingRestock || 0)} restock needs</p></article>
+      <article class="card"><span class="badge">Job reserved</span><div class="metric">${Number(summary.assignedToJobs || 0)}</div><p>items/materials staged for work orders</p></article>
+      <article class="card"><span class="badge">Workers</span><div class="metric">${Number(summary.assignedToWorkers || 0)}</div><p>assigned tools/materials</p></article>
+      <article class="card"><span class="badge">Trucks</span><div class="metric">${Number(summary.inTrucks || 0)}</div><p>truck or vehicle stock records</p></article>
+      <article class="card"><span class="badge">Warehouse</span><div class="metric">${Number(summary.inWarehouse || 0)}</div><p>main shop/warehouse records</p></article>
     `;
 
     const renderAdminInventoryCard = (item) => `
-      <article class="inventory-card">
-        <span class="badge">${escapeHtml(item.stockStatus === 'low' ? 'low stock' : 'in stock')}</span>
+      <article class="inventory-card" data-inventory-item-card="${escapeHtml(item.id)}">
+        <span class="badge">${escapeHtml(item.stockStatus === 'out' ? 'out of stock' : (item.stockStatus === 'low' ? 'low stock' : 'in stock'))}</span>
         <strong>${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || 'each')}</strong>
-        <div class="meta"><span>${escapeHtml(item.category || 'Uncategorized')}</span><span>${escapeHtml(item.sku || 'No SKU')}</span><span>${escapeHtml(item.storageLocation || 'No location')}</span><span>Reorder at ${Number(item.reorderPoint || 0)}</span></div>
-        ${item.supplier ? `<p><strong>Supplier:</strong> ${escapeHtml(item.supplier)}</p>` : ''}
+        <div class="meta"><span>${escapeHtml(item.itemType || 'material')}</span><span>${escapeHtml(item.category || 'Uncategorized')}</span><span>${escapeHtml(item.sku || 'No SKU')}</span><span>${escapeHtml(item.locationType || item.storageLocation || 'No location')}</span><span>Available ${Number(item.quantityAvailable ?? item.quantityOnHand ?? 0)}</span><span>Reserved ${Number(item.quantityReserved || 0)}</span><span>Reorder at ${Number(item.reorderPoint || 0)}</span></div>
+        <p><span class="inventory-value">${formatMoney(item.inventoryValue || 0)}</span> value • Cost ${formatMoney(item.unitCost || 0)} • Charge ${formatMoney(item.chargePrice || 0)} • Markup ${Number(item.markupPercent || 0)}%</p>
+        ${item.supplier ? `<p><strong>Supplier:</strong> ${escapeHtml(item.supplier)} ${item.supplierPartNumber ? `• Part # ${escapeHtml(item.supplierPartNumber)}` : ''}</p>` : ''}
+        ${item.barcodeValue || item.qrValue ? `<p><strong>Label:</strong> ${escapeHtml(item.barcodeValue || 'No barcode')} • QR ${escapeHtml(item.qrValue || 'not set')} <button class="btn" type="button" data-inventory-print-label="${escapeHtml(item.id)}">Preview label</button></p>` : ''}
         ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ''}
+        <div class="inventory-card-grid">
         <form class="form" data-admin-inventory-edit-form data-inventory-item-id="${escapeHtml(item.id)}">
           <input type="hidden" name="action" value="update">
           <div class="form-grid">
             <label>Item name<input name="name" required value="${escapeHtml(item.name)}"></label>
-            <label>SKU / reference<input name="sku" value="${escapeHtml(item.sku || '')}"></label>
+            <label>SKU<input name="sku" value="${escapeHtml(item.sku || '')}"></label>
             <label>Category<input name="category" value="${escapeHtml(item.category || '')}"></label>
+            <label>Trade<input name="tradeType" value="${escapeHtml(item.tradeType || '')}"></label>
+            <label>Item type<input name="itemType" value="${escapeHtml(item.itemType || 'material')}"></label>
             <label>Unit<input name="unit" value="${escapeHtml(item.unit || 'each')}"></label>
             <label>Reorder point<input name="reorderPoint" type="number" step="0.01" value="${Number(item.reorderPoint || 0)}"></label>
+            <label>Reorder qty<input name="reorderQuantity" type="number" step="0.01" value="${Number(item.reorderQuantity || 0)}"></label>
+            <label>Unit cost<input name="unitCost" type="number" step="0.01" value="${Number(item.unitCost || 0)}"></label>
+            <label>Markup %<input name="markupPercent" type="number" step="0.01" value="${Number(item.markupPercent || 0)}"></label>
+            <label>Charge price<input name="chargePrice" type="number" step="0.01" value="${Number(item.chargePrice || 0)}"></label>
             <label>Supplier<input name="supplier" value="${escapeHtml(item.supplier || '')}"></label>
-            <label>Location<input name="storageLocation" value="${escapeHtml(item.storageLocation || '')}"></label>
+            <label>Supplier part #<input name="supplierPartNumber" value="${escapeHtml(item.supplierPartNumber || '')}"></label>
+            <label>Location<input name="locationType" value="${escapeHtml(item.locationType || '')}"></label>
+            <label>Truck<input name="truckAssignment" value="${escapeHtml(item.truckAssignment || '')}"></label>
+            <label>Barcode<input name="barcodeValue" value="${escapeHtml(item.barcodeValue || '')}"></label>
+            <label>QR<input name="qrValue" value="${escapeHtml(item.qrValue || '')}"></label>
             <label class="full">Notes<textarea name="notes">${escapeHtml(item.notes || '')}</textarea></label>
           </div>
           <div class="actions"><button class="btn" type="submit">Save item details</button><button class="btn btn-danger" type="button" data-admin-inventory-archive data-inventory-item-id="${escapeHtml(item.id)}">Archive item</button><span data-admin-inventory-edit-status aria-live="polite"></span></div>
         </form>
         <form class="form" data-admin-inventory-adjust-form data-inventory-item-id="${escapeHtml(item.id)}">
-          <div class="form-grid"><label>Adjustment type<select name="adjustmentType"><option value="received">Received</option><option value="used">Used</option><option value="correction">Correction</option><option value="manual">Manual</option></select></label><label>Quantity change<input name="quantityDelta" type="number" step="0.01" placeholder="5 or -2" required></label><label class="full">Note<input name="adjustmentNote" placeholder="Restocked, used on job, count correction"></label></div>
-          <div class="actions"><button class="btn" type="submit">Save adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
+          <div class="form-grid"><label>Adjustment type<select name="adjustmentType"><option value="received">Received</option><option value="used">Used</option><option value="correction">Correction</option><option value="manual">Manual</option></select></label><label>Quantity change<input name="quantityDelta" type="number" step="0.01" placeholder="5 or -2" required></label><label>Job/work order ID<input name="jobRequestId" placeholder="Optional for job usage"></label><label class="full">Note<input name="adjustmentNote" placeholder="Restocked, consumed on job, cycle count correction"></label></div>
+          <div class="actions"><button class="btn" type="submit">Save movement</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
         </form>
+        </div>
       </article>
     `;
 
@@ -432,6 +505,59 @@
       const list = document.querySelector('[data-admin-inventory-list]');
       if (!list) return;
       list.innerHTML = currentAdminInventory.length ? currentAdminInventory.map(renderAdminInventoryCard).join('') : '<p class="status">No inventory items yet.</p>';
+    };
+
+    const renderMiniItem = (item) => `<article><strong>${escapeHtml(item.name || item.itemName || item.supplier || 'Inventory record')}</strong><div class="meta"><span>${escapeHtml(item.sku || item.itemSku || item.movementType || item.status || '')}</span><span>${escapeHtml(item.locationType || item.toLocation || item.jobRequestId || '')}</span></div><p>${escapeHtml(item.notes || item.supplierPartNumber || '')}</p></article>`;
+
+    const renderOperationsPanels = () => {
+      const low = currentAdminInventory.filter((item) => item.stockStatus === 'low' || item.stockStatus === 'out');
+      const tools = currentAdminInventory.filter((item) => ['tool','equipment'].includes(String(item.itemType || '').toLowerCase()));
+      const locations = currentInventoryData.locations || [];
+      const setHtml = (selector, html) => { const target = document.querySelector(selector); if (target) target.innerHTML = html || '<p class="inventory-empty">No records yet.</p>'; };
+      setHtml('[data-inventory-reorder-list]', low.slice(0, 6).map((item) => `<article><strong>${escapeHtml(item.name)}</strong><div class="meta"><span>${escapeHtml(item.supplier || 'No supplier')}</span><span>Available ${Number(item.quantityAvailable || 0)}</span><span>Reorder ${Number(item.reorderQuantity || item.reorderPoint || 0)}</span></div></article>`).join(''));
+      setHtml('[data-inventory-low-stock-list]', low.map((item) => `<article><strong>${escapeHtml(item.name)}</strong><div class="meta"><span>${escapeHtml(item.supplier || 'No supplier')}</span><span>${escapeHtml(item.sku || 'No SKU')}</span><span>Available ${Number(item.quantityAvailable || 0)}</span></div><div class="actions"><button class="btn" type="button" data-inventory-reorder-needed="${escapeHtml(item.id)}">Mark order needed</button><button class="btn" type="button" data-inventory-reorder-ordered="${escapeHtml(item.id)}">Mark ordered</button><button class="btn" type="button" data-inventory-reorder-received="${escapeHtml(item.id)}">Mark received</button></div></article>`).join(''));
+      setHtml('[data-inventory-location-list]', locations.map((loc) => `<article><strong>${escapeHtml(loc.name)}</strong><div class="meta"><span>${escapeHtml(loc.key)}</span><span>${escapeHtml(loc.type)}</span><span>${currentAdminInventory.filter((item) => item.locationType === loc.key || item.storageLocation === loc.key).length} records</span></div></article>`).join(''));
+      setHtml('[data-inventory-reservation-list]', (currentInventoryData.reservations || []).map(renderMiniItem).join(''));
+      setHtml('[data-inventory-tool-list]', tools.map(renderMiniItem).join(''));
+      setHtml('[data-inventory-supplier-list]', (currentInventoryData.suppliers || []).map((supplier) => `<article><strong>${escapeHtml(supplier.name)}</strong><div class="meta"><span>${supplier.preferred ? 'Preferred' : 'Standard'}</span><span>${Number(supplier.leadTimeDays || 0)} day lead</span><span>${Number(supplier.defaultMarkupPercent || 0)}% markup</span></div><p>${escapeHtml([supplier.phone, supplier.email, supplier.website].filter(Boolean).join(' • '))}</p></article>`).join(''));
+      setHtml('[data-inventory-purchase-list]', low.map((item) => `<article><strong>${escapeHtml(item.supplier || 'No supplier')}</strong><p>${escapeHtml(item.name)} • recommended ${Number(item.reorderQuantity || item.reorderPoint || 0)} ${escapeHtml(item.unit || 'each')}</p></article>`).join(''));
+      setHtml('[data-inventory-movement-list]', (currentInventoryData.movements || []).map((movement) => `<article><strong>${escapeHtml(movement.itemName || 'Inventory movement')}</strong><div class="meta"><span>${escapeHtml(movement.movementType)}</span><span>${Number(movement.quantity || 0)}</span><span>${escapeHtml([movement.fromLocation, movement.toLocation].filter(Boolean).join(' → '))}</span></div><p>${escapeHtml(movement.notes || '')}</p></article>`).join(''));
+    };
+
+    const populateInventoryControls = () => {
+      const itemOptions = '<option value="">Choose inventory item</option>' + currentAdminInventory.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} (${escapeHtml(item.sku || 'no SKU')}) — available ${Number(item.quantityAvailable ?? item.quantityOnHand ?? 0)}</option>`).join('');
+      document.querySelectorAll('[data-inventory-item-select]').forEach((select) => { select.innerHTML = itemOptions; });
+      const locations = currentInventoryData.locations?.length ? currentInventoryData.locations : [{ key: 'main_warehouse', name: 'Main warehouse / shop' }, { key: 'truck_1', name: 'Truck 1' }, { key: 'truck_2', name: 'Truck 2' }];
+      const locationOptions = locations.map((loc) => `<option value="${escapeHtml(loc.key)}">${escapeHtml(loc.name)}</option>`).join('');
+      document.querySelectorAll('[data-inventory-location-select]').forEach((select) => { select.innerHTML = locationOptions; });
+      const categories = currentInventoryData.categories?.length ? currentInventoryData.categories : ['HVAC','Electrical','Plumbing','Drywall','Painting','Carpentry','Fasteners','Tools','Equipment'];
+      document.querySelectorAll('[data-inventory-category-select]').forEach((select) => { select.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join(''); });
+    };
+
+    const bindInventoryPaneTabs = () => {
+      document.querySelectorAll('[data-inventory-pane-tab]').forEach((button) => {
+        if (button.dataset.bound) return;
+        button.dataset.bound = 'true';
+        button.addEventListener('click', () => {
+          const pane = button.dataset.inventoryPaneTab;
+          document.querySelectorAll('[data-inventory-pane-tab]').forEach((peer) => peer.setAttribute('aria-current', String(peer === button)));
+          document.querySelectorAll('[data-inventory-pane]').forEach((section) => { section.hidden = section.dataset.inventoryPane !== pane; });
+        });
+      });
+    };
+
+    const postInventoryAction = async (url, payload, statusSelector, successMessage) => {
+      const status = document.querySelector(statusSelector);
+      if (status) status.textContent = 'Saving…';
+      try {
+        const response = await fetch(url, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory action failed.');
+        if (status) status.textContent = successMessage;
+        await loadAdminInventory();
+      } catch (error) {
+        if (status) status.textContent = error.message;
+      }
     };
 
     const bindAdminInventoryActions = () => {
@@ -465,7 +591,7 @@
         const formData = new FormData(activeForm);
         const payload = editForm
           ? { ...Object.fromEntries(formData.entries()), itemId: editForm.dataset.inventoryItemId }
-          : { itemId: adjustmentForm.dataset.inventoryItemId, adjustmentType: formData.get('adjustmentType'), quantityDelta: Number(formData.get('quantityDelta') || 0), adjustmentNote: formData.get('adjustmentNote') || '' };
+          : { itemId: adjustmentForm.dataset.inventoryItemId, adjustmentType: formData.get('adjustmentType'), quantityDelta: Number(formData.get('quantityDelta') || 0), adjustmentNote: formData.get('adjustmentNote') || '', jobRequestId: formData.get('jobRequestId') || '' };
         if (status) status.textContent = editForm ? 'Saving item details…' : 'Saving adjustment…';
         try {
           const response = await fetch('/api/admin/inventory', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(payload) });
@@ -478,6 +604,14 @@
       });
       document.querySelector('[data-admin-inventory-list]')?.addEventListener('click', async (event) => {
         const archiveButton = event.target.closest('[data-admin-inventory-archive]');
+        const labelButton = event.target.closest('[data-inventory-print-label]');
+        if (labelButton) {
+          event.preventDefault();
+          const item = currentAdminInventory.find((record) => record.id === labelButton.dataset.inventoryPrintLabel);
+          const status = document.querySelector('[data-admin-inventory-status]');
+          if (status) status.textContent = item ? `Label ready: ${item.name} • ${item.sku || item.barcodeValue || item.id}` : 'Label record not found.';
+          return;
+        }
         if (!archiveButton) return;
         const card = archiveButton.closest('.inventory-card');
         const status = card?.querySelector('[data-admin-inventory-edit-status]');
@@ -491,6 +625,42 @@
           if (status) status.textContent = error.message;
         }
       });
+
+      document.querySelector('[data-inventory-reservation-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+        postInventoryAction('/api/admin/inventory/reserve', payload, '[data-inventory-reservation-status]', 'Material reserved for job.');
+      });
+      document.querySelector('[data-inventory-transfer-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+        postInventoryAction('/api/admin/inventory/transfer', payload, '[data-inventory-transfer-status]', 'Inventory transfer recorded.');
+      });
+      document.querySelector('[data-inventory-count-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+        postInventoryAction('/api/admin/inventory/count', payload, '[data-inventory-count-status]', 'Cycle count completed and audited.');
+      });
+      document.querySelector('[data-inventory-supplier-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+        postInventoryAction('/api/admin/inventory/suppliers', payload, '[data-inventory-supplier-status]', 'Supplier saved.');
+      });
+      document.addEventListener('click', (event) => {
+        const needed = event.target.closest('[data-inventory-reorder-needed]');
+        const ordered = event.target.closest('[data-inventory-reorder-ordered]');
+        const received = event.target.closest('[data-inventory-reorder-received]');
+        const button = needed || ordered || received;
+        if (!button) return;
+        event.preventDefault();
+        postInventoryAction('/api/admin/inventory/reorder', { itemId: button.dataset.inventoryReorderNeeded || button.dataset.inventoryReorderOrdered || button.dataset.inventoryReorderReceived, orderStatus: needed ? 'order_needed' : (ordered ? 'ordered' : 'received') }, '[data-admin-inventory-status]', 'Reorder status updated.');
+      });
+      document.querySelector('[data-inventory-scan-button]')?.addEventListener('click', () => {
+        const query = (document.querySelector('[data-inventory-scan-input]')?.value || '').trim().toLowerCase();
+        const status = document.querySelector('[data-inventory-scan-status]');
+        const item = currentAdminInventory.find((record) => [record.sku, record.barcodeValue, record.qrValue, record.name, record.supplierPartNumber].some((value) => String(value || '').toLowerCase().includes(query)));
+        if (status) status.textContent = item ? `${item.name}: ${Number(item.quantityAvailable ?? item.quantityOnHand ?? 0)} available at ${item.locationType || item.storageLocation || 'unknown location'}.` : 'No matching SKU/barcode/QR record found.';
+      });
     };
 
     const loadAdminInventory = async () => {
@@ -501,10 +671,14 @@
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory is not available.');
         currentAdminInventory = result.items || [];
+        currentInventoryData = result;
         if (status) status.textContent = currentAdminInventory.length ? `${currentAdminInventory.length} inventory item${currentAdminInventory.length === 1 ? '' : 's'} loaded.` : 'No inventory items yet.';
         if (summary) summary.innerHTML = renderAdminInventorySummary(result.summary || {});
         document.querySelector('[data-inventory-workspace]')?.removeAttribute('hidden');
+        populateInventoryControls();
+        renderOperationsPanels();
         renderAdminInventoryList();
+        bindInventoryPaneTabs();
         bindAdminInventoryActions();
       } catch (error) {
         currentAdminInventory = [];
@@ -547,5 +721,6 @@
 
     requireInventoryAccess();
   </script>
+  <script src="/assets/site-cleanup.js" defer></script>
 </body>
 </html>

@@ -132,7 +132,6 @@
         if (permissions.canViewAdminTools) actions.push('<a class="btn btn-soft" href="#admin-requests">Requests</a><a class="btn btn-soft" href="#estimate-review">Estimate Review</a><a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>');
         if (permissions.canManageInvoices) actions.push('<a class="btn btn-soft" href="#finance-command-center">Finance Center</a><a class="btn btn-soft" href="#admin-invoices">Invoices</a>');
         if (permissions.canManageUsers || permissions.canManageRoles) actions.push('<button class="btn btn-soft" type="button" data-admin-access-shortcut>Roles & Users</button>');
-        if (permissions.canViewAdminActivity) actions.push('<button class="btn btn-soft" type="button" data-admin-activity-shortcut>Audit Activity</button>');
         if (permissions.canManageInventory) actions.push('<a class="btn btn-soft" href="#admin-inventory">Inventory</a>');
         if (permissions.canViewClientTools) actions.push('<a class="btn btn-soft" href="#client-requests">Client Requests</a><a class="btn btn-soft" href="#client-quotes">Client Quotes</a><a class="btn btn-soft" href="#client-invoices">Client Invoices</a>');
         if (permissions.canViewWorkerTools) actions.push('<a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>');
@@ -145,7 +144,6 @@
         bindDashboardToolPopupLaunchers();
         bindClientWorkspaceLaunchers();
         bindAdminAccessLauncher();
-        bindAdminActivityLauncher();
         return panel;
       };
 
@@ -288,7 +286,6 @@
         bindDashboardToolPopupLaunchers();
         bindClientWorkspaceLaunchers();
         bindAdminAccessLauncher();
-        bindAdminActivityLauncher();
         bindClientProfileButton();
         bindRequestEstimateLink();
       };
@@ -334,9 +331,6 @@
           loadAdminActivity();
         }
 
-        if (user.permissions?.canViewAdminActivity) {
-          bindAdminActivityLauncher();
-        }
 
         if (user.permissions?.canManageInvoices) {
           window.taDashboardActions.bindAdminInvoiceActions();
@@ -803,7 +797,7 @@ if (!status) {
         return `
           <article class="client-quote" data-admin-work-order-summary-card>
             <span class="client-quote-badge">${escapeHtml((request.status || 'new').replaceAll('_', ' '))}</span>
-            <strong>Work order command center</strong>
+            <strong>Work orders</strong>
             <div class="client-quote-meta">
               <span>WO ${escapeHtml(String(request.id || '').slice(0, 8) || 'new')}</span>
               <span>${escapeHtml(request.requesterName || 'Client')}</span>
@@ -2361,9 +2355,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const closeAdminRoleModal = () => setModalOpen(document.querySelector('[data-admin-role-modal]'), false);
       const closeAdminUserModal = () => setModalOpen(document.querySelector('[data-admin-user-modal]'), false);
 
-      const renderCheckboxList = (items, selected, name) => items.map((item) => `
-        <label><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> ${escapeHtml(item.name || item.label || item.key)}</label>
-      `).join('');
+      const renderCheckboxList = (items, selected, name) => items.map((item) => {
+        const title = item.name || item.label || item.key;
+        const detail = item.description || item.key;
+        return `
+          <label class="admin-access-choice"><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> <span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></span></label>
+        `;
+      }).join('');
 
       const renderPermissionInputs = (selected = []) => {
         const list = document.querySelector('[data-admin-permission-list]');
@@ -2519,26 +2517,58 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const roleForm = document.querySelector('[data-admin-role-form]');
         const userForm = document.querySelector('[data-admin-user-form]');
         const search = document.querySelector('[data-admin-user-search]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
+        if (!panel || document.documentElement.dataset.boundAdminAccessForms) return;
+        document.documentElement.dataset.boundAdminAccessForms = 'true';
 
-        panel.addEventListener('click', (event) => {
-          const roleButton = event.target.closest('[data-admin-edit-role]');
-          const userButton = event.target.closest('[data-admin-edit-user]');
-          const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
-          if (roleButton) selectAdminRole(roleButton.dataset.adminEditRole);
-          if (selectedRoleButton) {
+        document.addEventListener('click', async (event) => {
+          const accessAction = event.target.closest('[data-admin-edit-role], [data-admin-open-selected-role], [data-admin-edit-user], [data-admin-new-role], [data-admin-user-create], [data-admin-role-modal-close], [data-admin-user-modal-close]');
+          if (!accessAction) return;
+
+          const isInsideAccessManager = Boolean(accessAction.closest('[data-admin-access]'));
+          const isInsideAccessModal = Boolean(accessAction.closest('[data-admin-role-modal], [data-admin-user-modal]'));
+          if (!isInsideAccessManager && !isInsideAccessModal) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          const status = document.querySelector('[data-admin-access-status]');
+          if (accessAction.matches('[data-admin-role-modal-close]')) {
+            closeAdminRoleModal();
+            return;
+          }
+          if (accessAction.matches('[data-admin-user-modal-close]')) {
+            closeAdminUserModal();
+            return;
+          }
+          if (accessAction.matches('[data-admin-edit-role]')) {
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            selectAdminRole(accessAction.dataset.adminEditRole);
+            return;
+          }
+          if (accessAction.matches('[data-admin-open-selected-role]')) {
+            if (!currentAdminRoles.size) await loadAdminAccess();
             const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
             if (selectedRole) selectAdminRole(selectedRole);
+            else if (status) status.textContent = 'Select a role first, then click Edit selected role.';
+            return;
           }
-          if (userButton) selectAdminUser(userButton.dataset.adminEditUser);
-          if (event.target.closest('[data-admin-new-role]')) {
+          if (accessAction.matches('[data-admin-edit-user]')) {
+            if (!currentAdminUsers.size) await loadAdminAccess();
+            selectAdminUser(accessAction.dataset.adminEditUser);
+            return;
+          }
+          if (accessAction.matches('[data-admin-new-role]')) {
+            if (!currentPermissions.length) await loadAdminAccess();
             resetRoleForm();
             openAdminRoleModal();
+            return;
           }
-          if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
-          if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
-        });
+          if (accessAction.matches('[data-admin-user-create]')) {
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            resetUserForm();
+            openAdminUserModal();
+          }
+        }, true);
 
         document.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
           if (event.target === event.currentTarget) closeAdminRoleModal();
@@ -2645,7 +2675,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const target = document.querySelector(selector);
             if (target) { target.hidden = false; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
           };
-          if (config.key === 'workOrders') revealOne('#admin-work-orders');
+          if (config.key === 'workOrders') revealOne('[data-phase3-workflow-suite]');
           if (config.key === 'inventory') revealOne('[data-admin-inventory]');
           if (config.key === 'invoices') revealOne('[data-admin-invoices]');
           if (config.key === 'activity') {
@@ -2702,7 +2732,6 @@ Additional info from client: ${payload.additionalInfo}` : '';
           { selector: '[data-admin-work-orders-shortcut]', key: 'workOrders', label: 'Work orders', description: 'Review incoming requests, build quotes, assign workers, and close jobs.', href: '/portal/admin/work-orders/', endpoint: '/api/admin/job-requests' },
           { selector: '[data-admin-invoices-shortcut]', key: 'invoices', label: 'Invoices', description: 'Track approvals, payment follow-up, and invoice status updates.', href: '/portal/admin/invoices/', endpoint: '/api/admin/invoices' },
           { selector: '[data-admin-inventory-shortcut]', key: 'inventory', label: 'Inventory', description: 'Monitor stock, materials, and usage controls.', href: '/portal/admin/inventory/', endpoint: '/api/admin/inventory' },
-          { selector: '[data-admin-activity-shortcut]', key: 'activity', label: 'Audit activity', description: 'Search recent account, payment, and status events quickly.', href: '/portal/admin/audit-activity/', endpoint: '/api/admin/activity?limit=5' },
         ];
 
         launchers.forEach((config) => {
@@ -2774,22 +2803,33 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const panel = document.querySelector('[data-admin-access]');
         const openButtons = document.querySelectorAll('[data-admin-access-shortcut]');
         if (!panel || !openButtons.length) return;
+        const openAccessWorkspace = async () => {
+          bindAdminAccessForms();
+          if (panel.matches('[data-admin-access-workspace]')) {
+            if (typeof window.taSetSidebarWorkspace === 'function') window.taSetSidebarWorkspace('settings');
+            panel.hidden = false;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            await loadAdminAccess();
+            document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+            return;
+          }
+          setModalOpen(panel, true);
+          document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
+        };
         openButtons.forEach((openButton) => {
           if (openButton.dataset.bound) return;
           openButton.dataset.bound = 'true';
-          openButton.addEventListener('click', () => {
-            setModalOpen(panel, true);
-            document.querySelector('[data-admin-user-search]')?.focus({ preventScroll: true });
-          });
+          openButton.addEventListener('click', openAccessWorkspace);
         });
         panel.querySelector('[data-admin-access-close]')?.addEventListener('click', () => setModalOpen(panel, false));
         panel.addEventListener('click', (event) => {
-          if (event.target === panel) setModalOpen(panel, false);
+          if (!panel.matches('[data-admin-access-workspace]') && event.target === panel) setModalOpen(panel, false);
         });
       };
 
       const loadAdminAccess = async () => {
         const status = document.querySelector('[data-admin-access-status]');
+        bindAdminAccessForms();
         try {
           const [rolesResponse, usersResponse] = await Promise.all([
             fetch('/api/admin/roles', { headers: { accept: 'application/json' } }),
@@ -2797,13 +2837,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
           ]);
           const rolesResult = await rolesResponse.json().catch(() => ({}));
           const usersResult = await usersResponse.json().catch(() => ({}));
-          if (!rolesResponse.ok || !rolesResult.ok) throw new Error(rolesResult.message || 'Roles are not available.');
-          if (!usersResponse.ok || !usersResult.ok) throw new Error(usersResult.message || 'Users are not available.');
-          renderAdminAccess({ roles: rolesResult.roles, users: usersResult.users, permissions: rolesResult.permissions });
+          const rolesOk = rolesResponse.ok && rolesResult.ok;
+          const usersOk = usersResponse.ok && usersResult.ok;
+
+          if (!rolesOk && !usersOk) {
+            throw new Error(rolesResult.message || usersResult.message || 'Roles and users are not available.');
+          }
+
+          const roleRows = rolesOk ? (rolesResult.roles || []) : (usersResult.roles || []);
+          const permissionRows = rolesOk ? (rolesResult.permissions || []) : currentPermissions;
+          const userRows = usersOk ? (usersResult.users || []) : [];
+
+          renderAdminAccess({ roles: roleRows, users: userRows, permissions: permissionRows });
           bindAdminAccessForms();
           if (status) {
-            status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
+            status.dataset.state = rolesOk && usersOk ? 'ready' : 'warning';
+            const warnings = [
+              rolesOk ? '' : (rolesResult.message || 'Role editing is unavailable for this session.'),
+              usersOk ? '' : (usersResult.message || 'User editing is unavailable for this session.'),
+            ].filter(Boolean);
+            status.textContent = warnings.length
+              ? `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} and ${userRows.length} user${userRows.length === 1 ? "" : "s"} loaded. ${warnings.join(' ')}`
+              : `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
           }
         } catch (error) {
           if (status) {
@@ -2812,6 +2867,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
         }
       };
+
+      window.taDashboardActions = window.taDashboardActions || {};
+      window.taDashboardActions.bindAdminAccessForms = bindAdminAccessForms;
+      window.taDashboardActions.loadAdminAccess = loadAdminAccess;
 
 
       const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {
@@ -3008,11 +3067,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }, {});
         const inventoryEvents = Number(typeCounts.inventory || 0);
         const paymentEvents = Number(typeCounts.payment || 0);
-        return `
-          <article class="admin-request"><span class="admin-request-badge">Loaded events</span><strong>${events.length}</strong><p>currently visible</p></article>
-          <article class="admin-request"><span class="admin-request-badge">Inventory events</span><strong>${inventoryEvents}</strong><p>stock and usage updates</p></article>
-          <article class="admin-request"><span class="admin-request-badge">Payment events</span><strong>${paymentEvents}</strong><p>billing confirmations</p></article>
-        `;
+        return '';
       };
 
       const renderAdminInventoryWorkspace = () => {

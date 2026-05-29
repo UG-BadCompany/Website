@@ -19,7 +19,7 @@ const MAX_FIELD_LENGTHS = {
   service: 120,
   subcategory: 160,
   timeframe: 80,
-  description: 5000,
+  description: 4000,
   recaptchaToken: 4000,
 };
 
@@ -806,6 +806,7 @@ const estimateFromPayload = (payload) => {
     laborHours: totals.laborHoursHigh,
     laborRateCents: DEFAULT_LABOR_RATE_CENTS,
     materials: pricedMaterials,
+    materialBreakdown: pricedMaterials.map((item) => ({ name: item.name, category: item.category || item.trade || item.workCategory || '', estimatedQuantity: Number(item.estimatedQuantity ?? item.quantity ?? item.neededQty ?? 1) || 1, unit: item.unit || 'each', notes: item.notes || '', inventoryMatchHint: item.inventoryMatchHint || item.sku || item.supplierPartNumber || item.aiQuoteCatalogKey || item.name })),
     laborItems,
     baseMaterials,
     baseLaborItems,
@@ -1004,8 +1005,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         requester_phone,
         city,
         street_address,
-        work_scope,
-        work_category,
         service_type,
         preferred_timeframe,
         description
@@ -1017,8 +1016,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         ${payload.phone},
         ${payload.city},
         ${payload.streetAddress},
-        ${payload.workScope || null},
-        ${payload.workCategory || payload.service || null},
         ${payload.service},
         ${payload.timeframe || null},
         ${payload.description}
@@ -1044,23 +1041,6 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         })}::jsonb
       )
     `;
-
-    let estimateDraftResult = null;
-    try {
-      estimateDraftResult = await createAutomaticEstimateDraft({ db, jobRequest, client, payload });
-    } catch (draftError) {
-      console.error('Automatic estimate draft failed', draftError);
-      await db.sql`
-        insert into audit_events (event_type, entity_type, entity_id, metadata)
-        values (
-          ${'estimate_draft.failed'},
-          ${'job_request'},
-          ${jobRequest.id},
-          ${JSON.stringify({ source: 'public_request_estimate_form', error: draftError?.message || 'unknown' })}::jsonb
-        )
-      `;
-    }
-
     const token = makeToken();
     const magicLinkUrl = createMagicLinkUrl(request, token);
 
@@ -1083,32 +1063,10 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
       clientId: client.id,
       propertyId: property.id,
       createdAt: jobRequest.created_at,
-      estimateDraftCreated: Boolean(estimateDraftResult?.quote?.id),
-      estimateDraft: estimateDraftResult ? {
-        id: estimateDraftResult.quote.id,
-        status: estimateDraftResult.quote.status,
-        title: estimateDraftResult.quote.title,
-        summary: estimateDraftResult.quote.summary,
-        amountCents: estimateDraftResult.quote.amount_cents,
-        lowAmountCents: estimateDraftResult.draft.lowAmountCents || null,
-        confidence: estimateDraftResult.draft.confidence || null,
-        quoteReady: Boolean(estimateDraftResult.draft.quoteReady),
-        accuracyRulesVersion: estimateDraftResult.draft.accuracyRulesVersion || ACCURACY_RULES_VERSION,
-        factors: estimateDraftResult.draft.factors || {},
-        accuracyReview: estimateDraftResult.draft.accuracyReview || [],
-        quoteOptions: estimateDraftResult.draft.quoteOptions || [],
-        missingInfoQuestions: estimateDraftResult.draft.missingInfoQuestions || [],
-        riskFlags: estimateDraftResult.draft.riskFlags || [],
-        materials: estimateDraftResult.draft.materials || [],
-        supplierPricingPlan: estimateDraftResult.draft.supplierPricingPlan || {},
-        troubleshootingPlan: estimateDraftResult.draft.troubleshootingPlan || {},
-        laborItems: estimateDraftResult.draft.laborItems || [],
-        totals: estimateDraftResult.draft.totals || {},
-      } : null,
       emailSent: emailResult.sent,
       message: emailResult.sent
-        ? 'Estimate request saved. We are preparing your estimate, and a secure client portal link was sent to your email.'
-        : 'Estimate request saved. We are preparing your estimate. Your request is in the portal, but confirmation email delivery needs configuration.',
+        ? 'Estimate request saved. Check your email for a confirmation and secure client portal link.'
+        : 'Estimate request saved. Email delivery is not configured yet; request a magic link from the portal login to continue.',
     });
   } catch (error) {
     console.error('Failed to create job request', error);

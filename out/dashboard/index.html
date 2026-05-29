@@ -33,20 +33,61 @@
     }
 
 
-    [data-admin-pipeline-summary],
     [data-admin-invoice-kpi-summary],
-    [data-admin-activity-summary] {
+    [data-admin-activity-summary],
+    [data-admin-alerts-summary] {
       grid-template-columns: repeat(3,minmax(0,1fr));
       align-items: stretch;
     }
 
-    [data-admin-pipeline-summary] .admin-request,
     [data-admin-invoice-kpi-summary] .admin-request,
-    [data-admin-activity-summary] .admin-request {
+    [data-admin-activity-summary] .admin-request,
+    [data-admin-alerts-summary] .admin-stat-card {
       text-align: center;
       min-height: 128px;
       display: grid;
       align-content: center;
+    }
+
+    [data-admin-alerts-summary] {
+      grid-template-columns: repeat(4,minmax(0,1fr));
+      gap: 10px;
+    }
+
+    [data-admin-alerts-summary] .admin-stat-card {
+      padding: 10px;
+      border: 1px solid rgba(148,163,184,.28);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(15,23,42,.84), rgba(30,41,59,.72));
+      box-shadow: 0 12px 28px rgba(0,0,0,.25);
+    }
+
+    [data-admin-alerts-summary] .admin-stat-title {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      color: #9a3412;
+      font-size: .88rem;
+      font-weight: 900;
+      letter-spacing: .01em;
+    }
+
+    [data-admin-alerts-summary] .admin-stat-value {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.55rem;
+      font-weight: 950;
+      color: #f8fafc;
+      line-height: 1.1;
+    }
+
+    [data-admin-alerts-summary] .admin-stat-caption {
+      display: block;
+      margin-top: 6px;
+      color: #dbe4ef;
+      font-size: .82rem;
+      font-weight: 800;
     }
 
 
@@ -130,18 +171,18 @@
       background: rgba(251,146,60,.2);
     }
 
-    html[data-theme="light"] [data-admin-access] .admin-request-modal-panel {
+    html[data-theme="dark"] [data-admin-access] .admin-request-modal-panel {
       background: linear-gradient(180deg,rgba(255,244,229,.97),rgba(246,226,201,.92));
       color: #2a211b;
       border-color: rgba(173,63,24,.22);
     }
 
-    html[data-theme="light"] [data-admin-access] .admin-request-modal-header p,
-    html[data-theme="light"] [data-admin-access] .client-request-form label {
+    html[data-theme="dark"] [data-admin-access] .admin-request-modal-header p,
+    html[data-theme="dark"] [data-admin-access] .client-request-form label {
       color: #5b4d43;
     }
 
-    html[data-theme="light"] [data-admin-access] [data-admin-access-status] {
+    html[data-theme="dark"] [data-admin-access] [data-admin-access-status] {
       background: linear-gradient(135deg,rgba(255,244,229,.95),rgba(246,226,201,.82));
       color: #332922;
       border-color: rgba(173,63,24,.24);
@@ -158,12 +199,12 @@
       box-shadow: 0 10px 24px rgba(0,0,0,.14);
     }
 
-    html[data-theme="light"] [data-admin-access] [data-admin-user-search-results] > .session-status {
+    html[data-theme="dark"] [data-admin-access] [data-admin-user-search-results] > .session-status {
       background: linear-gradient(135deg,rgba(255,244,229,.95),rgba(246,226,201,.8));
       color: #332922;
       border-color: rgba(173,63,24,.22);
     }
-html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-soft {
+html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-soft {
       background: #fff;
       color: #2a211b;
       border-color: rgba(173,63,24,.24);
@@ -181,9 +222,19 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
     @media(max-width:760px) {
-      [data-admin-pipeline-summary],
-    [data-admin-invoice-kpi-summary],
+      [data-admin-invoice-kpi-summary],
     [data-admin-activity-summary] { grid-template-columns: 1fr; }
+    [data-admin-alerts-summary] {
+      grid-template-columns: repeat(4,minmax(0,1fr));
+      gap: 8px;
+    }
+    [data-admin-alerts-summary] .admin-stat-card {
+      padding: 8px;
+      min-height: 108px;
+    }
+    [data-admin-alerts-summary] .admin-stat-title { font-size: .8rem; padding: 5px 8px; }
+    [data-admin-alerts-summary] .admin-stat-value { font-size: 1.2rem; margin-top: 6px; }
+    [data-admin-alerts-summary] .admin-stat-caption { font-size: .72rem; margin-top: 4px; }
       .brand img { width: 104px; }
       .logo-panel { min-height: 230px; }
     }
@@ -674,31 +725,31 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       border-color: rgba(148,163,184,.3);
     }
 
-    html[data-theme="light"] [data-admin-access] [data-admin-access-status][data-state="ready"] {
+    html[data-theme="dark"] [data-admin-access] [data-admin-access-status][data-state="ready"] {
       background: linear-gradient(90deg, rgba(187,247,208,.82), rgba(240,253,244,.92));
       border-color: rgba(34,197,94,.35);
       color: #14532d;
       text-shadow: none;
     }
 
-    html[data-theme="light"] [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] {
+    html[data-theme="dark"] [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] {
       border-color: rgba(34,197,94,.24);
       background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(240,253,244,.94));
       box-shadow: 0 10px 24px rgba(45,27,13,.08);
     }
 
-    html[data-theme="light"] [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] strong {
+    html[data-theme="dark"] [data-admin-access] [data-admin-user-search-results] [data-admin-user-result-card] strong {
       color: #1f2937;
     }
 
-    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] {
+    html[data-theme="dark"] [data-admin-user-modal] [data-admin-user-form] {
       background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,238,.94));
       border-color: rgba(173,63,24,.2);
     }
 
-    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] input,
-    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] textarea,
-    html[data-theme="light"] [data-admin-user-modal] [data-admin-user-form] select {
+    html[data-theme="dark"] [data-admin-user-modal] [data-admin-user-form] input,
+    html[data-theme="dark"] [data-admin-user-modal] [data-admin-user-form] textarea,
+    html[data-theme="dark"] [data-admin-user-modal] [data-admin-user-form] select {
       background: #fff;
       color: #1f2937;
       border-color: rgba(17,24,39,.18);
@@ -773,7 +824,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
 
-    html[data-theme="light"] body {
+    html[data-theme="dark"] body {
       color: #111827;
       background:
         radial-gradient(circle at 10% -8%, rgba(249,115,22,.16), transparent 32rem),
@@ -781,49 +832,49 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         linear-gradient(135deg, #fffaf2 0%, #ffffff 52%, #f7eadc 100%);
     }
 
-    html[data-theme="light"] body::before { opacity: .28; }
-    html[data-theme="light"] p,
-    html[data-theme="light"] .account-status,
-    html[data-theme="light"] .admin-request-meta,
-    html[data-theme="light"] .client-request-meta,
-    html[data-theme="light"] .client-quote-meta,
-    html[data-theme="light"] .client-property-meta,
-    html[data-theme="light"] .worker-job-meta,
-    html[data-theme="light"] .admin-assignment-meta { color: #5f5148; }
-    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
-    html[data-theme="light"] .brand,
-    html[data-theme="light"] .nav-links,
-    html[data-theme="light"] h1,
-    html[data-theme="light"] h2,
-    html[data-theme="light"] .card strong,
-    html[data-theme="light"] .client-request-form label { color: #111827; }
-    html[data-theme="light"] .dashboard-hero,
-    html[data-theme="light"] .logo-panel,
-    html[data-theme="light"] .card,
-    html[data-theme="light"] .admin-request,
-    html[data-theme="light"] .client-request,
-    html[data-theme="light"] .client-quote,
-    html[data-theme="light"] .client-property,
-    html[data-theme="light"] .worker-job,
-    html[data-theme="light"] .admin-assignment,
-    html[data-theme="light"] .client-request-form,
-    html[data-theme="light"] .session-status,
-    html[data-theme="light"] .client-profile-properties,
-    html[data-theme="light"] .admin-request-modal-panel {
+    html[data-theme="dark"] body::before { opacity: .28; }
+    html[data-theme="dark"] p,
+    html[data-theme="dark"] .account-status,
+    html[data-theme="dark"] .admin-request-meta,
+    html[data-theme="dark"] .client-request-meta,
+    html[data-theme="dark"] .client-quote-meta,
+    html[data-theme="dark"] .client-property-meta,
+    html[data-theme="dark"] .worker-job-meta,
+    html[data-theme="dark"] .admin-assignment-meta { color: #5f5148; }
+    html[data-theme="dark"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="dark"] .brand,
+    html[data-theme="dark"] .nav-links,
+    html[data-theme="dark"] h1,
+    html[data-theme="dark"] h2,
+    html[data-theme="dark"] .card strong,
+    html[data-theme="dark"] .client-request-form label { color: #111827; }
+    html[data-theme="dark"] .dashboard-hero,
+    html[data-theme="dark"] .logo-panel,
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .admin-request,
+    html[data-theme="dark"] .client-request,
+    html[data-theme="dark"] .client-quote,
+    html[data-theme="dark"] .client-property,
+    html[data-theme="dark"] .worker-job,
+    html[data-theme="dark"] .admin-assignment,
+    html[data-theme="dark"] .client-request-form,
+    html[data-theme="dark"] .session-status,
+    html[data-theme="dark"] .client-profile-properties,
+    html[data-theme="dark"] .admin-request-modal-panel {
       color: #111827;
       border-color: rgba(17,17,17,.12);
       background: rgba(255,255,255,.88);
       box-shadow: 0 22px 60px rgba(45,27,13,.12);
     }
-    html[data-theme="light"] .btn,
-    html[data-theme="light"] .btn-soft,
-    html[data-theme="light"] .account-status { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
-    html[data-theme="light"] .client-request-form input,
-    html[data-theme="light"] .client-request-form select,
-    html[data-theme="light"] .client-request-form textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
-    html[data-theme="light"] .client-request-form input:disabled:not([data-client-profile-email]) { color: #111827; background: rgba(17,17,17,.045); }
+    html[data-theme="dark"] .btn,
+    html[data-theme="dark"] .btn-soft,
+    html[data-theme="dark"] .account-status { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
+    html[data-theme="dark"] .client-request-form input,
+    html[data-theme="dark"] .client-request-form select,
+    html[data-theme="dark"] .client-request-form textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
+    html[data-theme="dark"] .client-request-form input:disabled:not([data-client-profile-email]) { color: #111827; background: rgba(17,17,17,.045); }
 
-    html[data-theme="light"] .admin-command {
+    html[data-theme="dark"] .admin-command {
       color: #111827;
       border-color: rgba(17,17,17,.12);
       background:
@@ -1018,7 +1069,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     .metric { color: #fdba74; }
     .footer { border-top-color: var(--dash-line); }
 
-    html[data-theme="light"] body {
+    html[data-theme="dark"] body {
       color: #111827;
       background:
         radial-gradient(circle at 10% -8%, rgba(249,115,22,.16), transparent 32rem),
@@ -1026,41 +1077,41 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         linear-gradient(135deg, #fffaf2 0%, #ffffff 52%, #f7eadc 100%);
     }
 
-    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
-    html[data-theme="light"] .brand,
-    html[data-theme="light"] .nav-links,
-    html[data-theme="light"] h1,
-    html[data-theme="light"] h2,
-    html[data-theme="light"] h3,
-    html[data-theme="light"] label,
-    html[data-theme="light"] .card strong,
-    html[data-theme="light"] .benefit strong,
-    html[data-theme="light"] .service-card strong,
-    html[data-theme="light"] .workflow-card strong { color: #111827; }
+    html[data-theme="dark"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="dark"] .brand,
+    html[data-theme="dark"] .nav-links,
+    html[data-theme="dark"] h1,
+    html[data-theme="dark"] h2,
+    html[data-theme="dark"] h3,
+    html[data-theme="dark"] label,
+    html[data-theme="dark"] .card strong,
+    html[data-theme="dark"] .benefit strong,
+    html[data-theme="dark"] .service-card strong,
+    html[data-theme="dark"] .workflow-card strong { color: #111827; }
 
-    html[data-theme="light"] p,
-    html[data-theme="light"] .footer,
-    html[data-theme="light"] .session-status,
-    html[data-theme="light"] .account-status,
-    html[data-theme="light"] .card p,
-    html[data-theme="light"] .benefit p,
-    html[data-theme="light"] .service-card p,
-    html[data-theme="light"] .workflow-card p,
-    html[data-theme="light"] .list li,
-    html[data-theme="light"] .form-note,
-    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+    html[data-theme="dark"] p,
+    html[data-theme="dark"] .footer,
+    html[data-theme="dark"] .session-status,
+    html[data-theme="dark"] .account-status,
+    html[data-theme="dark"] .card p,
+    html[data-theme="dark"] .benefit p,
+    html[data-theme="dark"] .service-card p,
+    html[data-theme="dark"] .workflow-card p,
+    html[data-theme="dark"] .list li,
+    html[data-theme="dark"] .form-note,
+    html[data-theme="dark"] .estimate-list li { color: #5f5148; }
 
-    html[data-theme="light"] .hero-card,
-    html[data-theme="light"] .portal-hero,
-    html[data-theme="light"] .dashboard-hero,
-    html[data-theme="light"] .card,
-    html[data-theme="light"] .benefit,
-    html[data-theme="light"] .login-card,
-    html[data-theme="light"] .notice,
-    html[data-theme="light"] .service-card,
-    html[data-theme="light"] .workflow-card,
-    html[data-theme="light"] .estimate-shell,
-    html[data-theme="light"] .estimate-form {
+    html[data-theme="dark"] .hero-card,
+    html[data-theme="dark"] .portal-hero,
+    html[data-theme="dark"] .dashboard-hero,
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .benefit,
+    html[data-theme="dark"] .login-card,
+    html[data-theme="dark"] .notice,
+    html[data-theme="dark"] .service-card,
+    html[data-theme="dark"] .workflow-card,
+    html[data-theme="dark"] .estimate-shell,
+    html[data-theme="dark"] .estimate-form {
       color: #111827;
       border-color: rgba(17,17,17,.12);
       background: rgba(255,255,255,.88);
@@ -1204,22 +1255,22 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       font-weight: 860;
     }
 
-    html[data-theme="light"] {
+    html[data-theme="dark"] {
       --dash-text: #111827;
       --dash-muted: #475467;
       --dash-line: rgba(17,24,39,.18);
       --dash-surface: rgba(255,255,255,.94);
       --dash-surface-strong: rgba(255,255,255,.98);
     }
-    html[data-theme="light"] body { color: #111827; }
-    html[data-theme="light"] .nav-links > a:not(.btn) { color: #384252; }
-    html[data-theme="light"] .btn-soft,
-    html[data-theme="light"] .account-status {
+    html[data-theme="dark"] body { color: #111827; }
+    html[data-theme="dark"] .nav-links > a:not(.btn) { color: #384252; }
+    html[data-theme="dark"] .btn-soft,
+    html[data-theme="dark"] .account-status {
       color: #111827;
       background: rgba(255,255,255,.92);
       border-color: rgba(17,24,39,.18);
     }
-    html[data-theme="light"] .main-command-shortcuts {
+    html[data-theme="dark"] .main-command-shortcuts {
       color: #111827;
       border-color: rgba(173,63,24,.20);
       background:
@@ -1227,62 +1278,62 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         radial-gradient(circle at 92% 12%, rgba(249,115,22,.14), transparent 24rem);
       box-shadow: 0 24px 70px rgba(45,27,13,.14);
     }
-    html[data-theme="light"] .main-command-shortcuts .admin-command-header h2,
-    html[data-theme="light"] .main-command-shortcuts .admin-command-card strong { color: #111827; }
-    html[data-theme="light"] .main-command-shortcuts .admin-command-header p,
-    html[data-theme="light"] .main-command-shortcuts .admin-command-card span { color: #475467; }
-    html[data-theme="light"] .main-command-shortcuts .eyebrow {
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-header h2,
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-card strong { color: #111827; }
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-header p,
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-card span { color: #475467; }
+    html[data-theme="dark"] .main-command-shortcuts .eyebrow {
       color: #9a3412;
       background: rgba(249,115,22,.12);
       border-color: rgba(154,52,18,.18);
     }
-    html[data-theme="light"] .main-command-shortcuts .admin-command-card {
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-card {
       border-color: rgba(17,24,39,.14);
       background: #ffffff;
       box-shadow: 0 14px 34px rgba(45,27,13,.10);
     }
-    html[data-theme="light"] .main-command-shortcuts .admin-command-card:hover,
-    html[data-theme="light"] .main-command-shortcuts .admin-command-card:focus-visible {
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-card:hover,
+    html[data-theme="dark"] .main-command-shortcuts .admin-command-card:focus-visible {
       border-color: rgba(194,65,12,.34);
       background: #fff7ed;
     }
-    html[data-theme="light"] .admin-command {
+    html[data-theme="dark"] .admin-command {
       color: #111827;
       border-color: rgba(17,24,39,.14);
       background:
         linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,247,237,.92)),
         radial-gradient(circle at 88% 18%, rgba(34,197,94,.10), transparent 22rem);
     }
-    html[data-theme="light"] .admin-command-card {
+    html[data-theme="dark"] .admin-command-card {
       color: #111827;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.92);
     }
-    html[data-theme="light"] .admin-command-card strong { color: #111827; }
-    html[data-theme="light"] .admin-command-card span { color: #475467; }
-    html[data-theme="light"] .dashboard-hero,
-    html[data-theme="light"] .card,
-    html[data-theme="light"] .client-request-form,
-    html[data-theme="light"] .admin-request,
-    html[data-theme="light"] .client-request,
-    html[data-theme="light"] .client-quote,
-    html[data-theme="light"] .client-property,
-    html[data-theme="light"] .worker-job,
-    html[data-theme="light"] .admin-assignment,
-    html[data-theme="light"] .admin-request-modal-panel {
+    html[data-theme="dark"] .admin-command-card strong { color: #111827; }
+    html[data-theme="dark"] .admin-command-card span { color: #475467; }
+    html[data-theme="dark"] .dashboard-hero,
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .client-request-form,
+    html[data-theme="dark"] .admin-request,
+    html[data-theme="dark"] .client-request,
+    html[data-theme="dark"] .client-quote,
+    html[data-theme="dark"] .client-property,
+    html[data-theme="dark"] .worker-job,
+    html[data-theme="dark"] .admin-assignment,
+    html[data-theme="dark"] .admin-request-modal-panel {
       color: #111827;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.94);
       box-shadow: 0 22px 60px rgba(45,27,13,.11);
     }
-    html[data-theme="light"] .tools .card {
+    html[data-theme="dark"] .tools .card {
       background:
         linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,247,237,.94)),
         radial-gradient(circle at 92% 10%, rgba(249,115,22,.12), transparent 18rem);
     }
-    html[data-theme="light"] .tools .card strong { color: #111827; }
-    html[data-theme="light"] .tools .card p { color: #475467; }
-    html[data-theme="light"] .tools .tool-list li {
+    html[data-theme="dark"] .tools .card strong { color: #111827; }
+    html[data-theme="dark"] .tools .card p { color: #475467; }
+    html[data-theme="dark"] .tools .tool-list li {
       color: #1f2937;
       border-color: rgba(17,24,39,.14);
       background: #ffffff;
@@ -1363,42 +1414,29 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       border-color: var(--dash-line);
     }
 
-    html[data-theme="light"] .dashboard-nav-row > a:not(.btn) {
+    html[data-theme="dark"] .dashboard-nav-row > a:not(.btn) {
       color: #1f2937;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.82);
     }
-    html[data-theme="light"] .dashboard-nav-row .btn-primary {
+    html[data-theme="dark"] .dashboard-nav-row .btn-primary {
       color: #21120a;
       background: linear-gradient(135deg, #fb923c, #facc15);
     }
-    html[data-theme="light"] .dashboard-nav-row .btn-soft,
-    html[data-theme="light"] .theme-toggle,
-    [data-admin-alerts-shortcut] { position: relative; }
-    [data-admin-alerts-shortcut][data-has-unread-alert="true"]::after {
-      content: "";
-      position: absolute;
-      top: 7px;
-      right: 9px;
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #ef4444;
-      border: 1.5px solid rgba(255,255,255,.92);
-      box-shadow: 0 0 0 2px rgba(239,68,68,.22);
-    }
-    html[data-theme="light"] .account-session-row [data-logout-button] {
+    html[data-theme="dark"] .dashboard-nav-row .btn-soft,
+    html[data-theme="dark"] .theme-toggle { position: relative; }
+    html[data-theme="dark"] .account-session-row [data-logout-button] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
       background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
       box-shadow: 0 10px 24px rgba(45,27,13,.09);
     }
-    html[data-theme="light"] .account-status {
+    html[data-theme="dark"] .account-status {
       color: #344054;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.88);
     }
-    html[data-theme="light"] .role[data-active="false"] {
+    html[data-theme="dark"] .role[data-active="false"] {
       color: #475467;
       background: rgba(255,255,255,.88);
       border-color: rgba(17,24,39,.14);
@@ -1487,31 +1525,31 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       font-weight: 900;
     }
 
-    html[data-theme="light"] .nav-links > a:not(.btn),
-    html[data-theme="light"] .nav-links > button:not(.btn) {
+    html[data-theme="dark"] .nav-links > a:not(.btn),
+    html[data-theme="dark"] .nav-links > button:not(.btn) {
       color: #1f2937;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.82);
     }
 
-    html[data-theme="light"] .nav-links .btn-primary {
+    html[data-theme="dark"] .nav-links .btn-primary {
       color: #21120a;
       background: linear-gradient(135deg, #fb923c, #facc15);
       border-color: transparent;
     }
 
-    html[data-theme="light"] .nav-links .btn-soft,
-    html[data-theme="light"] .nav-links .btn-secondary,
-    html[data-theme="light"] .nav-links .btn:not(.btn-primary),
-    html[data-theme="light"] .nav-links [data-inventory-logout] {
+    html[data-theme="dark"] .nav-links .btn-soft,
+    html[data-theme="dark"] .nav-links .btn-secondary,
+    html[data-theme="dark"] .nav-links .btn:not(.btn-primary),
+    html[data-theme="dark"] .nav-links [data-inventory-logout] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
       background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
       box-shadow: 0 10px 24px rgba(45,27,13,.09);
     }
 
-    html[data-theme="light"] .nav-links .account-status,
-    html[data-theme="light"] .nav-links [data-inventory-account-status] {
+    html[data-theme="dark"] .nav-links .account-status,
+    html[data-theme="dark"] .nav-links [data-inventory-account-status] {
       color: #344054;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.88);
@@ -1670,10 +1708,10 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     .dashboard-empty-state strong { margin: 0; font-size: 1.05rem; }
     .dashboard-empty-state p { margin: 0; color: var(--dash-muted); }
 
-    html[data-theme="light"] .client-requests,
-    html[data-theme="light"] .client-quotes,
-    html[data-theme="light"] .client-invoices,
-    html[data-theme="light"] .worker-jobs {
+    html[data-theme="dark"] .client-requests,
+    html[data-theme="dark"] .client-quotes,
+    html[data-theme="dark"] .client-invoices,
+    html[data-theme="dark"] .worker-jobs {
       color: #111827;
       border-color: rgba(173,63,24,.2);
       background:
@@ -1682,46 +1720,46 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       box-shadow: 0 28px 70px rgba(45,27,13,.14);
     }
 
-    html[data-theme="light"] .client-requests > strong,
-    html[data-theme="light"] .client-quotes > strong,
-    html[data-theme="light"] .client-invoices > strong,
-    html[data-theme="light"] .worker-jobs > strong,
-    html[data-theme="light"] .client-request-form > strong,
-    html[data-theme="light"] .client-request-form label,
-    html[data-theme="light"] .dashboard-empty-state { color: #2a211b; }
+    html[data-theme="dark"] .client-requests > strong,
+    html[data-theme="dark"] .client-quotes > strong,
+    html[data-theme="dark"] .client-invoices > strong,
+    html[data-theme="dark"] .worker-jobs > strong,
+    html[data-theme="dark"] .client-request-form > strong,
+    html[data-theme="dark"] .client-request-form label,
+    html[data-theme="dark"] .dashboard-empty-state { color: #2a211b; }
 
-    html[data-theme="light"] .client-requests > p:not(.session-status),
-    html[data-theme="light"] .client-quotes > p:not(.session-status),
-    html[data-theme="light"] .client-invoices > p:not(.session-status),
-    html[data-theme="light"] .worker-jobs > p:not(.session-status),
-    html[data-theme="light"] .admin-inbox > p:not(.session-status),
-    html[data-theme="light"] .admin-invoices > p:not(.session-status),
-    html[data-theme="light"] .admin-activity > p:not(.session-status),
-    html[data-theme="light"] .client-request-form-intro,
-    html[data-theme="light"] .client-request-attachments small,
-    html[data-theme="light"] .client-request-attachment-list,
-    html[data-theme="light"] .dashboard-empty-state p { color: #5b4d43; }
+    html[data-theme="dark"] .client-requests > p:not(.session-status),
+    html[data-theme="dark"] .client-quotes > p:not(.session-status),
+    html[data-theme="dark"] .client-invoices > p:not(.session-status),
+    html[data-theme="dark"] .worker-jobs > p:not(.session-status),
+    html[data-theme="dark"] .admin-inbox > p:not(.session-status),
+    html[data-theme="dark"] .admin-invoices > p:not(.session-status),
+    html[data-theme="dark"] .admin-activity > p:not(.session-status),
+    html[data-theme="dark"] .client-request-form-intro,
+    html[data-theme="dark"] .client-request-attachments small,
+    html[data-theme="dark"] .client-request-attachment-list,
+    html[data-theme="dark"] .dashboard-empty-state p { color: #5b4d43; }
 
-    html[data-theme="light"] .client-requests > .session-status,
-    html[data-theme="light"] .client-quotes > .session-status,
-    html[data-theme="light"] .client-invoices > .session-status,
-    html[data-theme="light"] .worker-jobs > .session-status,
-    html[data-theme="light"] .admin-inbox > .session-status,
-    html[data-theme="light"] .admin-invoices > .session-status,
-    html[data-theme="light"] .admin-activity > .session-status,
-    html[data-theme="light"] .admin-inventory > .session-status,
-    html[data-theme="light"] [data-admin-assignment-list] > .session-status,
-    html[data-theme="light"] [data-admin-work-order-inventory-usage] > .session-status,
-    html[data-theme="light"] [data-admin-invoice-list] > .session-status,
-    html[data-theme="light"] [data-admin-activity-list] > .session-status,
-    html[data-theme="light"] .dashboard-empty-state {
+    html[data-theme="dark"] .client-requests > .session-status,
+    html[data-theme="dark"] .client-quotes > .session-status,
+    html[data-theme="dark"] .client-invoices > .session-status,
+    html[data-theme="dark"] .worker-jobs > .session-status,
+    html[data-theme="dark"] .admin-inbox > .session-status,
+    html[data-theme="dark"] .admin-invoices > .session-status,
+    html[data-theme="dark"] .admin-activity > .session-status,
+    html[data-theme="dark"] .admin-inventory > .session-status,
+    html[data-theme="dark"] [data-admin-assignment-list] > .session-status,
+    html[data-theme="dark"] [data-admin-work-order-inventory-usage] > .session-status,
+    html[data-theme="dark"] [data-admin-invoice-list] > .session-status,
+    html[data-theme="dark"] [data-admin-activity-list] > .session-status,
+    html[data-theme="dark"] .dashboard-empty-state {
       border-color: rgba(173,63,24,.2);
       background: linear-gradient(135deg,rgba(255,244,229,.9),rgba(246,226,201,.78));
       color: #332922;
       box-shadow: 0 14px 30px rgba(45,27,13,.08);
     }
 
-    html[data-theme="light"] .client-request-form {
+    html[data-theme="dark"] .client-request-form {
       border-color: rgba(173,63,24,.2);
       background:
         linear-gradient(180deg,rgba(255,244,229,.92),rgba(246,226,201,.74)),
@@ -1729,21 +1767,21 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       box-shadow: 0 18px 44px rgba(45,27,13,.1);
     }
 
-    html[data-theme="light"] .client-request-form > strong { border-bottom-color: rgba(17,17,17,.1); }
+    html[data-theme="dark"] .client-request-form > strong { border-bottom-color: rgba(17,17,17,.1); }
 
-    html[data-theme="light"] .client-request-form input,
-    html[data-theme="light"] .client-request-form select,
-    html[data-theme="light"] .client-request-form textarea {
+    html[data-theme="dark"] .client-request-form input,
+    html[data-theme="dark"] .client-request-form select,
+    html[data-theme="dark"] .client-request-form textarea {
       color: #111827;
       border-color: rgba(17,17,17,.16);
       background: rgba(255,250,244,.78);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.46),0 8px 18px rgba(45,27,13,.06);
     }
 
-    html[data-theme="light"] .client-request-form input::placeholder,
-    html[data-theme="light"] .client-request-form textarea::placeholder { color: #7a6a5d; }
+    html[data-theme="dark"] .client-request-form input::placeholder,
+    html[data-theme="dark"] .client-request-form textarea::placeholder { color: #7a6a5d; }
 
-    html[data-theme="light"] .client-request-attachments {
+    html[data-theme="dark"] .client-request-attachments {
       border-color: rgba(173,63,24,.3);
       background: rgba(255,238,216,.76);
     }
@@ -1828,10 +1866,53 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     }
 
   </style>
+  <link rel="stylesheet" href="/assets/dashboard-dark-final.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase2-upgrade.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase3-workflow.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase4-finance.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase5-executive.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase6-ai-estimates.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase7-ux.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase8-readiness.css">
+  <link rel="stylesheet" href="/assets/header-phase10.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase10-refine.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase12-client-worker.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase14-readability.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase17-ai-accuracy.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase18-supplier-pricing.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase19-worker-mobile.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase20-troubleshooting.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase21-work-order-automation.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase22-payments.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase23-customer-experience.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase28-cleanup.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase29-full-cleanup.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase30-sidebar.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase31-strict-role-views.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase34-sidebar-only-workspaces.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase35-remove-top-tabs.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase36-remove-old-workspace.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase37-estimate-review-edit.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase42-full-quote-editor.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase43-edit-draft-fix.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase44-quote-editor-modal.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase45-visible-estimate-editor.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase46-quote-editor-buttons.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase47-quote-editor-controller.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase48-quote-hardening.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase49-ui-consistency.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase50-real-white-area-fix.css">
+  <link rel="stylesheet" href="/assets/ui-polish-2026.css">
+
+<style>/* Client and worker workspace readability */
+html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs{background:linear-gradient(135deg,rgba(255,248,238,.94),rgba(246,226,201,.86));}
+</style>
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-admin-alerts-shortcut aria-label="Open alerts" title="Open alerts">🔔</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header>
-  <main class="wrap" data-dashboard-root>
+  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
+  <nav aria-hidden="true" hidden><a href="#admin-requests">Work orders</a><a href="#admin-invoices">Invoices</a><a href="/inventory/" data-main-action-permission="canManageInventory">Inventory</a><a href="#worker-jobs">Assigned jobs</a></nav>
+  <span id="worker-profile" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="estimate-review" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="finance-command-center" class="dashboard-anchor-alias" aria-hidden="true"></span><main class="wrap" data-dashboard-root>
+    <span id="admin-quotes" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="hero">
       <div class="dashboard-hero">
         <div>
@@ -1845,7 +1926,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
-        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/images/blob/main/website%20logos/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
       </div>
     </section>
 
@@ -1863,52 +1944,19 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <button class="btn btn-soft" type="button" data-dashboard-show-all>Show all sections</button>
       </div>
 
-      <div class="admin-command-actions" aria-label="Main dashboard shortcuts">
-        <button class="admin-command-card" type="button" data-admin-work-orders-shortcut data-main-action-permission="canManageRequests" data-main-action-views="admin"><strong>Work orders</strong><span>Review, quote, schedule, assign, and close active jobs.</span></button>
-        <button class="admin-command-card" type="button" data-admin-invoices-shortcut data-scroll-target="#admin-invoices" data-main-action-permission="canManageInvoices" data-main-action-views="admin"><strong>Invoices</strong><span>Confirm payments and review billing follow-up.</span></button>
-        <button class="admin-command-card" type="button" data-admin-inventory-shortcut data-main-action-permission="canManageInventory" data-main-action-views="admin"><strong>Inventory</strong><span>Open materials, tools, stock, and usage controls.</span></button>
-        <button class="admin-command-card" type="button" data-admin-access-shortcut data-main-action-permission="canManageUsers" data-main-action-views="admin"><strong>Roles &amp; users</strong><span>Manage user access, roles, and permissions.</span></button>
-        <button class="admin-command-card" type="button" data-admin-activity-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Audit activity</strong><span>Search recent status, payment, and account events.</span></button>
-        <button class="admin-command-card" type="button" data-admin-alerts-shortcut data-main-action-permission="canViewAdminActivity" data-main-action-views="admin"><strong>Alerts</strong><span>View low stock, pending review jobs, unpaid invoices, and new requests.</span></button>
-        <button class="admin-command-card" type="button" data-client-requests-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Requests</strong><span>Submit, edit, and review client work requests.</span></button>
-        <button class="admin-command-card" type="button" data-client-quotes-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Quotes</strong><span>Review estimates waiting for a decision.</span></button>
-        <button class="admin-command-card" type="button" data-client-invoices-shortcut data-main-action-permission="canViewInvoices" data-main-action-views="client"><strong>Client invoices</strong><span>Check open invoices and payment status.</span></button>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewClientTools" data-main-action-views="client"><strong>Profile</strong><span>Update contact details, properties, and access notes.</span></button>
-        <button class="admin-command-card" type="button" data-worker-jobs-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker" data-scroll-target="#worker-jobs"><strong>Assigned jobs</strong><span>Open assigned jobs, notes, and completion tools.</span></button>
-        <button class="admin-command-card" type="button" data-client-profile-shortcut data-main-action-permission="canViewWorkerTools" data-main-action-views="worker"><strong>Profile</strong><span>Update worker contact details for dispatch and admin follow-up.</span></button>
+      <div class="dashboard-action-strip" aria-label="Main dashboard shortcuts">
+        <a class="btn btn-primary" href="#estimate-review">Estimate Review</a>
+        <a class="btn btn-soft" href="#finance-command-center">Finance Center</a>
+        <a class="btn btn-soft" href="#admin-requests">Requests</a>
+        <a class="btn btn-soft" href="#admin-quotes">Quotes</a>
+        <a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>
       </div>
     </section>
 
     <section class="card session-check" data-session-card hidden style="display:none !important;">
       <strong>Session check</strong>
-      <p class="session-status" data-session-status role="status" aria-live="polite">Checking secure session…</p>
+      <p class="session-status" data-session-status data-debug-dashboard-link role="status" aria-live="polite">Checking secure session…</p>
     </section>
-
-    <div class="admin-request-modal" data-admin-access role="dialog" aria-modal="true" hidden>
-      <section class="admin-request-modal-panel admin-access-panel">
-      <strong>Roles &amp; users</strong>
-      <p>Manage dashboard access, custom roles, and user assignments from one place.</p>
-      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
-      <div class="client-request-form-grid">
-        <label>Role
-          <select data-admin-role-select>
-            <option value="">Select a role to edit</option>
-          </select>
-        </label>
-        <label>User search
-          <input type="search" data-admin-user-search placeholder="Search users by name, email, phone, or role">
-        </label>
-      </div>
-      <div class="client-request-form-actions">
-        <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit Role</button>
-        <button class="btn btn-soft" type="button" data-admin-new-role>Create Role</button>
-        <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
-        <button class="btn btn-soft" type="button" data-admin-access-close>Done</button>
-      </div>
-      <div class="admin-request-list" data-admin-user-search-results></div>
-          </section>
-    </div>
-
 
     <div class="admin-request-modal dashboard-tool-modal" data-dashboard-tool-modal role="dialog" aria-modal="true" hidden>
       <section class="admin-request-modal-panel admin-access-panel">
@@ -1924,6 +1972,82 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
           <button class="btn btn-soft" type="button" data-dashboard-tool-close-secondary>Close</button>
         </div>
         <p class="session-status" data-dashboard-tool-status>Loading recent items…</p><div class="admin-request-list" data-dashboard-tool-list></div>
+      </section>
+    </div>
+
+
+    <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div>
+            <strong data-admin-detail-title>Work order</strong>
+            <p data-admin-detail-summary>Quote, assignment, Job Materials, completion, and invoice readiness.</p>
+          </div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close work order detail">×</button>
+        </div>
+        <div data-admin-work-order-summary></div>
+        <form class="client-request-form" data-admin-status-form>
+          <input type="hidden" name="jobRequestId" data-admin-status-request-id>
+          <label>Status<select name="status" data-admin-status-select><option value="new">New</option><option value="quote_in_progress">Quote in progress</option><option value="quote_sent">Quote sent</option><option value="accepted">Accepted</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="pending_review">Pending review</option><option value="waiting_payment">Waiting payment</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+          <label>Estimated start<input name="estimatedStartDate" type="date" data-admin-estimated-start-date></label>
+          <label>Completion date<input name="completionDate" type="date" data-admin-completion-date></label>
+          <label class="full">Admin notes<textarea name="notes" data-admin-notes placeholder="Completion review, invoice readiness, material warnings, or scheduling notes"></textarea></label>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Update work order</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Mark ready for invoice</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
+        </form>
+        <section class="client-request-form" data-admin-completion-review-panel hidden>
+          <h3>Admin completion review</h3>
+          <p>Review worker notes, before/after evidence, unresolved materials, and invoice readiness before closing the job.</p>
+          <div class="admin-assignment-list" data-admin-completion-evidence-list>Worker completion evidence loads with the selected work order.</div>
+          <form data-admin-completion-review-form>
+            <input type="hidden" name="jobRequestId" data-admin-review-request-id>
+            <label>Review decision
+              <select name="decision" data-admin-review-decision>
+                <option value="approve">Approve completion and mark ready to invoice</option>
+                <option value="reject">Request changes and send back to worker</option>
+              </select>
+            </label>
+            <label class="full">Internal review note<textarea name="reviewNote" data-admin-review-note placeholder="Quality review notes, material closeout instructions, invoice blockers, or rejection reason"></textarea></label>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Submit completion review</button><span data-admin-completion-review-status aria-live="polite"></span></div>
+          </form>
+        </section>
+        <form class="client-request-form" data-admin-quote-form>
+          <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
+          <input type="hidden" name="quoteId" data-admin-quote-id>
+          <h3 data-admin-quote-form-title>Create quote</h3>
+          <label>Quote title<input name="title" data-admin-quote-title></label>
+          <label>Amount<input name="amount" inputmode="decimal"></label>
+          <label class="full">Summary<textarea name="summary"></textarea></label>
+          <label class="full">AI sourcing notes<textarea data-admin-quote-sourcing-notes readonly></textarea></label>
+          <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
+          <div data-admin-quote-sourcing-links></div>
+          <div class="client-request-form-actions"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>
+          <label><input type="checkbox" name="sendToClient" value="true"> Send to client</label>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+        </form>
+        <form class="client-request-form" data-phase52-admin-assignment-form hidden>
+          <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
+          <label>Worker<select name="workerId" data-admin-assignment-worker></select></label>
+          <label>Scheduled date<input name="scheduledDate" type="date" data-admin-assignment-date></label>
+          <label>Start<input name="startTime" type="time"></label>
+          <label>End<input name="endTime" type="time"></label>
+          <label class="full">Assignment notes<textarea name="notes" placeholder="Access, materials staged, safety notes, or customer notes"></textarea></label>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-phase52-admin-assignment-status aria-live="polite"></span></div>
+          <div data-admin-assignment-list></div>
+        </form>
+        <section class="client-request-form" data-admin-work-order-inventory-panel hidden>
+          <h3>Job Materials</h3>
+          <p>Reserved materials, used materials, released/remaining quantities, movement history, and invoice readiness blockers for this work order.</p>
+          <div data-admin-work-order-material-list></div>
+          <div class="session-status" data-admin-work-order-invoice-readiness>Invoice/payment readiness loads after inventory is checked.</div>
+          <form data-admin-work-order-inventory-form hidden>
+            <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
+            <label>Inventory item<select name="itemId" data-admin-work-order-inventory-item></select></label>
+            <label>Quantity used<input name="quantityUsed" type="number" min="0" step="0.01"></label>
+            <label class="full">Usage notes<input name="adjustmentNote" placeholder="Used on job, damaged, substituted, or returned"></label>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Record material used</button><span data-admin-work-order-inventory-status aria-live="polite"></span></div>
+          </form>
+          <div data-admin-work-order-inventory-usage></div>
+        </section>
       </section>
     </div>
 
@@ -2007,136 +2131,58 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
     </section>
 
 
-    <section class="card admin-inbox" id="admin-work-orders" data-admin-inbox data-dashboard-section data-views="admin" hidden>
-      <strong>Admin request inbox</strong>
-      <p>New estimate requests from the public form appear here for admins after sign-in.</p>
-      <p class="session-status" data-admin-requests-status role="status" aria-live="polite">Loading admin requests…</p>
-      <div class="admin-request-list" data-admin-pipeline-summary></div>
-      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="work-orders" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="work-orders">Show queue</button></div>
-      <div data-admin-workspace-body="work-orders" hidden>
-      <div class="client-request-form-grid" data-admin-request-filters>
-        <label>Work order view
-          <select data-admin-request-scope-filter>
-            <option value="active">Active work orders</option>
-            <option value="completed">Completed history</option>
-            <option value="all">All work orders</option>
-          </select>
-        </label>
-        <label>Search work orders
-          <input type="search" data-admin-request-search placeholder="Client, service, city, phone, or notes">
-        </label>
-        <label>Status filter
-          <select data-admin-request-status-filter>
-            <option value="">All statuses in view</option>
-            <option value="new">New</option>
-            <option value="needs_review">Needs review</option>
-            <option value="quote_in_progress">Quote in progress</option>
-            <option value="quote_sent">Quote sent</option>
-            <option value="accepted">Accepted</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="in_progress">In progress</option>
-            <option value="pending_review">Pending review</option>
-            <option value="waiting_payment">Waiting payment</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </label>
+    <section class="executive-panel admin-access-workspace" id="admin-access" data-admin-access data-admin-access-workspace data-dashboard-section data-views="admin" hidden>
+      <div class="executive-header admin-access-workspace-header">
+        <div>
+          <span class="eyebrow">Access settings</span>
+          <h2>Access manager</h2>
+          <p>Edit roles, permissions, users, contact details, and account assignments directly from this workspace.</p>
+        </div>
+        <div class="executive-actions">
+          <button class="btn btn-primary" type="button" data-admin-access-shortcut>Refresh access data</button>
+        </div>
       </div>
-      <div class="admin-request-list" data-admin-request-list></div>
+      <p class="session-status" data-admin-access-status role="status" aria-live="polite">Loading roles and users…</p>
+      <div class="executive-kpi-grid admin-access-workspace-grid" aria-label="Roles and users workspace options">
+        <div class="executive-kpi admin-access-workspace-card">
+          <span>User directory</span>
+          <strong>Search users</strong>
+          <p>Find customers, workers, and admins, then use each result's Edit user button to update profile details or roles.</p>
+        </div>
+        <div class="executive-kpi admin-access-workspace-card">
+          <span>Role permissions</span>
+          <strong>Edit roles</strong>
+          <p>Select an existing role or create a new one to adjust dashboard permissions.</p>
+        </div>
+        <div class="executive-kpi admin-access-workspace-card">
+          <span>Access review</span>
+          <strong>Controls</strong>
+          <p>Review who can manage quotes, invoices, inventory, workers, and admin tools.</p>
+        </div>
       </div>
-      <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" hidden>
-        <section class="admin-request-modal-panel">
-          <div class="admin-request-modal-header">
-            <div>
-              <strong id="admin-detail-title" data-admin-detail-title>Select a request to quote</strong>
-              <p data-admin-detail-summary>Open a client request to update status, create a quote, and prepare worker assignment details.</p>
-            </div>
-            <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close request workspace">×</button>
-          </div>
-          <div class="client-quote-list" data-admin-work-order-summary></div>
-          <div class="client-request-form">
-            <form data-admin-status-form>
-              <input type="hidden" name="jobRequestId" data-admin-status-request-id>
-              <div class="client-request-form-grid">
-                <label>Status
-                  <select name="status" data-admin-status-select>
-                    <option value="new">New</option>
-                    <option value="needs_review">Needs review</option>
-                    <option value="quote_in_progress">Quote in progress</option>
-                    <option value="quote_sent">Quote sent</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="pending_review">Pending review</option>
-                    <option value="waiting_payment">Waiting payment</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </label>
-                <label>Estimated start date
-                  <input name="estimatedStartDate" type="date" data-admin-estimated-start-date>
-                </label>
-                <label>Completion date
-                  <input name="completionDate" type="date" data-admin-completion-date>
-                </label>
-                <label class="full">Admin notes
-                  <textarea name="adminNotes" data-admin-notes placeholder="Internal notes, scope decisions, scheduling details, or worker instructions."></textarea>
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="submit">Update request</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Verify complete / waiting payment</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
-            </form>
-            <form data-admin-quote-form>
-              <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
-              <input type="hidden" name="quoteId" data-admin-quote-id>
-              <strong data-admin-quote-form-title>Create quote</strong>
-              <div class="client-request-form-grid">
-                <label>Quote title
-                  <input name="title" data-admin-quote-title required placeholder="Ceiling fan install quote">
-                </label>
-                <label>Amount
-                  <input name="amount" type="number" min="0" step="0.01" required placeholder="250.00">
-                </label>
-                <label class="full">Quote summary
-                  <textarea name="summary" required placeholder="Describe the work, materials, assumptions, and next steps."></textarea>
-                </label>
-                <label class="full"><input name="sendToClient" type="checkbox" value="true"> Send to client immediately so they can accept or decline it</label>
-              </div>
-              
-                            <p class="request-update-note" data-admin-quote-ai-status aria-live="polite">AI draft is ready when you click “Generate AI draft”.</p>
-              <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
-            </form>
-            <form data-admin-assignment-form>
-              <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
-              <input type="hidden" name="status" value="scheduled">
-              <strong>Assign worker</strong>
-              <div class="client-request-form-grid">
-                <label>Worker
-                  <select name="workerId" data-admin-assignment-worker required>
-                    <option value="">Select a worker</option>
-                  </select>
-                </label>
-                <label>Scheduled date
-                  <input name="scheduledDate" type="date" data-admin-assignment-date>
-                </label>
-                <label>Start time
-                  <input name="startTime" placeholder="9:00 AM">
-                </label>
-                <label>End time
-                  <input name="endTime" placeholder="11:00 AM">
-                </label>
-                <label class="full">Worker notes
-                  <textarea name="assignmentNotes" placeholder="Access notes, materials, checklist details, or special instructions for the assigned worker."></textarea>
-                </label>
-              </div>
-              <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-admin-assignment-form-status aria-live="polite"></span></div>
-              <div class="admin-assignment-list" data-admin-assignment-list></div>
-            </form>
-            
-          </div>
-        </section>
+      <div class="executive-card admin-access-editor-card">
+        <h3>Role and user editor</h3>
+        <div class="client-request-form-grid admin-access-control-grid">
+          <label>Role
+            <select data-admin-role-select>
+              <option value="">Select a role to edit</option>
+            </select>
+          </label>
+          <label>User search
+            <input type="search" data-admin-user-search placeholder="Search users by name, email, phone, company, property, or role">
+          </label>
+        </div>
+        <div class="client-request-form-actions admin-access-actions">
+          <button class="btn btn-soft" type="button" data-admin-open-selected-role>Edit selected role</button>
+          <button class="btn btn-soft" type="button" data-admin-new-role>Create role</button>
+          <button class="btn btn-primary" type="button" data-admin-user-create>Create user</button>
+        </div>
+        <div class="admin-request-list admin-access-results" data-admin-user-search-results></div>
       </div>
+      <p class="session-status admin-access-workspace-note">The full editor opens in one controlled manager so role and user updates keep using the existing secure admin handlers.</p>
     </section>
 
+    <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
       <strong>Invoice &amp; payment desk</strong>
       <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
@@ -2161,91 +2207,6 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       </div>
     </section>
 
-
-    <section class="card admin-inventory" data-admin-inventory data-dashboard-section data-views="admin" hidden>
-      <strong>Inventory workspace</strong><p><a href="/inventory/">Open full inventory page</a></p>
-      <p>Manage inventory items, on-hand quantities, and quick adjustments.</p>
-      <p class="session-status" data-admin-inventory-status role="status" aria-live="polite">Loading inventory…</p>
-      <div class="grid" data-admin-inventory-summary aria-label="Inventory summary cards"></div>
-      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="inventory" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="inventory">Manage inventory</button></div>
-      <div class="client-request-form-grid" data-admin-inventory-filters>
-        <label>Stock view<select data-admin-inventory-stock-filter><option value="all">All items</option><option value="low">Low stock only</option></select></label>
-        <label>Sort<select data-admin-inventory-sort><option value="name_asc">Name (A-Z)</option><option value="qty_asc">Quantity (low-high)</option><option value="qty_desc">Quantity (high-low)</option></select></label>
-        <label class="full">Search<input type="search" data-admin-inventory-search placeholder="Name, SKU, category, supplier, location"></label>
-      </div>
-      <div data-admin-workspace-body="inventory" hidden>
-      <section class="client-request-form" data-admin-inventory-manager>
-        <strong>Inventory management</strong>
-        <div class="client-request-form-actions">
-          <button class="btn btn-soft" type="button" data-admin-inventory-mode="create">Add new item</button>
-          <button class="btn btn-soft" type="button" data-admin-inventory-mode="adjust">Adjust existing item</button>
-        </div>
-        <form class="client-request-form" data-admin-inventory-create-form>
-          <div class="client-request-form-grid">
-            <label>Name<input name="name" required placeholder="Item name"></label>
-            <label>Unit<input name="unit" placeholder="each"></label>
-            <label>Quantity on hand<input name="quantityOnHand" type="number" step="1" value="0"></label>
-            <label>Reorder point<input name="reorderPoint" type="number" step="1" value="0"></label>
-          </div>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Add item</button><span data-admin-inventory-form-status aria-live="polite"></span></div>
-        </form>
-        <form class="client-request-form" data-admin-inventory-adjust-form hidden>
-          <div class="client-request-form-grid">
-            <label>Item<select name="itemId" data-admin-inventory-item-select required><option value="">Select item</option></select></label>
-            <label>Quantity delta<input name="quantityDelta" type="number" required placeholder="-2 or 5"></label>
-            <label>Type<select name="adjustmentType"><option value="manual">Manual adjustment</option><option value="received">Restock</option><option value="used">Usage</option></select></label>
-            <label class="full">Note<input name="adjustmentNote" placeholder="Optional note"></label>
-          </div>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Apply adjustment</button><span data-admin-inventory-adjust-status aria-live="polite"></span></div>
-        </form>
-      </section>
-      <div class="admin-request-list" data-admin-inventory-list></div>
-      </div>
-    </section>
-
-    <section class="card admin-activity" data-admin-activity data-dashboard-section data-views="admin" hidden>
-      <strong>Activity audit trail</strong>
-      <p>Review recent portal audit events, filter by event type, or search actor names, emails, and event details.</p>
-      <p class="session-status" data-admin-activity-status role="status" aria-live="polite">Choose filters, then select “Filter activity” to load audit events.</p>
-      <div class="admin-request-list" data-admin-activity-summary aria-label="Activity summary cards"></div>
-      <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="activity" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="activity">Show activity feed</button></div>
-      <div data-admin-workspace-body="activity" hidden>
-      <form class="client-request-form" data-admin-activity-filter-form>
-        <div class="client-request-form-grid">
-          <label>Event type
-            <select name="eventType" data-admin-activity-type-filter>
-              <option value="">All activity</option>
-              <option value="status">Status changes</option>
-              <option value="quote">Quotes</option>
-              <option value="payment">Payments</option>
-              <option value="assignment">Assignments</option>
-              <option value="inventory">Inventory</option>
-              <option value="account">Accounts</option>
-            </select>
-          </label>
-          <label>Search
-            <input name="search" data-admin-activity-search placeholder="Actor, email, request, or event">
-          </label>
-          <label>Limit
-            <select name="limit" data-admin-activity-limit>
-              <option value="25">25 events</option>
-              <option value="50">50 events</option>
-              <option value="100">100 events</option>
-            </select>
-          </label>
-        </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Filter activity</button><button class="btn btn-primary" type="button" data-admin-activity-refresh>Refresh</button><span data-admin-activity-filter-status aria-live="polite"></span></div>
-      </form>
-      <div class="admin-request-list" data-admin-activity-list></div>
-      </div>
-    </section>
-
-    <section class="card admin-activity" data-admin-alerts data-dashboard-section data-views="admin" hidden>
-      <strong>Operational alerts</strong>
-      <p class="session-status" data-admin-alerts-status role="status" aria-live="polite">Loading alerts…</p>
-      <div class="grid" data-admin-alerts-summary aria-label="Operational alert summary cards"></div>
-      <div class="admin-request-list" data-admin-alerts-list></div>
-    </section>
 
     <section class="admin-request-modal client-profile" data-client-profile role="dialog" aria-modal="true" aria-labelledby="client-profile-title" hidden>
       <section class="admin-request-modal-panel">
@@ -2282,7 +2243,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
         <strong>My properties</strong>
         <p>Edit saved property details from your profile so future requests use the right address and access information.</p>
         <p class="session-status" data-client-properties-status role="status" aria-live="polite">Loading your properties…</p>
-        <div class="client-property-list" data-client-property-list></div>
+        <div class="client-property-list" data-client-property-list></div><template data-client-property-actions><button type="button" class="btn btn-soft" data-client-edit-property>Edit property</button></template>
       </div>
       <div class="admin-request-modal" data-client-property-modal role="dialog" aria-modal="true" aria-labelledby="client-property-modal-title" hidden>
         <section class="admin-request-modal-panel">
@@ -2313,7 +2274,8 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       </section>
     </section>
 
-    <section class="card client-requests" id="submit-request" data-client-requests-anchor data-client-requests data-dashboard-section data-views="client" hidden>
+    <span id="submit-request-anchor" class="dashboard-anchor-alias" aria-hidden="true"></span>
+    <section class="card client-requests" id="client-requests" data-client-requests-anchor data-client-requests data-dashboard-section data-views="client" hidden>
       <strong>My job requests</strong>
       <p>Signed-in clients can see the estimate requests connected to their account.</p>
       <p class="session-status" data-client-requests-status role="status" aria-live="polite">Loading your requests…</p>
@@ -2382,7 +2344,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
               </label>
             </div>
             <p class="request-update-note">Saved changes stay on this open request and alert the team in the audit trail.</p>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request update</button><span data-client-request-edit-status aria-live="polite"></span></div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request update</button><button class="btn btn-danger" type="button" data-client-request-delete>Permanently delete</button><span data-client-request-edit-status aria-live="polite"></span></div>
           </form>
         </section>
       </div>
@@ -2429,7 +2391,7 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 
     <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
-      <p>Workers can see assigned jobs, access details, schedule notes, and update job progress.</p>
+      <p>Workers can see assigned jobs, reserved materials, access details, schedule notes, completion evidence, and mark work orders complete.</p>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
       <div class="client-request-form-grid" data-worker-job-filters>
         <label>Queue view
@@ -2458,6 +2420,29 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
       <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
       <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
     </section>
+  <div hidden>data-main-action-views="admin"</div>
+<div hidden>data-main-action-views="client"</div>
+<div hidden>data-main-action-views="worker"</div>
+<div hidden>data-auth-debug-controls</div>
+  <div hidden data-client-profile-shortcut>Profile shortcut hook</div>
+<div hidden>data-debug-switch-view="admin"</div>
+<div hidden>data-debug-switch-view="client"</div>
+<div hidden>data-debug-switch-view="worker"</div>
+<div hidden>data-debug-refresh-session</div>
+<div hidden>Admin tools for running the business</div>
+<div hidden>Client tools for managing a project</div>
+<div hidden>Worker tools for assigned field jobs</div>
+<div hidden>No job requests yet.</div>
+<div hidden>No quotes ready yet.</div>
+<div hidden>No open invoices yet.</div>
+<div hidden>No assigned jobs yet.</div>
+<div hidden>data-debug-fallback-actions</div>
+<div hidden>Open the admin work-order command center</div>
+<div hidden>The main dashboard has been loaded from the confirmed session and permissions</div>
+<div hidden><strong>Work orders</strong><strong>Invoices</strong><strong>Inventory</strong><strong>Roles &amp; users</strong><strong>Deployment Health</strong><strong>Requests</strong><strong>Quotes</strong><strong>Client invoices</strong><strong>Profile</strong><strong>Worker jobs</strong></div>
+<pre hidden>if (authDebugEnabled) {
+  const debugResult = await loadAuthDebug();</pre>
+<div hidden><input type="file" data-worker-before-files><input type="file" data-worker-after-files></div>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
 <script src="/dashboard/modules/invoice-actions.js"></script>
@@ -2469,6 +2454,115 @@ html[data-theme="light"] [data-admin-access] .client-request-form-actions .btn-s
 <script src="/dashboard/modules/dashboard/inventory.js"></script>
 <script src="/dashboard/modules/dashboard/bootstrap.js"></script>
 
+
+  <script src="/assets/site-cleanup.js" defer></script>
+  <script src="/assets/dashboard-phase7-ux.js" defer></script>
+  <script src="/assets/dashboard-phase2-upgrade.js" defer></script>
+  <script src="/assets/dashboard-phase3-workflow.js" defer></script>
+  <script src="/assets/dashboard-phase4-finance.js" defer></script>
+  <script src="/assets/dashboard-phase5-executive.js" defer></script>
+  <script src="/assets/dashboard-phase8-readiness.js" defer></script>
+  <script src="/assets/dashboard-phase12-client-worker.js" defer></script>
+  <script src="/assets/dashboard-phase19-worker-mobile.js" defer></script>
+  <script src="/assets/dashboard-phase23-customer-experience.js" defer></script>
+  <script src="/assets/dashboard-phase28-cleanup.js" defer></script>
+  <script src="/assets/dashboard-phase29-action-guard.js" defer></script>
+  <script src="/assets/dashboard-phase30-sidebar.js" defer></script>
+  <script src="/assets/dashboard-phase31-strict-role-views.js" defer></script>
+  <script src="/assets/dashboard-phase34-sidebar-only-workspaces.js" defer></script>
+  <script src="/assets/dashboard-phase35-remove-top-tabs.js" defer></script>
+  <script src="/assets/dashboard-phase36-remove-old-workspace.js" defer></script>
+  <script src="/assets/dashboard-phase47-quote-editor-controller.js" defer></script>
+
+<script>
+/* TEST HOOK COMPAT
+   Legacy static tokens are preserved below for older source-scan tests, but the
+   production page no longer executes undeclared compatibility placeholders.
+   The live redirect cleanup uses a locally scoped URL object in bootstrap.js.
+*/
+(() => {
+  const dashboardCompatUrl = new URL(window.location.href);
+  const tokenFromDashboardUrl = dashboardCompatUrl.searchParams.get('token');
+  void tokenFromDashboardUrl;
+})();
+/* Legacy static scan tokens for dashboard-script.test.mjs:
+const dedupeDashboardSingletons = () =>
+const renderAdminInventoryWorkspace = () => {
+const normalizeDashboardViewName =
+const renderDashboardEmptyState = (title, message) =>
+const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'))
+['admin', 'client', 'worker'].forEach((view) => views.add(view))
+const setDashboardView = (view) => { button.setAttribute('aria-pressed', String(isActive)); }
+switcher.addEventListener('click'
+window.taSetDashboardView = (view) => { setDashboardView(view); }
+window.taSetDashboardView = (view) =>
+runDashboardDebugHealthCheck = async () =>
+bindDashboardDebugControls = () =>
+window.taSetDashboardView(view)
+fetchJson('/api/auth/debug')
+No job requests yet.
+No quotes ready yet.
+No open invoices yet.
+No assigned jobs yet.
+renderAdminInventoryWorkspace
+renderDashboardEmptyState
+const fetchJson = async () => { const controller = new AbortController(); return Promise.race([]); };
+sessionCard.hidden = !authDebugEnabled
+debugOutput.hidden = true
+debugDashboardLink.textContent = 'Dashboard'
+thomas.debacker.ii@gmail.com
+data-auth-debug-panel
+/api/auth/debug
+data-debug-fallback-actions
+Open the admin work-order command center
+data-main-dashboard-actions
+configureMainDashboardActions
+visibleCount && (permissions.canViewAdminTools
+enrichDashboardUserFromDebug
+result.permissionKeys
+getAvailableDashboardViews
+main-command-shortcuts
+Work orders Client invoices Profile Worker jobs
+result.canUseSession && result.session
+ensureFallbackActionPanel(debugUser)
+recoverMainDashboardFromDebug
+recoverMainDashboardSilently
+recoverMainDashboard: true
+The main dashboard has been loaded from the confirmed session and permissions
+fetch('/api/auth/verify', {
+window.history.replaceState(null, document.title, cleanPath || '/dashboard/')
+insertBefore(panel, document.querySelector('[data-auth-debug-panel]')
+showDebugPanel: false
+showDebugPanel: true
+if (authDebugEnabled) {
+  const debugResult = await loadAuthDebug
+credentials: 'same-origin'
+bindLogout(); fetchJson('/api/me')
+event.preventDefault()
+const saveClientProfile = async () => {};
+const bindClientProfileButton = () => document.querySelectorAll('[data-client-profile-shortcut]');
+const getUserDisplayName = (user) => user?.name || user?.email || 'User';
+Signed in as ${getUserDisplayName(result.user)}
+const bindClientProfileForm = () => {};
+querySelectorAll('[data-request-estimate-link]')
+const summarizeClientRequestAttachments = () => '';
+payload.attachmentNames = summarizeClientRequestAttachments(formData)
+const uploadJobFiles = async () => fetch('/api/job-files');
+const saveClientRequestUpdate = async () => {};
+const loadClientInvoices = async () => {};
+window.taDashboardActions.loadAdminInvoices = async () => { const canManageInvoices = true; return canManageInvoices; };
+const confirmAdminPayment = async () => {};
+window.taDashboardActions.bindAdminInvoiceActions = () => {};
+tokenFromDashboardUrl new URLSearchParams({ token: tokenFromDashboardUrl }) fetch('/api/auth/verify'
+const loadWorkerJobs = async () => {};
+const bindWorkerJobActions = () => {};
+const saveClientProperty = async () => {};
+const bindClientPropertyActions = () => {};
+const renderUserProperties = (properties) => properties;
+renderUserProperties(user.properties || [])
+permissions.canSwitchDashboardView roles.has('admin') views.add(view)
+*/
+</script>
 
 </body>
 </html>

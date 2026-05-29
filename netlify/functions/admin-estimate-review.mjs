@@ -17,7 +17,84 @@ const parseMetadata = (metadata) => {
   }
 };
 
-const mapDraft = (row) => {
+
+const normalizeMaterialBreakdown = (metadata = {}) => {
+  const raw = Array.isArray(metadata.materialBreakdown) && metadata.materialBreakdown.length
+    ? metadata.materialBreakdown
+    : (Array.isArray(metadata.materials) ? metadata.materials : []);
+  return raw.slice(0, 24).map((item) => ({
+    name: clean(item.name || item.label || item.part || 'Material', 180),
+    category: clean(item.category || item.trade || item.workCategory || '', 120),
+    estimatedQuantity: Number(item.estimatedQuantity ?? item.quantity ?? item.neededQty ?? 1) || 1,
+    unit: clean(item.unit || 'each', 40),
+    notes: clean(item.notes || item.description || '', 500),
+    inventoryMatchHint: clean(item.inventoryMatchHint || item.sku || item.supplierPartNumber || item.aiQuoteCatalogKey || item.name || '', 180),
+  }));
+};
+
+const normalizeMatchText = (value = '') => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+const confidenceForInventoryMatch = (material, item) => {
+  const materialName = normalizeMatchText(material.name);
+  const hint = normalizeMatchText(material.inventoryMatchHint);
+  const sku = normalizeMatchText(item.sku);
+  const part = normalizeMatchText(item.supplier_part_number);
+  const itemName = normalizeMatchText(item.name);
+  const itemCategory = normalizeMatchText(item.category || item.trade_type);
+  const materialCategory = normalizeMatchText(material.category);
+  const catalogKey = normalizeMatchText(item.ai_quote_catalog_key);
+  if (hint && (hint === sku || hint === part || hint === catalogKey)) return 'exact';
+  if (materialName && itemName && (itemName.includes(materialName) || materialName.includes(itemName))) return 'strong';
+  if (materialCategory && itemCategory && (itemCategory.includes(materialCategory) || materialCategory.includes(itemCategory))) return 'possible';
+  return 'no_match';
+};
+
+const scoreConfidence = (confidence) => ({ exact: 4, strong: 3, possible: 2, no_match: 1 })[confidence] || 0;
+
+const buildInventoryMatches = ({ materialBreakdown = [], inventoryItems = [], reservationRows = [], jobRequestId = '' }) => materialBreakdown.map((material) => {
+  const matches = inventoryItems
+    .map((item) => {
+      const quantityOnHand = Number(item.quantity_on_hand || 0);
+      const quantityReserved = Number(item.quantity_reserved || 0);
+      const quantityAvailable = quantityOnHand - quantityReserved;
+      const reorderPoint = Number(item.reorder_point || 0);
+      const confidence = confidenceForInventoryMatch(material, item);
+      return {
+        confidence,
+        itemId: item.id,
+        name: item.name,
+        sku: item.sku,
+        category: item.category,
+        quantityOnHand,
+        quantityReserved,
+        quantityAvailable,
+        unitCost: Number(item.unit_cost || 0),
+        chargePrice: Number(item.charge_price || 0),
+        reorderPoint,
+        stockStatus: quantityAvailable <= 0 ? 'out_of_stock' : (quantityAvailable <= reorderPoint ? 'low_stock' : 'in_stock'),
+        supplier: item.supplier,
+        supplierPartNumber: item.supplier_part_number,
+      };
+    })
+    .filter((match) => match.confidence !== 'no_match')
+    .sort((a, b) => scoreConfidence(b.confidence) - scoreConfidence(a.confidence) || b.quantityAvailable - a.quantityAvailable)
+    .slice(0, 4);
+  const best = matches[0] || null;
+  const existingReservation = best ? reservationRows.find((row) => row.inventory_item_id === best.itemId && (!jobRequestId || row.job_request_id === jobRequestId)) : null;
+  return {
+    material,
+    confidence: best?.confidence || 'no_match',
+    matches,
+    selectedItem: best,
+    reservedQuantity: Number(existingReservation?.reserved_quantity || 0),
+    usedQuantity: Number(existingReservation?.used_quantity || 0),
+    reservationId: existingReservation?.id || null,
+    reservationStatus: existingReservation?.status || 'none',
+    reorderWarning: best ? best.stockStatus !== 'in_stock' : true,
+  };
+});
+
+const mapDraft = (row, { inventoryItems = [], reservationRows = [] } = {}) => {
   const metadata = parseMetadata(row.estimate_metadata);
   return {
     quoteId: row.quote_id,
@@ -32,6 +109,7 @@ const mapDraft = (row) => {
     quoteReady: Boolean(metadata.quoteReady),
     laborItems: metadata.laborItems || [],
     materials: metadata.materials || [],
+    materialBreakdown: normalizeMaterialBreakdown(metadata),
     baseLaborItems: metadata.baseLaborItems || [],
     baseMaterials: metadata.baseMaterials || [],
     factors: metadata.factors || {},
@@ -59,6 +137,7 @@ const mapDraft = (row) => {
     preferredTimeframe: row.preferred_timeframe,
     requestDescription: row.request_description,
     requestStatus: row.request_status,
+    inventoryMatches: buildInventoryMatches({ materialBreakdown: normalizeMaterialBreakdown(metadata), inventoryItems, reservationRows, jobRequestId: row.job_request_id }),
   };
 };
 
@@ -182,7 +261,19 @@ export default async (request) => {
         limit ${limit}
       `;
 
-      const drafts = rows.map(mapDraft);
+      const inventoryItems = await db.sql`
+        select id, name, sku, category, trade_type, unit, quantity_on_hand, quantity_reserved, reorder_point, unit_cost, charge_price, supplier, supplier_part_number, ai_quote_catalog_key
+        from inventory_items
+        where is_active = true
+        limit 500
+      `;
+      const reservationRows = await db.sql`
+        select id, inventory_item_id, job_request_id, reserved_quantity, used_quantity, status
+        from inventory_reservations
+        where status in ('reserved', 'partially_used')
+        limit 500
+      `;
+      const drafts = rows.map((row) => mapDraft(row, { inventoryItems, reservationRows }));
       const readyCount = drafts.filter((draft) => Number(draft.amountCents || 0) > 0).length;
       const needsReviewCount = drafts.length - readyCount;
 

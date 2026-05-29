@@ -8,6 +8,10 @@
   const root = document.querySelector('[data-dashboard-root]');
   if (!root) return;
 
+  if (!document.body.dataset.sidebarWorkspace) {
+    document.body.dataset.sidebarWorkspace = 'overview';
+  }
+
   const workspaces = {
     overview: {
       title: 'Overview',
@@ -27,7 +31,7 @@
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: ['#admin-work-orders', '#worker-jobs', '[data-worker-jobs]']
+      targets: ['[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]']
     },
     invoices: {
       title: 'Invoices',
@@ -41,8 +45,13 @@
     },
     settings: {
       title: 'Settings',
-      description: 'Admin settings, roles, users, inventory access, and audit tools.',
-      targets: ['#admin-access', '#admin-activity', '#admin-inventory', '[data-admin-inventory]', '[data-admin-activity]', '[data-admin-alerts]']
+      description: 'Admin settings, roles, users, and inventory access.',
+      targets: ['#admin-access', '#admin-inventory', '[data-admin-inventory]', '.inventory-suite']
+    },
+    deployment: {
+      title: 'Deployment and workflow health',
+      description: 'Developer-focused deployment readiness, environment checks, critical API routes, and workflow health.',
+      targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite']
     }
   };
 
@@ -54,7 +63,8 @@
       ['work-orders', ['work order', 'job']],
       ['invoices', ['invoice', 'finance']],
       ['workers', ['worker', 'field']],
-      ['settings', ['setting', 'roles', 'users', 'audit', 'inventory']]
+      ['settings', ['setting', 'roles', 'users', 'inventory']],
+      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']]
     ];
 
     document.querySelectorAll('.sidebar-nav-link').forEach((button) => {
@@ -123,6 +133,11 @@
     if (url.searchParams.has('workspace')) {
       url.searchParams.delete('workspace');
       window.history.replaceState({}, '', url);
+    }
+
+    if (workspace === 'settings') {
+      window.taDashboardActions?.bindAdminAccessForms?.();
+      window.taDashboardActions?.loadAdminAccess?.();
     }
   };
 
