@@ -1,8 +1,10 @@
 // Phase 34: sidebar-only dashboard workspaces.
 // Fixes duplicate active states:
 // - Inventory stays a real /inventory/ link.
-// - Finance Center and Invoices are separate workspaces.
+// - Finance Center and Invoices are separate.
+// - Maintenance Plans and Roles & Users are separate.
 // - Roles & Users opens Settings / Access Manager.
+// - Invoices no longer targets the old #admin-invoices "Invoice & payment desk" module.
 // - Only one sidebar item should be highlighted at a time.
 
 (() => {
@@ -20,47 +22,122 @@
     overview: {
       title: 'Overview',
       description: 'Quick business snapshot and daily attention items.',
-      targets: ['.hero', '#executive-overview', '.executive-suite', '#customer-experience-center', '.customer-experience-suite'],
+      targets: [
+        '.hero',
+        '#executive-overview',
+        '.executive-suite',
+        '#customer-experience-center',
+        '.customer-experience-suite',
+      ],
     },
+
     requests: {
       title: 'Requests',
       description: 'New customer requests and request review workflow.',
-      targets: ['#admin-requests', '#client-requests', '[data-client-requests]', '[data-admin-inbox]'],
+      targets: [
+        '#admin-requests',
+        '#client-requests',
+        '[data-client-requests]',
+        '[data-admin-inbox]',
+      ],
     },
+
     quotes: {
       title: 'Quotes',
       description: 'AI estimate review, quote approval, risks, materials, and customer quote status.',
-      targets: ['#estimate-review', '#admin-quotes', '#client-quotes', '[data-client-quotes]', '[data-phase2-command-center]'],
+      targets: [
+        '#estimate-review',
+        '#admin-quotes',
+        '#client-quotes',
+        '[data-client-quotes]',
+        '[data-phase2-command-center]',
+      ],
     },
+
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: ['[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]'],
+      targets: [
+        '[data-phase3-workflow-suite]',
+        '.workflow-suite',
+        '#worker-jobs',
+        '[data-worker-jobs]',
+        '#smart-schedule-suite',
+        '.smart-schedule-suite',
+      ],
     },
+
     finance: {
       title: 'Finance Center',
       description: 'Finance KPIs, payment readiness, deposits, balances, and billing overview.',
-      targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-command-center'],
+      targets: [
+        '#finance-command-center',
+        '[data-finance-command-center]',
+        '[data-phase4-finance-suite]',
+        '.finance-command-center',
+        '.finance-command-suite',
+        '.finance-suite',
+      ],
     },
+
     invoices: {
       title: 'Invoices',
-      description: 'Invoice desk, billing queue, client invoices, payment status, and closeout.',
-      targets: ['#admin-invoices', '#client-invoices', '[data-admin-invoices]', '[data-client-invoices]'],
+      description: 'Invoice workflow, client balances, payment status, and closeout.',
+      // IMPORTANT:
+      // Do NOT include #admin-invoices here. That is the older "Invoice & payment desk" module.
+      targets: [
+        '[data-admin-invoice-kpi-summary]',
+        '[data-admin-invoice-summary]',
+        '[data-admin-invoice-list]',
+        '[data-client-invoices]',
+        '#client-invoices',
+        '.client-invoices',
+        '.invoice-workspace',
+        '.invoice-suite',
+      ],
     },
+
     workers: {
       title: 'Workers',
       description: 'Worker jobs, field workflow, mobile tools, and job documentation.',
-      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite'],
+      targets: [
+        '#worker-jobs',
+        '#worker-tools-upgrade',
+        '#worker-mobile-field',
+        '.worker-mobile-suite',
+        '.photo-doc-suite',
+      ],
     },
+
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring service plans, preventative maintenance, and property care schedules.',
+      targets: [
+        '#maintenance-plans',
+        '.maintenance-suite',
+        '[data-maintenance-plans]',
+        '[data-maintenance-suite]',
+      ],
+    },
+
     settings: {
       title: 'Settings',
       description: 'Admin settings, roles, users, and access management.',
-      targets: ['#admin-access'],
+      targets: [
+        '#admin-access',
+        '[data-admin-access]',
+        '[data-admin-access-workspace]',
+      ],
     },
+
     deployment: {
       title: 'Deployment and workflow health',
       description: 'Developer-focused deployment readiness, environment checks, critical API routes, and workflow health.',
-      targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite'],
+      targets: [
+        '#system-readiness',
+        '[data-phase8-readiness-suite]',
+        '.readiness-suite',
+      ],
     },
   };
 
@@ -86,19 +163,26 @@
     const source = `${label} ${hint} ${target} ${action}`;
 
     // Exact label checks first so similar items do not collide.
-    if (label === 'finance center') return 'finance';
-    if (label === 'invoices') return 'invoices';
-    if (label === 'inventory') return null; // Inventory must remain a normal link.
-    if (label === 'roles & users' || label === 'roles and users') return 'settings';
+    if (label === 'overview') return 'overview';
     if (label === 'estimate review') return 'quotes';
     if (label === 'work orders') return 'work-orders';
-    if (label === 'worker jobs' || label === 'worker mobile') return 'workers';
+    if (label === 'scheduling') return 'work-orders';
+
+    if (label === 'finance center') return 'finance';
+    if (label === 'invoices') return 'invoices';
+
+    if (label === 'worker jobs') return 'workers';
+    if (label === 'worker mobile') return 'workers';
+    if (label === 'photo docs') return 'workers';
+
+    if (label === 'maintenance plans') return 'maintenance';
+
+    if (label === 'roles & users') return 'settings';
+    if (label === 'roles and users') return 'settings';
+
+    if (label === 'inventory') return null; // Inventory must remain a normal link.
     if (label === 'customer status') return 'overview';
     if (label === 'deployment health') return 'deployment';
-    if (label === 'overview') return 'overview';
-    if (label === 'scheduling') return 'work-orders';
-    if (label === 'photo docs') return 'workers';
-    if (label === 'maintenance plans') return 'settings';
 
     const map = [
       ['overview', ['overview']],
@@ -108,7 +192,8 @@
       ['finance', ['finance center', 'finance-command-center']],
       ['invoices', ['invoice', 'billing']],
       ['workers', ['worker', 'field', 'photo docs', 'mobile']],
-      ['settings', ['setting', 'roles', 'users', 'access', 'maintenance']],
+      ['maintenance', ['maintenance plan', 'recurring service', 'property care']],
+      ['settings', ['setting', 'roles', 'users', 'access']],
       ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']],
     ];
 
@@ -182,6 +267,7 @@
 
     document.querySelectorAll('[data-sidebar-workspace]').forEach((button) => {
       const active = button.dataset.sidebarWorkspace === workspace;
+
       if (active) button.setAttribute('aria-current', 'true');
       else button.removeAttribute('aria-current');
     });
