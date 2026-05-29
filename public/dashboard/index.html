@@ -2437,6 +2437,86 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div hidden>Start job Mark in progress Mark complete</div><div class="phase54-list" data-worker-mobile-list></div>
     </section>
 
+
+    <section class="card worker-ai-troubleshooting-suite phase54-workspace" id="worker-ai-troubleshooting" data-worker-ai-troubleshooting data-dashboard-section data-views="worker admin" hidden>
+      <strong>AI Troubleshooting Assistant</strong>
+      <p>Safety-first field assistant for equipment details, symptoms, error codes, readings, and practical next steps workers can attach to a job.</p>
+      <p class="session-status" data-ai-troubleshooting-status role="status" aria-live="polite">Enter the system, issue, readings, and safety conditions to generate a troubleshooting plan.</p>
+      <form class="client-request-form" data-ai-troubleshooting-form>
+        <div class="client-request-form-grid">
+          <label>System / Trade
+            <select name="systemType" required>
+              <option value="">Select system / trade</option>
+              <option value="HVAC">HVAC</option>
+              <option value="Mini split">Mini split</option>
+              <option value="Water source heat pump">Water source heat pump</option>
+              <option value="Plumbing">Plumbing</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Appliance">Appliance</option>
+              <option value="Pool/Spa">Pool/Spa</option>
+              <option value="Door/Hardware">Door/Hardware</option>
+              <option value="General handyman">General handyman</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Equipment / Component
+            <select name="component" required>
+              <option value="">Select equipment / component</option>
+              <option value="Compressor">Compressor</option>
+              <option value="Condenser">Condenser</option>
+              <option value="Air handler">Air handler</option>
+              <option value="Mini split indoor head">Mini split indoor head</option>
+              <option value="Mini split outdoor unit">Mini split outdoor unit</option>
+              <option value="Water heater">Water heater</option>
+              <option value="Circulating pump">Circulating pump</option>
+              <option value="Light switch">Light switch</option>
+              <option value="Outlet">Outlet</option>
+              <option value="Garbage disposal">Garbage disposal</option>
+              <option value="Toilet">Toilet</option>
+              <option value="Faucet">Faucet</option>
+              <option value="Dishwasher">Dishwasher</option>
+              <option value="Refrigerator">Refrigerator</option>
+              <option value="Garage door opener">Garage door opener</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Make / Brand<input name="make" autocomplete="organization" placeholder="Mitsubishi, Rheem, Moen, Square D"></label>
+          <label>Model Number<input name="model" autocomplete="off" placeholder="Model number"></label>
+          <label>Serial Number<input name="serial" autocomplete="off" placeholder="Optional serial number"></label>
+          <label>Error Code / Blink Code<input name="errorCode" autocomplete="off" placeholder="P6, E1, 4 flashes, GFCI trip"></label>
+          <label class="full">Issue / Complaint<textarea name="issue" required placeholder="Customer says unit turns on but does not cool. Outdoor fan runs. Indoor head flashes P6."></textarea></label>
+          <label class="full">Field Readings<textarea name="readings" placeholder="Voltage, amp draw, capacitor reading, pressure readings, temperature split, continuity, ohms, water pressure, GFCI status, breaker/fuse size"></textarea></label>
+          <label class="full">What has already been checked?<textarea name="checkedAlready" placeholder="Thermostat setting, filter, breaker, drain, visible leaks, reset attempts, access notes"></textarea></label>
+          <fieldset class="full ai-troubleshooting-safety-grid" aria-label="Safety conditions">
+            <legend>Safety Conditions</legend>
+            <label><input type="checkbox" name="safetyFlags" value="Power verified off before opening equipment"> Power verified off before opening equipment</label>
+            <label><input type="checkbox" name="safetyFlags" value="No burning smell/smoke"> No burning smell/smoke</label>
+            <label><input type="checkbox" name="safetyFlags" value="No active water leak"> No active water leak</label>
+            <label><input type="checkbox" name="safetyFlags" value="No gas smell"> No gas smell</label>
+            <label><input type="checkbox" name="safetyFlags" value="No exposed live wiring"> No exposed live wiring</label>
+            <label><input type="checkbox" name="safetyFlags" value="Needs supervisor review"> Needs supervisor review</label>
+          </fieldset>
+          <label>Urgency
+            <select name="urgency">
+              <option value="Low">Low</option>
+              <option value="Normal" selected>Normal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Emergency / unsafe">Emergency / unsafe</option>
+            </select>
+          </label>
+          <label>Attach to Work Order<input name="workOrderId" autocomplete="off" placeholder="Optional work order / job request ID"></label>
+        </div>
+        <div class="client-request-form-actions mobile-sticky-action-source">
+          <button class="btn btn-primary" type="submit" data-ai-troubleshooting-generate>Generate Troubleshooting Plan</button>
+          <button class="btn btn-soft" type="button" data-ai-troubleshooting-clear>Clear</button>
+          <button class="btn btn-soft" type="button" data-ai-troubleshooting-copy disabled title="Generate a troubleshooting plan before copying.">Copy Plan</button>
+          <button class="btn btn-soft" type="button" data-ai-troubleshooting-save disabled title="Generate a plan and add a work order ID before saving.">Save Notes to Job</button>
+          <span data-ai-troubleshooting-form-status aria-live="polite"></span>
+        </div>
+      </form>
+      <div class="phase54-grid ai-troubleshooting-result-grid" data-ai-troubleshooting-results></div>
+    </section>
+
     <section class="card photo-doc-suite phase54-workspace" data-dashboard-section data-views="worker admin" hidden>
       <strong>Photo Docs &amp; Completion Evidence</strong>
       <p>Track before, progress, and after documentation, completion notes, evidence checklist, and admin review status.</p>

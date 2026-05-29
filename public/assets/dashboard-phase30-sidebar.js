@@ -20,6 +20,7 @@
 
     { group: 'Field', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field' },
     { group: 'Field', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone' },
+    { group: 'Field', label: 'AI Troubleshooting', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', hint: 'AI Help' },
     { group: 'Field', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof' },
 
     { group: 'Operations', label: 'Inventory', workspace: 'inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory' },
@@ -42,6 +43,7 @@
     { label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', views: ['admin'] },
     { label: 'Stock', workspace: 'inventory', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
     { label: 'Today', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Troubleshoot', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', views: ['worker', 'admin'] },
     { label: 'Materials', workspace: 'worker-jobs', target: '#worker-jobs', views: ['worker'] },
     { label: 'Photos', workspace: 'photo-docs', target: '.photo-doc-suite', views: ['worker'] },
     { label: 'Complete', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },

@@ -14,6 +14,7 @@ has(moduleCss, /--module-bg:[\s\S]*rgba\(15, 23, 42/, 'Module polish CSS must us
 has(moduleCss, /--module-orange:[\s\S]*#fb923c/, 'Module polish CSS must keep copper/orange accents.');
 has(moduleCss, /border-radius:\s*28px/, 'Module polish CSS must use modern rounded cards.');
 has(moduleCss, /admin-invoices[\s\S]*admin-access[\s\S]*worker-jobs[\s\S]*smart-schedule-suite[\s\S]*maintenance-suite/, 'Module polish CSS must cover old and new dashboard modules.');
+has(moduleCss, /worker-ai-troubleshooting-suite/, 'Module polish CSS must cover AI Troubleshooting.');
 has(moduleCss, /input[\s\S]*select[\s\S]*textarea[\s\S]*background:\s*rgba\(2,6,23/, 'Forms must be restyled away from old white inputs.');
 has(mobileCss, /--mobile-tap:\s*44px/, 'Phase 55 mobile tap target standard must remain.');
 has(mobileCss, /mobile-quick-action-bar/, 'Phase 55 mobile quick action bar must remain.');

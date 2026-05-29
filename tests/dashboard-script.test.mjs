@@ -60,8 +60,8 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /Work order command center/, 'legacy work-order command-center copy should be removed');
   assert.doesNotMatch(html, /<section class="card admin-inbox" id="admin-work-orders"/, 'legacy work-order summary panel should be removed from the dashboard');
   assert.match(html, /<strong>Work orders<\/strong>/, 'work-order shortcut copy should remain available in the command center');
-  assert.match(html, /Invoice &amp; payment desk|Invoice & payment desk/, 'admin invoices should use clearer payment desk copy');
-  assert.equal((html.match(/Invoice &amp; payment desk/g) || []).length, 1, 'admin invoice desk should render only one heading');
+  assert.match(html, /Modern Invoice Command Center/, 'admin invoices should use the modern invoice command center copy');
+  assert.equal((html.match(/Modern Invoice Command Center/g) || []).length, 1, 'admin invoice command center should render only one heading');
   assert.equal((html.match(/data-dashboard-singleton=\"admin-invoices\"/g) || []).length, 1, 'admin invoice desk should be marked as a singleton section');
   assert.doesNotMatch(html, /Activity audit trail|Review recent portal audit events|Operational alerts|Loading alerts…/, 'removed audit and alert dashboard copy should not render');
   assert.match(html, /data-admin-access-shortcut/, 'admin command center should open roles and users');

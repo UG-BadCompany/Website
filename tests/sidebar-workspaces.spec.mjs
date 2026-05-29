@@ -12,6 +12,7 @@ const expectedRoutes = [
   ['Customer Status', 'customer-status', '#customer-experience-center'],
   ['Worker Jobs', 'worker-jobs', '#worker-jobs'],
   ['Worker Mobile', 'worker-mobile', '#worker-mobile-field'],
+  ['AI Troubleshooting', 'ai-troubleshooting', '#worker-ai-troubleshooting'],
   ['Photo Docs', 'photo-docs', '.photo-doc-suite'],
   ['Maintenance Plans', 'maintenance', '.maintenance-suite'],
   ['Roles & Users', 'roles-users', '#admin-access'],
@@ -33,7 +34,9 @@ test('Phase 34 router separates finance, invoices, scheduling, work orders, role
   assert.match(phase34, /invoices:[\s\S]*targets: \['#admin-invoices', '#client-invoices', '\[data-admin-invoices\]', '\[data-client-invoices\]'\]/, 'Invoices should target modern invoice modules only');
   assert.doesNotMatch(phase34.match(/finance: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /admin-invoices|client-invoices/, 'Finance should not include invoice module selectors');
   assert.doesNotMatch(phase34.match(/work-orders: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /worker-jobs|smart-schedule-suite/, 'Work Orders should not include Worker Jobs or Scheduling');
-  assert.doesNotMatch(phase34.match(/worker-jobs: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /worker-mobile-field|photo-doc-suite/, 'Worker Jobs should not include Worker Mobile or Photo Docs');
+  assert.doesNotMatch(phase34.match(/worker-jobs: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /worker-mobile-field|worker-ai-troubleshooting|photo-doc-suite/, 'Worker Jobs should not include Worker Mobile, AI Troubleshooting, or Photo Docs');
+  assert.match(phase34, /'ai-troubleshooting':[\s\S]*targets: \['#worker-ai-troubleshooting', '\[data-worker-ai-troubleshooting\]'\]/, 'AI Troubleshooting should target only its assistant module');
+  assert.doesNotMatch(phase34.match(/ai-troubleshooting: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /worker-jobs|worker-mobile-field|photo-doc-suite/, 'AI Troubleshooting should not target other field modules');
   assert.doesNotMatch(phase34.match(/roles-users: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /maintenance-suite/, 'Roles & Users should not include Maintenance Plans');
 });
 
@@ -45,7 +48,7 @@ test('workspace router clears stale tags and prevents duplicate active sidebar h
   assert.match(phase34, /setActiveButton/, 'router should centralize active-state updates');
   assert.match(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'router should visibly scroll to the selected module');
   assert.match(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget/, 'sidebar clicks should request scrolling to their target');
-  for (const workspace of ['estimate-review', 'work-orders', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
+  for (const workspace of ['estimate-review', 'work-orders', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
     assert.match(css, new RegExp(`data-sidebar-workspace="${workspace}"[\\s\\S]*${workspace}`), `CSS should reveal ${workspace}`);
   }
 });
@@ -57,12 +60,14 @@ test('required modules exist and key buttons have real status/action wiring', as
   assert.match(bootstrap, /data-schedule-dispatch-form[\s\S]*\/api\/admin\/job-requests/, 'Scheduling should call job request API');
   assert.match(html, /data-admin-new-role[\s\S]*data-admin-user-create/, 'Roles & Users should expose create role/user actions');
   assert.match(bootstrap, /data-mobile-request-material[\s\S]*\/api\/worker\/inventory\/request/, 'Worker Mobile request material should call real endpoint');
+  assert.match(html, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-form[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting should include a real form and generate button');
+  assert.match(bootstrap, /data-ai-troubleshooting-form[\s\S]*\/api\/worker\/ai-troubleshooting[\s\S]*data-ai-troubleshooting-copy[\s\S]*save_notes/, 'AI Troubleshooting should call the real endpoint, copy plans, and save job notes');
   assert.match(bootstrap, /data-photo-doc-form[\s\S]*postWorkerAssignmentUpdate/, 'Photo Docs should persist evidence notes');
 });
 
 test('mobile quick actions and inventory navigation are preserved', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
-  assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Stock[\s\S]*Today[\s\S]*Complete[\s\S]*Profile/, 'mobile quick action bar should keep role-aware actions');
+  assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Stock[\s\S]*Today[\s\S]*Troubleshoot[\s\S]*Complete[\s\S]*Profile/, 'mobile quick action bar should keep role-aware actions');
   assert.match(sidebar, /data-mobile-quick-workspace[\s\S]*taSetSidebarWorkspace/, 'mobile quick actions should use workspace routing when available');
   assert.match(sidebar, /href: '\/inventory\/'/, 'Inventory should remain a page navigation');
 });

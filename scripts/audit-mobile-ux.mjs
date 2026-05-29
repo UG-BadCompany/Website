@@ -39,10 +39,12 @@ has(mobileCss, /mobile-modal-sheet|admin-request-modal-panel[\s\S]*100dvh/, 'Mob
 has(mobileCss, /mobile-sticky-actions[\s\S]*position:\s*sticky/, 'Sticky mobile action classes are missing.');
 has(mobileCss, /inventory-mobile-card/, 'Inventory mobile card CSS hook is missing.');
 has(mobileCss, /worker-mobile-card/, 'Worker mobile card CSS hook is missing.');
+has(mobileCss, /worker-ai-troubleshooting-suite/, 'AI Troubleshooting mobile CSS hook is missing.');
 
 has(dashboard, /id="worker-mobile-field"[\s\S]*class="[^"]*worker-mobile-suite|class="[^"]*worker-mobile-suite[\s\S]*id="worker-mobile-field"/, 'Worker Mobile workspace is missing.');
 has(dashboard, /id="smart-schedule-suite"/, 'Scheduling workspace is missing while sidebar uses it.');
 has(dashboard, /class="[^"]*photo-doc-suite/, 'Photo Docs workspace is missing while sidebar uses it.');
+has(dashboard, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-form/, 'AI Troubleshooting workspace is missing while sidebar uses it.');
 has(dashboard, /class="[^"]*maintenance-suite/, 'Maintenance workspace is missing while sidebar uses it.');
 has(dashboard, /data-admin-quote-form[\s\S]*data-admin-quote-ai-draft[\s\S]*data-admin-quote-submit/, 'Mobile quote editor critical actions are missing.');
 has(dashboard, /data-client-request-form[\s\S]*type="file"[\s\S]*Save request/, 'Client mobile request form and upload field are missing.');
@@ -55,7 +57,9 @@ has(sidebar, /data-sidebar-toggle|sidebarToggle/, 'Sidebar mobile drawer toggle 
 has(sidebar, /data-sidebar-close/, 'Sidebar mobile close button is missing.');
 has(sidebar, /data-sidebar-backdrop|sidebarBackdrop/, 'Sidebar mobile backdrop is missing.');
 has(sidebar, /href: '\/inventory\/'/, 'Inventory sidebar link must remain /inventory/.');
+has(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting/, 'Worker/admin mobile quick actions must include Troubleshoot.');
 
+has(bootstrap, /data-ai-troubleshooting-form[\s\S]*\/api\/worker\/ai-troubleshooting/, 'AI Troubleshooting generate action must call its worker endpoint.');
 has(bootstrap, /data-mobile-use-material[\s\S]*\/api\/worker\/inventory\/use/, 'Worker mobile material usage must call worker inventory use endpoint.');
 has(bootstrap, /data-mobile-return-material[\s\S]*\/api\/worker\/inventory\/\$\{action\}/, 'Worker mobile return/release material path must be wired.');
 has(bootstrap, /data-mobile-request-material[\s\S]*\/api\/worker\/inventory\/request/, 'Worker mobile stock request must call worker inventory request endpoint.');

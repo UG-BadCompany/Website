@@ -36,6 +36,7 @@ const expected = [
   ['Customer Status', 'customer-status', '#customer-experience-center'],
   ['Worker Jobs', 'worker-jobs', '#worker-jobs'],
   ['Worker Mobile', 'worker-mobile', '#worker-mobile-field'],
+  ['AI Troubleshooting', 'ai-troubleshooting', '#worker-ai-troubleshooting'],
   ['Photo Docs', 'photo-docs', '.photo-doc-suite'],
   ['Inventory', 'inventory', '/inventory/'],
   ['Maintenance Plans', 'maintenance', '.maintenance-suite'],
@@ -72,9 +73,11 @@ has(phase34, /root\.querySelectorAll\('\[data-sidebar-workspace-section\]'\)[\s\
 has(phase34, /finance:[\s\S]*targets: \['\.finance-suite', '\[data-phase4-finance-suite\]', '#finance-command-center'\]/, 'Finance workspace must target only the Financial Command Center module.');
 has(phase34, /invoices:[\s\S]*targets: \['#admin-invoices', '#client-invoices', '\[data-admin-invoices\]', '\[data-client-invoices\]'\]/, 'Invoices workspace must target only invoice modules.');
 has(phase34, /'worker-mobile':[\s\S]*#worker-mobile-field/, 'Worker Mobile workspace must be separate from Worker Jobs.');
+has(phase34, /'ai-troubleshooting':[\s\S]*targets: \['#worker-ai-troubleshooting', '\[data-worker-ai-troubleshooting\]'\]/, 'AI Troubleshooting workspace must target only its assistant module.');
 has(phase34, /'roles-users':[\s\S]*#admin-access/, 'Roles & Users workspace must map to Access Manager only.');
 has(phase34Css, /body\[data-sidebar-workspace="finance"\][\s\S]*data-sidebar-workspace-section~="finance"/, 'Phase 34 CSS must reveal Finance workspace.');
 has(phase34Css, /body\[data-sidebar-workspace="worker-mobile"\][\s\S]*data-sidebar-workspace-section~="worker-mobile"/, 'Phase 34 CSS must reveal Worker Mobile workspace.');
+has(phase34Css, /body\[data-sidebar-workspace="ai-troubleshooting"\][\s\S]*data-sidebar-workspace-section~="ai-troubleshooting"/, 'Phase 34 CSS must reveal AI Troubleshooting workspace.');
 has(phase34Css, /sidebar-nav-link\[aria-current="true"\]/, 'Sidebar CSS must include a single active-state style.');
 has(phase34, /removeAttribute\('aria-current'\)/, 'Workspace routing must remove inactive aria-current values to prevent duplicate highlights.');
 has(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'Sidebar workspace clicks must scroll to the selected module.');
@@ -87,6 +90,11 @@ const forbiddenCombos = [
   ['work-orders', '#worker-jobs'],
   ['worker-jobs', '#worker-mobile-field'],
   ['worker-jobs', '.photo-doc-suite'],
+  ['worker-jobs', '#worker-ai-troubleshooting'],
+  ['worker-mobile', '#worker-ai-troubleshooting'],
+  ['ai-troubleshooting', '#worker-jobs'],
+  ['ai-troubleshooting', '#worker-mobile-field'],
+  ['ai-troubleshooting', '.photo-doc-suite'],
   ['roles-users', '.maintenance-suite'],
   ['maintenance', '#admin-access'],
 ];
@@ -98,6 +106,8 @@ for (const [workspace, selector] of forbiddenCombos) {
 has(dashboard, /data-schedule-dispatch-form[\s\S]*Schedule \/ assign job/, 'Scheduling workspace must include a real dispatch form.');
 has(dashboard, /Worker Mobile Field Mode[\s\S]*data-worker-mobile-list/, 'Worker Mobile workspace must include job list/status UI.');
 has(dashboard, /data-photo-doc-form[\s\S]*Save evidence notes/, 'Photo Docs workspace must include an evidence form.');
+has(dashboard, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-form[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting workspace must include a real assistant form.');
+has(sidebar, /mobileQuickActions[\s\S]*Troubleshoot[\s\S]*ai-troubleshooting/, 'Worker/admin mobile quick actions must include Troubleshoot.');
 has(dashboard, /data-maintenance-plan-form[\s\S]*Save maintenance plan/, 'Maintenance workspace must include plan form.');
 has(dashboard, /Modern Invoice Command Center[\s\S]*data-admin-invoice-status-filter[\s\S]*data-admin-invoice-search/, 'Invoices module must be the modern invoice command center with filters/search.');
 has(dashboard, /mobile-field-ux\.css/, 'Phase 55 mobile CSS must remain included.');

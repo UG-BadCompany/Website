@@ -7,6 +7,7 @@ const dashboard = read('public/dashboard/index.html');
 const bootstrap = read('public/dashboard/modules/dashboard/bootstrap.js');
 const finance = read('public/assets/dashboard-phase4-finance.js');
 const phase34 = read('public/assets/dashboard-phase34-sidebar-only-workspaces.js');
+const netlify = read('netlify.toml');
 const failures = [];
 const fail = (message) => failures.push(message);
 const has = (text, pattern, message) => { if (!pattern.test(text)) fail(message); };
@@ -27,6 +28,9 @@ const moduleChecks = [
   ['Worker Job material closeout', bootstrap, /data-worker-material-use[\s\S]*data-worker-material-release[\s\S]*\/api\/worker\/inventory\/\$\{action\}/],
   ['Worker Mobile', bootstrap, /worker-mobile-card[\s\S]*data-mobile-start-job[\s\S]*data-mobile-complete-job[\s\S]*data-mobile-request-material/],
   ['Photo Docs', dashboard, /photo-doc-suite[\s\S]*Before photos[\s\S]*Progress photos[\s\S]*After photos[\s\S]*Save evidence notes/],
+  ['AI Troubleshooting module', dashboard, /id="worker-ai-troubleshooting"[\s\S]*System \/ Trade[\s\S]*Equipment \/ Component[\s\S]*Issue \/ Complaint[\s\S]*Safety Conditions[\s\S]*Generate Troubleshooting Plan/],
+  ['AI Troubleshooting frontend API', bootstrap, /data-ai-troubleshooting-form[\s\S]*\/api\/worker\/ai-troubleshooting[\s\S]*data-ai-troubleshooting-copy[\s\S]*save_notes/],
+  ['AI Troubleshooting route', netlify, /\/api\/worker\/ai-troubleshooting[\s\S]*worker-ai-troubleshooting/],
   ['Customer Status', dashboard, /id="customer-experience-center"[\s\S]*Requests[\s\S]*Quotes[\s\S]*Invoices[\s\S]*Maintenance/],
   ['Deployment Health', dashboard, /id="system-readiness"[\s\S]*npm run build[\s\S]*check-netlify-functions[\s\S]*audit:dead-buttons[\s\S]*test:browser/],
 ];
@@ -38,7 +42,7 @@ if (/<span id="finance-command-center" class="dashboard-anchor-alias"/.test(dash
 if (!/module-completion-2026\.css/.test(dashboard)) fail('Dashboard must include Phase 56 module completion polish CSS.');
 
 const workspaceKeys = [...phase34.matchAll(/^    ['"]?([a-z-]+)['"]?: \{/gm)].map((match) => match[1]);
-for (const required of ['overview', 'estimate-review', 'work-orders', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
+for (const required of ['overview', 'estimate-review', 'work-orders', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
   if (!workspaceKeys.includes(required)) fail(`Phase 34 router missing workspace key: ${required}.`);
 }
 
