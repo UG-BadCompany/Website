@@ -135,7 +135,43 @@ const useInventory = async ({ db, session, payload }) => {
   `;
   if (!item) return json(422, { ok: false, message: 'Item not available or not enough worker/truck stock.' });
   await recordWorkerMovement({ db, session, payload, movementType: 'consumed_on_job', quantity: payload.quantity, fromLocation: 'worker_or_truck', toLocation: 'job_site' });
+  if (payload.jobRequestId) {
+    await db.sql`
+      update inventory_reservations
+      set used_quantity = least(reserved_quantity, used_quantity + ${Math.abs(payload.quantity)}),
+          status = case when least(reserved_quantity, used_quantity + ${Math.abs(payload.quantity)}) >= reserved_quantity then 'used' else 'partially_used' end,
+          updated_at = now()
+      where inventory_item_id = ${payload.itemId}
+        and job_request_id = ${payload.jobRequestId}
+        and status in ('reserved', 'partially_used')
+    `;
+  }
   return json(200, { ok: true, item });
+};
+
+const releaseReservedInventory = async ({ db, session, payload }) => {
+  if (!payload.itemId || !payload.jobRequestId || !payload.quantity) return json(400, { ok: false, message: 'Item, job, and quantity are required to release unused reserved material.' });
+  const quantity = Math.abs(payload.quantity);
+  const [reservation] = await db.sql`
+    update inventory_reservations
+    set reserved_quantity = greatest(reserved_quantity - ${quantity}, used_quantity),
+        status = case when greatest(reserved_quantity - ${quantity}, used_quantity) <= used_quantity then 'released' else 'partially_used' end,
+        updated_at = now()
+    where inventory_item_id = ${payload.itemId}
+      and job_request_id = ${payload.jobRequestId}
+      and status in ('reserved', 'partially_used')
+      and exists (select 1 from worker_assignments where worker_assignments.job_request_id = inventory_reservations.job_request_id and worker_assignments.worker_user_id = ${session.user_id})
+    returning id, inventory_item_id, job_request_id, reserved_quantity, used_quantity, status
+  `;
+  if (!reservation) return json(404, { ok: false, message: 'No assigned active reservation was found to release.' });
+  const [item] = await db.sql`
+    update inventory_items
+    set quantity_reserved = greatest(quantity_reserved - ${quantity}, 0), updated_at = now()
+    where id = ${payload.itemId} and is_active = true
+    returning id, name, sku, quantity_on_hand, quantity_reserved
+  `;
+  await recordWorkerMovement({ db, session, payload, movementType: 'released_from_job', quantity, fromLocation: 'job_site', toLocation: 'main_warehouse' });
+  return json(200, { ok: true, item, reservation });
 };
 
 const returnInventory = async ({ db, session, payload }) => {
@@ -182,6 +218,7 @@ export const createWorkerInventoryHandler = ({ getDatabase = loadDatabase } = {}
     const payload = normalizePayload(body);
     const path = new URL(request.url).pathname;
     if (path.endsWith('/use') || payload.action === 'use') return await useInventory({ db, session, payload });
+    if (path.endsWith('/release') || payload.action === 'release') return await releaseReservedInventory({ db, session, payload });
     if (path.endsWith('/return') || payload.action === 'return') return await returnInventory({ db, session, payload });
     if (path.endsWith('/damage') || payload.action === 'damage') return await reportDamaged({ db, session, payload });
     return await requestInventory({ db, session, payload });

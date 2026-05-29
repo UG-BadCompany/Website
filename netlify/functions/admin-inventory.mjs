@@ -28,7 +28,7 @@ export const INVENTORY_LOCATIONS = [
 
 export const INVENTORY_MOVEMENT_TYPES = [
   'stock_added', 'stock_removed', 'reserved_for_job', 'assigned_to_worker', 'assigned_to_truck',
-  'consumed_on_job', 'returned_from_job', 'returned_from_worker', 'adjusted_after_count',
+  'consumed_on_job', 'returned_from_job', 'released_from_job', 'returned_from_worker', 'adjusted_after_count',
   'damaged_lost', 'purchase_received',
 ];
 
@@ -88,6 +88,7 @@ const normalizeInventoryPayload = (body = {}) => ({
   jobRequestId: clean(body.jobRequestId, 80),
   workerUserId: clean(body.workerUserId || body.workerAssignment, 80),
   reservationId: clean(body.reservationId, 80),
+  quoteId: clean(body.quoteId, 80),
   countReason: clean(body.countReason || body.adjustmentReason, 500),
   countedQuantity: normalizeNumber(body.countedQuantity, 0),
   supplierName: clean(body.supplierName || body.supplier, 180),
@@ -234,7 +235,17 @@ const listInventory = async (db, { jobRequestId = '' } = {}) => {
     limit 30
   `;
 
-  const reservations = await db.sql`
+  const reservations = jobRequestId ? await db.sql`
+    select inventory_reservations.id, inventory_reservations.inventory_item_id, inventory_reservations.job_request_id,
+           inventory_reservations.reserved_quantity, inventory_reservations.used_quantity, inventory_reservations.status,
+           inventory_reservations.notes, inventory_reservations.created_at, inventory_items.name as item_name,
+           inventory_items.sku as item_sku
+    from inventory_reservations
+    join inventory_items on inventory_items.id = inventory_reservations.inventory_item_id
+    where inventory_reservations.job_request_id = ${jobRequestId}
+    order by inventory_reservations.created_at desc
+    limit 100
+  ` : await db.sql`
     select inventory_reservations.id, inventory_reservations.inventory_item_id, inventory_reservations.job_request_id,
            inventory_reservations.reserved_quantity, inventory_reservations.used_quantity, inventory_reservations.status,
            inventory_reservations.notes, inventory_reservations.created_at, inventory_items.name as item_name,
@@ -429,6 +440,17 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
     values (${session.user_id}, ${payload.jobRequestId ? 'inventory.used' : 'inventory.adjusted'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, quantityDelta: payload.quantityDelta, adjustmentType: payload.adjustmentType, jobRequestId: payload.jobRequestId || null, workOrderService: linkedWorkOrder?.service_type || null, workOrderStatus: linkedWorkOrder?.status || null })}::jsonb)
   `;
   await insertMovement({ db, session, payload, itemId: item.id, movementType: payload.jobRequestId ? 'consumed_on_job' : (payload.quantityDelta > 0 ? 'stock_added' : 'stock_removed'), quantity: Math.abs(payload.quantityDelta), fromLocation: item.location_type || item.storage_location || '', toLocation: payload.quantityDelta > 0 ? (item.location_type || item.storage_location || '') : '', notes: payload.adjustmentNote });
+  if (payload.jobRequestId && payload.quantityDelta < 0) {
+    await db.sql`
+      update inventory_reservations
+      set used_quantity = least(reserved_quantity, used_quantity + ${Math.abs(payload.quantityDelta)}),
+          status = case when least(reserved_quantity, used_quantity + ${Math.abs(payload.quantityDelta)}) >= reserved_quantity then 'used' else 'partially_used' end,
+          updated_at = now()
+      where inventory_item_id = ${payload.itemId}
+        and job_request_id = ${payload.jobRequestId}
+        and status in ('reserved', 'partially_used')
+    `;
+  }
 
   return json(200, {
     ok: true,
@@ -467,6 +489,39 @@ const reserveInventoryForJob = async ({ db, session, payload }) => {
     values (${session.user_id}, ${'inventory.reserved_for_job'}, ${'inventory_item'}, ${item.id}, ${JSON.stringify({ name: item.name, jobRequestId: payload.jobRequestId, quantity: payload.quantity })}::jsonb)
   `;
   return json(200, { ok: true, item: mapInventoryItem(item), reservation });
+};
+
+
+const releaseInventoryReservation = async ({ db, session, payload }) => {
+  if (!payload.itemId || !payload.jobRequestId || !payload.quantity) return json(400, { ok: false, message: 'Item, job, and quantity are required to release reserved materials.' });
+  const quantity = Math.abs(payload.quantity);
+  const [reservation] = await db.sql`
+    update inventory_reservations
+    set reserved_quantity = greatest(reserved_quantity - ${quantity}, used_quantity),
+        status = case
+          when greatest(reserved_quantity - ${quantity}, used_quantity) <= used_quantity then 'released'
+          else 'partially_used'
+        end,
+        notes = concat_ws(' | ', nullif(notes, ''), nullif(${payload.adjustmentNote || 'Unused reserved material released'}, '')),
+        updated_at = now()
+    where inventory_item_id = ${payload.itemId}
+      and job_request_id = ${payload.jobRequestId}
+      and status in ('reserved', 'partially_used')
+    returning id, inventory_item_id, job_request_id, reserved_quantity, used_quantity, status, notes, created_at
+  `;
+  if (!reservation) return json(404, { ok: false, message: 'No active reservation was found for that job material.' });
+  const [item] = await db.sql`
+    update inventory_items
+    set quantity_reserved = greatest(quantity_reserved - ${quantity}, 0), updated_at = now()
+    where id = ${payload.itemId} and is_active = true
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+  `;
+  await insertMovement({ db, session, payload, itemId: payload.itemId, movementType: 'released_from_job', quantity, fromLocation: 'job_site', toLocation: item?.location_type || 'main_warehouse', notes: payload.adjustmentNote || 'Unused reserved material released' });
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (${session.user_id}, ${'inventory.released_from_job'}, ${'inventory_item'}, ${payload.itemId}, ${JSON.stringify({ jobRequestId: payload.jobRequestId, quantity })}::jsonb)
+  `;
+  return json(200, { ok: true, item: item ? mapInventoryItem(item) : null, reservation });
 };
 
 const transferInventory = async ({ db, session, payload }) => {
@@ -556,6 +611,7 @@ const routeActionFromUrl = (request, payload) => {
   if (path.endsWith('/items') && request.method === 'PATCH') return 'update';
   if (path.endsWith('/movements')) return 'movement';
   if (path.endsWith('/reserve')) return 'reserve';
+  if (path.endsWith('/release')) return 'release';
   if (path.endsWith('/consume')) return 'consume';
   if (path.endsWith('/transfer')) return 'transfer';
   if (path.endsWith('/count')) return 'count';
@@ -591,6 +647,7 @@ export const createAdminInventoryHandler = ({ getDatabase = loadDatabase } = {})
     if (action === 'archive') return await archiveInventoryItem({ db, session, payload });
     if (action === 'delete') return await deleteInventoryItem({ db, session, payload });
     if (action === 'reserve') return await reserveInventoryForJob({ db, session, payload });
+    if (action === 'release') return await releaseInventoryReservation({ db, session, payload });
     if (action === 'consume') return await adjustInventoryItem({ db, session, payload: { ...payload, quantityDelta: -Math.abs(payload.quantity || payload.quantityDelta), adjustmentType: 'used' } });
     if (action === 'transfer') return await transferInventory({ db, session, payload });
     if (action === 'count') return await recordCycleCount({ db, session, payload });

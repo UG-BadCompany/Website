@@ -76,7 +76,9 @@ for (const file of [...htmlFiles, ...jsFiles]) {
 for (const api of apiCalls) {
   const normalized = api.replace(/\/$/, '');
   if (normalized.includes('${')) continue;
-  const hasRedirect = netlifyToml.includes(`from = "${normalized}"`) || netlifyToml.includes(`from = "${normalized}/*"`);
+  const routeParts = normalized.split('/').filter(Boolean);
+  const wildcardParents = routeParts.map((_, index) => `/${routeParts.slice(0, index + 1).join('/')}/*`);
+  const hasRedirect = netlifyToml.includes(`from = "${normalized}"`) || netlifyToml.includes(`from = "${normalized}/*"`) || wildcardParents.some((route) => netlifyToml.includes(`from = "${route}"`));
   const functionName = normalized.replace(/^\/api\//, '').replaceAll('/', '-');
   const hasFunction = existsSync(path.join(root, 'netlify/functions', `${functionName}.mjs`));
   if (!hasRedirect && !hasFunction) warn(`API call ${api} has no exact redirect/function match; verify dynamic fallback is intentional.`);

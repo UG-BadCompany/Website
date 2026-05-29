@@ -806,6 +806,7 @@ const estimateFromPayload = (payload) => {
     laborHours: totals.laborHoursHigh,
     laborRateCents: DEFAULT_LABOR_RATE_CENTS,
     materials: pricedMaterials,
+    materialBreakdown: pricedMaterials.map((item) => ({ name: item.name, category: item.category || item.trade || item.workCategory || '', estimatedQuantity: Number(item.estimatedQuantity ?? item.quantity ?? item.neededQty ?? 1) || 1, unit: item.unit || 'each', notes: item.notes || '', inventoryMatchHint: item.inventoryMatchHint || item.sku || item.supplierPartNumber || item.aiQuoteCatalogKey || item.name })),
     laborItems,
     baseMaterials,
     baseLaborItems,

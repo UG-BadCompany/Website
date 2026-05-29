@@ -1975,6 +1975,66 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       </section>
     </div>
 
+
+    <div class="admin-request-modal" data-admin-request-detail role="dialog" aria-modal="true" hidden>
+      <section class="admin-request-modal-panel admin-access-panel">
+        <div class="admin-request-modal-header">
+          <div>
+            <strong data-admin-detail-title>Work order</strong>
+            <p data-admin-detail-summary>Quote, assignment, Job Materials, completion, and invoice readiness.</p>
+          </div>
+          <button class="btn btn-soft admin-request-modal-close" type="button" data-admin-detail-close aria-label="Close work order detail">×</button>
+        </div>
+        <div data-admin-work-order-summary></div>
+        <form class="client-request-form" data-admin-status-form>
+          <input type="hidden" name="jobRequestId" data-admin-status-request-id>
+          <label>Status<select name="status" data-admin-status-select><option value="new">New</option><option value="quote_in_progress">Quote in progress</option><option value="quote_sent">Quote sent</option><option value="accepted">Accepted</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="pending_review">Pending review</option><option value="waiting_payment">Waiting payment</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+          <label>Estimated start<input name="estimatedStartDate" type="date" data-admin-estimated-start-date></label>
+          <label>Completion date<input name="completionDate" type="date" data-admin-completion-date></label>
+          <label class="full">Admin notes<textarea name="notes" data-admin-notes placeholder="Completion review, invoice readiness, material warnings, or scheduling notes"></textarea></label>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Update work order</button><button class="btn btn-soft" type="button" data-admin-mark-complete>Mark ready for invoice</button><button class="btn btn-danger" type="button" data-admin-delete-request>Permanently delete</button><span data-admin-status-form-status aria-live="polite"></span></div>
+        </form>
+        <form class="client-request-form" data-admin-quote-form>
+          <input type="hidden" name="jobRequestId" data-admin-quote-request-id>
+          <input type="hidden" name="quoteId" data-admin-quote-id>
+          <h3 data-admin-quote-form-title>Create quote</h3>
+          <label>Quote title<input name="title" data-admin-quote-title></label>
+          <label>Amount<input name="amount" inputmode="decimal"></label>
+          <label class="full">Summary<textarea name="summary"></textarea></label>
+          <label class="full">AI sourcing notes<textarea data-admin-quote-sourcing-notes readonly></textarea></label>
+          <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
+          <div data-admin-quote-sourcing-links></div>
+          <div class="client-request-form-actions"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>
+          <label><input type="checkbox" name="sendToClient" value="true"> Send to client</label>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+        </form>
+        <form class="client-request-form" data-phase52-admin-assignment-form hidden>
+          <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
+          <label>Worker<select name="workerId" data-admin-assignment-worker></select></label>
+          <label>Scheduled date<input name="scheduledDate" type="date" data-admin-assignment-date></label>
+          <label>Start<input name="startTime" type="time"></label>
+          <label>End<input name="endTime" type="time"></label>
+          <label class="full">Assignment notes<textarea name="notes" placeholder="Access, materials staged, safety notes, or customer notes"></textarea></label>
+          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Assign worker</button><span data-phase52-admin-assignment-status aria-live="polite"></span></div>
+          <div data-admin-assignment-list></div>
+        </form>
+        <section class="client-request-form" data-admin-work-order-inventory-panel hidden>
+          <h3>Job Materials</h3>
+          <p>Reserved materials, used materials, release status, movement history, and invoice readiness for this work order.</p>
+          <div data-admin-work-order-material-list></div>
+          <div class="session-status" data-admin-work-order-invoice-readiness>Invoice/payment readiness loads after inventory is checked.</div>
+          <form data-admin-work-order-inventory-form hidden>
+            <input type="hidden" name="jobRequestId" data-admin-inventory-request-id>
+            <label>Inventory item<select name="itemId" data-admin-work-order-inventory-item></select></label>
+            <label>Quantity used<input name="quantityUsed" type="number" min="0" step="0.01"></label>
+            <label class="full">Usage notes<input name="adjustmentNote" placeholder="Used on job, damaged, substituted, or returned"></label>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Record material used</button><span data-admin-work-order-inventory-status aria-live="polite"></span></div>
+          </form>
+          <div data-admin-work-order-inventory-usage></div>
+        </section>
+      </section>
+    </div>
+
     <div class="admin-request-modal" data-admin-role-modal role="dialog" aria-modal="true" hidden>
       <section class="admin-request-modal-panel admin-access-panel">
         <div class="admin-request-modal-header">

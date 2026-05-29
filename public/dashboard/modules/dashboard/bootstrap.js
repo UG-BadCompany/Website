@@ -501,6 +501,8 @@
       let currentAdminActivity = [];
       let currentAdminInventoryItems = [];
       let currentAdminInventoryUsage = [];
+      let currentAdminInventoryReservations = [];
+      let currentAdminInventoryMovements = [];
       let currentWorkerInventoryItems = [];
       let currentProfileUser = null;
       let currentDashboardView = '';
@@ -1257,6 +1259,35 @@
         `).join('') : '<p class="session-status">No inventory usage recorded for this work order yet.</p>';
       };
 
+
+      const renderAdminWorkOrderMaterials = ({ reservations = [], movements = [] } = {}) => {
+        const materialList = document.querySelector('[data-admin-work-order-material-list]');
+        const readiness = document.querySelector('[data-admin-work-order-invoice-readiness]');
+        if (!materialList && !readiness) return;
+        const openReservations = reservations.filter((item) => ['reserved', 'partially_used'].includes(item.status));
+        const materialChargeTotal = reservations.reduce((sum, item) => sum + Number(item.chargeTotal || 0), 0);
+        if (materialList) {
+          materialList.innerHTML = reservations.length ? reservations.map((entry) => {
+            const unused = Math.max(0, Number(entry.reservedQuantity || 0) - Number(entry.usedQuantity || 0));
+            return `
+              <article class="admin-assignment" data-admin-job-material>
+                <span class="admin-assignment-badge">${escapeHtml(entry.status || 'reserved')}</span>
+                <strong>${escapeHtml(entry.itemName || 'Reserved material')}</strong>
+                <div class="admin-assignment-meta"><span>Reserved ${Number(entry.reservedQuantity || 0)}</span><span>Used ${Number(entry.usedQuantity || 0)}</span><span>Unused ${unused}</span><span>${escapeHtml(entry.itemSku || 'No SKU')}</span></div>
+                ${unused > 0 ? `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-release-job-material data-item-id="${escapeHtml(entry.itemId)}" data-job-request-id="${escapeHtml(entry.jobRequestId)}" data-reservation-id="${escapeHtml(entry.id)}" data-unused-quantity="${escapeHtml(String(unused))}">Release unused</button></div>` : ''}
+              </article>
+            `;
+          }).join('') : '<p class="session-status">No reserved Job Materials yet. Reserve from Estimate Review or the inventory panel before scheduling.</p>';
+        }
+        if (readiness) {
+          readiness.innerHTML = `
+            <strong>Invoice/payment readiness</strong>
+            <p>${openReservations.length ? `${openReservations.length} material reservation${openReservations.length === 1 ? '' : 's'} still need use/release before closeout.` : 'All reserved materials are used or released. Invoice can include material usage totals.'}</p>
+            <div class="admin-request-meta"><span>Material charge total ${escapeHtml(formatMoney(materialChargeTotal * 100))}</span><span>${movements.length} movement${movements.length === 1 ? '' : 's'}</span></div>
+          `;
+        }
+      };
+
       const populateAdminWorkOrderInventoryItems = () => {
         const itemSelect = document.querySelector('[data-admin-work-order-inventory-item]');
         if (!itemSelect) return;
@@ -1278,14 +1309,20 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory usage is not available.');
           currentAdminInventoryItems = result.items || [];
           currentAdminInventoryUsage = result.usage || [];
+          currentAdminInventoryReservations = result.reservations || [];
+          currentAdminInventoryMovements = result.movements || [];
           populateAdminWorkOrderInventoryItems();
           renderAdminWorkOrderInventoryUsage(currentAdminInventoryUsage);
-          if (status) status.textContent = currentAdminInventoryUsage.length ? `${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No inventory usage recorded yet.';
+          renderAdminWorkOrderMaterials({ reservations: currentAdminInventoryReservations, movements: currentAdminInventoryMovements });
+          if (status) status.textContent = currentAdminInventoryUsage.length || currentAdminInventoryReservations.length ? `${currentAdminInventoryReservations.length} reservation${currentAdminInventoryReservations.length === 1 ? '' : 's'} and ${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No job materials recorded yet.';
         } catch (error) {
           currentAdminInventoryItems = [];
           currentAdminInventoryUsage = [];
+          currentAdminInventoryReservations = [];
+          currentAdminInventoryMovements = [];
           populateAdminWorkOrderInventoryItems();
           renderAdminWorkOrderInventoryUsage([]);
+          renderAdminWorkOrderMaterials({ reservations: [], movements: [] });
           if (status) status.textContent = error.message;
         }
       };
@@ -2358,7 +2395,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const statusForm = document.querySelector('[data-admin-status-form]');
-        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form], [data-phase52-admin-assignment-form]');
         const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
 
@@ -2398,7 +2435,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteApproved = ['accepted'].includes(savedQuote?.status || '') || ['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
         if (statusForm) statusForm.hidden = !quoteApproved;
         if (assignmentForm) assignmentForm.hidden = !quoteApproved;
-        if (inventoryForm) inventoryForm.hidden = true;
+        if (inventoryForm) inventoryForm.hidden = !quoteApproved;
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
         if (workOrderSummary) {
@@ -2407,6 +2444,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (assignmentList) {
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
+        if (quoteApproved) loadAdminWorkOrderInventory(request.id);
         if (closeButton) closeButton.focus();
       };
 
@@ -2424,7 +2462,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inbox = document.querySelector('[data-admin-inbox]');
         const statusForm = document.querySelector('[data-admin-status-form]');
         const quoteForm = document.querySelector('[data-admin-quote-form]');
-        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form], [data-phase52-admin-assignment-form]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const detail = document.querySelector('[data-admin-request-detail]');
 
@@ -2518,7 +2556,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           assignmentForm.dataset.bound = 'true';
           assignmentForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const formStatus = document.querySelector('[data-admin-assignment-form-status]');
+            const formStatus = document.querySelector('[data-admin-assignment-form-status], [data-phase52-admin-assignment-status]');
             const payload = Object.fromEntries(new FormData(assignmentForm).entries());
             if (!payload.workerId) {
               if (formStatus) formStatus.textContent = 'Choose a worker to assign.';
@@ -2536,6 +2574,39 @@ Additional info from client: ${payload.additionalInfo}` : '';
               assignmentForm.reset();
               if (formStatus) formStatus.textContent = 'Worker assigned.';
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
+
+        if (detail && !detail.dataset.materialReleaseBound) {
+          detail.dataset.materialReleaseBound = 'true';
+          detail.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-admin-release-job-material]');
+            if (!button) return;
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-work-order-inventory-status]');
+            const payload = {
+              itemId: button.dataset.itemId,
+              jobRequestId: button.dataset.jobRequestId,
+              reservationId: button.dataset.reservationId,
+              quantity: Number(button.dataset.unusedQuantity || 0),
+              note: 'Released unused material from Job Materials section',
+            };
+            if (formStatus) formStatus.textContent = 'Releasing unused reserved material…';
+            try {
+              const response = await fetch('/api/admin/inventory/release', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not release reserved material.');
+              if (formStatus) formStatus.textContent = 'Unused material released; on-hand quantity was not changed.';
+              await loadAdminWorkOrderInventory(payload.jobRequestId);
               await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
