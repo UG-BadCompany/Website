@@ -1,11 +1,11 @@
 // Phase 34: sidebar-only dashboard workspaces.
-// Fixes duplicate active states:
+// Fixes sidebar collisions:
+// - Finance Center targets the newer Phase 4 finance command module.
+// - Work Orders and Scheduling are separate workspaces.
 // - Inventory stays a real /inventory/ link.
-// - Finance Center and Invoices are separate.
 // - Maintenance Plans and Roles & Users are separate.
-// - Roles & Users opens Settings / Access Manager.
-// - Invoices no longer targets the old #admin-invoices "Invoice & payment desk" module.
-// - Only one sidebar item should be highlighted at a time.
+// - Roles & Users opens Access Manager.
+// - Only one sidebar item highlights at a time.
 
 (() => {
   if (window.__phase34SidebarOnlyWorkspacesLoaded) return;
@@ -60,31 +60,38 @@
       targets: [
         '[data-phase3-workflow-suite]',
         '.workflow-suite',
+        '#admin-requests',
         '#worker-jobs',
         '[data-worker-jobs]',
+      ],
+    },
+
+    scheduling: {
+      title: 'Scheduling',
+      description: 'Dispatch planning, scheduled jobs, worker assignments, and priority routing.',
+      targets: [
         '#smart-schedule-suite',
         '.smart-schedule-suite',
+        '[data-smart-schedule-suite]',
+        '[data-scheduling-workspace]',
+        '.scheduling-suite',
       ],
     },
 
     finance: {
       title: 'Finance Center',
-      description: 'Finance KPIs, payment readiness, deposits, balances, and billing overview.',
+      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
       targets: [
         '#finance-command-center',
-        '[data-finance-command-center]',
         '[data-phase4-finance-suite]',
-        '.finance-command-center',
-        '.finance-command-suite',
         '.finance-suite',
+        '.finance-command-panel',
       ],
     },
 
     invoices: {
       title: 'Invoices',
       description: 'Invoice workflow, client balances, payment status, and closeout.',
-      // IMPORTANT:
-      // Do NOT include #admin-invoices here. That is the older "Invoice & payment desk" module.
       targets: [
         '[data-admin-invoice-kpi-summary]',
         '[data-admin-invoice-summary]',
@@ -162,11 +169,12 @@
     const action = (button.dataset.sidebarAction || '').trim().toLowerCase();
     const source = `${label} ${hint} ${target} ${action}`;
 
-    // Exact label checks first so similar items do not collide.
+    // Exact labels first so buttons do not collide.
     if (label === 'overview') return 'overview';
     if (label === 'estimate review') return 'quotes';
+
     if (label === 'work orders') return 'work-orders';
-    if (label === 'scheduling') return 'work-orders';
+    if (label === 'scheduling') return 'scheduling';
 
     if (label === 'finance center') return 'finance';
     if (label === 'invoices') return 'invoices';
@@ -180,7 +188,7 @@
     if (label === 'roles & users') return 'settings';
     if (label === 'roles and users') return 'settings';
 
-    if (label === 'inventory') return null; // Inventory must remain a normal link.
+    if (label === 'inventory') return null; // Inventory must remain a normal /inventory/ link.
     if (label === 'customer status') return 'overview';
     if (label === 'deployment health') return 'deployment';
 
@@ -188,8 +196,9 @@
       ['overview', ['overview']],
       ['requests', ['request']],
       ['quotes', ['quote', 'estimate']],
-      ['work-orders', ['work order', 'job', 'schedule', 'scheduling']],
-      ['finance', ['finance center', 'finance-command-center']],
+      ['work-orders', ['work order']],
+      ['scheduling', ['schedule', 'scheduling', 'dispatch']],
+      ['finance', ['finance center', 'finance-command-center', 'financial command center']],
       ['invoices', ['invoice', 'billing']],
       ['workers', ['worker', 'field', 'photo docs', 'mobile']],
       ['maintenance', ['maintenance plan', 'recurring service', 'property care']],
@@ -202,10 +211,6 @@
   };
 
   const normalizeSidebarButtons = () => {
-    // Do not normalize href links like Inventory.
-    // Inventory is generated as:
-    // <a class="sidebar-nav-link" href="/inventory/" data-sidebar-href="/inventory/">
-    // If we add data-sidebar-workspace to it, the document click handler can swallow the link.
     document.querySelectorAll('.sidebar-nav-link:not([data-sidebar-href])').forEach((button) => {
       const workspace = detectWorkspace(button);
 
@@ -215,7 +220,6 @@
       }
     });
 
-    // Make sure Inventory stays a normal link and cannot be caught as a workspace.
     document.querySelectorAll('[data-sidebar-href="/inventory/"], a[href="/inventory/"]').forEach((link) => {
       link.removeAttribute('data-sidebar-workspace');
       link.removeAttribute('data-sidebar-target');
@@ -295,7 +299,7 @@
       link.setAttribute('aria-current', 'page');
       closeSidebar();
 
-      // Do not prevent default. Let Inventory navigate to /inventory/.
+      // Let Inventory navigate normally.
       return;
     }
 
