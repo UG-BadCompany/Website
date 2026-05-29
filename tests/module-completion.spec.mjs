@@ -6,7 +6,7 @@ test('Finance Center opens the newer Financial Command Center, not invoice desk'
   const finance = await readText('public/assets/dashboard-phase4-finance.js');
   const phase34 = await readText('public/assets/dashboard-phase34-sidebar-only-workspaces.js');
   assert.match(finance, /Financial Command Center[\s\S]*data-finance-open-count[\s\S]*data-finance-paid-amount[\s\S]*data-finance-refresh/, 'Financial Command Center should include KPIs and refresh');
-  assert.match(phase34, /finance:[\s\S]*\.finance-suite/, 'Finance sidebar should map to finance suite');
+  assert.match(phase34, /finance:[\s\S]*\.finance-suite[\s\S]*\.finance-command-panel/, 'Finance sidebar should map to finance command panels');
   assert.doesNotMatch(phase34.match(/finance: \{[\s\S]*?targets: \[([^\]]*)\]/)?.[1] || '', /#admin-invoices/, 'Finance should not route to admin invoices');
 });
 
@@ -35,7 +35,7 @@ test('field modules are separated and actionable', async () => {
   assert.match(bootstrap, /data-worker-material-use[\s\S]*data-worker-material-release[\s\S]*\/api\/worker\/inventory\/\$\{action\}/, 'Worker Jobs should update material use/release');
   assert.match(bootstrap, /worker-mobile-card[\s\S]*data-mobile-start-job[\s\S]*data-mobile-complete-job[\s\S]*data-mobile-request-material/, 'Worker Mobile should have phone-first actions');
   assert.match(html, /photo-doc-suite[\s\S]*Before photos[\s\S]*Progress photos[\s\S]*After photos[\s\S]*Save evidence notes/, 'Photo Docs should have evidence workflow');
-  assert.match(html, /id="worker-ai-troubleshooting"[\s\S]*System \/ Trade[\s\S]*Equipment \/ Component[\s\S]*Issue \/ Complaint[\s\S]*Safety Conditions[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting should expose all core field assistant inputs');
+  assert.match(html, /id="worker-ai-troubleshooting"[^>]*data-views="worker admin"[\s\S]*System \/ Trade[\s\S]*Equipment \/ Component[\s\S]*Issue \/ Complaint[\s\S]*Safety Conditions[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting should expose all core field assistant inputs');
   assert.match(bootstrap, /data-ai-troubleshooting-form[\s\S]*\/api\/worker\/ai-troubleshooting[\s\S]*data-ai-troubleshooting-copy[\s\S]*save_notes/, 'AI Troubleshooting should submit, copy, and save notes through real handlers');
 });
 

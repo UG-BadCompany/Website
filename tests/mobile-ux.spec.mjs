@@ -68,7 +68,8 @@ test('AI troubleshooting is mobile-ready for field workers', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
   const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
   const css = await readText('public/assets/mobile-field-ux.css');
-  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting/, 'mobile quick actions should include Troubleshoot');
+  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting[\s\S]*views: \['worker', 'admin'\]/, 'mobile quick actions should include Troubleshoot for worker and admin');
+  assert.doesNotMatch(html, /id="worker-ai-troubleshooting"[^>]*data-views="client/, 'AI troubleshooting should not be visible to client view');
   for (const field of ['name="systemType"', 'name="component"', 'name="make"', 'name="model"', 'name="issue"', 'name="errorCode"', 'name="readings"', 'name="checkedAlready"', 'name="urgency"', 'name="workOrderId"']) {
     assert.match(html, new RegExp(field), `AI troubleshooting field ${field} should exist`);
   }

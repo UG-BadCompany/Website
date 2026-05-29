@@ -31,6 +31,10 @@ const expected = [
   ['Estimate Review', 'estimate-review', '#estimate-review'],
   ['Work Orders', 'work-orders', '#admin-requests'],
   ['Scheduling', 'scheduling', '#smart-schedule-suite'],
+  ['Requests', 'client-requests', '#client-requests'],
+  ['Quotes', 'client-quotes', '#client-quotes'],
+  ['Invoices', 'client-invoices', '#client-invoices'],
+  ['Profile', '', 'client-profile'],
   ['Finance Center', 'finance', '.finance-suite'],
   ['Invoices', 'invoices', '#admin-invoices'],
   ['Customer Status', 'customer-status', '#customer-experience-center'],
@@ -49,15 +53,19 @@ if (navItems.length !== expected.length) fail(`Expected ${expected.length} sideb
 
 const labels = new Set();
 for (const item of navItems) {
-  if (labels.has(item.label)) fail(`Duplicate sidebar item label: ${item.label}.`);
-  labels.add(item.label);
+  const labelKey = `${item.group}:${item.label}`;
+  if (labels.has(labelKey)) fail(`Duplicate sidebar item label in ${item.group}: ${item.label}.`);
+  labels.add(labelKey);
   const href = item.raw.match(/href: '([^']+)'/)?.[1] || '';
   const target = item.raw.match(/target: '([^']+)'/)?.[1] || '';
+  const action = item.raw.match(/action: '([^']+)'/)?.[1] || '';
   const workspace = item.raw.match(/workspace: '([^']+)'/)?.[1] || '';
-  const expectedItem = expected.find(([label]) => label === item.label);
+  const expectedItem = expected.find(([label, workspace]) => label === item.label && workspace === (item.raw.match(/workspace: '([^']+)'/)?.[1] || '')) || expected.find(([label]) => label === item.label);
   if (!expectedItem) { fail(`Unexpected sidebar item: ${item.label}.`); continue; }
   const [, expectedWorkspace, expectedTarget] = expectedItem;
-  if (workspace !== expectedWorkspace) fail(`${item.label}: expected workspace ${expectedWorkspace}, found ${workspace || 'none'}.`);
+  if (workspace !== expectedWorkspace) fail(`${item.label}: expected workspace ${expectedWorkspace || '(none)'}, found ${workspace || 'none'}.`);
+  if (!expectedWorkspace && action !== expectedTarget) fail(`${item.label}: expected action ${expectedTarget}, found ${action || 'none'}.`);
+  if (!expectedWorkspace) continue;
   if (href) {
     if (href !== expectedTarget) fail(`${item.label}: expected href ${expectedTarget}, found ${href}.`);
     if (href === '/inventory/' && !existsSync(path.join(root, 'public/inventory/index.html'))) fail('Inventory href points to /inventory/ but public inventory page is missing.');
@@ -70,14 +78,15 @@ for (const item of navItems) {
 has(sidebar, /data-sidebar-workspace="\$\{item\.workspace/, 'Rendered sidebar buttons must carry exactly one workspace key.');
 has(sidebar, /mobileQuickActions[\s\S]*href: '\/inventory\/'/, 'Phase 55 mobile quick action bar must preserve Inventory navigation.');
 has(phase34, /root\.querySelectorAll\('\[data-sidebar-workspace-section\]'\)[\s\S]*removeAttribute\('data-sidebar-workspace-section'\)/, 'Phase 34 must clear stale workspace tags before retagging.');
-has(phase34, /finance:[\s\S]*targets: \['\.finance-suite', '\[data-phase4-finance-suite\]', '#finance-command-center'\]/, 'Finance workspace must target only the Financial Command Center module.');
-has(phase34, /invoices:[\s\S]*targets: \['#admin-invoices', '#client-invoices', '\[data-admin-invoices\]', '\[data-client-invoices\]'\]/, 'Invoices workspace must target only invoice modules.');
+has(phase34, /finance:[\s\S]*targets: \['\.finance-suite', '\[data-phase4-finance-suite\]', '#finance-command-center', '\.finance-command-panel'\]/, 'Finance workspace must target only the Financial Command Center module.');
+has(phase34, /invoices:[\s\S]*targets: \['#admin-invoices', '\[data-admin-invoices\]'\]/, 'Invoices workspace must target only admin invoice modules.');
 has(phase34, /'worker-mobile':[\s\S]*#worker-mobile-field/, 'Worker Mobile workspace must be separate from Worker Jobs.');
-has(phase34, /'ai-troubleshooting':[\s\S]*targets: \['#worker-ai-troubleshooting', '\[data-worker-ai-troubleshooting\]'\]/, 'AI Troubleshooting workspace must target only its assistant module.');
+has(phase34, /'ai-troubleshooting':[\s\S]*targets: \['#worker-ai-troubleshooting', '\[data-worker-ai-troubleshooting\]', '\.ai-troubleshooting-suite'\]/, 'AI Troubleshooting workspace must target only its assistant module.');
 has(phase34, /'roles-users':[\s\S]*#admin-access/, 'Roles & Users workspace must map to Access Manager only.');
 has(phase34Css, /body\[data-sidebar-workspace="finance"\][\s\S]*data-sidebar-workspace-section~="finance"/, 'Phase 34 CSS must reveal Finance workspace.');
 has(phase34Css, /body\[data-sidebar-workspace="worker-mobile"\][\s\S]*data-sidebar-workspace-section~="worker-mobile"/, 'Phase 34 CSS must reveal Worker Mobile workspace.');
 has(phase34Css, /body\[data-sidebar-workspace="ai-troubleshooting"\][\s\S]*data-sidebar-workspace-section~="ai-troubleshooting"/, 'Phase 34 CSS must reveal AI Troubleshooting workspace.');
+has(phase34Css, /body\[data-sidebar-workspace="client-requests"\][\s\S]*data-sidebar-workspace-section~="client-requests"/, 'Phase 34 CSS must reveal Client Requests workspace.');
 has(phase34Css, /sidebar-nav-link\[aria-current="true"\]/, 'Sidebar CSS must include a single active-state style.');
 has(phase34, /removeAttribute\('aria-current'\)/, 'Workspace routing must remove inactive aria-current values to prevent duplicate highlights.');
 has(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'Sidebar workspace clicks must scroll to the selected module.');
@@ -85,6 +94,9 @@ has(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace, \{ scroll: true, 
 
 const forbiddenCombos = [
   ['finance', '#admin-invoices'],
+  ['client-requests', '#admin-requests'],
+  ['client-quotes', '#estimate-review'],
+  ['client-invoices', '#admin-invoices'],
   ['finance', '[data-admin-invoices]'],
   ['invoices', '[data-phase4-finance-suite]'],
   ['work-orders', '#worker-jobs'],
@@ -107,7 +119,12 @@ has(dashboard, /data-schedule-dispatch-form[\s\S]*Schedule \/ assign job/, 'Sche
 has(dashboard, /Worker Mobile Field Mode[\s\S]*data-worker-mobile-list/, 'Worker Mobile workspace must include job list/status UI.');
 has(dashboard, /data-photo-doc-form[\s\S]*Save evidence notes/, 'Photo Docs workspace must include an evidence form.');
 has(dashboard, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-form[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting workspace must include a real assistant form.');
-has(sidebar, /mobileQuickActions[\s\S]*Troubleshoot[\s\S]*ai-troubleshooting/, 'Worker/admin mobile quick actions must include Troubleshoot.');
+has(sidebar, /mobileQuickActions[\s\S]*Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*views: \['worker', 'admin'\]/, 'Worker/admin mobile quick actions must include Troubleshoot.');
+has(sidebar, /label: 'Requests'[\s\S]*workspace: 'client-requests'[\s\S]*views: \['client'\]/, 'Client Requests sidebar item must route to client requests only.');
+has(sidebar, /label: 'Profile'[\s\S]*action: 'client-profile'[\s\S]*views: \['client'\]/, 'Client Profile sidebar item must open the profile modal only.');
+has(phase34, /!button\.dataset\.sidebarWorkspace\) return/, 'Phase 34 must ignore action-only sidebar buttons instead of forcing overview.');
+has(phase34, /setWorkspace\(button\.dataset\.sidebarWorkspace/, 'Sidebar click handler must use the selected button workspace.');
+if (/setWorkspace\(workspace\)/.test(phase34)) fail('Phase 34 must not call setWorkspace(workspace) with an undefined workspace variable.');
 has(dashboard, /data-maintenance-plan-form[\s\S]*Save maintenance plan/, 'Maintenance workspace must include plan form.');
 has(dashboard, /Modern Invoice Command Center[\s\S]*data-admin-invoice-status-filter[\s\S]*data-admin-invoice-search/, 'Invoices module must be the modern invoice command center with filters/search.');
 has(dashboard, /mobile-field-ux\.css/, 'Phase 55 mobile CSS must remain included.');

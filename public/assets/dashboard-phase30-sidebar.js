@@ -9,25 +9,30 @@
   if (!root) return;
 
   const navItems = [
-    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.hero', hint: 'Start' },
-    { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes' },
-    { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs' },
-    { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch' },
+    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.hero', hint: 'Start', views: ['admin', 'client', 'worker'] },
+    { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes', views: ['admin'] },
+    { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs', views: ['admin'] },
+    { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch', views: ['admin', 'worker'] },
 
-    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs' },
-    { group: 'Money', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing' },
-    { group: 'Money', label: 'Customer Status', workspace: 'customer-status', target: '#customer-experience-center', hint: 'Client' },
+    { group: 'Client', label: 'Requests', workspace: 'client-requests', target: '#client-requests', hint: 'Requests', views: ['client'] },
+    { group: 'Client', label: 'Quotes', workspace: 'client-quotes', target: '#client-quotes', hint: 'Quotes', views: ['client'] },
+    { group: 'Client', label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', hint: 'Payments', views: ['client'] },
+    { group: 'Client', label: 'Profile', action: 'client-profile', hint: 'Profile', views: ['client'] },
 
-    { group: 'Field', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field' },
-    { group: 'Field', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone' },
-    { group: 'Field', label: 'AI Troubleshooting', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', hint: 'AI Help' },
-    { group: 'Field', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof' },
+    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs', views: ['admin'] },
+    { group: 'Money', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing', views: ['admin'] },
+    { group: 'Money', label: 'Customer Status', workspace: 'customer-status', target: '#customer-experience-center', hint: 'Client', views: ['admin', 'client'] },
 
-    { group: 'Operations', label: 'Inventory', workspace: 'inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory' },
-    { group: 'Operations', label: 'Maintenance Plans', workspace: 'maintenance', target: '.maintenance-suite', hint: 'Recurring' },
-    { group: 'Operations', label: 'Roles & Users', workspace: 'roles-users', target: '#admin-access', hint: 'Access' },
+    { group: 'Field', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field', views: ['admin', 'worker'] },
+    { group: 'Field', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone', views: ['admin', 'worker'] },
+    { group: 'Field', label: 'AI Troubleshooting', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', hint: 'AI Help', views: ['admin', 'worker'] },
+    { group: 'Field', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof', views: ['admin', 'worker'] },
 
-    { group: 'Dev', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Workflow' },
+    { group: 'Operations', label: 'Inventory', workspace: 'inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory', views: ['admin'] },
+    { group: 'Operations', label: 'Maintenance Plans', workspace: 'maintenance', target: '.maintenance-suite', hint: 'Recurring', views: ['admin', 'client'] },
+    { group: 'Operations', label: 'Roles & Users', workspace: 'roles-users', target: '#admin-access', hint: 'Access', views: ['admin'] },
+
+    { group: 'Dev', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Workflow', views: ['admin'] },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -47,10 +52,10 @@
     { label: 'Materials', workspace: 'worker-jobs', target: '#worker-jobs', views: ['worker'] },
     { label: 'Photos', workspace: 'photo-docs', target: '.photo-doc-suite', views: ['worker'] },
     { label: 'Complete', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
-    { label: 'Request', workspace: 'work-orders', target: '#client-requests', views: ['client'] },
-    { label: 'Quotes', workspace: 'estimate-review', target: '#client-quotes', views: ['client'] },
-    { label: 'Invoices', workspace: 'invoices', target: '#client-invoices', views: ['client'] },
-    { label: 'Profile', workspace: 'overview', target: '#worker-profile', views: ['client'] },
+    { label: 'Request', workspace: 'client-requests', target: '#client-requests', views: ['client'] },
+    { label: 'Quotes', workspace: 'client-quotes', target: '#client-quotes', views: ['client'] },
+    { label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', views: ['client'] },
+    { label: 'Profile', action: 'client-profile', views: ['client'] },
   ];
 
   const targetExists = (target) => {
@@ -59,7 +64,7 @@
   };
 
   const openModalShortcut = (name) => {
-    const selector = '[data-admin-access-shortcut]';
+    const selector = name === 'client-profile' ? '[data-client-profile-shortcut]' : '[data-admin-access-shortcut]';
     const button = document.querySelector(selector);
     if (button) {
       button.click();
@@ -67,7 +72,7 @@
     }
     window.TAUX?.toast?.({
       title: 'Section unavailable',
-      message: 'That admin tool is not available for this account or has not loaded yet.',
+      message: 'That dashboard tool is not available for this account or has not loaded yet.',
       type: 'warn',
     });
     return false;
@@ -116,12 +121,12 @@
     nav.innerHTML = Object.entries(groups).map(([group, items]) => `
       <div class="sidebar-nav-label">${group}</div>
       ${items.map((item) => item.href ? `
-        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}">
+        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}" data-sidebar-views="${(item.views || []).join(' ')}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </a>
       ` : `
-        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}">
+        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}" data-sidebar-views="${(item.views || []).join(' ')}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </button>
@@ -151,7 +156,7 @@
     quickBar.innerHTML = mobileQuickActions.map((item) => item.href ? `
       <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
     ` : `
-      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
+      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target || ''}" data-mobile-quick-action="${item.action || ''}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
     `).join('');
 
     root.appendChild(toggle);
@@ -185,19 +190,30 @@
 
     const syncPermissionLinks = () => {
       const view = document.body.dataset.currentDashboardView || document.documentElement.dataset.currentDashboardView || '';
-      nav.querySelectorAll('[data-sidebar-permission="canManageInventory"]').forEach((link) => {
-        link.hidden = Boolean(view && view !== 'admin');
-        link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
-      });
-      quickBar.querySelectorAll('[data-mobile-quick-views]').forEach((item) => {
-        const views = String(item.dataset.mobileQuickViews || '').split(/\s+/).filter(Boolean);
-        const hidden = Boolean(view && views.length && !views.includes(view));
+      nav.querySelectorAll('[data-sidebar-views]').forEach((item) => {
+        const views = String(item.dataset.sidebarViews || '').split(/\s+/).filter(Boolean);
+        const blockedByView = Boolean(view && views.length && !views.includes(view));
+        const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && Boolean(view && view !== 'admin');
+        const hidden = blockedByView || blockedByPermission;
         item.hidden = hidden;
         item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
       });
-      quickBar.querySelectorAll('[data-sidebar-permission="canManageInventory"]').forEach((link) => {
-        link.hidden = Boolean(view && view !== 'admin');
-        link.setAttribute('aria-disabled', view && view !== 'admin' ? 'true' : 'false');
+      nav.querySelectorAll('.sidebar-nav-label').forEach((label) => {
+        let next = label.nextElementSibling;
+        let hasVisibleItem = false;
+        while (next && !next.classList.contains('sidebar-nav-label')) {
+          if (next.classList.contains('sidebar-nav-link') && !next.hidden) hasVisibleItem = true;
+          next = next.nextElementSibling;
+        }
+        label.hidden = Boolean(view && !hasVisibleItem);
+      });
+      quickBar.querySelectorAll('[data-mobile-quick-views]').forEach((item) => {
+        const views = String(item.dataset.mobileQuickViews || '').split(/\s+/).filter(Boolean);
+        const blockedByView = Boolean(view && views.length && !views.includes(view));
+        const blockedByPermission = item.dataset.sidebarPermission === 'canManageInventory' && Boolean(view && view !== 'admin');
+        const hidden = blockedByView || blockedByPermission;
+        item.hidden = hidden;
+        item.setAttribute('aria-disabled', hidden ? 'true' : 'false');
       });
     };
     syncPermissionLinks();
@@ -226,7 +242,9 @@
       }
       const button = event.target.closest('[data-mobile-quick-target]');
       if (!button) return;
-      if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+      const action = button.dataset.mobileQuickAction;
+      if (action) openModalShortcut(action);
+      else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
         window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
       } else {
         scrollToTarget(button.dataset.mobileQuickTarget);

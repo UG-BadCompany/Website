@@ -21,18 +21,37 @@
     'estimate-review': {
       title: 'Estimate Review',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
-      targets: ['#estimate-review', '#admin-quotes', '#client-quotes', '[data-client-quotes]', '[data-phase2-command-center]'],
+      targets: ['#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
-
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
       targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite'],
     },
+    'client-requests': {
+      title: 'Requests',
+      description: 'Client request intake, status, updates, files, and property-aware service details.',
+      targets: ['#client-requests', '[data-client-requests]'],
+    },
+    'client-quotes': {
+      title: 'Quotes',
+      description: 'Client quote review, approval, decline/request-change actions, and quote history.',
+      targets: ['#client-quotes', '[data-client-quotes]'],
+    },
+    'client-invoices': {
+      title: 'Client Invoices',
+      description: 'Client invoice balances, payment status, invoice details, and payment actions.',
+      targets: ['#client-invoices', '[data-client-invoices]'],
+    },
     scheduling: {
       title: 'Scheduling and Dispatch',
       description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
       targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
+    },
+    finance: {
+      title: 'Financial Command Center',
+      description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
+      targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
     finance: {
       title: 'Financial Command Center',
@@ -60,7 +79,7 @@
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
-      targets: ['#admin-invoices', '#client-invoices', '[data-admin-invoices]', '[data-client-invoices]'],
+      targets: ['#admin-invoices', '[data-admin-invoices]'],
     },
     'customer-status': {
       title: 'Customer Status',
@@ -71,6 +90,31 @@
       title: 'Worker Jobs',
       description: 'Assigned jobs, status updates, reserved materials, notes, evidence status, and completion actions.',
       targets: ['#worker-jobs', '[data-worker-jobs]', '#worker-tools-upgrade'],
+    },
+    'worker-mobile': {
+      title: 'Worker Mobile',
+      description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
+      targets: ['#worker-mobile-field', '.worker-mobile-suite'],
+    },
+    'ai-troubleshooting': {
+      title: 'AI Technician',
+      description: 'OpenAI-powered field troubleshooting for equipment, error codes, symptoms, readings, and repair recommendations.',
+      targets: ['#worker-ai-troubleshooting', '[data-worker-ai-troubleshooting]', '.ai-troubleshooting-suite'],
+    },
+    'photo-docs': {
+      title: 'Photo Documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
+      targets: ['.photo-doc-suite'],
+    },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
     'worker-mobile': {
       title: 'Worker Mobile',
@@ -140,6 +184,9 @@
     ['overview', 'overview'],
     ['estimate review', 'estimate-review'],
     ['work orders', 'work-orders'],
+    ['requests', 'client-requests'],
+    ['quotes', 'client-quotes'],
+    ['client invoices', 'client-invoices'],
     ['scheduling', 'scheduling'],
     ['finance center', 'finance'],
     ['invoices', 'invoices'],
@@ -239,19 +286,6 @@
     document.body.dataset.sidebarWorkspace = workspace;
     setActiveButton(workspace);
 
-    return true;
-  };
-
-  const setWorkspace = (workspace = 'overview', options = {}) => {
-    workspace = resolveWorkspace(workspace);
-    if (!workspaces[workspace]) workspace = 'overview';
-
-    normalizeSidebarButtons();
-    tagWorkspaceSections();
-
-    document.body.dataset.sidebarWorkspace = workspace;
-    setActiveButton(workspace);
-
     const header = ensureHeader();
     header.querySelector('h2').textContent = workspaces[workspace].title;
     header.querySelector('p').textContent = workspaces[workspace].description;
@@ -282,7 +316,7 @@
 
   document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-sidebar-workspace]');
-    if (!button || button.dataset.sidebarHref) return;
+    if (!button || button.dataset.sidebarHref || !button.dataset.sidebarWorkspace) return;
 
       const button = event.target.closest('[data-sidebar-workspace]');
       if (!button || button.dataset.sidebarHref) return;

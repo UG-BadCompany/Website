@@ -635,6 +635,8 @@
         const nextView = availableDashboardViews.includes(view) ? view : fallbackView;
         currentDashboardView = nextView;
         document.documentElement.dataset.dashboardView = nextView;
+        document.documentElement.dataset.currentDashboardView = nextView;
+        document.body.dataset.currentDashboardView = nextView;
         updateDashboardViewChrome(nextView);
 
         document.querySelectorAll('[data-dashboard-section]').forEach((section) => {

@@ -18,7 +18,8 @@ const moduleChecks = [
   ['Work Orders closeout', dashboard, /id="admin-requests"[\s\S]*Job Materials[\s\S]*Admin Completion Review|data-admin-work-order-inventory-usage[\s\S]*data-admin-completion-review/],
   ['Work Orders action code', bootstrap, /loadAdminRequests[\s\S]*completion|admin-work-orders[\s\S]*review/],
   ['Financial Command Center', finance, /Financial Command Center[\s\S]*data-finance-open-count[\s\S]*data-finance-paid-amount[\s\S]*data-finance-refresh/],
-  ['Finance route separation', phase34, /finance:[\s\S]*\.finance-suite[\s\S]*invoices:[\s\S]*#admin-invoices/],
+  ['Finance route separation', phase34, /finance:[\s\S]*\.finance-suite[\s\S]*\.finance-command-panel[\s\S]*invoices:[\s\S]*#admin-invoices/],
+  ['Client invoice route separation', phase34, /'client-invoices':[\s\S]*#client-invoices/],
   ['Modern invoices', dashboard, /Modern Invoice Command Center[\s\S]*data-admin-invoice-status-filter[\s\S]*data-admin-invoice-search[\s\S]*data-admin-invoice-list/],
   ['Invoice actions', bootstrap, /bindAdminInvoiceActions[\s\S]*taInvoiceActions[\s\S]*taAdminInvoicePayments/],
   ['Maintenance Plans', dashboard, /class="[^"]*maintenance-suite[\s\S]*HVAC seasonal maintenance[\s\S]*Save maintenance plan/],
@@ -28,7 +29,7 @@ const moduleChecks = [
   ['Worker Job material closeout', bootstrap, /data-worker-material-use[\s\S]*data-worker-material-release[\s\S]*\/api\/worker\/inventory\/\$\{action\}/],
   ['Worker Mobile', bootstrap, /worker-mobile-card[\s\S]*data-mobile-start-job[\s\S]*data-mobile-complete-job[\s\S]*data-mobile-request-material/],
   ['Photo Docs', dashboard, /photo-doc-suite[\s\S]*Before photos[\s\S]*Progress photos[\s\S]*After photos[\s\S]*Save evidence notes/],
-  ['AI Troubleshooting module', dashboard, /id="worker-ai-troubleshooting"[\s\S]*System \/ Trade[\s\S]*Equipment \/ Component[\s\S]*Issue \/ Complaint[\s\S]*Safety Conditions[\s\S]*Generate Troubleshooting Plan/],
+  ['AI Troubleshooting admin/worker module', dashboard, /id="worker-ai-troubleshooting"[\s\S]*System \/ Trade[\s\S]*Equipment \/ Component[\s\S]*Issue \/ Complaint[\s\S]*Safety Conditions[\s\S]*Generate Troubleshooting Plan/],
   ['AI Troubleshooting frontend API', bootstrap, /data-ai-troubleshooting-form[\s\S]*\/api\/worker\/ai-troubleshooting[\s\S]*data-ai-troubleshooting-copy[\s\S]*save_notes/],
   ['AI Troubleshooting route', netlify, /\/api\/worker\/ai-troubleshooting[\s\S]*worker-ai-troubleshooting/],
   ['Customer Status', dashboard, /id="customer-experience-center"[\s\S]*Requests[\s\S]*Quotes[\s\S]*Invoices[\s\S]*Maintenance/],
@@ -42,7 +43,7 @@ if (/<span id="finance-command-center" class="dashboard-anchor-alias"/.test(dash
 if (!/module-completion-2026\.css/.test(dashboard)) fail('Dashboard must include Phase 56 module completion polish CSS.');
 
 const workspaceKeys = [...phase34.matchAll(/^    ['"]?([a-z-]+)['"]?: \{/gm)].map((match) => match[1]);
-for (const required of ['overview', 'estimate-review', 'work-orders', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
+for (const required of ['overview', 'estimate-review', 'work-orders', 'client-requests', 'client-quotes', 'client-invoices', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
   if (!workspaceKeys.includes(required)) fail(`Phase 34 router missing workspace key: ${required}.`);
 }
 
