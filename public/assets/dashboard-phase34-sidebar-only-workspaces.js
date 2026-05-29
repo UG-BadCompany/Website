@@ -1,9 +1,5 @@
 // Phase 34: sidebar-only dashboard workspaces.
-// Fixes duplicate active states:
-// - Inventory stays a real /inventory/ link.
-// - Finance Center and Invoices are separate workspaces.
-// - Roles & Users opens Settings / Access Manager.
-// - Only one sidebar item should be highlighted at a time.
+// Updated: Inventory opens the real Inventory workspace/page instead of Settings/Access Manager.
 
 (() => {
   if (window.__phase34SidebarOnlyWorkspacesLoaded) return;
@@ -35,27 +31,37 @@
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: ['[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]'],
+      targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]']
     },
-    finance: {
-      title: 'Finance Center',
-      description: 'Finance KPIs, payment readiness, deposits, balances, and billing overview.',
-      targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-command-center'],
+    scheduling: {
+      title: 'Scheduling and dispatch',
+      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      targets: ['#smart-schedule-suite', '.smart-schedule-suite']
     },
     invoices: {
       title: 'Invoices',
-      description: 'Invoice desk, billing queue, client invoices, payment status, and closeout.',
-      targets: ['#admin-invoices', '#client-invoices', '[data-admin-invoices]', '[data-client-invoices]'],
+      description: 'Finance center, customer invoices, payment readiness, and closeout.',
+      targets: ['#finance-command-center', '#admin-invoices', '#client-invoices', '[data-admin-invoices]', '[data-client-invoices]', '[data-phase4-finance-suite]'],
     },
     workers: {
       title: 'Workers',
       description: 'Worker jobs, field workflow, mobile tools, and job documentation.',
-      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite'],
+      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite', '.photo-doc-suite']
+    },
+    'photo-docs': {
+      title: 'Photo documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, and admin review status.',
+      targets: ['.photo-doc-suite']
     },
     settings: {
       title: 'Settings',
       description: 'Admin settings, roles, users, and access management.',
       targets: ['#admin-access'],
+    },
+    maintenance: {
+      title: 'Maintenance plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite']
     },
     deployment: {
       title: 'Deployment and workflow health',
@@ -64,78 +70,32 @@
     },
   };
 
-  const closeSidebar = () => {
-    const sidebar = document.querySelector('.dashboard-sidebar-v2');
-    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
-
-    if (sidebar) sidebar.dataset.open = 'false';
-    if (backdrop) backdrop.dataset.open = 'false';
-  };
-
-  const clearSidebarActiveStates = () => {
-    document.querySelectorAll('.sidebar-nav-link').forEach((item) => {
-      item.removeAttribute('aria-current');
-    });
-  };
-
-  const detectWorkspace = (button) => {
-    const label = (button.querySelector('span')?.textContent || button.textContent || '').trim().toLowerCase();
-    const hint = (button.querySelector('small')?.textContent || '').trim().toLowerCase();
-    const target = (button.dataset.sidebarTarget || '').trim().toLowerCase();
-    const action = (button.dataset.sidebarAction || '').trim().toLowerCase();
-    const source = `${label} ${hint} ${target} ${action}`;
-
-    // Exact label checks first so similar items do not collide.
-    if (label === 'finance center') return 'finance';
-    if (label === 'invoices') return 'invoices';
-    if (label === 'inventory') return null; // Inventory must remain a normal link.
-    if (label === 'roles & users' || label === 'roles and users') return 'settings';
-    if (label === 'estimate review') return 'quotes';
-    if (label === 'work orders') return 'work-orders';
-    if (label === 'worker jobs' || label === 'worker mobile') return 'workers';
-    if (label === 'customer status') return 'overview';
-    if (label === 'deployment health') return 'deployment';
-    if (label === 'overview') return 'overview';
-    if (label === 'scheduling') return 'work-orders';
-    if (label === 'photo docs') return 'workers';
-    if (label === 'maintenance plans') return 'settings';
-
+  const normalizeSidebarButtons = () => {
     const map = [
       ['overview', ['overview']],
       ['requests', ['request']],
       ['quotes', ['quote', 'estimate']],
-      ['work-orders', ['work order', 'job', 'schedule', 'scheduling']],
-      ['finance', ['finance center', 'finance-command-center']],
-      ['invoices', ['invoice', 'billing']],
-      ['workers', ['worker', 'field', 'photo docs', 'mobile']],
-      ['settings', ['setting', 'roles', 'users', 'access', 'maintenance']],
-      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']],
+      ['work-orders', ['work order', 'job']],
+      ['scheduling', ['scheduling', 'schedule', 'dispatch']],
+      ['invoices', ['invoice', 'finance']],
+      ['workers', ['worker mobile', 'worker', 'field']],
+      ['photo-docs', ['photo', 'proof', 'documentation']],
+      ['settings', ['setting', 'roles', 'users', 'inventory']],
+      ['maintenance', ['maintenance', 'recurring', 'plan']],
+      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']]
     ];
 
-    const found = map.find(([, words]) => words.some((word) => source.includes(word)));
-    return found ? found[0] : null;
-  };
+    document.querySelectorAll('.sidebar-nav-link').forEach((button) => {
+      const text = (button.textContent || '').toLowerCase();
+      const target = (button.dataset.sidebarTarget || '').toLowerCase();
+      const action = (button.dataset.sidebarAction || '').toLowerCase();
+      const source = `${text} ${target} ${action}`;
 
-  const normalizeSidebarButtons = () => {
-    // Do not normalize href links like Inventory.
-    // Inventory is generated as:
-    // <a class="sidebar-nav-link" href="/inventory/" data-sidebar-href="/inventory/">
-    // If we add data-sidebar-workspace to it, the document click handler can swallow the link.
-    document.querySelectorAll('.sidebar-nav-link:not([data-sidebar-href])').forEach((button) => {
-      const workspace = detectWorkspace(button);
-
-      if (workspace) {
-        button.dataset.sidebarWorkspace = workspace;
+      const found = map.find(([, words]) => words.some((word) => source.includes(word)));
+      if (found) {
+        button.dataset.sidebarWorkspace = found[0];
         button.removeAttribute('data-sidebar-target');
       }
-    });
-
-    // Make sure Inventory stays a normal link and cannot be caught as a workspace.
-    document.querySelectorAll('[data-sidebar-href="/inventory/"], a[href="/inventory/"]').forEach((link) => {
-      link.removeAttribute('data-sidebar-workspace');
-      link.removeAttribute('data-sidebar-target');
-      link.dataset.sidebarHref = '/inventory/';
-      link.setAttribute('href', '/inventory/');
     });
   };
 
@@ -163,32 +123,43 @@
 
     const shell = document.querySelector('.dashboard-workspace-v2') || root;
     const first = shell.firstElementChild;
-
     if (first) shell.insertBefore(header, first);
     else shell.appendChild(header);
 
     return header;
   };
 
+  const closeSidebar = () => {
+    const sidebar = document.querySelector('.dashboard-sidebar-v2');
+    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
+    if (sidebar) sidebar.dataset.open = 'false';
+    if (backdrop) backdrop.dataset.open = 'false';
+  };
+
   const setWorkspace = (workspace = 'overview') => {
     if (!workspaces[workspace]) workspace = 'overview';
+
+    const config = workspaces[workspace];
+
+    if (config.externalUrl) {
+      closeSidebar();
+      window.location.assign(config.externalUrl);
+      return;
+    }
 
     tagWorkspaceSections();
     normalizeSidebarButtons();
 
     document.body.dataset.sidebarWorkspace = workspace;
 
-    clearSidebarActiveStates();
-
     document.querySelectorAll('[data-sidebar-workspace]').forEach((button) => {
       const active = button.dataset.sidebarWorkspace === workspace;
-      if (active) button.setAttribute('aria-current', 'true');
-      else button.removeAttribute('aria-current');
+      button.setAttribute('aria-current', active ? 'true' : 'false');
     });
 
     const header = ensureHeader();
-    header.querySelector('h2').textContent = workspaces[workspace].title;
-    header.querySelector('p').textContent = workspaces[workspace].description;
+    header.querySelector('h2').textContent = config.title;
+    header.querySelector('p').textContent = config.description;
 
     const url = new URL(window.location.href);
     if (url.searchParams.has('workspace')) {
@@ -203,28 +174,13 @@
   };
 
   document.addEventListener('click', (event) => {
-    const link = event.target.closest('[data-sidebar-href]');
-    if (link) {
-      clearSidebarActiveStates();
-      link.setAttribute('aria-current', 'page');
-      closeSidebar();
-
-      // Do not prevent default. Let Inventory navigate to /inventory/.
-      return;
-    }
-
     const button = event.target.closest('[data-sidebar-workspace]');
     if (!button) return;
 
     event.preventDefault();
     event.stopPropagation();
 
-    const workspace = button.dataset.sidebarWorkspace;
-
-    clearSidebarActiveStates();
-
-    button.setAttribute('aria-current', 'true');
-    setWorkspace(workspace);
+    setWorkspace(button.dataset.sidebarWorkspace);
     closeSidebar();
   }, true);
 
@@ -246,7 +202,9 @@
       tagWorkspaceSections();
 
       const current = document.body.dataset.sidebarWorkspace || initial;
-      setWorkspace(current);
+      if (current !== 'inventory') {
+        setWorkspace(current);
+      }
     }, 200);
   });
 

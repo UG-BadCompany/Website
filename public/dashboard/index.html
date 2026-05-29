@@ -1907,6 +1907,11 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
 <style>/* Client and worker workspace readability */
 html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs{background:linear-gradient(135deg,rgba(255,248,238,.94),rgba(246,226,201,.86));}
 </style>
+
+<style>
+  .phase54-workspace{border-color:rgba(255,255,255,.18);background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(19,13,9,.78)),radial-gradient(circle at 90% 0,rgba(249,115,22,.18),transparent 24rem);color:#f8fafc;box-shadow:0 28px 80px rgba(0,0,0,.24)}
+  .phase54-workspace strong,.phase54-workspace h3{color:#fff}.phase54-workspace p{color:#dbe4ef}.phase54-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.phase54-list{display:grid;gap:12px;margin-top:14px}.phase54-card{padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(15,23,42,.62)}.phase54-card strong{display:block}.phase54-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:#cbd5e1;font-size:.9rem;font-weight:800}.phase54-badge{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.35);color:#fed7aa;font-weight:950;text-transform:capitalize}.phase54-workspace .client-request-form{background:rgba(15,23,42,.68);border-color:rgba(148,163,184,.24)}.phase54-workspace .client-request-form input,.phase54-workspace .client-request-form select,.phase54-workspace .client-request-form textarea{background:rgba(2,6,23,.74);color:#f8fafc;border-color:rgba(148,163,184,.35)}.phase54-command-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.phase54-command-list button{justify-content:flex-start}.phase54-workspace [data-state="ready"]{color:#bbf7d0}.phase54-workspace [data-state="error"]{color:#fecaca}@media(max-width:850px){.phase54-grid,.phase54-command-list{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
   <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
@@ -2386,6 +2391,100 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
         </label>
       </div>
       <div class="client-quote-list" data-client-invoice-list></div>
+    </section>
+
+    <section class="card customer-experience-suite phase54-workspace" id="customer-experience-center" data-dashboard-section data-views="admin client" hidden>
+      <strong>Customer Status Center</strong>
+      <p>Client-facing request, quote, invoice, scheduled work, completion, and maintenance status in one workspace.</p>
+      <p class="session-status" data-customer-status-workspace-status role="status" aria-live="polite">Customer status workspace ready.</p>
+      <div class="phase54-grid">
+        <article class="phase54-card"><span class="phase54-badge">Requests</span><p>Open requests and work-order status load in the Requests workspace.</p></article>
+        <article class="phase54-card"><span class="phase54-badge">Quotes</span><p>Quote review/approval status loads in the Quotes workspace.</p></article>
+        <article class="phase54-card"><span class="phase54-badge">Invoices</span><p>Invoice and payment readiness load in the Invoices workspace.</p></article>
+        <article class="phase54-card"><span class="phase54-badge">Maintenance</span><p>Recurring maintenance plan status loads in Maintenance Plans.</p></article>
+      </div>
+      <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-customer-status-refresh>Refresh customer status summary</button></div>
+    </section>
+
+    <section class="card smart-schedule-suite phase54-workspace" id="smart-schedule-suite" data-dashboard-section data-views="admin worker" hidden>
+      <strong>Scheduling &amp; Dispatch</strong>
+      <p>Schedule board for upcoming jobs, unscheduled accepted work, assigned workers, dispatch notes, city/area, priority, and status.</p>
+      <p class="session-status" data-schedule-status role="status" aria-live="polite">Loading schedule board…</p>
+      <div class="phase54-grid">
+        <article class="phase54-card"><span class="phase54-badge">Upcoming jobs</span><div class="phase54-list" data-schedule-upcoming-list></div></article>
+        <article class="phase54-card"><span class="phase54-badge">Unscheduled jobs</span><div class="phase54-list" data-schedule-unscheduled-list></div></article>
+      </div>
+      <form class="client-request-form" data-schedule-dispatch-form>
+        <div class="client-request-form-grid">
+          <label>Job / work order<select name="jobRequestId" data-schedule-job-select required></select></label>
+          <label>Assigned worker<select name="workerId" data-schedule-worker-select></select></label>
+          <label>Scheduled date<input name="scheduledDate" type="date"></label>
+          <label>Start time<input name="startTime" type="time"></label>
+          <label>End time<input name="endTime" type="time"></label>
+          <label>Priority<select name="priority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label>
+          <label class="full">Dispatch notes<textarea name="notes" placeholder="Access, route notes, materials to stage, customer timing, or safety notes"></textarea></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Schedule / assign job</button><span data-schedule-form-status aria-live="polite"></span></div>
+      </form>
+    </section>
+
+    <section class="card worker-mobile-suite phase54-workspace" id="worker-mobile-field" data-dashboard-section data-views="worker admin" hidden>
+      <strong>Worker Mobile Field Mode</strong>
+      <p>Mobile-friendly cards for today's jobs, status changes, notes, reserved materials, usage, returns, and completion.</p>
+      <p class="session-status" data-worker-mobile-status role="status" aria-live="polite">Loading mobile field jobs…</p>
+      <div hidden>Start job Mark in progress Mark complete</div><div class="phase54-list" data-worker-mobile-list></div>
+    </section>
+
+    <section class="card photo-doc-suite phase54-workspace" data-dashboard-section data-views="worker admin" hidden>
+      <strong>Photo Docs &amp; Completion Evidence</strong>
+      <p>Track before, progress, and after documentation, completion notes, evidence checklist, and admin review status.</p>
+      <p class="session-status" data-photo-doc-status role="status" aria-live="polite">Choose a job to manage evidence.</p>
+      <form class="client-request-form" data-photo-doc-form>
+        <div class="client-request-form-grid">
+          <label>Job selector<select name="assignmentId" data-photo-doc-assignment required></select></label>
+          <label>Evidence stage<select name="stage"><option value="before">Before photos</option><option value="progress">Progress photos</option><option value="after">After photos</option></select></label>
+          <label class="full">Completion / evidence notes<textarea name="workerNotes" data-photo-doc-notes placeholder="Describe the before/progress/after evidence captured"></textarea></label>
+          <label class="full">Evidence file names<input name="completionEvidenceFiles" data-photo-doc-files placeholder="before-kitchen.jpg, after-kitchen.jpg"></label>
+        </div>
+        <div class="phase54-meta"><span>Checklist: before photo</span><span>progress photo</span><span>after photo</span><span>completion note</span><span>admin review</span></div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save evidence notes</button><button class="btn btn-soft" type="button" data-photo-doc-upload-note>Explain upload endpoint</button><span data-photo-doc-form-status aria-live="polite"></span></div>
+      </form>
+      <div class="phase54-list" data-photo-doc-list></div>
+    </section>
+
+    <section class="card maintenance-suite phase54-workspace" data-dashboard-section data-views="admin client" hidden>
+      <strong>Maintenance Plans</strong>
+      <p>Recurring HVAC, plumbing, electrical, seasonal, and property-care plans tied to client properties and next due dates.</p>
+      <p class="session-status" data-maintenance-status role="status" aria-live="polite">Loading maintenance plans…</p>
+      <form class="client-request-form" data-maintenance-plan-form>
+        <div class="client-request-form-grid">
+          <input type="hidden" name="planId" data-maintenance-plan-id>
+          <label>Plan name<input name="planName" required placeholder="HVAC seasonal maintenance"></label>
+          <label>Plan type<select name="planType"><option value="hvac_seasonal">HVAC seasonal maintenance</option><option value="plumbing_inspection">Plumbing inspection</option><option value="electrical_safety">Electrical safety check</option><option value="property_care">Property care plan</option></select></label>
+          <label>Frequency<select name="frequency"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="semiannual">Semiannual</option><option value="annual">Annual</option></select></label>
+          <label>Next due date<input name="nextDueDate" type="date"></label>
+          <label>Client ID<input name="clientId" placeholder="Client UUID"></label>
+          <label>Property ID<input name="propertyId" placeholder="Property UUID"></label>
+          <label>Status<select name="status"><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+          <label class="full">Plan notes<textarea name="notes" placeholder="Filters, inspection scope, seasonal tasks, access notes"></textarea></label>
+        </div>
+        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save maintenance plan</button><span data-maintenance-form-status aria-live="polite"></span></div>
+      </form>
+      <div class="phase54-list" data-maintenance-plan-list></div>
+    </section>
+
+    <section class="card readiness-suite phase54-workspace" id="system-readiness" data-dashboard-section data-views="admin" hidden>
+      <strong>Deployment Health &amp; System Readiness</strong>
+      <p>Route coverage, function checks, environment checklist, migrations, and audit commands without exposing secrets.</p>
+      <p class="session-status" data-readiness-status role="status" aria-live="polite">System readiness checklist is available.</p>
+      <div class="phase54-grid" data-readiness-checklist></div>
+      <div class="phase54-command-list" aria-label="Readiness commands">
+        <button class="btn btn-soft" type="button" data-copy-command="npm run build">npm run build</button>
+        <button class="btn btn-soft" type="button" data-copy-command="node scripts/check-netlify-functions.mjs">node scripts/check-netlify-functions.mjs</button>
+        <button class="btn btn-soft" type="button" data-copy-command="npm run audit:dead-buttons">npm run audit:dead-buttons</button>
+        <button class="btn btn-soft" type="button" data-copy-command="npm run test:browser">npm run test:browser</button>
+        <button class="btn btn-primary" type="button" data-readiness-refresh>Refresh readiness checklist</button>
+      </div>
     </section>
 
 
