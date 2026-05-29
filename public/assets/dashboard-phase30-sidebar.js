@@ -1,5 +1,6 @@
 // public/assets/dashboard-phase30-sidebar.js
 // Phase 30: app-style sidebar navigation for the dashboard.
+// Safe shell version: preserves the hero/role switcher above the sidebar shell.
 
 (() => {
   if (window.__taPhase30SidebarLoaded) return;
@@ -9,7 +10,7 @@
   if (!root) return;
 
   const navItems = [
-    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.hero', hint: 'Start', views: ['admin', 'client', 'worker'] },
+    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '#executive-overview, .executive-suite, [data-overview-workspace]', hint: 'Start', views: ['admin', 'client', 'worker'] },
     { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes', views: ['admin'] },
     { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs', views: ['admin'] },
     { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch', views: ['admin', 'worker'] },
@@ -57,19 +58,29 @@
     return groups;
   }, {});
 
+  const queryFirst = (selector) => {
+    if (!selector) return null;
+    for (const part of selector.split(',').map((item) => item.trim()).filter(Boolean)) {
+      try {
+        const found = document.querySelector(part);
+        if (found) return found;
+      } catch {}
+    }
+    return null;
+  };
+
   const openModalShortcut = (name) => {
     const selector = name === 'client-profile'
       ? '[data-client-profile-shortcut], #client-profile, [data-client-profile]'
       : '[data-admin-access-shortcut]';
 
-    const button = document.querySelector(selector);
+    const target = queryFirst(selector);
 
-    if (button?.click && button.matches('button, a')) {
-      button.click();
+    if (target?.click && target.matches('button, a')) {
+      target.click();
       return true;
     }
 
-    const target = document.querySelector(selector);
     if (target?.scrollIntoView) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return true;
@@ -85,13 +96,7 @@
   };
 
   const scrollToTarget = (target) => {
-    let destination = null;
-
-    try {
-      destination = document.querySelector(target);
-    } catch {
-      destination = null;
-    }
+    const destination = queryFirst(target);
 
     if (!destination) {
       window.TAUX?.toast?.({
@@ -107,10 +112,31 @@
     setTimeout(() => destination.classList.remove('dashboard-section-highlight'), 1200);
   };
 
+  const detectViewFromText = (value = '') => {
+    const text = String(value).toLowerCase();
+    if (text.includes('admin')) return 'admin';
+    if (text.includes('worker')) return 'worker';
+    if (text.includes('client')) return 'client';
+    return '';
+  };
+
   const mount = () => {
     if (document.querySelector('[data-phase30-sidebar]')) return;
 
     const originalChildren = Array.from(root.children);
+
+    const preservedTop = [];
+    const workspaceChildren = [];
+
+    originalChildren.forEach((child) => {
+      const preserve =
+        child.matches?.('.hero, [data-dashboard-hero], [data-role-bar], .role-bar, [data-dashboard-role-switcher]') ||
+        child.querySelector?.('.role-bar, [data-role], [data-dashboard-role]');
+
+      if (preserve && preservedTop.length < 3) preservedTop.push(child);
+      else workspaceChildren.push(child);
+    });
+
     const shell = document.createElement('div');
     shell.className = 'dashboard-shell-v2';
     shell.dataset.phase30Sidebar = 'true';
@@ -160,7 +186,7 @@
 
     const workspace = document.createElement('div');
     workspace.className = 'dashboard-workspace-v2';
-    originalChildren.forEach((child) => workspace.appendChild(child));
+    workspaceChildren.forEach((child) => workspace.appendChild(child));
 
     shell.appendChild(sidebar);
     shell.appendChild(workspace);
@@ -198,6 +224,8 @@
       </button>
     `).join('');
 
+    root.innerHTML = '';
+    preservedTop.forEach((child) => root.appendChild(child));
     root.appendChild(toggle);
     root.appendChild(backdrop);
     root.appendChild(shell);
@@ -255,16 +283,14 @@
         document.querySelector('[aria-pressed="true"][data-role]') ||
         document.querySelector('[aria-current="true"][data-role]');
 
-      const roleText = String(
+      const roleView = detectViewFromText(
         activeRole?.dataset?.role ||
         activeRole?.dataset?.dashboardRole ||
         activeRole?.textContent ||
         ''
-      ).toLowerCase();
+      );
 
-      if (roleText.includes('admin')) return 'admin';
-      if (roleText.includes('worker')) return 'worker';
-      if (roleText.includes('client')) return 'client';
+      if (roleView) return roleView;
 
       if (document.body.classList.contains('view-admin')) return 'admin';
       if (document.body.classList.contains('view-worker')) return 'worker';
@@ -344,17 +370,20 @@
         const roleButton = event.target.closest('.role, [data-role], [data-dashboard-role]');
         if (!roleButton) return;
 
-        const raw =
+        const view = detectViewFromText(
           roleButton.dataset.role ||
           roleButton.dataset.dashboardRole ||
           roleButton.textContent ||
-          '';
+          ''
+        );
 
-        const text = String(raw).toLowerCase();
+        if (view) {
+          setCurrentDashboardView(view);
 
-        if (text.includes('admin')) setCurrentDashboardView('admin');
-        else if (text.includes('worker')) setCurrentDashboardView('worker');
-        else if (text.includes('client')) setCurrentDashboardView('client');
+          if (window.taSetSidebarWorkspace) {
+            window.taSetSidebarWorkspace('overview', { scroll: false });
+          }
+        }
 
         setTimeout(syncPermissionLinks, 50);
         setTimeout(syncPermissionLinks, 250);

@@ -1,5 +1,7 @@
 // Phase 34: sidebar-only dashboard workspaces.
 // This makes the sidebar the single source of dashboard workspace routing.
+// Important: .hero is intentionally NOT tagged as a workspace section so the
+// Admin / Client / Worker role buttons remain visible.
 
 (() => {
   if (window.__phase34SidebarOnlyWorkspacesLoaded) return;
@@ -16,102 +18,86 @@
     overview: {
       title: 'Overview',
       description: 'Quick business snapshot and daily attention items.',
-      targets: ['.hero', '#executive-overview', '.executive-suite'],
+      targets: ['#executive-overview', '.executive-suite', '[data-overview-workspace]'],
     },
-
     'estimate-review': {
       title: 'Estimate Review',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
       targets: ['#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
-
     'work-orders': {
       title: 'Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
       targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite'],
     },
-
     'client-requests': {
       title: 'Requests',
       description: 'Client request intake, status, updates, files, and property-aware service details.',
       targets: ['#client-requests', '[data-client-requests]'],
     },
-
     'client-quotes': {
       title: 'Quotes',
       description: 'Client quote review, approval, decline/request-change actions, and quote history.',
       targets: ['#client-quotes', '[data-client-quotes]'],
     },
-
     'client-invoices': {
       title: 'Client Invoices',
       description: 'Client invoice balances, payment status, invoice details, and payment actions.',
       targets: ['#client-invoices', '[data-client-invoices]'],
     },
-
     scheduling: {
       title: 'Scheduling and Dispatch',
       description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
       targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
     },
-
     finance: {
       title: 'Finance Center',
       description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
       targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-suite', '.finance-command-panel'],
     },
-
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
       targets: ['#admin-invoices', '[data-admin-invoices]'],
     },
-
     'customer-status': {
       title: 'Customer Status',
       description: 'Client-friendly request, quote, job, invoice/payment, and maintenance timeline status.',
       targets: ['#customer-experience-center', '.customer-experience-suite'],
     },
-
     'worker-jobs': {
       title: 'Worker Jobs',
       description: 'Assigned jobs, status updates, reserved materials, notes, evidence status, and completion actions.',
       targets: ['#worker-jobs', '[data-worker-jobs]', '#worker-tools-upgrade'],
     },
-
     'worker-mobile': {
       title: 'Worker Mobile',
       description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
       targets: ['#worker-mobile-field', '.worker-mobile-suite'],
     },
-
     'ai-troubleshooting': {
       title: 'AI Troubleshooting',
       description: 'Safety-first AI field assistant for equipment details, symptoms, fault codes, readings, and work-order notes.',
       targets: ['#worker-ai-troubleshooting', '[data-worker-ai-troubleshooting]', '.ai-troubleshooting-suite'],
     },
-
     'photo-docs': {
       title: 'Photo Documentation',
       description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
       targets: ['.photo-doc-suite'],
     },
-
     maintenance: {
       title: 'Maintenance Plans',
       description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
       targets: ['.maintenance-suite'],
     },
-
     'roles-users': {
       title: 'Roles & Users',
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
-
     deployment: {
       title: 'Deployment and Readiness',
-      description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
+      description: 'API route coverage, environment checklist, Netlify function notes, and workflow health.',
       targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite'],
     },
   };
@@ -143,6 +129,14 @@
     ['roles & users', 'roles-users'],
     ['deployment health', 'deployment'],
   ]);
+
+  const queryAllSafe = (selector) => {
+    try {
+      return Array.from(document.querySelectorAll(selector));
+    } catch {
+      return [];
+    }
+  };
 
   const closeSidebar = () => {
     document.querySelectorAll('[data-sidebar-backdrop], .dashboard-sidebar-backdrop').forEach((element) => {
@@ -181,15 +175,8 @@
 
     Object.entries(workspaces).forEach(([workspace, config]) => {
       config.targets.forEach((selector) => {
-        let matches = [];
-
-        try {
-          matches = Array.from(document.querySelectorAll(selector));
-        } catch {
-          matches = [];
-        }
-
-        matches.forEach((element) => {
+        queryAllSafe(selector).forEach((element) => {
+          if (element.closest('.hero')) return;
           element.setAttribute('data-sidebar-workspace-section', workspace);
         });
       });
@@ -224,13 +211,7 @@
     const config = workspaces[workspace];
     if (!config) return [];
 
-    return config.targets.flatMap((selector) => {
-      try {
-        return Array.from(document.querySelectorAll(selector));
-      } catch {
-        return [];
-      }
-    });
+    return config.targets.flatMap((selector) => queryAllSafe(selector).filter((element) => !element.closest('.hero')));
   };
 
   const setActiveButton = (workspace) => {
@@ -252,7 +233,10 @@
         })()
       : null;
 
-    const destination = preferred || visibleTargetsFor(workspace)[0] || null;
+    const destination = (preferred && !preferred.closest('.hero'))
+      ? preferred
+      : visibleTargetsFor(workspace)[0] || null;
+
     if (!destination) return false;
 
     window.requestAnimationFrame(() => {
@@ -282,15 +266,11 @@
     const visibleTargets = visibleTargetsFor(workspace);
 
     if (missingStatus) {
-      const missing = visibleTargets.length === 0;
+      const missing = visibleTargets.length === 0 && workspace !== 'overview';
       missingStatus.hidden = !missing;
       missingStatus.textContent = missing
         ? `Missing module target for ${workspaces[workspace].title}. Check sidebar workspace routing.`
         : '';
-    }
-
-    if (!visibleTargets.length && window.location.hostname === 'localhost') {
-      console.warn(`No dashboard module targets found for sidebar workspace: ${workspace}`);
     }
 
     const url = new URL(window.location.href);
