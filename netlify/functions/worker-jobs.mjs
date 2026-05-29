@@ -264,22 +264,52 @@ const handlePatch = async ({ request, db, context }) => {
   }
 
   const isAdmin = context.roleKeys.includes('admin');
-  const [updatedAssignment] = isAdmin ? await db.sql`
-    update worker_assignments
-    set status = ${payload.status},
-        worker_notes = ${payload.workerNotes || null},
-        updated_at = now()
-    where id = ${payload.assignmentId}
-    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
-  ` : await db.sql`
-    update worker_assignments
-    set status = ${payload.status},
-        worker_notes = ${payload.workerNotes || null},
-        updated_at = now()
-    where id = ${payload.assignmentId}
-      and worker_id = ${context.session.user_id}
-    returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
-  `;
+  const completionFiles = JSON.stringify(payload.completionEvidenceFiles || []);
+  let updatedRows = [];
+
+  if (payload.status === 'completed') {
+    updatedRows = isAdmin ? await db.sql`
+      update worker_assignments
+      set status = ${payload.status},
+          worker_notes = ${payload.workerNotes || null},
+          completion_notes = nullif(${payload.workerNotes || ''}, ''),
+          completion_photo_names = ${completionFiles}::jsonb,
+          completion_submitted_at = now(),
+          updated_at = now()
+      where id = ${payload.assignmentId}
+      returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
+    ` : await db.sql`
+      update worker_assignments
+      set status = ${payload.status},
+          worker_notes = ${payload.workerNotes || null},
+          completion_notes = nullif(${payload.workerNotes || ''}, ''),
+          completion_photo_names = ${completionFiles}::jsonb,
+          completion_submitted_at = now(),
+          updated_at = now()
+      where id = ${payload.assignmentId}
+        and worker_id = ${context.session.user_id}
+      returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
+    `;
+  } else {
+    updatedRows = isAdmin ? await db.sql`
+      update worker_assignments
+      set status = ${payload.status},
+          worker_notes = ${payload.workerNotes || null},
+          updated_at = now()
+      where id = ${payload.assignmentId}
+      returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
+    ` : await db.sql`
+      update worker_assignments
+      set status = ${payload.status},
+          worker_notes = ${payload.workerNotes || null},
+          updated_at = now()
+      where id = ${payload.assignmentId}
+        and worker_id = ${context.session.user_id}
+      returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
+    `;
+  }
+
+  const [updatedAssignment] = updatedRows;
 
   if (!updatedAssignment) {
     return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
@@ -453,7 +483,11 @@ export const createWorkerJobsHandler = ({ getDatabase = loadDatabase } = {}) => 
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Worker access required to view assigned jobs.' });
     }
 
+    const path = new URL(request.url).pathname;
     if (request.method === 'PATCH') {
+      return await handlePatch({ request, db, context });
+    }
+    if (request.method === 'POST' && path.endsWith('/complete')) {
       return await handlePatch({ request, db, context });
     }
     if (request.method === 'POST') {

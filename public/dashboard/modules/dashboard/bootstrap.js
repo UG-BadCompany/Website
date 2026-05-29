@@ -501,7 +501,10 @@
       let currentAdminActivity = [];
       let currentAdminInventoryItems = [];
       let currentAdminInventoryUsage = [];
+      let currentAdminInventoryReservations = [];
+      let currentAdminInventoryMovements = [];
       let currentWorkerInventoryItems = [];
+      let currentWorkerInventoryReservations = [];
       let currentProfileUser = null;
       let currentDashboardView = '';
       let availableDashboardViews = [];
@@ -815,7 +818,8 @@
           { key: 'accepted', label: 'Schedule + assign' },
           { key: 'in_progress', label: 'Worker in field' },
           { key: 'pending_review', label: 'Admin/client review' },
-          { key: 'waiting_payment', label: 'Invoice + payment' },
+          { key: 'pending_review', label: 'Admin review' },
+          { key: 'waiting_payment', label: 'Ready to invoice' },
           { key: 'completed', label: 'Complete' },
         ];
         const workflowIndex = Math.max(0, workflowSteps.findIndex((step) => step.key === status));
@@ -1257,6 +1261,49 @@
         `).join('') : '<p class="session-status">No inventory usage recorded for this work order yet.</p>';
       };
 
+
+      const getInvoiceReadinessBlocks = (request, reservations = [], movements = []) => {
+        const openReservations = reservations.filter((item) => ['reserved', 'partially_used'].includes(item.status));
+        const blocks = [];
+        if (request && !['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '')) blocks.push('Client quote/request is not accepted yet.');
+        if (request && !['pending_review', 'waiting_payment', 'completed'].includes(request.status || '')) blocks.push('Labor is not marked complete by the worker yet.');
+        if (request && request.status === 'pending_review') blocks.push('Admin completion review is still pending.');
+        if (openReservations.length) blocks.push(`${openReservations.length} reserved material line${openReservations.length === 1 ? '' : 's'} still need use, release, or keep-reserved reason.`);
+        if (reservations.length && !movements.length) blocks.push('Material reservations have no movement history yet.');
+        return blocks;
+      };
+
+      const renderAdminWorkOrderMaterials = ({ reservations = [], movements = [], request = null } = {}) => {
+        const materialList = document.querySelector('[data-admin-work-order-material-list]');
+        const readiness = document.querySelector('[data-admin-work-order-invoice-readiness]');
+        if (!materialList && !readiness) return;
+        const openReservations = reservations.filter((item) => ['reserved', 'partially_used'].includes(item.status));
+        const materialChargeTotal = reservations.reduce((sum, item) => sum + Number(item.chargeTotal || 0), 0);
+        if (materialList) {
+          materialList.innerHTML = reservations.length ? reservations.map((entry) => {
+            const unused = Math.max(0, Number(entry.reservedQuantity || 0) - Number(entry.usedQuantity || 0));
+            return `
+              <article class="admin-assignment" data-admin-job-material>
+                <span class="admin-assignment-badge">${escapeHtml(entry.status || 'reserved')}</span>
+                <strong>${escapeHtml(entry.itemName || 'Reserved material')}</strong>
+                <div class="admin-assignment-meta"><span>Reserved ${Number(entry.reservedQuantity || 0)}</span><span>Used ${Number(entry.usedQuantity || 0)}</span><span>Unused ${unused}</span><span>${escapeHtml(entry.itemSku || 'No SKU')}</span></div>
+                ${unused > 0 ? `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-admin-release-job-material data-item-id="${escapeHtml(entry.itemId)}" data-job-request-id="${escapeHtml(entry.jobRequestId)}" data-reservation-id="${escapeHtml(entry.id)}" data-unused-quantity="${escapeHtml(String(unused))}">Release unused</button><span class="session-status" data-admin-keep-reserved-reason>Keep reserved only if a reason is documented in admin review notes.</span></div>` : ''}
+              </article>
+            `;
+          }).join('') : '<p class="session-status">No reserved Job Materials yet. Reserve from Estimate Review or the inventory panel before scheduling.</p>';
+        }
+        if (readiness) {
+          const blocks = getInvoiceReadinessBlocks(request, reservations, movements);
+          readiness.dataset.readyToInvoice = blocks.length ? 'false' : 'true';
+          readiness.innerHTML = `
+            <strong>Invoice/payment readiness: ${blocks.length ? 'Not ready' : 'Ready'}</strong>
+            <p>${blocks.length ? 'Blocking reasons must be resolved before invoice closeout.' : 'Labor, admin review, and reserved materials are resolved. Invoice can include material usage totals.'}</p>
+            ${blocks.length ? `<ul>${blocks.map((block) => `<li>${escapeHtml(block)}</li>`).join('')}</ul>` : ''}
+            <div class="admin-request-meta"><span>Material charge total ${escapeHtml(formatMoney(materialChargeTotal * 100))}</span><span>${movements.length} movement${movements.length === 1 ? '' : 's'}</span><span>${openReservations.length} open reservation${openReservations.length === 1 ? '' : 's'}</span></div>
+          `;
+        }
+      };
+
       const populateAdminWorkOrderInventoryItems = () => {
         const itemSelect = document.querySelector('[data-admin-work-order-inventory-item]');
         if (!itemSelect) return;
@@ -1278,14 +1325,20 @@
           if (!response.ok || !result.ok) throw new Error(result.message || 'Inventory usage is not available.');
           currentAdminInventoryItems = result.items || [];
           currentAdminInventoryUsage = result.usage || [];
+          currentAdminInventoryReservations = result.reservations || [];
+          currentAdminInventoryMovements = result.movements || [];
           populateAdminWorkOrderInventoryItems();
           renderAdminWorkOrderInventoryUsage(currentAdminInventoryUsage);
-          if (status) status.textContent = currentAdminInventoryUsage.length ? `${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No inventory usage recorded yet.';
+          renderAdminWorkOrderMaterials({ reservations: currentAdminInventoryReservations, movements: currentAdminInventoryMovements, request: currentAdminRequests.get(jobRequestId) || null });
+          if (status) status.textContent = currentAdminInventoryUsage.length || currentAdminInventoryReservations.length ? `${currentAdminInventoryReservations.length} reservation${currentAdminInventoryReservations.length === 1 ? '' : 's'} and ${currentAdminInventoryUsage.length} usage record${currentAdminInventoryUsage.length === 1 ? '' : 's'} loaded.` : 'No job materials recorded yet.';
         } catch (error) {
           currentAdminInventoryItems = [];
           currentAdminInventoryUsage = [];
+          currentAdminInventoryReservations = [];
+          currentAdminInventoryMovements = [];
           populateAdminWorkOrderInventoryItems();
           renderAdminWorkOrderInventoryUsage([]);
+          renderAdminWorkOrderMaterials({ reservations: [], movements: [], request: currentAdminRequests.get(jobRequestId) || null });
           if (status) status.textContent = error.message;
         }
       };
@@ -1522,6 +1575,23 @@
         panel.querySelector('[data-admin-activity-refresh]')?.addEventListener('click', () => loadAdminActivity());
       };
 
+      const renderWorkerJobMaterials = (assignment = {}) => {
+        const jobRequestId = assignment.jobRequest?.id || '';
+        const reservations = currentWorkerInventoryReservations.filter((entry) => String(entry.jobRequestId || '') === String(jobRequestId));
+        if (!reservations.length) return '<p class="session-status">No reserved job materials assigned yet. Use the stock request flow if more material is needed.</p>';
+        return reservations.map((entry) => {
+          const unused = Math.max(0, Number(entry.reservedQuantity || 0) - Number(entry.usedQuantity || 0));
+          return `
+            <article class="admin-assignment" data-worker-job-material>
+              <span class="admin-assignment-badge">${escapeHtml(entry.status || 'reserved')}</span>
+              <strong>${escapeHtml(entry.itemName || 'Reserved material')}</strong>
+              <div class="admin-assignment-meta"><span>Reserved ${Number(entry.reservedQuantity || 0)}</span><span>Used ${Number(entry.usedQuantity || 0)}</span><span>Remaining ${unused}</span><span>${escapeHtml(entry.itemSku || 'No SKU')}</span></div>
+              ${unused > 0 ? `<div class="client-quote-actions"><input aria-label="Quantity for ${escapeHtml(entry.itemName || 'material')}" data-worker-material-quantity value="${unused}" type="number" min="0" step="0.01"><button class="btn btn-soft" type="button" data-worker-material-use data-item-id="${escapeHtml(entry.itemId)}" data-job-request-id="${escapeHtml(jobRequestId)}">Mark used</button><button class="btn btn-soft" type="button" data-worker-material-release data-item-id="${escapeHtml(entry.itemId)}" data-job-request-id="${escapeHtml(jobRequestId)}">Release unused</button></div>` : '<p class="session-status">Material line is resolved for closeout.</p>'}
+            </article>
+          `;
+        }).join('');
+      };
+
       const renderWorkerJobCard = (assignment) => {
         const completionPhotoNames = assignment.completionPhotoNames || [];
         const checklistItems = assignment.checklistItems || [];
@@ -1552,6 +1622,9 @@
           ${assignment.jobRequest?.property?.accessNotes ? `<p><strong>Access:</strong> ${escapeHtml(assignment.jobRequest.property.accessNotes)}</p>` : ''}
           <p><strong>Work order:</strong> #${escapeHtml(assignment.jobRequest?.id || assignment.id || 'N/A')}</p>
           ${assignment.notes ? `<p><strong>Admin notes:</strong> ${escapeHtml(assignment.notes)}</p>` : ''}
+          <div class="admin-assignment-list" data-worker-job-materials="${escapeHtml(assignment.jobRequest?.id || '')}">
+            ${renderWorkerJobMaterials(assignment)}
+          </div>
           <div class="client-quote-actions">
             <button class="btn btn-soft" type="button" data-worker-job-toggle="${escapeHtml(assignment.id)}">Open work order</button>
           </div>
@@ -1587,7 +1660,7 @@
                 <span class="client-request-attachment-list" data-worker-file-list>No files selected yet.</span>
               </label>
             </div>
-            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><span data-worker-job-form-status aria-live="polite"></span></div>
+            <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save job update</button><button class="btn btn-soft" type="button" data-worker-mark-complete>Mark job complete</button><span data-worker-job-form-status aria-live="polite"></span></div>
           </form>
           <div class="job-file-list" data-job-files="${escapeHtml(assignment.jobRequest?.id || '')}" aria-live="polite"></div>
         </article>
@@ -2358,9 +2431,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inventoryRequestId = document.querySelector('[data-admin-inventory-request-id]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const statusForm = document.querySelector('[data-admin-status-form]');
-        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form], [data-phase52-admin-assignment-form]');
         const workOrderSummary = document.querySelector('[data-admin-work-order-summary]');
         const closeButton = document.querySelector('[data-admin-detail-close]');
+        const reviewPanel = document.querySelector('[data-admin-completion-review-panel]');
+        const reviewRequestId = document.querySelector('[data-admin-review-request-id]');
+        const reviewEvidenceList = document.querySelector('[data-admin-completion-evidence-list]');
 
         if (!request || !detail) {
           return;
@@ -2375,6 +2451,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteRequestId) quoteRequestId.value = request.id;
         if (assignmentRequestId) assignmentRequestId.value = request.id;
         if (inventoryRequestId) inventoryRequestId.value = request.id;
+        if (reviewRequestId) reviewRequestId.value = request.id;
         if (inventoryForm) inventoryForm.reset();
         if (statusSelect) statusSelect.value = request.status;
         if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
@@ -2398,15 +2475,29 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const quoteApproved = ['accepted'].includes(savedQuote?.status || '') || ['accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
         if (statusForm) statusForm.hidden = !quoteApproved;
         if (assignmentForm) assignmentForm.hidden = !quoteApproved;
-        if (inventoryForm) inventoryForm.hidden = true;
+        if (inventoryForm) inventoryForm.hidden = !quoteApproved;
         if (assignmentDate) assignmentDate.value = request.estimatedStartDate || '';
         const requestAssignments = [...currentAdminAssignments.values()].filter((assignment) => assignment.jobRequestId === request.id);
+        const hasCompletionReview = ['pending_review', 'waiting_payment', 'completed'].includes(request.status || '');
+        if (reviewPanel) reviewPanel.hidden = !hasCompletionReview;
+        if (reviewEvidenceList) {
+          const completionAssignments = requestAssignments.filter((assignment) => assignment.workerNotes || assignment.completionNotes || (assignment.completionPhotoNames || []).length || assignment.status === 'completed');
+          reviewEvidenceList.innerHTML = completionAssignments.length ? completionAssignments.map((assignment) => `
+            <article class="admin-assignment">
+              <span class="admin-assignment-badge">${escapeHtml((assignment.status || 'completed').replaceAll('_', ' '))}</span>
+              <strong>${escapeHtml(assignment.workerName || assignment.workerEmail || 'Assigned worker')}</strong>
+              <p>${escapeHtml(assignment.completionNotes || assignment.workerNotes || 'Worker marked complete; review material closeout before invoicing.')}</p>
+              <div class="admin-assignment-meta"><span>${escapeHtml((assignment.completionPhotoNames || []).length ? `${assignment.completionPhotoNames.length} evidence file(s)` : 'Before/after evidence placeholder ready')}</span><span>${escapeHtml(assignment.completionSubmittedAt ? formatDate(String(assignment.completionSubmittedAt).slice(0, 10)) : 'No completion timestamp')}</span></div>
+            </article>
+          `).join('') : '<p class="session-status">No worker completion notes or evidence submitted yet.</p>';
+        }
         if (workOrderSummary) {
           workOrderSummary.innerHTML = renderAdminWorkOrderSummary(request, requestAssignments, savedQuote);
         }
         if (assignmentList) {
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
+        if (quoteApproved) loadAdminWorkOrderInventory(request.id);
         if (closeButton) closeButton.focus();
       };
 
@@ -2424,7 +2515,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const inbox = document.querySelector('[data-admin-inbox]');
         const statusForm = document.querySelector('[data-admin-status-form]');
         const quoteForm = document.querySelector('[data-admin-quote-form]');
-        const assignmentForm = document.querySelector('[data-admin-assignment-form]');
+        const assignmentForm = document.querySelector('[data-admin-assignment-form], [data-phase52-admin-assignment-form]');
         const inventoryForm = document.querySelector('[data-admin-work-order-inventory-form]');
         const detail = document.querySelector('[data-admin-request-detail]');
 
@@ -2518,7 +2609,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
           assignmentForm.dataset.bound = 'true';
           assignmentForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const formStatus = document.querySelector('[data-admin-assignment-form-status]');
+            const formStatus = document.querySelector('[data-admin-assignment-form-status], [data-phase52-admin-assignment-status]');
             const payload = Object.fromEntries(new FormData(assignmentForm).entries());
             if (!payload.workerId) {
               if (formStatus) formStatus.textContent = 'Choose a worker to assign.';
@@ -2536,6 +2627,39 @@ Additional info from client: ${payload.additionalInfo}` : '';
               assignmentForm.reset();
               if (formStatus) formStatus.textContent = 'Worker assigned.';
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminActivity();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
+
+        if (detail && !detail.dataset.materialReleaseBound) {
+          detail.dataset.materialReleaseBound = 'true';
+          detail.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-admin-release-job-material]');
+            if (!button) return;
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-work-order-inventory-status]');
+            const payload = {
+              itemId: button.dataset.itemId,
+              jobRequestId: button.dataset.jobRequestId,
+              reservationId: button.dataset.reservationId,
+              quantity: Number(button.dataset.unusedQuantity || 0),
+              note: 'Released unused material from Job Materials section',
+            };
+            if (formStatus) formStatus.textContent = 'Releasing unused reserved material…';
+            try {
+              const response = await fetch('/api/admin/inventory/release', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not release reserved material.');
+              if (formStatus) formStatus.textContent = 'Unused material released; on-hand quantity was not changed.';
+              await loadAdminWorkOrderInventory(payload.jobRequestId);
               await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
@@ -2580,6 +2704,35 @@ Additional info from client: ${payload.additionalInfo}` : '';
               inventoryForm.reset();
               if (formStatus) formStatus.textContent = 'Inventory usage recorded.';
               await loadAdminWorkOrderInventory(jobRequestId);
+              await loadAdminActivity();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          });
+        }
+
+        const reviewForm = document.querySelector('[data-admin-completion-review-form]');
+        if (reviewForm && !reviewForm.dataset.bound) {
+          reviewForm.dataset.bound = 'true';
+          reviewForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formStatus = document.querySelector('[data-admin-completion-review-status]');
+            const payload = Object.fromEntries(new FormData(reviewForm).entries());
+            if (!payload.jobRequestId) {
+              if (formStatus) formStatus.textContent = 'Open a work order before submitting review.';
+              return;
+            }
+            if (formStatus) formStatus.textContent = 'Submitting completion review…';
+            try {
+              const response = await fetch('/api/admin/work-orders/review', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not submit completion review.');
+              if (formStatus) formStatus.textContent = result.invoiceReadiness?.ready ? 'Completion approved. Ready to invoice.' : 'Completion review saved; invoice blockers remain.';
+              await loadAdminRequests(payload.jobRequestId);
               await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
@@ -2734,9 +2887,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
       const closeAdminRoleModal = () => setModalOpen(document.querySelector('[data-admin-role-modal]'), false);
       const closeAdminUserModal = () => setModalOpen(document.querySelector('[data-admin-user-modal]'), false);
 
-      const renderCheckboxList = (items, selected, name) => items.map((item) => `
-        <label><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> ${escapeHtml(item.name || item.label || item.key)}</label>
-      `).join('');
+      const renderCheckboxList = (items, selected, name) => items.map((item) => {
+        const title = item.name || item.label || item.key;
+        const detail = item.description || item.key;
+        return `
+          <label class="admin-access-choice"><input type="checkbox" name="${name}" value="${escapeHtml(item.key)}" ${selected.includes(item.key) ? 'checked' : ''}> <span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></span></label>
+        `;
+      }).join('');
 
       const renderPermissionInputs = (selected = []) => {
         const list = document.querySelector('[data-admin-permission-list]');
@@ -2892,46 +3049,58 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const roleForm = document.querySelector('[data-admin-role-form]');
         const userForm = document.querySelector('[data-admin-user-form]');
         const search = document.querySelector('[data-admin-user-search]');
-        if (!panel || panel.dataset.bound) return;
-        panel.dataset.bound = 'true';
+        if (!panel || document.documentElement.dataset.boundAdminAccessForms) return;
+        document.documentElement.dataset.boundAdminAccessForms = 'true';
 
-        panel.addEventListener('click', async (event) => {
+        document.addEventListener('click', async (event) => {
+          const accessAction = event.target.closest('[data-admin-edit-role], [data-admin-open-selected-role], [data-admin-edit-user], [data-admin-new-role], [data-admin-user-create], [data-admin-role-modal-close], [data-admin-user-modal-close]');
+          if (!accessAction) return;
+
+          const isInsideAccessManager = Boolean(accessAction.closest('[data-admin-access]'));
+          const isInsideAccessModal = Boolean(accessAction.closest('[data-admin-role-modal], [data-admin-user-modal]'));
+          if (!isInsideAccessManager && !isInsideAccessModal) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
           const status = document.querySelector('[data-admin-access-status]');
-          const roleButton = event.target.closest('[data-admin-edit-role]');
-          const userButton = event.target.closest('[data-admin-edit-user]');
-          const selectedRoleButton = event.target.closest('[data-admin-open-selected-role]');
-          if (roleButton) {
-            event.preventDefault();
-            if (!currentAdminRoles.size) await loadAdminAccess();
-            selectAdminRole(roleButton.dataset.adminEditRole);
+          if (accessAction.matches('[data-admin-role-modal-close]')) {
+            closeAdminRoleModal();
+            return;
           }
-          if (selectedRoleButton) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-user-modal-close]')) {
+            closeAdminUserModal();
+            return;
+          }
+          if (accessAction.matches('[data-admin-edit-role]')) {
+            if (!currentAdminRoles.size) await loadAdminAccess();
+            selectAdminRole(accessAction.dataset.adminEditRole);
+            return;
+          }
+          if (accessAction.matches('[data-admin-open-selected-role]')) {
             if (!currentAdminRoles.size) await loadAdminAccess();
             const selectedRole = document.querySelector('[data-admin-role-select]')?.value || '';
             if (selectedRole) selectAdminRole(selectedRole);
             else if (status) status.textContent = 'Select a role first, then click Edit selected role.';
+            return;
           }
-          if (userButton) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-edit-user]')) {
             if (!currentAdminUsers.size) await loadAdminAccess();
-            selectAdminUser(userButton.dataset.adminEditUser);
+            selectAdminUser(accessAction.dataset.adminEditUser);
+            return;
           }
-          if (event.target.closest('[data-admin-new-role]')) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-new-role]')) {
             if (!currentPermissions.length) await loadAdminAccess();
             resetRoleForm();
             openAdminRoleModal();
+            return;
           }
-          if (event.target.closest('[data-admin-user-create]')) {
-            event.preventDefault();
+          if (accessAction.matches('[data-admin-user-create]')) {
             if (!currentAdminRoles.size) await loadAdminAccess();
             resetUserForm();
             openAdminUserModal();
           }
-          if (event.target.closest('[data-admin-role-modal-close]')) closeAdminRoleModal();
-          if (event.target.closest('[data-admin-user-modal-close]')) closeAdminUserModal();
-        });
+        }, true);
 
         document.querySelector('[data-admin-role-modal]')?.addEventListener('click', (event) => {
           if (event.target === event.currentTarget) closeAdminRoleModal();
@@ -3228,13 +3397,28 @@ Additional info from client: ${payload.additionalInfo}` : '';
           ]);
           const rolesResult = await rolesResponse.json().catch(() => ({}));
           const usersResult = await usersResponse.json().catch(() => ({}));
-          if (!rolesResponse.ok || !rolesResult.ok) throw new Error(rolesResult.message || 'Roles are not available.');
-          if (!usersResponse.ok || !usersResult.ok) throw new Error(usersResult.message || 'Users are not available.');
-          renderAdminAccess({ roles: rolesResult.roles, users: usersResult.users, permissions: rolesResult.permissions });
+          const rolesOk = rolesResponse.ok && rolesResult.ok;
+          const usersOk = usersResponse.ok && usersResult.ok;
+
+          if (!rolesOk && !usersOk) {
+            throw new Error(rolesResult.message || usersResult.message || 'Roles and users are not available.');
+          }
+
+          const roleRows = rolesOk ? (rolesResult.roles || []) : (usersResult.roles || []);
+          const permissionRows = rolesOk ? (rolesResult.permissions || []) : currentPermissions;
+          const userRows = usersOk ? (usersResult.users || []) : [];
+
+          renderAdminAccess({ roles: roleRows, users: userRows, permissions: permissionRows });
           bindAdminAccessForms();
           if (status) {
-            status.dataset.state = 'ready';
-            status.textContent = `${rolesResult.roles.length} role${rolesResult.roles.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
+            status.dataset.state = rolesOk && usersOk ? 'ready' : 'warning';
+            const warnings = [
+              rolesOk ? '' : (rolesResult.message || 'Role editing is unavailable for this session.'),
+              usersOk ? '' : (usersResult.message || 'User editing is unavailable for this session.'),
+            ].filter(Boolean);
+            status.textContent = warnings.length
+              ? `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} and ${userRows.length} user${userRows.length === 1 ? "" : "s"} loaded. ${warnings.join(' ')}`
+              : `${roleRows.length} role${roleRows.length === 1 ? "" : "s"} loaded. Search below to edit a user.`;
           }
         } catch (error) {
           if (status) {
@@ -3243,6 +3427,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
           }
         }
       };
+
+      window.taDashboardActions = window.taDashboardActions || {};
+      window.taDashboardActions.bindAdminAccessForms = bindAdminAccessForms;
+      window.taDashboardActions.loadAdminAccess = loadAdminAccess;
 
 
       const loadAdminActivityFeed = async ({ filtered = false, append = false } = {}) => {
@@ -3318,15 +3506,72 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (list) list.textContent = [...event.target.files].map((file) => file.name).join(', ') || 'No files selected yet.';
           }
         });
-        panel.addEventListener('click', (event) => {
+        panel.addEventListener('click', async (event) => {
           const toggle = event.target.closest('[data-worker-job-toggle]');
-          if (!toggle) return;
-          const card = toggle.closest('[data-worker-status]');
-          const form = card?.querySelector('[data-worker-job-form]');
-          if (!form) return;
-          const open = form.hidden;
-          form.hidden = !open;
-          toggle.textContent = open ? 'Hide work order' : 'Open work order';
+          if (toggle) {
+            const card = toggle.closest('[data-worker-status]');
+            const form = card?.querySelector('[data-worker-job-form]');
+            if (!form) return;
+            const open = form.hidden;
+            form.hidden = !open;
+            toggle.textContent = open ? 'Hide work order' : 'Open work order';
+            return;
+          }
+
+          const materialButton = event.target.closest('[data-worker-material-use], [data-worker-material-release]');
+          if (materialButton) {
+            event.preventDefault();
+            const card = materialButton.closest('[data-worker-status]');
+            const formStatus = card?.querySelector('[data-worker-job-form-status]') || document.querySelector('[data-worker-jobs-status]');
+            const quantityInput = materialButton.closest('[data-worker-job-material]')?.querySelector('[data-worker-material-quantity]');
+            const quantity = Number(quantityInput?.value || 0);
+            if (!quantity || quantity <= 0) {
+              if (formStatus) formStatus.textContent = 'Enter a material quantity greater than zero.';
+              return;
+            }
+            const action = materialButton.matches('[data-worker-material-use]') ? 'use' : 'release';
+            // Phase53 endpoints: /api/worker/inventory/use /api/worker/inventory/release
+            if (formStatus) formStatus.textContent = action === 'use' ? 'Marking reserved material used…' : 'Releasing unused reserved material…';
+            try {
+              const response = await fetch(`/api/worker/inventory/${action}`, {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify({ itemId: materialButton.dataset.itemId, jobRequestId: materialButton.dataset.jobRequestId, quantity, note: action === 'use' ? 'Worker used reserved material on job closeout' : 'Worker released unused reserved material during closeout' }),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not update reserved material.');
+              if (formStatus) formStatus.textContent = action === 'use' ? 'Material usage recorded.' : 'Unused material released.';
+              await loadWorkerJobs();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+            return;
+          }
+
+          const completeButton = event.target.closest('[data-worker-mark-complete]');
+          if (completeButton) {
+            event.preventDefault();
+            const form = completeButton.closest('[data-worker-job-form]');
+            const formStatus = form?.querySelector('[data-worker-job-form-status]');
+            if (!form) return;
+            const payload = Object.fromEntries(new FormData(form).entries());
+            payload.assignmentId = form.dataset.assignmentId;
+            payload.status = 'completed';
+            if (formStatus) formStatus.textContent = 'Marking job complete for admin review…';
+            try {
+              const response = await fetch('/api/worker/jobs/complete', {
+                method: 'POST',
+                headers: { accept: 'application/json', 'content-type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok || !result.ok) throw new Error(result.message || 'Could not mark job complete.');
+              if (formStatus) formStatus.textContent = 'Job marked complete. Admin review is next.';
+              await loadWorkerJobs();
+            } catch (error) {
+              if (formStatus) formStatus.textContent = error.message;
+            }
+          }
         });
         panel.addEventListener('submit', async (event) => {
           const form = event.target.closest('[data-worker-job-form]');
@@ -3370,8 +3615,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const response = await fetch('/api/worker/jobs', { headers: { accept: 'application/json' } });
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.ok) throw new Error(result.message || 'Assigned jobs are not available.');
+          const inventoryResult = await fetch('/api/worker/inventory', { headers: { accept: 'application/json' } })
+            .then((inventoryResponse) => inventoryResponse.json().then((json) => inventoryResponse.ok && json.ok ? json : null))
+            .catch(() => null);
           const assignments = result.assignments || [];
-          currentWorkerInventoryItems = result.inventoryItems || [];
+          currentWorkerInventoryItems = inventoryResult?.items || result.inventoryItems || [];
+          currentWorkerInventoryReservations = inventoryResult?.reservations || [];
           const filteredAssignments = filterWorkerAssignments(assignments);
           renderWorkerJobSummary(assignments);
           panelStatus.dataset.state = 'ready';
