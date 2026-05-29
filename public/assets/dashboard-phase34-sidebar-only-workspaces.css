@@ -9,12 +9,25 @@ body[data-sidebar-workspace] [data-sidebar-workspace-section] {
 }
 
 body[data-sidebar-workspace="overview"] [data-sidebar-workspace-section~="overview"],
-body[data-sidebar-workspace="requests"] [data-sidebar-workspace-section~="requests"],
-body[data-sidebar-workspace="quotes"] [data-sidebar-workspace-section~="quotes"],
+body[data-sidebar-workspace="estimate-review"] [data-sidebar-workspace-section~="estimate-review"],
+body[data-sidebar-workspace="quotes"] [data-sidebar-workspace-section~="estimate-review"],
 body[data-sidebar-workspace="work-orders"] [data-sidebar-workspace-section~="work-orders"],
+body[data-sidebar-workspace="requests"] [data-sidebar-workspace-section~="work-orders"],
+body[data-sidebar-workspace="client-requests"] [data-sidebar-workspace-section~="client-requests"],
+body[data-sidebar-workspace="client-quotes"] [data-sidebar-workspace-section~="client-quotes"],
+body[data-sidebar-workspace="client-invoices"] [data-sidebar-workspace-section~="client-invoices"],
+body[data-sidebar-workspace="scheduling"] [data-sidebar-workspace-section~="scheduling"],
+body[data-sidebar-workspace="finance"] [data-sidebar-workspace-section~="finance"],
 body[data-sidebar-workspace="invoices"] [data-sidebar-workspace-section~="invoices"],
-body[data-sidebar-workspace="workers"] [data-sidebar-workspace-section~="workers"],
-body[data-sidebar-workspace="settings"] [data-sidebar-workspace-section~="settings"],
+body[data-sidebar-workspace="customer-status"] [data-sidebar-workspace-section~="customer-status"],
+body[data-sidebar-workspace="worker-jobs"] [data-sidebar-workspace-section~="worker-jobs"],
+body[data-sidebar-workspace="workers"] [data-sidebar-workspace-section~="worker-jobs"],
+body[data-sidebar-workspace="worker-mobile"] [data-sidebar-workspace-section~="worker-mobile"],
+body[data-sidebar-workspace="ai-troubleshooting"] [data-sidebar-workspace-section~="ai-troubleshooting"],
+body[data-sidebar-workspace="photo-docs"] [data-sidebar-workspace-section~="photo-docs"],
+body[data-sidebar-workspace="maintenance"] [data-sidebar-workspace-section~="maintenance"],
+body[data-sidebar-workspace="roles-users"] [data-sidebar-workspace-section~="roles-users"],
+body[data-sidebar-workspace="settings"] [data-sidebar-workspace-section~="roles-users"],
 body[data-sidebar-workspace="deployment"] [data-sidebar-workspace-section~="deployment"] {
   display: block !important;
 }
