@@ -1913,11 +1913,12 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   .phase54-workspace strong,.phase54-workspace h3{color:#fff}.phase54-workspace p{color:#dbe4ef}.phase54-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.phase54-list{display:grid;gap:12px;margin-top:14px}.phase54-card{padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(15,23,42,.62)}.phase54-card strong{display:block}.phase54-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:#cbd5e1;font-size:.9rem;font-weight:800}.phase54-badge{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.35);color:#fed7aa;font-weight:950;text-transform:capitalize}.phase54-workspace .client-request-form{background:rgba(15,23,42,.68);border-color:rgba(148,163,184,.24)}.phase54-workspace .client-request-form input,.phase54-workspace .client-request-form select,.phase54-workspace .client-request-form textarea{background:rgba(2,6,23,.74);color:#f8fafc;border-color:rgba(148,163,184,.35)}.phase54-command-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.phase54-command-list button{justify-content:flex-start}.phase54-workspace [data-state="ready"]{color:#bbf7d0}.phase54-workspace [data-state="error"]{color:#fecaca}@media(max-width:850px){.phase54-grid,.phase54-command-list{grid-template-columns:1fr}}
 </style>
   <link rel="stylesheet" href="/assets/mobile-field-ux.css">
+  <link rel="stylesheet" href="/assets/module-completion-2026.css">
 </head>
 <body>
   <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
   <nav aria-hidden="true" hidden><a href="#admin-requests">Work orders</a><a href="#admin-invoices">Invoices</a><a href="/inventory/" data-main-action-permission="canManageInventory">Inventory</a><a href="#worker-jobs">Assigned jobs</a></nav>
-  <span id="worker-profile" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="estimate-review" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="finance-command-center" class="dashboard-anchor-alias" aria-hidden="true"></span><main class="wrap" data-dashboard-root>
+  <span id="worker-profile" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="estimate-review" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="finance-command-center-anchor" class="dashboard-anchor-alias" aria-hidden="true"></span><main class="wrap" data-dashboard-root>
     <span id="admin-quotes" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="hero">
       <div class="dashboard-hero">
@@ -1952,7 +1953,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 
       <div class="dashboard-action-strip" aria-label="Main dashboard shortcuts">
         <a class="btn btn-primary" href="#estimate-review">Estimate Review</a>
-        <a class="btn btn-soft" href="#finance-command-center">Finance Center</a>
+        <a class="btn btn-soft" href="#finance-command-center-anchor">Finance Center</a>
         <a class="btn btn-soft" href="#admin-requests">Requests</a>
         <a class="btn btn-soft" href="#admin-quotes">Quotes</a>
         <a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>
@@ -2190,8 +2191,8 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
-      <strong>Invoice &amp; payment desk</strong>
-      <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
+      <strong>Modern Invoice Command Center</strong>
+      <p>Review open, paid, and all invoices with filters, search, payment links, mark-paid actions, payment status, and closeout readiness.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
       <div class="admin-request-list" data-admin-invoice-kpi-summary aria-label="Invoice summary cards"></div>
       <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="invoices" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="invoices">Show invoices</button></div>

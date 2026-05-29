@@ -22,6 +22,8 @@ test('mobile UX layer is loaded on core public and portal pages', async () => {
     const html = await assertHtmlPage(page, ['mobile-field-ux.css']);
     assert.doesNotMatch(html, /url is not defined|Cannot read properties of undefined/, `${page} should not contain known console error strings`);
   }
+  const dashboard = await readText('public/dashboard/index.html');
+  assert.match(dashboard, /module-completion-2026\.css/, 'dashboard should preserve Phase 56 module polish alongside mobile CSS');
 });
 
 test('mobile breakpoints prevent horizontal overflow for target viewports', async () => {

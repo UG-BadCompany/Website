@@ -9,24 +9,24 @@
   if (!root) return;
 
   const navItems = [
-    { group: 'Daily work', label: 'Overview', target: '.hero', hint: 'Start' },
-    { group: 'Daily work', label: 'Estimate Review', target: '#estimate-review', hint: 'AI quotes' },
-    { group: 'Daily work', label: 'Work Orders', target: '#admin-requests', hint: 'Jobs' },
-    { group: 'Daily work', label: 'Scheduling', target: '.smart-schedule-suite', hint: 'Dispatch' },
+    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.hero', hint: 'Start' },
+    { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes' },
+    { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs' },
+    { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch' },
 
-    { group: 'Money', label: 'Finance Center', target: '#finance-command-center', hint: 'KPIs' },
-    { group: 'Money', label: 'Invoices', target: '#admin-invoices', hint: 'Billing' },
-    { group: 'Money', label: 'Customer Status', target: '#customer-experience-center', hint: 'Client' },
+    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs' },
+    { group: 'Money', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing' },
+    { group: 'Money', label: 'Customer Status', workspace: 'customer-status', target: '#customer-experience-center', hint: 'Client' },
 
-    { group: 'Field', label: 'Worker Jobs', target: '#worker-jobs', hint: 'Field' },
-    { group: 'Field', label: 'Worker Mobile', target: '#worker-mobile-field', hint: 'Phone' },
-    { group: 'Field', label: 'Photo Docs', target: '.photo-doc-suite', hint: 'Proof' },
+    { group: 'Field', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field' },
+    { group: 'Field', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone' },
+    { group: 'Field', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof' },
 
-    { group: 'Operations', label: 'Inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory' },
-    { group: 'Operations', label: 'Maintenance Plans', target: '.maintenance-suite', hint: 'Recurring' },
-    { group: 'Operations', label: 'Roles & Users', target: '#admin-access', hint: 'Access' },
+    { group: 'Operations', label: 'Inventory', workspace: 'inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory' },
+    { group: 'Operations', label: 'Maintenance Plans', workspace: 'maintenance', target: '.maintenance-suite', hint: 'Recurring' },
+    { group: 'Operations', label: 'Roles & Users', workspace: 'roles-users', target: '#admin-access', hint: 'Access' },
 
-    { group: 'Dev', label: 'Deployment Health', target: '#system-readiness', hint: 'Workflow' },
+    { group: 'Dev', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Workflow' },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -36,19 +36,19 @@
   }, {});
 
   const mobileQuickActions = [
-    { label: 'Requests', target: '#admin-requests', views: ['admin'] },
-    { label: 'Quotes', target: '#estimate-review', views: ['admin'] },
-    { label: 'Jobs', target: '#worker-jobs', views: ['admin', 'worker'] },
-    { label: 'Invoices', target: '#admin-invoices', views: ['admin'] },
-    { label: 'Stock', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
-    { label: 'Today', target: '#worker-mobile-field', views: ['worker'] },
-    { label: 'Materials', target: '#worker-jobs', views: ['worker'] },
-    { label: 'Photos', target: '.photo-doc-suite', views: ['worker'] },
-    { label: 'Complete', target: '#worker-mobile-field', views: ['worker'] },
-    { label: 'Request', target: '#client-requests', views: ['client'] },
-    { label: 'Quotes', target: '#client-quotes', views: ['client'] },
-    { label: 'Invoices', target: '#client-invoices', views: ['client'] },
-    { label: 'Profile', target: '#worker-profile', views: ['client'] },
+    { label: 'Requests', workspace: 'work-orders', target: '#admin-requests', views: ['admin'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#estimate-review', views: ['admin'] },
+    { label: 'Jobs', workspace: 'worker-jobs', target: '#worker-jobs', views: ['admin', 'worker'] },
+    { label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', views: ['admin'] },
+    { label: 'Stock', workspace: 'inventory', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
+    { label: 'Today', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Materials', workspace: 'worker-jobs', target: '#worker-jobs', views: ['worker'] },
+    { label: 'Photos', workspace: 'photo-docs', target: '.photo-doc-suite', views: ['worker'] },
+    { label: 'Complete', workspace: 'worker-mobile', target: '#worker-mobile-field', views: ['worker'] },
+    { label: 'Request', workspace: 'work-orders', target: '#client-requests', views: ['client'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#client-quotes', views: ['client'] },
+    { label: 'Invoices', workspace: 'invoices', target: '#client-invoices', views: ['client'] },
+    { label: 'Profile', workspace: 'overview', target: '#worker-profile', views: ['client'] },
   ];
 
   const targetExists = (target) => {
@@ -114,12 +114,12 @@
     nav.innerHTML = Object.entries(groups).map(([group, items]) => `
       <div class="sidebar-nav-label">${group}</div>
       ${items.map((item) => item.href ? `
-        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-permission="${item.permission || ''}">
+        <a class="sidebar-nav-link" href="${item.href}" data-sidebar-href="${item.href}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </a>
       ` : `
-        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-permission="${item.permission || ''}">
+        <button class="sidebar-nav-link" type="button" data-sidebar-target="${item.target || ''}" data-sidebar-action="${item.action || ''}" data-sidebar-workspace="${item.workspace || ''}" data-sidebar-permission="${item.permission || ''}">
           <span>${item.label}</span>
           <small>${item.hint || ''}</small>
         </button>
@@ -147,9 +147,9 @@
     quickBar.className = 'mobile-quick-action-bar';
     quickBar.setAttribute('aria-label', 'Mobile quick actions');
     quickBar.innerHTML = mobileQuickActions.map((item) => item.href ? `
-      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
+      <a class="mobile-quick-action" href="${item.href}" data-mobile-quick-href="${item.href}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}" data-sidebar-permission="${item.permission || ''}">${item.label}</a>
     ` : `
-      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
+      <button class="mobile-quick-action" type="button" data-mobile-quick-target="${item.target}" data-mobile-quick-workspace="${item.workspace || ''}" data-mobile-quick-views="${item.views.join(' ')}">${item.label}</button>
     `).join('');
 
     root.appendChild(toggle);
@@ -224,7 +224,11 @@
       }
       const button = event.target.closest('[data-mobile-quick-target]');
       if (!button) return;
-      scrollToTarget(button.dataset.mobileQuickTarget);
+      if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
       quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
       button.setAttribute('aria-current', 'true');
       setOpen(false);
