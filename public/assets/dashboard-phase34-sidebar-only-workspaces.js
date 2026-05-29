@@ -122,6 +122,18 @@
       views: ['admin'],
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      views: ['admin', 'client'],
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      views: ['admin'],
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
+    },
     'photo-docs': {
       title: 'Photo Documentation',
       description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
