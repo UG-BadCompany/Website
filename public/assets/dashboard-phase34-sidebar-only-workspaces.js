@@ -61,6 +61,19 @@
       views: ['admin'],
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
+
+    scheduling: {
+      title: 'Scheduling and Dispatch',
+      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
+    },
+
+    finance: {
+      title: 'Finance Center',
+      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
+      targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-suite', '.finance-command-panel'],
+    },
+
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
@@ -109,6 +122,22 @@
       views: ['admin'],
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
+    'photo-docs': {
+      title: 'Photo Documentation',
+      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
+      targets: ['.photo-doc-suite'],
+    },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
+    },
+
     deployment: {
       title: 'Deployment and Readiness',
       description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
@@ -299,16 +328,15 @@
     const selectedWorkspace = button.dataset.sidebarWorkspace || button.dataset.mobileQuickWorkspace || '';
     if (!selectedWorkspace || button.hidden || button.getAttribute('aria-disabled') === 'true') return;
 
-    event.preventDefault();
-    event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
 
     setWorkspace(selectedWorkspace, { scroll: true, target: button.dataset.sidebarTarget || button.dataset.mobileQuickTarget || '' });
 
-    const sidebar = document.querySelector('.dashboard-sidebar-v2');
-    const backdrop = document.querySelector('.dashboard-sidebar-backdrop');
-    if (sidebar) sidebar.dataset.open = 'false';
-    if (backdrop) backdrop.dataset.open = 'false';
-  }, true);
+      closeSidebar();
+    },
+    true
+  );
 
   const initial = resolveWorkspace(document.body.dataset.sidebarWorkspace || 'overview');
 
@@ -319,7 +347,17 @@
     setWorkspace(initial);
   };
 
+  const retagCurrentWorkspace = () => {
+    const current = document.body.dataset.sidebarWorkspace || initial;
+
+    normalizeSidebarButtons();
+    tagWorkspaceSections();
+    setWorkspace(current);
+  };
+
   setTimeout(boot, 1200);
+  setTimeout(retagCurrentWorkspace, 1800);
+  setTimeout(retagCurrentWorkspace, 2600);
 
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
