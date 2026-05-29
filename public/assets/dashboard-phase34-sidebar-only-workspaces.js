@@ -1,11 +1,13 @@
 // Phase 34: sidebar-only dashboard workspaces.
-// Fixes sidebar collisions:
-// - Finance Center targets the newer Phase 4 finance command module.
-// - Work Orders and Scheduling are separate workspaces.
-// - Inventory stays a real /inventory/ link.
+// Current-safe update after Phase 55 mobile work.
+// Fixes:
+// - Finance Center points to the newer Phase 4 finance command module.
+// - Finance Center and Invoices are separate.
+// - Work Orders and Scheduling are separate.
 // - Maintenance Plans and Roles & Users are separate.
-// - Roles & Users opens Access Manager.
-// - Only one sidebar item highlights at a time.
+// - Photo Docs has its own workspace.
+// - Inventory stays a real /inventory/ link.
+// - Old/wrong workspace tags are cleared before retagging.
 
 (() => {
   if (window.__phase34SidebarOnlyWorkspacesLoaded) return;
@@ -26,8 +28,6 @@
         '.hero',
         '#executive-overview',
         '.executive-suite',
-        '#customer-experience-center',
-        '.customer-experience-suite',
       ],
     },
 
@@ -43,7 +43,7 @@
     },
 
     quotes: {
-      title: 'Quotes',
+      title: 'Estimate Review',
       description: 'AI estimate review, quote approval, risks, materials, and customer quote status.',
       targets: [
         '#estimate-review',
@@ -56,58 +56,113 @@
 
     'work-orders': {
       title: 'Work Orders',
-      description: 'Active jobs, assignments, status updates, blocked work, and completion review.',
-      targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite', '#worker-jobs', '[data-worker-jobs]']
+      description: 'Active jobs, assignments, blocked work, completion review, and closeout.',
+      targets: [
+        '[data-phase3-workflow-suite]',
+        '.workflow-suite',
+        '#admin-work-orders',
+        '[data-admin-work-orders]',
+      ],
     },
+
     scheduling: {
       title: 'Scheduling and dispatch',
-      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
-      targets: ['#smart-schedule-suite', '.smart-schedule-suite']
+      description: 'Schedule board, upcoming jobs, unscheduled work, assigned workers, priority, and dispatch notes.',
+      targets: [
+        '#smart-schedule-suite',
+        '.smart-schedule-suite',
+        '[data-smart-schedule-suite]',
+        '[data-scheduling-workspace]',
+        '.scheduling-suite',
+      ],
+    },
+
+    finance: {
+      title: 'Finance Center',
+      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
+      targets: [
+        '#finance-command-center',
+        '[data-phase4-finance-suite]',
+        '.finance-suite',
+        '.finance-command-panel',
+      ],
     },
 
     invoices: {
       title: 'Invoices',
       description: 'Invoice workflow, client balances, payment status, and closeout.',
+      // Keep #admin-invoices out of here if you do not want the old Invoice & payment desk.
       targets: [
-        '[data-admin-invoice-kpi-summary]',
-        '[data-admin-invoice-summary]',
-        '[data-admin-invoice-list]',
+        '[data-modern-invoices]',
+        '.invoice-workspace',
+        '.invoice-suite',
         '[data-client-invoices]',
         '#client-invoices',
         '.client-invoices',
-        '.invoice-workspace',
-        '.invoice-suite',
       ],
     },
 
-    workers: {
-      title: 'Workers',
-      description: 'Worker jobs, field workflow, mobile tools, and job documentation.',
-      targets: ['#worker-jobs', '#worker-tools-upgrade', '#worker-mobile-field', '.worker-mobile-suite', '.photo-doc-suite']
+    'customer-status': {
+      title: 'Customer Status',
+      description: 'Client experience, project status, quote status, and customer-facing updates.',
+      targets: [
+        '#customer-experience-center',
+        '.customer-experience-suite',
+      ],
     },
+
+    'worker-jobs': {
+      title: 'Worker Jobs',
+      description: 'Assigned worker jobs, field status, job notes, and completion workflow.',
+      targets: [
+        '#worker-jobs',
+        '[data-worker-jobs]',
+      ],
+    },
+
+    'worker-mobile': {
+      title: 'Worker Mobile',
+      description: 'Mobile field workflow, today’s jobs, materials, notes, and completion actions.',
+      targets: [
+        '#worker-mobile-field',
+        '.worker-mobile-suite',
+      ],
+    },
+
     'photo-docs': {
-      title: 'Photo documentation',
+      title: 'Photo Documentation',
       description: 'Before, progress, after, completion notes, evidence checklist, and admin review status.',
-      targets: ['.photo-doc-suite']
+      targets: [
+        '.photo-doc-suite',
+        '#photo-doc-suite',
+        '[data-photo-doc-suite]',
+      ],
+    },
+
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      targets: [
+        '#maintenance-plans',
+        '.maintenance-suite',
+        '[data-maintenance-plans]',
+        '[data-maintenance-suite]',
+      ],
     },
 
     settings: {
-      title: 'Settings',
-      description: 'Admin settings, roles, users, and access management.',
+      title: 'Roles & Users',
+      description: 'Access manager, role permissions, users, and account assignments.',
       targets: [
         '#admin-access',
         '[data-admin-access]',
         '[data-admin-access-workspace]',
       ],
     },
-    maintenance: {
-      title: 'Maintenance plans',
-      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
-      targets: ['.maintenance-suite']
-    },
+
     deployment: {
-      title: 'Deployment and workflow health',
-      description: 'Developer-focused deployment readiness, environment checks, critical API routes, and workflow health.',
+      title: 'Deployment Health',
+      description: 'Deployment readiness, environment checks, API routes, workflow health, and audit status.',
       targets: [
         '#system-readiness',
         '[data-phase8-readiness-suite]',
@@ -130,6 +185,12 @@
     });
   };
 
+  const clearWorkspaceSectionTags = () => {
+    document.querySelectorAll('[data-sidebar-workspace-section]').forEach((element) => {
+      element.removeAttribute('data-sidebar-workspace-section');
+    });
+  };
+
   const detectWorkspace = (button) => {
     const label = (button.querySelector('span')?.textContent || button.textContent || '').trim().toLowerCase();
     const hint = (button.querySelector('small')?.textContent || '').trim().toLowerCase();
@@ -137,41 +198,47 @@
     const action = (button.dataset.sidebarAction || '').trim().toLowerCase();
     const source = `${label} ${hint} ${target} ${action}`;
 
-    // Exact labels first so buttons do not collide.
     if (label === 'overview') return 'overview';
     if (label === 'estimate review') return 'quotes';
+    if (label === 'requests') return 'requests';
 
     if (label === 'work orders') return 'work-orders';
     if (label === 'scheduling') return 'scheduling';
 
     if (label === 'finance center') return 'finance';
     if (label === 'invoices') return 'invoices';
+    if (label === 'customer status') return 'customer-status';
 
-    if (label === 'worker jobs') return 'workers';
-    if (label === 'worker mobile') return 'workers';
-    if (label === 'photo docs') return 'workers';
+    if (label === 'worker jobs') return 'worker-jobs';
+    if (label === 'worker mobile') return 'worker-mobile';
+    if (label === 'photo docs') return 'photo-docs';
+    if (label === 'photo documentation') return 'photo-docs';
 
     if (label === 'maintenance plans') return 'maintenance';
 
     if (label === 'roles & users') return 'settings';
     if (label === 'roles and users') return 'settings';
 
-    if (label === 'inventory') return null; // Inventory must remain a normal /inventory/ link.
-    if (label === 'customer status') return 'overview';
     if (label === 'deployment health') return 'deployment';
+
+    // Inventory must stay a real /inventory/ link.
+    if (label === 'inventory') return null;
 
     const map = [
       ['overview', ['overview']],
       ['requests', ['request']],
-      ['quotes', ['quote', 'estimate']],
-      ['work-orders', ['work order', 'job']],
+      ['quotes', ['estimate review', 'quote']],
+      ['work-orders', ['work order']],
       ['scheduling', ['scheduling', 'schedule', 'dispatch']],
-      ['invoices', ['invoice', 'finance']],
-      ['workers', ['worker mobile', 'worker', 'field']],
-      ['photo-docs', ['photo', 'proof', 'documentation']],
-      ['settings', ['setting', 'roles', 'users', 'inventory']],
+      ['finance', ['finance center', 'financial command center', 'finance-command-center']],
+      ['invoices', ['invoice', 'billing']],
+      ['customer-status', ['customer status', 'customer experience']],
+      ['worker-jobs', ['worker jobs']],
+      ['worker-mobile', ['worker mobile', 'today']],
+      ['photo-docs', ['photo docs', 'photo documentation', 'proof', 'documentation']],
       ['maintenance', ['maintenance', 'recurring', 'plan']],
-      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']]
+      ['settings', ['roles', 'users', 'access']],
+      ['deployment', ['deployment', 'deploy', 'workflow health', 'system readiness', 'readiness', 'health']],
     ];
 
     const found = map.find(([, words]) => words.some((word) => source.includes(word)));
@@ -197,13 +264,12 @@
   };
 
   const tagWorkspaceSections = () => {
+    clearWorkspaceSectionTags();
+
     Object.entries(workspaces).forEach(([workspace, config]) => {
       config.targets.forEach((selector) => {
         document.querySelectorAll(selector).forEach((element) => {
-          const existing = element.getAttribute('data-sidebar-workspace-section') || '';
-          const values = new Set(existing.split(/\s+/).filter(Boolean));
-          values.add(workspace);
-          element.setAttribute('data-sidebar-workspace-section', Array.from(values).join(' '));
+          element.setAttribute('data-sidebar-workspace-section', workspace);
         });
       });
     });
@@ -230,8 +296,8 @@
   const setWorkspace = (workspace = 'overview') => {
     if (!workspaces[workspace]) workspace = 'overview';
 
-    tagWorkspaceSections();
     normalizeSidebarButtons();
+    tagWorkspaceSections();
 
     document.body.dataset.sidebarWorkspace = workspace;
 
@@ -258,10 +324,15 @@
       window.taDashboardActions?.bindAdminAccessForms?.();
       window.taDashboardActions?.loadAdminAccess?.();
     }
+
+    window.dispatchEvent(new CustomEvent('ta:sidebar-workspace-change', {
+      detail: { workspace },
+    }));
   };
 
   document.addEventListener('click', (event) => {
     const link = event.target.closest('[data-sidebar-href]');
+
     if (link) {
       clearSidebarActiveStates();
       link.setAttribute('aria-current', 'page');
@@ -280,8 +351,8 @@
     const workspace = button.dataset.sidebarWorkspace;
 
     clearSidebarActiveStates();
-
     button.setAttribute('aria-current', 'true');
+
     setWorkspace(workspace);
     closeSidebar();
   }, true);
@@ -300,10 +371,10 @@
   const observer = new MutationObserver(() => {
     clearTimeout(window.__phase34SidebarWorkspaceTimer);
     window.__phase34SidebarWorkspaceTimer = setTimeout(() => {
+      const current = document.body.dataset.sidebarWorkspace || initial;
+
       normalizeSidebarButtons();
       tagWorkspaceSections();
-
-      const current = document.body.dataset.sidebarWorkspace || initial;
       setWorkspace(current);
     }, 200);
   });
