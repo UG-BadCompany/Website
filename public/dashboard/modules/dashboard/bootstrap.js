@@ -744,6 +744,14 @@
             viewStatus.textContent = 'We could not load that workspace. Please try another view.';
           }
         }
+        } catch (error) {
+          console.error('Failed to switch dashboard view.', error);
+          const viewStatus = document.querySelector('[data-dashboard-view-status]');
+          if (viewStatus) {
+            viewStatus.hidden = false;
+            viewStatus.textContent = 'We could not load that workspace. Please try another view.';
+          }
+        }
       };
       window.taSetDashboardView = (view) => {
         window.taPendingDashboardView = view;
