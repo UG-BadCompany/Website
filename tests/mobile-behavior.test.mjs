@@ -22,6 +22,7 @@ class FakeElement {
   addEventListener(type, handler) { (this.listeners[type] ||= []).push(handler); }
   setAttribute(name, value) { this.attributes[name] = String(value); if (name === 'aria-expanded') this.ariaExpanded = String(value); }
   getAttribute(name) { if (name === 'href') return this.href; return this.attributes[name] || ''; }
+  hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name) || (name.startsWith('data-') && Object.prototype.hasOwnProperty.call(this.dataset, name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase()))); }
   scrollIntoView() { this.scrolled = true; }
   focus() { this.focused = true; }
   matches(selector) { return matches(this, selector); }
@@ -84,6 +85,7 @@ test('dashboard view helpers expose admin/owner all-view access and toggle real 
 test('mobile dashboard script opens FAB once and routes data-mobile-fab-action actions', async () => {
   const code = await readText('public/assets/mobile-dashboard-ux.js');
   const body = new FakeElement('body');
+  body.dataset.currentDashboardView = 'admin';
   const html = new FakeElement('html');
   const fab = body.append(new FakeElement('button', { dataset: { mobileFab: '' } }));
   const menu = body.append(new FakeElement('div', { dataset: { mobileFabMenu: '' }, hidden: true }));
@@ -136,4 +138,75 @@ test('mobile dashboard script opens FAB once and routes data-mobile-fab-action a
   customer.dispatch('pointerup');
   assert.deepEqual(workspaceCalls.at(-1)?.[0], 'customer-status');
   assert.equal(menu.hidden, true);
+});
+
+
+test('mobile role filtering hides admin controls for client/worker views', async () => {
+  const code = await readText('public/assets/mobile-dashboard-ux.js');
+  const body = new FakeElement('body');
+  body.dataset.currentDashboardView = 'client';
+  const html = new FakeElement('html');
+
+  const moreKeys = ['dashboard', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'schedule', 'settings', 'troubleshooter', 'sign-out'];
+  const moreItems = Object.fromEntries(moreKeys.map((key) => [key, body.append(new FakeElement('button', { dataset: { mobileMoreKey: key }, textContent: key }))]));
+  const fabActions = ['request', 'quote', 'job', 'inventory', 'customer', 'photo', 'assistant', 'invoices', 'profile', 'update-job', 'job-note', 'material'];
+  const fabItems = Object.fromEntries(fabActions.map((action) => [action, body.append(new FakeElement('button', { dataset: { mobileFabAction: action }, textContent: action }))]));
+
+  const context = {
+    window: {
+      __taMobileDashboardUxLoaded: false,
+      PointerEvent: function PointerEvent() {},
+      innerWidth: 390,
+      location: { href: '/dashboard/' },
+      setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 1; },
+      clearTimeout: () => {},
+      requestIdleCallback: (fn) => fn(),
+      addEventListener: () => {},
+      taSetSidebarWorkspace: () => true,
+    },
+    document: {
+      body,
+      documentElement: html,
+      readyState: 'complete',
+      querySelector: (selector) => collect(body, selector)[0] || (matches(html, selector) ? html : null),
+      querySelectorAll: (selector) => collect(body, selector),
+      addEventListener: () => {},
+    },
+    MutationObserver: class { observe() {} },
+    setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 1; },
+    clearTimeout: () => {},
+    console,
+  };
+  context.window.document = context.document;
+  vm.runInNewContext(code, context);
+  const hooks = context.window.taMobileDashboardTestHooks;
+
+  hooks.syncMobileMoreVisibility();
+  assert.equal(moreItems['admin-tools'].hidden, true);
+  assert.equal(moreItems.inventory.hidden, true);
+  assert.equal(moreItems.finance.hidden, true);
+  assert.equal(moreItems.employees.hidden, true);
+  assert.equal(moreItems.invoices.hidden, false);
+  assert.equal(moreItems.customers.textContent, 'Project Status');
+
+  hooks.syncMobileFabVisibility();
+  assert.equal(fabItems.job.hidden, true);
+  assert.equal(fabItems.inventory.hidden, true);
+  assert.equal(fabItems.customer.hidden, true);
+  assert.equal(fabItems.assistant.hidden, true);
+  assert.equal(fabItems.request.hidden, false);
+  assert.equal(fabItems.quote.textContent, 'View Quotes');
+  assert.equal(hooks.routeMobileKey('finance'), false, 'direct client route to finance should be blocked');
+  assert.equal(hooks.routeMobileKey('admin-tools'), false, 'direct client route to admin tools should be blocked');
+  assert.equal(hooks.routeMobileKey('inventory'), false, 'direct client route to inventory management should be blocked');
+
+  body.dataset.currentDashboardView = 'worker';
+  hooks.syncMobileMoreVisibility();
+  hooks.syncMobileFabVisibility();
+  assert.equal(moreItems['admin-tools'].hidden, true);
+  assert.equal(moreItems.invoices.hidden, true);
+  assert.equal(moreItems.schedule.hidden, false);
+  assert.equal(fabItems.request.hidden, true);
+  assert.equal(fabItems['update-job'].hidden, false);
+  assert.equal(fabItems.material.hidden, false);
 });

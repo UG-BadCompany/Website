@@ -83,6 +83,8 @@
     if (title) title.textContent = copy[1];
     if (description) description.textContent = copy[2];
     syncMobileMoreVisibility();
+    syncMobileFabVisibility();
+    syncMobileBottomNavigation();
   };
 
   const updateMetrics = () => {
@@ -139,30 +141,52 @@
       customers: ['customer-status', '#customer-experience-center'],
       schedule: ['maintenance', '.maintenance-suite'],
       profile: ['client-profile-action', '[data-client-profile-shortcut]'],
-      employees: ['client-profile-action', '[data-client-profile-shortcut]'],
-      reports: ['customer-status', '#customer-experience-center'],
       settings: ['client-profile-action', '[data-client-profile-shortcut]'],
     },
     worker: {
-      requests: ['worker-mobile', '#worker-mobile-field'],
-      quotes: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
       jobs: ['worker-jobs', '#worker-jobs'],
       dashboard: ['overview', '#executive-overview'],
-      invoices: ['worker-jobs', '#worker-jobs'],
-      finance: ['worker-jobs', '#worker-jobs'],
       troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
-      customers: ['photo-docs', '.photo-doc-suite'],
       schedule: ['scheduling', '#smart-schedule-suite'],
       profile: ['worker-mobile', '#worker-mobile-field'],
-      employees: ['worker-mobile', '#worker-mobile-field'],
       reports: ['photo-docs', '.photo-doc-suite'],
       settings: ['worker-mobile', '#worker-mobile-field'],
     },
   };
 
+  const mobileAllowedMoreKeysByView = {
+    admin: ['dashboard', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'schedule', 'settings', 'troubleshooter', 'sign-out'],
+    client: ['dashboard', 'requests', 'quotes', 'invoices', 'customers', 'settings', 'sign-out'],
+    worker: ['dashboard', 'jobs', 'schedule', 'troubleshooter', 'reports', 'settings', 'sign-out'],
+  };
+
+  const mobileFabActionsByView = {
+    admin: ['request', 'quote', 'job', 'inventory', 'customer', 'photo', 'assistant'],
+    client: ['request', 'quote', 'invoices', 'profile', 'photo'],
+    worker: ['update-job', 'job-note', 'photo', 'material', 'assistant'],
+  };
+
+  const mobileBottomNavByView = {
+    admin: [
+      ['requests', '📋', 'Requests'],
+      ['quotes', '💰', 'Quotes'],
+      ['jobs', '🔨', 'Jobs'],
+    ],
+    client: [
+      ['requests', '📋', 'Requests'],
+      ['quotes', '💰', 'Quotes'],
+      ['invoices', '🧾', 'Invoices'],
+    ],
+    worker: [
+      ['jobs', '🔨', 'Jobs'],
+      ['schedule', '📅', 'Schedule'],
+      ['troubleshooter', '🤖', 'AI / Notes'],
+    ],
+  };
+
   const routeFor = (key) => {
     const role = currentRole();
-    return (roleRoutes[role] && roleRoutes[role][key]) || roleRoutes.admin[key] || null;
+    return (roleRoutes[role] && roleRoutes[role][key]) || null;
   };
 
   const triggerProfile = () => {
@@ -193,17 +217,35 @@
   }
 
   const routeFabAction = (action, item = null) => {
-    if (!action) return false;
-    const fabRoutes = {
-      request: () => openWorkspace('client-requests', '#client-requests'),
-      quote: () => { window.location.href = '/#estimate'; return true; },
-      job: () => openWorkspace('work-orders', '#admin-requests'),
-      inventory: () => { window.location.href = '/inventory/'; return true; },
-      customer: () => routeMobileKey('customers'),
-      photo: () => openWorkspace('photo-docs', '.photo-doc-suite') || routeMobileKey('reports'),
-      assistant: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
+    const role = currentRole();
+    const allowedActions = mobileFabActionsByView[role] || [];
+    if (!action || !allowedActions.includes(action)) return false;
+    const roleFabRoutes = {
+      admin: {
+        request: () => openWorkspace('client-requests', '#client-requests'),
+        quote: () => { window.location.href = '/#estimate'; return true; },
+        job: () => openWorkspace('work-orders', '#admin-requests'),
+        inventory: () => { window.location.href = '/inventory/'; return true; },
+        customer: () => openWorkspace('customer-status', '#customer-experience-center'),
+        photo: () => openWorkspace('photo-docs', '.photo-doc-suite'),
+        assistant: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
+      },
+      client: {
+        request: () => openWorkspace('client-requests', '#client-requests'),
+        quote: () => openWorkspace('client-quotes', '#client-quotes'),
+        invoices: () => openWorkspace('client-invoices', '#client-invoices'),
+        profile: () => routeMobileKey('settings'),
+        photo: () => openWorkspace('client-requests', '#client-requests'),
+      },
+      worker: {
+        'update-job': () => openWorkspace('worker-jobs', '#worker-jobs') || openWorkspace('worker-mobile', '#worker-mobile-field'),
+        'job-note': () => openWorkspace('worker-mobile', '#worker-mobile-field') || openWorkspace('worker-jobs', '#worker-jobs'),
+        photo: () => openWorkspace('photo-docs', '.photo-doc-suite'),
+        material: () => openWorkspace('worker-mobile', '#worker-mobile-field'),
+        assistant: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
+      },
     };
-    const routed = fabRoutes[action]?.();
+    const routed = roleFabRoutes[role]?.[action]?.();
     if (routed) return true;
     const workspace = item?.dataset?.mobileWorkspaceLink;
     const href = item?.getAttribute?.('href') || '';
@@ -213,13 +255,51 @@
 
   function syncMobileMoreVisibility() {
     const role = currentRole();
+    const allowedKeys = new Set(mobileAllowedMoreKeysByView[role] || mobileAllowedMoreKeysByView.client);
+    const labelsByRole = {
+      client: { customers: 'Project Status', settings: 'Profile / Properties', invoices: 'My Invoices' },
+      worker: { reports: 'Upload Photos', settings: 'Job Notes', schedule: 'Schedule / Dispatch', troubleshooter: 'AI Troubleshooter' },
+      admin: { customers: 'Customers', settings: 'Settings', invoices: 'Invoices', reports: 'Reports', schedule: 'Schedule', troubleshooter: 'AI Assistant' },
+    };
     qa('[data-mobile-more-key]').forEach((item) => {
       const key = item.dataset.mobileMoreKey;
-      let visible = true;
-      if (key === 'admin-tools') visible = role === 'admin';
-      if (['troubleshooter', 'inventory', 'dashboard', 'invoices', 'finance', 'customers', 'employees', 'reports', 'settings', 'sign-out'].includes(key)) visible = true;
+      const visible = allowedKeys.has(key);
       item.hidden = !visible;
       item.setAttribute('aria-disabled', visible ? 'false' : 'true');
+      const label = labelsByRole[role]?.[key] || labelsByRole.admin[key];
+      if (label && item.textContent.trim() !== label) item.textContent = label;
+    });
+  }
+
+  function syncMobileFabVisibility() {
+    const role = currentRole();
+    const allowedActions = new Set(mobileFabActionsByView[role] || []);
+    const labelsByRole = {
+      admin: { request: 'New Request', quote: 'New Quote / Estimate', job: 'New Job / Work Order', inventory: 'Scan/Add Inventory', customer: 'Add Customer', photo: 'Upload Photo', assistant: 'Open AI Assistant' },
+      client: { request: 'New Request', quote: 'View Quotes', invoices: 'View Invoices', profile: 'Profile / Property', photo: 'Upload Photo to Request' },
+      worker: { 'update-job': 'Start/Update Job', 'job-note': 'Add Job Note', photo: 'Upload Before/After Photo', material: 'Use/Request Material', assistant: 'Open AI Troubleshooter' },
+    };
+    qa('[data-mobile-fab-action]').forEach((item) => {
+      const action = item.dataset.mobileFabAction;
+      const visible = allowedActions.has(action);
+      item.hidden = !visible;
+      item.setAttribute('aria-disabled', visible ? 'false' : 'true');
+      const label = labelsByRole[role]?.[action];
+      if (label && item.textContent.trim() !== label) item.textContent = label;
+    });
+  }
+
+  function syncMobileBottomNavigation() {
+    const role = currentRole();
+    const config = mobileBottomNavByView[role] || mobileBottomNavByView.client;
+    const buttons = qa('[data-mobile-bottom-key]').filter((button) => !['home'].includes(button.dataset.mobileBottomKey));
+    const actionButtons = buttons.filter((button) => !button.hasAttribute('data-mobile-open-more'));
+    actionButtons.forEach((button, index) => {
+      const item = config[index];
+      if (!item) return;
+      const [key, icon, label] = item;
+      button.dataset.mobileBottomKey = key;
+      button.innerHTML = `<span>${icon}</span>${label}`;
     });
   }
 
@@ -365,7 +445,7 @@
   setTimeout(refresh, 900);
   if ('requestIdleCallback' in window) window.requestIdleCallback(refresh, { timeout: 2200 });
   else setTimeout(refresh, 2200);
-  window.taMobileDashboardTestHooks = { bindTapOnce, routeFabAction, routeMobileKey, setMoreOpen };
+  window.taMobileDashboardTestHooks = { bindTapOnce, routeFabAction, routeMobileKey, setMoreOpen, syncMobileMoreVisibility, syncMobileFabVisibility, syncMobileBottomNavigation, mobileAllowedMoreKeysByView, mobileFabActionsByView, roleRoutes };
   try {
     new MutationObserver(scheduleRefresh).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
     new MutationObserver(scheduleRefresh).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
