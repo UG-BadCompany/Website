@@ -14,6 +14,11 @@ import {
   PORTAL_PERMISSIONS,
 } from './auth-utils.mjs';
 
+const safeJson = (status, body) => json(status, body, {
+  'content-type': 'application/json; charset=utf-8',
+  'cache-control': 'no-store, max-age=0',
+});
+
 const normalizeRolePayload = (body = {}) => {
   const key = normalizeRoleKey(body.key || body.name);
 
@@ -27,21 +32,27 @@ const normalizeRolePayload = (body = {}) => {
 };
 
 const mapRole = (role, permissions = []) => ({
-  id: role.id,
-  key: role.key,
-  name: role.name,
-  description: role.description,
+  id: String(role.id || ''),
+  key: clean(role.key, 80),
+  name: clean(role.name, 120),
+  description: clean(role.description || '', 500),
   isSystem: Boolean(role.is_system),
   permissions: getPermissionKeysForRoles([role.key], permissions),
-  createdAt: role.created_at,
-  updatedAt: role.updated_at,
+  createdAt: role.created_at ? String(role.created_at) : null,
+  updatedAt: role.updated_at ? String(role.updated_at) : null,
 });
 
 const loadAdminSession = async (db, request) => {
   const sessionToken = getSessionToken(request);
 
   if (!sessionToken) {
-    return { response: json(401, { ok: false, authenticated: false, message: 'Sign in with an admin account to manage roles.' }) };
+    return {
+      response: safeJson(401, {
+        ok: false,
+        authenticated: false,
+        message: 'Sign in with an admin account to manage roles.',
+      }),
+    };
   }
 
   const [session] = await db.sql`
@@ -56,7 +67,13 @@ const loadAdminSession = async (db, request) => {
   `;
 
   if (!session) {
-    return { response: json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' }) };
+    return {
+      response: safeJson(401, {
+        ok: false,
+        authenticated: false,
+        message: 'Your session expired. Request a new magic link.',
+      }),
+    };
   }
 
   await db.sql`
@@ -71,17 +88,31 @@ const loadAdminSession = async (db, request) => {
     join roles on roles.id = user_roles.role_id
     where user_roles.user_id = ${session.user_id}
   `;
+
   const roleKeys = roles.map((role) => role.key);
+
   const assignedPermissionKeys = await loadRolePermissionKeys(db, session.user_id, {
     logPrefix: 'Failed to load admin role permissions; using role defaults',
   });
+
   const permissionKeys = getPermissionKeysForRoles(roleKeys, assignedPermissionKeys);
 
   if (!permissionKeys.includes('admin.roles.manage')) {
-    return { response: json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role-management permission required to manage roles.' }) };
+    return {
+      response: safeJson(403, {
+        ok: false,
+        authenticated: true,
+        authorized: false,
+        message: 'Admin role-management permission required to manage roles.',
+      }),
+    };
   }
 
-  return { session, roleKeys, permissionKeys };
+  return {
+    session,
+    roleKeys,
+    permissionKeys,
+  };
 };
 
 const savePermissions = async (db, roleId, permissions) => {
@@ -99,9 +130,56 @@ const savePermissions = async (db, roleId, permissions) => {
   }
 };
 
+const loadRolesSafely = async (db) => {
+  const roles = await db.sql`
+    select id, key, name, description, coalesce(is_system, false) as is_system, created_at, updated_at
+    from roles
+    order by case
+      when key = 'admin' then 0
+      when key = 'worker' then 1
+      when key = 'client' then 2
+      else 3
+    end, name
+  `;
+
+  let permissionsByRole = {};
+  let permissionWarning = '';
+
+  try {
+    const rolePermissions = await db.sql`
+      select roles.key as role_key, role_permissions.permission_key
+      from roles
+      left join role_permissions
+        on role_permissions.role_id = roles.id
+        and role_permissions.enabled = true
+      order by roles.key, role_permissions.permission_key
+    `;
+
+    permissionsByRole = rolePermissions.reduce((acc, row) => {
+      if (!acc[row.role_key]) acc[row.role_key] = [];
+      if (row.permission_key) acc[row.role_key].push(row.permission_key);
+      return acc;
+    }, {});
+  } catch (error) {
+    console.error('Failed to load role_permissions; using default permissions', error);
+    permissionWarning = 'Role permissions could not be fully loaded. Defaults were used where possible.';
+  }
+
+  return {
+    roles: roles.map((role) => {
+      const assignedPermissions = permissionsByRole[role.key] || DEFAULT_ROLE_PERMISSIONS[role.key] || [];
+      return mapRole(role, role.key === 'admin' ? ALL_PERMISSION_KEYS : assignedPermissions);
+    }),
+    permissionWarning,
+  };
+};
+
 export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
-    return json(405, { ok: false, message: 'Method not allowed.' });
+    return safeJson(405, {
+      ok: false,
+      message: 'Method not allowed.',
+    });
   }
 
   try {
@@ -113,46 +191,48 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
     }
 
     if (request.method === 'GET') {
-      const roles = await db.sql`
-        select id, key, name, description, coalesce(is_system, false) as is_system, created_at, updated_at
-        from roles
-        order by case when key = 'admin' then 0 when key = 'worker' then 1 when key = 'client' then 2 else 3 end, name
-      `;
-      const rolePermissions = await db.sql`
-        select roles.key as role_key, role_permissions.permission_key
-        from roles
-        left join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true
-        order by roles.key, role_permissions.permission_key
-      `;
-      const permissionsByRole = rolePermissions.reduce((acc, row) => {
-        if (!acc[row.role_key]) acc[row.role_key] = [];
-        if (row.permission_key) acc[row.role_key].push(row.permission_key);
-        return acc;
-      }, {});
+      const { roles, permissionWarning } = await loadRolesSafely(db);
 
-      return json(200, {
+      return safeJson(200, {
         ok: true,
         authenticated: true,
         authorized: true,
         permissions: PORTAL_PERMISSIONS,
-        roles: roles.map((role) => mapRole(role, permissionsByRole[role.key] || [])),
+        roles,
+        warning: permissionWarning || '',
       });
     }
 
     const body = await parseJsonBody(request);
 
     if (!body) {
-      return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+      return safeJson(400, {
+        ok: false,
+        message: 'Request body must be valid JSON.',
+      });
     }
 
     const payload = normalizeRolePayload(body);
 
     if (request.method === 'POST' && !payload.key) {
-      return json(422, { ok: false, message: 'Role key is required.' });
+      return safeJson(422, {
+        ok: false,
+        message: 'Role key is required.',
+      });
     }
 
     if (!payload.name) {
-      return json(422, { ok: false, message: 'Role name is required.' });
+      return safeJson(422, {
+        ok: false,
+        message: 'Role name is required.',
+      });
+    }
+
+    if (request.method === 'PATCH' && !payload.roleId) {
+      return safeJson(422, {
+        ok: false,
+        message: 'Role ID is required.',
+      });
     }
 
     const effectivePermissions = payload.key === 'admin'
@@ -175,10 +255,19 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
         `;
 
     if (!role) {
-      return json(404, { ok: false, authenticated: true, authorized: true, message: 'Role not found.' });
+      return safeJson(404, {
+        ok: false,
+        authenticated: true,
+        authorized: true,
+        message: 'Role not found.',
+      });
     }
 
-    await savePermissions(db, role.id, role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions);
+    await savePermissions(
+      db,
+      role.id,
+      role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions,
+    );
 
     await db.sql`
       insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
@@ -187,20 +276,29 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
         ${request.method === 'POST' ? 'role.created_by_admin' : 'role.updated_by_admin'},
         'role',
         ${role.id},
-        ${JSON.stringify({ key: role.key, permissions: role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions })}::jsonb
+        ${JSON.stringify({
+          key: role.key,
+          permissions: role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions,
+        })}::jsonb
       )
     `;
 
-    return json(request.method === 'POST' ? 201 : 200, {
+    return safeJson(request.method === 'POST' ? 201 : 200, {
       ok: true,
       authenticated: true,
       authorized: true,
-      role: mapRole(role, role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions),
+      role: mapRole(
+        role,
+        role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions,
+      ),
     });
   } catch (error) {
     console.error('Failed to manage admin roles', error);
 
-    return json(500, { ok: false, message: 'We could not save roles right now.' });
+    return safeJson(500, {
+      ok: false,
+      message: 'We could not load or save roles right now.',
+    });
   }
 };
 
