@@ -2122,6 +2122,9 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <label>Amount<input name="amount" inputmode="decimal"></label>
           <label class="full">Summary<textarea name="summary"></textarea></label>
           <label class="full">AI sourcing notes<textarea data-admin-quote-sourcing-notes readonly></textarea></label>
+          <label>Confidence override<select name="pricingConfidenceOverride" data-admin-quote-confidence-override><option value="">Use AI confidence</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+          <label>Range low<input name="rangeLow" inputmode="decimal" data-admin-quote-range-low></label>
+          <label>Range high<input name="rangeHigh" inputmode="decimal" data-admin-quote-range-high></label>
           <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
           <div data-admin-quote-sourcing-links></div>
           <div class="client-request-form-actions"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>

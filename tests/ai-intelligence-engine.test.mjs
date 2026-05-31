@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   REQUIRED_QUOTE_FIELDS,
@@ -29,9 +30,16 @@ const validQuote = (overrides = {}) => ({
   changeOrderTriggers: ['Hidden electrical damage', 'Failed control board', 'Refrigerant leak repair'],
   customerReadySummary: 'Diagnose mini split, replace confirmed failed condensate pump if needed, and test operation.',
   adminReviewChecklist: ['Verify model/serial', 'Confirm safe access', 'Verify licensed HVAC scope before refrigerant work'],
-  totalLowCents: 45000,
-  totalHighCents: 95000,
-  fixedPriceRecommendationCents: 72500,
+  totalLowCents: 65000,
+  totalHighCents: 72500,
+  fixedPriceRecommendationCents: 69500,
+  pricingConfidenceLevel: 'high',
+  pricingConfidenceReason: 'Scope is specific, similar jobs exist, standard parts are available, and labor phases are known.',
+  rangeSpreadReason: 'Small allowance for access and confirmed part condition.',
+  fixedPricePreferred: true,
+  needsSiteVisitToTightenPrice: false,
+  missingMeasurementsNeeded: [],
+  assumptionsUsedForTightPrice: ['Standard wall access', 'No hidden electrical damage', 'Condensate pump is reachable'],
   ...overrides,
 });
 
@@ -144,6 +152,60 @@ test('emergency fallback receives company history before falling back to static 
   assert.equal(seenHistory.length, 1);
   assert.equal(result.fallbackUsed, true);
   assert.equal(result.fallbackSource, 'company_history');
+});
+
+
+test('huge quote-ready range fails validation and triggers correction retry', async () => {
+  const wideQuote = validQuote({ pricingConfidenceLevel: 'high', totalLowCents: 50000, totalHighCents: 250000, fixedPriceRecommendationCents: 100000 });
+  const validation = validateQuoteAiOutput(wideQuote, { serviceType: 'Handyman', description: 'Replace a simple door handle with standard hardware.' });
+  assert.equal(validation.ok, false);
+  assert.equal(validation.errors.some((error) => /range|spread|15%|\$250/i.test(error)), true);
+
+  const db = makeDb();
+  let fetchCalls = 0;
+  const result = await runAiFirstQuote({
+    db,
+    apiKey: 'test-key',
+    jobRequest: { id: 'req-range', service_type: 'Handyman', work_category: 'Door hardware', description: 'Replace a simple door handle with standard hardware.', city: 'Phoenix' },
+    fetchImpl: async () => {
+      fetchCalls += 1;
+      return openAiResponse(fetchCalls === 1 ? wideQuote : validQuote({ totalLowCents: 65000, totalHighCents: 72500, fixedPriceRecommendationCents: 69500 }));
+    },
+  });
+
+  assert.equal(fetchCalls, 2, 'wide ranges should trigger one OpenAI correction retry');
+  assert.equal(result.fallbackUsed, false);
+  assert.equal(result.totalHighCents, 72500);
+});
+
+test('low-confidence quote-ready output fails validation', () => {
+  const lowConfidence = validQuote({ pricingConfidenceLevel: 'low', quoteReady: true, siteVisitRecommended: false });
+  const validation = validateQuoteAiOutput(lowConfidence, { serviceType: 'Handyman', description: 'Install owner supplied shelves in a standard closet.' });
+  assert.equal(validation.ok, false);
+  assert.equal(validation.errors.some((error) => /Low-confidence output cannot be quoteReady/i.test(error)), true);
+});
+
+test('site visit can allow wider range only when rangeSpreadReason explains it', () => {
+  const noReason = validQuote({ quoteReady: false, siteVisitRecommended: true, needsSiteVisitToTightenPrice: true, pricingConfidenceLevel: 'low', totalLowCents: 200000, totalHighCents: 450000, fixedPriceRecommendationCents: 300000, rangeSpreadReason: '' });
+  const withReason = validQuote({ ...noReason, missingInfoQuestions: ['Measure damaged drywall square footage before fixed quote.'], rangeSpreadReason: 'Wall access and measurements are unknown until site visit.' });
+  assert.equal(validateQuoteAiOutput(noReason, { serviceType: 'Drywall', description: 'Repair water damaged drywall across multiple rooms.' }).ok, false);
+  assert.equal(validateQuoteAiOutput(withReason, { serviceType: 'Drywall', description: 'Repair water damaged drywall across multiple rooms.' }).ok, true);
+});
+
+
+test('quote UI exposes recommended fixed price, tight range, confidence, and override controls', async () => {
+  const draftFunction = await readFile('netlify/functions/admin-quote-draft.mjs', 'utf8');
+  const dashboard = await readFile('public/dashboard/modules/dashboard/bootstrap.js', 'utf8');
+  const html = await readFile('public/dashboard/index.html', 'utf8');
+
+  assert.match(draftFunction, /Recommended fixed price/);
+  assert.match(draftFunction, /Tight range/);
+  assert.match(draftFunction, /Confidence:/);
+  assert.match(dashboard, /HIGH confidence|pricingConfidenceLevel|confidenceText/);
+  assert.match(dashboard, /Recommended fixed price shown first/);
+  assert.match(html, /data-admin-quote-confidence-override/);
+  assert.match(html, /data-admin-quote-range-low/);
+  assert.match(html, /data-admin-quote-range-high/);
 });
 
 test('admin quote edits are stored as AI corrections for future learning', async () => {

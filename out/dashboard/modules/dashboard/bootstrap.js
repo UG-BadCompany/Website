@@ -3074,6 +3074,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
               const summaryField = quoteForm.querySelector('[name="summary"]');
               const sourcingField = quoteForm.querySelector('[data-admin-quote-sourcing-notes]');
               const amountField = quoteForm.querySelector('[name="amount"]');
+              const confidenceOverrideField = quoteForm.querySelector('[data-admin-quote-confidence-override]');
+              const rangeLowField = quoteForm.querySelector('[data-admin-quote-range-low]');
+              const rangeHighField = quoteForm.querySelector('[data-admin-quote-range-high]');
               if (titleField) titleField.value = result.draft.title || '';
               if (summaryField) summaryField.value = result.draft.summary || '';
               if (sourcingField) sourcingField.value = result.draft.adminSourcingNotes || '';
@@ -3086,8 +3089,18 @@ Additional info from client: ${payload.additionalInfo}` : '';
                 fallbackReason: result.draft.fallbackReason || '',
                 fallbackSource: result.draft.fallbackSource || '',
                 fixedPriceRecommendationCents: result.draft.fixedPriceRecommendationCents || result.draft.amountCents || 0,
+                totalLowCents: result.draft.totalLowCents || result.draft.aiStructuredQuote?.totalLowCents || 0,
+                totalHighCents: result.draft.totalHighCents || result.draft.aiStructuredQuote?.totalHighCents || 0,
+                pricingConfidenceLevel: result.draft.pricingConfidenceLevel || result.draft.meta?.pricingConfidenceLevel || '',
+                pricingConfidenceReason: result.draft.pricingConfidenceReason || result.draft.meta?.pricingConfidenceReason || '',
+                rangeSpreadReason: result.draft.rangeSpreadReason || result.draft.meta?.rangeSpreadReason || '',
+                needsSiteVisitToTightenPrice: Boolean(result.draft.needsSiteVisitToTightenPrice),
+                missingMeasurementsNeeded: result.draft.missingMeasurementsNeeded || [],
                 confidenceScore: result.draft.meta?.confidenceScore || result.draft.aiStructuredQuote?.confidenceScore || null,
               });
+              if (confidenceOverrideField) confidenceOverrideField.value = result.draft.pricingConfidenceLevel || result.draft.meta?.pricingConfidenceLevel || '';
+              if (rangeLowField) rangeLowField.value = result.draft.totalLowCents ? (Number(result.draft.totalLowCents) / 100).toFixed(2) : '';
+              if (rangeHighField) rangeHighField.value = result.draft.totalHighCents ? (Number(result.draft.totalHighCents) / 100).toFixed(2) : '';
               if (quoteSourcingLinks) {
                 const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
                 quoteSourcingLinks.innerHTML = links.length
@@ -3102,10 +3115,12 @@ Additional info from client: ${payload.additionalInfo}` : '';
                 }
                 amountField.value = ((Number(amountCents || 0)) / 100).toFixed(2);
               }
+              const confidenceText = result.draft.pricingConfidenceLevel ? ` · ${(result.draft.pricingConfidenceLevel || '').toUpperCase()} confidence` : '';
+              const rangeText = result.draft.totalLowCents && result.draft.totalHighCents ? ` · range $${(Number(result.draft.totalLowCents) / 100).toFixed(2)}-$${(Number(result.draft.totalHighCents) / 100).toFixed(2)}` : '';
               const aiBadge = result.draft.fallbackUsed
                 ? `Fallback Used${result.draft.fallbackSource ? ` (${result.draft.fallbackSource})` : ''}`
-                : `AI Generated${result.draft.meta?.historicalMatchUsed ? ' · Historical Match Used' : ''}`;
-              if (aiStatus) aiStatus.textContent = `${aiBadge}. Review title, materials, labor, risks, exclusions, and amount before sending.`;
+                : `AI Generated${result.draft.meta?.historicalMatchUsed ? ' · Historical Match Used' : ''}${confidenceText}${rangeText}`;
+              if (aiStatus) aiStatus.textContent = `${aiBadge}. Recommended fixed price shown first; review range, confidence reason, missing info, risks, exclusions, and amount before sending.`;
               if (formStatus) formStatus.textContent = result.draft.fallbackUsed ? (result.draft.warning || 'Fallback draft ready. Admin review required.') : 'AI draft ready for admin review.';
             } catch (error) {
               const fallbackSummary = quoteForm.querySelector('[name="summary"]');
@@ -3143,6 +3158,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
               summary: formData.get('summary'),
               amountCents: Math.round(amount * 100),
               sendToClient: formData.get('sendToClient') === 'true',
+              pricingConfidenceOverride: formData.get('pricingConfidenceOverride'),
+              rangeLowCents: Math.round(Number(formData.get('rangeLow') || 0) * 100),
+              rangeHighCents: Math.round(Number(formData.get('rangeHigh') || 0) * 100),
               aiOriginal: (() => { try { return JSON.parse(formData.get('aiOriginal') || '{}'); } catch { return {}; } })(),
               aiMetadata: (() => { try { return JSON.parse(formData.get('aiMetadata') || '{}'); } catch { return {}; } })(),
             };

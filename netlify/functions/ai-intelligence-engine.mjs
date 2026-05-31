@@ -1,6 +1,6 @@
 import { clean } from './auth-utils.mjs';
 
-export const AI_QUOTE_PROMPT_VERSION = 'phase57-ai-first-quote-v1';
+export const AI_QUOTE_PROMPT_VERSION = 'phase58-ai-tight-confidence-quote-v1';
 export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase57-ai-first-troubleshooting-v1';
 
 export const REQUIRED_QUOTE_FIELDS = [
@@ -27,6 +27,13 @@ export const REQUIRED_QUOTE_FIELDS = [
   'totalLowCents',
   'totalHighCents',
   'fixedPriceRecommendationCents',
+  'pricingConfidenceLevel',
+  'pricingConfidenceReason',
+  'rangeSpreadReason',
+  'fixedPricePreferred',
+  'needsSiteVisitToTightenPrice',
+  'missingMeasurementsNeeded',
+  'assumptionsUsedForTightPrice',
 ];
 
 export const REQUIRED_TROUBLESHOOTING_FIELDS = [
@@ -98,6 +105,13 @@ export const normalizeQuoteAiOutput = (quote = {}) => {
     totalLowCents: Math.max(0, Math.round(toNumber(quote.totalLowCents, 0))),
     totalHighCents: Math.max(0, Math.round(toNumber(quote.totalHighCents, 0))),
     fixedPriceRecommendationCents: Math.max(0, Math.round(toNumber(quote.fixedPriceRecommendationCents, 0))),
+    pricingConfidenceLevel: ['high', 'medium', 'low'].includes(clean(quote.pricingConfidenceLevel, 20).toLowerCase()) ? clean(quote.pricingConfidenceLevel, 20).toLowerCase() : '',
+    pricingConfidenceReason: clean(quote.pricingConfidenceReason, 1200),
+    rangeSpreadReason: clean(quote.rangeSpreadReason, 1200),
+    fixedPricePreferred: Boolean(quote.fixedPricePreferred),
+    needsSiteVisitToTightenPrice: Boolean(quote.needsSiteVisitToTightenPrice),
+    missingMeasurementsNeeded: toArray(quote.missingMeasurementsNeeded).map((item) => clean(String(item), 400)),
+    assumptionsUsedForTightPrice: toArray(quote.assumptionsUsedForTightPrice).map((item) => clean(String(item), 600)),
   };
 };
 
@@ -123,7 +137,40 @@ export const validateQuoteAiOutput = (quote = {}, context = {}) => {
   }
   if (!normalized.customerReadySummary) errors.push('customerReadySummary is required.');
   if (!normalized.adminReviewChecklist.length) errors.push('adminReviewChecklist is required.');
+  if (!normalized.pricingConfidenceLevel) errors.push('pricingConfidenceLevel must be high, medium, or low.');
+  if (!normalized.pricingConfidenceReason) errors.push('pricingConfidenceReason is required.');
+  if (!normalized.assumptionsUsedForTightPrice.length) errors.push('assumptionsUsedForTightPrice is required to support tight pricing.');
   if (normalized.totalHighCents < normalized.totalLowCents) errors.push('totalHighCents must be >= totalLowCents.');
+
+  const rangeSpreadCents = Math.max(0, normalized.totalHighCents - normalized.totalLowCents);
+  const rangeSpreadRatio = normalized.totalLowCents > 0 ? rangeSpreadCents / normalized.totalLowCents : 0;
+  const quoteReadyWithoutVisit = normalized.quoteReady && !normalized.siteVisitRecommended && !normalized.needsSiteVisitToTightenPrice;
+  if (normalized.pricingConfidenceLevel === 'low' && normalized.quoteReady) {
+    errors.push('Low-confidence output cannot be quoteReady; ask missing questions or recommend a site visit.');
+  }
+  if (normalized.fixedPriceRecommendationCents && normalized.totalLowCents && normalized.totalHighCents && (normalized.fixedPriceRecommendationCents < normalized.totalLowCents || normalized.fixedPriceRecommendationCents > normalized.totalHighCents)) {
+    errors.push('fixedPriceRecommendationCents must fall within totalLowCents and totalHighCents.');
+  }
+  if (quoteReadyWithoutVisit) {
+    const confidenceMaxRatio = normalized.pricingConfidenceLevel === 'high' ? 0.15 : normalized.pricingConfidenceLevel === 'medium' ? 0.25 : 0.2;
+    if (normalized.totalLowCents < 100000 && rangeSpreadCents > 25000) {
+      errors.push('Quote-ready small jobs under $1,000 must keep the range within $250 unless a site visit/missing info is required.');
+    }
+    if (normalized.totalLowCents >= 100000 && normalized.totalLowCents <= 500000 && rangeSpreadRatio > 0.25) {
+      errors.push('Quote-ready medium jobs must keep totalHighCents within 25% of totalLowCents.');
+    }
+    if (normalized.totalLowCents > 500000 && rangeSpreadRatio > 0.30) {
+      errors.push('Quote-ready larger jobs must keep totalHighCents within 30% of totalLowCents.');
+    }
+    if (rangeSpreadRatio > confidenceMaxRatio) {
+      errors.push(`${normalized.pricingConfidenceLevel || 'unknown'} pricing confidence allows a maximum ${(confidenceMaxRatio * 100).toFixed(0)}% range spread for quote-ready work.`);
+    }
+    if (rangeSpreadRatio > 0.20 && !normalized.rangeSpreadReason) {
+      errors.push('rangeSpreadReason is required whenever a quote-ready range exceeds 20%.');
+    }
+  } else if (rangeSpreadRatio > 0.30 && !normalized.rangeSpreadReason) {
+    errors.push('Site-visit or not-ready quotes may use a wider range only with rangeSpreadReason.');
+  }
   return { ok: errors.length === 0, errors, normalized };
 };
 
@@ -218,6 +265,10 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
     'Decide quoteReady and siteVisitRecommended.',
     'Provide labor phases, hours low/high, and labor rate.',
     'Provide materials, tools, consumables, inventory hints, supplier recommendations, risks, exclusions, change orders, customer summary, admin checklist, and low/high/fixed cents.',
+    'Prefer a confident fixed price whenever enough information exists; do not hide uncertainty behind a huge low/high range.',
+    'Return a tight low/high range plus one recommended fixed price. High confidence range max 10-15%; medium confidence max 20-25%; low confidence must set quoteReady false unless admin overrides later.',
+    'Use company history, inventory, labor knowledge, material knowledge, supplier pricing, and photos/context to tighten pricing.',
+    'If uncertain, ask missing questions or recommend a site visit and explain exactly what information would tighten price.',
     'High-risk trades require risk flags and stop/escalate guidance.',
     'Vague requests require missingInfoQuestions.',
   ],
