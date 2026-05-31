@@ -3077,6 +3077,17 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (titleField) titleField.value = result.draft.title || '';
               if (summaryField) summaryField.value = result.draft.summary || '';
               if (sourcingField) sourcingField.value = result.draft.adminSourcingNotes || '';
+              const aiOriginalField = quoteForm.querySelector('[data-admin-quote-ai-original]');
+              const aiMetadataField = quoteForm.querySelector('[data-admin-quote-ai-metadata]');
+              if (aiOriginalField) aiOriginalField.value = JSON.stringify(result.draft.aiStructuredQuote || {});
+              if (aiMetadataField) aiMetadataField.value = JSON.stringify({
+                aiEnhanced: Boolean(result.draft.aiEnhanced),
+                fallbackUsed: Boolean(result.draft.fallbackUsed),
+                fallbackReason: result.draft.fallbackReason || '',
+                fallbackSource: result.draft.fallbackSource || '',
+                fixedPriceRecommendationCents: result.draft.fixedPriceRecommendationCents || result.draft.amountCents || 0,
+                confidenceScore: result.draft.meta?.confidenceScore || result.draft.aiStructuredQuote?.confidenceScore || null,
+              });
               if (quoteSourcingLinks) {
                 const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
                 quoteSourcingLinks.innerHTML = links.length
@@ -3091,8 +3102,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
                 }
                 amountField.value = ((Number(amountCents || 0)) / 100).toFixed(2);
               }
-              if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
-              if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
+              const aiBadge = result.draft.fallbackUsed
+                ? `Fallback Used${result.draft.fallbackSource ? ` (${result.draft.fallbackSource})` : ''}`
+                : `AI Generated${result.draft.meta?.historicalMatchUsed ? ' · Historical Match Used' : ''}`;
+              if (aiStatus) aiStatus.textContent = `${aiBadge}. Review title, materials, labor, risks, exclusions, and amount before sending.`;
+              if (formStatus) formStatus.textContent = result.draft.fallbackUsed ? (result.draft.warning || 'Fallback draft ready. Admin review required.') : 'AI draft ready for admin review.';
             } catch (error) {
               const fallbackSummary = quoteForm.querySelector('[name="summary"]');
               if (fallbackSummary && !fallbackSummary.value.trim()) {
@@ -3129,6 +3143,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
               summary: formData.get('summary'),
               amountCents: Math.round(amount * 100),
               sendToClient: formData.get('sendToClient') === 'true',
+              aiOriginal: (() => { try { return JSON.parse(formData.get('aiOriginal') || '{}'); } catch { return {}; } })(),
+              aiMetadata: (() => { try { return JSON.parse(formData.get('aiMetadata') || '{}'); } catch { return {}; } })(),
             };
 
             const quoteMethod = payload.quoteId ? 'PATCH' : 'POST';

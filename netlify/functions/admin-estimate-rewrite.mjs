@@ -147,6 +147,9 @@ const fallbackRewrite = ({ quote, job, metadata, payload }) => {
     ],
     customerClarifications: Array.isArray(metadata.missingInfoQuestions) ? metadata.missingInfoQuestions.slice(0, 12) : [],
     aiEnhanced: false,
+    fallbackUsed: true,
+    fallbackReason: 'OpenAI rewrite unavailable or invalid after retry.',
+    warning: 'Fallback rewrite used. Admin must verify materials, labor, risks, exclusions, and customer wording before sending.',
   };
 };
 
@@ -242,6 +245,7 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
       adminReviewChecklist: Array.isArray(rewritten.adminReviewChecklist) ? rewritten.adminReviewChecklist.slice(0, 12) : [],
       customerClarifications: Array.isArray(rewritten.customerClarifications) ? rewritten.customerClarifications.slice(0, 12) : [],
       aiEnhanced: true,
+      fallbackUsed: false,
     };
   } catch (error) {
     console.error('AI quote rewrite failed', error);
@@ -265,6 +269,9 @@ const normalizeRewriteShape = (rewrite = {}) => ({
   adminReviewChecklist: Array.isArray(rewrite.adminReviewChecklist) ? rewrite.adminReviewChecklist : [],
   customerClarifications: Array.isArray(rewrite.customerClarifications) ? rewrite.customerClarifications : [],
   aiEnhanced: Boolean(rewrite.aiEnhanced),
+  fallbackUsed: Boolean(rewrite.fallbackUsed),
+  fallbackReason: clean(rewrite.fallbackReason, 400),
+  warning: clean(rewrite.warning, 600),
 });
 
 export default async (request) => {
@@ -331,7 +338,7 @@ export default async (request) => {
         ${'quote.ai_rewrite_generated'},
         ${'quote'},
         ${row.quote_id},
-        ${JSON.stringify({ source: 'estimate_review_editor', aiEnhanced: rewrite.aiEnhanced, rewriteStyle: payload.rewriteStyle })}::jsonb
+        ${JSON.stringify({ source: 'estimate_review_editor', aiEnhanced: rewrite.aiEnhanced, fallbackUsed: rewrite.fallbackUsed, fallbackReason: rewrite.fallbackReason, rewriteStyle: payload.rewriteStyle })}::jsonb
       )
     `;
 
