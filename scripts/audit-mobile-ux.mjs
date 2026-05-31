@@ -47,6 +47,16 @@ has(mobileCss, /worker-ai-troubleshooting-suite/, 'AI Troubleshooting mobile CSS
 
 has(dashboard, /href="\/"[\s\S]*href="\/dashboard\/"[\s\S]*href="\/#estimate"[\s\S]*Request Estimate/, 'Dashboard header must keep working Home, Dashboard, and Request Estimate links.');
 has(dashboard, /data-main-dashboard-actions[\s\S]*Estimate Review[\s\S]*Work Orders[\s\S]*AI Troubleshooting/, 'Dashboard shortcuts must preserve reachable module actions for all views.');
+has(dashboard, /data-mobile-dashboard-greeting[\s\S]*data-mobile-current-role[\s\S]*data-mobile-notifications/, 'Mobile header must include dynamic greeting, current role, notifications, and avatar.');
+has(dashboard, /data-mobile-role-option="owner"[\s\S]*data-mobile-role-option="admin"[\s\S]*data-mobile-role-option="client"[\s\S]*data-mobile-role-option="worker"/, 'Mobile role selector must expose Owner, Admin, Client, and Worker.');
+has(dashboard, /data-mobile-metric="revenue"[\s\S]*data-mobile-metric="jobs"[\s\S]*data-mobile-metric="quotes"[\s\S]*data-mobile-metric="requests"/, 'Mobile dashboard KPI cards must include revenue, jobs, quotes, and requests.');
+has(dashboard, /Today&apos;s Priorities[\s\S]*Inventory alerts[\s\S]*Past due invoices/, 'Mobile Today priorities must include estimate, job, inventory, and invoice queues.');
+has(dashboard, /mobile-bottom-navigation[\s\S]*Home[\s\S]*Requests[\s\S]*Quotes[\s\S]*Jobs[\s\S]*More/, 'Mobile bottom navigation must expose Home, Requests, Quotes, Jobs, and More.');
+has(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request/, 'Floating quick action button must expose create actions.');
+has(mobileCss, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Mobile bottom navigation CSS is missing.');
+has(mobileCss, /mobile-fab[\s\S]*position:\s*fixed|mobile-fab-shell[\s\S]*position:\s*fixed/, 'Floating action button CSS is missing.');
+const mobileDashboardJs = read('public/assets/mobile-dashboard-ux.js');
+if (!/data-mobile-role-option/.test(mobileDashboardJs) || !/taSetDashboardView/.test(mobileDashboardJs) || !/taSetSidebarWorkspace/.test(mobileDashboardJs)) fail('Mobile dashboard JS must bridge role selector and workspace links to existing dashboard APIs.');
 has(dashboard, /id="worker-mobile-field"[\s\S]*class="[^"]*worker-mobile-suite|class="[^"]*worker-mobile-suite[\s\S]*id="worker-mobile-field"/, 'Worker Mobile workspace is missing.');
 has(dashboard, /id="smart-schedule-suite"/, 'Scheduling workspace is missing while sidebar uses it.');
 has(dashboard, /class="[^"]*photo-doc-suite/, 'Photo Docs workspace is missing while sidebar uses it.');

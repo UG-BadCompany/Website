@@ -1934,6 +1934,11 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div>
           <a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a>
         </div>
+        <div class="mobile-app-account" aria-label="Mobile account summary">
+          <div><strong data-mobile-dashboard-greeting>Good Morning, Thomas ☀️</strong><span data-mobile-current-role>Role: Client</span></div>
+          <button class="mobile-app-icon" type="button" data-mobile-notifications aria-label="Notifications">🔔<span data-mobile-notification-count>3</span></button>
+          <button class="mobile-app-avatar" type="button" data-client-profile-shortcut aria-label="Open account profile">TA</button>
+        </div>
       </div>
     </div>
   </header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
@@ -1946,6 +1951,18 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <span class="eyebrow">Secure Client Portal</span>
           <h1>Welcome back to your T&amp;A workspace.</h1>
           <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
+          <div class="mobile-dashboard-kpi-grid" aria-label="Mobile dashboard snapshot">
+            <article><span>Revenue</span><strong data-mobile-metric="revenue">$0</strong><small>Open + paid invoice signal</small></article>
+            <article><span>Open Jobs</span><strong data-mobile-metric="jobs">0</strong><small>Active work orders</small></article>
+            <article><span>Pending Quotes</span><strong data-mobile-metric="quotes">0</strong><small>Needs review</small></article>
+            <article><span>New Requests</span><strong data-mobile-metric="requests">0</strong><small>Fresh intake</small></article>
+          </div>
+          <div class="mobile-role-selector" aria-label="Mobile role selector">
+            <button type="button" data-mobile-role-option="owner">Owner</button>
+            <button type="button" data-mobile-role-option="admin">Admin</button>
+            <button type="button" data-mobile-role-option="client">Client</button>
+            <button type="button" data-mobile-role-option="worker">Worker</button>
+          </div>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('admin')">Admin view</button>
             <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('client')">Client view</button>
@@ -1996,6 +2013,40 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
         <a class="btn btn-soft" href="#worker-ai-troubleshooting" data-main-action-views="admin worker">AI Troubleshooting</a>
         <a class="btn btn-soft" href="#worker-profile" data-main-action-views="worker">Profile</a>
       </div>
+
+      <section class="mobile-priority-panel" aria-label="Today's priorities">
+        <div class="mobile-section-heading"><span>Today&apos;s Priorities</span><strong>Focus queue</strong></div>
+        <div class="mobile-priority-list">
+          <a href="#estimate-review" data-mobile-workspace-link="estimate-review"><strong>Estimates needing review</strong><span data-mobile-priority="quotes">Check pending quote drafts</span></a>
+          <a href="#admin-requests" data-mobile-workspace-link="work-orders"><strong>Overdue jobs</strong><span data-mobile-priority="jobs">Review active work orders</span></a>
+          <a href="/inventory/"><strong>Inventory alerts</strong><span>Open stock and reservations</span></a>
+          <a href="#admin-invoices" data-mobile-workspace-link="invoices"><strong>Past due invoices</strong><span data-mobile-priority="invoices">Review payment status</span></a>
+        </div>
+      </section>
+
+      <section class="mobile-quick-create" aria-label="Quick actions">
+        <div class="mobile-section-heading"><span>Quick Actions</span><strong>Create work fast</strong></div>
+        <div class="mobile-create-grid">
+          <a href="/#estimate">New Estimate</a>
+          <a href="#admin-invoices" data-mobile-workspace-link="invoices">New Invoice</a>
+          <a href="#admin-requests" data-mobile-workspace-link="work-orders">New Job</a>
+          <a href="#client-requests" data-mobile-workspace-link="client-requests">New Request</a>
+        </div>
+      </section>
+
+      <section class="mobile-operations-grid" aria-label="Operations modules">
+        <a href="#client-requests" data-mobile-workspace-link="client-requests"><span>📋</span><strong>Requests</strong><small>Client intake</small></a>
+        <a href="#estimate-review" data-mobile-workspace-link="estimate-review"><span>💰</span><strong>Quotes</strong><small>Estimates</small></a>
+        <a href="#admin-requests" data-mobile-workspace-link="work-orders"><span>🔨</span><strong>Jobs</strong><small>Work orders</small></a>
+        <a href="#admin-invoices" data-mobile-workspace-link="invoices"><span>🧾</span><strong>Invoices</strong><small>Payments</small></a>
+        <a href="/inventory/"><span>📦</span><strong>Inventory</strong><small>Stock</small></a>
+        <a href="#worker-ai-troubleshooting" data-mobile-workspace-link="ai-troubleshooting"><span>🤖</span><strong>AI Troubleshooter</strong><small>Field help</small></a>
+      </section>
+
+      <section class="mobile-ai-insights" aria-label="AI assistant business insights">
+        <div><span>AI Assistant</span><strong>Business insights and alerts</strong><p data-mobile-ai-insight>Review today&apos;s estimates, inventory alerts, job updates, and invoice risk before dispatch.</p></div>
+        <a class="btn btn-primary" href="#worker-ai-troubleshooting" data-mobile-workspace-link="ai-troubleshooting">Open AI Troubleshooter</a>
+      </section>
     </section>
 
     <section class="card session-check" data-session-card hidden style="display:none !important;">
@@ -2664,6 +2715,23 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 <div hidden><input type="file" data-worker-before-files><input type="file" data-worker-after-files></div>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
+  <nav class="mobile-bottom-navigation" aria-label="Mobile dashboard navigation">
+    <a href="/" data-mobile-bottom-home><span>🏠</span>Home</a>
+    <a href="#client-requests" data-mobile-workspace-link="client-requests"><span>📋</span>Requests</a>
+    <a href="#estimate-review" data-mobile-workspace-link="estimate-review"><span>💰</span>Quotes</a>
+    <a href="#worker-jobs" data-mobile-workspace-link="worker-jobs"><span>🔨</span>Jobs</a>
+    <button type="button" data-mobile-open-more><span>👤</span>More</button>
+  </nav>
+  <div class="mobile-fab-shell">
+    <button class="mobile-fab" type="button" data-mobile-fab aria-expanded="false" aria-label="Open quick create actions">+</button>
+    <div class="mobile-fab-menu" data-mobile-fab-menu hidden>
+      <a href="/#estimate">New Estimate</a>
+      <a href="#admin-invoices" data-mobile-workspace-link="invoices">New Invoice</a>
+      <a href="#admin-requests" data-mobile-workspace-link="work-orders">New Job</a>
+      <button type="button" disabled title="Customer creation is handled through request intake in this dashboard.">New Customer</button>
+      <a href="#client-requests" data-mobile-workspace-link="client-requests">New Request</a>
+    </div>
+  </div>
 <script src="/dashboard/modules/invoice-actions.js"></script>
 <script src="/dashboard/modules/workspace-route.js"></script>
 <script src="/dashboard/modules/admin-invoice-payments.js"></script>
@@ -2692,7 +2760,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   <script src="/assets/dashboard-phase35-remove-top-tabs.js" defer></script>
   <script src="/assets/dashboard-phase36-remove-old-workspace.js" defer></script>
   <script src="/assets/dashboard-phase47-quote-editor-controller.js" defer></script>
-  <script src="/assets/mobile-saas-overhaul.js" defer></script>
+  <script src="/assets/mobile-dashboard-ux.js" defer></script>
 
 <script>
 /* TEST HOOK COMPAT

@@ -55,6 +55,7 @@
     { label: 'Request', workspace: 'client-requests', target: '#client-requests', views: ['client'] },
     { label: 'Quotes', workspace: 'client-quotes', target: '#client-quotes', views: ['client'] },
     { label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', views: ['client'] },
+    { label: 'Status', workspace: 'customer-status', target: '#customer-experience-center', views: ['client'] },
     { label: 'Profile', action: 'client-profile', views: ['client'] },
   ];
 
@@ -313,6 +314,31 @@
       }
       const button = event.target.closest('[data-mobile-quick-target]');
       if (!button) return;
+      const action = button.dataset.mobileQuickAction;
+      if (action) openModalShortcut(action);
+      else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
+
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        if (link.getAttribute('aria-disabled') === 'true') {
+          event.preventDefault();
+          return;
+        }
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+      const button = event.target.closest('[data-mobile-quick-target]');
+      if (!button || button.getAttribute('aria-disabled') === 'true') return;
       const action = button.dataset.mobileQuickAction;
       if (action) openModalShortcut(action);
       else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {

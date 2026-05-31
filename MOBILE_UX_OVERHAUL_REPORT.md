@@ -1,32 +1,36 @@
-# Mobile UX Navigation Fix Report
+# Mobile UX Navigation + App Shell Report
 
 ## Reason for Follow-Up
 
-The previous mobile SaaS-style overhaul overreached. It introduced a separate compact header/KPI/card shell that made some users lose access to existing dashboard modules and caused navigation confusion. This follow-up intentionally prioritizes functionality over a cosmetic mobile shell.
+The previous mobile SaaS-only shell went too far and risked hiding dashboard modules. This pass keeps the proven dashboard, role system, sidebar drawer, mobile quick actions, and workspace router intact while adding a professional mobile app layer that is additive only.
 
 ## Issues Found
 
-- The dashboard header was changed from the proven Home / Request Estimate flow into a SaaS-style segmented header.
-- The Request Estimate link routed back into the dashboard instead of the public estimate form.
-- A separate `mobile-saas-overhaul.css` layer added global mobile padding and mobile-only hiding rules that could create extra blank space and hide important account/navigation controls.
-- The dashboard shortcut area was converted into a small curated card set instead of preserving all existing admin/client/worker shortcuts.
-- The giant visible `Open workspace menu` label had been removed, but the dedicated SaaS layer was not needed to accomplish that.
+- Home, Dashboard, and Request Estimate needed explicit, stable routes on mobile and desktop.
+- The role switcher existed, but mobile users needed a clearer app-style selector for Owner/Admin/Client/Worker without replacing bootstrap role switching.
+- The dashboard needed mobile KPI cards and priorities, but those cards could not hide or replace existing modules.
+- The mobile experience needed bottom navigation and a floating create action without dead buttons.
+- The giant visible `Open workspace menu` label was not acceptable on mobile, but the drawer itself is still required for full module access.
+- Large blank-space risk came from mobile-only layout layers that added global padding/min-height without preserving module access.
 
 ## Fixes Made
 
-- Removed the `mobile-saas-overhaul.css` and `mobile-saas-overhaul.js` layer from pages so it can no longer hide modules or add large blank mobile spacing.
-- Restored the normal dashboard header structure with working links:
+- Kept working header links:
   - Home: `/`
   - Dashboard: `/dashboard/`
   - Request Estimate: `/#estimate`
-- Restored the original dashboard hero copy and logo panel so no KPI shell creates missing-module confusion.
-- Restored the shortcut strip to standard buttons that expose admin, client, and worker destinations, including AI Troubleshooting.
-- Kept the giant `Open workspace menu` text removed by making the sidebar toggle a compact 44px icon button with screen-reader text.
-- Left the existing sidebar drawer, role switcher, mobile quick actions, inventory link, AI troubleshooting, and workspace routing intact.
+- Added a mobile account summary with dynamic greeting, current role, notifications, and avatar/profile access.
+- Added a mobile role selector for Owner, Admin, Client, and Worker that calls the existing `window.taSetDashboardView` function instead of creating a second role system.
+- Added modern mobile dashboard cards for Revenue, Open Jobs, Pending Quotes, and New Requests, hydrated from existing dashboard metrics when available.
+- Added Today's Priorities for estimate review, overdue/active jobs, inventory alerts, and past due invoices.
+- Added Quick Actions and Operations cards for Requests, Quotes, Jobs, Invoices, Inventory, and AI Troubleshooter while keeping existing module anchors/routes.
+- Added bottom navigation for Home, Requests, Quotes, Jobs, and More; More opens the existing sidebar drawer so every module remains reachable.
+- Added a floating plus menu for New Estimate, New Invoice, New Job, New Customer, and New Request. New Customer is intentionally disabled with a clear explanation because customer creation currently flows through request intake.
+- Kept the large `Open workspace menu` label removed by using a compact 44px icon control with screen-reader text.
 
 ## Functionality Preserved
 
-- Admin, client, and worker role buttons remain in the dashboard hero.
+- Admin, client, worker, and owner/admin role access uses the existing bootstrap role-switching API.
 - Sidebar drawer remains available on mobile for all modules.
 - Mobile quick actions remain role-aware.
 - Inventory remains a real `/inventory/` link.
@@ -35,4 +39,4 @@ The previous mobile SaaS-style overhaul overreached. It introduced a separate co
 
 ## Risk Assessment
 
-Low. This is a targeted rollback of the overreaching mobile SaaS shell while keeping the established mobile field UX and sidebar system. The fix removes the mobile-only layer that introduced navigation risk and keeps the smaller menu control requested by the user.
+Low to medium. The changes are additive HTML/CSS/JS on top of the existing dashboard architecture. The new mobile controls route through existing anchors, `window.taSetDashboardView`, and `window.taSetSidebarWorkspace` instead of replacing authentication, permissions, or dashboard module logic.
