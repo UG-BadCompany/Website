@@ -18,6 +18,12 @@ const normalizeFilePayload = (file = {}) => ({
   mimeType: clean(file.mimeType || file.type, 120),
   sizeBytes: Math.max(0, Number(file.sizeBytes || file.size || 0)),
   category: clean(file.category, 80) || 'job_file',
+  photoType: clean(file.photoType || file.photo_type || file.category, 80) || 'issue',
+  caption: clean(file.caption, 500),
+  notes: clean(file.notes, 1200),
+  sourceContext: clean(file.sourceContext || file.source_context, 80) || 'job_request',
+  quoteId: clean(file.quoteId || file.quote_id, 80),
+  workOrderId: clean(file.workOrderId || file.work_order_id, 80),
 });
 
 const mapFile = (file) => ({
@@ -30,6 +36,13 @@ const mapFile = (file) => ({
   fileName: file.file_name,
   mimeType: file.mime_type,
   sizeBytes: Number(file.size_bytes || 0),
+  caption: file.caption || '',
+  notes: file.notes || '',
+  photoType: file.photo_type || file.category || 'issue',
+  sourceContext: file.source_context || 'job_request',
+  quoteId: file.quote_id || '',
+  workOrderId: file.work_order_id || '',
+  metadata: file.metadata || {},
   createdAt: file.created_at,
 });
 
@@ -110,7 +123,7 @@ const canAccessJobRequest = async (db, context, jobRequestId) => {
 
 const listJobFiles = async (db, jobRequestId) => {
   const files = await db.sql`
-    select id, owner_id, job_request_id, storage_provider, bucket, path, file_name, mime_type, size_bytes, created_at
+    select id, owner_id, job_request_id, storage_provider, bucket, path, file_name, mime_type, size_bytes, caption, notes, photo_type, source_context, quote_id, work_order_id, metadata, created_at
     from files
     where job_request_id = ${jobRequestId}
     order by created_at desc
@@ -140,16 +153,16 @@ const createJobFiles = async (db, context, jobRequestId, rawFiles = []) => {
     }
 
     const [createdFile] = await db.sql`
-      insert into files (owner_id, job_request_id, path, file_name, mime_type, size_bytes)
-      values (${context.session.user_id}, ${jobRequestId}, ${createFilePath({ jobRequestId, category: file.category, fileName: file.fileName })}, ${file.fileName}, ${file.mimeType || null}, ${file.sizeBytes || null})
-      returning id, owner_id, job_request_id, storage_provider, bucket, path, file_name, mime_type, size_bytes, created_at
+      insert into files (owner_id, job_request_id, path, file_name, mime_type, size_bytes, caption, notes, photo_type, source_context, quote_id, work_order_id, metadata)
+      values (${context.session.user_id}, ${jobRequestId}, ${createFilePath({ jobRequestId, category: file.category, fileName: file.fileName })}, ${file.fileName}, ${file.mimeType || null}, ${file.sizeBytes || null}, ${file.caption || null}, ${file.notes || null}, ${file.photoType || 'issue'}, ${file.sourceContext || 'job_request'}, ${file.quoteId || null}, ${file.workOrderId || null}, ${JSON.stringify({ originalCategory: file.category })}::jsonb)
+      returning id, owner_id, job_request_id, storage_provider, bucket, path, file_name, mime_type, size_bytes, caption, notes, photo_type, source_context, quote_id, work_order_id, metadata, created_at
     `;
     createdFiles.push(mapFile(createdFile));
   }
 
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-    values (${context.session.user_id}, ${'job_files.uploaded'}, ${'job_request'}, ${jobRequestId}, ${JSON.stringify({ fileCount: createdFiles.length, fileNames: createdFiles.map((file) => file.fileName) })}::jsonb)
+    values (${context.session.user_id}, ${'job_files.uploaded'}, ${'job_request'}, ${jobRequestId}, ${JSON.stringify({ fileCount: createdFiles.length, fileNames: createdFiles.map((file) => file.fileName), photoTypes: createdFiles.map((file) => file.photoType) })}::jsonb)
   `;
 
   return json(201, { ok: true, files: createdFiles });

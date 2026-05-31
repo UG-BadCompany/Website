@@ -6,6 +6,7 @@ import {
   loadDatabase,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { saveAdminAiCorrection } from './ai-intelligence-engine.mjs';
 
 const normalizePayload = (body = {}) => ({
   quoteId: clean(body.quoteId, 80),
@@ -14,6 +15,11 @@ const normalizePayload = (body = {}) => ({
   summary: clean(body.summary, 4000),
   amountCents: Number(body.amountCents),
   sendToClient: Boolean(body.sendToClient),
+  pricingConfidenceOverride: ['high', 'medium', 'low'].includes(clean(body.pricingConfidenceOverride, 20)) ? clean(body.pricingConfidenceOverride, 20) : '',
+  rangeLowCents: Number.isFinite(Number(body.rangeLowCents)) ? Math.max(0, Math.round(Number(body.rangeLowCents))) : null,
+  rangeHighCents: Number.isFinite(Number(body.rangeHighCents)) ? Math.max(0, Math.round(Number(body.rangeHighCents))) : null,
+  aiOriginal: body.aiOriginal && typeof body.aiOriginal === 'object' ? body.aiOriginal : null,
+  aiMetadata: body.aiMetadata && typeof body.aiMetadata === 'object' ? body.aiMetadata : null,
 });
 
 const validatePayload = (payload, method = 'POST') => {
@@ -157,6 +163,28 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         `;
       }
 
+      if (payload.aiOriginal || payload.aiMetadata) await saveAdminAiCorrection({
+        db,
+        quoteId: quote.id,
+        jobRequestId: quote.job_request_id,
+        actorUserId: session.user_id,
+        originalAiResult: payload.aiOriginal || payload.aiMetadata?.aiStructuredQuote || {},
+        adminChanges: {
+          title: payload.title,
+          summary: payload.summary,
+          amountCents: payload.amountCents,
+          priceAdjustmentCents: payload.aiMetadata?.fixedPriceRecommendationCents ? payload.amountCents - Number(payload.aiMetadata.fixedPriceRecommendationCents) : null,
+          pricingConfidenceOverride: payload.pricingConfidenceOverride,
+          rangeLowCents: payload.rangeLowCents,
+          rangeHighCents: payload.rangeHighCents,
+          originalPricingConfidenceLevel: payload.aiMetadata?.pricingConfidenceLevel || payload.aiOriginal?.pricingConfidenceLevel || '',
+          originalTotalLowCents: payload.aiMetadata?.totalLowCents || payload.aiOriginal?.totalLowCents || null,
+          originalTotalHighCents: payload.aiMetadata?.totalHighCents || payload.aiOriginal?.totalHighCents || null,
+          sentToClient: payload.sendToClient,
+        },
+        finalQuote: quote,
+      });
+
       await db.sql`
         insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
         values (
@@ -164,7 +192,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
           ${'quote.updated'},
           ${'quote'},
           ${quote.id},
-          ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: quote.job_request_id, clientId: quote.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient })}::jsonb
+          ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: quote.job_request_id, clientId: quote.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient, aiCorrectionSaved: true })}::jsonb
         )
       `;
 
@@ -224,6 +252,22 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         and status in ('new', 'needs_review', 'quote_in_progress')
     `;
 
+    if (payload.aiOriginal || payload.aiMetadata) await saveAdminAiCorrection({
+      db,
+      quoteId: quote.id,
+      jobRequestId: quote.job_request_id,
+      actorUserId: session.user_id,
+      originalAiResult: payload.aiOriginal || payload.aiMetadata?.aiStructuredQuote || {},
+      adminChanges: {
+        title: payload.title,
+        summary: payload.summary,
+        amountCents: payload.amountCents,
+        priceAdjustmentCents: payload.aiMetadata?.fixedPriceRecommendationCents ? payload.amountCents - Number(payload.aiMetadata.fixedPriceRecommendationCents) : null,
+        sentToClient: payload.sendToClient,
+      },
+      finalQuote: quote,
+    });
+
     await db.sql`
       insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
       values (
@@ -231,7 +275,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         ${'quote.created'},
         ${'quote'},
         ${quote.id},
-        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient })}::jsonb
+        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient, aiCorrectionSaved: true })}::jsonb
       )
     `;
 

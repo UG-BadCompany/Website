@@ -5,9 +5,30 @@
       const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const dashboardParams = new URLSearchParams(window.location.search);
+      const viewStorageKey = 'ta.dashboard.selectedView';
+      const readStoredDashboardView = () => {
+        try {
+          const stored = window.localStorage?.getItem(viewStorageKey) || window.sessionStorage?.getItem(viewStorageKey) || '';
+          return ['admin', 'client', 'worker'].includes(stored) ? stored : '';
+        } catch (error) {
+          console.warn('Dashboard view storage is unavailable.', error);
+          return '';
+        }
+      };
+      const persistDashboardView = (view) => {
+        try {
+          window.localStorage?.setItem(viewStorageKey, view);
+          window.sessionStorage?.setItem(viewStorageKey, view);
+        } catch (error) {
+          console.warn('Unable to persist dashboard view.', error);
+        }
+      };
       const requestedDashboardView = String(dashboardParams.get('view') || '').trim().toLowerCase();
       if (['admin', 'client', 'worker'].includes(requestedDashboardView)) {
         window.taPendingDashboardView = requestedDashboardView;
+      } else {
+        const storedDashboardView = readStoredDashboardView();
+        if (storedDashboardView) window.taPendingDashboardView = storedDashboardView;
       }
       const authDebugEnabled = false;
       if (sessionCard) sessionCard.hidden = false;
@@ -28,7 +49,7 @@
         const roleSet = new Set(roles.length ? roles : ['client']);
         const permissionSet = new Set(permissionKeys || []);
         const hasPermissionPrefix = (prefix) => [...permissionSet].some((permission) => permission.startsWith(prefix));
-        const admin = roleSet.has('admin') || permissionSet.has('admin.tools') || hasPermissionPrefix('admin.');
+        const admin = roleSet.has('admin') || roleSet.has('owner') || permissionSet.has('admin.tools') || hasPermissionPrefix('admin.');
         const worker = roleSet.has('worker') || admin || permissionSet.has('worker.tools') || hasPermissionPrefix('worker.');
         const client = roleSet.has('client') || admin || permissionSet.has('client.tools') || hasPermissionPrefix('client.');
         const availableViews = [
@@ -510,6 +531,28 @@
       let currentProfileUser = null;
       let currentDashboardView = '';
       let availableDashboardViews = [];
+      const mobileWorkspaceForView = {
+        admin: 'work-orders',
+        client: 'client-requests',
+        worker: 'worker-jobs',
+      };
+      const isMobileDashboardViewport = () => {
+        try {
+          return window.matchMedia?.('(max-width: 820px)').matches || window.innerWidth <= 820;
+        } catch {
+          return false;
+        }
+      };
+      const applySidebarWorkspaceForView = (view) => {
+        const workspace = isMobileDashboardViewport() ? (mobileWorkspaceForView[view] || 'overview') : 'overview';
+        document.body.dataset.sidebarWorkspace = workspace;
+        window.taSetSidebarWorkspace?.('overview', { scroll: false });
+        if (typeof window.taSetSidebarWorkspace === 'function') {
+          window.taSetSidebarWorkspace(workspace, { scroll: false });
+        } else {
+          window.setTimeout(() => window.taSetSidebarWorkspace?.(workspace, { scroll: false }), 160);
+        }
+      };
       let adminActivityLoaded = false;
       let adminActivityFilterTimer = null;
       let currentAdminActivityPage = 1;
@@ -613,6 +656,26 @@
         },
       };
 
+      const applyDashboardSectionVisibility = (sections, view, user = {}) => {
+        sections.forEach((section) => {
+          const views = (section.dataset.views || '').split(' ').filter(Boolean);
+          const requiredPermission = section.dataset.permission;
+          const hasRequiredPermission = !requiredPermission || Boolean(user?.permissions?.[requiredPermission]);
+          section.hidden = !views.includes(view) || !hasRequiredPermission;
+        });
+      };
+
+      const applyDashboardViewButtonState = (buttons, view) => {
+        buttons.forEach((button) => {
+          const isActive = button.dataset.viewButton === view;
+          button.dataset.active = String(isActive);
+          button.setAttribute('aria-pressed', String(isActive));
+          button.classList?.toggle?.('active-admin', isActive && view === 'admin');
+          button.classList?.toggle?.('active-client', isActive && view === 'client');
+          button.classList?.toggle?.('active-worker', isActive && view === 'worker');
+        });
+      };
+
       const updateDashboardViewChrome = (view) => {
         const copy = dashboardViewCopy[view] || dashboardViewCopy.client;
         const eyebrow = document.querySelector('[data-main-command-eyebrow]');
@@ -630,21 +693,22 @@
       };
 
       const setDashboardView = (view) => {
-        dedupeDashboardSingletons();
-        const fallbackView = availableDashboardViews[0] || 'client';
-        const nextView = availableDashboardViews.includes(view) ? view : fallbackView;
-        currentDashboardView = nextView;
+        try {
+          dedupeDashboardSingletons();
+          const requestedView = normalizeDashboardViewName(view);
+          const fallbackView = availableDashboardViews[0] || 'client';
+          const nextView = availableDashboardViews.includes(requestedView) ? requestedView : fallbackView;
+          const lockedView = requestedView && requestedView !== nextView ? requestedView : '';
+          const viewLabel = nextView.charAt(0).toUpperCase() + nextView.slice(1);
+          console.log(`Switching view: ${viewLabel}`);
+          currentDashboardView = nextView;
+          persistDashboardView(nextView);
         document.documentElement.dataset.dashboardView = nextView;
         document.documentElement.dataset.currentDashboardView = nextView;
         document.body.dataset.currentDashboardView = nextView;
         updateDashboardViewChrome(nextView);
 
-        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
-          const views = (section.dataset.views || '').split(' ').filter(Boolean);
-          const requiredPermission = section.dataset.permission;
-          const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
-          section.hidden = !views.includes(nextView) || !hasRequiredPermission;
-        });
+        applyDashboardSectionVisibility(document.querySelectorAll('[data-dashboard-section]'), nextView, currentProfileUser);
         const workspace = new URLSearchParams(window.location.search).get('workspace');
         if (nextView === 'admin' && workspace) {
           const workspaceSelectors = {
@@ -660,20 +724,34 @@
           }
         }
 
-        document.querySelectorAll('[data-view-button]').forEach((button) => {
-          const isActive = button.dataset.viewButton === nextView;
+        applyDashboardViewButtonState(document.querySelectorAll('[data-view-button]'), nextView);
+
+        document.querySelectorAll('[data-mobile-role-option]').forEach((button) => {
+          const mapsTo = button.dataset.mobileRoleOption === 'owner' ? 'admin' : button.dataset.mobileRoleOption;
+          const canView = availableDashboardViews.includes(mapsTo);
+          const isActive = mapsTo === nextView && !(button.dataset.mobileRoleOption === 'owner' && availableDashboardViews.includes('admin'));
+          button.hidden = !canView && button.dataset.mobileRoleOption !== 'owner';
+          button.disabled = !canView;
           button.dataset.active = String(isActive);
           button.setAttribute('aria-pressed', String(isActive));
-          button.classList.toggle('active-admin', isActive && nextView === 'admin');
-          button.classList.toggle('active-client', isActive && nextView === 'client');
-          button.classList.toggle('active-worker', isActive && nextView === 'worker');
+          button.setAttribute('aria-disabled', String(!canView));
         });
 
+        const lockedPanel = document.querySelector('[data-mobile-clean-locked]');
+        if (lockedPanel) {
+          lockedPanel.hidden = !lockedView;
+          if (lockedView) lockedPanel.querySelector('p').textContent = `Your account cannot open the ${lockedView} view. Showing ${nextView} instead.`;
+        }
+
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
-        if (document.body.dataset.sidebarWorkspace && document.body.dataset.sidebarWorkspace !== 'overview') {
-          window.taSetSidebarWorkspace?.('overview', { scroll: false });
-        } else {
-          document.body.dataset.sidebarWorkspace ||= 'overview';
+        applySidebarWorkspaceForView(nextView);
+        } catch (error) {
+          console.error('Failed to switch dashboard view.', error);
+          const viewStatus = document.querySelector('[data-dashboard-view-status]');
+          if (viewStatus) {
+            viewStatus.hidden = false;
+            viewStatus.textContent = 'We could not load that workspace. Please try another view.';
+          }
         }
       };
       window.taSetDashboardView = (view) => {
@@ -686,17 +764,43 @@
         const permissions = user.permissions || {};
         const normalizedRoles = (user.roles || []).map(normalizeDashboardViewName);
         const normalizedProvidedViews = (permissions.availableViews || user.roles || []).map(normalizeDashboardViewName);
+        const normalizedPermissionKeys = (permissions.permissionKeys || []).map(normalizeDashboardViewName);
         const roles = new Set(normalizedRoles);
         const views = new Set(normalizedProvidedViews);
-        const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'));
-        if (canSwitchAllViews) {
+        const hasAdminPermissionKey = normalizedPermissionKeys.some((permission) => permission === 'admin.tools' || permission.startsWith('admin.'));
+        const hasAdminCapability = Boolean(
+          permissions.canViewAdminTools ||
+          permissions.canManageUsers ||
+          permissions.canManageRoles ||
+          permissions.canManageRequests ||
+          permissions.canManageQuotes ||
+          permissions.canManageInvoices ||
+          permissions.canManageInventory ||
+          permissions.canViewAdminActivity ||
+          hasAdminPermissionKey
+        );
+        const isAdminOwner = Boolean(
+          permissions.canSwitchDashboardView ||
+          hasAdminCapability ||
+          roles.has('admin') ||
+          roles.has('owner') ||
+          normalizeDashboardViewName(permissions.defaultView) === 'admin'
+        );
+        if (isAdminOwner) {
           ['admin', 'client', 'worker'].forEach((view) => views.add(view));
         }
-        if (permissions.canViewAdminTools) views.add('admin');
+        if (permissions.canViewAdminTools || hasAdminCapability) views.add('admin');
         if (permissions.canViewClientTools) views.add('client');
         if (permissions.canViewWorkerTools) views.add('worker');
         if (!views.size) views.add('client');
         return ['admin', 'client', 'worker'].filter((view) => views.has(view));
+      };
+
+      window.taDashboardViewTestHooks = {
+        getAvailableDashboardViews,
+        normalizeDashboardViewName,
+        applyDashboardSectionVisibility,
+        applyDashboardViewButtonState,
       };
 
       const configureDashboardForUser = (user) => {
@@ -711,9 +815,39 @@
           switcher.hidden = availableViews.length <= 1;
           if (!switcher.dataset.boundViewSwitcher) {
             switcher.dataset.boundViewSwitcher = 'true';
-            switcher.addEventListener('click', (event) => {
+            const bindTapOnce = (element, handler) => {
+              let lastTap = 0;
+              let handledPointer = false;
+              const activate = (event) => {
+                const now = Date.now();
+                if (now - lastTap < 350) {
+                  event?.preventDefault?.();
+                  return;
+                }
+                lastTap = now;
+                if (event?.type !== 'click') {
+                  handledPointer = true;
+                  event?.preventDefault?.();
+                }
+                handler(event);
+              };
+              element.addEventListener('pointerup', activate, { passive: false });
+              element.addEventListener('touchend', (event) => {
+                if (window.PointerEvent) return;
+                activate(event);
+              }, { passive: false });
+              element.addEventListener('click', (event) => {
+                if (handledPointer && Date.now() - lastTap < 500) {
+                  handledPointer = false;
+                  event.preventDefault();
+                  return;
+                }
+                activate(event);
+              });
+            };
+            bindTapOnce(switcher, (event) => {
               const button = event.target.closest('[data-view-button]');
-              if (!button || button.disabled) return;
+              if (!button || button.disabled || button.hidden) return;
               setDashboardView(button.dataset.viewButton);
             });
           }
@@ -728,7 +862,7 @@
         const defaultView = normalizeDashboardViewName(permissions.defaultView);
         const preferredView = availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]);
         configureMainDashboardActions(user, preferredView || 'client');
-        setDashboardView(preferredView || 'client');
+        setDashboardView(requestedView || preferredView || 'client');
       };
       const configureSignedInDashboard = (user) => {
         try {
@@ -1697,6 +1831,91 @@
         status.textContent = `${currentMaintenancePlans.length} maintenance plan${currentMaintenancePlans.length === 1 ? '' : 's'} loaded.`;
       };
 
+
+      const renderAiKnowledgeItems = (items = [], type = 'materials') => items.length ? items.map((item) => {
+        const payload = item.source_payload || item.content || item.sourcePayload || {};
+        const title = item.title || item.name || item.phase_name || item.knowledge_type || item.content || 'AI knowledge item';
+        const trade = item.trade || item.category || item.work_category || item.component || 'Uncategorized';
+        const sourceRun = item.source_run_id || item.sourceRunId || payload.sourceRunId || '';
+        const confidence = item.confidence_score ?? payload.confidenceScore ?? payload.confidence_score ?? '';
+        return `
+          <article class="phase54-card" data-ai-knowledge-item data-ai-knowledge-id="${escapeHtml(item.id || '')}">
+            <span class="phase54-badge">${escapeHtml(type)} · ${escapeHtml(item.review_status || item.reviewStatus || 'pending_review')}</span>
+            <strong>${escapeHtml(String(title).slice(0, 160))}</strong>
+            <div class="phase54-meta"><span>${escapeHtml(trade)}</span><span>${confidence === '' ? 'Confidence n/a' : `Confidence ${escapeHtml(String(confidence))}`}</span><span>${item.promoted_to_company_standard || item.promotedToCompanyStandard ? 'Company standard' : 'Not promoted'}</span><span>${escapeHtml(item.created_at || item.createdAt ? formatDate(String(item.created_at || item.createdAt).slice(0, 10)) : 'No date')}</span></div>
+            <p>${escapeHtml(typeof item.content === 'string' ? item.content : (payload.notes || payload.name || payload.phase || payload.description || JSON.stringify(payload).slice(0, 280) || 'Review source AI output before promoting.'))}</p>
+            <small>${sourceRun ? `Source AI run: ${escapeHtml(sourceRun)}` : 'Source AI run metadata pending or not linked.'}</small>
+            <div class="client-request-form-actions">
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="approve">Approve</button>
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="reject">Reject</button>
+              <button class="btn btn-primary" type="button" data-ai-knowledge-action="promote">Promote</button>
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="disable">Disable</button>
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="edit">Edit</button>
+            </div>
+          </article>`;
+      }).join('') : '<p class="session-status">No AI knowledge found for this filter.</p>';
+
+      const loadAiKnowledgeCenter = async () => {
+        const panel = document.querySelector('[data-ai-knowledge-center]');
+        if (!panel || currentDashboardView !== 'admin') return;
+        const type = panel.querySelector('[data-ai-knowledge-type]')?.value || 'materials';
+        const statusValue = panel.querySelector('[data-ai-knowledge-status]')?.value || '';
+        const status = panel.querySelector('[data-ai-knowledge-status-text]');
+        const list = panel.querySelector('[data-ai-knowledge-list]');
+        if (!list) return;
+        if (status) status.textContent = 'Loading AI knowledge…';
+        try {
+          const response = await fetch(`/api/admin/ai-knowledge?type=${encodeURIComponent(type)}&status=${encodeURIComponent(statusValue)}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load AI knowledge.');
+          list.innerHTML = renderAiKnowledgeItems(result.items || [], result.type || type);
+          if (status) status.textContent = `${(result.items || []).length} ${result.type || type} knowledge item${(result.items || []).length === 1 ? '' : 's'} loaded.`;
+        } catch (error) {
+          list.innerHTML = '<p class="session-status">AI Knowledge Center could not load.</p>';
+          if (status) status.textContent = error.message;
+        }
+      };
+
+      const bindAiKnowledgeCenter = () => {
+        const panel = document.querySelector('[data-ai-knowledge-center]');
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+        panel.querySelector('[data-ai-knowledge-refresh]')?.addEventListener('click', loadAiKnowledgeCenter);
+        panel.querySelector('[data-ai-knowledge-type]')?.addEventListener('change', loadAiKnowledgeCenter);
+        panel.querySelector('[data-ai-knowledge-status]')?.addEventListener('change', loadAiKnowledgeCenter);
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-ai-knowledge-action]');
+          if (!button) return;
+          const card = button.closest('[data-ai-knowledge-item]');
+          const id = card?.dataset.aiKnowledgeId;
+          const action = button.dataset.aiKnowledgeAction;
+          const type = panel.querySelector('[data-ai-knowledge-type]')?.value || 'materials';
+          const status = panel.querySelector('[data-ai-knowledge-status-text]');
+          if (!id || !action) return;
+          let content = null;
+          if (action === 'edit') {
+            const current = card.querySelector('p')?.textContent || '';
+            const next = window.prompt('Edit this AI knowledge note/content before saving.', current);
+            if (next === null) return;
+            content = type === 'troubleshooting' ? { content: next } : { notes: next };
+          }
+          if (status) status.textContent = `${action} AI knowledge…`;
+          try {
+            const response = await fetch('/api/admin/ai-knowledge', {
+              method: 'PATCH',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({ id, type, action, content }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not update AI knowledge.');
+            await loadAiKnowledgeCenter();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          }
+        });
+        loadAiKnowledgeCenter();
+      };
+
       const renderReadinessWorkspace = () => {
         const status = document.querySelector('[data-readiness-status]');
         const list = document.querySelector('[data-readiness-checklist]');
@@ -1719,6 +1938,7 @@
         renderWorkerMobileWorkspace();
         renderPhotoDocsWorkspace();
         renderMaintenanceWorkspace();
+        if (currentDashboardView === 'admin') loadAiKnowledgeCenter();
         renderReadinessWorkspace();
       };
 
@@ -2941,9 +3161,33 @@ Additional info from client: ${payload.additionalInfo}` : '';
               const summaryField = quoteForm.querySelector('[name="summary"]');
               const sourcingField = quoteForm.querySelector('[data-admin-quote-sourcing-notes]');
               const amountField = quoteForm.querySelector('[name="amount"]');
+              const confidenceOverrideField = quoteForm.querySelector('[data-admin-quote-confidence-override]');
+              const rangeLowField = quoteForm.querySelector('[data-admin-quote-range-low]');
+              const rangeHighField = quoteForm.querySelector('[data-admin-quote-range-high]');
               if (titleField) titleField.value = result.draft.title || '';
               if (summaryField) summaryField.value = result.draft.summary || '';
               if (sourcingField) sourcingField.value = result.draft.adminSourcingNotes || '';
+              const aiOriginalField = quoteForm.querySelector('[data-admin-quote-ai-original]');
+              const aiMetadataField = quoteForm.querySelector('[data-admin-quote-ai-metadata]');
+              if (aiOriginalField) aiOriginalField.value = JSON.stringify(result.draft.aiStructuredQuote || {});
+              if (aiMetadataField) aiMetadataField.value = JSON.stringify({
+                aiEnhanced: Boolean(result.draft.aiEnhanced),
+                fallbackUsed: Boolean(result.draft.fallbackUsed),
+                fallbackReason: result.draft.fallbackReason || '',
+                fallbackSource: result.draft.fallbackSource || '',
+                fixedPriceRecommendationCents: result.draft.fixedPriceRecommendationCents || result.draft.amountCents || 0,
+                totalLowCents: result.draft.totalLowCents || result.draft.aiStructuredQuote?.totalLowCents || 0,
+                totalHighCents: result.draft.totalHighCents || result.draft.aiStructuredQuote?.totalHighCents || 0,
+                pricingConfidenceLevel: result.draft.pricingConfidenceLevel || result.draft.meta?.pricingConfidenceLevel || '',
+                pricingConfidenceReason: result.draft.pricingConfidenceReason || result.draft.meta?.pricingConfidenceReason || '',
+                rangeSpreadReason: result.draft.rangeSpreadReason || result.draft.meta?.rangeSpreadReason || '',
+                needsSiteVisitToTightenPrice: Boolean(result.draft.needsSiteVisitToTightenPrice),
+                missingMeasurementsNeeded: result.draft.missingMeasurementsNeeded || [],
+                confidenceScore: result.draft.meta?.confidenceScore || result.draft.aiStructuredQuote?.confidenceScore || null,
+              });
+              if (confidenceOverrideField) confidenceOverrideField.value = result.draft.pricingConfidenceLevel || result.draft.meta?.pricingConfidenceLevel || '';
+              if (rangeLowField) rangeLowField.value = result.draft.totalLowCents ? (Number(result.draft.totalLowCents) / 100).toFixed(2) : '';
+              if (rangeHighField) rangeHighField.value = result.draft.totalHighCents ? (Number(result.draft.totalHighCents) / 100).toFixed(2) : '';
               if (quoteSourcingLinks) {
                 const links = Array.isArray(result.draft.adminSourcingLinks) ? result.draft.adminSourcingLinks : [];
                 quoteSourcingLinks.innerHTML = links.length
@@ -2958,8 +3202,13 @@ Additional info from client: ${payload.additionalInfo}` : '';
                 }
                 amountField.value = ((Number(amountCents || 0)) / 100).toFixed(2);
               }
-              if (aiStatus) aiStatus.textContent = 'AI draft generated. Review title, materials, labor, and amount before sending.';
-              if (formStatus) formStatus.textContent = 'AI draft ready. Review and edit before sending.';
+              const confidenceText = result.draft.pricingConfidenceLevel ? ` · ${(result.draft.pricingConfidenceLevel || '').toUpperCase()} confidence` : '';
+              const rangeText = result.draft.totalLowCents && result.draft.totalHighCents ? ` · range $${(Number(result.draft.totalLowCents) / 100).toFixed(2)}-$${(Number(result.draft.totalHighCents) / 100).toFixed(2)}` : '';
+              const aiBadge = result.draft.fallbackUsed
+                ? `Fallback Used${result.draft.fallbackSource ? ` (${result.draft.fallbackSource})` : ''}`
+                : `AI Generated${result.draft.meta?.historicalMatchUsed ? ' · Historical Match Used' : ''}${confidenceText}${rangeText}`;
+              if (aiStatus) aiStatus.textContent = `${aiBadge}. Recommended fixed price shown first; review range, confidence reason, missing info, risks, exclusions, and amount before sending.`;
+              if (formStatus) formStatus.textContent = result.draft.fallbackUsed ? (result.draft.warning || 'Fallback draft ready. Admin review required.') : 'AI draft ready for admin review.';
             } catch (error) {
               const fallbackSummary = quoteForm.querySelector('[name="summary"]');
               if (fallbackSummary && !fallbackSummary.value.trim()) {
@@ -2996,6 +3245,11 @@ Additional info from client: ${payload.additionalInfo}` : '';
               summary: formData.get('summary'),
               amountCents: Math.round(amount * 100),
               sendToClient: formData.get('sendToClient') === 'true',
+              pricingConfidenceOverride: formData.get('pricingConfidenceOverride'),
+              rangeLowCents: Math.round(Number(formData.get('rangeLow') || 0) * 100),
+              rangeHighCents: Math.round(Number(formData.get('rangeHigh') || 0) * 100),
+              aiOriginal: (() => { try { return JSON.parse(formData.get('aiOriginal') || '{}'); } catch { return {}; } })(),
+              aiMetadata: (() => { try { return JSON.parse(formData.get('aiMetadata') || '{}'); } catch { return {}; } })(),
             };
 
             const quoteMethod = payload.quoteId ? 'PATCH' : 'POST';
@@ -3824,6 +4078,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
       const bindPhase54Workspaces = () => {
         bindAiTroubleshootingWorkspace();
+        bindAiKnowledgeCenter();
         const scheduleForm = document.querySelector('[data-schedule-dispatch-form]');
         if (scheduleForm && !scheduleForm.dataset.bound) {
           scheduleForm.dataset.bound = 'true';
@@ -3923,17 +4178,43 @@ Additional info from client: ${payload.additionalInfo}` : '';
             event.preventDefault();
             const formStatus = document.querySelector('[data-photo-doc-form-status]');
             const payload = Object.fromEntries(new FormData(photoForm).entries());
-            const evidenceFiles = String(payload.completionEvidenceFiles || '').split(',').map((item) => item.trim()).filter(Boolean);
+            const selectedFiles = [...(photoForm.querySelector('[data-photo-doc-upload-files]')?.files || [])];
+            const evidenceFiles = [...String(payload.completionEvidenceFiles || '').split(',').map((item) => item.trim()).filter(Boolean), ...selectedFiles.map((file) => file.name)];
             if (!payload.assignmentId) { if (formStatus) formStatus.textContent = 'Choose a job before saving evidence notes.'; return; }
-            if (formStatus) formStatus.textContent = 'Saving evidence notes…';
+            const assignment = currentAdminAssignments.get(payload.assignmentId) || currentWorkerAssignments.find((entry) => entry.id === payload.assignmentId) || {};
+            const jobRequestId = assignment.jobRequest?.id || assignment.jobRequestId || '';
+            if (formStatus) formStatus.textContent = selectedFiles.length ? 'Saving evidence notes and photo metadata…' : 'Saving evidence notes…';
             try {
-              await postWorkerAssignmentUpdate({ assignmentId: payload.assignmentId, status: 'in_progress', workerNotes: `${payload.stage || 'evidence'}: ${payload.workerNotes || 'Evidence note saved.'}`, completionEvidenceFiles: evidenceFiles }, formStatus);
-              if (formStatus) formStatus.textContent = 'Evidence notes saved. File upload storage uses the existing job files endpoint when files are attached from the work order form.';
+              if (selectedFiles.length && jobRequestId) {
+                const response = await fetch('/api/job-files', {
+                  method: 'POST',
+                  headers: { accept: 'application/json', 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    jobRequestId,
+                    files: selectedFiles.map((file) => ({
+                      fileName: file.name,
+                      mimeType: file.type || 'image/*',
+                      sizeBytes: file.size || 0,
+                      category: payload.photoType || payload.stage || 'issue',
+                      photoType: payload.photoType || payload.stage || 'issue',
+                      caption: payload.photoCaption || payload.workerNotes || '',
+                      notes: payload.workerNotes || '',
+                      sourceContext: 'photo_doc_workspace',
+                      workOrderId: jobRequestId,
+                    })),
+                  }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save photo metadata.');
+              }
+              await postWorkerAssignmentUpdate({ assignmentId: payload.assignmentId, status: 'in_progress', workerNotes: `${payload.stage || 'evidence'}: ${payload.workerNotes || payload.photoCaption || 'Evidence note saved.'}`, completionEvidenceFiles: evidenceFiles }, formStatus);
+              if (formStatus) formStatus.textContent = selectedFiles.length ? 'Evidence notes and photo metadata saved for AI context.' : 'Evidence notes saved.';
+              photoForm.reset();
             } catch (error) { if (formStatus) formStatus.textContent = error.message; }
           });
           photoForm.querySelector('[data-photo-doc-upload-note]')?.addEventListener('click', () => {
             const formStatus = document.querySelector('[data-photo-doc-form-status]');
-            if (formStatus) formStatus.textContent = 'Upload storage is handled by the existing /api/job-files work-order attachment flow; this workspace records evidence notes and filenames for review.';
+            if (formStatus) formStatus.textContent = 'Choose camera/photos, select photo type, add caption/notes, then Save evidence notes to store metadata through /api/job-files for AI context.';
           });
         }
 
