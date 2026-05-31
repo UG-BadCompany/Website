@@ -49,7 +49,7 @@
         const roleSet = new Set(roles.length ? roles : ['client']);
         const permissionSet = new Set(permissionKeys || []);
         const hasPermissionPrefix = (prefix) => [...permissionSet].some((permission) => permission.startsWith(prefix));
-        const admin = roleSet.has('admin') || permissionSet.has('admin.tools') || hasPermissionPrefix('admin.');
+        const admin = roleSet.has('admin') || roleSet.has('owner') || permissionSet.has('admin.tools') || hasPermissionPrefix('admin.');
         const worker = roleSet.has('worker') || admin || permissionSet.has('worker.tools') || hasPermissionPrefix('worker.');
         const client = roleSet.has('client') || admin || permissionSet.has('client.tools') || hasPermissionPrefix('client.');
         const availableViews = [
@@ -655,6 +655,26 @@
         },
       };
 
+      const applyDashboardSectionVisibility = (sections, view, user = {}) => {
+        sections.forEach((section) => {
+          const views = (section.dataset.views || '').split(' ').filter(Boolean);
+          const requiredPermission = section.dataset.permission;
+          const hasRequiredPermission = !requiredPermission || Boolean(user?.permissions?.[requiredPermission]);
+          section.hidden = !views.includes(view) || !hasRequiredPermission;
+        });
+      };
+
+      const applyDashboardViewButtonState = (buttons, view) => {
+        buttons.forEach((button) => {
+          const isActive = button.dataset.viewButton === view;
+          button.dataset.active = String(isActive);
+          button.setAttribute('aria-pressed', String(isActive));
+          button.classList?.toggle?.('active-admin', isActive && view === 'admin');
+          button.classList?.toggle?.('active-client', isActive && view === 'client');
+          button.classList?.toggle?.('active-worker', isActive && view === 'worker');
+        });
+      };
+
       const updateDashboardViewChrome = (view) => {
         const copy = dashboardViewCopy[view] || dashboardViewCopy.client;
         const eyebrow = document.querySelector('[data-main-command-eyebrow]');
@@ -687,12 +707,7 @@
         document.body.dataset.currentDashboardView = nextView;
         updateDashboardViewChrome(nextView);
 
-        document.querySelectorAll('[data-dashboard-section]').forEach((section) => {
-          const views = (section.dataset.views || '').split(' ').filter(Boolean);
-          const requiredPermission = section.dataset.permission;
-          const hasRequiredPermission = !requiredPermission || Boolean(currentProfileUser?.permissions?.[requiredPermission]);
-          section.hidden = !views.includes(nextView) || !hasRequiredPermission;
-        });
+        applyDashboardSectionVisibility(document.querySelectorAll('[data-dashboard-section]'), nextView, currentProfileUser);
         const workspace = new URLSearchParams(window.location.search).get('workspace');
         if (nextView === 'admin' && workspace) {
           const workspaceSelectors = {
@@ -708,14 +723,7 @@
           }
         }
 
-        document.querySelectorAll('[data-view-button]').forEach((button) => {
-          const isActive = button.dataset.viewButton === nextView;
-          button.dataset.active = String(isActive);
-          button.setAttribute('aria-pressed', String(isActive));
-          button.classList.toggle('active-admin', isActive && nextView === 'admin');
-          button.classList.toggle('active-client', isActive && nextView === 'client');
-          button.classList.toggle('active-worker', isActive && nextView === 'worker');
-        });
+        applyDashboardViewButtonState(document.querySelectorAll('[data-view-button]'), nextView);
 
         document.querySelectorAll('[data-mobile-role-option]').forEach((button) => {
           const mapsTo = button.dataset.mobileRoleOption === 'owner' ? 'admin' : button.dataset.mobileRoleOption;
@@ -744,14 +752,6 @@
             viewStatus.textContent = 'We could not load that workspace. Please try another view.';
           }
         }
-        } catch (error) {
-          console.error('Failed to switch dashboard view.', error);
-          const viewStatus = document.querySelector('[data-dashboard-view-status]');
-          if (viewStatus) {
-            viewStatus.hidden = false;
-            viewStatus.textContent = 'We could not load that workspace. Please try another view.';
-          }
-        }
       };
       window.taSetDashboardView = (view) => {
         window.taPendingDashboardView = view;
@@ -763,17 +763,43 @@
         const permissions = user.permissions || {};
         const normalizedRoles = (user.roles || []).map(normalizeDashboardViewName);
         const normalizedProvidedViews = (permissions.availableViews || user.roles || []).map(normalizeDashboardViewName);
+        const normalizedPermissionKeys = (permissions.permissionKeys || []).map(normalizeDashboardViewName);
         const roles = new Set(normalizedRoles);
         const views = new Set(normalizedProvidedViews);
-        const canSwitchAllViews = Boolean(permissions.canSwitchDashboardView || permissions.canViewAdminTools || roles.has('admin'));
-        if (canSwitchAllViews) {
+        const hasAdminPermissionKey = normalizedPermissionKeys.some((permission) => permission === 'admin.tools' || permission.startsWith('admin.'));
+        const hasAdminCapability = Boolean(
+          permissions.canViewAdminTools ||
+          permissions.canManageUsers ||
+          permissions.canManageRoles ||
+          permissions.canManageRequests ||
+          permissions.canManageQuotes ||
+          permissions.canManageInvoices ||
+          permissions.canManageInventory ||
+          permissions.canViewAdminActivity ||
+          hasAdminPermissionKey
+        );
+        const isAdminOwner = Boolean(
+          permissions.canSwitchDashboardView ||
+          hasAdminCapability ||
+          roles.has('admin') ||
+          roles.has('owner') ||
+          normalizeDashboardViewName(permissions.defaultView) === 'admin'
+        );
+        if (isAdminOwner) {
           ['admin', 'client', 'worker'].forEach((view) => views.add(view));
         }
-        if (permissions.canViewAdminTools) views.add('admin');
+        if (permissions.canViewAdminTools || hasAdminCapability) views.add('admin');
         if (permissions.canViewClientTools) views.add('client');
         if (permissions.canViewWorkerTools) views.add('worker');
         if (!views.size) views.add('client');
         return ['admin', 'client', 'worker'].filter((view) => views.has(view));
+      };
+
+      window.taDashboardViewTestHooks = {
+        getAvailableDashboardViews,
+        normalizeDashboardViewName,
+        applyDashboardSectionVisibility,
+        applyDashboardViewButtonState,
       };
 
       const configureDashboardForUser = (user) => {
@@ -788,26 +814,41 @@
           switcher.hidden = availableViews.length <= 1;
           if (!switcher.dataset.boundViewSwitcher) {
             switcher.dataset.boundViewSwitcher = 'true';
-            let lastViewActivation = 0;
-            let lastActivatedView = '';
-            const activateViewButton = (event) => {
+            const bindTapOnce = (element, handler) => {
+              let lastTap = 0;
+              let handledPointer = false;
+              const activate = (event) => {
+                const now = Date.now();
+                if (now - lastTap < 350) {
+                  event?.preventDefault?.();
+                  return;
+                }
+                lastTap = now;
+                if (event?.type !== 'click') {
+                  handledPointer = true;
+                  event?.preventDefault?.();
+                }
+                handler(event);
+              };
+              element.addEventListener('pointerup', activate, { passive: false });
+              element.addEventListener('touchend', (event) => {
+                if (window.PointerEvent) return;
+                activate(event);
+              }, { passive: false });
+              element.addEventListener('click', (event) => {
+                if (handledPointer && Date.now() - lastTap < 500) {
+                  handledPointer = false;
+                  event.preventDefault();
+                  return;
+                }
+                activate(event);
+              });
+            };
+            bindTapOnce(switcher, (event) => {
               const button = event.target.closest('[data-view-button]');
               if (!button || button.disabled || button.hidden) return;
-              const view = button.dataset.viewButton;
-              const now = Date.now();
-              if (event.type !== 'click') {
-                lastViewActivation = now;
-                lastActivatedView = view;
-                event.preventDefault();
-              } else if (lastActivatedView === view && now - lastViewActivation < 450) {
-                event.preventDefault();
-                return;
-              }
-              setDashboardView(view);
-            };
-            switcher.addEventListener('click', activateViewButton);
-            switcher.addEventListener('pointerup', activateViewButton, { passive: false });
-            switcher.addEventListener('touchend', activateViewButton, { passive: false });
+              setDashboardView(button.dataset.viewButton);
+            });
           }
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             const canView = availableViews.includes(button.dataset.viewButton);

@@ -7,6 +7,39 @@
   const qa = (selector) => Array.from(document.querySelectorAll(selector));
   const textOf = (selector, fallback = '0') => q(selector)?.textContent?.trim() || fallback;
 
+  const bindTapOnce = (element, handler) => {
+    if (!element || element.dataset.tapOnceBound === 'true') return;
+    element.dataset.tapOnceBound = 'true';
+    let lastTap = 0;
+    let handledPointer = false;
+    const activate = (event) => {
+      const now = Date.now();
+      if (now - lastTap < 350) {
+        event?.preventDefault?.();
+        return;
+      }
+      lastTap = now;
+      if (event?.type !== 'click') {
+        handledPointer = true;
+        event?.preventDefault?.();
+      }
+      handler(event);
+    };
+    element.addEventListener('pointerup', activate, { passive: false });
+    element.addEventListener('touchend', (event) => {
+      if (window.PointerEvent) return;
+      activate(event);
+    }, { passive: false });
+    element.addEventListener('click', (event) => {
+      if (handledPointer && Date.now() - lastTap < 500) {
+        handledPointer = false;
+        event.preventDefault();
+        return;
+      }
+      activate(event);
+    });
+  };
+
   const roleLabel = (role = '') => {
     if (role === 'admin') return 'Role: Admin / Owner';
     if (role === 'worker') return 'Role: Worker';
@@ -159,6 +192,25 @@
     moreButton?.setAttribute('aria-expanded', String(open));
   }
 
+  const routeFabAction = (action, item = null) => {
+    if (!action) return false;
+    const fabRoutes = {
+      request: () => openWorkspace('client-requests', '#client-requests'),
+      quote: () => { window.location.href = '/#estimate'; return true; },
+      job: () => openWorkspace('work-orders', '#admin-requests'),
+      inventory: () => { window.location.href = '/inventory/'; return true; },
+      customer: () => routeMobileKey('customers'),
+      photo: () => openWorkspace('photo-docs', '.photo-doc-suite') || routeMobileKey('reports'),
+      assistant: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
+    };
+    const routed = fabRoutes[action]?.();
+    if (routed) return true;
+    const workspace = item?.dataset?.mobileWorkspaceLink;
+    const href = item?.getAttribute?.('href') || '';
+    if (workspace) return openWorkspace(workspace, href);
+    return false;
+  };
+
   function syncMobileMoreVisibility() {
     const role = currentRole();
     qa('[data-mobile-more-key]').forEach((item) => {
@@ -173,10 +225,20 @@
 
   const bind = () => {
     qa('[data-mobile-workspace-link]').forEach((link) => {
+      if (link.closest('[data-mobile-fab-menu]')) return;
       if (link.dataset.mobileWorkspaceBound) return;
       link.dataset.mobileWorkspaceBound = 'true';
-      link.addEventListener('click', (event) => {
+      bindTapOnce(link, (event) => {
         const href = link.getAttribute('href') || '';
+        const action = link.dataset.mobileFabAction;
+        if (action && routeFabAction(action, link)) {
+          event.preventDefault();
+          const fabMenu = q('[data-mobile-fab-menu]');
+          const fabButton = q('[data-mobile-fab]');
+          if (fabMenu) fabMenu.hidden = true;
+          fabButton?.setAttribute('aria-expanded', 'false');
+          return;
+        }
         if (!href.startsWith('#')) return;
         event.preventDefault();
         const opened = openWorkspace(link.dataset.mobileWorkspaceLink, href);
@@ -187,7 +249,7 @@
     qa('[data-mobile-bottom-key]').forEach((button) => {
       if (button.dataset.mobileBottomBound) return;
       button.dataset.mobileBottomBound = 'true';
-      button.addEventListener('click', (event) => {
+      bindTapOnce(button, (event) => {
         const key = button.dataset.mobileBottomKey;
         if (key === 'home') return;
         event.preventDefault();
@@ -196,9 +258,10 @@
     });
 
     qa('[data-mobile-more-key]').forEach((item) => {
+      if (item.closest('[data-mobile-fab-menu]')) return;
       if (item.dataset.mobileMoreBound) return;
       item.dataset.mobileMoreBound = 'true';
-      item.addEventListener('click', (event) => {
+      bindTapOnce(item, (event) => {
         const key = item.dataset.mobileMoreKey;
         const href = item.getAttribute('href') || '';
         if (href && !href.startsWith('#')) {
@@ -224,17 +287,17 @@
     const more = q('[data-mobile-open-more]');
     if (more && !more.dataset.mobileMoreButtonBound) {
       more.dataset.mobileMoreButtonBound = 'true';
-      more.addEventListener('click', () => setMoreOpen(q('[data-mobile-more-menu]')?.hidden !== false));
+      bindTapOnce(more, () => setMoreOpen(q('[data-mobile-more-menu]')?.hidden !== false));
     }
     const closeMore = q('[data-mobile-close-more]');
     if (closeMore && !closeMore.dataset.mobileCloseMoreBound) {
       closeMore.dataset.mobileCloseMoreBound = 'true';
-      closeMore.addEventListener('click', () => setMoreOpen(false));
+      bindTapOnce(closeMore, () => setMoreOpen(false));
     }
     const moreBackdrop = q('[data-mobile-more-backdrop]');
     if (moreBackdrop && !moreBackdrop.dataset.mobileMoreBackdropBound) {
       moreBackdrop.dataset.mobileMoreBackdropBound = 'true';
-      moreBackdrop.addEventListener('click', () => setMoreOpen(false));
+      bindTapOnce(moreBackdrop, () => setMoreOpen(false));
     }
 
     const fab = q('[data-mobile-fab]');
@@ -246,26 +309,27 @@
     };
     if (fab && menu && !fab.dataset.mobileFabBound) {
       fab.dataset.mobileFabBound = 'true';
-      let lastFabActivation = 0;
       const toggleFab = (event) => {
-        const now = Date.now();
-        if (event?.type === 'click' && now - lastFabActivation < 450) {
-          event?.preventDefault?.();
-          return;
-        }
-        lastFabActivation = now;
         event?.preventDefault?.();
         event?.stopPropagation?.();
         setFabOpen(menu.hidden);
       };
-      fab.addEventListener('click', toggleFab);
-      fab.addEventListener('pointerup', toggleFab, { passive: false });
-      fab.addEventListener('touchend', toggleFab, { passive: false });
+      bindTapOnce(fab, toggleFab);
+      qa('[data-mobile-fab-menu] [data-mobile-fab-action]').forEach((item) => {
+        bindTapOnce(item, (event) => {
+          const action = item.dataset.mobileFabAction;
+          const routed = routeFabAction(action, item);
+          if (routed || item.tagName === 'BUTTON' || (item.getAttribute('href') || '').startsWith('#')) event.preventDefault();
+          setFabOpen(false);
+        });
+      });
       menu.addEventListener('click', (event) => {
-        const action = event.target.closest('[data-mobile-more-key]');
-        if (action && action.tagName === 'BUTTON') {
+        const moreAction = event.target.closest('[data-mobile-more-key]');
+        if (moreAction && moreAction.tagName === 'BUTTON') {
           event.preventDefault();
-          routeMobileKey(action.dataset.mobileMoreKey);
+          routeMobileKey(moreAction.dataset.mobileMoreKey);
+          setFabOpen(false);
+          return;
         }
         if (event.target.closest('a, button')) setFabOpen(false);
       });
@@ -301,6 +365,7 @@
   setTimeout(refresh, 900);
   if ('requestIdleCallback' in window) window.requestIdleCallback(refresh, { timeout: 2200 });
   else setTimeout(refresh, 2200);
+  window.taMobileDashboardTestHooks = { bindTapOnce, routeFabAction, routeMobileKey, setMoreOpen };
   try {
     new MutationObserver(scheduleRefresh).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
     new MutationObserver(scheduleRefresh).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });

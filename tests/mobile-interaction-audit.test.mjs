@@ -14,10 +14,10 @@ test('mobile app shell uses one navigation system and no mobile command center',
 test('view switcher and fab have touch-safe activation handlers', async () => {
   const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
   const mobileJs = await readText('public/assets/mobile-dashboard-ux.js');
-  assert.match(bootstrap, /activateViewButton[\s\S]*addEventListener\('click'[\s\S]*addEventListener\('pointerup'[\s\S]*addEventListener\('touchend'/);
+  assert.match(bootstrap, /bindTapOnce[\s\S]*addEventListener\('pointerup'[\s\S]*addEventListener\('touchend'[\s\S]*addEventListener\('click'[\s\S]*data-view-button/);
   assert.match(bootstrap, /console\.log\(`Switching view: \$\{viewLabel\}`\)/);
   assert.match(bootstrap, /mobileWorkspaceForView[\s\S]*admin:\s*'work-orders'[\s\S]*client:\s*'client-requests'[\s\S]*worker:\s*'worker-jobs'/);
-  assert.match(mobileJs, /toggleFab[\s\S]*addEventListener\('click'[\s\S]*addEventListener\('pointerup'[\s\S]*addEventListener\('touchend'/);
+  assert.match(mobileJs, /bindTapOnce[\s\S]*addEventListener\('pointerup'[\s\S]*addEventListener\('touchend'[\s\S]*addEventListener\('click'[\s\S]*data-mobile-fab-action/);
 });
 
 test('more menu and inventory floating actions are not placeholders', async () => {
