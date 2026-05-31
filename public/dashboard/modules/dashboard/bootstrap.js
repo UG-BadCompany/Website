@@ -598,7 +598,7 @@
       const dashboardViewCopy = {
         admin: {
           eyebrow: 'Admin view',
-          title: 'Admin tools for running the business.',
+          title: 'Business command center.',
           description: 'Work orders, invoices, inventory, roles, users, and audit activity are visible in this view.',
         },
         client: {

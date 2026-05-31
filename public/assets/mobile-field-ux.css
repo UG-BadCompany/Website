@@ -933,3 +933,112 @@ iframe {
     font-size: .62rem;
   }
 }
+
+/* Mobile More menu: keeps every module reachable without restoring top nav buttons. */
+.mobile-more-menu,
+.mobile-more-backdrop {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .mobile-more-backdrop:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(2,6,23,.48);
+    backdrop-filter: blur(5px);
+  }
+
+  .mobile-more-menu:not([hidden]) {
+    display: grid;
+    gap: 14px;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(82px + var(--mobile-safe-bottom));
+    z-index: 10000;
+    max-height: min(72dvh, 620px);
+    overflow: auto;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(7,10,15,.98), rgba(15,23,42,.96));
+    box-shadow: 0 24px 80px rgba(2,6,23,.55);
+  }
+
+  .mobile-more-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-more-header strong,
+  .mobile-more-header span {
+    display: block;
+  }
+
+  .mobile-more-header strong {
+    color: #fff;
+    font-size: 1.1rem;
+  }
+
+  .mobile-more-header span {
+    color: #fdba74;
+    font-size: .8rem;
+    font-weight: 900;
+  }
+
+  .mobile-more-header button {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 16px;
+    background: rgba(255,255,255,.08);
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+
+  .mobile-more-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mobile-more-grid a,
+  .mobile-more-grid button {
+    min-width: 0;
+    min-height: 52px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 16px;
+    background: rgba(255,255,255,.08);
+    color: #f8fafc;
+    font-size: .88rem;
+    font-weight: 950;
+    line-height: 1.15;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .mobile-more-grid [hidden] {
+    display: none !important;
+  }
+
+  .dashboard-workspace-v2 > [data-dashboard-section],
+  .dashboard-workspace-v2 > .card,
+  .phase54-workspace,
+  .admin-command,
+  .client-requests,
+  .client-quotes,
+  .worker-jobs {
+    contain-intrinsic-size: 1px 360px;
+  }
+}

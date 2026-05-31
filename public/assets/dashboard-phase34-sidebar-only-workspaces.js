@@ -62,18 +62,6 @@
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
 
-    scheduling: {
-      title: 'Scheduling and Dispatch',
-      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
-      targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
-    },
-
-    finance: {
-      title: 'Finance Center',
-      description: 'Financial command center, payment readiness, Square links, deposits, balances, and billing overview.',
-      targets: ['#finance-command-center', '[data-phase4-finance-suite]', '.finance-suite', '.finance-command-panel'],
-    },
-
     invoices: {
       title: 'Invoices',
       description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',

@@ -40,21 +40,24 @@ test('mobile breakpoints prevent horizontal overflow for target viewports', asyn
 test('mobile header links and dashboard module shortcuts remain functional', async () => {
   const dashboard = await readText('public/dashboard/index.html');
   const css = await readText('public/assets/mobile-field-ux.css');
-  assert.match(dashboard, /<a href="\/">Home<\/a>/, 'Home link should route to the public home page');
-  assert.match(dashboard, /<a href="\/dashboard\/">Dashboard<\/a>/, 'Dashboard link should route back to the dashboard');
-  assert.match(dashboard, /href="\/#estimate"[^>]*data-request-estimate-link>Request Estimate/, 'Request Estimate should route to the public estimate form');
+  assert.match(dashboard, /<a href="\/">Home<\/a>/, 'Desktop Home link should route to the public home page');
+  assert.match(dashboard, /<a href="\/dashboard\/">Dashboard<\/a>/, 'Desktop Dashboard link should route back to the dashboard');
+  assert.match(dashboard, /href="\/#estimate"[^>]*data-request-estimate-link>Request Estimate/, 'Desktop Request Estimate should route to the public estimate form');
   assert.match(dashboard, /data-main-dashboard-actions[\s\S]*Estimate Review[\s\S]*Work Orders[\s\S]*Invoices[\s\S]*AI Troubleshooting/, 'Dashboard shortcuts should keep admin, client, and worker modules reachable');
   assert.match(dashboard, /data-mobile-dashboard-greeting[\s\S]*data-mobile-current-role[\s\S]*data-mobile-notifications/, 'Mobile header should show greeting, current role, notifications, and avatar controls');
   assert.match(dashboard, /data-mobile-role-option="owner"[\s\S]*data-mobile-role-option="admin"[\s\S]*data-mobile-role-option="client"[\s\S]*data-mobile-role-option="worker"/, 'Mobile role selector should expose Owner, Admin, Client, and Worker');
   assert.match(dashboard, /data-mobile-metric="revenue"[\s\S]*data-mobile-metric="jobs"[\s\S]*data-mobile-metric="quotes"[\s\S]*data-mobile-metric="requests"/, 'Mobile dashboard KPI cards should expose revenue, jobs, quotes, and requests');
   assert.match(dashboard, /Today&apos;s Priorities[\s\S]*Inventory alerts[\s\S]*Past due invoices/, 'Mobile dashboard should include Today priorities');
   assert.match(dashboard, /mobile-bottom-navigation[\s\S]*Home[\s\S]*Requests[\s\S]*Quotes[\s\S]*Jobs[\s\S]*More/, 'Mobile bottom navigation should expose Home, Requests, Quotes, Jobs, and More');
+  assert.match(dashboard, /mobile-more-menu[\s\S]*Dashboard[\s\S]*Request Estimate[\s\S]*Invoices[\s\S]*Inventory \/ Stock[\s\S]*Troubleshooter[\s\S]*Schedule[\s\S]*Profile[\s\S]*Sign out/, 'More menu should expose the remaining mobile modules and sign out.');
   assert.match(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request[\s\S]*Sign out/, 'Floating quick action button should expose create actions and mobile sign out without dead links');
   assert.match(css, /dashboard-mobile-nav-toggle[\s\S]*width:\s*44px/, 'Mobile workspace toggle should be compact instead of a full-width menu button');
   assert.match(css, /dashboard-nav-row[\s\S]*display:\s*none !important/, 'Crowded top nav buttons should be removed on mobile');
+  assert.match(css, /mobile-more-menu[\s\S]*position:\s*fixed/, 'More menu should be a fixed clean mobile sheet.');
   assert.match(css, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Bottom mobile navigation should be fixed and app-like');
   const mobileJs = await readText('public/assets/mobile-dashboard-ux.js');
   assert.match(mobileJs, /data-mobile-notifications[\s\S]*data-mobile-notification-panel/, 'Notifications should toggle a real panel');
+  assert.match(mobileJs, /roleRoutes[\s\S]*data-mobile-bottom-key[\s\S]*data-mobile-more-key/, 'Bottom nav and More menu should route through role-aware mobile routes.');
   assert.doesNotMatch(mobileJs, /observe\(document\.body, \{ attributes: true, childList: true, subtree: true/, 'Mobile JS should avoid whole-body subtree observers for performance');
 });
 

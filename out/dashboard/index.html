@@ -1912,18 +1912,61 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   .phase54-workspace{border-color:rgba(255,255,255,.18);background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(19,13,9,.78)),radial-gradient(circle at 90% 0,rgba(249,115,22,.18),transparent 24rem);color:#f8fafc;box-shadow:0 28px 80px rgba(0,0,0,.24)}
   .phase54-workspace strong,.phase54-workspace h3{color:#fff}.phase54-workspace p{color:#dbe4ef}.phase54-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.phase54-list{display:grid;gap:12px;margin-top:14px}.phase54-card{padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(15,23,42,.62)}.phase54-card strong{display:block}.phase54-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:#cbd5e1;font-size:.9rem;font-weight:800}.phase54-badge{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.35);color:#fed7aa;font-weight:950;text-transform:capitalize}.phase54-workspace .client-request-form{background:rgba(15,23,42,.68);border-color:rgba(148,163,184,.24)}.phase54-workspace .client-request-form input,.phase54-workspace .client-request-form select,.phase54-workspace .client-request-form textarea{background:rgba(2,6,23,.74);color:#f8fafc;border-color:rgba(148,163,184,.35)}.phase54-command-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.phase54-command-list button{justify-content:flex-start}.phase54-workspace [data-state="ready"]{color:#bbf7d0}.phase54-workspace [data-state="error"]{color:#fecaca}@media(max-width:850px){.phase54-grid,.phase54-command-list{grid-template-columns:1fr}}
 </style>
+  <link rel="stylesheet" href="/assets/mobile-field-ux.css">
+  <link rel="stylesheet" href="/assets/module-completion-2026.css">
 </head>
 <body>
-  <header class="nav"><div class="wrap nav-inner"><a class="brand" href="/"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"><span>T&A Contracting</span></a><div class="dashboard-nav-cluster"><nav class="nav-links dashboard-nav-row"><a href="/">Home</a><a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Request Estimate</a><button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button><button type="button" data-admin-access-shortcut hidden>Roles</button></nav><div class="account-session-row"><div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div><a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a></div></div></div></header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/">
+        <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo" width="82" height="56" decoding="async" fetchpriority="high">
+        <span>T&amp;A Contracting</span>
+      </a>
+      <div class="dashboard-nav-cluster">
+        <nav class="nav-links dashboard-nav-row" aria-label="Primary dashboard navigation">
+          <a href="/">Home</a>
+          <a href="/dashboard/">Dashboard</a>
+          <a class="btn btn-primary" href="/#estimate" data-request-estimate-link>Request Estimate</a>
+          <button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button>
+          <button type="button" data-admin-access-shortcut hidden>Roles</button>
+        </nav>
+        <div class="account-session-row">
+          <div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div>
+          <a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a>
+        </div>
+        <div class="mobile-app-account" aria-label="Mobile account summary">
+          <div><strong data-mobile-dashboard-greeting>Good Morning, Thomas ☀️</strong><span data-mobile-current-role>Role: Client</span></div>
+          <button class="mobile-app-icon" type="button" data-mobile-notifications aria-label="Notifications">🔔<span data-mobile-notification-count>3</span></button>
+          <button class="mobile-app-avatar" type="button" data-client-profile-shortcut aria-label="Open account profile">TA</button>
+          <div class="mobile-notification-panel" data-mobile-notification-panel hidden>
+            <strong>Notifications</strong>
+            <p>Review today's priorities, pending quotes, job updates, and invoice alerts from the mobile dashboard.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header><section hidden aria-hidden="true"><a data-main-action-views="worker" href="#worker-jobs"><strong>Assigned jobs</strong></a><a data-main-action-views="worker" href="#worker-profile"><strong>Profile</strong></a></section>
   <nav aria-hidden="true" hidden><a href="#admin-requests">Work orders</a><a href="#admin-invoices">Invoices</a><a href="/inventory/" data-main-action-permission="canManageInventory">Inventory</a><a href="#worker-jobs">Assigned jobs</a></nav>
-  <span id="worker-profile" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="estimate-review" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="finance-command-center" class="dashboard-anchor-alias" aria-hidden="true"></span><main class="wrap" data-dashboard-root>
+  <span id="worker-profile" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="estimate-review" class="dashboard-anchor-alias" aria-hidden="true"></span><span id="finance-command-center-anchor" class="dashboard-anchor-alias" aria-hidden="true"></span><main class="wrap" data-dashboard-root>
     <span id="admin-quotes" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="hero">
       <div class="dashboard-hero">
         <div>
           <span class="eyebrow">Secure Client Portal</span>
-          <h1>Welcome back to your T&A workspace.</h1>
+          <h1>Welcome back to your T&amp;A workspace.</h1>
           <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
+          <div class="mobile-dashboard-kpi-grid" aria-label="Mobile dashboard snapshot">
+            <article><span>Revenue</span><strong data-mobile-metric="revenue">$0</strong><small>Open + paid invoice signal</small></article>
+            <article><span>Open Jobs</span><strong data-mobile-metric="jobs">0</strong><small>Active work orders</small></article>
+            <article><span>Pending Quotes</span><strong data-mobile-metric="quotes">0</strong><small>Needs review</small></article>
+            <article><span>New Requests</span><strong data-mobile-metric="requests">0</strong><small>Fresh intake</small></article>
+          </div>
+          <div class="mobile-role-selector" aria-label="Mobile role selector">
+            <button type="button" data-mobile-role-option="owner">Owner</button>
+            <button type="button" data-mobile-role-option="admin">Admin</button>
+            <button type="button" data-mobile-role-option="client">Client</button>
+            <button type="button" data-mobile-role-option="worker">Worker</button>
+          </div>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('admin')">Admin view</button>
             <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('client')">Client view</button>
@@ -1931,11 +1974,11 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
-        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo"></div>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo" width="430" height="294" loading="lazy" decoding="async"></div>
       </div>
     </section>
 
-    <section class="admin-command main-command-shortcuts" aria-label="Main dashboard command center" data-main-dashboard-actions hidden>
+    <section class="admin-command main-command-shortcuts executive-suite" id="executive-overview" aria-label="Main dashboard command center" data-main-dashboard-actions data-overview-workspace hidden>
       <div class="admin-command-header">
         <span class="eyebrow" data-main-command-eyebrow>Command center</span>
         <h2 data-main-command-title>All dashboard tools under the hero.</h2>
@@ -1950,12 +1993,55 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       </div>
 
       <div class="dashboard-action-strip" aria-label="Main dashboard shortcuts">
-        <a class="btn btn-primary" href="#estimate-review">Estimate Review</a>
-        <a class="btn btn-soft" href="#finance-command-center">Finance Center</a>
-        <a class="btn btn-soft" href="#admin-requests">Requests</a>
-        <a class="btn btn-soft" href="#admin-quotes">Quotes</a>
-        <a class="btn btn-soft" href="#worker-jobs">Worker Jobs</a>
+        <a class="btn btn-primary" href="#estimate-review" data-main-action-views="admin">Estimate Review</a>
+        <a class="btn btn-soft" href="#admin-requests" data-main-action-views="admin">Work Orders</a>
+        <a class="btn btn-soft" href="#admin-invoices" data-main-action-views="admin">Invoices</a>
+        <a class="btn btn-soft" href="#finance-command-center-anchor" data-main-action-views="admin">Finance Center</a>
+        <a class="btn btn-soft" href="/inventory/" data-main-action-views="admin" data-main-action-permission="canManageInventory">Inventory</a>
+        <a class="btn btn-soft" href="#admin-access" data-main-action-views="admin">Roles &amp; Users</a>
+        <a class="btn btn-primary" href="#client-requests" data-main-action-views="client">Requests</a>
+        <a class="btn btn-soft" href="#client-quotes" data-main-action-views="client">Quotes</a>
+        <a class="btn btn-soft" href="#client-invoices" data-main-action-views="client">Invoices</a>
+        <button class="btn btn-soft" type="button" data-client-profile-shortcut data-main-action-views="client">Profile</button>
+        <a class="btn btn-primary" href="#worker-jobs" data-main-action-views="worker">Assigned Jobs</a>
+        <a class="btn btn-soft" href="#worker-mobile-field" data-main-action-views="worker">Worker Mobile</a>
+        <a class="btn btn-soft" href="#worker-ai-troubleshooting" data-main-action-views="admin worker">AI Troubleshooting</a>
+        <a class="btn btn-soft" href="#worker-profile" data-main-action-views="worker">Profile</a>
       </div>
+
+      <section class="mobile-priority-panel" aria-label="Today's priorities">
+        <div class="mobile-section-heading"><span>Today&apos;s Priorities</span><strong>Focus queue</strong></div>
+        <div class="mobile-priority-list">
+          <a href="#estimate-review" data-mobile-workspace-link="estimate-review"><strong>Estimates needing review</strong><span data-mobile-priority="quotes">Check pending quote drafts</span></a>
+          <a href="#admin-requests" data-mobile-workspace-link="work-orders"><strong>Overdue jobs</strong><span data-mobile-priority="jobs">Review active work orders</span></a>
+          <a href="/inventory/"><strong>Inventory alerts</strong><span>Open stock and reservations</span></a>
+          <a href="#admin-invoices" data-mobile-workspace-link="invoices"><strong>Past due invoices</strong><span data-mobile-priority="invoices">Review payment status</span></a>
+        </div>
+      </section>
+
+      <section class="mobile-quick-create" aria-label="Quick actions">
+        <div class="mobile-section-heading"><span>Quick Actions</span><strong>Create work fast</strong></div>
+        <div class="mobile-create-grid">
+          <a href="/#estimate">New Estimate</a>
+          <a href="#admin-invoices" data-mobile-workspace-link="invoices">New Invoice</a>
+          <a href="#admin-requests" data-mobile-workspace-link="work-orders">New Job</a>
+          <a href="#client-requests" data-mobile-workspace-link="client-requests">New Request</a>
+        </div>
+      </section>
+
+      <section class="mobile-operations-grid" aria-label="Operations modules">
+        <a href="#client-requests" data-mobile-workspace-link="client-requests"><span>📋</span><strong>Requests</strong><small>Client intake</small></a>
+        <a href="#estimate-review" data-mobile-workspace-link="estimate-review"><span>💰</span><strong>Quotes</strong><small>Estimates</small></a>
+        <a href="#admin-requests" data-mobile-workspace-link="work-orders"><span>🔨</span><strong>Jobs</strong><small>Work orders</small></a>
+        <a href="#admin-invoices" data-mobile-workspace-link="invoices"><span>🧾</span><strong>Invoices</strong><small>Payments</small></a>
+        <a href="/inventory/"><span>📦</span><strong>Inventory</strong><small>Stock</small></a>
+        <a href="#worker-ai-troubleshooting" data-mobile-workspace-link="ai-troubleshooting"><span>🤖</span><strong>AI Troubleshooter</strong><small>Field help</small></a>
+      </section>
+
+      <section class="mobile-ai-insights" aria-label="AI assistant business insights">
+        <div><span>AI Assistant</span><strong>Business insights and alerts</strong><p data-mobile-ai-insight>Review today&apos;s estimates, inventory alerts, job updates, and invoice risk before dispatch.</p></div>
+        <a class="btn btn-primary" href="#worker-ai-troubleshooting" data-mobile-workspace-link="ai-troubleshooting">Open AI Troubleshooter</a>
+      </section>
     </section>
 
     <section class="card session-check" data-session-card hidden style="display:none !important;">
@@ -2023,11 +2109,11 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <label>Amount<input name="amount" inputmode="decimal"></label>
           <label class="full">Summary<textarea name="summary"></textarea></label>
           <label class="full">AI sourcing notes<textarea data-admin-quote-sourcing-notes readonly></textarea></label>
-          <div class="client-request-form-actions"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
+          <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI draft</button><span data-admin-quote-ai-status aria-live="polite"></span></div>
           <div data-admin-quote-sourcing-links></div>
           <div class="client-request-form-actions"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>
           <label><input type="checkbox" name="sendToClient" value="true"> Send to client</label>
-          <div class="client-request-form-actions"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
+          <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-primary" type="submit" data-admin-quote-submit>Create quote</button><span data-admin-quote-form-status aria-live="polite"></span></div>
         </form>
         <form class="client-request-form" data-phase52-admin-assignment-form hidden>
           <input type="hidden" name="jobRequestId" data-admin-assignment-request-id>
@@ -2189,8 +2275,8 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
     <section class="card admin-invoices" id="admin-invoices" data-admin-invoices data-dashboard-singleton="admin-invoices" data-dashboard-section data-views="admin" hidden>
-      <strong>Invoice &amp; payment desk</strong>
-      <p>Review open invoices, confirm matching payments, and close paid work orders from the admin dashboard.</p>
+      <strong>Modern Invoice Command Center</strong>
+      <p>Review open, paid, and all invoices with filters, search, payment links, mark-paid actions, payment status, and closeout readiness.</p>
       <p class="session-status" data-admin-invoices-status role="status" aria-live="polite">Loading invoices…</p>
       <div class="admin-request-list" data-admin-invoice-kpi-summary aria-label="Invoice summary cards"></div>
       <div class="admin-workspace-toolbar"><button class="btn btn-soft" type="button" data-admin-workspace-view="overview" data-admin-workspace-target="invoices" data-active="true">Overview</button><button class="btn btn-soft" type="button" data-admin-workspace-view="details" data-admin-workspace-target="invoices">Show invoices</button></div>
@@ -2323,7 +2409,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
             <span class="client-request-attachment-list" data-client-request-attachment-list>No files selected yet.</span>
           </label>
         </div>
-        <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
+        <div class="client-request-form-actions mobile-sticky-action-source"><button class="btn btn-primary" type="submit">Save request</button><span data-client-request-form-status aria-live="polite"></span></div>
       </form>
       <div class="client-request-list" data-client-request-list></div>
       <div class="admin-request-modal" data-client-request-modal role="dialog" aria-modal="true" aria-labelledby="client-request-modal-title" hidden>
@@ -2435,6 +2521,86 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div hidden>Start job Mark in progress Mark complete</div><div class="phase54-list" data-worker-mobile-list></div>
     </section>
 
+
+    <section class="card worker-ai-troubleshooting-suite ai-troubleshooting-suite phase54-workspace" id="worker-ai-troubleshooting" data-worker-ai-troubleshooting data-dashboard-section data-views="worker admin" hidden>
+      <strong>AI Troubleshooting Assistant</strong>
+      <p>Safety-first field assistant for equipment details, symptoms, error codes, readings, and practical next steps workers can attach to a job.</p>
+      <p class="session-status" data-ai-troubleshooting-status role="status" aria-live="polite">Enter the system, issue, readings, and safety conditions to generate a troubleshooting plan.</p>
+      <form class="client-request-form" data-ai-troubleshooting-form>
+        <div class="client-request-form-grid">
+          <label>System / Trade
+            <select name="systemType" required>
+              <option value="">Select system / trade</option>
+              <option value="HVAC">HVAC</option>
+              <option value="Mini split">Mini split</option>
+              <option value="Water source heat pump">Water source heat pump</option>
+              <option value="Plumbing">Plumbing</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Appliance">Appliance</option>
+              <option value="Pool/Spa">Pool/Spa</option>
+              <option value="Door/Hardware">Door/Hardware</option>
+              <option value="General handyman">General handyman</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Equipment / Component
+            <select name="component" required>
+              <option value="">Select equipment / component</option>
+              <option value="Compressor">Compressor</option>
+              <option value="Condenser">Condenser</option>
+              <option value="Air handler">Air handler</option>
+              <option value="Mini split indoor head">Mini split indoor head</option>
+              <option value="Mini split outdoor unit">Mini split outdoor unit</option>
+              <option value="Water heater">Water heater</option>
+              <option value="Circulating pump">Circulating pump</option>
+              <option value="Light switch">Light switch</option>
+              <option value="Outlet">Outlet</option>
+              <option value="Garbage disposal">Garbage disposal</option>
+              <option value="Toilet">Toilet</option>
+              <option value="Faucet">Faucet</option>
+              <option value="Dishwasher">Dishwasher</option>
+              <option value="Refrigerator">Refrigerator</option>
+              <option value="Garage door opener">Garage door opener</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Make / Brand<input name="make" autocomplete="organization" placeholder="Mitsubishi, Rheem, Moen, Square D"></label>
+          <label>Model Number<input name="model" autocomplete="off" placeholder="Model number"></label>
+          <label>Serial Number<input name="serial" autocomplete="off" placeholder="Optional serial number"></label>
+          <label>Error Code / Blink Code<input name="errorCode" autocomplete="off" placeholder="P6, E1, 4 flashes, GFCI trip"></label>
+          <label class="full">Issue / Complaint<textarea name="issue" required placeholder="Customer says unit turns on but does not cool. Outdoor fan runs. Indoor head flashes P6."></textarea></label>
+          <label class="full">Field Readings<textarea name="readings" placeholder="Voltage, amp draw, capacitor reading, pressure readings, temperature split, continuity, ohms, water pressure, GFCI status, breaker/fuse size"></textarea></label>
+          <label class="full">What has already been checked?<textarea name="checkedAlready" placeholder="Thermostat setting, filter, breaker, drain, visible leaks, reset attempts, access notes"></textarea></label>
+          <fieldset class="full ai-troubleshooting-safety-grid" aria-label="Safety conditions">
+            <legend>Safety Conditions</legend>
+            <label><input type="checkbox" name="safetyFlags" value="Power verified off before opening equipment"> Power verified off before opening equipment</label>
+            <label><input type="checkbox" name="safetyFlags" value="No burning smell/smoke"> No burning smell/smoke</label>
+            <label><input type="checkbox" name="safetyFlags" value="No active water leak"> No active water leak</label>
+            <label><input type="checkbox" name="safetyFlags" value="No gas smell"> No gas smell</label>
+            <label><input type="checkbox" name="safetyFlags" value="No exposed live wiring"> No exposed live wiring</label>
+            <label><input type="checkbox" name="safetyFlags" value="Needs supervisor review"> Needs supervisor review</label>
+          </fieldset>
+          <label>Urgency
+            <select name="urgency">
+              <option value="Low">Low</option>
+              <option value="Normal" selected>Normal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Emergency / unsafe">Emergency / unsafe</option>
+            </select>
+          </label>
+          <label>Attach to Work Order<input name="workOrderId" autocomplete="off" placeholder="Optional work order / job request ID"></label>
+        </div>
+        <div class="client-request-form-actions mobile-sticky-action-source">
+          <button class="btn btn-primary" type="submit" data-ai-troubleshooting-generate>Generate Troubleshooting Plan</button>
+          <button class="btn btn-soft" type="button" data-ai-troubleshooting-clear>Clear</button>
+          <button class="btn btn-soft" type="button" data-ai-troubleshooting-copy disabled title="Generate a troubleshooting plan before copying.">Copy Plan</button>
+          <button class="btn btn-soft" type="button" data-ai-troubleshooting-save disabled title="Generate a plan and add a work order ID before saving.">Save Notes to Job</button>
+          <span data-ai-troubleshooting-form-status aria-live="polite"></span>
+        </div>
+      </form>
+      <div class="phase54-grid ai-troubleshooting-result-grid" data-ai-troubleshooting-results></div>
+    </section>
+
     <section class="card photo-doc-suite phase54-workspace" data-dashboard-section data-views="worker admin" hidden>
       <strong>Photo Docs &amp; Completion Evidence</strong>
       <p>Track before, progress, and after documentation, completion notes, evidence checklist, and admin review status.</p>
@@ -2488,7 +2654,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
 
-    <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
+    <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker admin" hidden>
       <strong>Assigned jobs</strong>
       <p>Workers can see assigned jobs, reserved materials, access details, schedule notes, completion evidence, and mark work orders complete.</p>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
@@ -2528,7 +2694,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 <div hidden>data-debug-switch-view="client"</div>
 <div hidden>data-debug-switch-view="worker"</div>
 <div hidden>data-debug-refresh-session</div>
-<div hidden>Admin tools for running the business</div>
 <div hidden>Client tools for managing a project</div>
 <div hidden>Worker tools for assigned field jobs</div>
 <div hidden>No job requests yet.</div>
@@ -2544,6 +2709,46 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 <div hidden><input type="file" data-worker-before-files><input type="file" data-worker-after-files></div>
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
+  <nav class="mobile-bottom-navigation" aria-label="Mobile dashboard navigation">
+    <a href="/" data-mobile-bottom-home data-mobile-bottom-key="home"><span>🏠</span>Home</a>
+    <button type="button" data-mobile-bottom-key="requests"><span>📋</span>Requests</button>
+    <button type="button" data-mobile-bottom-key="quotes"><span>💰</span>Quotes</button>
+    <button type="button" data-mobile-bottom-key="jobs"><span>🔨</span>Jobs</button>
+    <button type="button" data-mobile-open-more aria-expanded="false" aria-controls="mobile-more-menu"><span>👤</span>More</button>
+  </nav>
+  <div class="mobile-more-backdrop" data-mobile-more-backdrop hidden></div>
+  <section class="mobile-more-menu" id="mobile-more-menu" data-mobile-more-menu hidden aria-label="More mobile navigation">
+    <div class="mobile-more-header">
+      <div>
+        <strong>More</strong>
+        <span data-mobile-more-role>Dashboard modules</span>
+      </div>
+      <button type="button" data-mobile-close-more aria-label="Close more menu">×</button>
+    </div>
+    <div class="mobile-more-grid">
+      <button type="button" data-mobile-more-key="dashboard">Dashboard</button>
+      <a href="/#estimate" data-mobile-more-key="request-estimate">Request Estimate</a>
+      <button type="button" data-mobile-more-key="invoices">Invoices</button>
+      <a href="/inventory/" data-mobile-more-key="inventory">Inventory / Stock</a>
+      <button type="button" data-mobile-more-key="troubleshooter">Troubleshooter</button>
+      <button type="button" data-mobile-more-key="customers">Customers</button>
+      <button type="button" data-mobile-more-key="schedule">Schedule</button>
+      <button type="button" data-mobile-more-key="profile">Profile</button>
+      <button type="button" data-mobile-more-key="admin-tools" data-mobile-more-admin>Admin tools</button>
+      <a href="/api/auth/logout?redirect=/login/?signed-out=1" data-mobile-more-key="sign-out">Sign out</a>
+    </div>
+  </section>
+  <div class="mobile-fab-shell">
+    <button class="mobile-fab" type="button" data-mobile-fab aria-expanded="false" aria-label="Open quick create actions">+</button>
+    <div class="mobile-fab-menu" data-mobile-fab-menu hidden>
+      <a href="/#estimate">New Estimate</a>
+      <a href="#admin-invoices" data-mobile-workspace-link="invoices">New Invoice</a>
+      <a href="#admin-requests" data-mobile-workspace-link="work-orders">New Job</a>
+      <button type="button" disabled title="Customer creation is handled through request intake in this dashboard.">New Customer</button>
+      <a href="#client-requests" data-mobile-workspace-link="client-requests">New Request</a>
+      <a href="/api/auth/logout?redirect=/login/?signed-out=1">Sign out</a>
+    </div>
+  </div>
 <script src="/dashboard/modules/invoice-actions.js"></script>
 <script src="/dashboard/modules/workspace-route.js"></script>
 <script src="/dashboard/modules/admin-invoice-payments.js"></script>
@@ -2572,6 +2777,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   <script src="/assets/dashboard-phase35-remove-top-tabs.js" defer></script>
   <script src="/assets/dashboard-phase36-remove-old-workspace.js" defer></script>
   <script src="/assets/dashboard-phase47-quote-editor-controller.js" defer></script>
+  <script src="/assets/mobile-dashboard-ux.js" defer></script>
 
 <script>
 /* TEST HOOK COMPAT

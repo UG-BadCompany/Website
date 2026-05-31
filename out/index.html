@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>T&A Contracting | Arizona Maintenance, Repairs & Improvements</title>
-  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico">
   <meta name="description" content="T&A Contracting is an Arizona-native contracting and maintenance company for repairs, improvements, property maintenance, quote approvals, client requests, and online payments.">
+  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/UG-BadCompany/images/refs/heads/main/website%20logos/favicon/favicon.ico">
   <style>
     :root {
       --ink: #111111;
@@ -199,6 +199,17 @@
       padding: clamp(14px, 3vw, 28px);
       filter: drop-shadow(0 24px 34px rgba(35, 20, 11, 0.16));
     }
+
+    .job-slideshow { margin-top: 28px; }
+    .slideshow-shell { display: grid; gap: 16px; }
+    .slideshow-frame { position: relative; height: clamp(260px, 42vw, 440px); border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.22); background: rgba(10,14,20,.55); box-shadow: 0 18px 40px rgba(0,0,0,.24); }
+    .slideshow-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slideshow-caption { position: absolute; left: 14px; bottom: 14px; padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-weight: 800; font-size: .85rem; letter-spacing: .03em; }
+    .slideshow-controls { display: flex; gap: 10px; align-items: center; }
+    .slideshow-controls button { min-height: 42px; min-width: 42px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; font-weight: 900; cursor: pointer; }
+    .slideshow-dots { display: flex; gap: 8px; flex-wrap: wrap; }
+    .slideshow-dots button { width: 10px; height: 10px; border-radius: 999px; border: 0; background: rgba(255,255,255,.35); padding: 0; }
+    .slideshow-dots button[aria-current="true"] { background: #f1a64a; }
 
     .section {
       width: min(1180px, calc(100% - 36px));
@@ -706,42 +717,42 @@
     .footer { border-top-color: var(--modern-line); }
 
 
-    html[data-theme="light"] body {
+    html[data-theme="dark"] body {
       color: #111827;
       background:
         radial-gradient(circle at 14% -10%, rgba(249,115,22,.16), transparent 34rem),
         radial-gradient(circle at 92% 12%, rgba(245,158,11,.12), transparent 30rem),
         linear-gradient(135deg, #fffaf2 0%, #ffffff 48%, #f7eadc 100%);
     }
-    html[data-theme="light"] body::before { opacity: .25; }
-    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
-    html[data-theme="light"] .brand,
-    html[data-theme="light"] .nav-links,
-    html[data-theme="light"] h1,
-    html[data-theme="light"] h2,
-    html[data-theme="light"] label,
-    html[data-theme="light"] .service-card strong,
-    html[data-theme="light"] .workflow-card strong { color: #111827; }
-    html[data-theme="light"] .hero-copy,
-    html[data-theme="light"] .section-heading p,
-    html[data-theme="light"] .estimate-copy p,
-    html[data-theme="light"] .form-note,
-    html[data-theme="light"] .footer,
-    html[data-theme="light"] .service-card p,
-    html[data-theme="light"] .workflow-card p,
-    html[data-theme="light"] .estimate-list li { color: #5f5148; }
-    html[data-theme="light"] .hero,
-    html[data-theme="light"] .service-card,
-    html[data-theme="light"] .workflow-card,
-    html[data-theme="light"] .estimate-shell,
-    html[data-theme="light"] .estimate-form,
-    html[data-theme="light"] .band { background: rgba(255,255,255,.88); border-color: rgba(17,17,17,.12); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
-    html[data-theme="light"] .hero-media { background: rgba(255,255,255,.72); border-color: rgba(17,17,17,.12); }
-    html[data-theme="light"] .btn,
-    html[data-theme="light"] .btn-secondary { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
-    html[data-theme="light"] input,
-    html[data-theme="light"] select,
-    html[data-theme="light"] textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
+    html[data-theme="dark"] body::before { opacity: .25; }
+    html[data-theme="dark"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="dark"] .brand,
+    html[data-theme="dark"] .nav-links,
+    html[data-theme="dark"] h1,
+    html[data-theme="dark"] h2,
+    html[data-theme="dark"] label,
+    html[data-theme="dark"] .service-card strong,
+    html[data-theme="dark"] .workflow-card strong { color: #111827; }
+    html[data-theme="dark"] .hero-copy,
+    html[data-theme="dark"] .section-heading p,
+    html[data-theme="dark"] .estimate-copy p,
+    html[data-theme="dark"] .form-note,
+    html[data-theme="dark"] .footer,
+    html[data-theme="dark"] .service-card p,
+    html[data-theme="dark"] .workflow-card p,
+    html[data-theme="dark"] .estimate-list li { color: #5f5148; }
+    html[data-theme="dark"] .hero,
+    html[data-theme="dark"] .service-card,
+    html[data-theme="dark"] .workflow-card,
+    html[data-theme="dark"] .estimate-shell,
+    html[data-theme="dark"] .estimate-form,
+    html[data-theme="dark"] .band { background: rgba(255,255,255,.88); border-color: rgba(17,17,17,.12); box-shadow: 0 22px 60px rgba(45,27,13,.12); }
+    html[data-theme="dark"] .hero-media { background: rgba(255,255,255,.72); border-color: rgba(17,17,17,.12); }
+    html[data-theme="dark"] .btn,
+    html[data-theme="dark"] .btn-secondary { color: #111827; background: rgba(255,255,255,.82); border-color: rgba(17,17,17,.14); }
+    html[data-theme="dark"] input,
+    html[data-theme="dark"] select,
+    html[data-theme="dark"] textarea { color: #111827; background: #fffaf4; border-color: rgba(17,17,17,.14); }
 
 
     /* Unified homepage/dashboard visual system */
@@ -918,7 +929,7 @@
     .metric { color: #fdba74; }
     .footer { border-top-color: var(--dash-line); }
 
-    html[data-theme="light"] body {
+    html[data-theme="dark"] body {
       color: #111827;
       background:
         radial-gradient(circle at 10% -8%, rgba(249,115,22,.16), transparent 32rem),
@@ -926,41 +937,41 @@
         linear-gradient(135deg, #fffaf2 0%, #ffffff 52%, #f7eadc 100%);
     }
 
-    html[data-theme="light"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
-    html[data-theme="light"] .brand,
-    html[data-theme="light"] .nav-links,
-    html[data-theme="light"] h1,
-    html[data-theme="light"] h2,
-    html[data-theme="light"] h3,
-    html[data-theme="light"] label,
-    html[data-theme="light"] .card strong,
-    html[data-theme="light"] .benefit strong,
-    html[data-theme="light"] .service-card strong,
-    html[data-theme="light"] .workflow-card strong { color: #111827; }
+    html[data-theme="dark"] .nav { background: rgba(255,250,244,.88); border-bottom-color: rgba(17,17,17,.12); }
+    html[data-theme="dark"] .brand,
+    html[data-theme="dark"] .nav-links,
+    html[data-theme="dark"] h1,
+    html[data-theme="dark"] h2,
+    html[data-theme="dark"] h3,
+    html[data-theme="dark"] label,
+    html[data-theme="dark"] .card strong,
+    html[data-theme="dark"] .benefit strong,
+    html[data-theme="dark"] .service-card strong,
+    html[data-theme="dark"] .workflow-card strong { color: #111827; }
 
-    html[data-theme="light"] p,
-    html[data-theme="light"] .footer,
-    html[data-theme="light"] .session-status,
-    html[data-theme="light"] .account-status,
-    html[data-theme="light"] .card p,
-    html[data-theme="light"] .benefit p,
-    html[data-theme="light"] .service-card p,
-    html[data-theme="light"] .workflow-card p,
-    html[data-theme="light"] .list li,
-    html[data-theme="light"] .form-note,
-    html[data-theme="light"] .estimate-list li { color: #5f5148; }
+    html[data-theme="dark"] p,
+    html[data-theme="dark"] .footer,
+    html[data-theme="dark"] .session-status,
+    html[data-theme="dark"] .account-status,
+    html[data-theme="dark"] .card p,
+    html[data-theme="dark"] .benefit p,
+    html[data-theme="dark"] .service-card p,
+    html[data-theme="dark"] .workflow-card p,
+    html[data-theme="dark"] .list li,
+    html[data-theme="dark"] .form-note,
+    html[data-theme="dark"] .estimate-list li { color: #5f5148; }
 
-    html[data-theme="light"] .hero-card,
-    html[data-theme="light"] .portal-hero,
-    html[data-theme="light"] .dashboard-hero,
-    html[data-theme="light"] .card,
-    html[data-theme="light"] .benefit,
-    html[data-theme="light"] .login-card,
-    html[data-theme="light"] .notice,
-    html[data-theme="light"] .service-card,
-    html[data-theme="light"] .workflow-card,
-    html[data-theme="light"] .estimate-shell,
-    html[data-theme="light"] .estimate-form {
+    html[data-theme="dark"] .hero-card,
+    html[data-theme="dark"] .portal-hero,
+    html[data-theme="dark"] .dashboard-hero,
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .benefit,
+    html[data-theme="dark"] .login-card,
+    html[data-theme="dark"] .notice,
+    html[data-theme="dark"] .service-card,
+    html[data-theme="dark"] .workflow-card,
+    html[data-theme="dark"] .estimate-shell,
+    html[data-theme="dark"] .estimate-form {
       color: #111827;
       border-color: rgba(17,17,17,.12);
       background: rgba(255,255,255,.88);
@@ -1057,49 +1068,43 @@
       font-weight: 900;
     }
 
-    html[data-theme="light"] .nav-links > a:not(.btn),
-    html[data-theme="light"] .nav-links > button:not(.btn) {
+    html[data-theme="dark"] .nav-links > a:not(.btn),
+    html[data-theme="dark"] .nav-links > button:not(.btn) {
       color: #1f2937;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.82);
     }
 
-    html[data-theme="light"] .nav-links .btn-primary {
+    html[data-theme="dark"] .nav-links .btn-primary {
       color: #21120a;
       background: linear-gradient(135deg, #fb923c, #facc15);
       border-color: transparent;
     }
 
-    html[data-theme="light"] .nav-links .btn-soft,
-    html[data-theme="light"] .nav-links .btn-secondary,
-    html[data-theme="light"] .nav-links .btn:not(.btn-primary),
-    html[data-theme="light"] .nav-links [data-inventory-logout] {
+    html[data-theme="dark"] .nav-links .btn-soft,
+    html[data-theme="dark"] .nav-links .btn-secondary,
+    html[data-theme="dark"] .nav-links .btn:not(.btn-primary),
+    html[data-theme="dark"] .nav-links [data-inventory-logout] {
       color: #111827;
       border-color: rgba(17,24,39,.16);
       background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,237,.9));
       box-shadow: 0 10px 24px rgba(45,27,13,.09);
     }
 
-    html[data-theme="light"] .nav-links .account-status,
-    html[data-theme="light"] .nav-links [data-inventory-account-status] {
+    html[data-theme="dark"] .nav-links .account-status,
+    html[data-theme="dark"] .nav-links [data-inventory-account-status] {
       color: #344054;
       border-color: rgba(17,24,39,.14);
       background: rgba(255,255,255,.88);
     }
 
-
-    .job-slideshow { margin-top: 28px; }
-    .slideshow-shell { display: grid; gap: 16px; }
-    .slideshow-frame { position: relative; height: clamp(260px, 42vw, 440px); border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,.22); background: rgba(10,14,20,.55); box-shadow: 0 18px 40px rgba(0,0,0,.24); }
-    .slideshow-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .slideshow-caption { position: absolute; left: 14px; bottom: 14px; padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-weight: 800; font-size: .85rem; letter-spacing: .03em; }
-    .slideshow-controls { display: flex; gap: 10px; align-items: center; }
-    .slideshow-controls button { min-height: 42px; min-width: 42px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; font-weight: 900; cursor: pointer; }
-    .slideshow-dots { display: flex; gap: 8px; flex-wrap: wrap; }
-    .slideshow-dots button { width: 10px; height: 10px; border-radius: 999px; border: 0; background: rgba(255,255,255,.35); padding: 0; }
-    .slideshow-dots button[aria-current="true"] { background: #f1a64a; }
-
   </style>
+  <link rel="stylesheet" href="/assets/header-phase10.css">
+  <link rel="stylesheet" href="/assets/public-phase13-dashboard-match.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase49-ui-consistency.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase50-real-white-area-fix.css">
+  <link rel="stylesheet" href="/assets/ui-polish-2026.css">
+  <link rel="stylesheet" href="/assets/mobile-field-ux.css">
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to main content</a>
@@ -1230,42 +1235,30 @@
                 <input id="streetAddress" name="streetAddress" type="text" autocomplete="street-address" placeholder="Street address for the requested work" required>
               </div>
               <div class="field">
-                <label for="service">Type of Work *</label>
-                <select id="service" name="service" required>
-                  <option value="">Select one</option>
-                  <option>Home repair</option>
-                  <option>Property maintenance</option>
-                  <option>Painting / finish work</option>
-                  <option>Fixture work</option>
-                  <option>Installation</option>
-                  <option>Commercial support</option>
-                  <option>Other / not sure</option>
-                </select>
-              </div>
-              <div class="field">
                 <label for="workScope">Work Scope *</label>
                 <select id="workScope" name="workScope" required>
                   <option value="">Select one</option>
-                  <option>Troubleshooting / repair</option>
-                  <option>Replace existing</option>
-                  <option>New install</option>
+                  <option>Troubleshooting / Repair</option>
+                  <option>Replace Existing</option>
+                  <option>New Install</option>
                 </select>
               </div>
               <div class="field">
-                <label for="workCategory">System / Trade *</label>
-                <select id="workCategory" name="workCategory" required>
+                <label for="service">Type of Work *</label>
+                <select id="service" name="service" required>
                   <option value="">Select one</option>
                   <option>HVAC</option>
                   <option>Electrical</option>
                   <option>Plumbing</option>
-                  <option>Appliance installation</option>
-                  <option>Water heater</option>
-                  <option>Drywall / framing</option>
-                  <option>Painting / finish work</option>
-                  <option>Doors / windows</option>
-                  <option>Exterior / fencing</option>
-                  <option>General handyman</option>
-                  <option>Other / not sure</option>
+                  <option>General Maintenance</option>
+                  <option>Carpentry</option>
+                  <option>Drywall</option>
+                  <option>Painting</option>
+                  <option>Appliance / Fixture Installation</option>
+                  <option>Roofing</option>
+                  <option>Flooring</option>
+                  <option>Exterior / Yard</option>
+                  <option>Other / Not Sure</option>
                 </select>
               </div>
               <div class="field">
@@ -1280,7 +1273,7 @@
               </div>
               <div class="field field-full">
                 <label for="description">Project Details *</label>
-                <textarea id="description" name="description" placeholder="Include model/type, whether this is existing or new, and lengths/quantities (example: 100ft run, 2 fixtures, 1 unit)." required></textarea>
+                <textarea id="description" name="description" placeholder="Tell us what needs to be repaired, installed, replaced, maintained, or improved." required></textarea>
               </div>
               <div class="field field-full">
                 <label for="photos">Photo / File</label>
@@ -1338,7 +1331,7 @@
         const payload = Object.fromEntries(formData.entries());
 
         submitButton.disabled = true;
-        setStatus('Saving your request…');
+        setStatus('Saving your request and preparing your estimate…');
 
         try {
           const response = await fetch('/api/job-requests', {
@@ -1352,10 +1345,10 @@
             throw new Error(result.message || 'The database request did not complete.');
           }
 
-          setStatus('Request received. Redirecting…', 'success');
+          setStatus('Request received. We are preparing your estimate. Redirecting…', 'success');
           window.location.assign('/thank-you/');
         } catch (error) {
-          console.warn('Database request failed; using Netlify Forms fallback.', error);
+          console.warn('Request Estimate flow failed; using Netlify Forms fallback.', error);
           submitWithNetlifyForms();
         } finally {
           submitButton.disabled = false;
@@ -1383,6 +1376,7 @@
       });
     })();
   </script>
+
 
   <script>
     (() => {
@@ -1455,6 +1449,8 @@
     })();
   </script>
 
-
+  <script src="/assets/site-cleanup.js" defer></script>
+  <script src="/assets/public-phase15-home-section-fix.js" defer></script>
+  <script src="/assets/public-phase16-portal-grid-fix.js" defer></script>
 </body>
 </html>

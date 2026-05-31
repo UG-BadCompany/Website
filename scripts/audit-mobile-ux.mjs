@@ -53,12 +53,15 @@ has(dashboard, /data-mobile-role-option="owner"[\s\S]*data-mobile-role-option="a
 has(dashboard, /data-mobile-metric="revenue"[\s\S]*data-mobile-metric="jobs"[\s\S]*data-mobile-metric="quotes"[\s\S]*data-mobile-metric="requests"/, 'Mobile dashboard KPI cards must include revenue, jobs, quotes, and requests.');
 has(dashboard, /Today&apos;s Priorities[\s\S]*Inventory alerts[\s\S]*Past due invoices/, 'Mobile Today priorities must include estimate, job, inventory, and invoice queues.');
 has(dashboard, /mobile-bottom-navigation[\s\S]*Home[\s\S]*Requests[\s\S]*Quotes[\s\S]*Jobs[\s\S]*More/, 'Mobile bottom navigation must expose Home, Requests, Quotes, Jobs, and More.');
+has(dashboard, /mobile-more-menu[\s\S]*Dashboard[\s\S]*Request Estimate[\s\S]*Invoices[\s\S]*Inventory \/ Stock[\s\S]*Troubleshooter[\s\S]*Schedule[\s\S]*Profile[\s\S]*Sign out/, 'Mobile More menu must expose the remaining modules.');
+has(mobileCss, /mobile-more-menu[\s\S]*position:\s*fixed/, 'Mobile More menu CSS is missing.');
 has(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request/, 'Floating quick action button must expose create actions.');
 has(mobileCss, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Mobile bottom navigation CSS is missing.');
 has(mobileCss, /mobile-fab[\s\S]*position:\s*fixed|mobile-fab-shell[\s\S]*position:\s*fixed/, 'Floating action button CSS is missing.');
 const mobileDashboardJs = read('public/assets/mobile-dashboard-ux.js');
 if (!/data-mobile-role-option/.test(mobileDashboardJs) || !/taSetDashboardView/.test(mobileDashboardJs) || !/taSetSidebarWorkspace/.test(mobileDashboardJs)) fail('Mobile dashboard JS must bridge role selector and workspace links to existing dashboard APIs.');
 if (!/data-mobile-notifications/.test(mobileDashboardJs) || !/data-mobile-notification-panel/.test(mobileDashboardJs)) fail('Notifications button must toggle a real mobile notification panel.');
+if (!/roleRoutes/.test(mobileDashboardJs) || !/data-mobile-bottom-key/.test(mobileDashboardJs) || !/data-mobile-more-key/.test(mobileDashboardJs)) fail('Bottom nav and More menu must use role-aware mobile routes.');
 if (/observe\(document\.body, \{ attributes: true, childList: true, subtree: true/.test(mobileDashboardJs)) fail('Mobile dashboard JS must not observe the whole body subtree for every mutation.');
 has(dashboard, /id="worker-mobile-field"[\s\S]*class="[^"]*worker-mobile-suite|class="[^"]*worker-mobile-suite[\s\S]*id="worker-mobile-field"/, 'Worker Mobile workspace is missing.');
 has(dashboard, /id="smart-schedule-suite"/, 'Scheduling workspace is missing while sidebar uses it.');

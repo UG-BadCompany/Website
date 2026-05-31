@@ -2694,7 +2694,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
 <div hidden>data-debug-switch-view="client"</div>
 <div hidden>data-debug-switch-view="worker"</div>
 <div hidden>data-debug-refresh-session</div>
-<div hidden>Admin tools for running the business</div>
 <div hidden>Client tools for managing a project</div>
 <div hidden>Worker tools for assigned field jobs</div>
 <div hidden>No job requests yet.</div>
@@ -2711,12 +2710,34 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <nav class="mobile-bottom-navigation" aria-label="Mobile dashboard navigation">
-    <a href="/" data-mobile-bottom-home><span>🏠</span>Home</a>
-    <a href="#client-requests" data-mobile-workspace-link="client-requests"><span>📋</span>Requests</a>
-    <a href="#estimate-review" data-mobile-workspace-link="estimate-review"><span>💰</span>Quotes</a>
-    <a href="#worker-jobs" data-mobile-workspace-link="worker-jobs"><span>🔨</span>Jobs</a>
-    <button type="button" data-mobile-open-more><span>👤</span>More</button>
+    <a href="/" data-mobile-bottom-home data-mobile-bottom-key="home"><span>🏠</span>Home</a>
+    <button type="button" data-mobile-bottom-key="requests"><span>📋</span>Requests</button>
+    <button type="button" data-mobile-bottom-key="quotes"><span>💰</span>Quotes</button>
+    <button type="button" data-mobile-bottom-key="jobs"><span>🔨</span>Jobs</button>
+    <button type="button" data-mobile-open-more aria-expanded="false" aria-controls="mobile-more-menu"><span>👤</span>More</button>
   </nav>
+  <div class="mobile-more-backdrop" data-mobile-more-backdrop hidden></div>
+  <section class="mobile-more-menu" id="mobile-more-menu" data-mobile-more-menu hidden aria-label="More mobile navigation">
+    <div class="mobile-more-header">
+      <div>
+        <strong>More</strong>
+        <span data-mobile-more-role>Dashboard modules</span>
+      </div>
+      <button type="button" data-mobile-close-more aria-label="Close more menu">×</button>
+    </div>
+    <div class="mobile-more-grid">
+      <button type="button" data-mobile-more-key="dashboard">Dashboard</button>
+      <a href="/#estimate" data-mobile-more-key="request-estimate">Request Estimate</a>
+      <button type="button" data-mobile-more-key="invoices">Invoices</button>
+      <a href="/inventory/" data-mobile-more-key="inventory">Inventory / Stock</a>
+      <button type="button" data-mobile-more-key="troubleshooter">Troubleshooter</button>
+      <button type="button" data-mobile-more-key="customers">Customers</button>
+      <button type="button" data-mobile-more-key="schedule">Schedule</button>
+      <button type="button" data-mobile-more-key="profile">Profile</button>
+      <button type="button" data-mobile-more-key="admin-tools" data-mobile-more-admin>Admin tools</button>
+      <a href="/api/auth/logout?redirect=/login/?signed-out=1" data-mobile-more-key="sign-out">Sign out</a>
+    </div>
+  </section>
   <div class="mobile-fab-shell">
     <button class="mobile-fab" type="button" data-mobile-fab aria-expanded="false" aria-label="Open quick create actions">+</button>
     <div class="mobile-fab-menu" data-mobile-fab-menu hidden>
