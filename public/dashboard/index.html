@@ -1919,7 +1919,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   <header class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="/">
-        <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo">
+        <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo" width="82" height="56" decoding="async" fetchpriority="high">
         <span>T&amp;A Contracting</span>
       </a>
       <div class="dashboard-nav-cluster">
@@ -1938,6 +1938,10 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <div><strong data-mobile-dashboard-greeting>Good Morning, Thomas ☀️</strong><span data-mobile-current-role>Role: Client</span></div>
           <button class="mobile-app-icon" type="button" data-mobile-notifications aria-label="Notifications">🔔<span data-mobile-notification-count>3</span></button>
           <button class="mobile-app-avatar" type="button" data-client-profile-shortcut aria-label="Open account profile">TA</button>
+          <div class="mobile-notification-panel" data-mobile-notification-panel hidden>
+            <strong>Notifications</strong>
+            <p>Review today's priorities, pending quotes, job updates, and invoice alerts from the mobile dashboard.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1970,16 +1974,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           </div>
           <p class="session-status dashboard-view-status" data-dashboard-view-status hidden>Showing your dashboard tools.</p>
         </div>
-        <aside class="mobile-dashboard-brief" aria-label="Contractor portal quick actions">
-          <span class="eyebrow">Field-ready</span>
-          <h2>Contractor command center</h2>
-          <p>Fast access to requests, quotes, jobs, invoices, stock, and AI troubleshooting.</p>
-          <div class="mobile-brief-list">
-            <span>24/7 client portal</span>
-            <span>Worker field tools</span>
-            <span>Inventory-aware jobs</span>
-          </div>
-        </aside>
+        <div class="logo-panel"><img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo" width="430" height="294" loading="lazy" decoding="async"></div>
       </div>
     </section>
 
@@ -2730,6 +2725,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <a href="#admin-requests" data-mobile-workspace-link="work-orders">New Job</a>
       <button type="button" disabled title="Customer creation is handled through request intake in this dashboard.">New Customer</button>
       <a href="#client-requests" data-mobile-workspace-link="client-requests">New Request</a>
+      <a href="/api/auth/logout?redirect=/login/?signed-out=1">Sign out</a>
     </div>
   </div>
 <script src="/dashboard/modules/invoice-actions.js"></script>

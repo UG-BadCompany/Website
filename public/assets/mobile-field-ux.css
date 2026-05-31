@@ -435,6 +435,17 @@ iframe {
     min-height: 46px !important;
     width: 100%;
   }
+
+  .dashboard-workspace-v2 > [data-dashboard-section],
+  .dashboard-workspace-v2 > .card,
+  .phase54-workspace,
+  .admin-command,
+  .client-requests,
+  .client-quotes,
+  .worker-jobs {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 720px;
+  }
 }
 
 @media (max-width: 430px) {
@@ -497,6 +508,20 @@ iframe {
 @media (max-width: 820px) {
   body {
     padding-bottom: calc(96px + var(--mobile-safe-bottom)) !important;
+  }
+
+  /* Bottom navigation is the primary mobile nav; hide the crowded top nav buttons on phones. */
+  .dashboard-nav-row {
+    display: none !important;
+  }
+
+  .account-session-row {
+    display: none !important;
+  }
+
+  /* Avoid two competing bottom bars on the app shell; More opens the full sidebar instead. */
+  .mobile-quick-action-bar {
+    display: none !important;
   }
 
   .hero {
@@ -577,6 +602,29 @@ iframe {
   .mobile-app-avatar {
     background: linear-gradient(135deg, #f97316, #9a3412);
     box-shadow: 0 10px 24px rgba(249,115,22,.28);
+  }
+
+  .mobile-notification-panel {
+    grid-column: 1 / -1;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 16px;
+    background: rgba(2,6,23,.72);
+  }
+
+  .mobile-notification-panel[hidden] {
+    display: none !important;
+  }
+
+  .mobile-notification-panel strong {
+    color: #fff;
+  }
+
+  .mobile-notification-panel p {
+    margin: 5px 0 0;
+    color: #dbeafe !important;
+    font-size: .84rem;
+    line-height: 1.4;
   }
 
   .mobile-dashboard-kpi-grid {
@@ -848,6 +896,17 @@ iframe {
 
   .mobile-fab-menu button:disabled {
     opacity: .72;
+  }
+
+  .dashboard-workspace-v2 > [data-dashboard-section],
+  .dashboard-workspace-v2 > .card,
+  .phase54-workspace,
+  .admin-command,
+  .client-requests,
+  .client-quotes,
+  .worker-jobs {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 720px;
   }
 }
 

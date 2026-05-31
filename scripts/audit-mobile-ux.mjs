@@ -46,6 +46,7 @@ has(mobileCss, /worker-mobile-card/, 'Worker mobile card CSS hook is missing.');
 has(mobileCss, /worker-ai-troubleshooting-suite/, 'AI Troubleshooting mobile CSS hook is missing.');
 
 has(dashboard, /href="\/"[\s\S]*href="\/dashboard\/"[\s\S]*href="\/#estimate"[\s\S]*Request Estimate/, 'Dashboard header must keep working Home, Dashboard, and Request Estimate links.');
+has(mobileCss, /dashboard-nav-row[\s\S]*display:\s*none !important/, 'Mobile CSS must remove the crowded top nav buttons.');
 has(dashboard, /data-main-dashboard-actions[\s\S]*Estimate Review[\s\S]*Work Orders[\s\S]*AI Troubleshooting/, 'Dashboard shortcuts must preserve reachable module actions for all views.');
 has(dashboard, /data-mobile-dashboard-greeting[\s\S]*data-mobile-current-role[\s\S]*data-mobile-notifications/, 'Mobile header must include dynamic greeting, current role, notifications, and avatar.');
 has(dashboard, /data-mobile-role-option="owner"[\s\S]*data-mobile-role-option="admin"[\s\S]*data-mobile-role-option="client"[\s\S]*data-mobile-role-option="worker"/, 'Mobile role selector must expose Owner, Admin, Client, and Worker.');
@@ -57,6 +58,8 @@ has(mobileCss, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Mobile botto
 has(mobileCss, /mobile-fab[\s\S]*position:\s*fixed|mobile-fab-shell[\s\S]*position:\s*fixed/, 'Floating action button CSS is missing.');
 const mobileDashboardJs = read('public/assets/mobile-dashboard-ux.js');
 if (!/data-mobile-role-option/.test(mobileDashboardJs) || !/taSetDashboardView/.test(mobileDashboardJs) || !/taSetSidebarWorkspace/.test(mobileDashboardJs)) fail('Mobile dashboard JS must bridge role selector and workspace links to existing dashboard APIs.');
+if (!/data-mobile-notifications/.test(mobileDashboardJs) || !/data-mobile-notification-panel/.test(mobileDashboardJs)) fail('Notifications button must toggle a real mobile notification panel.');
+if (/observe\(document\.body, \{ attributes: true, childList: true, subtree: true/.test(mobileDashboardJs)) fail('Mobile dashboard JS must not observe the whole body subtree for every mutation.');
 has(dashboard, /id="worker-mobile-field"[\s\S]*class="[^"]*worker-mobile-suite|class="[^"]*worker-mobile-suite[\s\S]*id="worker-mobile-field"/, 'Worker Mobile workspace is missing.');
 has(dashboard, /id="smart-schedule-suite"/, 'Scheduling workspace is missing while sidebar uses it.');
 has(dashboard, /class="[^"]*photo-doc-suite/, 'Photo Docs workspace is missing while sidebar uses it.');

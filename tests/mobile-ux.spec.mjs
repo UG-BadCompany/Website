@@ -49,9 +49,13 @@ test('mobile header links and dashboard module shortcuts remain functional', asy
   assert.match(dashboard, /data-mobile-metric="revenue"[\s\S]*data-mobile-metric="jobs"[\s\S]*data-mobile-metric="quotes"[\s\S]*data-mobile-metric="requests"/, 'Mobile dashboard KPI cards should expose revenue, jobs, quotes, and requests');
   assert.match(dashboard, /Today&apos;s Priorities[\s\S]*Inventory alerts[\s\S]*Past due invoices/, 'Mobile dashboard should include Today priorities');
   assert.match(dashboard, /mobile-bottom-navigation[\s\S]*Home[\s\S]*Requests[\s\S]*Quotes[\s\S]*Jobs[\s\S]*More/, 'Mobile bottom navigation should expose Home, Requests, Quotes, Jobs, and More');
-  assert.match(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request/, 'Floating quick action button should expose create actions without dead links');
+  assert.match(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request[\s\S]*Sign out/, 'Floating quick action button should expose create actions and mobile sign out without dead links');
   assert.match(css, /dashboard-mobile-nav-toggle[\s\S]*width:\s*44px/, 'Mobile workspace toggle should be compact instead of a full-width menu button');
+  assert.match(css, /dashboard-nav-row[\s\S]*display:\s*none !important/, 'Crowded top nav buttons should be removed on mobile');
   assert.match(css, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Bottom mobile navigation should be fixed and app-like');
+  const mobileJs = await readText('public/assets/mobile-dashboard-ux.js');
+  assert.match(mobileJs, /data-mobile-notifications[\s\S]*data-mobile-notification-panel/, 'Notifications should toggle a real panel');
+  assert.doesNotMatch(mobileJs, /observe\(document\.body, \{ attributes: true, childList: true, subtree: true/, 'Mobile JS should avoid whole-body subtree observers for performance');
 });
 
 test('mobile sidebar opens/closes and every sidebar item remains tappable', async () => {

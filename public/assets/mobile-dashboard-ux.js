@@ -86,6 +86,15 @@
       });
     });
 
+    const notifications = q('[data-mobile-notifications]');
+    const notificationPanel = q('[data-mobile-notification-panel]');
+    if (notifications && notificationPanel && !notifications.dataset.mobileNotificationsBound) {
+      notifications.dataset.mobileNotificationsBound = 'true';
+      notifications.addEventListener('click', () => {
+        notificationPanel.hidden = !notificationPanel.hidden;
+      });
+    }
+
     const more = q('[data-mobile-open-more]');
     if (more && !more.dataset.mobileMoreBound) {
       more.dataset.mobileMoreBound = 'true';
@@ -111,19 +120,27 @@
     }
   };
 
+  let refreshTimer = 0;
   const refresh = () => {
     updateGreeting();
     updateRole();
     updateMetrics();
     bind();
   };
+  const scheduleRefresh = () => {
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(refresh, 80);
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refresh, { once: true });
   else refresh();
   setTimeout(refresh, 900);
-  setTimeout(refresh, 2200);
+  if ('requestIdleCallback' in window) window.requestIdleCallback(refresh, { timeout: 2200 });
+  else setTimeout(refresh, 2200);
   try {
-    new MutationObserver(refresh).observe(document.body, { attributes: true, childList: true, subtree: true, attributeFilter: ['data-current-dashboard-view'] });
-    new MutationObserver(refresh).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+    new MutationObserver(scheduleRefresh).observe(document.body, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+    new MutationObserver(scheduleRefresh).observe(document.documentElement, { attributes: true, attributeFilter: ['data-current-dashboard-view'] });
+    const account = q('[data-account-status]');
+    if (account) new MutationObserver(scheduleRefresh).observe(account, { childList: true, characterData: true, subtree: true });
   } catch {}
 })();
