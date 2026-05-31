@@ -1978,6 +1978,23 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       </div>
     </section>
 
+    <section class="mobile-clean-dashboard" aria-label="Mobile dashboard summary" data-mobile-clean-dashboard>
+      <div class="mobile-section-heading"><span data-mobile-clean-eyebrow>Dashboard</span><strong data-mobile-clean-title>Today at a glance</strong></div>
+      <p data-mobile-clean-description>Role-aware summary cards for the selected workspace. Use the bottom nav, More sheet, or plus button for actions.</p>
+      <div class="mobile-clean-grid" aria-label="Mobile role summary cards">
+        <article><span>Today&apos;s jobs</span><strong data-mobile-clean-metric="jobs">0</strong><small data-mobile-clean-copy="jobs">Active and assigned work</small></article>
+        <article><span>Open requests</span><strong data-mobile-clean-metric="requests">0</strong><small data-mobile-clean-copy="requests">New client intake</small></article>
+        <article><span>Pending quotes</span><strong data-mobile-clean-metric="quotes">0</strong><small data-mobile-clean-copy="quotes">Estimates needing action</small></article>
+        <article><span>Unpaid invoices</span><strong data-mobile-clean-metric="invoices">0</strong><small data-mobile-clean-copy="invoices">Payment follow-up</small></article>
+        <article><span>Low inventory alerts</span><strong data-mobile-clean-metric="inventory">0</strong><small data-mobile-clean-copy="inventory">Stock and reservations</small></article>
+        <article><span>Recent activity</span><strong data-mobile-clean-metric="activity">Live</strong><small data-mobile-clean-copy="activity">Latest project updates</small></article>
+      </div>
+      <div class="mobile-clean-locked" data-mobile-clean-locked hidden role="status">
+        <strong>Workspace locked</strong>
+        <p>Your account does not have permission to open this view. Choose an available workspace or contact an administrator.</p>
+      </div>
+    </section>
+
     <section class="admin-command main-command-shortcuts executive-suite" id="executive-overview" aria-label="Main dashboard command center" data-main-dashboard-actions data-overview-workspace hidden>
       <div class="admin-command-header">
         <span class="eyebrow" data-main-command-eyebrow>Command center</span>
@@ -2710,11 +2727,11 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   </main>
   <footer class="wrap footer"><strong>T&A Contracting</strong> — Secure dashboard preview with magic-link sessions, role loading, client requests, and quote review.</footer>
   <nav class="mobile-bottom-navigation" aria-label="Mobile dashboard navigation">
-    <a href="/" data-mobile-bottom-home data-mobile-bottom-key="home"><span>🏠</span>Home</a>
+    <a href="/dashboard/" data-mobile-bottom-home data-mobile-bottom-key="home"><span>🏠</span>Home</a>
     <button type="button" data-mobile-bottom-key="requests"><span>📋</span>Requests</button>
     <button type="button" data-mobile-bottom-key="quotes"><span>💰</span>Quotes</button>
     <button type="button" data-mobile-bottom-key="jobs"><span>🔨</span>Jobs</button>
-    <button type="button" data-mobile-open-more aria-expanded="false" aria-controls="mobile-more-menu"><span>👤</span>More</button>
+    <button type="button" data-mobile-open-more aria-expanded="false" aria-controls="mobile-more-menu"><span>☰</span>More</button>
   </nav>
   <div class="mobile-more-backdrop" data-mobile-more-backdrop hidden></div>
   <section class="mobile-more-menu" id="mobile-more-menu" data-mobile-more-menu hidden aria-label="More mobile navigation">
@@ -2727,26 +2744,27 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </div>
     <div class="mobile-more-grid">
       <button type="button" data-mobile-more-key="dashboard">Dashboard</button>
-      <a href="/#estimate" data-mobile-more-key="request-estimate">Request Estimate</a>
-      <button type="button" data-mobile-more-key="invoices">Invoices</button>
-      <a href="/inventory/" data-mobile-more-key="inventory">Inventory / Stock</a>
-      <button type="button" data-mobile-more-key="troubleshooter">Troubleshooter</button>
+      <a href="/inventory/" data-mobile-more-key="inventory">Inventory</a>
+      <button type="button" data-mobile-more-key="invoices">Invoices / Finance</button>
       <button type="button" data-mobile-more-key="customers">Customers</button>
-      <button type="button" data-mobile-more-key="schedule">Schedule</button>
-      <button type="button" data-mobile-more-key="profile">Profile</button>
-      <button type="button" data-mobile-more-key="admin-tools" data-mobile-more-admin>Admin tools</button>
-      <a href="/api/auth/logout?redirect=/login/?signed-out=1" data-mobile-more-key="sign-out">Sign out</a>
+      <button type="button" data-mobile-more-key="employees">Employees / Workers</button>
+      <button type="button" data-mobile-more-key="admin-tools" data-mobile-more-admin>Admin</button>
+      <button type="button" data-mobile-more-key="reports">Reports</button>
+      <button type="button" data-mobile-more-key="settings">Settings</button>
+      <button type="button" data-mobile-more-key="troubleshooter">AI Assistant</button>
+      <a href="/api/auth/logout?redirect=/login/?signed-out=1" data-mobile-more-key="sign-out">Logout</a>
     </div>
   </section>
   <div class="mobile-fab-shell">
     <button class="mobile-fab" type="button" data-mobile-fab aria-expanded="false" aria-label="Open quick create actions">+</button>
     <div class="mobile-fab-menu" data-mobile-fab-menu hidden>
-      <a href="/#estimate">New Estimate</a>
-      <a href="#admin-invoices" data-mobile-workspace-link="invoices">New Invoice</a>
-      <a href="#admin-requests" data-mobile-workspace-link="work-orders">New Job</a>
-      <button type="button" disabled title="Customer creation is handled through request intake in this dashboard.">New Customer</button>
-      <a href="#client-requests" data-mobile-workspace-link="client-requests">New Request</a>
-      <a href="/api/auth/logout?redirect=/login/?signed-out=1">Sign out</a>
+      <a href="#client-requests" data-mobile-fab-action="request" data-mobile-workspace-link="client-requests">New Request</a>
+      <a href="/#estimate" data-mobile-fab-action="quote">New Quote / Estimate</a>
+      <a href="#admin-requests" data-mobile-fab-action="job" data-mobile-workspace-link="work-orders">New Job / Work Order</a>
+      <a href="/inventory/" data-mobile-fab-action="inventory">Scan/Add Inventory</a>
+      <button type="button" data-mobile-fab-action="customer" data-mobile-more-key="customers">Add Customer</button>
+      <button type="button" data-mobile-fab-action="photo" data-mobile-more-key="reports">Upload Photo</button>
+      <a href="#worker-ai-troubleshooting" data-mobile-fab-action="assistant" data-mobile-workspace-link="ai-troubleshooting">Open AI Assistant</a>
     </div>
   </div>
 <script src="/dashboard/modules/invoice-actions.js"></script>

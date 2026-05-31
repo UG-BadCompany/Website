@@ -51,11 +51,11 @@ has(dashboard, /data-main-dashboard-actions[\s\S]*Estimate Review[\s\S]*Work Ord
 has(dashboard, /data-mobile-dashboard-greeting[\s\S]*data-mobile-current-role[\s\S]*data-mobile-notifications/, 'Mobile header must include dynamic greeting, current role, notifications, and avatar.');
 has(dashboard, /data-mobile-role-option="owner"[\s\S]*data-mobile-role-option="admin"[\s\S]*data-mobile-role-option="client"[\s\S]*data-mobile-role-option="worker"/, 'Mobile role selector must expose Owner, Admin, Client, and Worker.');
 has(dashboard, /data-mobile-metric="revenue"[\s\S]*data-mobile-metric="jobs"[\s\S]*data-mobile-metric="quotes"[\s\S]*data-mobile-metric="requests"/, 'Mobile dashboard KPI cards must include revenue, jobs, quotes, and requests.');
-has(dashboard, /Today&apos;s Priorities[\s\S]*Inventory alerts[\s\S]*Past due invoices/, 'Mobile Today priorities must include estimate, job, inventory, and invoice queues.');
+has(dashboard, /mobile-clean-dashboard[\s\S]*Today&apos;s jobs[\s\S]*Open requests[\s\S]*Pending quotes[\s\S]*Unpaid invoices[\s\S]*Low inventory alerts[\s\S]*Recent activity/, 'Mobile dashboard must use a clean role-aware summary instead of the desktop command center.');
 has(dashboard, /mobile-bottom-navigation[\s\S]*Home[\s\S]*Requests[\s\S]*Quotes[\s\S]*Jobs[\s\S]*More/, 'Mobile bottom navigation must expose Home, Requests, Quotes, Jobs, and More.');
-has(dashboard, /mobile-more-menu[\s\S]*Dashboard[\s\S]*Request Estimate[\s\S]*Invoices[\s\S]*Inventory \/ Stock[\s\S]*Troubleshooter[\s\S]*Schedule[\s\S]*Profile[\s\S]*Sign out/, 'Mobile More menu must expose the remaining modules.');
+has(dashboard, /mobile-more-menu[\s\S]*Dashboard[\s\S]*Inventory[\s\S]*Invoices \/ Finance[\s\S]*Customers[\s\S]*Employees \/ Workers[\s\S]*Admin[\s\S]*Reports[\s\S]*Settings[\s\S]*Logout/, 'Mobile More menu must expose the remaining modules.');
 has(mobileCss, /mobile-more-menu[\s\S]*position:\s*fixed/, 'Mobile More menu CSS is missing.');
-has(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request/, 'Floating quick action button must expose create actions.');
+has(dashboard, /data-mobile-fab[\s\S]*New Request[\s\S]*New Quote \/ Estimate[\s\S]*New Job \/ Work Order[\s\S]*Scan\/Add Inventory[\s\S]*Add Customer[\s\S]*Upload Photo[\s\S]*Open AI Assistant/, 'Floating quick action button must expose create actions.');
 has(mobileCss, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Mobile bottom navigation CSS is missing.');
 has(mobileCss, /mobile-fab[\s\S]*position:\s*fixed|mobile-fab-shell[\s\S]*position:\s*fixed/, 'Floating action button CSS is missing.');
 const mobileDashboardJs = read('public/assets/mobile-dashboard-ux.js');
