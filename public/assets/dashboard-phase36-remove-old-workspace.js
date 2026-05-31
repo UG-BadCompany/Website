@@ -1,3 +1,6 @@
+// CLEANUP CANDIDATE
+// Possible legacy overlap: Phase 35 and Phase 36 both remove old top workspace tab UI.
+// Keep this guard until cached Phase 33 workspace assets are no longer present in production/client caches.
 // Phase 36: remove old dashboard workspace query behavior.
 (() => {
   const url = new URL(window.location.href);

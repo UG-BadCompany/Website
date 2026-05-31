@@ -4,18 +4,31 @@
   display: none !important;
 }
 
-body[data-sidebar-workspace] [data-sidebar-workspace-section] {
+body[data-sidebar-workspace] .dashboard-workspace-v2 [data-sidebar-workspace-section] {
   display: none !important;
 }
 
-body[data-sidebar-workspace="overview"] [data-sidebar-workspace-section~="overview"],
-body[data-sidebar-workspace="requests"] [data-sidebar-workspace-section~="requests"],
-body[data-sidebar-workspace="quotes"] [data-sidebar-workspace-section~="quotes"],
-body[data-sidebar-workspace="work-orders"] [data-sidebar-workspace-section~="work-orders"],
-body[data-sidebar-workspace="invoices"] [data-sidebar-workspace-section~="invoices"],
-body[data-sidebar-workspace="workers"] [data-sidebar-workspace-section~="workers"],
-body[data-sidebar-workspace="settings"] [data-sidebar-workspace-section~="settings"],
-body[data-sidebar-workspace="deployment"] [data-sidebar-workspace-section~="deployment"] {
+body[data-sidebar-workspace="overview"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="overview"],
+body[data-sidebar-workspace="estimate-review"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="estimate-review"],
+body[data-sidebar-workspace="quotes"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="estimate-review"],
+body[data-sidebar-workspace="work-orders"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="work-orders"],
+body[data-sidebar-workspace="requests"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="work-orders"],
+body[data-sidebar-workspace="client-requests"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="client-requests"],
+body[data-sidebar-workspace="client-quotes"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="client-quotes"],
+body[data-sidebar-workspace="client-invoices"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="client-invoices"],
+body[data-sidebar-workspace="scheduling"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="scheduling"],
+body[data-sidebar-workspace="finance"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="finance"],
+body[data-sidebar-workspace="invoices"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="invoices"],
+body[data-sidebar-workspace="customer-status"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="customer-status"],
+body[data-sidebar-workspace="worker-jobs"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="worker-jobs"],
+body[data-sidebar-workspace="workers"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="worker-jobs"],
+body[data-sidebar-workspace="worker-mobile"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="worker-mobile"],
+body[data-sidebar-workspace="ai-troubleshooting"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="ai-troubleshooting"],
+body[data-sidebar-workspace="photo-docs"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="photo-docs"],
+body[data-sidebar-workspace="maintenance"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="maintenance"],
+body[data-sidebar-workspace="roles-users"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="roles-users"],
+body[data-sidebar-workspace="settings"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="roles-users"],
+body[data-sidebar-workspace="deployment"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="deployment"] {
   display: block !important;
 }
 

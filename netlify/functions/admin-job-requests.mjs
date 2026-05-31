@@ -113,6 +113,9 @@ const mapAssignment = (assignment) => ({
   endTime: assignment.end_time,
   notes: assignment.notes,
   workerNotes: assignment.worker_notes,
+  completionNotes: assignment.completion_notes,
+  completionPhotoNames: assignment.completion_photo_names || [],
+  completionSubmittedAt: assignment.completion_submitted_at,
   createdAt: assignment.created_at,
   updatedAt: assignment.updated_at,
 });
@@ -195,7 +198,7 @@ const selectScopedStatusCounts = async (db, scope) => {
 const selectScopedAssignments = async (db, scope) => {
   if (scope === 'completed') {
     return await db.sql`
-      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.completion_notes, worker_assignments.completion_photo_names, worker_assignments.completion_submitted_at, worker_assignments.created_at, worker_assignments.updated_at
       from worker_assignments
       join app_users workers on workers.id = worker_assignments.worker_id
       where worker_assignments.job_request_id in (select id from job_requests where status = ${'completed'} order by coalesce(completion_date, updated_at::date, created_at::date) desc, created_at desc limit 75)
@@ -205,7 +208,7 @@ const selectScopedAssignments = async (db, scope) => {
 
   if (scope === 'all') {
     return await db.sql`
-      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+      select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.completion_notes, worker_assignments.completion_photo_names, worker_assignments.completion_submitted_at, worker_assignments.created_at, worker_assignments.updated_at
       from worker_assignments
       join app_users workers on workers.id = worker_assignments.worker_id
       where worker_assignments.job_request_id in (select id from job_requests order by created_at desc limit 75)
@@ -214,7 +217,7 @@ const selectScopedAssignments = async (db, scope) => {
   }
 
   return await db.sql`
-    select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.created_at, worker_assignments.updated_at
+    select worker_assignments.id, worker_assignments.job_request_id, worker_assignments.worker_id, workers.full_name as worker_full_name, workers.email as worker_email, worker_assignments.status, worker_assignments.scheduled_date, worker_assignments.start_time, worker_assignments.end_time, worker_assignments.notes, worker_assignments.worker_notes, worker_assignments.completion_notes, worker_assignments.completion_photo_names, worker_assignments.completion_submitted_at, worker_assignments.created_at, worker_assignments.updated_at
     from worker_assignments
     join app_users workers on workers.id = worker_assignments.worker_id
     where worker_assignments.job_request_id in (select id from job_requests where status not in (${'completed'}, ${'cancelled'}) order by created_at desc limit 75)
