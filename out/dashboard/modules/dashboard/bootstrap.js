@@ -531,6 +531,27 @@
       let currentProfileUser = null;
       let currentDashboardView = '';
       let availableDashboardViews = [];
+      const mobileWorkspaceForView = {
+        admin: 'work-orders',
+        client: 'client-requests',
+        worker: 'worker-jobs',
+      };
+      const isMobileDashboardViewport = () => {
+        try {
+          return window.matchMedia?.('(max-width: 820px)').matches || window.innerWidth <= 820;
+        } catch {
+          return false;
+        }
+      };
+      const applySidebarWorkspaceForView = (view) => {
+        const workspace = isMobileDashboardViewport() ? (mobileWorkspaceForView[view] || 'overview') : 'overview';
+        document.body.dataset.sidebarWorkspace = workspace;
+        if (typeof window.taSetSidebarWorkspace === 'function') {
+          window.taSetSidebarWorkspace(workspace, { scroll: false });
+        } else {
+          window.setTimeout(() => window.taSetSidebarWorkspace?.(workspace, { scroll: false }), 160);
+        }
+      };
       let adminActivityLoaded = false;
       let adminActivityFilterTimer = null;
       let currentAdminActivityPage = 1;
@@ -657,6 +678,8 @@
           const fallbackView = availableDashboardViews[0] || 'client';
           const nextView = availableDashboardViews.includes(requestedView) ? requestedView : fallbackView;
           const lockedView = requestedView && requestedView !== nextView ? requestedView : '';
+          const viewLabel = nextView.charAt(0).toUpperCase() + nextView.slice(1);
+          console.log(`Switching view: ${viewLabel}`);
           currentDashboardView = nextView;
           persistDashboardView(nextView);
         document.documentElement.dataset.dashboardView = nextView;
@@ -712,10 +735,14 @@
         }
 
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
-        if (document.body.dataset.sidebarWorkspace && document.body.dataset.sidebarWorkspace !== 'overview') {
-          window.taSetSidebarWorkspace?.('overview', { scroll: false });
-        } else {
-          document.body.dataset.sidebarWorkspace ||= 'overview';
+        applySidebarWorkspaceForView(nextView);
+        } catch (error) {
+          console.error('Failed to switch dashboard view.', error);
+          const viewStatus = document.querySelector('[data-dashboard-view-status]');
+          if (viewStatus) {
+            viewStatus.hidden = false;
+            viewStatus.textContent = 'We could not load that workspace. Please try another view.';
+          }
         }
         } catch (error) {
           console.error('Failed to switch dashboard view.', error);
@@ -761,11 +788,26 @@
           switcher.hidden = availableViews.length <= 1;
           if (!switcher.dataset.boundViewSwitcher) {
             switcher.dataset.boundViewSwitcher = 'true';
-            switcher.addEventListener('click', (event) => {
+            let lastViewActivation = 0;
+            let lastActivatedView = '';
+            const activateViewButton = (event) => {
               const button = event.target.closest('[data-view-button]');
-              if (!button || button.disabled) return;
-              setDashboardView(button.dataset.viewButton);
-            });
+              if (!button || button.disabled || button.hidden) return;
+              const view = button.dataset.viewButton;
+              const now = Date.now();
+              if (event.type !== 'click') {
+                lastViewActivation = now;
+                lastActivatedView = view;
+                event.preventDefault();
+              } else if (lastActivatedView === view && now - lastViewActivation < 450) {
+                event.preventDefault();
+                return;
+              }
+              setDashboardView(view);
+            };
+            switcher.addEventListener('click', activateViewButton);
+            switcher.addEventListener('pointerup', activateViewButton, { passive: false });
+            switcher.addEventListener('touchend', activateViewButton, { passive: false });
           }
           switcher.querySelectorAll('[data-view-button]').forEach((button) => {
             const canView = availableViews.includes(button.dataset.viewButton);

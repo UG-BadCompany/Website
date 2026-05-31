@@ -1961,12 +1961,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
             <article><span>Pending Quotes</span><strong data-mobile-metric="quotes">0</strong><small>Needs review</small></article>
             <article><span>New Requests</span><strong data-mobile-metric="requests">0</strong><small>Fresh intake</small></article>
           </div>
-          <div class="mobile-role-selector" aria-label="Mobile role selector">
-            <button type="button" data-mobile-role-option="owner">Owner</button>
-            <button type="button" data-mobile-role-option="admin">Admin</button>
-            <button type="button" data-mobile-role-option="client">Client</button>
-            <button type="button" data-mobile-role-option="worker">Worker</button>
-          </div>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('admin')">Admin view</button>
             <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('client')">Client view</button>
@@ -2745,7 +2739,8 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     <div class="mobile-more-grid">
       <button type="button" data-mobile-more-key="dashboard">Dashboard</button>
       <a href="/inventory/" data-mobile-more-key="inventory">Inventory</a>
-      <button type="button" data-mobile-more-key="invoices">Invoices / Finance</button>
+      <button type="button" data-mobile-more-key="invoices">Invoices</button>
+      <button type="button" data-mobile-more-key="finance">Finance</button>
       <button type="button" data-mobile-more-key="customers">Customers</button>
       <button type="button" data-mobile-more-key="employees">Employees / Workers</button>
       <button type="button" data-mobile-more-key="admin-tools" data-mobile-more-admin>Admin</button>

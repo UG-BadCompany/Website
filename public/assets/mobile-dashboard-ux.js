@@ -33,10 +33,8 @@
     if (label) label.textContent = roleLabel(role);
     const moreRole = q('[data-mobile-more-role]');
     if (moreRole) moreRole.textContent = roleLabel(role).replace('Role: ', '');
-    qa('[data-mobile-role-option]').forEach((button) => {
-      const option = button.dataset.mobileRoleOption;
-      const mapsTo = option === 'owner' ? 'admin' : option;
-      const active = mapsTo === role && option !== 'owner';
+    qa('[data-view-button]').forEach((button) => {
+      const active = button.dataset.viewButton === role;
       button.dataset.active = String(active);
       button.setAttribute('aria-pressed', String(active));
     });
@@ -88,6 +86,7 @@
       jobs: ['work-orders', '#admin-requests'],
       dashboard: ['overview', '#executive-overview'],
       invoices: ['invoices', '#admin-invoices'],
+      finance: ['finance', '#finance-command-center-anchor'],
       troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
       customers: ['customer-status', '#customer-experience-center'],
       schedule: ['scheduling', '#smart-schedule-suite'],
@@ -103,6 +102,7 @@
       jobs: ['customer-status', '#customer-experience-center'],
       dashboard: ['overview', '#executive-overview'],
       invoices: ['client-invoices', '#client-invoices'],
+      finance: ['client-invoices', '#client-invoices'],
       customers: ['customer-status', '#customer-experience-center'],
       schedule: ['maintenance', '.maintenance-suite'],
       profile: ['client-profile-action', '[data-client-profile-shortcut]'],
@@ -116,6 +116,7 @@
       jobs: ['worker-jobs', '#worker-jobs'],
       dashboard: ['overview', '#executive-overview'],
       invoices: ['worker-jobs', '#worker-jobs'],
+      finance: ['worker-jobs', '#worker-jobs'],
       troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
       customers: ['photo-docs', '.photo-doc-suite'],
       schedule: ['scheduling', '#smart-schedule-suite'],
@@ -164,27 +165,13 @@
       const key = item.dataset.mobileMoreKey;
       let visible = true;
       if (key === 'admin-tools') visible = role === 'admin';
-      if (['troubleshooter', 'inventory', 'dashboard', 'invoices', 'customers', 'employees', 'reports', 'settings', 'sign-out'].includes(key)) visible = true;
+      if (['troubleshooter', 'inventory', 'dashboard', 'invoices', 'finance', 'customers', 'employees', 'reports', 'settings', 'sign-out'].includes(key)) visible = true;
       item.hidden = !visible;
       item.setAttribute('aria-disabled', visible ? 'false' : 'true');
     });
   }
 
   const bind = () => {
-    qa('[data-mobile-role-option]').forEach((button) => {
-      if (button.dataset.mobileRoleBound) return;
-      button.dataset.mobileRoleBound = 'true';
-      button.addEventListener('click', () => {
-        const view = button.dataset.mobileRoleOption === 'owner' ? 'admin' : button.dataset.mobileRoleOption;
-        const viewButton = q(`[data-view-button="${view}"]`);
-        if (typeof window.taSetDashboardView === 'function') window.taSetDashboardView(view);
-        else if (viewButton) viewButton.click();
-        else window.taPendingDashboardView = view;
-        window.setTimeout(updateRole, 60);
-        window.setTimeout(updateRole, 220);
-      });
-    });
-
     qa('[data-mobile-workspace-link]').forEach((link) => {
       if (link.dataset.mobileWorkspaceBound) return;
       link.dataset.mobileWorkspaceBound = 'true';
@@ -259,10 +246,21 @@
     };
     if (fab && menu && !fab.dataset.mobileFabBound) {
       fab.dataset.mobileFabBound = 'true';
-      fab.addEventListener('click', (event) => {
-        event.stopPropagation();
+      let lastFabActivation = 0;
+      const toggleFab = (event) => {
+        const now = Date.now();
+        if (event?.type === 'click' && now - lastFabActivation < 450) {
+          event?.preventDefault?.();
+          return;
+        }
+        lastFabActivation = now;
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
         setFabOpen(menu.hidden);
-      });
+      };
+      fab.addEventListener('click', toggleFab);
+      fab.addEventListener('pointerup', toggleFab, { passive: false });
+      fab.addEventListener('touchend', toggleFab, { passive: false });
       menu.addEventListener('click', (event) => {
         const action = event.target.closest('[data-mobile-more-key]');
         if (action && action.tagName === 'BUTTON') {
