@@ -36,10 +36,21 @@
     qa('[data-mobile-role-option]').forEach((button) => {
       const option = button.dataset.mobileRoleOption;
       const mapsTo = option === 'owner' ? 'admin' : option;
-      const active = mapsTo === role || (option === 'owner' && role === 'admin');
+      const active = mapsTo === role && option !== 'owner';
       button.dataset.active = String(active);
       button.setAttribute('aria-pressed', String(active));
     });
+    const copy = {
+      admin: ['Admin command', 'Owner operations snapshot', 'Today’s jobs, open requests, pending quotes, invoices, inventory alerts, and activity for the business.'],
+      client: ['Client portal', 'Project snapshot', 'Requests, quotes, invoices, saved job updates, and recent account activity for your projects.'],
+      worker: ['Worker field', 'Today’s route snapshot', 'Assigned jobs, requested materials, job notes, safety items, and recent dispatch activity.'],
+    }[role] || ['Dashboard', 'Today at a glance', 'Role-aware summary cards for this workspace.'];
+    const eyebrow = q('[data-mobile-clean-eyebrow]');
+    const title = q('[data-mobile-clean-title]');
+    const description = q('[data-mobile-clean-description]');
+    if (eyebrow) eyebrow.textContent = copy[0];
+    if (title) title.textContent = copy[1];
+    if (description) description.textContent = copy[2];
     syncMobileMoreVisibility();
   };
 
@@ -48,9 +59,11 @@
     const jobs = textOf('[data-worker-jobs-count]', textOf('[data-open-requests-metric]', '0'));
     const quotes = textOf('[data-quotes-metric]', '0');
     const requests = textOf('[data-open-requests-metric]', '0');
-    const values = { revenue, jobs, quotes, requests };
+    const invoices = textOf('[data-client-invoices-count]', textOf('[data-admin-open-invoices-metric]', '0'));
+    const inventory = textOf('[data-low-inventory-count]', '0');
+    const values = { revenue, jobs, quotes, requests, invoices, inventory, activity: 'Live' };
     Object.entries(values).forEach(([key, value]) => {
-      qa(`[data-mobile-metric="${key}"]`).forEach((node) => { node.textContent = value; });
+      qa(`[data-mobile-metric="${key}"], [data-mobile-clean-metric="${key}"]`).forEach((node) => { node.textContent = value; });
     });
   };
 
@@ -80,6 +93,9 @@
       schedule: ['scheduling', '#smart-schedule-suite'],
       profile: ['roles-users', '#admin-access'],
       'admin-tools': ['roles-users', '#admin-access'],
+      employees: ['roles-users', '#admin-access'],
+      reports: ['activity', '#admin-activity'],
+      settings: ['roles-users', '#admin-access'],
     },
     client: {
       requests: ['client-requests', '#client-requests'],
@@ -90,6 +106,9 @@
       customers: ['customer-status', '#customer-experience-center'],
       schedule: ['maintenance', '.maintenance-suite'],
       profile: ['client-profile-action', '[data-client-profile-shortcut]'],
+      employees: ['client-profile-action', '[data-client-profile-shortcut]'],
+      reports: ['customer-status', '#customer-experience-center'],
+      settings: ['client-profile-action', '[data-client-profile-shortcut]'],
     },
     worker: {
       requests: ['worker-mobile', '#worker-mobile-field'],
@@ -101,6 +120,9 @@
       customers: ['photo-docs', '.photo-doc-suite'],
       schedule: ['scheduling', '#smart-schedule-suite'],
       profile: ['worker-mobile', '#worker-mobile-field'],
+      employees: ['worker-mobile', '#worker-mobile-field'],
+      reports: ['photo-docs', '.photo-doc-suite'],
+      settings: ['worker-mobile', '#worker-mobile-field'],
     },
   };
 
@@ -142,9 +164,7 @@
       const key = item.dataset.mobileMoreKey;
       let visible = true;
       if (key === 'admin-tools') visible = role === 'admin';
-      if (key === 'troubleshooter') visible = true;
-      if (key === 'inventory') visible = true;
-      if (key === 'sign-out' || key === 'request-estimate' || key === 'dashboard') visible = true;
+      if (['troubleshooter', 'inventory', 'dashboard', 'invoices', 'customers', 'employees', 'reports', 'settings', 'sign-out'].includes(key)) visible = true;
       item.hidden = !visible;
       item.setAttribute('aria-disabled', visible ? 'false' : 'true');
     });
@@ -198,7 +218,7 @@
           setMoreOpen(false);
           return;
         }
-        if (key === 'sign-out' || key === 'request-estimate' || key === 'inventory') return;
+        if (key === 'sign-out' || key === 'inventory') return;
         event.preventDefault();
         routeMobileKey(key);
         setMoreOpen(false);
@@ -232,18 +252,37 @@
 
     const fab = q('[data-mobile-fab]');
     const menu = q('[data-mobile-fab-menu]');
+    const setFabOpen = (open) => {
+      if (!fab || !menu) return;
+      menu.hidden = !open;
+      fab.setAttribute('aria-expanded', String(open));
+    };
     if (fab && menu && !fab.dataset.mobileFabBound) {
       fab.dataset.mobileFabBound = 'true';
-      fab.addEventListener('click', () => {
-        const open = menu.hidden;
-        menu.hidden = !open;
-        fab.setAttribute('aria-expanded', String(open));
+      fab.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setFabOpen(menu.hidden);
+      });
+      menu.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-mobile-more-key]');
+        if (action && action.tagName === 'BUTTON') {
+          event.preventDefault();
+          routeMobileKey(action.dataset.mobileMoreKey);
+        }
+        if (event.target.closest('a, button')) setFabOpen(false);
       });
       document.addEventListener('click', (event) => {
         if (event.target.closest('[data-mobile-fab], [data-mobile-fab-menu]')) return;
-        menu.hidden = true;
-        fab.setAttribute('aria-expanded', 'false');
+        setFabOpen(false);
       });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          setFabOpen(false);
+          setMoreOpen(false);
+        }
+      });
+      window.addEventListener('hashchange', () => setFabOpen(false));
+      window.addEventListener('popstate', () => setFabOpen(false));
     }
   };
 

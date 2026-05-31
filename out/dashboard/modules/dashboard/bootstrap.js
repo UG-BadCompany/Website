@@ -5,9 +5,30 @@
       const accountStatus = document.querySelector('[data-account-status]');
       const logoutButton = document.querySelector('[data-logout-button]');
       const dashboardParams = new URLSearchParams(window.location.search);
+      const viewStorageKey = 'ta.dashboard.selectedView';
+      const readStoredDashboardView = () => {
+        try {
+          const stored = window.localStorage?.getItem(viewStorageKey) || window.sessionStorage?.getItem(viewStorageKey) || '';
+          return ['admin', 'client', 'worker'].includes(stored) ? stored : '';
+        } catch (error) {
+          console.warn('Dashboard view storage is unavailable.', error);
+          return '';
+        }
+      };
+      const persistDashboardView = (view) => {
+        try {
+          window.localStorage?.setItem(viewStorageKey, view);
+          window.sessionStorage?.setItem(viewStorageKey, view);
+        } catch (error) {
+          console.warn('Unable to persist dashboard view.', error);
+        }
+      };
       const requestedDashboardView = String(dashboardParams.get('view') || '').trim().toLowerCase();
       if (['admin', 'client', 'worker'].includes(requestedDashboardView)) {
         window.taPendingDashboardView = requestedDashboardView;
+      } else {
+        const storedDashboardView = readStoredDashboardView();
+        if (storedDashboardView) window.taPendingDashboardView = storedDashboardView;
       }
       const authDebugEnabled = false;
       if (sessionCard) sessionCard.hidden = false;
@@ -630,10 +651,14 @@
       };
 
       const setDashboardView = (view) => {
-        dedupeDashboardSingletons();
-        const fallbackView = availableDashboardViews[0] || 'client';
-        const nextView = availableDashboardViews.includes(view) ? view : fallbackView;
-        currentDashboardView = nextView;
+        try {
+          dedupeDashboardSingletons();
+          const requestedView = normalizeDashboardViewName(view);
+          const fallbackView = availableDashboardViews[0] || 'client';
+          const nextView = availableDashboardViews.includes(requestedView) ? requestedView : fallbackView;
+          const lockedView = requestedView && requestedView !== nextView ? requestedView : '';
+          currentDashboardView = nextView;
+          persistDashboardView(nextView);
         document.documentElement.dataset.dashboardView = nextView;
         document.documentElement.dataset.currentDashboardView = nextView;
         document.body.dataset.currentDashboardView = nextView;
@@ -669,11 +694,36 @@
           button.classList.toggle('active-worker', isActive && nextView === 'worker');
         });
 
+        document.querySelectorAll('[data-mobile-role-option]').forEach((button) => {
+          const mapsTo = button.dataset.mobileRoleOption === 'owner' ? 'admin' : button.dataset.mobileRoleOption;
+          const canView = availableDashboardViews.includes(mapsTo);
+          const isActive = mapsTo === nextView && !(button.dataset.mobileRoleOption === 'owner' && availableDashboardViews.includes('admin'));
+          button.hidden = !canView && button.dataset.mobileRoleOption !== 'owner';
+          button.disabled = !canView;
+          button.dataset.active = String(isActive);
+          button.setAttribute('aria-pressed', String(isActive));
+          button.setAttribute('aria-disabled', String(!canView));
+        });
+
+        const lockedPanel = document.querySelector('[data-mobile-clean-locked]');
+        if (lockedPanel) {
+          lockedPanel.hidden = !lockedView;
+          if (lockedView) lockedPanel.querySelector('p').textContent = `Your account cannot open the ${lockedView} view. Showing ${nextView} instead.`;
+        }
+
         if (currentProfileUser) configureMainDashboardActions(currentProfileUser, nextView);
         if (document.body.dataset.sidebarWorkspace && document.body.dataset.sidebarWorkspace !== 'overview') {
           window.taSetSidebarWorkspace?.('overview', { scroll: false });
         } else {
           document.body.dataset.sidebarWorkspace ||= 'overview';
+        }
+        } catch (error) {
+          console.error('Failed to switch dashboard view.', error);
+          const viewStatus = document.querySelector('[data-dashboard-view-status]');
+          if (viewStatus) {
+            viewStatus.hidden = false;
+            viewStatus.textContent = 'We could not load that workspace. Please try another view.';
+          }
         }
       };
       window.taSetDashboardView = (view) => {
@@ -728,7 +778,7 @@
         const defaultView = normalizeDashboardViewName(permissions.defaultView);
         const preferredView = availableViews.includes(requestedView) ? requestedView : (availableViews.includes(defaultView) ? defaultView : availableViews[0]);
         configureMainDashboardActions(user, preferredView || 'client');
-        setDashboardView(preferredView || 'client');
+        setDashboardView(requestedView || preferredView || 'client');
       };
       const configureSignedInDashboard = (user) => {
         try {
