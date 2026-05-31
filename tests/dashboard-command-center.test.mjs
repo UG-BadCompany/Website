@@ -60,7 +60,7 @@ test('dashboard view switcher exposes all role views for switch-capable users', 
   assert.match(html, /const normalizeDashboardViewName =/, 'dashboard should normalize role/view names before deciding available views');
   assert.match(html, /data-dashboard-view-status/, 'dashboard should show visible feedback for the selected role view');
   assert.match(html, /data-main-command-title/, 'main command center heading should update when the selected view changes');
-  assert.match(html, /Admin tools for running the business/, 'admin view should have clear admin command-center copy');
+  assert.doesNotMatch(html, /Admin tools for running the business/, 'old admin tools copy should not appear in dashboard markup');
   assert.match(html, /Client tools for managing a project/, 'client view should have clear client command-center copy');
   assert.match(html, /Worker tools for assigned field jobs/, 'worker view should have clear worker command-center copy');
   assert.match(html, /data-main-action-views="admin"/, 'admin command shortcuts should be scoped to the admin view');
