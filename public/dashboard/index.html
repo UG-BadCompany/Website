@@ -1913,27 +1913,24 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   .phase54-workspace strong,.phase54-workspace h3{color:#fff}.phase54-workspace p{color:#dbe4ef}.phase54-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.phase54-list{display:grid;gap:12px;margin-top:14px}.phase54-card{padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(15,23,42,.62)}.phase54-card strong{display:block}.phase54-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;color:#cbd5e1;font-size:.9rem;font-weight:800}.phase54-badge{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.35);color:#fed7aa;font-weight:950;text-transform:capitalize}.phase54-workspace .client-request-form{background:rgba(15,23,42,.68);border-color:rgba(148,163,184,.24)}.phase54-workspace .client-request-form input,.phase54-workspace .client-request-form select,.phase54-workspace .client-request-form textarea{background:rgba(2,6,23,.74);color:#f8fafc;border-color:rgba(148,163,184,.35)}.phase54-command-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.phase54-command-list button{justify-content:flex-start}.phase54-workspace [data-state="ready"]{color:#bbf7d0}.phase54-workspace [data-state="error"]{color:#fecaca}@media(max-width:850px){.phase54-grid,.phase54-command-list{grid-template-columns:1fr}}
 </style>
   <link rel="stylesheet" href="/assets/mobile-field-ux.css">
-  <link rel="stylesheet" href="/assets/mobile-saas-overhaul.css">
   <link rel="stylesheet" href="/assets/module-completion-2026.css">
 </head>
 <body>
-  <header class="nav mobile-saas-header">
-    <div class="wrap nav-inner mobile-saas-header-inner">
-      <a class="brand mobile-saas-brand" href="/">
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/">
         <img src="https://github.com/UG-BadCompany/Website/blob/main/images/logo/logo3.png?raw=true" alt="T&A Contracting logo">
-        <span class="brand-copy"><strong>T&amp;A Contracting</strong><small>Contracting • Maintenance • Service</small></span>
+        <span>T&amp;A Contracting</span>
       </a>
-      <div class="dashboard-nav-cluster mobile-saas-nav-cluster">
-        <nav class="nav-links dashboard-nav-row mobile-saas-segmented-nav" aria-label="Primary dashboard navigation">
+      <div class="dashboard-nav-cluster">
+        <nav class="nav-links dashboard-nav-row" aria-label="Primary dashboard navigation">
           <a href="/">Home</a>
           <a href="/dashboard/">Dashboard</a>
-          <a class="btn btn-primary" href="/dashboard/?view=client" data-request-estimate-link>Estimates</a>
+          <a class="btn btn-primary" href="/#estimate" data-request-estimate-link>Request Estimate</a>
           <button class="btn btn-soft" type="button" data-theme-toggle aria-label="Toggle theme">Theme</button>
           <button type="button" data-admin-access-shortcut hidden>Roles</button>
         </nav>
-        <div class="account-session-row mobile-saas-account-row">
-          <button class="mobile-saas-icon-button" type="button" aria-label="Notifications" data-mobile-notifications>•</button>
-          <button class="mobile-saas-avatar" type="button" aria-label="Open account menu" data-client-profile-shortcut>TA</button>
+        <div class="account-session-row">
           <div class="account-status" data-account-status role="status" aria-live="polite">Checking secure session…</div>
           <a class="btn btn-soft" href="/api/auth/logout?redirect=/login/?signed-out=1" data-logout-button>Sign out</a>
         </div>
@@ -1946,15 +1943,9 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     <section class="hero">
       <div class="dashboard-hero">
         <div>
-          <span class="eyebrow">Today's Overview</span>
-          <h1><span data-mobile-greeting>Good morning</span></h1>
-          <p>Run jobs, estimates, invoices, inventory, and customer requests from a mobile-first contractor command center.</p>
-          <div class="mobile-dashboard-kpis" aria-label="Today's overview metrics">
-            <article><span>Active jobs</span><strong data-mobile-kpi="jobs">—</strong><small>Scheduled and in progress</small></article>
-            <article><span>Open estimates</span><strong data-mobile-kpi="estimates">—</strong><small>Drafts and approvals</small></article>
-            <article><span>Pending invoices</span><strong data-mobile-kpi="invoices">—</strong><small>Open balances</small></article>
-            <article><span>Customer requests</span><strong data-mobile-kpi="requests">—</strong><small>New and quoted</small></article>
-          </div>
+          <span class="eyebrow">Secure Client Portal</span>
+          <h1>Welcome back to your T&amp;A workspace.</h1>
+          <p>Manage requests, quotes, invoices, schedules, profile details, and assigned work from one clean portal.</p>
           <div class="role-bar" aria-label="Dashboard views" data-view-switcher hidden>
             <button class="role" type="button" data-view-button="admin" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('admin')">Admin view</button>
             <button class="role" type="button" data-view-button="client" aria-pressed="false" onclick="window.taSetDashboardView && window.taSetDashboardView('client')">Client view</button>
@@ -1989,13 +1980,21 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
         <button class="btn btn-soft" type="button" data-dashboard-show-all>Show all sections</button>
       </div>
 
-      <div class="dashboard-action-strip mobile-portal-action-grid" aria-label="Main dashboard shortcuts">
-        <a class="mobile-portal-card primary" href="#estimate-review"><span class="mobile-portal-icon">✦</span><strong>Estimates</strong><small>AI review queue</small><em data-mobile-badge>Open</em></a>
-        <a class="mobile-portal-card" href="#admin-requests"><span class="mobile-portal-icon">✓</span><strong>Jobs</strong><small>Work orders</small><em data-mobile-badge>Today</em></a>
-        <a class="mobile-portal-card" href="#admin-invoices"><span class="mobile-portal-icon">$</span><strong>Invoices</strong><small>Payment desk</small><em data-mobile-badge>Due</em></a>
-        <a class="mobile-portal-card" href="#finance-command-center-anchor"><span class="mobile-portal-icon">↗</span><strong>Finance</strong><small>Command center</small><em data-mobile-badge>KPI</em></a>
-        <a class="mobile-portal-card" href="/inventory/"><span class="mobile-portal-icon">▣</span><strong>Inventory</strong><small>Stock &amp; tools</small><em data-mobile-badge>Live</em></a>
-        <a class="mobile-portal-card" href="#worker-ai-troubleshooting"><span class="mobile-portal-icon">AI</span><strong>Troubleshoot</strong><small>Field assistant</small><em data-mobile-badge>Safe</em></a>
+      <div class="dashboard-action-strip" aria-label="Main dashboard shortcuts">
+        <a class="btn btn-primary" href="#estimate-review" data-main-action-views="admin">Estimate Review</a>
+        <a class="btn btn-soft" href="#admin-requests" data-main-action-views="admin">Work Orders</a>
+        <a class="btn btn-soft" href="#admin-invoices" data-main-action-views="admin">Invoices</a>
+        <a class="btn btn-soft" href="#finance-command-center-anchor" data-main-action-views="admin">Finance Center</a>
+        <a class="btn btn-soft" href="/inventory/" data-main-action-views="admin" data-main-action-permission="canManageInventory">Inventory</a>
+        <a class="btn btn-soft" href="#admin-access" data-main-action-views="admin">Roles &amp; Users</a>
+        <a class="btn btn-primary" href="#client-requests" data-main-action-views="client">Requests</a>
+        <a class="btn btn-soft" href="#client-quotes" data-main-action-views="client">Quotes</a>
+        <a class="btn btn-soft" href="#client-invoices" data-main-action-views="client">Invoices</a>
+        <button class="btn btn-soft" type="button" data-client-profile-shortcut data-main-action-views="client">Profile</button>
+        <a class="btn btn-primary" href="#worker-jobs" data-main-action-views="worker">Assigned Jobs</a>
+        <a class="btn btn-soft" href="#worker-mobile-field" data-main-action-views="worker">Worker Mobile</a>
+        <a class="btn btn-soft" href="#worker-ai-troubleshooting" data-main-action-views="admin worker">AI Troubleshooting</a>
+        <a class="btn btn-soft" href="#worker-profile" data-main-action-views="worker">Profile</a>
       </div>
     </section>
 

@@ -61,12 +61,6 @@
       views: ['admin'],
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
-    finance: {
-      title: 'Financial Command Center',
-      description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
-      views: ['admin'],
-      targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
-    },
 
     scheduling: {
       title: 'Scheduling and Dispatch',
@@ -115,6 +109,18 @@
       description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
       views: ['admin', 'worker'],
       targets: ['.photo-doc-suite'],
+    },
+    maintenance: {
+      title: 'Maintenance Plans',
+      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
+      views: ['admin', 'client'],
+      targets: ['.maintenance-suite'],
+    },
+    'roles-users': {
+      title: 'Roles & Users',
+      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
+      views: ['admin'],
+      targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
     maintenance: {
       title: 'Maintenance Plans',

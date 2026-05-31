@@ -37,15 +37,15 @@ test('mobile breakpoints prevent horizontal overflow for target viewports', asyn
   assert.match(css, /--mobile-tap:\s*44px/, 'mobile CSS should enforce 44px tap target baseline');
 });
 
-test('premium mobile SaaS header, KPI dashboard, and shortcut cards are wired', async () => {
+test('mobile header links and dashboard module shortcuts remain functional', async () => {
   const dashboard = await readText('public/dashboard/index.html');
-  const css = await readText('public/assets/mobile-saas-overhaul.css');
-  const js = await readText('public/assets/mobile-saas-overhaul.js');
-  assert.match(dashboard, /mobile-saas-header[\s\S]*Contracting • Maintenance • Service/, 'Dashboard should have compact branded mobile header');
-  assert.match(dashboard, /data-mobile-greeting[\s\S]*mobile-dashboard-kpis/, 'Dashboard hero should expose mobile greeting and KPI cards');
-  assert.match(dashboard, /mobile-portal-action-grid[\s\S]*mobile-portal-card[\s\S]*Troubleshoot/, 'Portal shortcuts should be modern cards');
-  assert.match(css, /mobile-saas-segmented-nav[\s\S]*grid-template-columns:\s*repeat\(3/, 'Mobile navigation should use segmented app nav');
-  assert.match(js, /data-mobile-greeting[\s\S]*data-mobile-kpi/, 'Mobile SaaS script should hydrate greeting and KPIs');
+  const css = await readText('public/assets/mobile-field-ux.css');
+  assert.match(dashboard, /<a href="\/">Home<\/a>/, 'Home link should route to the public home page');
+  assert.match(dashboard, /<a href="\/dashboard\/">Dashboard<\/a>/, 'Dashboard link should route back to the dashboard');
+  assert.match(dashboard, /href="\/#estimate"[^>]*data-request-estimate-link>Request Estimate/, 'Request Estimate should route to the public estimate form');
+  assert.match(dashboard, /data-main-dashboard-actions[\s\S]*Estimate Review[\s\S]*Work Orders[\s\S]*Invoices[\s\S]*AI Troubleshooting/, 'Dashboard shortcuts should keep admin, client, and worker modules reachable');
+  assert.doesNotMatch(dashboard, /mobile-saas-header|mobile-dashboard-kpis|mobile-portal-card/, 'Removed SaaS-only mobile shell should not hide portal modules');
+  assert.match(css, /dashboard-mobile-nav-toggle[\s\S]*width:\s*44px/, 'Mobile workspace toggle should be compact instead of a full-width menu button');
 });
 
 test('mobile sidebar opens/closes and every sidebar item remains tappable', async () => {

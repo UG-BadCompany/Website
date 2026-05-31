@@ -1,79 +1,38 @@
-# Mobile UX/UI Overhaul Report
+# Mobile UX Navigation Fix Report
 
-Date: 2026-05-31
+## Reason for Follow-Up
 
-## Audit Findings
+The previous mobile SaaS-style overhaul overreached. It introduced a separate compact header/KPI/card shell that made some users lose access to existing dashboard modules and caused navigation confusion. This follow-up intentionally prioritizes functionality over a cosmetic mobile shell.
 
-- The dashboard mobile header was crowded: brand, nav links, session state, theme, estimate, and sign-out controls competed for the same vertical space.
-- The mobile workspace entry used the old `Open workspace menu` label, which read like a large unfinished action instead of a premium app navigation control.
-- The dashboard hero was desktop-first and generic (`Welcome back...`) rather than a contractor operations overview.
-- Shortcut buttons were inconsistent with a mobile SaaS portal pattern and did not provide a strong card-based hierarchy for Requests, Quotes, Jobs, Invoices, Inventory, and Troubleshooting.
-- Existing mobile CSS had good safety foundations, but the product still needed a stronger app shell, compact header, KPI cards, segmented navigation, bottom navigation treatment, and 360px/430px-specific behavior.
-- Phase 35/36 legacy cleanup still overlaps by design; this pass did not remove it because cached workspace markup may still appear for some users.
+## Issues Found
 
-## Improvements Made
+- The dashboard header was changed from the proven Home / Request Estimate flow into a SaaS-style segmented header.
+- The Request Estimate link routed back into the dashboard instead of the public estimate form.
+- A separate `mobile-saas-overhaul.css` layer added global mobile padding and mobile-only hiding rules that could create extra blank space and hide important account/navigation controls.
+- The dashboard shortcut area was converted into a small curated card set instead of preserving all existing admin/client/worker shortcuts.
+- The giant visible `Open workspace menu` label had been removed, but the dedicated SaaS layer was not needed to accomplish that.
 
-1. **Premium mobile app header**
-   - Added a compact SaaS-style header with logo, company name, service descriptor, segmented Home/Dashboard/Estimates navigation, notification affordance, avatar, session state, and sign-out access.
-   - Reduced mobile header height by moving from stacked large buttons to compact segmented navigation and icon/account controls.
+## Fixes Made
 
-2. **Removed old workspace button presentation**
-   - Replaced the old `Open workspace menu` text with a compact icon-only drawer trigger.
-   - Kept the drawer behavior intact while removing the giant orange mobile workspace button experience.
+- Removed the `mobile-saas-overhaul.css` and `mobile-saas-overhaul.js` layer from pages so it can no longer hide modules or add large blank mobile spacing.
+- Restored the normal dashboard header structure with working links:
+  - Home: `/`
+  - Dashboard: `/dashboard/`
+  - Request Estimate: `/#estimate`
+- Restored the original dashboard hero copy and logo panel so no KPI shell creates missing-module confusion.
+- Restored the shortcut strip to standard buttons that expose admin, client, and worker destinations, including AI Troubleshooting.
+- Kept the giant `Open workspace menu` text removed by making the sidebar toggle a compact 44px icon button with screen-reader text.
+- Left the existing sidebar drawer, role switcher, mobile quick actions, inventory link, AI troubleshooting, and workspace routing intact.
 
-3. **Contractor dashboard hero**
-   - Replaced the generic hero copy with a mobile-first `Today's Overview` experience.
-   - Added KPI cards for Active Jobs, Open Estimates, Pending Invoices, and Customer Requests.
-   - Added a contractor command-center summary panel focused on field readiness and operations.
+## Functionality Preserved
 
-4. **Portal navigation card redesign**
-   - Converted the main shortcut strip into uniform mobile portal cards with icons, badges, titles, and descriptions.
-   - Added direct access for Estimates, Jobs, Invoices, Finance, Inventory, and AI Troubleshooting.
-
-5. **Mobile-first design system layer**
-   - Added `public/assets/mobile-saas-overhaul.css` with a consistent SaaS mobile design layer: radius scale, copper/orange accent system, card elevation, segmented navigation, focus/touch states, KPI grids, skeleton loader primitive, bottom quick-action treatment, 360px/430px breakpoints, and reduced motion-safe interactions.
-
-6. **Lightweight mobile enhancement script**
-   - Added `public/assets/mobile-saas-overhaul.js` to hydrate the greeting and KPI cards from existing dashboard metrics without changing API behavior.
-
-7. **Audit/test hardening**
-   - Updated the mobile UX audit and tests so future regressions catch missing premium mobile CSS, old workspace menu text, missing dashboard KPI cards, missing shortcut card layout, or missing segmented navigation.
-
-## Design Decisions
-
-- **Additive layer over rewrite:** The overhaul uses a new mobile SaaS layer so desktop dashboard behavior and existing role/workspace systems remain intact.
-- **No fake features:** New shortcut cards navigate to existing anchors or pages. Inventory remains `/inventory/`, and AI Troubleshooting routes to the existing module.
-- **Mobile first, desktop safe:** Most major layout changes are scoped to mobile/tablet breakpoints or additive classes, avoiding a desktop dashboard redesign.
-- **Compact navigation:** The workspace drawer still exists but no longer consumes mobile screen space as a large orange button.
-- **Performance:** No external libraries were added. The new JS is small, deferred, and reads existing DOM metrics.
-
-## Target Viewports Covered
-
-- 360px and under: one-column fallback for KPI/cards and compact segmented nav.
-- 375px / 390px / 414px / 430px: two-column KPI and portal cards with no horizontal overflow.
-- 768px / 820px: tablet-oriented two-column mobile dashboard behavior.
-- 1024px+: card grids expand while desktop dashboard layout remains preserved.
+- Admin, client, and worker role buttons remain in the dashboard hero.
+- Sidebar drawer remains available on mobile for all modules.
+- Mobile quick actions remain role-aware.
+- Inventory remains a real `/inventory/` link.
+- AI Troubleshooting remains available to admin and worker views.
+- Existing modules are not hidden for mobile-only cosmetic reasons.
 
 ## Risk Assessment
 
-- **Runtime risk:** Low/medium. Header and hero markup changed on the dashboard, but role switcher and dashboard root were preserved.
-- **Routing risk:** Low. Shortcut cards use existing anchors/pages, and Inventory remains a real `/inventory/` link.
-- **Performance risk:** Low. Added one CSS file and a small deferred JS file; no new libraries or remote dependencies.
-- **Accessibility risk:** Low. Tap targets remain at least 44px, icon controls have labels, focus-visible styles remain, and the old workspace menu text is not exposed as a giant visual action.
-
-## Modified Files
-
-- `public/assets/mobile-saas-overhaul.css`
-- `public/assets/mobile-saas-overhaul.js`
-- `public/dashboard/index.html`
-- `public/assets/dashboard-phase30-sidebar.js`
-- Core public/portal pages that now load the mobile SaaS CSS layer
-- `scripts/audit-mobile-ux.mjs`
-- `tests/mobile-ux.spec.mjs`
-
-## Verification
-
-- `npm run build`
-- `node scripts/audit-mobile-ux.mjs`
-- `npm run test:mobile-ux`
-- Full phase and Node suites were run during final verification.
+Low. This is a targeted rollback of the overreaching mobile SaaS shell while keeping the established mobile field UX and sidebar system. The fix removes the mobile-only layer that introduced navigation risk and keeps the smaller menu control requested by the user.
