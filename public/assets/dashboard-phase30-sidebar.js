@@ -167,7 +167,8 @@
     const toggle = document.createElement('button');
     toggle.className = 'btn btn-primary dashboard-mobile-nav-toggle';
     toggle.type = 'button';
-    toggle.textContent = 'Open workspace menu';
+    toggle.setAttribute('aria-label', 'Open dashboard navigation');
+    toggle.innerHTML = '<span aria-hidden="true">☰</span><span class="sr-only">Menu</span>';
     toggle.dataset.sidebarToggle = 'true';
 
     const backdrop = document.createElement('div');
@@ -312,6 +313,31 @@
       }
       const button = event.target.closest('[data-mobile-quick-target]');
       if (!button) return;
+      const action = button.dataset.mobileQuickAction;
+      if (action) openModalShortcut(action);
+      else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {
+        window.taSetSidebarWorkspace(button.dataset.mobileQuickWorkspace, { scroll: true, target: button.dataset.mobileQuickTarget || '' });
+      } else {
+        scrollToTarget(button.dataset.mobileQuickTarget);
+      }
+      quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      setOpen(false);
+    });
+
+    quickBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-mobile-quick-href]');
+      if (link) {
+        if (link.getAttribute('aria-disabled') === 'true') {
+          event.preventDefault();
+          return;
+        }
+        quickBar.querySelectorAll('.mobile-quick-action').forEach((item) => item.removeAttribute('aria-current'));
+        link.setAttribute('aria-current', 'page');
+        return;
+      }
+      const button = event.target.closest('[data-mobile-quick-target]');
+      if (!button || button.getAttribute('aria-disabled') === 'true') return;
       const action = button.dataset.mobileQuickAction;
       if (action) openModalShortcut(action);
       else if (window.taSetSidebarWorkspace && button.dataset.mobileQuickWorkspace) {

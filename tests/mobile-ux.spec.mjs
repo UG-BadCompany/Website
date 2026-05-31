@@ -37,6 +37,17 @@ test('mobile breakpoints prevent horizontal overflow for target viewports', asyn
   assert.match(css, /--mobile-tap:\s*44px/, 'mobile CSS should enforce 44px tap target baseline');
 });
 
+test('premium mobile SaaS header, KPI dashboard, and shortcut cards are wired', async () => {
+  const dashboard = await readText('public/dashboard/index.html');
+  const css = await readText('public/assets/mobile-saas-overhaul.css');
+  const js = await readText('public/assets/mobile-saas-overhaul.js');
+  assert.match(dashboard, /mobile-saas-header[\s\S]*Contracting • Maintenance • Service/, 'Dashboard should have compact branded mobile header');
+  assert.match(dashboard, /data-mobile-greeting[\s\S]*mobile-dashboard-kpis/, 'Dashboard hero should expose mobile greeting and KPI cards');
+  assert.match(dashboard, /mobile-portal-action-grid[\s\S]*mobile-portal-card[\s\S]*Troubleshoot/, 'Portal shortcuts should be modern cards');
+  assert.match(css, /mobile-saas-segmented-nav[\s\S]*grid-template-columns:\s*repeat\(3/, 'Mobile navigation should use segmented app nav');
+  assert.match(js, /data-mobile-greeting[\s\S]*data-mobile-kpi/, 'Mobile SaaS script should hydrate greeting and KPIs');
+});
+
 test('mobile sidebar opens/closes and every sidebar item remains tappable', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
   const css = await readText('public/assets/mobile-field-ux.css');

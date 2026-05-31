@@ -10,6 +10,10 @@ const has = (text, pattern, message) => { if (!pattern.test(text)) fail(message)
 const cssPath = 'public/assets/mobile-field-ux.css';
 if (!existsSync(path.join(root, cssPath))) fail('public/assets/mobile-field-ux.css is missing.');
 const mobileCss = existsSync(path.join(root, cssPath)) ? read(cssPath) : '';
+const saasCssPath = 'public/assets/mobile-saas-overhaul.css';
+if (!existsSync(path.join(root, saasCssPath))) fail('public/assets/mobile-saas-overhaul.css is missing.');
+const saasCss = existsSync(path.join(root, saasCssPath)) ? read(saasCssPath) : '';
+const saasJs = existsSync(path.join(root, 'public/assets/mobile-saas-overhaul.js')) ? read('public/assets/mobile-saas-overhaul.js') : '';
 const dashboard = read('public/dashboard/index.html');
 const inventory = read('public/inventory/index.html');
 const sidebar = read('public/assets/dashboard-phase30-sidebar.js');
@@ -27,7 +31,17 @@ for (const file of [
 ]) {
   const html = read(file);
   if (!html.includes('/assets/mobile-field-ux.css')) fail(`${file} must link the mobile UX layer.`);
+  if (!html.includes('/assets/mobile-saas-overhaul.css')) fail(`${file} must link the premium mobile SaaS layer.`);
 }
+
+
+has(saasCss, /mobile-saas-header[\s\S]*backdrop-filter/, 'Premium mobile header treatment is missing.');
+has(saasCss, /mobile-saas-segmented-nav[\s\S]*grid-template-columns:\s*repeat\(3/, 'Segmented mobile navigation is missing.');
+has(saasCss, /mobile-dashboard-kpis[\s\S]*grid-template-columns/, 'Mobile KPI dashboard cards are missing.');
+has(saasCss, /mobile-portal-action-grid[\s\S]*mobile-portal-card/, 'Portal shortcut cards are missing.');
+has(saasCss, /dashboard-mobile-nav-toggle[\s\S]*width:\s*42px/, 'Workspace menu must be reduced to a compact icon control.');
+has(saasJs, /data-mobile-greeting[\s\S]*Good morning/, 'Mobile dashboard greeting script is missing.');
+if (/Open workspace menu/.test(sidebar)) fail('Sidebar toggle must not display the old "Open workspace menu" label.');
 
 has(mobileCss, /@media\s*\(max-width:\s*820px\)/, 'Mobile CSS must define a phone/tablet breakpoint.');
 has(mobileCss, /overflow-x:\s*clip|overflow-x:\s*hidden/, 'Mobile CSS must guard against horizontal overflow.');
@@ -41,6 +55,9 @@ has(mobileCss, /inventory-mobile-card/, 'Inventory mobile card CSS hook is missi
 has(mobileCss, /worker-mobile-card/, 'Worker mobile card CSS hook is missing.');
 has(mobileCss, /worker-ai-troubleshooting-suite/, 'AI Troubleshooting mobile CSS hook is missing.');
 
+has(dashboard, /mobile-saas-header[\s\S]*Contracting • Maintenance • Service/, 'Dashboard must include premium compact mobile header copy.');
+has(dashboard, /data-mobile-greeting[\s\S]*mobile-dashboard-kpis/, 'Dashboard hero must include mobile greeting and KPI cards.');
+has(dashboard, /mobile-portal-action-grid[\s\S]*Troubleshoot/, 'Dashboard shortcuts must be card-based and include Troubleshoot.');
 has(dashboard, /id="worker-mobile-field"[\s\S]*class="[^"]*worker-mobile-suite|class="[^"]*worker-mobile-suite[\s\S]*id="worker-mobile-field"/, 'Worker Mobile workspace is missing.');
 has(dashboard, /id="smart-schedule-suite"/, 'Scheduling workspace is missing while sidebar uses it.');
 has(dashboard, /class="[^"]*photo-doc-suite/, 'Photo Docs workspace is missing while sidebar uses it.');
