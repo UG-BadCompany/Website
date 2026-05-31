@@ -1885,6 +1885,7 @@ html[data-theme="dark"] [data-admin-access] .client-request-form-actions .btn-so
   <link rel="stylesheet" href="/assets/dashboard-phase21-work-order-automation.css">
   <link rel="stylesheet" href="/assets/dashboard-phase22-payments.css">
   <link rel="stylesheet" href="/assets/dashboard-phase23-customer-experience.css">
+  <link rel="stylesheet" href="/assets/dashboard-phase24-photo-documentation.css">
   <link rel="stylesheet" href="/assets/dashboard-phase28-cleanup.css">
   <link rel="stylesheet" href="/assets/dashboard-phase29-full-cleanup.css">
   <link rel="stylesheet" href="/assets/dashboard-phase30-sidebar.css">
@@ -2047,6 +2048,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
         <a href="#admin-invoices" data-mobile-workspace-link="invoices"><span>🧾</span><strong>Invoices</strong><small>Payments</small></a>
         <a href="/inventory/"><span>📦</span><strong>Inventory</strong><small>Stock</small></a>
         <a href="#worker-ai-troubleshooting" data-mobile-workspace-link="ai-troubleshooting"><span>🤖</span><strong>AI Troubleshooter</strong><small>Field help</small></a>
+        <a href="#ai-knowledge-center" data-mobile-workspace-link="ai-knowledge" data-main-action-views="admin"><span>🧠</span><strong>AI Knowledge</strong><small>Review learned rules</small></a>
       </section>
 
       <section class="mobile-ai-insights" aria-label="AI assistant business insights">
@@ -2626,6 +2628,9 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <label>Job selector<select name="assignmentId" data-photo-doc-assignment required></select></label>
           <label>Evidence stage<select name="stage"><option value="before">Before photos</option><option value="progress">Progress photos</option><option value="after">After photos</option></select></label>
           <label class="full">Completion / evidence notes<textarea name="workerNotes" data-photo-doc-notes placeholder="Describe the before/progress/after evidence captured"></textarea></label>
+          <label>Photo type<select name="photoType" data-photo-doc-photo-type><option value="before">Before</option><option value="progress">Progress</option><option value="after">After</option><option value="issue">Issue / damage</option><option value="measurement">Measurement</option><option value="model_plate">Model plate</option><option value="serial_plate">Serial plate</option><option value="access_condition">Access condition</option></select></label>
+          <label class="full">Upload photos<input name="photos" type="file" accept="image/*,.heic,.heif" capture="environment" multiple data-photo-doc-upload-files></label>
+          <label class="full">Photo caption / notes<input name="photoCaption" data-photo-doc-caption placeholder="What does this photo show?"></label>
           <label class="full">Evidence file names<input name="completionEvidenceFiles" data-photo-doc-files placeholder="before-kitchen.jpg, after-kitchen.jpg"></label>
         </div>
         <div class="phase54-meta"><span>Checklist: before photo</span><span>progress photo</span><span>after photo</span><span>completion note</span><span>admin review</span></div>
@@ -2653,6 +2658,18 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
         <div class="client-request-form-actions"><button class="btn btn-primary" type="submit">Save maintenance plan</button><span data-maintenance-form-status aria-live="polite"></span></div>
       </form>
       <div class="phase54-list" data-maintenance-plan-list></div>
+    </section>
+
+
+    <section class="card ai-knowledge-suite phase54-workspace" id="ai-knowledge-center" data-ai-knowledge-center data-dashboard-section data-views="admin" hidden>
+      <strong>AI Knowledge Center</strong>
+      <p>Review OpenAI-learned quote, material, labor, and troubleshooting knowledge before promoting it to trusted company standards.</p>
+      <div class="client-request-form-grid">
+        <label>Knowledge type<select data-ai-knowledge-type><option value="materials">Materials</option><option value="labor">Labor</option><option value="troubleshooting">Troubleshooting</option><option value="quotes">Quote patterns</option></select></label>
+        <label>Review status<select data-ai-knowledge-status><option value="">All statuses</option><option value="pending_review">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="disabled">Disabled</option></select></label>
+      </div>
+      <div class="client-request-form-actions"><button class="btn btn-primary" type="button" data-ai-knowledge-refresh>Refresh knowledge</button><span class="session-status" data-ai-knowledge-status-text aria-live="polite">Choose filters to load learned AI knowledge.</span></div>
+      <div class="phase54-list" data-ai-knowledge-list></div>
     </section>
 
     <section class="card readiness-suite phase54-workspace" id="system-readiness" data-dashboard-section data-views="admin" hidden>
@@ -2750,6 +2767,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <button type="button" data-mobile-more-key="employees">Employees / Workers</button>
       <button type="button" data-mobile-more-key="admin-tools" data-mobile-more-admin>Admin</button>
       <button type="button" data-mobile-more-key="reports">Reports</button>
+      <button type="button" data-mobile-more-key="ai-knowledge" data-mobile-more-admin>AI Knowledge</button>
       <button type="button" data-mobile-more-key="schedule">Schedule</button>
       <button type="button" data-mobile-more-key="settings">Settings</button>
       <button type="button" data-mobile-more-key="troubleshooter">AI Assistant</button>
@@ -2793,6 +2811,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   <script src="/assets/dashboard-phase12-client-worker.js" defer></script>
   <script src="/assets/dashboard-phase19-worker-mobile.js" defer></script>
   <script src="/assets/dashboard-phase23-customer-experience.js" defer></script>
+  <script src="/assets/dashboard-phase24-photo-documentation.js" defer></script>
   <script src="/assets/dashboard-phase28-cleanup.js" defer></script>
   <script src="/assets/dashboard-phase29-action-guard.js" defer></script>
   <script src="/assets/dashboard-phase30-sidebar.js" defer></script>

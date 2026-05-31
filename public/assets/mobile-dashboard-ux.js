@@ -129,6 +129,7 @@
       'admin-tools': ['roles-users', '#admin-access'],
       employees: ['roles-users', '#admin-access'],
       reports: ['activity', '#admin-activity'],
+      'ai-knowledge': ['ai-knowledge', '#ai-knowledge-center'],
       settings: ['roles-users', '#admin-access'],
     },
     client: {
@@ -155,7 +156,7 @@
   };
 
   const mobileAllowedMoreKeysByView = {
-    admin: ['dashboard', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'schedule', 'settings', 'troubleshooter', 'sign-out'],
+    admin: ['dashboard', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'ai-knowledge', 'schedule', 'settings', 'troubleshooter', 'sign-out'],
     client: ['dashboard', 'requests', 'quotes', 'invoices', 'customers', 'settings', 'sign-out'],
     worker: ['dashboard', 'jobs', 'schedule', 'troubleshooter', 'reports', 'settings', 'sign-out'],
   };

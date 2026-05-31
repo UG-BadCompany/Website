@@ -546,6 +546,7 @@
       const applySidebarWorkspaceForView = (view) => {
         const workspace = isMobileDashboardViewport() ? (mobileWorkspaceForView[view] || 'overview') : 'overview';
         document.body.dataset.sidebarWorkspace = workspace;
+        window.taSetSidebarWorkspace?.('overview', { scroll: false });
         if (typeof window.taSetSidebarWorkspace === 'function') {
           window.taSetSidebarWorkspace(workspace, { scroll: false });
         } else {
@@ -1830,6 +1831,91 @@
         status.textContent = `${currentMaintenancePlans.length} maintenance plan${currentMaintenancePlans.length === 1 ? '' : 's'} loaded.`;
       };
 
+
+      const renderAiKnowledgeItems = (items = [], type = 'materials') => items.length ? items.map((item) => {
+        const payload = item.source_payload || item.content || item.sourcePayload || {};
+        const title = item.title || item.name || item.phase_name || item.knowledge_type || item.content || 'AI knowledge item';
+        const trade = item.trade || item.category || item.work_category || item.component || 'Uncategorized';
+        const sourceRun = item.source_run_id || item.sourceRunId || payload.sourceRunId || '';
+        const confidence = item.confidence_score ?? payload.confidenceScore ?? payload.confidence_score ?? '';
+        return `
+          <article class="phase54-card" data-ai-knowledge-item data-ai-knowledge-id="${escapeHtml(item.id || '')}">
+            <span class="phase54-badge">${escapeHtml(type)} · ${escapeHtml(item.review_status || item.reviewStatus || 'pending_review')}</span>
+            <strong>${escapeHtml(String(title).slice(0, 160))}</strong>
+            <div class="phase54-meta"><span>${escapeHtml(trade)}</span><span>${confidence === '' ? 'Confidence n/a' : `Confidence ${escapeHtml(String(confidence))}`}</span><span>${item.promoted_to_company_standard || item.promotedToCompanyStandard ? 'Company standard' : 'Not promoted'}</span><span>${escapeHtml(item.created_at || item.createdAt ? formatDate(String(item.created_at || item.createdAt).slice(0, 10)) : 'No date')}</span></div>
+            <p>${escapeHtml(typeof item.content === 'string' ? item.content : (payload.notes || payload.name || payload.phase || payload.description || JSON.stringify(payload).slice(0, 280) || 'Review source AI output before promoting.'))}</p>
+            <small>${sourceRun ? `Source AI run: ${escapeHtml(sourceRun)}` : 'Source AI run metadata pending or not linked.'}</small>
+            <div class="client-request-form-actions">
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="approve">Approve</button>
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="reject">Reject</button>
+              <button class="btn btn-primary" type="button" data-ai-knowledge-action="promote">Promote</button>
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="disable">Disable</button>
+              <button class="btn btn-soft" type="button" data-ai-knowledge-action="edit">Edit</button>
+            </div>
+          </article>`;
+      }).join('') : '<p class="session-status">No AI knowledge found for this filter.</p>';
+
+      const loadAiKnowledgeCenter = async () => {
+        const panel = document.querySelector('[data-ai-knowledge-center]');
+        if (!panel || currentDashboardView !== 'admin') return;
+        const type = panel.querySelector('[data-ai-knowledge-type]')?.value || 'materials';
+        const statusValue = panel.querySelector('[data-ai-knowledge-status]')?.value || '';
+        const status = panel.querySelector('[data-ai-knowledge-status-text]');
+        const list = panel.querySelector('[data-ai-knowledge-list]');
+        if (!list) return;
+        if (status) status.textContent = 'Loading AI knowledge…';
+        try {
+          const response = await fetch(`/api/admin/ai-knowledge?type=${encodeURIComponent(type)}&status=${encodeURIComponent(statusValue)}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Could not load AI knowledge.');
+          list.innerHTML = renderAiKnowledgeItems(result.items || [], result.type || type);
+          if (status) status.textContent = `${(result.items || []).length} ${result.type || type} knowledge item${(result.items || []).length === 1 ? '' : 's'} loaded.`;
+        } catch (error) {
+          list.innerHTML = '<p class="session-status">AI Knowledge Center could not load.</p>';
+          if (status) status.textContent = error.message;
+        }
+      };
+
+      const bindAiKnowledgeCenter = () => {
+        const panel = document.querySelector('[data-ai-knowledge-center]');
+        if (!panel || panel.dataset.bound) return;
+        panel.dataset.bound = 'true';
+        panel.querySelector('[data-ai-knowledge-refresh]')?.addEventListener('click', loadAiKnowledgeCenter);
+        panel.querySelector('[data-ai-knowledge-type]')?.addEventListener('change', loadAiKnowledgeCenter);
+        panel.querySelector('[data-ai-knowledge-status]')?.addEventListener('change', loadAiKnowledgeCenter);
+        panel.addEventListener('click', async (event) => {
+          const button = event.target.closest('[data-ai-knowledge-action]');
+          if (!button) return;
+          const card = button.closest('[data-ai-knowledge-item]');
+          const id = card?.dataset.aiKnowledgeId;
+          const action = button.dataset.aiKnowledgeAction;
+          const type = panel.querySelector('[data-ai-knowledge-type]')?.value || 'materials';
+          const status = panel.querySelector('[data-ai-knowledge-status-text]');
+          if (!id || !action) return;
+          let content = null;
+          if (action === 'edit') {
+            const current = card.querySelector('p')?.textContent || '';
+            const next = window.prompt('Edit this AI knowledge note/content before saving.', current);
+            if (next === null) return;
+            content = type === 'troubleshooting' ? { content: next } : { notes: next };
+          }
+          if (status) status.textContent = `${action} AI knowledge…`;
+          try {
+            const response = await fetch('/api/admin/ai-knowledge', {
+              method: 'PATCH',
+              headers: { accept: 'application/json', 'content-type': 'application/json' },
+              body: JSON.stringify({ id, type, action, content }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not update AI knowledge.');
+            await loadAiKnowledgeCenter();
+          } catch (error) {
+            if (status) status.textContent = error.message;
+          }
+        });
+        loadAiKnowledgeCenter();
+      };
+
       const renderReadinessWorkspace = () => {
         const status = document.querySelector('[data-readiness-status]');
         const list = document.querySelector('[data-readiness-checklist]');
@@ -1852,6 +1938,7 @@
         renderWorkerMobileWorkspace();
         renderPhotoDocsWorkspace();
         renderMaintenanceWorkspace();
+        if (currentDashboardView === 'admin') loadAiKnowledgeCenter();
         renderReadinessWorkspace();
       };
 
@@ -3991,6 +4078,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
 
       const bindPhase54Workspaces = () => {
         bindAiTroubleshootingWorkspace();
+        bindAiKnowledgeCenter();
         const scheduleForm = document.querySelector('[data-schedule-dispatch-form]');
         if (scheduleForm && !scheduleForm.dataset.bound) {
           scheduleForm.dataset.bound = 'true';
@@ -4090,17 +4178,43 @@ Additional info from client: ${payload.additionalInfo}` : '';
             event.preventDefault();
             const formStatus = document.querySelector('[data-photo-doc-form-status]');
             const payload = Object.fromEntries(new FormData(photoForm).entries());
-            const evidenceFiles = String(payload.completionEvidenceFiles || '').split(',').map((item) => item.trim()).filter(Boolean);
+            const selectedFiles = [...(photoForm.querySelector('[data-photo-doc-upload-files]')?.files || [])];
+            const evidenceFiles = [...String(payload.completionEvidenceFiles || '').split(',').map((item) => item.trim()).filter(Boolean), ...selectedFiles.map((file) => file.name)];
             if (!payload.assignmentId) { if (formStatus) formStatus.textContent = 'Choose a job before saving evidence notes.'; return; }
-            if (formStatus) formStatus.textContent = 'Saving evidence notes…';
+            const assignment = currentAdminAssignments.get(payload.assignmentId) || currentWorkerAssignments.find((entry) => entry.id === payload.assignmentId) || {};
+            const jobRequestId = assignment.jobRequest?.id || assignment.jobRequestId || '';
+            if (formStatus) formStatus.textContent = selectedFiles.length ? 'Saving evidence notes and photo metadata…' : 'Saving evidence notes…';
             try {
-              await postWorkerAssignmentUpdate({ assignmentId: payload.assignmentId, status: 'in_progress', workerNotes: `${payload.stage || 'evidence'}: ${payload.workerNotes || 'Evidence note saved.'}`, completionEvidenceFiles: evidenceFiles }, formStatus);
-              if (formStatus) formStatus.textContent = 'Evidence notes saved. File upload storage uses the existing job files endpoint when files are attached from the work order form.';
+              if (selectedFiles.length && jobRequestId) {
+                const response = await fetch('/api/job-files', {
+                  method: 'POST',
+                  headers: { accept: 'application/json', 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    jobRequestId,
+                    files: selectedFiles.map((file) => ({
+                      fileName: file.name,
+                      mimeType: file.type || 'image/*',
+                      sizeBytes: file.size || 0,
+                      category: payload.photoType || payload.stage || 'issue',
+                      photoType: payload.photoType || payload.stage || 'issue',
+                      caption: payload.photoCaption || payload.workerNotes || '',
+                      notes: payload.workerNotes || '',
+                      sourceContext: 'photo_doc_workspace',
+                      workOrderId: jobRequestId,
+                    })),
+                  }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save photo metadata.');
+              }
+              await postWorkerAssignmentUpdate({ assignmentId: payload.assignmentId, status: 'in_progress', workerNotes: `${payload.stage || 'evidence'}: ${payload.workerNotes || payload.photoCaption || 'Evidence note saved.'}`, completionEvidenceFiles: evidenceFiles }, formStatus);
+              if (formStatus) formStatus.textContent = selectedFiles.length ? 'Evidence notes and photo metadata saved for AI context.' : 'Evidence notes saved.';
+              photoForm.reset();
             } catch (error) { if (formStatus) formStatus.textContent = error.message; }
           });
           photoForm.querySelector('[data-photo-doc-upload-note]')?.addEventListener('click', () => {
             const formStatus = document.querySelector('[data-photo-doc-form-status]');
-            if (formStatus) formStatus.textContent = 'Upload storage is handled by the existing /api/job-files work-order attachment flow; this workspace records evidence notes and filenames for review.';
+            if (formStatus) formStatus.textContent = 'Choose camera/photos, select photo type, add caption/notes, then Save evidence notes to store metadata through /api/job-files for AI context.';
           });
         }
 

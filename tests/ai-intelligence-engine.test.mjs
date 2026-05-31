@@ -40,6 +40,11 @@ const validQuote = (overrides = {}) => ({
   needsSiteVisitToTightenPrice: false,
   missingMeasurementsNeeded: [],
   assumptionsUsedForTightPrice: ['Standard wall access', 'No hidden electrical damage', 'Condensate pump is reachable'],
+  photoNeeded: false,
+  photoTypesNeeded: [],
+  measurementNeeded: false,
+  modelPlateNeeded: false,
+  photoConfidenceImpact: 'Existing photo metadata is not required for this standard repair; model/access assumptions are stated.',
   ...overrides,
 });
 
@@ -192,6 +197,29 @@ test('site visit can allow wider range only when rangeSpreadReason explains it',
   assert.equal(validateQuoteAiOutput(withReason, { serviceType: 'Drywall', description: 'Repair water damaged drywall across multiple rooms.' }).ok, true);
 });
 
+
+
+test('AI quote prompt loads job photo metadata into photoContext', async () => {
+  const db = makeDb({ history: [] });
+  const originalSql = db.sql;
+  db.sql = async (strings, ...values) => {
+    const text = Array.isArray(strings) ? strings.join('?') : String(strings);
+    db.queries.push({ text, values });
+    if (/from ai_quote_runs/i.test(text)) return [];
+    if (/from files/i.test(text)) return [{ id: 'file-1', job_request_id: 'req-photo', path: 'req-photo/issue/leak.jpg', file_name: 'leak.jpg', mime_type: 'image/jpeg', caption: 'Leak under sink', notes: 'Shows access and damage', photo_type: 'damage', source_context: 'client_request', created_at: '2026-05-31T00:00:00Z', metadata: {} }];
+    return originalSql(strings, ...values);
+  };
+  let prompt = null;
+  await runAiFirstQuote({
+    db,
+    apiKey: 'test-key',
+    jobRequest: { id: 'req-photo', service_type: 'Plumbing', work_category: 'Leak', description: 'Repair visible under-sink leak with photo evidence.', city: 'Phoenix' },
+    fetchImpl: async (_url, options) => { prompt = JSON.parse(options.body).input[1].content; return openAiResponse(validQuote({ tradeCategory: 'Plumbing' })); },
+  });
+  assert.match(prompt, /leak\.jpg/);
+  assert.match(prompt, /damage/);
+  assert.match(prompt, /Shows access and damage/);
+});
 
 test('quote UI exposes recommended fixed price, tight range, confidence, and override controls', async () => {
   const draftFunction = await readFile('netlify/functions/admin-quote-draft.mjs', 'utf8');

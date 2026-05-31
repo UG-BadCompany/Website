@@ -34,6 +34,11 @@ export const REQUIRED_QUOTE_FIELDS = [
   'needsSiteVisitToTightenPrice',
   'missingMeasurementsNeeded',
   'assumptionsUsedForTightPrice',
+  'photoNeeded',
+  'photoTypesNeeded',
+  'measurementNeeded',
+  'modelPlateNeeded',
+  'photoConfidenceImpact',
 ];
 
 export const REQUIRED_TROUBLESHOOTING_FIELDS = [
@@ -112,6 +117,11 @@ export const normalizeQuoteAiOutput = (quote = {}) => {
     needsSiteVisitToTightenPrice: Boolean(quote.needsSiteVisitToTightenPrice),
     missingMeasurementsNeeded: toArray(quote.missingMeasurementsNeeded).map((item) => clean(String(item), 400)),
     assumptionsUsedForTightPrice: toArray(quote.assumptionsUsedForTightPrice).map((item) => clean(String(item), 600)),
+    photoNeeded: Boolean(quote.photoNeeded),
+    photoTypesNeeded: toArray(quote.photoTypesNeeded).map((item) => clean(String(item), 120)),
+    measurementNeeded: Boolean(quote.measurementNeeded),
+    modelPlateNeeded: Boolean(quote.modelPlateNeeded),
+    photoConfidenceImpact: clean(quote.photoConfidenceImpact, 1200),
   };
 };
 
@@ -140,6 +150,8 @@ export const validateQuoteAiOutput = (quote = {}, context = {}) => {
   if (!normalized.pricingConfidenceLevel) errors.push('pricingConfidenceLevel must be high, medium, or low.');
   if (!normalized.pricingConfidenceReason) errors.push('pricingConfidenceReason is required.');
   if (!normalized.assumptionsUsedForTightPrice.length) errors.push('assumptionsUsedForTightPrice is required to support tight pricing.');
+  if (normalized.photoNeeded && !normalized.photoTypesNeeded.length) errors.push('photoTypesNeeded is required when photoNeeded is true.');
+  if ((normalized.photoNeeded || normalized.measurementNeeded || normalized.modelPlateNeeded) && !normalized.photoConfidenceImpact) errors.push('photoConfidenceImpact is required when photos, measurements, or model plate evidence are needed.');
   if (normalized.totalHighCents < normalized.totalLowCents) errors.push('totalHighCents must be >= totalLowCents.');
 
   const rangeSpreadCents = Math.max(0, normalized.totalHighCents - normalized.totalLowCents);
@@ -269,6 +281,8 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
     'Return a tight low/high range plus one recommended fixed price. High confidence range max 10-15%; medium confidence max 20-25%; low confidence must set quoteReady false unless admin overrides later.',
     'Use company history, inventory, labor knowledge, material knowledge, supplier pricing, and photos/context to tighten pricing.',
     'If uncertain, ask missing questions or recommend a site visit and explain exactly what information would tighten price.',
+    'Use photoContext when available: file URLs/paths, names, captions, notes, photo type, measurement/model plate/access/damage evidence should improve confidence and tighten range when strong.',
+    'If visual evidence is missing for visual-dependent work, set photoNeeded/photoTypesNeeded/measurementNeeded/modelPlateNeeded and reduce pricingConfidenceLevel or mark needsSiteVisitToTightenPrice.',
     'High-risk trades require risk flags and stop/escalate guidance.',
     'Vague requests require missingInfoQuestions.',
   ],
@@ -386,9 +400,39 @@ export const loadHistoricalAiContext = async ({ db, serviceType = '', workCatego
   return Array.isArray(rows) ? rows.map((row) => ({ type: row.run_type, input: row.input_summary, output: row.output_json, createdAt: row.created_at, city })) : [];
 };
 
+export const loadPhotoContext = async ({ db, jobRequestId = '', workOrderId = '', quoteId = '', limit = 12 }) => {
+  const rows = await safeSql(db, (sql) => sql`
+    select id, owner_id, job_request_id, path, file_name, mime_type, caption, notes, photo_type, source_context, quote_id, work_order_id, metadata, created_at
+    from files
+    where (${jobRequestId || ''} = '' or job_request_id = ${jobRequestId || ''})
+      and (${workOrderId || ''} = '' or coalesce(work_order_id, job_request_id::text) = ${workOrderId || ''})
+      and (${quoteId || ''} = '' or quote_id = ${quoteId || ''})
+      and (mime_type ilike 'image/%' or lower(file_name) ~ '\.(jpg|jpeg|png|webp|heic|heif)$')
+    order by created_at desc
+    limit ${limit}
+  `);
+  return Array.isArray(rows) ? rows.map((file) => ({
+    id: file.id,
+    jobRequestId: file.job_request_id,
+    workOrderId: file.work_order_id || '',
+    quoteId: file.quote_id || '',
+    fileName: file.file_name,
+    mimeType: file.mime_type,
+    url: file.path,
+    path: file.path,
+    caption: clean(file.caption, 500),
+    notes: clean(file.notes, 1200),
+    photoType: clean(file.photo_type, 80) || 'issue',
+    sourceContext: clean(file.source_context, 80) || 'job_request',
+    createdAt: file.created_at,
+    metadata: file.metadata || {},
+  })) : [];
+};
+
 export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplierPricing = [], companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_QUOTE_TIMEOUT_MS || 14000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, city: jobRequest.city });
-  const prompt = buildQuotePrompt({ jobRequest, inventory, supplierPricing, historicalContext, companyRules, photoContext });
+  const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: jobRequest.id });
+  const prompt = buildQuotePrompt({ jobRequest, inventory, supplierPricing, historicalContext, companyRules, photoContext: resolvedPhotoContext });
   const system = 'You are the AI-first estimating engine for T&A Contracting. Use company history, inventory, supplier pricing, photos, and request details. Return strict JSON only with the required fields. Do not omit high-risk safety/stop guidance.';
   const result = await runOpenAiWithValidation({ kind: 'quote', apiKey, model, timeoutMs, system, user: prompt, validate: validateQuoteAiOutput, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description }, fetchImpl });
   if (result.ok) {
@@ -412,7 +456,8 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
 
 export const runAiFirstTroubleshooting = async ({ db, payload, companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 12000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: payload.systemType, workCategory: payload.component, city: '', limit: 6 });
-  const prompt = buildTroubleshootingPrompt({ payload, historicalContext, companyRules, photoContext });
+  const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: payload.workOrderId, workOrderId: payload.workOrderId });
+  const prompt = buildTroubleshootingPrompt({ payload, historicalContext, companyRules, photoContext: resolvedPhotoContext });
   const system = 'You are the AI-first field troubleshooting engine for T&A Contracting. Return strict JSON only. Be safety-first and trade-specific. Include stop/escalate guidance for high-risk work.';
   const result = await runOpenAiWithValidation({ kind: 'troubleshooting', apiKey, model, timeoutMs, system, user: prompt, validate: validateTroubleshootingAiOutput, context: payload, fetchImpl });
   if (result.ok) {

@@ -51,28 +51,28 @@ const normalizeAction = (value) => ['approve', 'reject', 'promote', 'disable', '
 
 const listKnowledge = async (db, type, status) => {
   if (type === 'labor') return await db.sql`
-    select id, phase_name as title, trade, hours_low, hours_high, source_payload, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
+    select id, source_run_id, phase_name as title, trade, hours_low, hours_high, source_payload, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
     from ai_labor_knowledge
     where (${status || ''} = '' or review_status = ${status || ''})
     order by created_at desc
     limit 100
   `;
   if (type === 'troubleshooting') return await db.sql`
-    select id, trade, component, symptom, knowledge_type, content, source_payload, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
+    select id, source_run_id, trade, component, symptom, knowledge_type, content, source_payload, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
     from ai_troubleshooting_knowledge
     where (${status || ''} = '' or review_status = ${status || ''})
     order by created_at desc
     limit 100
   `;
   if (type === 'quotes') return await db.sql`
-    select id, trade, service_type, work_category, city, knowledge_type, content, confidence_score, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
+    select id, source_run_id, trade, service_type, work_category, city, knowledge_type, content, confidence_score, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
     from ai_quote_knowledge
     where (${status || ''} = '' or review_status = ${status || ''})
     order by created_at desc
     limit 100
   `;
   return await db.sql`
-    select id, name as title, trade, supplier, sku, quantity_assumption, unit, source_payload, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
+    select id, source_run_id, name as title, trade, supplier, sku, quantity_assumption, unit, source_payload, review_status, promoted_to_company_standard, disabled_at, created_at, updated_at
     from ai_material_knowledge
     where (${status || ''} = '' or review_status = ${status || ''})
     order by created_at desc
