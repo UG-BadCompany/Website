@@ -24,8 +24,8 @@ test('more menu and inventory floating actions are not placeholders', async () =
   const dashboard = await readText('public/dashboard/index.html');
   const mobileJs = await readText('public/assets/mobile-dashboard-ux.js');
   const inventory = await readText('public/inventory/index.html');
-  assert.match(dashboard, /data-mobile-more-key="dashboard"[\s\S]*data-mobile-more-key="inventory"[\s\S]*data-mobile-more-key="invoices"[\s\S]*data-mobile-more-key="finance"[\s\S]*data-mobile-more-key="customers"[\s\S]*data-mobile-more-key="employees"[\s\S]*data-mobile-more-key="admin-tools"[\s\S]*data-mobile-more-key="reports"[\s\S]*data-mobile-more-key="settings"[\s\S]*data-mobile-more-key="sign-out"/);
-  assert.match(mobileJs, /finance:\s*\['finance'[\s\S]*employees:[\s\S]*reports:[\s\S]*settings:/);
+  assert.match(dashboard, /data-mobile-more-key="dashboard"[\s\S]*data-mobile-more-key="requests"[\s\S]*data-mobile-more-key="quotes"[\s\S]*data-mobile-more-key="work-orders"[\s\S]*data-mobile-more-key="invoices"[\s\S]*data-mobile-more-key="customers"[\s\S]*data-mobile-more-key="employees"[\s\S]*data-mobile-more-key="inventory"[\s\S]*data-mobile-more-key="reports"[\s\S]*data-mobile-more-key="settings"[\s\S]*data-mobile-more-key="ai-tools"[\s\S]*data-mobile-more-key="project-updates"[\s\S]*data-mobile-more-key="profile"[\s\S]*data-mobile-more-key="request-estimate"[\s\S]*data-mobile-more-key="schedule"[\s\S]*data-mobile-more-key="materials"[\s\S]*data-mobile-more-key="photos"[\s\S]*data-mobile-more-key="troubleshooter"[\s\S]*data-mobile-more-key="job-notes"[\s\S]*data-mobile-more-key="sign-out"/);
+  assert.match(mobileJs, /'work-orders': \['work-orders'[\s\S]*employees:[\s\S]*reports:[\s\S]*settings:[\s\S]*'ai-tools':/);
   assert.match(inventory, /data-inventory-fab-action="add-item"[\s\S]*data-inventory-fab-action="scan-item"[\s\S]*data-inventory-fab-action="low-stock"/);
   assert.match(inventory, /bindInventoryMobileFab[\s\S]*pointerup[\s\S]*touchend[\s\S]*openInventoryPane\('items'\)[\s\S]*openInventoryPane\('low-stock'\)/);
 });

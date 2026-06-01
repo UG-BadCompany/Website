@@ -27,10 +27,10 @@ test('AI Knowledge Center UI is admin-only and reachable from desktop and mobile
   assert.match(html, /data-ai-knowledge-center data-dashboard-section data-views="admin"/);
   assert.match(html, /data-ai-knowledge-type/);
   assert.match(html, /data-ai-knowledge-action="approve"|data-ai-knowledge-refresh/);
-  assert.match(mobile, /'ai-knowledge': \['ai-knowledge', '#ai-knowledge-center'\]/);
-  assert.match(mobile, /admin: \[[^\]]*'ai-knowledge'/);
-  assert.doesNotMatch(mobile, /client: \[[^\]]*'ai-knowledge'/);
-  assert.doesNotMatch(mobile, /worker: \[[^\]]*'ai-knowledge'/);
+  assert.match(mobile, /'ai-tools': \['ai-knowledge', '#ai-knowledge-center'\]/);
+  assert.match(mobile, /admin: \[[^\]]*'ai-tools'/);
+  assert.doesNotMatch(mobile, /client: \[[^\]]*'ai-tools'/);
+  assert.doesNotMatch(mobile, /worker: \[[^\]]*'ai-tools'/);
   assert.match(sidebar, /'ai-knowledge'[\s\S]*views: \['admin'\]/);
   assert.match(bootstrap, /fetch\('\/api\/admin\/ai-knowledge'/);
 });

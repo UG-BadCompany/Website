@@ -642,19 +642,19 @@
       };
       const dashboardViewCopy = {
         admin: {
-          eyebrow: 'Admin view',
-          title: 'Business command center.',
-          description: 'Work orders, invoices, inventory, roles, users, and audit activity are visible in this view.',
+          eyebrow: 'Admin Command Center',
+          title: 'Business Operations Dashboard',
+          description: 'Manage customers, estimates, work orders, employees, inventory, invoices, scheduling, and business performance.',
         },
         client: {
-          eyebrow: 'Client view',
-          title: 'Client tools for managing a project.',
-          description: 'Requests, quotes, client invoices, saved properties, and profile details are visible in this view.',
+          eyebrow: 'Client Portal',
+          title: 'Project Dashboard',
+          description: 'Track your requests, quotes, invoices, projects, and service updates.',
         },
         worker: {
-          eyebrow: 'Worker view',
-          title: 'Worker tools for assigned field jobs.',
-          description: 'Assigned jobs, notes, task checklist details, and completion upload tools are visible in this view.',
+          eyebrow: 'Field Operations',
+          title: 'Today’s Assignments',
+          description: 'View jobs, schedules, materials, notes, photos, and troubleshooting tools.',
         },
       };
 
@@ -664,6 +664,17 @@
           const requiredPermission = section.dataset.permission;
           const hasRequiredPermission = !requiredPermission || Boolean(user?.permissions?.[requiredPermission]);
           section.hidden = !views.includes(view) || !hasRequiredPermission;
+        });
+      };
+
+      const applyRoleVisibility = (view) => {
+        const currentView = normalizeDashboardViewName(view) || 'client';
+        document.querySelectorAll('[data-role-visible]').forEach((element) => {
+          const roles = (element.dataset.roleVisible || '').split(/\s+/).filter(Boolean).map(normalizeDashboardViewName);
+          const visible = roles.includes(currentView);
+          element.hidden = !visible;
+          element.setAttribute('aria-hidden', visible ? 'false' : 'true');
+          element.dataset.roleActive = String(visible);
         });
       };
 
@@ -708,6 +719,7 @@
         document.documentElement.dataset.dashboardView = nextView;
         document.documentElement.dataset.currentDashboardView = nextView;
         document.body.dataset.currentDashboardView = nextView;
+        applyRoleVisibility(nextView);
         updateDashboardViewChrome(nextView);
 
         applyDashboardSectionVisibility(document.querySelectorAll('[data-dashboard-section]'), nextView, currentProfileUser);
@@ -803,6 +815,7 @@
         getAvailableDashboardViews,
         normalizeDashboardViewName,
         applyDashboardSectionVisibility,
+        applyRoleVisibility,
         applyDashboardViewButtonState,
       };
 

@@ -7,9 +7,9 @@ test('mobile dashboard removes desktop command center duplicates and keeps app a
   const css = await readText('public/assets/mobile-field-ux.css');
   const js = await readText('public/assets/mobile-dashboard-ux.js');
 
-  assert.match(html, /data-mobile-clean-dashboard[\s\S]*Today&apos;s jobs[\s\S]*Open requests[\s\S]*Pending quotes[\s\S]*Unpaid invoices[\s\S]*Low inventory alerts[\s\S]*Recent activity/);
+  assert.match(html, /data-mobile-clean-dashboard[\s\S]*Revenue[\s\S]*Open Jobs[\s\S]*Pending Quotes[\s\S]*Unpaid Invoices[\s\S]*Inventory Alerts[\s\S]*Employee Activity/);
   assert.match(css, /#executive-overview\.main-command-shortcuts[\s\S]*display:\s*none !important/);
-  assert.match(html, /data-mobile-fab-action="request"[\s\S]*data-mobile-fab-action="quote"[\s\S]*data-mobile-fab-action="job"[\s\S]*data-mobile-fab-action="inventory"[\s\S]*data-mobile-fab-action="customer"[\s\S]*data-mobile-fab-action="photo"[\s\S]*data-mobile-fab-action="assistant"/);
+  assert.match(html, /data-mobile-fab-action="estimate"[\s\S]*data-mobile-fab-action="work-order"[\s\S]*data-mobile-fab-action="customer"[\s\S]*data-mobile-fab-action="inventory-entry"[\s\S]*data-mobile-fab-action="schedule-job"[\s\S]*data-mobile-fab-action="request"[\s\S]*data-mobile-fab-action="request-estimate"[\s\S]*data-mobile-fab-action="support"[\s\S]*data-mobile-fab-action="start-job"[\s\S]*data-mobile-fab-action="photo"[\s\S]*data-mobile-fab-action="material-request"[\s\S]*data-mobile-fab-action="troubleshooting"/);
   assert.match(js, /pointerup[\s\S]*touchend[\s\S]*Escape[\s\S]*setFabOpen\(false\)[\s\S]*hashchange[\s\S]*popstate/);
 });
 

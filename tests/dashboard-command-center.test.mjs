@@ -9,7 +9,7 @@ const loadDashboardHtml = () => readFile(PUBLIC_DASHBOARD_PATH, 'utf8');
 
 test('dashboard places a single all-tools command center directly under the hero', async () => {
   const html = await loadDashboardHtml();
-  const heroIndex = html.indexOf('<section class="hero">');
+  const heroIndex = html.indexOf('<section class="hero dashboard-role-heroes"');
   const mainCommandIndex = html.indexOf('aria-label="Main dashboard command center"');
   const sessionCheckIndex = html.indexOf('data-session-card');
 
@@ -61,8 +61,8 @@ test('dashboard view switcher exposes all role views for switch-capable users', 
   assert.match(html, /data-dashboard-view-status/, 'dashboard should show visible feedback for the selected role view');
   assert.match(html, /data-main-command-title/, 'main command center heading should update when the selected view changes');
   assert.doesNotMatch(html, /Admin tools for running the business/, 'old admin tools copy should not appear in dashboard markup');
-  assert.match(html, /Client tools for managing a project/, 'client view should have clear client command-center copy');
-  assert.match(html, /Worker tools for assigned field jobs/, 'worker view should have clear worker command-center copy');
+  assert.match(html, /Track your requests, quotes, invoices, projects, and service updates\./, 'client view should have clear client portal copy');
+  assert.match(html, /View jobs, schedules, materials, notes, photos, and troubleshooting tools\./, 'worker view should have clear worker field copy');
   assert.match(html, /data-main-action-views="admin"/, 'admin command shortcuts should be scoped to the admin view');
   assert.match(html, /data-main-action-views="client"/, 'client command shortcuts should be scoped to the client view');
   assert.match(html, /data-main-action-views="worker"/, 'worker command shortcuts should be scoped to the worker view');

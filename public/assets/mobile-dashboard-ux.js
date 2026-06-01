@@ -49,6 +49,47 @@
 
   const currentRole = () => document.body.dataset.currentDashboardView || document.documentElement.dataset.currentDashboardView || 'client';
 
+
+  const mobileSummaryByRole = {
+    admin: {
+      eyebrow: 'Admin command',
+      title: 'Business operations snapshot',
+      description: 'Revenue, open jobs, pending quotes, unpaid invoices, inventory alerts, and employee activity for the business.',
+      cards: [
+        ['Revenue', 'revenue', 'Business income signal'],
+        ['Open Jobs', 'jobs', 'Active work orders'],
+        ['Pending Quotes', 'quotes', 'Estimates needing review'],
+        ['Unpaid Invoices', 'invoices', 'Payment follow-up'],
+        ['Inventory Alerts', 'inventory', 'Low stock and reservations'],
+        ['Employee Activity', 'activity', 'Team updates and notes'],
+      ],
+    },
+    client: {
+      eyebrow: 'Client portal',
+      title: 'Project snapshot',
+      description: 'Requests, quotes, invoices, project updates, and upcoming service for your account.',
+      cards: [
+        ['My Requests', 'requests', 'Submitted service needs'],
+        ['My Quotes', 'quotes', 'Estimates to review'],
+        ['My Invoices', 'invoices', 'Payments and balances'],
+        ['Project Updates', 'jobs', 'Safe job status updates'],
+        ['Upcoming Service', 'activity', 'Visits and scheduling'],
+      ],
+    },
+    worker: {
+      eyebrow: 'Field operations',
+      title: 'Today’s assignments',
+      description: 'Assigned jobs, route details, materials, safety notes, and dispatch updates for field work.',
+      cards: [
+        ['Assigned Jobs', 'jobs', 'Work assigned to you'],
+        ['Route', 'activity', 'Stops and dispatch'],
+        ['Materials', 'inventory', 'Needed or used parts'],
+        ['Safety Notes', 'requests', 'Stop and escalate items'],
+        ['Dispatch Updates', 'quotes', 'Office and schedule notes'],
+      ],
+    },
+  };
+
   const updateGreeting = () => {
     const target = q('[data-mobile-dashboard-greeting]');
     if (!target) return;
@@ -71,23 +112,38 @@
       button.dataset.active = String(active);
       button.setAttribute('aria-pressed', String(active));
     });
-    const copy = {
-      admin: ['Admin command', 'Owner operations snapshot', 'Today’s jobs, open requests, pending quotes, invoices, inventory alerts, and activity for the business.'],
-      client: ['Client portal', 'Project snapshot', 'Requests, quotes, invoices, saved job updates, and recent account activity for your projects.'],
-      worker: ['Worker field', 'Today’s route snapshot', 'Assigned jobs, requested materials, job notes, safety items, and recent dispatch activity.'],
-    }[role] || ['Dashboard', 'Today at a glance', 'Role-aware summary cards for this workspace.'];
-    const eyebrow = q('[data-mobile-clean-eyebrow]');
-    const title = q('[data-mobile-clean-title]');
-    const description = q('[data-mobile-clean-description]');
-    if (eyebrow) eyebrow.textContent = copy[0];
-    if (title) title.textContent = copy[1];
-    if (description) description.textContent = copy[2];
+    applyMobileSummary(role);
     syncMobileMoreVisibility();
     syncMobileFabVisibility();
     syncMobileBottomNavigation();
   };
 
+  function applyMobileSummary(role = currentRole()) {
+    const summary = mobileSummaryByRole[role] || mobileSummaryByRole.client;
+    const eyebrow = q('[data-mobile-clean-eyebrow]');
+    const title = q('[data-mobile-clean-title]');
+    const description = q('[data-mobile-clean-description]');
+    if (eyebrow) eyebrow.textContent = summary.eyebrow;
+    if (title) title.textContent = summary.title;
+    if (description) description.textContent = summary.description;
+    const cards = qa('[data-mobile-clean-dashboard] .mobile-clean-grid article');
+    cards.forEach((card, index) => {
+      const config = summary.cards[index];
+      card.hidden = !config;
+      card.setAttribute('aria-hidden', config ? 'false' : 'true');
+      if (!config) return;
+      const [label, metric, copy] = config;
+      const labelNode = card.querySelector('span');
+      const valueNode = card.querySelector('strong');
+      const copyNode = card.querySelector('small');
+      if (labelNode) labelNode.textContent = label;
+      if (valueNode) valueNode.dataset.mobileCleanMetric = metric;
+      if (copyNode) copyNode.textContent = copy;
+    });
+  }
+
   const updateMetrics = () => {
+    applyMobileSummary(currentRole());
     const revenue = textOf('[data-admin-open-amount-metric]', textOf('[data-admin-paid-amount-metric]', '$0'));
     const jobs = textOf('[data-worker-jobs-count]', textOf('[data-open-requests-metric]', '0'));
     const quotes = textOf('[data-quotes-metric]', '0');
@@ -116,55 +172,52 @@
 
   const roleRoutes = {
     admin: {
+      dashboard: ['overview', '#executive-overview'],
       requests: ['work-orders', '#admin-requests'],
       quotes: ['quotes', '#admin-quotes-workspace'],
       jobs: ['work-orders', '#admin-requests'],
-      dashboard: ['overview', '#executive-overview'],
+      'work-orders': ['work-orders', '#admin-requests'],
       invoices: ['invoices', '#admin-invoices'],
-      finance: ['finance', '#finance-command-center-anchor'],
-      troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
       customers: ['customer-status', '#customer-experience-center'],
-      schedule: ['scheduling', '#smart-schedule-suite'],
-      profile: ['roles-users', '#admin-access'],
-      'admin-tools': ['roles-users', '#admin-access'],
       employees: ['roles-users', '#admin-access'],
+      inventory: ['inventory', '#admin-inventory'],
       reports: ['activity', '#admin-activity'],
-      'ai-knowledge': ['ai-knowledge', '#ai-knowledge-center'],
       settings: ['roles-users', '#admin-access'],
+      'ai-tools': ['ai-knowledge', '#ai-knowledge-center'],
+      'ai-knowledge': ['ai-knowledge', '#ai-knowledge-center'],
+      schedule: ['scheduling', '#smart-schedule-suite'],
+      troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
     },
     client: {
+      dashboard: ['overview', '#executive-overview'],
       requests: ['client-requests', '#client-requests'],
       quotes: ['client-quotes', '#client-quotes'],
-      jobs: ['customer-status', '#customer-experience-center'],
-      dashboard: ['overview', '#executive-overview'],
       invoices: ['client-invoices', '#client-invoices'],
-      finance: ['client-invoices', '#client-invoices'],
-      customers: ['customer-status', '#customer-experience-center'],
-      schedule: ['maintenance', '.maintenance-suite'],
+      'project-updates': ['customer-status', '#customer-experience-center'],
       profile: ['client-profile-action', '[data-client-profile-shortcut]'],
-      settings: ['client-profile-action', '[data-client-profile-shortcut]'],
+      'request-estimate': ['client-requests', '#client-requests'],
     },
     worker: {
-      jobs: ['worker-jobs', '#worker-jobs'],
       dashboard: ['overview', '#executive-overview'],
-      troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
+      jobs: ['worker-jobs', '#worker-jobs'],
       schedule: ['scheduling', '#smart-schedule-suite'],
-      profile: ['worker-mobile', '#worker-mobile-field'],
-      reports: ['photo-docs', '.photo-doc-suite'],
-      settings: ['worker-mobile', '#worker-mobile-field'],
+      materials: ['worker-mobile', '#worker-mobile-field'],
+      photos: ['photo-docs', '.photo-doc-suite'],
+      troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
+      'job-notes': ['worker-mobile', '#worker-mobile-field'],
     },
   };
 
   const mobileAllowedMoreKeysByView = {
-    admin: ['dashboard', 'quotes', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'ai-knowledge', 'schedule', 'settings', 'troubleshooter', 'sign-out'],
-    client: ['dashboard', 'requests', 'quotes', 'invoices', 'customers', 'settings', 'sign-out'],
-    worker: ['dashboard', 'jobs', 'schedule', 'troubleshooter', 'reports', 'settings', 'sign-out'],
+    admin: ['dashboard', 'requests', 'quotes', 'work-orders', 'invoices', 'customers', 'employees', 'inventory', 'reports', 'settings', 'ai-tools', 'sign-out'],
+    client: ['dashboard', 'requests', 'quotes', 'invoices', 'project-updates', 'profile', 'request-estimate', 'sign-out'],
+    worker: ['dashboard', 'jobs', 'schedule', 'materials', 'photos', 'troubleshooter', 'job-notes', 'sign-out'],
   };
 
   const mobileFabActionsByView = {
-    admin: ['request', 'quote', 'job', 'inventory', 'customer', 'photo', 'assistant'],
-    client: ['request', 'quote', 'invoices', 'profile', 'photo'],
-    worker: ['update-job', 'job-note', 'photo', 'material', 'assistant'],
+    admin: ['estimate', 'work-order', 'customer', 'inventory-entry', 'schedule-job'],
+    client: ['request', 'request-estimate', 'support'],
+    worker: ['start-job', 'photo', 'material-request', 'troubleshooting'],
   };
 
   const mobileBottomNavByView = {
@@ -191,7 +244,7 @@
   };
 
   const triggerProfile = () => {
-    const shortcut = q('[data-client-profile-shortcut], [data-admin-access-shortcut]');
+    const shortcut = qa('[data-client-profile-shortcut], [data-admin-access-shortcut]').find((node) => !node.hidden && node.getAttribute('aria-hidden') !== 'true');
     if (shortcut && typeof shortcut.click === 'function') {
       shortcut.click();
       return true;
@@ -200,6 +253,10 @@
   };
 
   const routeMobileKey = (key) => {
+    if (key === 'sign-out') {
+      window.location.href = '/api/auth/logout?redirect=/login/?signed-out=1';
+      return true;
+    }
     const route = routeFor(key);
     if (!route) return false;
     const [workspace, target] = route;
@@ -223,27 +280,22 @@
     if (!action || !allowedActions.includes(action)) return false;
     const roleFabRoutes = {
       admin: {
-        request: () => openWorkspace('client-requests', '#client-requests'),
-        quote: () => openWorkspace('quotes', '#admin-quotes-workspace'),
-        job: () => openWorkspace('work-orders', '#admin-requests'),
-        inventory: () => { window.location.href = '/inventory/'; return true; },
+        estimate: () => openWorkspace('quotes', '#admin-quotes-workspace'),
+        'work-order': () => openWorkspace('work-orders', '#admin-requests'),
         customer: () => openWorkspace('customer-status', '#customer-experience-center'),
-        photo: () => openWorkspace('photo-docs', '.photo-doc-suite'),
-        assistant: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
+        'inventory-entry': () => { window.location.href = '/inventory/'; return true; },
+        'schedule-job': () => openWorkspace('scheduling', '#smart-schedule-suite'),
       },
       client: {
         request: () => openWorkspace('client-requests', '#client-requests'),
-        quote: () => openWorkspace('client-quotes', '#client-quotes'),
-        invoices: () => openWorkspace('client-invoices', '#client-invoices'),
-        profile: () => routeMobileKey('settings'),
-        photo: () => openWorkspace('client-requests', '#client-requests'),
+        'request-estimate': () => openWorkspace('client-requests', '#client-requests'),
+        support: () => openWorkspace('customer-status', '#customer-experience-center'),
       },
       worker: {
-        'update-job': () => openWorkspace('worker-jobs', '#worker-jobs') || openWorkspace('worker-mobile', '#worker-mobile-field'),
-        'job-note': () => openWorkspace('worker-mobile', '#worker-mobile-field') || openWorkspace('worker-jobs', '#worker-jobs'),
+        'start-job': () => openWorkspace('worker-jobs', '#worker-jobs') || openWorkspace('worker-mobile', '#worker-mobile-field'),
         photo: () => openWorkspace('photo-docs', '.photo-doc-suite'),
-        material: () => openWorkspace('worker-mobile', '#worker-mobile-field'),
-        assistant: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
+        'material-request': () => openWorkspace('worker-mobile', '#worker-mobile-field'),
+        troubleshooting: () => openWorkspace('ai-troubleshooting', '#worker-ai-troubleshooting'),
       },
     };
     const routed = roleFabRoutes[role]?.[action]?.();
@@ -258,9 +310,9 @@
     const role = currentRole();
     const allowedKeys = new Set(mobileAllowedMoreKeysByView[role] || mobileAllowedMoreKeysByView.client);
     const labelsByRole = {
-      client: { customers: 'Project Status', settings: 'Profile / Properties', invoices: 'My Invoices' },
-      worker: { reports: 'Upload Photos', settings: 'Job Notes', schedule: 'Schedule / Dispatch', troubleshooter: 'AI Troubleshooter' },
-      admin: { quotes: 'Quotes', customers: 'Customers', settings: 'Settings', invoices: 'Invoices', reports: 'Reports', schedule: 'Schedule', troubleshooter: 'AI Assistant' },
+      admin: { dashboard: 'Dashboard', requests: 'Requests', quotes: 'Quotes', 'work-orders': 'Work Orders', invoices: 'Invoices', customers: 'Customers', employees: 'Employees', inventory: 'Inventory', reports: 'Reports', settings: 'Settings', 'ai-tools': 'AI Tools', 'sign-out': 'Logout' },
+      client: { dashboard: 'Dashboard', requests: 'My Requests', quotes: 'My Quotes', invoices: 'My Invoices', 'project-updates': 'Project Updates', profile: 'Profile', 'request-estimate': 'Request Estimate', 'sign-out': 'Logout' },
+      worker: { dashboard: 'Dashboard', jobs: 'My Jobs', schedule: 'Schedule', materials: 'Materials', photos: 'Photos', troubleshooter: 'AI Troubleshooting', 'job-notes': 'Job Notes', 'sign-out': 'Logout' },
     };
     qa('[data-mobile-more-key]').forEach((item) => {
       const key = item.dataset.mobileMoreKey;
@@ -276,9 +328,9 @@
     const role = currentRole();
     const allowedActions = new Set(mobileFabActionsByView[role] || []);
     const labelsByRole = {
-      admin: { request: 'New Request', quote: 'New Quote / Estimate', job: 'New Job / Work Order', inventory: 'Scan/Add Inventory', customer: 'Add Customer', photo: 'Upload Photo', assistant: 'Open AI Assistant' },
-      client: { request: 'New Request', quote: 'View Quotes', invoices: 'View Invoices', profile: 'Profile / Property', photo: 'Upload Photo to Request' },
-      worker: { 'update-job': 'Start/Update Job', 'job-note': 'Add Job Note', photo: 'Upload Before/After Photo', material: 'Use/Request Material', assistant: 'Open AI Troubleshooter' },
+      admin: { estimate: 'New Estimate', 'work-order': 'New Work Order', customer: 'Add Customer', 'inventory-entry': 'Inventory Entry', 'schedule-job': 'Schedule Job' },
+      client: { request: 'New Request', 'request-estimate': 'Request Estimate', support: 'Contact Support' },
+      worker: { 'start-job': 'Start Job', photo: 'Upload Photo', 'material-request': 'Material Request', troubleshooting: 'Troubleshooting' },
     };
     qa('[data-mobile-fab-action]').forEach((item) => {
       const action = item.dataset.mobileFabAction;

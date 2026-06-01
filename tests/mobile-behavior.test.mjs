@@ -89,9 +89,9 @@ test('mobile dashboard script opens FAB once and routes data-mobile-fab-action a
   const html = new FakeElement('html');
   const fab = body.append(new FakeElement('button', { dataset: { mobileFab: '' } }));
   const menu = body.append(new FakeElement('div', { dataset: { mobileFabMenu: '' }, hidden: true }));
-  const request = menu.append(new FakeElement('a', { href: '#client-requests', dataset: { mobileFabAction: 'request', mobileWorkspaceLink: 'client-requests' } }));
+  const estimate = menu.append(new FakeElement('a', { href: '#admin-quotes-workspace', dataset: { mobileFabAction: 'estimate', mobileWorkspaceLink: 'quotes' } }));
   const customer = menu.append(new FakeElement('button', { dataset: { mobileFabAction: 'customer', mobileMoreKey: 'customers' } }));
-  const clientTarget = body.append(new FakeElement('section', { id: 'client-requests' }));
+  const quoteTarget = body.append(new FakeElement('section', { id: 'admin-quotes-workspace' }));
   body.append(new FakeElement('section', { id: 'customer-experience-center' }));
 
   const workspaceCalls = [];
@@ -129,10 +129,10 @@ test('mobile dashboard script opens FAB once and routes data-mobile-fab-action a
   fab.dispatch('click');
   assert.equal(menu.hidden, false, 'synthetic click after pointerup should not double-toggle closed');
 
-  request.dispatch('pointerup');
-  assert.deepEqual(workspaceCalls.at(-1)?.[0], 'client-requests');
+  estimate.dispatch('pointerup');
+  assert.deepEqual(workspaceCalls.at(-1)?.[0], 'quotes');
   assert.equal(menu.hidden, true);
-  assert.equal(clientTarget.scrolled, false, 'workspace API handles the route before fallback scrolling');
+  assert.equal(quoteTarget.scrolled, false, 'workspace API handles the route before fallback scrolling');
 
   menu.hidden = false;
   customer.dispatch('pointerup');
@@ -147,9 +147,9 @@ test('mobile role filtering hides admin controls for client/worker views', async
   body.dataset.currentDashboardView = 'client';
   const html = new FakeElement('html');
 
-  const moreKeys = ['dashboard', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'schedule', 'settings', 'troubleshooter', 'sign-out'];
+  const moreKeys = ['dashboard', 'requests', 'quotes', 'work-orders', 'invoices', 'customers', 'employees', 'inventory', 'reports', 'settings', 'ai-tools', 'project-updates', 'profile', 'request-estimate', 'schedule', 'materials', 'photos', 'troubleshooter', 'job-notes', 'sign-out'];
   const moreItems = Object.fromEntries(moreKeys.map((key) => [key, body.append(new FakeElement('button', { dataset: { mobileMoreKey: key }, textContent: key }))]));
-  const fabActions = ['request', 'quote', 'job', 'inventory', 'customer', 'photo', 'assistant', 'invoices', 'profile', 'update-job', 'job-note', 'material'];
+  const fabActions = ['estimate', 'work-order', 'customer', 'inventory-entry', 'schedule-job', 'request', 'request-estimate', 'support', 'start-job', 'photo', 'material-request', 'troubleshooting'];
   const fabItems = Object.fromEntries(fabActions.map((action) => [action, body.append(new FakeElement('button', { dataset: { mobileFabAction: action }, textContent: action }))]));
 
   const context = {
@@ -182,31 +182,33 @@ test('mobile role filtering hides admin controls for client/worker views', async
   const hooks = context.window.taMobileDashboardTestHooks;
 
   hooks.syncMobileMoreVisibility();
-  assert.equal(moreItems['admin-tools'].hidden, true);
+  assert.equal(moreItems['ai-tools'].hidden, true);
   assert.equal(moreItems.inventory.hidden, true);
-  assert.equal(moreItems.finance.hidden, true);
   assert.equal(moreItems.employees.hidden, true);
+  assert.equal(moreItems.reports.hidden, true);
   assert.equal(moreItems.invoices.hidden, false);
-  assert.equal(moreItems.customers.textContent, 'Project Status');
+  assert.equal(moreItems['project-updates'].hidden, false);
+  assert.equal(moreItems.requests.textContent, 'My Requests');
 
   hooks.syncMobileFabVisibility();
-  assert.equal(fabItems.job.hidden, true);
-  assert.equal(fabItems.inventory.hidden, true);
+  assert.equal(fabItems['work-order'].hidden, true);
+  assert.equal(fabItems['inventory-entry'].hidden, true);
   assert.equal(fabItems.customer.hidden, true);
-  assert.equal(fabItems.assistant.hidden, true);
+  assert.equal(fabItems.troubleshooting.hidden, true);
   assert.equal(fabItems.request.hidden, false);
-  assert.equal(fabItems.quote.textContent, 'View Quotes');
-  assert.equal(hooks.routeMobileKey('finance'), false, 'direct client route to finance should be blocked');
-  assert.equal(hooks.routeMobileKey('admin-tools'), false, 'direct client route to admin tools should be blocked');
+  assert.equal(fabItems['request-estimate'].textContent, 'Request Estimate');
+  assert.equal(hooks.routeMobileKey('reports'), false, 'direct client route to reports should be blocked');
+  assert.equal(hooks.routeMobileKey('ai-tools'), false, 'direct client route to admin AI tools should be blocked');
   assert.equal(hooks.routeMobileKey('inventory'), false, 'direct client route to inventory management should be blocked');
 
   body.dataset.currentDashboardView = 'worker';
   hooks.syncMobileMoreVisibility();
   hooks.syncMobileFabVisibility();
-  assert.equal(moreItems['admin-tools'].hidden, true);
+  assert.equal(moreItems['ai-tools'].hidden, true);
   assert.equal(moreItems.invoices.hidden, true);
   assert.equal(moreItems.schedule.hidden, false);
+  assert.equal(moreItems.materials.hidden, false);
   assert.equal(fabItems.request.hidden, true);
-  assert.equal(fabItems['update-job'].hidden, false);
-  assert.equal(fabItems.material.hidden, false);
+  assert.equal(fabItems['start-job'].hidden, false);
+  assert.equal(fabItems['material-request'].hidden, false);
 });

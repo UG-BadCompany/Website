@@ -30,7 +30,7 @@ test('mobile navigation routes admin Quotes to the dedicated quote workspace', a
   const sidebar = await readFile('public/assets/dashboard-phase34-sidebar-only-workspaces.js', 'utf8');
   assert.match(html, /data-mobile-more-key="quotes"/);
   assert.match(html, /data-mobile-bottom-key="quotes"/);
-  assert.match(html, /data-mobile-fab-action="quote" data-mobile-workspace-link="quotes"/);
+  assert.match(html, /data-mobile-fab-action="estimate" data-mobile-workspace-link="quotes"/);
   assert.match(mobile, /quotes: \['quotes', '#admin-quotes-workspace'\]/);
   assert.match(mobile, /admin: \[[^\]]*'quotes'/);
   assert.match(sidebar, /#admin-quotes-workspace/);
