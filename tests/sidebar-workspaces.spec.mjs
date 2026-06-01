@@ -12,12 +12,12 @@ const expectedRoutes = [
   ['Invoices', 'client-invoices', '#client-invoices'],
   ['Finance Center', 'finance', '.finance-suite'],
   ['Invoices', 'invoices', '#admin-invoices'],
-  ['Customer Status', 'customer-status', '#customer-experience-center'],
+  ['Customers', 'customers', '#customer-experience-center'],
   ['Worker Jobs', 'worker-jobs', '#worker-jobs'],
   ['Worker Mobile', 'worker-mobile', '#worker-mobile-field'],
   ['AI Troubleshooting', 'ai-troubleshooting', '#worker-ai-troubleshooting'],
   ['Photo Docs', 'photo-docs', '.photo-doc-suite'],
-  ['Maintenance Plans', 'maintenance', '.maintenance-suite'],
+  ['Project Updates', 'maintenance', '.maintenance-suite'],
   ['Roles & Users', 'roles-users', '#admin-access'],
   ['Deployment Health', 'deployment', '#system-readiness'],
 ];
@@ -55,14 +55,15 @@ test('role-specific sidebar routes are visible only for valid roles and targets'
     assert.match(itemBlock(label, workspace), /views: \['admin'\]/, `${label} should be admin-only`);
   }
   for (const [label, workspace] of [['Worker Jobs', 'worker-jobs'], ['Worker Mobile', 'worker-mobile'], ['AI Troubleshooting', 'ai-troubleshooting'], ['Photo Docs', 'photo-docs']]) {
-    assert.match(itemBlock(label, workspace), /views: \['admin', 'worker'\]/, `${label} should be admin/worker`);
+    assert.match(itemBlock(label, workspace), /views: \['worker'\]/, `${label} should be worker-only`);
   }
   for (const [label, workspace] of [['Requests', 'client-requests'], ['Quotes', 'client-quotes'], ['Invoices', 'client-invoices']]) {
     assert.match(itemBlock(label, workspace), /views: \['client'\]/, `${label} should be client-only`);
   }
-  assert.match(sidebar, /label: 'Customer Status'[\s\S]*views: \['admin', 'client'\]/, 'Customer Status should be admin/client only');
-  assert.match(sidebar, /label: 'Maintenance Plans'[\s\S]*views: \['admin', 'client'\]/, 'Maintenance should be admin/client only');
-  assert.match(sidebar, /label: 'Scheduling'[\s\S]*views: \['admin', 'worker'\]/, 'Scheduling should be worker-visible only because the scheduling workspace exists');
+  assert.match(sidebar, /label: 'Customers'[\s\S]*views: \['admin'\]/, 'Customers should be admin-only');
+  assert.match(sidebar, /label: 'Project Updates'[\s\S]*views: \['client'\]/, 'Project Updates should be client-only');
+  assert.match(sidebar, /label: 'Scheduling'[\s\S]*views: \['admin'\]/, 'Scheduling should be admin dispatch only');
+  assert.match(sidebar, /label: 'Schedule \/ Route'[\s\S]*views: \['worker'\]/, 'Schedule / Route should be worker-only');
   assert.match(phase34, /const validateSidebarControls[\s\S]*visibleTargetsFor[\s\S]*aria-disabled/, 'Phase 34 should validate visible controls against loaded targets');
   assert.match(sidebar, /const controlHasDestination[\s\S]*aria-disabled/, 'Phase 30 should hide/disable controls without destinations');
   assert.match(html, /id="executive-overview"[\s\S]*data-overview-workspace/, 'Overview should have a safe non-hero workspace wrapper');
@@ -88,7 +89,7 @@ test('workspace router clears stale tags and prevents duplicate active sidebar h
   assert.match(phase34, /setActiveButton/, 'router should centralize active-state updates');
   assert.match(phase34, /scrollWorkspaceTarget[\s\S]*scrollIntoView/, 'router should visibly scroll to the selected module');
   assert.match(phase34, /setWorkspace\(selectedWorkspace, \{ scroll: true, target: button\.dataset\.sidebarTarget \|\| button\.dataset\.mobileQuickTarget/, 'sidebar and mobile clicks should request scrolling to their target');
-  for (const workspace of ['estimate-review', 'work-orders', 'client-requests', 'client-quotes', 'client-invoices', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
+  for (const workspace of ['estimate-review', 'work-orders', 'client-requests', 'client-quotes', 'client-invoices', 'scheduling', 'finance', 'invoices', 'customers', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
     assert.match(css, new RegExp(`data-sidebar-workspace="${workspace}"[\\s\\S]*${workspace}`), `CSS should reveal ${workspace}`);
   }
 });
@@ -103,13 +104,13 @@ test('required modules exist and key buttons have real status/action wiring', as
   assert.match(html, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-form[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting should include a real form and generate button');
   assert.match(bootstrap, /data-ai-troubleshooting-form[\s\S]*\/api\/worker\/ai-troubleshooting[\s\S]*data-ai-troubleshooting-copy[\s\S]*save_notes/, 'AI Troubleshooting should call the real endpoint, copy plans, and save job notes');
   assert.match(bootstrap, /data-photo-doc-form[\s\S]*postWorkerAssignmentUpdate/, 'Photo Docs should persist evidence notes');
-  assert.match(html, /id="worker-ai-troubleshooting"[^>]*data-views="worker admin"|data-views="admin worker"[^>]*id="worker-ai-troubleshooting"/, 'AI Troubleshooting should be visible to worker and admin views');
+  assert.match(html, /id="worker-ai-troubleshooting"[^>]*data-views="worker"/, 'AI Troubleshooting should be visible to worker and admin views');
 });
 
 test('mobile quick actions and inventory navigation are preserved', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
   assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Stock[\s\S]*Today[\s\S]*Troubleshoot[\s\S]*Complete[\s\S]*Profile/, 'mobile quick action bar should keep role-aware actions');
-  assert.match(sidebar, /label: 'Troubleshoot'[\s\S]*workspace: 'ai-troubleshooting'[\s\S]*views: \['worker', 'admin'\]/, 'Troubleshoot quick action should be available for worker and admin');
+  assert.match(sidebar, /label: 'Troubleshoot'[\s\S]*workspace: 'ai-troubleshooting'[\s\S]*views: \['worker'\]/, 'Troubleshoot quick action should be available for worker and admin');
   assert.match(sidebar, /label: 'Request'[\s\S]*workspace: 'client-requests'[\s\S]*views: \['client'\]/, 'Client mobile Request should route to client requests');
   assert.match(sidebar, /label: 'Profile'[\s\S]*action: 'client-profile'[\s\S]*views: \['client'\]/, 'Client mobile Profile should open profile modal');
   assert.match(sidebar, /data-mobile-quick-workspace[\s\S]*taSetSidebarWorkspace/, 'mobile quick actions should use workspace routing when available');

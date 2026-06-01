@@ -34,19 +34,20 @@ const expected = [
   ['Estimate Review', 'estimate-review', '#estimate-review'],
   ['Work Orders', 'work-orders', '#admin-requests'],
   ['Scheduling', 'scheduling', '#smart-schedule-suite'],
+  ['Schedule / Route', 'scheduling', '#worker-route-suite'],
   ['Requests', 'client-requests', '#client-requests'],
   ['Quotes', 'client-quotes', '#client-quotes'],
   ['Invoices', 'client-invoices', '#client-invoices'],
   ['Profile', '', 'client-profile'],
   ['Finance Center', 'finance', '.finance-suite'],
   ['Invoices', 'invoices', '#admin-invoices'],
-  ['Customer Status', 'customer-status', '#customer-experience-center'],
+  ['Customers', 'customers', '#customer-experience-center'],
   ['Worker Jobs', 'worker-jobs', '#worker-jobs'],
   ['Worker Mobile', 'worker-mobile', '#worker-mobile-field'],
   ['AI Troubleshooting', 'ai-troubleshooting', '#worker-ai-troubleshooting'],
   ['Photo Docs', 'photo-docs', '.photo-doc-suite'],
   ['Inventory', 'inventory', '/inventory/'],
-  ['Maintenance Plans', 'maintenance', '.maintenance-suite'],
+  ['Project Updates', 'maintenance', '.maintenance-suite'],
   ['Roles & Users', 'roles-users', '#admin-access'],
   ['Deployment Health', 'deployment', '#system-readiness'],
 ];
@@ -135,7 +136,7 @@ has(dashboard, /data-schedule-dispatch-form[\s\S]*Schedule \/ assign job/, 'Sche
 has(dashboard, /Worker Mobile Field Mode[\s\S]*data-worker-mobile-list/, 'Worker Mobile workspace must include job list/status UI.');
 has(dashboard, /data-photo-doc-form[\s\S]*Save evidence notes/, 'Photo Docs workspace must include an evidence form.');
 has(dashboard, /id="worker-ai-troubleshooting"[\s\S]*data-ai-troubleshooting-form[\s\S]*Generate Troubleshooting Plan/, 'AI Troubleshooting workspace must include a real assistant form.');
-has(sidebar, /mobileQuickActions[\s\S]*Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*views: \['worker', 'admin'\]/, 'Worker/admin mobile quick actions must include Troubleshoot.');
+has(sidebar, /mobileQuickActions[\s\S]*Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*views: \['worker'\]/, 'Worker mobile quick actions must include Troubleshoot without exposing it to admin.');
 has(sidebar, /label: 'Requests'[\s\S]*workspace: 'client-requests'[\s\S]*views: \['client'\]/, 'Client Requests sidebar item must route to client requests only.');
 has(sidebar, /label: 'Profile'[\s\S]*action: 'client-profile'[\s\S]*views: \['client'\]/, 'Client Profile sidebar item must open the profile modal only.');
 has(phase34, /const selectedWorkspace = button\.dataset\.sidebarWorkspace \|\| button\.dataset\.mobileQuickWorkspace/, 'Phase 34 must derive selected workspace from sidebar or mobile quick action buttons.');

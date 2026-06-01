@@ -86,7 +86,7 @@ test('dashboard user and role controls have their required handlers', async () =
   assert.doesNotMatch(html, /<a href="\/inventory\/" data-dashboard-section/, 'admin inventory should not render as a duplicate tab above the command center');
   assert.doesNotMatch(html, /workspace-tabs/, 'old shortcut tab shell should be fully removed');
   assert.match(html, /data-client-profile-shortcut/, 'client and worker command centers should open profile from a command card');
-  assert.match(html, /aria-label="Dashboard summary cards" data-dashboard-section data-views="client worker"/, 'summary cards below command center should be hidden from admin view');
+  assert.match(html, /aria-label="Dashboard summary cards" data-dashboard-section data-views="client" hidden/, 'summary cards below command center should be hidden from admin view');
   assert.doesNotMatch(html, /workspace-action/, 'removed admin shortcut button styles should not leave stale button hooks behind');
   assert.match(html, /data-admin-invoice-summary/, 'admins should have invoice totals before payment confirmation');
   assert.match(html, /data-admin-invoice-status-filter/, 'admins should switch between open and paid invoice views');

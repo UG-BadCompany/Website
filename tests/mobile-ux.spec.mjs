@@ -45,19 +45,22 @@ test('mobile header links and dashboard module shortcuts remain functional', asy
   assert.match(dashboard, /href="\/#estimate"[^>]*data-request-estimate-link>Request Estimate/, 'Desktop Request Estimate should route to the public estimate form');
   assert.match(dashboard, /data-main-dashboard-actions[\s\S]*Estimate Review[\s\S]*Work Orders[\s\S]*Invoices[\s\S]*AI Troubleshooting/, 'Dashboard shortcuts should keep admin, client, and worker modules reachable');
   assert.match(dashboard, /data-mobile-dashboard-greeting[\s\S]*data-mobile-current-role[\s\S]*data-mobile-notifications/, 'Mobile header should show greeting, current role, notifications, and avatar controls');
-  assert.match(dashboard, /data-mobile-role-option="owner"[\s\S]*data-mobile-role-option="admin"[\s\S]*data-mobile-role-option="client"[\s\S]*data-mobile-role-option="worker"/, 'Mobile role selector should expose Owner, Admin, Client, and Worker');
+  assert.match(dashboard, /data-view-switcher[\s\S]*data-view-button="admin"[\s\S]*data-view-button="client"[\s\S]*data-view-button="worker"/, 'Mobile view switcher should expose Admin, Client, and Worker');
   assert.match(dashboard, /data-mobile-metric="revenue"[\s\S]*data-mobile-metric="jobs"[\s\S]*data-mobile-metric="quotes"[\s\S]*data-mobile-metric="requests"/, 'Mobile dashboard KPI cards should expose revenue, jobs, quotes, and requests');
-  assert.match(dashboard, /Today&apos;s Priorities[\s\S]*Inventory alerts[\s\S]*Past due invoices/, 'Mobile dashboard should include Today priorities');
+  assert.match(dashboard, /mobile-clean-dashboard[\s\S]*Revenue[\s\S]*Open Jobs[\s\S]*Pending Quotes[\s\S]*Unpaid Invoices[\s\S]*Inventory Alerts[\s\S]*Employee Activity/, 'Mobile dashboard should use a clean summary instead of a command center.');
   assert.match(dashboard, /mobile-bottom-navigation[\s\S]*Home[\s\S]*Requests[\s\S]*Quotes[\s\S]*Jobs[\s\S]*More/, 'Mobile bottom navigation should expose Home, Requests, Quotes, Jobs, and More');
-  assert.match(dashboard, /mobile-more-menu[\s\S]*Dashboard[\s\S]*Request Estimate[\s\S]*Invoices[\s\S]*Inventory \/ Stock[\s\S]*Troubleshooter[\s\S]*Schedule[\s\S]*Profile[\s\S]*Sign out/, 'More menu should expose the remaining mobile modules and sign out.');
-  assert.match(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Invoice[\s\S]*New Job[\s\S]*New Customer[\s\S]*New Request[\s\S]*Sign out/, 'Floating quick action button should expose create actions and mobile sign out without dead links');
+  assert.match(dashboard, /mobile-more-menu[\s\S]*Dashboard[\s\S]*Requests[\s\S]*Quotes[\s\S]*Work Orders[\s\S]*Invoices[\s\S]*Customers[\s\S]*Employees[\s\S]*Inventory[\s\S]*Reports[\s\S]*Settings[\s\S]*AI Tools[\s\S]*Project Updates[\s\S]*Profile[\s\S]*Request Estimate[\s\S]*Schedule[\s\S]*Materials[\s\S]*Photos[\s\S]*AI Troubleshooting[\s\S]*Job Notes[\s\S]*Logout/, 'More menu should expose remaining modules and logout.');
+  assert.match(dashboard, /data-mobile-fab[\s\S]*New Estimate[\s\S]*New Work Order[\s\S]*Add Customer[\s\S]*Inventory Entry[\s\S]*Schedule Job[\s\S]*New Request[\s\S]*Request Estimate[\s\S]*Contact Support[\s\S]*Start Job[\s\S]*Upload Photo[\s\S]*Material Request[\s\S]*Troubleshooting/, 'Floating quick action button should expose real create and assistant actions.');
   assert.match(css, /dashboard-mobile-nav-toggle[\s\S]*width:\s*44px/, 'Mobile workspace toggle should be compact instead of a full-width menu button');
   assert.match(css, /dashboard-nav-row[\s\S]*display:\s*none !important/, 'Crowded top nav buttons should be removed on mobile');
   assert.match(css, /mobile-more-menu[\s\S]*position:\s*fixed/, 'More menu should be a fixed clean mobile sheet.');
   assert.match(css, /mobile-bottom-navigation[\s\S]*position:\s*fixed/, 'Bottom mobile navigation should be fixed and app-like');
+  assert.match(css, /#executive-overview\.main-command-shortcuts[\s\S]*display:\s*none !important/, 'Mobile CSS should remove the desktop command center on phones.');
   const mobileJs = await readText('public/assets/mobile-dashboard-ux.js');
   assert.match(mobileJs, /data-mobile-notifications[\s\S]*data-mobile-notification-panel/, 'Notifications should toggle a real panel');
   assert.match(mobileJs, /roleRoutes[\s\S]*data-mobile-bottom-key[\s\S]*data-mobile-more-key/, 'Bottom nav and More menu should route through role-aware mobile routes.');
+  const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
+  assert.match(bootstrap, /ta\.dashboard\.selectedView[\s\S]*persistDashboardView[\s\S]*Failed to switch dashboard view/, 'Dashboard view switching should persist and fail safely.');
   assert.doesNotMatch(mobileJs, /observe\(document\.body, \{ attributes: true, childList: true, subtree: true/, 'Mobile JS should avoid whole-body subtree observers for performance');
 });
 
@@ -69,7 +72,7 @@ test('mobile sidebar opens/closes and every sidebar item remains tappable', asyn
   assert.match(sidebar, /sidebarBackdrop|data-sidebar-backdrop/, 'sidebar should create a backdrop that closes the drawer');
   assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Inventory|mobileQuickActions[\s\S]*Today[\s\S]*Troubleshoot[\s\S]*Complete/, 'sidebar should define role-aware quick actions including Troubleshoot');
   assert.match(css, /dashboard-sidebar-v2[\s\S]*position:\s*fixed/, 'sidebar should become a fixed mobile drawer');
-  for (const label of ['Scheduling', 'Worker Mobile', 'AI Troubleshooting', 'Photo Docs', 'Maintenance Plans', 'Deployment Health', 'Inventory']) {
+  for (const label of ['Scheduling', 'Schedule / Route', 'Worker Mobile', 'AI Troubleshooting', 'Photo Docs', 'Project Updates', 'Deployment Health', 'Inventory']) {
     assert.ok(sidebar.includes(label), `sidebar should keep ${label} as a tappable item`);
   }
 });
@@ -92,7 +95,7 @@ test('AI troubleshooting is mobile-ready for field workers', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
   const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
   const css = await readText('public/assets/mobile-field-ux.css');
-  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting[\s\S]*views: \['admin', 'worker'\]/, 'mobile quick actions should include Troubleshoot for admin and worker');
+  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting[\s\S]*views: \['worker'\]/, 'mobile quick actions should keep Troubleshoot worker-only');
   assert.doesNotMatch(html, /id="worker-ai-troubleshooting"[^>]*data-views="client/, 'AI troubleshooting should not be visible to client view');
   for (const field of ['name="systemType"', 'name="component"', 'name="make"', 'name="model"', 'name="issue"', 'name="errorCode"', 'name="readings"', 'name="checkedAlready"', 'name="urgency"', 'name="workOrderId"']) {
     assert.match(html, new RegExp(field), `AI troubleshooting field ${field} should exist`);

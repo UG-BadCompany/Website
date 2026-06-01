@@ -8,6 +8,7 @@ import {
   loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { runAiFirstTroubleshooting } from './ai-intelligence-engine.mjs';
 
 const OPENAI_MODEL = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
 const OPENAI_TIMEOUT_MS = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 9000);
@@ -142,7 +143,7 @@ const normalizePlan = (plan, fallback) => {
   const source = plan && typeof plan === 'object' ? plan : fallback;
   const arr = (value, fallbackValue = []) => Array.isArray(value) ? value.map((item) => clean(String(item), 600)).filter(Boolean).slice(0, 12) : fallbackValue;
   return {
-    summary: clean(source.summary, 1200) || fallback.summary,
+    summary: clean(source.summary || source.firstThingToCheck, 1200) || fallback.summary,
     likelyCauses: arr(source.likelyCauses, fallback.likelyCauses),
     safetyWarnings: arr(source.safetyWarnings, fallback.safetyWarnings),
     diagnosticSteps: arr(source.diagnosticSteps, fallback.diagnosticSteps),
@@ -152,7 +153,7 @@ const normalizePlan = (plan, fallback) => {
     stopAndEscalateIf: arr(source.stopAndEscalateIf, fallback.stopAndEscalateIf),
     customerExplanation: clean(source.customerExplanation, 1600) || fallback.customerExplanation,
     workOrderNotes: clean(source.workOrderNotes, 2400) || fallback.workOrderNotes,
-    estimateRecommendation: clean(source.estimateRecommendation, 1600) || fallback.estimateRecommendation,
+    estimateRecommendation: clean(source.estimateRecommendation || source.repairEstimateRecommendation, 1600) || fallback.estimateRecommendation,
   };
 };
 
@@ -196,9 +197,27 @@ export default async (request) => {
     if (payload.action === 'save_notes') return await saveNotesToJob({ db, session, payload });
     if (!payload.systemType || !payload.component || !payload.issue) return json(422, { ok: false, message: 'System/trade, equipment/component, and issue/complaint are required.' });
     const fallback = fallbackPlan(payload);
-    const aiPlan = await generateAiPlan(payload);
+    const aiPlan = await runAiFirstTroubleshooting({
+      db,
+      payload,
+      fallbackBuilder: async ({ historicalContext }) => ({
+        ...fallback,
+        fallbackSource: historicalContext?.length ? 'company_troubleshooting_history' : 'static_emergency_rules',
+      }),
+    });
     const troubleshootingPlan = normalizePlan(aiPlan, fallback);
-    return json(200, { ok: true, troubleshootingPlan, aiEnhanced: Boolean(aiPlan), fallbackUsed: !aiPlan });
+    return json(200, {
+      ok: true,
+      troubleshootingPlan,
+      aiEnhanced: Boolean(aiPlan?.aiEnhanced),
+      fallbackUsed: Boolean(aiPlan?.fallbackUsed),
+      fallbackReason: aiPlan?.fallbackReason || null,
+      fallbackSource: aiPlan?.fallbackSource || null,
+      warning: aiPlan?.warning || null,
+      model: aiPlan?.model || null,
+      promptVersion: aiPlan?.promptVersion || null,
+      historicalMatchUsed: Boolean(aiPlan?.historicalMatchUsed),
+    });
   } catch (error) {
     console.error('AI troubleshooting failed', error);
     return json(500, { ok: false, message: 'Troubleshooting assistant is unavailable right now.' });
