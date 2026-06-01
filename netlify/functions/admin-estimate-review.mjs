@@ -18,6 +18,9 @@ const parseMetadata = (metadata) => {
 };
 
 
+const ESTIMATE_REVIEW_STATUSES = ['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review'];
+const REQUEST_ONLY_REVIEW_STATUSES = ['new', 'needs_review', 'quote_in_progress'];
+
 const normalizeMaterialBreakdown = (metadata = {}) => {
   const raw = Array.isArray(metadata.materialBreakdown) && metadata.materialBreakdown.length
     ? metadata.materialBreakdown
@@ -97,10 +100,13 @@ const buildInventoryMatches = ({ materialBreakdown = [], inventoryItems = [], re
 const mapDraft = (row, { inventoryItems = [], reservationRows = [] } = {}) => {
   const metadata = parseMetadata(row.estimate_metadata);
   return {
-    quoteId: row.quote_id,
+    quoteId: row.quote_id || '',
+    queueId: row.quote_id || `request:${row.job_request_id}`,
     jobRequestId: row.job_request_id,
     clientId: row.client_id,
-    status: row.quote_status,
+    status: row.quote_status || 'needs_review',
+    reviewLabel: row.quote_id ? (['draft', 'pending_review', 'needs_review'].includes(row.quote_status) ? 'Needs Review' : row.quote_status) : 'Needs Draft',
+    needsDraft: !row.quote_id,
     title: row.title,
     summary: row.summary,
     amountCents: row.amount_cents,
@@ -124,8 +130,8 @@ const mapDraft = (row, { inventoryItems = [], reservationRows = [] } = {}) => {
     totals: metadata.totals || {},
     job: metadata.job || null,
     aiEnhanced: Boolean(metadata.aiEnhanced),
-    createdAt: row.quote_created_at,
-    updatedAt: row.quote_updated_at,
+    createdAt: row.quote_created_at || row.request_created_at,
+    updatedAt: row.quote_updated_at || row.request_updated_at,
     requesterName: row.requester_name,
     requesterEmail: row.requester_email,
     requesterPhone: row.requester_phone,
@@ -219,45 +225,82 @@ export default async (request) => {
 
     if (request.method === 'GET') {
       const url = new URL(request.url);
-      const status = clean(url.searchParams.get('status'), 40) || 'draft';
+      const requestedStatus = clean(url.searchParams.get('status'), 40) || 'draft';
+      const status = requestedStatus === 'all' || ESTIMATE_REVIEW_STATUSES.includes(requestedStatus) ? requestedStatus : 'draft';
       const limit = Math.max(1, Math.min(100, Number(url.searchParams.get('limit') || 50)));
 
       const rows = await db.sql`
-        select
-          q.id as quote_id,
-          q.job_request_id,
-          q.client_id,
-          q.status as quote_status,
-          q.title,
-          q.summary,
-          q.amount_cents,
-          q.created_at as quote_created_at,
-          q.updated_at as quote_updated_at,
-          jr.requester_name,
-          jr.requester_email,
-          jr.requester_phone,
-          jr.city,
-          jr.street_address,
-          jr.service_type,
-          jr.work_scope,
-          jr.work_category,
-          jr.preferred_timeframe,
-          jr.description as request_description,
-          jr.status as request_status,
-          estimate_event.metadata as estimate_metadata
-        from quotes q
-        left join job_requests jr on jr.id = q.job_request_id
-        left join lateral (
-          select metadata
-          from audit_events
-          where audit_events.entity_type = 'quote'
-            and audit_events.entity_id = q.id
-            and audit_events.event_type = 'estimate_draft.created'
-          order by created_at desc
-          limit 1
-        ) estimate_event on true
-        where q.status = ${status}
-        order by q.created_at desc
+        with quote_rows as (
+          select
+            q.id as quote_id,
+            q.job_request_id,
+            q.client_id,
+            q.status as quote_status,
+            q.title,
+            q.summary,
+            q.amount_cents,
+            q.created_at as quote_created_at,
+            q.updated_at as quote_updated_at,
+            jr.created_at as request_created_at,
+            jr.updated_at as request_updated_at,
+            jr.requester_name,
+            jr.requester_email,
+            jr.requester_phone,
+            jr.city,
+            jr.street_address,
+            jr.service_type,
+            jr.work_scope,
+            jr.work_category,
+            jr.preferred_timeframe,
+            jr.description as request_description,
+            jr.status as request_status,
+            estimate_event.metadata as estimate_metadata
+          from quotes q
+          left join job_requests jr on jr.id = q.job_request_id
+          left join lateral (
+            select metadata
+            from audit_events
+            where audit_events.entity_type = 'quote'
+              and audit_events.entity_id = q.id
+              and audit_events.event_type = 'estimate_draft.created'
+            order by created_at desc
+            limit 1
+          ) estimate_event on true
+          where (${status} = 'all' or q.status = ${status})
+        ), request_rows as (
+          select
+            null::uuid as quote_id,
+            jr.id as job_request_id,
+            jr.client_id,
+            'needs_review'::text as quote_status,
+            concat(coalesce(jr.service_type, 'Service'), ' estimate request') as title,
+            jr.description as summary,
+            null::integer as amount_cents,
+            null::timestamptz as quote_created_at,
+            null::timestamptz as quote_updated_at,
+            jr.created_at as request_created_at,
+            jr.updated_at as request_updated_at,
+            jr.requester_name,
+            jr.requester_email,
+            jr.requester_phone,
+            jr.city,
+            jr.street_address,
+            jr.service_type,
+            jr.work_scope,
+            jr.work_category,
+            jr.preferred_timeframe,
+            jr.description as request_description,
+            jr.status as request_status,
+            '{}'::jsonb as estimate_metadata
+          from job_requests jr
+          where not exists (select 1 from quotes q where q.job_request_id = jr.id)
+            and jr.status = any(${REQUEST_ONLY_REVIEW_STATUSES})
+            and ${status} in ('all', 'draft', 'needs_review', 'pending_review')
+        )
+        select * from quote_rows
+        union all
+        select * from request_rows
+        order by coalesce(quote_updated_at, request_updated_at, quote_created_at, request_created_at) desc
         limit ${limit}
       `;
 

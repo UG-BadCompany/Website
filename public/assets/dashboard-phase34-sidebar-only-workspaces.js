@@ -301,12 +301,32 @@
     });
   };
 
+  const ensureModuleTopAnchor = (destination, workspace) => {
+    if (!destination) return null;
+    const existing = destination.querySelector?.('[data-module-top-anchor]') || null;
+    if (existing) return existing;
+    const anchor = document.createElement('span');
+    anchor.className = 'dashboard-module-top-anchor';
+    anchor.dataset.moduleTopAnchor = workspace || 'module';
+    anchor.setAttribute('aria-hidden', 'true');
+    destination.prepend(anchor);
+    return anchor;
+  };
+
   const scrollWorkspaceTarget = (workspace, preferredTarget = '') => {
     const preferred = preferredTarget ? (() => { try { return document.querySelector(preferredTarget); } catch { return null; } })() : null;
     const destination = preferred || visibleTargetsFor(workspace)[0] || null;
     if (!destination) return false;
+    const anchor = ensureModuleTopAnchor(destination, workspace) || destination;
+    const scrollToAnchor = (behavior = 'auto') => {
+      const stickyOffset = Math.max(0, Math.round(document.querySelector('.nav')?.getBoundingClientRect?.().height || 0));
+      const viewportOffset = Math.max(0, Math.round(window.visualViewport?.offsetTop || 0));
+      const top = Math.max(0, Math.round(anchor.getBoundingClientRect().top + window.pageYOffset - stickyOffset - viewportOffset - 8));
+      window.scrollTo({ top, left: 0, behavior });
+    };
     window.requestAnimationFrame(() => {
-      destination.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollToAnchor('auto');
+      window.requestAnimationFrame(() => scrollToAnchor('smooth'));
       destination.classList.add('dashboard-section-highlight');
       setTimeout(() => destination.classList.remove('dashboard-section-highlight'), 1200);
     });

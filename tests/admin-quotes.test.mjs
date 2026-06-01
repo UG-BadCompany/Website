@@ -309,3 +309,98 @@ test('admin quote endpoint edits an existing quote from the open request', async
   assert.equal(db.queries[5].values[0], 'quote_sent');
   assert.equal(db.queries[6].values[1], 'quote.updated');
 });
+
+test('admin quote endpoint all filter does not query quotes.status equals all and includes request-only items', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: null,
+      job_request_id: 'job-need-draft',
+      client_id: 'client-1',
+      status: 'needs_review',
+      title: 'Plumbing estimate request',
+      summary: 'Submitted estimate request waiting for admin draft.',
+      amount_cents: null,
+      ai_enhanced: false,
+      fallback_used: false,
+      fallback_reason: null,
+      pricing_confidence_level: null,
+      range_low_cents: null,
+      range_high_cents: null,
+      fixed_price_recommendation_cents: null,
+      ai_metadata: {},
+      sourcing_notes: null,
+      created_at: '2026-05-10T00:00:00.000Z',
+      updated_at: '2026-05-10T00:00:00.000Z',
+      request_only: true,
+      request_id: 'job-need-draft',
+      request_status: 'new',
+      requester_name: 'Pat Pending',
+      requester_email: 'pat@example.com',
+      requester_phone: '555-0101',
+      city: 'Mesa',
+      street_address: '55 Main St',
+      service_type: 'Plumbing',
+      preferred_timeframe: 'Soon',
+      description: 'Leaking faucet request.',
+      admin_notes: '',
+      estimated_start_date: null,
+      completion_date: null,
+      request_created_at: '2026-05-10T00:00:00.000Z',
+      request_updated_at: '2026-05-10T00:00:00.000Z',
+      client_name: 'Pat Pending',
+      client_email: 'pat@example.com',
+    }],
+  ]);
+  const handler = createAdminQuotesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes?status=all', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.status, 'all');
+  assert.equal(response.body.quotes[0].isRequestOnly, true);
+  assert.equal(response.body.quotes[0].reviewLabel, 'Needs Draft');
+  assert.equal(response.body.quotes[0].request.streetAddress, '55 Main St');
+  assert.equal(db.queries[3].values.includes('all'), true);
+  assert.doesNotMatch(db.queries[3].text, /quotes\.status\s*=\s*'all'/);
+});
+
+test('admin quote endpoint needs_review filter returns submitted requests without quotes', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: null,
+      request_only: true,
+      request_id: 'job-2',
+      job_request_id: 'job-2',
+      client_id: 'client-2',
+      status: 'needs_review',
+      request_status: 'new',
+      title: 'Drywall estimate request',
+      summary: 'Patch a wall.',
+      amount_cents: null,
+      ai_metadata: {},
+      requester_name: 'Robin Requester',
+      requester_email: 'robin@example.com',
+      requester_phone: '555-0102',
+      city: 'Tempe',
+      street_address: '22 Oak Ave',
+      service_type: 'Drywall',
+      description: 'Patch a wall.',
+      created_at: '2026-05-11T00:00:00.000Z',
+      updated_at: '2026-05-11T00:00:00.000Z',
+      request_created_at: '2026-05-11T00:00:00.000Z',
+      request_updated_at: '2026-05-11T00:00:00.000Z',
+    }],
+  ]);
+  const handler = createAdminQuotesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes?status=needs_review', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.quotes[0].id, 'request:job-2');
+  assert.equal(response.body.quotes[0].needsDraft, true);
+  assert.equal(response.body.quotes[0].jobRequestId, 'job-2');
+});

@@ -70,13 +70,13 @@
         </section>
 
         <section class="dashboard-health-panel">
-          <span class="eyebrow">System Health</span>
-          <h2>What changed</h2>
-          <p>Request Estimate now builds a draft estimate automatically, then sends it to admin review instead of creating a disconnected quote system.</p>
+          <span class="eyebrow">Estimate workflow</span>
+          <h2>Requests ready for review</h2>
+          <p>Submitted customer requests appear in the Estimate Review Center so admins can review scope, adjust pricing, save drafts, and send final quotes to clients.</p>
           <div class="dashboard-empty-upgraded">
-            <strong>Public customer wording:</strong> Request Estimate<br>
-            <strong>Backend engine:</strong> automatic estimate draft<br>
-            <strong>Admin action:</strong> review, edit, send
+            <strong>Needs Review:</strong> submitted requests and drafts awaiting admin approval<br>
+            <strong>Drafts:</strong> saved estimates not yet sent<br>
+            <strong>Sent:</strong> quotes waiting on client response
           </div>
         </section>
       </div>
