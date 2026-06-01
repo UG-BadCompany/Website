@@ -326,7 +326,9 @@
         }
 
         if (user.permissions?.canManageRequests) {
+          bindAdminQuoteWorkspaceActions();
           loadAdminRequests();
+          loadAdminQuotes();
           loadAdminActivity();
         }
 
@@ -713,6 +715,7 @@
         if (nextView === 'admin' && workspace) {
           const workspaceSelectors = {
             'work-orders': '[data-phase3-workflow-suite]',
+            quotes: '[data-admin-quotes-workspace]',
             invoices: '[data-admin-invoices]',
             inventory: '[data-admin-inventory]',
           };
@@ -947,7 +950,7 @@
             </div>` : ''}
             <p>${escapeHtml(request.description)}</p>
             <div class="job-file-list" data-job-files="${escapeHtml(request.id)}" aria-live="polite"></div>
-            ${admin ? `<p class="request-update-note"><strong>${isQuoteFirstPhase ? 'Quote phase (required first):' : 'Next step:'}</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
+            ${admin ? `<p class="request-update-note"><strong>${isQuoteFirstPhase ? 'Quote phase (required first):' : 'Next step:'}</strong> ${escapeHtml(adminNextAction.hint)}</p><div class="client-quote-actions"><button class="btn btn-primary" type="button" data-admin-open-request="${escapeHtml(request.id)}" data-admin-open-request-action="${isQuoteFirstPhase ? 'quote' : 'workflow'}">${escapeHtml(adminNextAction.label)}</button></div>` : `<div class="client-quote-actions"><button class="btn btn-soft" type="button" data-client-open-request="${escapeHtml(request.id)}">Open / edit request</button>${request.status === 'pending_review' ? `<button class="btn btn-primary" type="button" data-client-approve-completion="${escapeHtml(request.id)}">Approve completed work</button>` : ''}</div>`}
           </article>
         `;
       };
@@ -1938,7 +1941,7 @@
         renderWorkerMobileWorkspace();
         renderPhotoDocsWorkspace();
         renderMaintenanceWorkspace();
-        if (currentDashboardView === 'admin') loadAiKnowledgeCenter();
+        if (currentDashboardView === 'admin') { loadAiKnowledgeCenter(); loadAdminQuotes(); }
         renderReadinessWorkspace();
       };
 
@@ -2769,7 +2772,107 @@ Additional info from client: ${payload.additionalInfo}` : '';
         });
       };
 
-      const selectAdminRequest = (requestId) => {
+
+
+      const quoteConfidenceLabel = (quote = {}) => quote.pricingConfidenceLevel || quote.aiMetadata?.pricingConfidenceLevel || 'not set';
+
+      const hydrateAdminQuoteForm = (quote = null, request = {}) => {
+        const quoteForm = document.querySelector('[data-admin-quote-form]');
+        if (!quoteForm) return;
+        const quoteId = quoteForm.querySelector('[data-admin-quote-id]');
+        const quoteRequestId = quoteForm.querySelector('[data-admin-quote-request-id]');
+        const quoteTitle = quoteForm.querySelector('[data-admin-quote-title]');
+        const quoteAmount = quoteForm.querySelector('[name="amount"]');
+        const quoteSummary = quoteForm.querySelector('[name="summary"]');
+        const quoteSourcingNotes = quoteForm.querySelector('[data-admin-quote-sourcing-notes]');
+        const quoteSourcingLinks = quoteForm.querySelector('[data-admin-quote-sourcing-links]');
+        const quoteSend = quoteForm.querySelector('[name="sendToClient"]');
+        const quoteFormTitle = quoteForm.querySelector('[data-admin-quote-form-title]');
+        const quoteSubmit = quoteForm.querySelector('[data-admin-quote-submit]');
+        const confidenceOverrideField = quoteForm.querySelector('[data-admin-quote-confidence-override]');
+        const rangeLowField = quoteForm.querySelector('[data-admin-quote-range-low]');
+        const rangeHighField = quoteForm.querySelector('[data-admin-quote-range-high]');
+        const aiOriginalField = quoteForm.querySelector('[data-admin-quote-ai-original]');
+        const aiMetadataField = quoteForm.querySelector('[data-admin-quote-ai-metadata]');
+        const aiStatus = quoteForm.querySelector('[data-admin-quote-ai-status]');
+        const metadata = quote?.aiMetadata || {};
+        if (quoteRequestId) quoteRequestId.value = quote?.jobRequestId || request?.id || '';
+        if (quoteId) quoteId.value = quote?.id || '';
+        if (quoteTitle) quoteTitle.value = quote?.title || `${request?.serviceType || 'Service'} quote`;
+        if (quoteAmount) quoteAmount.value = quote ? String(Number(quote.amountCents || 0) / 100) : '';
+        if (quoteSummary) quoteSummary.value = quote?.summary || '';
+        if (quoteSourcingNotes) quoteSourcingNotes.value = quote?.sourcingNotes || metadata.pricingConfidenceReason || metadata.rangeSpreadReason || '';
+        if (quoteSourcingLinks) quoteSourcingLinks.innerHTML = '';
+        if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(quote?.status || '');
+        if (quoteFormTitle) quoteFormTitle.textContent = quote ? 'Edit saved quote' : 'Create quote';
+        if (quoteSubmit) quoteSubmit.textContent = quote ? 'Save Draft' : 'Create quote';
+        if (confidenceOverrideField) confidenceOverrideField.value = quote?.pricingConfidenceLevel || metadata.pricingConfidenceLevel || '';
+        if (rangeLowField) rangeLowField.value = quote?.rangeLowCents ? (Number(quote.rangeLowCents) / 100).toFixed(2) : (metadata.totalLowCents ? (Number(metadata.totalLowCents) / 100).toFixed(2) : '');
+        if (rangeHighField) rangeHighField.value = quote?.rangeHighCents ? (Number(quote.rangeHighCents) / 100).toFixed(2) : (metadata.totalHighCents ? (Number(metadata.totalHighCents) / 100).toFixed(2) : '');
+        if (aiOriginalField) aiOriginalField.value = JSON.stringify(metadata.aiStructuredQuote || metadata || {});
+        if (aiMetadataField) aiMetadataField.value = JSON.stringify(metadata || {});
+        if (aiStatus) {
+          aiStatus.textContent = quote ? `${quote.aiEnhanced ? 'AI Enhanced' : 'Manual quote'}${quote.fallbackUsed ? ' · Fallback Used' : ''} · ${quoteConfidenceLabel(quote)} confidence.` : 'Ready to generate an AI draft.';
+        }
+      };
+
+      const renderAdminQuoteCard = (quote = {}) => {
+        const status = String(quote.status || 'draft').replaceAll('_', ' ');
+        const requestId = quote.jobRequestId || quote.requestId || quote.request?.id || '';
+        const confidence = quoteConfidenceLabel(quote);
+        const range = quote.rangeLowCents || quote.rangeHighCents ? `${formatMoney(quote.rangeLowCents || 0)}–${formatMoney(quote.rangeHighCents || 0)}` : 'Range not saved';
+        const fallbackBadge = quote.fallbackUsed ? '<span class="admin-request-badge">Fallback Used</span>' : (quote.aiEnhanced ? '<span class="admin-request-badge">AI Enhanced</span>' : '<span class="admin-request-badge">Manual</span>');
+        return `
+          <article class="admin-request admin-quote-card" data-admin-quote-card="${escapeHtml(quote.id || '')}" data-admin-quote-status="${escapeHtml(quote.status || 'draft')}">
+            <span class="admin-request-badge">${escapeHtml(status)}</span>
+            ${fallbackBadge}
+            <strong>${escapeHtml(quote.title || 'Untitled quote')}</strong>
+            <div class="admin-request-meta">
+              <span>${escapeHtml(quote.clientName || quote.clientEmail || quote.request?.requesterName || 'Client')}</span>
+              <span>${escapeHtml(quote.serviceType || quote.request?.serviceType || 'Service')}</span>
+              <span>${escapeHtml(quote.city || quote.request?.city || 'No city')}</span>
+              <span>${escapeHtml(formatMoney(quote.amountCents || quote.fixedPriceRecommendationCents || 0))}</span>
+              <span>${escapeHtml(confidence)} confidence</span>
+              <span>${escapeHtml(range)}</span>
+              <span>Req ${escapeHtml(String(requestId).slice(0, 8) || '—')}</span>
+            </div>
+            <p>${escapeHtml(quote.summary || quote.sourcingNotes || 'Open this saved quote to review scope, AI metadata, range, and client-send controls.')}</p>
+            <div class="client-quote-actions">
+              <button class="btn btn-primary" type="button" data-admin-edit-quote="${escapeHtml(quote.id || '')}">Edit Quote</button>
+              <button class="btn btn-soft" type="button" data-admin-quote-ai-card="${escapeHtml(quote.id || '')}">Generate AI Draft</button>
+              <button class="btn btn-soft" type="button" data-admin-send-quote="${escapeHtml(quote.id || '')}">Send/Resend</button>
+              ${quote.status === 'accepted' ? `<button class="btn btn-soft" type="button" data-admin-open-quote-work-order="${escapeHtml(requestId)}">Open Work Order</button>` : ''}
+            </div>
+          </article>`;
+      };
+
+      const loadAdminQuotes = async () => {
+        const workspace = document.querySelector('[data-admin-quotes-workspace]');
+        const statusNode = document.querySelector('[data-admin-quotes-status]');
+        const list = document.querySelector('[data-admin-quote-list]');
+        if (!workspace || !statusNode || !list) return;
+        const statusFilter = document.querySelector('[data-admin-quote-status-filter]')?.value || 'all';
+        const searchTerm = (document.querySelector('[data-admin-quote-search]')?.value || '').trim();
+        statusNode.textContent = 'Loading quotes…';
+        try {
+          const response = await fetch(`/api/admin/quotes?status=${encodeURIComponent(statusFilter)}&search=${encodeURIComponent(searchTerm)}`, { headers: { accept: 'application/json' } });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.message || 'Admin quotes are not available.');
+          currentAdminQuotes.clear();
+          (result.quotes || []).forEach((quote) => {
+            currentAdminQuotes.set(quote.id, quote);
+            if (quote.request?.id) currentAdminRequests.set(quote.request.id, quote.request);
+          });
+          list.innerHTML = result.quotes?.length ? result.quotes.map(renderAdminQuoteCard).join('') : '<p class="session-status">No quotes match this filter.</p>';
+          statusNode.dataset.state = 'ready';
+          statusNode.textContent = `${(result.quotes || []).length} quote${(result.quotes || []).length === 1 ? '' : 's'} loaded for mobile editing.`;
+        } catch (error) {
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = error.message;
+        }
+      };
+
+      const selectAdminRequest = (requestId, options = {}) => {
         const request = currentAdminRequests.get(requestId);
         const detail = document.querySelector('[data-admin-request-detail]');
         const detailTitle = document.querySelector('[data-admin-detail-title]');
@@ -2824,16 +2927,8 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (estimatedStartDate) estimatedStartDate.value = request.estimatedStartDate || '';
         if (completionDate) completionDate.value = request.completionDate || '';
         if (adminNotes) adminNotes.value = request.adminNotes || '';
-        const savedQuote = [...currentAdminQuotes.values()].find((quote) => quote.jobRequestId === request.id);
-        if (quoteId) quoteId.value = savedQuote?.id || '';
-        if (quoteTitle) quoteTitle.value = savedQuote?.title || `${request.serviceType || 'Service'} quote`;
-        if (quoteAmount) quoteAmount.value = savedQuote ? String((savedQuote.amountCents || 0) / 100) : '';
-        if (quoteSummary) quoteSummary.value = savedQuote?.summary || '';
-        if (quoteSourcingNotes) quoteSourcingNotes.value = '';
-        if (quoteSourcingLinks) quoteSourcingLinks.innerHTML = '';
-        if (quoteSend) quoteSend.checked = ['sent', 'viewed', 'accepted'].includes(savedQuote?.status || '');
-        if (quoteFormTitle) quoteFormTitle.textContent = savedQuote ? 'Edit saved quote' : 'Create quote';
-        if (quoteSubmit) quoteSubmit.textContent = savedQuote ? 'Save quote' : 'Create quote';
+        const savedQuote = [...currentAdminQuotes.values()].find((quote) => quote.jobRequestId === request.id || quote.requestId === request.id);
+        hydrateAdminQuoteForm(savedQuote, request);
         if (quoteMaterialItem) {
           quoteMaterialItem.innerHTML = '<option value="">Select inventory item</option>' + currentAdminInventoryItems.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} — ${Number(item.quantityOnHand || 0)} ${escapeHtml(item.unit || '')}</option>`).join('');
         }
@@ -2865,7 +2960,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
           assignmentList.innerHTML = requestAssignments.length ? requestAssignments.map(renderAdminAssignmentCard).join('') : '<p class="session-status">No workers assigned yet.</p>';
         }
         if (quoteApproved) loadAdminWorkOrderInventory(request.id);
-        if (closeButton) closeButton.focus();
+        if (options.focusQuote) {
+          window.setTimeout(() => document.querySelector('[data-admin-quote-form]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+        } else if (closeButton) closeButton.focus();
       };
 
       const closeAdminRequest = () => {
@@ -2876,6 +2973,82 @@ Additional info from client: ${payload.additionalInfo}` : '';
         }
 
         document.body.style.overflow = '';
+      };
+
+
+      const openAdminQuoteEditor = (quoteId, { generateAi = false } = {}) => {
+        const quote = currentAdminQuotes.get(quoteId);
+        const requestId = quote?.jobRequestId || quote?.requestId || quote?.request?.id || '';
+        if (!quote || !requestId) {
+          const status = document.querySelector('[data-admin-quotes-status]');
+          if (status) status.textContent = 'Quote is missing request context. Refresh quotes and try again.';
+          return;
+        }
+        if (quote.request?.id) currentAdminRequests.set(quote.request.id, quote.request);
+        selectAdminRequest(requestId);
+        window.setTimeout(() => {
+          const quoteSection = document.querySelector('[data-admin-quote-form]');
+          quoteSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (generateAi) quoteSection?.querySelector('[data-admin-quote-ai-draft]')?.click();
+        }, 80);
+      };
+
+      const sendAdminQuoteFromCard = async (quoteId) => {
+        const quote = currentAdminQuotes.get(quoteId);
+        const status = document.querySelector('[data-admin-quotes-status]');
+        if (!quote) return;
+        if (status) status.textContent = 'Sending quote to client…';
+        const response = await fetch('/api/admin/quotes', {
+          method: 'PATCH',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify({
+            quoteId: quote.id,
+            jobRequestId: quote.jobRequestId || quote.requestId,
+            title: quote.title,
+            summary: quote.summary,
+            amountCents: quote.amountCents || 0,
+            sendToClient: true,
+            pricingConfidenceOverride: quote.pricingConfidenceLevel || quote.aiMetadata?.pricingConfidenceLevel || '',
+            rangeLowCents: quote.rangeLowCents || quote.aiMetadata?.totalLowCents || null,
+            rangeHighCents: quote.rangeHighCents || quote.aiMetadata?.totalHighCents || null,
+            aiMetadata: quote.aiMetadata || {},
+            aiOriginal: quote.aiMetadata?.aiStructuredQuote || {},
+            sourcingNotes: quote.sourcingNotes || '',
+          }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Could not send quote.');
+        if (status) status.textContent = 'Quote sent/resend saved.';
+        await loadAdminQuotes();
+        await loadAdminRequests(quote.jobRequestId || quote.requestId || '');
+      };
+
+      const bindAdminQuoteWorkspaceActions = () => {
+        const workspace = document.querySelector('[data-admin-quotes-workspace]');
+        if (!workspace || workspace.dataset.bound) return;
+        workspace.dataset.bound = 'true';
+        workspace.querySelector('[data-admin-quotes-refresh]')?.addEventListener('click', loadAdminQuotes);
+        workspace.querySelector('[data-admin-quotes-open-requests]')?.addEventListener('click', () => window.taSetSidebarWorkspace?.('work-orders', { scroll: true, target: '#admin-requests' }));
+        workspace.querySelector('[data-admin-quote-status-filter]')?.addEventListener('change', loadAdminQuotes);
+        workspace.querySelector('[data-admin-quote-search]')?.addEventListener('input', () => window.clearTimeout(window.__adminQuoteSearchTimer) || (window.__adminQuoteSearchTimer = window.setTimeout(loadAdminQuotes, 250)));
+        workspace.addEventListener('click', async (event) => {
+          const edit = event.target.closest('[data-admin-edit-quote]');
+          const ai = event.target.closest('[data-admin-quote-ai-card]');
+          const send = event.target.closest('[data-admin-send-quote]');
+          const workOrder = event.target.closest('[data-admin-open-quote-work-order]');
+          try {
+            if (edit) return openAdminQuoteEditor(edit.dataset.adminEditQuote);
+            if (ai) return openAdminQuoteEditor(ai.dataset.adminQuoteAiCard, { generateAi: true });
+            if (send) return await sendAdminQuoteFromCard(send.dataset.adminSendQuote);
+            if (workOrder) {
+              window.taSetSidebarWorkspace?.('work-orders', { scroll: true, target: '#admin-requests' });
+              if (workOrder.dataset.adminOpenQuoteWorkOrder) selectAdminRequest(workOrder.dataset.adminOpenQuoteWorkOrder);
+            }
+          } catch (error) {
+            const status = document.querySelector('[data-admin-quotes-status]');
+            if (status) status.textContent = error.message;
+          }
+        });
       };
 
       const bindAdminRequestActions = () => {
@@ -2892,6 +3065,16 @@ Additional info from client: ${payload.additionalInfo}` : '';
             if (event.target === detail || event.target.closest('[data-admin-detail-close]')) {
               closeAdminRequest();
             }
+            const jump = event.target.closest('[data-admin-detail-jump]');
+            if (jump) {
+              const key = jump.dataset.adminDetailJump;
+              if (key === 'invoice') {
+                window.taSetSidebarWorkspace?.('invoices', { scroll: true, target: '#admin-invoices' });
+                return;
+              }
+              const selector = key === 'materials' ? '[data-admin-detail-section="materials"]' : `[data-admin-detail-section="${key}"]`;
+              detail.querySelector(selector)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           });
           document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && !detail.hidden) {
@@ -2906,7 +3089,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
             const button = event.target.closest('[data-admin-open-request]');
 
             if (button) {
-              selectAdminRequest(button.dataset.adminOpenRequest);
+              selectAdminRequest(button.dataset.adminOpenRequest, { focusQuote: button.dataset.adminOpenRequestAction === 'quote' });
             }
           });
         }
@@ -2994,6 +3177,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               assignmentForm.reset();
               if (formStatus) formStatus.textContent = 'Worker assigned.';
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminQuotes();
               await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;
@@ -3110,6 +3294,10 @@ Additional info from client: ${payload.additionalInfo}` : '';
         if (quoteForm && !quoteForm.dataset.bound) {
           quoteForm.dataset.bound = 'true';
           const quoteSourcingLinks = quoteForm.querySelector('[data-admin-quote-sourcing-links]');
+          const sendCheckbox = quoteForm.querySelector('[name="sendToClient"]');
+          quoteForm.querySelector('[data-admin-quote-save-draft]')?.addEventListener('click', () => { if (sendCheckbox) sendCheckbox.checked = false; quoteForm.requestSubmit(); });
+          quoteForm.querySelector('[data-admin-quote-send-client]')?.addEventListener('click', () => { if (sendCheckbox) sendCheckbox.checked = true; quoteForm.requestSubmit(); });
+          quoteForm.querySelector('[data-admin-quote-close]')?.addEventListener('click', closeAdminRequest);
           quoteForm.querySelector('[data-admin-quote-ai-draft]')?.addEventListener('click', async () => {
             const formStatus = document.querySelector('[data-admin-quote-form-status]');
             const aiStatus = document.querySelector('[data-admin-quote-ai-status]');
@@ -3250,6 +3438,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               rangeHighCents: Math.round(Number(formData.get('rangeHigh') || 0) * 100),
               aiOriginal: (() => { try { return JSON.parse(formData.get('aiOriginal') || '{}'); } catch { return {}; } })(),
               aiMetadata: (() => { try { return JSON.parse(formData.get('aiMetadata') || '{}'); } catch { return {}; } })(),
+              sourcingNotes: formData.get('sourcingNotes') || '',
             };
 
             const quoteMethod = payload.quoteId ? 'PATCH' : 'POST';
@@ -3270,6 +3459,7 @@ Additional info from client: ${payload.additionalInfo}` : '';
               if (!payload.quoteId) quoteForm.reset();
               if (formStatus) formStatus.textContent = payload.quoteId ? 'Quote saved.' : (payload.sendToClient ? 'Quote sent for client accept/decline.' : 'Draft quote created.');
               await loadAdminRequests(payload.jobRequestId);
+              await loadAdminQuotes();
               await loadAdminActivity();
             } catch (error) {
               if (formStatus) formStatus.textContent = error.message;

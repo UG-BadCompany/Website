@@ -33,7 +33,7 @@ test('admin quote endpoint rejects unsupported methods before auth or database w
     },
   });
 
-  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes', { method: 'GET' })));
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes', { method: 'PUT' })));
 
   assert.equal(response.status, 405);
   assert.equal(response.body.message, 'Method not allowed.');
@@ -72,6 +72,62 @@ test('admin quote endpoint rejects non-admin users', async () => {
   assert.equal(response.body.authorized, false);
   assert.equal(db.queries[0].values[0], hashToken('session-token'));
   assert.equal(db.queries.length, 3);
+});
+
+
+
+test('admin quote endpoint lists quotes with mobile UI metadata', async () => {
+  const db = createMockDb([
+    [{ id: 'session-1', user_id: 'admin-1', email: 'admin@example.com', full_name: 'Admin' }],
+    [],
+    [{ key: 'admin', name: 'Admin' }],
+    [{
+      id: 'quote-1',
+      job_request_id: 'job-1',
+      client_id: 'client-1',
+      status: 'draft',
+      title: 'Mobile drywall quote',
+      summary: 'Patch and paint.',
+      amount_cents: 42500,
+      ai_enhanced: true,
+      fallback_used: false,
+      fallback_reason: null,
+      pricing_confidence_level: 'high',
+      range_low_cents: 40000,
+      range_high_cents: 45000,
+      fixed_price_recommendation_cents: 42500,
+      ai_metadata: { pricingConfidenceLevel: 'high', fixedPriceRecommendationCents: 42500 },
+      sourcing_notes: 'Photo evidence and historical drywall quotes tightened price.',
+      created_at: '2026-05-08T00:00:00.000Z',
+      updated_at: '2026-05-09T00:00:00.000Z',
+      request_id: 'job-1',
+      request_status: 'quote_in_progress',
+      requester_name: 'Casey Client',
+      requester_email: 'casey@example.com',
+      requester_phone: '555-0100',
+      city: 'Mesa',
+      service_type: 'Drywall',
+      preferred_timeframe: 'This week',
+      description: 'Mobile quote request',
+      admin_notes: '',
+      estimated_start_date: null,
+      completion_date: null,
+      request_created_at: '2026-05-07T00:00:00.000Z',
+      request_updated_at: '2026-05-08T00:00:00.000Z',
+      client_name: 'Casey Client',
+      client_email: 'casey@example.com',
+    }],
+  ]);
+  const handler = createAdminQuotesHandler({ getDatabase: async () => db });
+  const response = await readJson(await handler(new Request('https://site.test/api/admin/quotes?status=draft&search=drywall', { headers: { cookie: 'ta_session=session-token' } })));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.quotes.length, 1);
+  assert.equal(response.body.quotes[0].pricingConfidenceLevel, 'high');
+  assert.equal(response.body.quotes[0].rangeLowCents, 40000);
+  assert.equal(response.body.quotes[0].fixedPriceRecommendationCents, 42500);
+  assert.equal(response.body.quotes[0].request.serviceType, 'Drywall');
+  assert.match(db.queries[3].text, /from quotes/);
 });
 
 test('admin quote endpoint validates quote payloads before opening the database', async () => {
@@ -120,17 +176,15 @@ test('admin quote endpoint creates a draft quote from a job request', async () =
 
   assert.equal(response.status, 201);
   assert.equal(response.body.authorized, true);
-  assert.deepEqual(response.body.quote, {
-    id: 'quote-1',
-    jobRequestId: 'job-1',
-    clientId: 'client-1',
-    status: 'draft',
-    title: 'Drywall repair quote',
-    summary: 'Patch and paint hallway drywall.',
-    amountCents: 27500,
-    createdAt: '2026-05-08T00:00:00.000Z',
-    updatedAt: '2026-05-08T00:00:00.000Z',
-  });
+  assert.equal(response.body.quote.id, 'quote-1');
+  assert.equal(response.body.quote.jobRequestId, 'job-1');
+  assert.equal(response.body.quote.clientId, 'client-1');
+  assert.equal(response.body.quote.status, 'draft');
+  assert.equal(response.body.quote.title, 'Drywall repair quote');
+  assert.equal(response.body.quote.summary, 'Patch and paint hallway drywall.');
+  assert.equal(response.body.quote.amountCents, 27500);
+  assert.equal(response.body.quote.aiEnhanced, false);
+  assert.equal(response.body.quote.fallbackUsed, false);
   assert.match(db.queries[3].text, /from job_requests/);
   assert.equal(db.queries[3].values[0], 'job-1');
   assert.match(db.queries[4].text, /from quotes/);

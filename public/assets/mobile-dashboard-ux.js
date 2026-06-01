@@ -117,7 +117,7 @@
   const roleRoutes = {
     admin: {
       requests: ['work-orders', '#admin-requests'],
-      quotes: ['estimate-review', '#estimate-review'],
+      quotes: ['quotes', '#admin-quotes-workspace'],
       jobs: ['work-orders', '#admin-requests'],
       dashboard: ['overview', '#executive-overview'],
       invoices: ['invoices', '#admin-invoices'],
@@ -156,7 +156,7 @@
   };
 
   const mobileAllowedMoreKeysByView = {
-    admin: ['dashboard', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'ai-knowledge', 'schedule', 'settings', 'troubleshooter', 'sign-out'],
+    admin: ['dashboard', 'quotes', 'inventory', 'invoices', 'finance', 'customers', 'employees', 'admin-tools', 'reports', 'ai-knowledge', 'schedule', 'settings', 'troubleshooter', 'sign-out'],
     client: ['dashboard', 'requests', 'quotes', 'invoices', 'customers', 'settings', 'sign-out'],
     worker: ['dashboard', 'jobs', 'schedule', 'troubleshooter', 'reports', 'settings', 'sign-out'],
   };
@@ -224,7 +224,7 @@
     const roleFabRoutes = {
       admin: {
         request: () => openWorkspace('client-requests', '#client-requests'),
-        quote: () => { window.location.href = '/#estimate'; return true; },
+        quote: () => openWorkspace('quotes', '#admin-quotes-workspace'),
         job: () => openWorkspace('work-orders', '#admin-requests'),
         inventory: () => { window.location.href = '/inventory/'; return true; },
         customer: () => openWorkspace('customer-status', '#customer-experience-center'),
@@ -260,7 +260,7 @@
     const labelsByRole = {
       client: { customers: 'Project Status', settings: 'Profile / Properties', invoices: 'My Invoices' },
       worker: { reports: 'Upload Photos', settings: 'Job Notes', schedule: 'Schedule / Dispatch', troubleshooter: 'AI Troubleshooter' },
-      admin: { customers: 'Customers', settings: 'Settings', invoices: 'Invoices', reports: 'Reports', schedule: 'Schedule', troubleshooter: 'AI Assistant' },
+      admin: { quotes: 'Quotes', customers: 'Customers', settings: 'Settings', invoices: 'Invoices', reports: 'Reports', schedule: 'Schedule', troubleshooter: 'AI Assistant' },
     };
     qa('[data-mobile-more-key]').forEach((item) => {
       const key = item.dataset.mobileMoreKey;

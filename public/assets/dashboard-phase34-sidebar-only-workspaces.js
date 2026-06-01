@@ -23,7 +23,7 @@
       title: 'Estimate Review',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
       views: ['admin'],
-      targets: ['#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
+      targets: ['#admin-quotes-workspace', '[data-admin-quotes-workspace]', '#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
     'work-orders': {
       title: 'Work Orders',
