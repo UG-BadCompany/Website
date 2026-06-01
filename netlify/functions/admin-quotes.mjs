@@ -8,8 +8,10 @@ import {
 } from './auth-utils.mjs';
 import { saveAdminAiCorrection } from './ai-intelligence-engine.mjs';
 
-const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired']);
-const QUOTE_LIST_STATUSES = new Set(['all', ...QUOTE_STATUSES]);
+const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review']);
+const QUOTE_LIST_STATUSES = new Set(['all', 'needs_review', ...QUOTE_STATUSES]);
+const NEEDS_REVIEW_QUOTE_STATUSES = ['draft', 'pending_review', 'needs_review'];
+const REQUEST_ONLY_STATUSES = ['new', 'needs_review', 'quote_in_progress'];
 
 const normalizePayload = (body = {}) => {
   const aiMetadata = body.aiMetadata && typeof body.aiMetadata === 'object' ? body.aiMetadata : null;
@@ -59,6 +61,7 @@ const mapDate = (value) => value ? String(value).slice(0, 10) : null;
 
 const mapQuote = (quote = {}) => {
   const metadata = quote.ai_metadata || {};
+  const requestOnly = Boolean(quote.request_only);
   const request = quote.request_id ? {
     id: quote.request_id,
     status: quote.request_status,
@@ -66,6 +69,7 @@ const mapQuote = (quote = {}) => {
     requesterEmail: quote.requester_email,
     requesterPhone: quote.requester_phone,
     city: quote.city,
+    streetAddress: quote.street_address,
     serviceType: quote.service_type,
     preferredTimeframe: quote.preferred_timeframe,
     description: quote.description,
@@ -76,8 +80,13 @@ const mapQuote = (quote = {}) => {
     updatedAt: quote.request_updated_at,
   } : null;
   return {
-    id: quote.id,
-    jobRequestId: quote.job_request_id,
+    id: requestOnly ? `request:${quote.request_id}` : quote.id,
+    quoteId: requestOnly ? '' : quote.id,
+    isRequestOnly: requestOnly,
+    needsDraft: requestOnly,
+    reviewLabel: requestOnly ? 'Needs Draft' : (['draft', 'pending_review', 'needs_review'].includes(quote.status) ? 'Needs Review' : ''),
+    submittedAt: quote.request_created_at || quote.created_at,
+    jobRequestId: quote.job_request_id || quote.request_id,
     clientId: quote.client_id,
     clientName: quote.client_name || quote.requester_name || '',
     clientEmail: quote.client_email || quote.requester_email || '',
@@ -96,6 +105,7 @@ const mapQuote = (quote = {}) => {
     sourcingNotes: quote.sourcing_notes || metadata.pricingConfidenceReason || metadata.rangeSpreadReason || '',
     serviceType: quote.service_type || '',
     city: quote.city || '',
+    streetAddress: quote.street_address || '',
     requestId: quote.request_id || quote.job_request_id || '',
     createdAt: quote.created_at,
     updatedAt: quote.updated_at,
@@ -143,24 +153,58 @@ const loadRoleKeys = async (db, userId) => {
 const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
   const likeSearch = `%${String(search || '').toLowerCase()}%`;
   return await db.sql`
-    select
-      quotes.id, quotes.job_request_id, quotes.client_id, quotes.status, quotes.title, quotes.summary, quotes.amount_cents,
-      quotes.ai_enhanced, quotes.fallback_used, quotes.fallback_reason, quotes.pricing_confidence_level,
-      quotes.range_low_cents, quotes.range_high_cents, quotes.fixed_price_recommendation_cents,
-      quotes.ai_metadata, quotes.sourcing_notes, quotes.created_at, quotes.updated_at,
-      job_requests.id as request_id, job_requests.status as request_status, job_requests.requester_name,
-      job_requests.requester_email, job_requests.requester_phone, job_requests.city, job_requests.service_type,
-      job_requests.preferred_timeframe, job_requests.description, job_requests.admin_notes,
-      job_requests.estimated_start_date, job_requests.completion_date, job_requests.created_at as request_created_at,
-      job_requests.updated_at as request_updated_at,
-      app_users.full_name as client_name, app_users.email as client_email
-    from quotes
-    left join job_requests on job_requests.id = quotes.job_request_id
-    left join app_users on app_users.id = quotes.client_id
-    where (${quoteId || ''} = '' or quotes.id::text = ${quoteId || ''})
-      and (${status} = 'all' or quotes.status = ${status})
-      and (${search || ''} = '' or lower(concat_ws(' ', quotes.title, quotes.summary, quotes.status, quotes.amount_cents::text, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.service_type, job_requests.id::text, quotes.id::text)) like ${likeSearch})
-    order by quotes.updated_at desc, quotes.created_at desc
+    with quote_rows as (
+      select
+        quotes.id, quotes.job_request_id, quotes.client_id, quotes.status, quotes.title, quotes.summary, quotes.amount_cents,
+        quotes.ai_enhanced, quotes.fallback_used, quotes.fallback_reason, quotes.pricing_confidence_level,
+        quotes.range_low_cents, quotes.range_high_cents, quotes.fixed_price_recommendation_cents,
+        quotes.ai_metadata, quotes.sourcing_notes, quotes.created_at, quotes.updated_at,
+        false as request_only,
+        job_requests.id as request_id, job_requests.status as request_status, job_requests.requester_name,
+        job_requests.requester_email, job_requests.requester_phone, job_requests.city, job_requests.street_address,
+        job_requests.service_type, job_requests.preferred_timeframe, job_requests.description, job_requests.admin_notes,
+        job_requests.estimated_start_date, job_requests.completion_date, job_requests.created_at as request_created_at,
+        job_requests.updated_at as request_updated_at,
+        app_users.full_name as client_name, app_users.email as client_email
+      from quotes
+      left join job_requests on job_requests.id = quotes.job_request_id
+      left join app_users on app_users.id = quotes.client_id
+      where (${quoteId || ''} = '' or quotes.id::text = ${quoteId || ''})
+        and (
+          ${status} = 'all'
+          or (${status} = 'needs_review' and quotes.status = any(${NEEDS_REVIEW_QUOTE_STATUSES}))
+          or quotes.status = ${status}
+        )
+        and (${search || ''} = '' or lower(concat_ws(' ', quotes.title, quotes.summary, quotes.status, quotes.amount_cents::text, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.id::text, quotes.id::text)) like ${likeSearch})
+    ), request_rows as (
+      select
+        null::uuid as id, job_requests.id as job_request_id, job_requests.client_id,
+        'needs_review'::text as status,
+        concat(coalesce(job_requests.service_type, 'Service'), ' estimate request') as title,
+        job_requests.description as summary,
+        null::integer as amount_cents,
+        false as ai_enhanced, false as fallback_used, null::text as fallback_reason, null::text as pricing_confidence_level,
+        null::integer as range_low_cents, null::integer as range_high_cents, null::integer as fixed_price_recommendation_cents,
+        '{}'::jsonb as ai_metadata, null::text as sourcing_notes, job_requests.created_at, job_requests.updated_at,
+        true as request_only,
+        job_requests.id as request_id, job_requests.status as request_status, job_requests.requester_name,
+        job_requests.requester_email, job_requests.requester_phone, job_requests.city, job_requests.street_address,
+        job_requests.service_type, job_requests.preferred_timeframe, job_requests.description, job_requests.admin_notes,
+        job_requests.estimated_start_date, job_requests.completion_date, job_requests.created_at as request_created_at,
+        job_requests.updated_at as request_updated_at,
+        app_users.full_name as client_name, app_users.email as client_email
+      from job_requests
+      left join app_users on app_users.id = job_requests.client_id
+      where not exists (select 1 from quotes where quotes.job_request_id = job_requests.id)
+        and job_requests.status = any(${REQUEST_ONLY_STATUSES})
+        and (${quoteId || ''} = '' or job_requests.id::text = ${quoteId || ''})
+        and (${status} in ('all', 'needs_review') or ${status} = job_requests.status)
+        and (${search || ''} = '' or lower(concat_ws(' ', job_requests.status, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.description, job_requests.id::text)) like ${likeSearch})
+    )
+    select * from quote_rows
+    union all
+    select * from request_rows
+    order by updated_at desc, created_at desc
     limit 150
   `;
 };

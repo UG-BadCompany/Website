@@ -902,9 +902,19 @@ const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload })
   let draft = estimateFromPayload(payload);
   draft = await tryImproveDraftWithOpenAi(payload, draft);
 
+  const draftMetadata = {
+    aiEnhanced: Boolean(draft.aiEnhanced),
+    pricingConfidenceLevel: draft.confidence >= 80 ? 'high' : (draft.confidence >= 55 ? 'medium' : 'low'),
+    fixedPriceRecommendationCents: draft.amountCents || 0,
+    totalLowCents: draft.lowAmountCents || 0,
+    totalHighCents: draft.amountCents || 0,
+    quoteReady: Boolean(draft.quoteReady),
+    aiStructuredQuote: draft,
+  };
+
   const [quote] = await db.sql`
-    insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, created_by)
-    values (${jobRequest.id}, ${client.id}, 'draft', ${draft.title}, ${draft.summary || null}, ${draft.amountCents || 0}, null)
+    insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, created_by, ai_enhanced, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes)
+    values (${jobRequest.id}, ${client.id}, 'draft', ${draft.title}, ${draft.summary || null}, ${draft.amountCents || 0}, null, ${Boolean(draft.aiEnhanced)}, ${draftMetadata.pricingConfidenceLevel}, ${draft.lowAmountCents || null}, ${draft.amountCents || null}, ${draft.amountCents || null}, ${JSON.stringify(draftMetadata)}::jsonb, ${draft.accuracyReview?.join('\n') || null})
     returning id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
   `;
 
@@ -1041,6 +1051,8 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         })}::jsonb
       )
     `;
+    const estimateDraft = await createAutomaticEstimateDraft({ db, jobRequest, client, payload });
+
     const token = makeToken();
     const magicLinkUrl = createMagicLinkUrl(request, token);
 
@@ -1064,6 +1076,14 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
       propertyId: property.id,
       createdAt: jobRequest.created_at,
       emailSent: emailResult.sent,
+      quoteId: estimateDraft.quote?.id || null,
+      quoteStatus: estimateDraft.quote?.status || 'draft',
+      estimateDraft: {
+        title: estimateDraft.draft?.title || '',
+        amountCents: estimateDraft.draft?.amountCents || 0,
+        lowAmountCents: estimateDraft.draft?.lowAmountCents || 0,
+        quoteReady: Boolean(estimateDraft.draft?.quoteReady),
+      },
       message: emailResult.sent
         ? 'Estimate request saved. Check your email for a confirmation and secure client portal link.'
         : 'Estimate request saved. Email delivery is not configured yet; request a magic link from the portal login to continue.',

@@ -164,7 +164,17 @@
     }
     const destination = resolvedTarget ? q(resolvedTarget) : null;
     if (destination) {
-      destination.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const anchor = destination.querySelector?.('[data-module-top-anchor]') || destination;
+      const scrollToAnchor = (behavior = 'auto') => {
+        const stickyOffset = Math.max(0, Math.round(q('.nav')?.getBoundingClientRect?.().height || 0));
+        const viewportOffset = Math.max(0, Math.round(window.visualViewport?.offsetTop || 0));
+        const top = Math.max(0, Math.round(anchor.getBoundingClientRect().top + window.pageYOffset - stickyOffset - viewportOffset - 8));
+        window.scrollTo({ top, left: 0, behavior });
+      };
+      window.requestAnimationFrame(() => {
+        scrollToAnchor('auto');
+        window.requestAnimationFrame(() => scrollToAnchor('smooth'));
+      });
       return true;
     }
     return false;

@@ -2365,26 +2365,35 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
 
     <section class="card admin-quotes-workspace" id="admin-quotes-workspace" data-admin-quotes-workspace data-dashboard-section data-views="admin" hidden>
-      <strong>Admin Quotes</strong>
-      <p>Mobile-safe quote list for viewing, AI drafting, editing, saving drafts, sending/resending to clients, and opening accepted work orders without digging through request modals.</p>
+      <span id="admin-quotes-workspace-top" class="dashboard-module-top-anchor" data-module-top-anchor="quotes" aria-hidden="true"></span>
+      <strong>Estimate Review Center</strong>
+      <p>Review submitted estimate requests, edit AI-generated drafts, adjust pricing, save drafts, and send final quotes to clients.</p>
       <p class="session-status" data-admin-quotes-status role="status" aria-live="polite">Loading admin quotes…</p>
+      <div class="client-request-form-actions admin-quote-inbox-tabs" role="tablist" aria-label="Estimate Review Center filters" data-admin-quote-tabs>
+        <button class="btn btn-primary" type="button" data-admin-quote-tab="needs_review" aria-pressed="true">Needs Review</button>
+        <button class="btn btn-soft" type="button" data-admin-quote-tab="draft">Drafts</button>
+        <button class="btn btn-soft" type="button" data-admin-quote-tab="sent">Sent</button>
+        <button class="btn btn-soft" type="button" data-admin-quote-tab="accepted">Accepted</button>
+        <button class="btn btn-soft" type="button" data-admin-quote-tab="declined">Declined</button>
+        <button class="btn btn-soft" type="button" data-admin-quote-tab="all">All</button>
+      </div>
       <div class="client-request-form-grid admin-quote-filters" data-admin-quote-filters>
-        <label>Status filter
+        <label class="sr-only">Status filter
           <select data-admin-quote-status-filter>
-            <option value="all">All quotes</option>
-            <option value="draft">Draft</option>
+            <option value="needs_review" selected>Needs Review</option>
+            <option value="draft">Drafts</option>
             <option value="sent">Sent</option>
-            <option value="viewed">Viewed</option>
             <option value="accepted">Accepted</option>
             <option value="declined">Declined</option>
+            <option value="all">All</option>
           </select>
         </label>
-        <label>Search quotes
-          <input type="search" data-admin-quote-search placeholder="Client, service, city, amount, request ID, or status">
+        <label>Search estimates
+          <input type="search" data-admin-quote-search placeholder="Customer, service, address, city, amount, request ID, or status">
         </label>
       </div>
       <div class="client-request-form-actions admin-quote-actions-bar">
-        <button class="btn btn-primary" type="button" data-admin-quotes-refresh>Refresh Quotes</button>
+        <button class="btn btn-primary" type="button" data-admin-quotes-refresh>Refresh Estimates</button>
         <button class="btn btn-soft" type="button" data-admin-quotes-open-requests>Open Request Inbox</button>
       </div>
       <div class="admin-request-list admin-quote-list" data-admin-quote-list></div>

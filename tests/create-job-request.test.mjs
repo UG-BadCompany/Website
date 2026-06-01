@@ -24,6 +24,9 @@ const defaultDbResponses = () => [
   [{ id: 'property-123' }],
   [{ id: 'job-123', created_at: '2026-05-06T22:00:00.000Z' }],
   [],
+  [{ id: 'quote-123', job_request_id: 'job-123', client_id: 'client-123', status: 'draft', title: 'Home repair estimate', summary: 'Draft summary', amount_cents: 25000, created_at: '2026-05-06T22:01:00.000Z', updated_at: '2026-05-06T22:01:00.000Z' }],
+  [],
+  [],
   [],
 ];
 
@@ -146,28 +149,32 @@ test('creates or updates a client account, property, job request, and audit even
   })));
 
   assert.equal(response.status, 201);
-  assert.deepEqual(response.body, {
-    ok: true,
-    id: 'job-123',
-    clientId: 'client-123',
-    propertyId: 'property-123',
-    createdAt: '2026-05-06T22:00:00.000Z',
-    emailSent: true,
-    message: 'Estimate request saved. Check your email for a confirmation and secure client portal link.',
-  });
+  assert.equal(response.body.ok, true);
+  assert.equal(response.body.id, 'job-123');
+  assert.equal(response.body.clientId, 'client-123');
+  assert.equal(response.body.propertyId, 'property-123');
+  assert.equal(response.body.createdAt, '2026-05-06T22:00:00.000Z');
+  assert.equal(response.body.emailSent, true);
+  assert.equal(response.body.quoteId, 'quote-123');
+  assert.equal(response.body.quoteStatus, 'draft');
+  assert.equal(typeof response.body.estimateDraft.quoteReady, 'boolean');
+  assert.equal(response.body.message, 'Estimate request saved. Check your email for a confirmation and secure client portal link.');
   assert.deepEqual(sentEmails, [{
     to: 'jane@example.com',
     magicLinkUrl: 'https://example.test/api/auth/verify?token=request-token',
     purpose: 'client_account',
   }]);
-  assert.equal(db.queries.length, 7);
+  assert.equal(db.queries.length, 10);
   assert.match(db.queries[0].text, /insert into app_users/);
   assert.match(db.queries[1].text, /insert into user_roles/);
   assert.match(db.queries[2].text, /from properties/);
   assert.match(db.queries[3].text, /insert into properties/);
   assert.match(db.queries[4].text, /insert into job_requests/);
   assert.match(db.queries[5].text, /insert into audit_events/);
-  assert.match(db.queries[6].text, /insert into auth_magic_links/);
+  assert.match(db.queries[6].text, /insert into quotes/);
+  assert.match(db.queries[7].text, /update job_requests/);
+  assert.equal(db.queries[8].values[0], 'estimate_draft.created');
+  assert.match(db.queries[9].text, /insert into auth_magic_links/);
   assert.deepEqual(db.queries[4].values, [
     'client-123',
     'property-123',
@@ -190,6 +197,10 @@ test('reuses an existing property for repeat requests at the same client address
     [{ id: 'property-existing' }],
     [{ id: 'job-456', created_at: '2026-05-07T22:00:00.000Z' }],
     [],
+    [{ id: 'quote-456', job_request_id: 'job-456', client_id: 'client-123', status: 'draft', title: 'Home repair estimate', summary: 'Draft summary', amount_cents: 25000 }],
+    [],
+    [],
+    [],
   ]);
   const handler = createJobRequestHandler({ getDatabase: async () => db });
 
@@ -206,11 +217,11 @@ test('reuses an existing property for repeat requests at the same client address
 
   assert.equal(response.status, 201);
   assert.equal(response.body.propertyId, 'property-existing');
-  assert.equal(db.queries.length, 6);
+  assert.equal(db.queries.length, 9);
   assert.match(db.queries[2].text, /from properties/);
   assert.doesNotMatch(db.queries[3].text, /insert into properties/);
   assert.match(db.queries[3].text, /insert into job_requests/);
-  assert.match(db.queries[5].text, /insert into auth_magic_links/);
+  assert.match(db.queries[8].text, /insert into auth_magic_links/);
   assert.deepEqual(db.queries[3].values.slice(0, 2), ['client-123', 'property-existing']);
 });
 
