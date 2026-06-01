@@ -444,6 +444,14 @@
       <section class="inventory-pane" data-inventory-pane="movements" hidden><article class="card"><strong>Movement History</strong><div class="inventory-mini-list" data-inventory-movement-list></div></article></section>
     </section>
   </main>
+  <div class="mobile-fab-shell" data-inventory-mobile-fab-shell>
+    <button class="mobile-fab" type="button" data-mobile-fab aria-expanded="false" aria-label="Open inventory quick actions">+</button>
+    <div class="mobile-fab-menu" data-mobile-fab-menu hidden>
+      <button type="button" data-inventory-fab-action="add-item">Add Item</button>
+      <button type="button" data-inventory-fab-action="scan-item">Scan Item</button>
+      <button type="button" data-inventory-fab-action="low-stock">Low Stock</button>
+    </div>
+  </div>
   <script>
     const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
     let currentAdminInventory = [];
@@ -720,6 +728,64 @@
       }
     };
 
+    const openInventoryPane = (pane) => {
+      const tab = document.querySelector(`[data-inventory-pane-tab="${pane}"]`);
+      if (tab) tab.click();
+    };
+
+    const bindInventoryMobileFab = () => {
+      const fab = document.querySelector('[data-mobile-fab]');
+      const menu = document.querySelector('[data-mobile-fab-menu]');
+      if (!fab || !menu || fab.dataset.inventoryFabBound) return;
+      fab.dataset.inventoryFabBound = 'true';
+      const setOpen = (open) => {
+        menu.hidden = !open;
+        fab.setAttribute('aria-expanded', String(open));
+      };
+      let lastActivation = 0;
+      const toggle = (event) => {
+        const now = Date.now();
+        if (event?.type === 'click' && now - lastActivation < 450) {
+          event?.preventDefault?.();
+          return;
+        }
+        lastActivation = now;
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        setOpen(menu.hidden);
+      };
+      fab.addEventListener('click', toggle);
+      fab.addEventListener('pointerup', toggle, { passive: false });
+      fab.addEventListener('touchend', toggle, { passive: false });
+      menu.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-inventory-fab-action]')?.dataset.inventoryFabAction;
+        if (!action) return;
+        event.preventDefault();
+        setOpen(false);
+        if (action === 'add-item') {
+          openInventoryPane('items');
+          document.querySelector('[data-admin-inventory-form] input[name="name"]')?.focus({ preventScroll: true });
+          document.querySelector('[data-admin-inventory-form]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (action === 'scan-item') {
+          openInventoryPane('overview');
+          const input = document.querySelector('[data-inventory-scan-input]');
+          input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          input?.focus();
+        }
+        if (action === 'low-stock') {
+          openInventoryPane('low-stock');
+          document.querySelector('[data-inventory-pane="low-stock"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      document.addEventListener('click', (event) => {
+        if (event.target.closest('[data-mobile-fab], [data-mobile-fab-menu]')) return;
+        setOpen(false);
+      });
+      document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setOpen(false); });
+    };
+
+    bindInventoryMobileFab();
     requireInventoryAccess();
   </script>
   <script src="/assets/site-cleanup.js" defer></script>
