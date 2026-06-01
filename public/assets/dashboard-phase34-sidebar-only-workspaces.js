@@ -15,181 +15,149 @@
   const workspaces = {
     overview: {
       title: 'Overview',
-      description: 'Quick business snapshot and daily attention items.',
+      description: 'Role-specific dashboard home with one summary surface and clean app actions.',
       views: ['admin', 'client', 'worker'],
+      module: 'home',
       targets: ['#executive-overview', '.executive-suite', '[data-overview-workspace]'],
     },
     'estimate-review': {
-      title: 'Estimate Review',
+      title: 'Admin Quotes',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
       views: ['admin'],
+      module: 'quotes',
       targets: ['#admin-quotes-workspace', '[data-admin-quotes-workspace]', '#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
     'work-orders': {
-      title: 'Work Orders',
+      title: 'Admin Requests / Work Orders',
       description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
       views: ['admin'],
+      module: 'requests',
       targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite'],
     },
     'client-requests': {
-      title: 'Requests',
+      title: 'My Requests',
       description: 'Client request intake, status, updates, files, and property-aware service details.',
       views: ['client'],
+      module: 'requests',
       targets: ['#client-requests', '[data-client-requests]'],
     },
     'client-quotes': {
-      title: 'Quotes',
+      title: 'My Quotes',
       description: 'Client quote review, approval, decline/request-change actions, and quote history.',
       views: ['client'],
+      module: 'quotes',
       targets: ['#client-quotes', '[data-client-quotes]'],
     },
     'client-invoices': {
-      title: 'Client Invoices',
+      title: 'My Invoices',
       description: 'Client invoice balances, payment status, invoice details, and payment actions.',
       views: ['client'],
+      module: 'invoices',
       targets: ['#client-invoices', '[data-client-invoices]'],
     },
+    'project-updates': {
+      title: 'Project Updates',
+      description: 'Client-safe project status, upcoming visits, quote status, invoice status, and maintenance updates.',
+      views: ['client'],
+      module: 'project-updates',
+      targets: ['#client-project-updates', '.maintenance-suite'],
+    },
     scheduling: {
-      title: 'Scheduling and Dispatch',
-      description: 'Schedule board, upcoming jobs, unscheduled work, assigned worker, date/time, priority, and dispatch notes.',
+      title: 'Schedule / Route',
+      description: 'Role-safe schedule view for dispatch planning or field route review.',
       views: ['admin', 'worker'],
-      targets: ['#smart-schedule-suite', '.smart-schedule-suite'],
+      module: 'schedule',
+      targets: ['#smart-schedule-suite', '.smart-schedule-suite', '#worker-route-suite', '.worker-route-suite'],
     },
     finance: {
-      title: 'Financial Command Center',
+      title: 'Admin Finance',
       description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
       views: ['admin'],
+      module: 'finance',
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
     },
-
     invoices: {
-      title: 'Invoices',
-      description: 'Modern invoice list, filters, search, payment links, mark-paid actions, client invoice view, and payment status.',
+      title: 'Admin Invoices',
+      description: 'Modern invoice list, filters, search, payment links, mark-paid actions, and payment status.',
       views: ['admin'],
+      module: 'invoices',
       targets: ['#admin-invoices', '[data-admin-invoices]'],
     },
-    'customer-status': {
-      title: 'Customer Status',
-      description: 'Client-friendly request, quote, job, invoice/payment, and maintenance timeline status.',
-      views: ['admin', 'client'],
+    customers: {
+      title: 'Admin Customers',
+      description: 'Customer list, customer status, service history, and account follow-up for admins.',
+      views: ['admin'],
+      module: 'customers',
       targets: ['#customer-experience-center', '.customer-experience-suite'],
     },
     'worker-jobs': {
-      title: 'Worker Jobs',
+      title: 'My Jobs',
       description: 'Assigned jobs, status updates, reserved materials, notes, evidence status, and completion actions.',
-      views: ['admin', 'worker'],
+      views: ['worker'],
+      module: 'jobs',
       targets: ['#worker-jobs', '[data-worker-jobs]', '#worker-tools-upgrade'],
     },
     'worker-mobile': {
-      title: 'Worker Mobile',
+      title: 'Materials / Job Notes',
       description: 'Phone-first field cards for today’s jobs, start/progress/complete, materials, notes, and evidence.',
-      views: ['admin', 'worker'],
+      views: ['worker'],
+      module: 'materials',
       targets: ['#worker-mobile-field', '.worker-mobile-suite'],
     },
     'ai-troubleshooting': {
-      title: 'AI Technician',
+      title: 'AI Troubleshooting',
       description: 'OpenAI-powered field troubleshooting for equipment, error codes, symptoms, readings, and repair recommendations.',
-      views: ['admin', 'worker'],
+      views: ['worker'],
+      module: 'troubleshooter',
       targets: ['#worker-ai-troubleshooting', '[data-worker-ai-troubleshooting]', '.ai-troubleshooting-suite'],
     },
     'photo-docs': {
-      title: 'Photo Documentation',
-      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
-      views: ['admin', 'worker'],
+      title: 'Photos / Completion Evidence',
+      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and closeout status.',
+      views: ['worker'],
+      module: 'photos',
       targets: ['.photo-doc-suite'],
     },
     maintenance: {
-      title: 'Maintenance Plans',
+      title: 'Maintenance / Project Updates',
       description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
-      views: ['admin', 'client'],
+      views: ['client'],
+      module: 'project-updates',
       targets: ['.maintenance-suite'],
     },
-
     'ai-knowledge': {
       title: 'AI Knowledge Center',
       description: 'Admin review queue for AI-learned quote, material, labor, and troubleshooting knowledge.',
       views: ['admin'],
+      module: 'ai-tools',
       targets: ['#ai-knowledge-center', '[data-ai-knowledge-center]', '.ai-knowledge-suite'],
     },
     'roles-users': {
-      title: 'Roles & Users',
+      title: 'Admin Settings',
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
       views: ['admin'],
+      module: 'settings',
       targets: ['#admin-access', '[data-admin-access-workspace]'],
     },
-    'roles-users': {
-      title: 'Roles & Users',
-      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
-      views: ['admin'],
-      targets: ['#admin-access', '[data-admin-access-workspace]'],
-    },
-    'roles-users': {
-      title: 'Roles & Users',
-      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
-      views: ['admin'],
-      targets: ['#admin-access', '[data-admin-access-workspace]'],
-    },
-    maintenance: {
-      title: 'Maintenance Plans',
-      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
-      views: ['admin', 'client'],
-      targets: ['.maintenance-suite'],
-    },
-    'roles-users': {
-      title: 'Roles & Users',
-      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
-      views: ['admin'],
-      targets: ['#admin-access', '[data-admin-access-workspace]'],
-    },
-    'roles-users': {
-      title: 'Roles & Users',
-      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
-      views: ['admin'],
-      targets: ['#admin-access', '[data-admin-access-workspace]'],
-    },
-    maintenance: {
-      title: 'Maintenance Plans',
-      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
-      views: ['admin', 'client'],
-      targets: ['.maintenance-suite'],
-    },
-    'roles-users': {
-      title: 'Roles & Users',
-      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
-      views: ['admin'],
-      targets: ['#admin-access', '[data-admin-access-workspace]'],
-    },
-    'photo-docs': {
-      title: 'Photo Documentation',
-      description: 'Before, progress, after, completion notes, evidence checklist, upload hooks, and admin review status.',
-      targets: ['.photo-doc-suite'],
-    },
-    maintenance: {
-      title: 'Maintenance Plans',
-      description: 'Recurring property care, HVAC, plumbing, electrical, frequency, due dates, and plan status.',
-      targets: ['.maintenance-suite'],
-    },
-    'roles-users': {
-      title: 'Roles & Users',
-      description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
-      targets: ['#admin-access', '[data-admin-access-workspace]'],
-    },
-
     deployment: {
-      title: 'Deployment and Readiness',
+      title: 'Admin System Readiness',
       description: 'Deployment and workflow health, API route coverage, environment checklist, audit commands, and Netlify function notes.',
       views: ['admin'],
+      module: 'readiness',
       targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite'],
     },
   };
+
 
   window.TASidebarWorkspaceRoutes = workspaces;
 
   const workspaceAliases = {
     quotes: 'estimate-review',
     requests: 'work-orders',
+    jobs: 'work-orders',
     workers: 'worker-jobs',
     settings: 'roles-users',
+    'customer-status': 'customers',
   };
 
   const labelWorkspace = new Map([
@@ -200,13 +168,16 @@
     ['quotes', 'client-quotes'],
     ['client invoices', 'client-invoices'],
     ['scheduling', 'scheduling'],
+    ['schedule / route', 'scheduling'],
     ['finance center', 'finance'],
     ['invoices', 'invoices'],
-    ['customer status', 'customer-status'],
+    ['customers', 'customers'],
+    ['customer status', 'customers'],
     ['worker jobs', 'worker-jobs'],
     ['worker mobile', 'worker-mobile'],
     ['ai troubleshooting', 'ai-troubleshooting'],
     ['photo docs', 'photo-docs'],
+    ['project updates', 'maintenance'],
     ['maintenance plans', 'maintenance'],
     ['roles & users', 'roles-users'],
     ['deployment health', 'deployment'],
@@ -249,13 +220,11 @@
     header = document.createElement('section');
     header.className = 'sidebar-workspace-header';
     header.dataset.sidebarWorkspaceHeader = 'true';
-    header.innerHTML = '<h2>Overview</h2><p>Quick business snapshot and daily attention items.</p><p class="session-status" data-sidebar-missing-module-status hidden></p>';
+    header.innerHTML = '<h2>Overview</h2><p>Role-specific dashboard home.</p><p class="session-status" data-sidebar-missing-module-status hidden></p>';
 
-    const shell = document.querySelector('.dashboard-workspace-v2') || root;
-    const firstContent = Array.from(shell.children).find((child) => !child.matches('.dashboard-mobile-nav-toggle, .dashboard-sidebar-backdrop, .dashboard-sidebar-v2, .mobile-quick-action-bar'));
-    if (firstContent) shell.insertBefore(header, firstContent);
-    else shell.appendChild(header);
-
+    const firstContent = Array.from(root.children).find((child) => !child.matches('.dashboard-mobile-nav-toggle, .dashboard-sidebar-backdrop, .dashboard-sidebar-v2, .mobile-quick-action-bar'));
+    if (firstContent) root.insertBefore(header, firstContent);
+    else root.appendChild(header);
     return header;
   };
 
@@ -266,8 +235,33 @@
   const visibleTargetsFor = (workspace) => {
     const config = workspaces[workspace];
     if (!config) return [];
+    const view = currentView();
+    if (config.views?.length && !config.views.includes(view)) return [];
     return config.targets.flatMap((selector) => Array.from(document.querySelectorAll(selector)));
   };
+
+  const setActiveDashboardModule = (workspace) => {
+    const config = workspaces[workspace] || workspaces.overview;
+    const view = currentView();
+    const module = config.module || workspace || 'home';
+    document.body.dataset.dashboardModule = module;
+    document.documentElement.dataset.dashboardModule = module;
+    document.body.dataset.currentDashboardModule = module;
+    document.documentElement.dataset.currentDashboardModule = module;
+
+    const activeTargets = new Set(visibleTargetsFor(workspace));
+    root.querySelectorAll('[data-dashboard-section], [data-main-dashboard-actions]').forEach((section) => {
+      const sectionViews = (section.dataset.views || '').split(/\s+/).filter(Boolean);
+      const allowedForView = !sectionViews.length || sectionViews.includes(view);
+      const active = allowedForView && activeTargets.has(section);
+      section.hidden = !active;
+      section.dataset.dashboardActiveSection = String(active);
+      section.setAttribute('aria-hidden', active ? 'false' : 'true');
+    });
+
+    window.dispatchEvent(new CustomEvent('ta-dashboard-module-change', { detail: { view, module, workspace } }));
+  };
+
 
   const actionExists = (action) => {
     if (action === 'client-profile') return Boolean(document.querySelector('[data-client-profile-shortcut], [data-client-profile]'));
@@ -329,7 +323,9 @@
     window.taSyncSidebarVisibility?.();
 
     document.body.dataset.sidebarWorkspace = workspace;
+    document.documentElement.dataset.sidebarWorkspace = workspace;
     setActiveButton(workspace);
+    setActiveDashboardModule(workspace);
 
     const header = ensureHeader();
     header.querySelector('h2').textContent = workspaces[workspace].title;
@@ -414,4 +410,6 @@
   } catch {}
 
   window.taSetSidebarWorkspace = setWorkspace;
+  window.taSetDashboardModule = setWorkspace;
+  window.taDashboardModuleRoutes = workspaces;
 })();

@@ -20,7 +20,7 @@ test('dashboard role switching persists selected view and shows locked fallback 
   assert.match(bootstrap, /persistDashboardView\(nextView\)/);
   assert.match(bootstrap, /data-mobile-clean-locked[\s\S]*Your account cannot open/);
   assert.match(bootstrap, /console\.log\(`Switching view: \${viewLabel}`\)/);
-  assert.match(bootstrap, /applySidebarWorkspaceForView[\s\S]*mobileWorkspaceForView[\s\S]*work-orders[\s\S]*client-requests[\s\S]*worker-jobs/);
+  assert.match(bootstrap, /applySidebarWorkspaceForView[\s\S]*mobileWorkspaceForView[\s\S]*overview/);
   assert.match(bootstrap, /pointerup[\s\S]*touchend/);
   assert.match(bootstrap, /console\.error\('Failed to switch dashboard view\.'/);
 });

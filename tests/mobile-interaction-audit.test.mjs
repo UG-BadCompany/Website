@@ -16,7 +16,7 @@ test('view switcher and fab have touch-safe activation handlers', async () => {
   const mobileJs = await readText('public/assets/mobile-dashboard-ux.js');
   assert.match(bootstrap, /bindTapOnce[\s\S]*addEventListener\('pointerup'[\s\S]*addEventListener\('touchend'[\s\S]*addEventListener\('click'[\s\S]*data-view-button/);
   assert.match(bootstrap, /console\.log\(`Switching view: \$\{viewLabel\}`\)/);
-  assert.match(bootstrap, /mobileWorkspaceForView[\s\S]*admin:\s*'work-orders'[\s\S]*client:\s*'client-requests'[\s\S]*worker:\s*'worker-jobs'/);
+  assert.match(bootstrap, /mobileWorkspaceForView[\s\S]*admin:\s*'overview'[\s\S]*client:\s*'overview'[\s\S]*worker:\s*'overview'/);
   assert.match(mobileJs, /bindTapOnce[\s\S]*addEventListener\('pointerup'[\s\S]*addEventListener\('touchend'[\s\S]*addEventListener\('click'[\s\S]*data-mobile-fab-action/);
 });
 

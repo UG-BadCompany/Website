@@ -43,7 +43,7 @@ if (/<span id="finance-command-center" class="dashboard-anchor-alias"/.test(dash
 if (!/module-completion-2026\.css/.test(dashboard)) fail('Dashboard must include Phase 56 module completion polish CSS.');
 
 const workspaceKeys = [...phase34.matchAll(/^    ['"]?([a-z-]+)['"]?: \{/gm)].map((match) => match[1]);
-for (const required of ['overview', 'estimate-review', 'work-orders', 'client-requests', 'client-quotes', 'client-invoices', 'scheduling', 'finance', 'invoices', 'customer-status', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
+for (const required of ['overview', 'estimate-review', 'work-orders', 'client-requests', 'client-quotes', 'client-invoices', 'scheduling', 'finance', 'invoices', 'customers', 'worker-jobs', 'worker-mobile', 'ai-troubleshooting', 'photo-docs', 'maintenance', 'roles-users', 'deployment']) {
   if (!workspaceKeys.includes(required)) fail(`Phase 34 router missing workspace key: ${required}.`);
 }
 

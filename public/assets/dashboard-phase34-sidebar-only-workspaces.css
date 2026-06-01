@@ -20,7 +20,8 @@ body[data-sidebar-workspace="client-invoices"] .dashboard-workspace-v2 [data-sid
 body[data-sidebar-workspace="scheduling"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="scheduling"],
 body[data-sidebar-workspace="finance"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="finance"],
 body[data-sidebar-workspace="invoices"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="invoices"],
-body[data-sidebar-workspace="customer-status"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="customer-status"],
+body[data-sidebar-workspace="customer-status"] [data-dashboard-root] [data-sidebar-workspace-section~="customers"],
+body[data-sidebar-workspace="customers"] [data-dashboard-root] [data-sidebar-workspace-section~="customers"],
 body[data-sidebar-workspace="worker-jobs"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="worker-jobs"],
 body[data-sidebar-workspace="workers"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="worker-jobs"],
 body[data-sidebar-workspace="worker-mobile"] .dashboard-workspace-v2 [data-sidebar-workspace-section~="worker-mobile"],
@@ -61,4 +62,23 @@ body[data-sidebar-workspace="deployment"] .dashboard-workspace-v2 [data-sidebar-
 
 .sidebar-nav-link[aria-current="true"] small {
   color: #431407 !important;
+}
+/* Phase 60: true app-module guard. The active dashboard module is the single source of truth. */
+body[data-dashboard-module] [data-dashboard-root] [data-dashboard-section],
+body[data-dashboard-module] [data-dashboard-root] [data-main-dashboard-actions] {
+  display: none !important;
+}
+
+body[data-dashboard-module] [data-dashboard-root] [data-dashboard-active-section="true"] {
+  display: block !important;
+}
+
+body[data-dashboard-module]:not([data-dashboard-module="home"]) [data-dashboard-root] [data-role-hero],
+body[data-dashboard-module]:not([data-dashboard-module="home"]) [data-dashboard-root] [data-mobile-clean-dashboard] {
+  display: none !important;
+}
+
+body[data-dashboard-module="home"] [data-dashboard-root] [data-role-hero][data-role-active="true"],
+body[data-dashboard-module="home"] [data-dashboard-root] [data-mobile-clean-dashboard] {
+  display: block !important;
 }

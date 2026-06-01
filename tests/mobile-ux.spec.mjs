@@ -72,7 +72,7 @@ test('mobile sidebar opens/closes and every sidebar item remains tappable', asyn
   assert.match(sidebar, /sidebarBackdrop|data-sidebar-backdrop/, 'sidebar should create a backdrop that closes the drawer');
   assert.match(sidebar, /mobileQuickActions[\s\S]*Requests[\s\S]*Quotes[\s\S]*Inventory|mobileQuickActions[\s\S]*Today[\s\S]*Troubleshoot[\s\S]*Complete/, 'sidebar should define role-aware quick actions including Troubleshoot');
   assert.match(css, /dashboard-sidebar-v2[\s\S]*position:\s*fixed/, 'sidebar should become a fixed mobile drawer');
-  for (const label of ['Scheduling', 'Worker Mobile', 'AI Troubleshooting', 'Photo Docs', 'Maintenance Plans', 'Deployment Health', 'Inventory']) {
+  for (const label of ['Scheduling', 'Schedule / Route', 'Worker Mobile', 'AI Troubleshooting', 'Photo Docs', 'Project Updates', 'Deployment Health', 'Inventory']) {
     assert.ok(sidebar.includes(label), `sidebar should keep ${label} as a tappable item`);
   }
 });
@@ -95,7 +95,7 @@ test('AI troubleshooting is mobile-ready for field workers', async () => {
   const sidebar = await readText('public/assets/dashboard-phase30-sidebar.js');
   const bootstrap = await readText('public/dashboard/modules/dashboard/bootstrap.js');
   const css = await readText('public/assets/mobile-field-ux.css');
-  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting[\s\S]*views: \['admin', 'worker'\]/, 'mobile quick actions should include Troubleshoot for admin and worker');
+  assert.match(sidebar, /Troubleshoot[\s\S]*ai-troubleshooting[\s\S]*#worker-ai-troubleshooting[\s\S]*views: \['worker'\]/, 'mobile quick actions should keep Troubleshoot worker-only');
   assert.doesNotMatch(html, /id="worker-ai-troubleshooting"[^>]*data-views="client/, 'AI troubleshooting should not be visible to client view');
   for (const field of ['name="systemType"', 'name="component"', 'name="make"', 'name="model"', 'name="issue"', 'name="errorCode"', 'name="readings"', 'name="checkedAlready"', 'name="urgency"', 'name="workOrderId"']) {
     assert.match(html, new RegExp(field), `AI troubleshooting field ${field} should exist`);

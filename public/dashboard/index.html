@@ -1977,7 +1977,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
             <a class="btn btn-primary" href="#admin-quotes-workspace" data-mobile-workspace-link="quotes">New Estimate</a>
             <a class="btn btn-soft" href="#admin-requests" data-mobile-workspace-link="work-orders">New Work Order</a>
             <a class="btn btn-soft" href="#smart-schedule-suite" data-mobile-workspace-link="scheduling">Schedule Job</a>
-            <a class="btn btn-soft" href="#customer-experience-center" data-mobile-workspace-link="customer-status">Add Customer</a>
+            <a class="btn btn-soft" href="#customer-experience-center" data-mobile-workspace-link="customers">Add Customer</a>
             <a class="btn btn-soft" href="/inventory/">Inventory</a>
             <a class="btn btn-soft" href="#admin-activity" data-mobile-workspace-link="activity">Reports</a>
           </div>
@@ -2047,23 +2047,6 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       </div>
     </section>
 
-    <section class="mobile-clean-dashboard" aria-label="Mobile dashboard summary" data-mobile-clean-dashboard>
-      <div class="mobile-section-heading"><span data-mobile-clean-eyebrow>Dashboard</span><strong data-mobile-clean-title>Today at a glance</strong></div>
-      <p data-mobile-clean-description>Role-aware summary cards for the selected workspace. Use the bottom nav, More sheet, or plus button for actions.</p>
-      <div class="mobile-clean-grid" aria-label="Mobile role summary cards">
-        <article><span>Today&apos;s jobs</span><strong data-mobile-clean-metric="jobs">0</strong><small data-mobile-clean-copy="jobs">Active and assigned work</small></article>
-        <article><span>Open requests</span><strong data-mobile-clean-metric="requests">0</strong><small data-mobile-clean-copy="requests">New client intake</small></article>
-        <article><span>Pending quotes</span><strong data-mobile-clean-metric="quotes">0</strong><small data-mobile-clean-copy="quotes">Estimates needing action</small></article>
-        <article><span>Unpaid invoices</span><strong data-mobile-clean-metric="invoices">0</strong><small data-mobile-clean-copy="invoices">Payment follow-up</small></article>
-        <article><span>Low inventory alerts</span><strong data-mobile-clean-metric="inventory">0</strong><small data-mobile-clean-copy="inventory">Stock and reservations</small></article>
-        <article><span>Recent activity</span><strong data-mobile-clean-metric="activity">Live</strong><small data-mobile-clean-copy="activity">Latest project updates</small></article>
-      </div>
-      <div class="mobile-clean-locked" data-mobile-clean-locked hidden role="status">
-        <strong>Workspace locked</strong>
-        <p>Your account does not have permission to open this view. Choose an available workspace or contact an administrator.</p>
-      </div>
-    </section>
-
     <section class="admin-command main-command-shortcuts executive-suite" id="executive-overview" aria-label="Main dashboard command center" data-main-dashboard-actions data-overview-workspace hidden>
       <div class="admin-command-header">
         <span class="eyebrow" data-main-command-eyebrow>Command center</span>
@@ -2091,7 +2074,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
         <button class="btn btn-soft" type="button" data-client-profile-shortcut data-main-action-views="client">Profile</button>
         <a class="btn btn-primary" href="#worker-jobs" data-main-action-views="worker">Assigned Jobs</a>
         <a class="btn btn-soft" href="#worker-mobile-field" data-main-action-views="worker">Worker Mobile</a>
-        <a class="btn btn-soft" href="#worker-ai-troubleshooting" data-main-action-views="admin worker">AI Troubleshooting</a>
+        <a class="btn btn-soft" href="#worker-ai-troubleshooting" data-main-action-views="worker">AI Troubleshooting</a>
         <a class="btn btn-soft" href="#worker-profile" data-main-action-views="worker">Profile</a>
       </div>
 
@@ -2321,7 +2304,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </div>
 
 
-    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="client worker">
+    <section class="grid" aria-label="Dashboard summary cards" data-dashboard-section data-views="client" hidden>
       <article class="card"><strong>Open Requests</strong><div class="metric" data-open-requests-metric>0</div><p>Client-created job requests will appear here first.</p></article>
       <article class="card"><strong>Quotes Waiting</strong><div class="metric" data-quotes-metric>0</div><p>Quote review, accept, decline, and change requests will live here.</p></article>
       <article class="card"><strong>Properties</strong><div class="metric" data-properties-metric>0</div><p>Client properties connected to submitted requests will appear here.</p></article>
@@ -2612,7 +2595,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div class="client-quote-list" data-client-invoice-list></div>
     </section>
 
-    <section class="card customer-experience-suite phase54-workspace" id="customer-experience-center" data-dashboard-section data-views="admin client" hidden>
+    <section class="card customer-experience-suite phase54-workspace" id="customer-experience-center" data-dashboard-section data-views="admin" hidden>
       <strong>Customer Status Center</strong>
       <p>Client-facing request, quote, invoice, scheduled work, completion, and maintenance status in one workspace.</p>
       <p class="session-status" data-customer-status-workspace-status role="status" aria-live="polite">Customer status workspace ready.</p>
@@ -2625,7 +2608,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div class="client-quote-actions"><button class="btn btn-soft" type="button" data-customer-status-refresh>Refresh customer status summary</button></div>
     </section>
 
-    <section class="card smart-schedule-suite phase54-workspace" id="smart-schedule-suite" data-dashboard-section data-views="admin worker" hidden>
+    <section class="card smart-schedule-suite phase54-workspace" id="smart-schedule-suite" data-dashboard-section data-views="admin" hidden>
       <strong>Scheduling &amp; Dispatch</strong>
       <p>Schedule board for upcoming jobs, unscheduled accepted work, assigned workers, dispatch notes, city/area, priority, and status.</p>
       <p class="session-status" data-schedule-status role="status" aria-live="polite">Loading schedule board…</p>
@@ -2647,7 +2630,17 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       </form>
     </section>
 
-    <section class="card worker-mobile-suite phase54-workspace" id="worker-mobile-field" data-dashboard-section data-views="worker admin" hidden>
+    <section class="card worker-route-suite phase54-workspace" id="worker-route-suite" data-dashboard-section data-views="worker" hidden>
+      <strong>Schedule / Route</strong>
+      <p>Worker-safe route view for today's assigned jobs, dispatch notes, materials to bring, and access reminders.</p>
+      <p class="session-status" role="status" aria-live="polite">Open My Jobs for live assignments and route details.</p>
+      <div class="phase54-grid">
+        <article class="phase54-card"><span class="phase54-badge">Today</span><p>Review assigned jobs, target windows, city/area, and access notes before starting the route.</p></article>
+        <article class="phase54-card"><span class="phase54-badge">Dispatch</span><p>Use job notes and AI troubleshooting modules for safe field updates.</p></article>
+      </div>
+    </section>
+
+    <section class="card worker-mobile-suite phase54-workspace" id="worker-mobile-field" data-dashboard-section data-views="worker" hidden>
       <strong>Worker Mobile Field Mode</strong>
       <p>Mobile-friendly cards for today's jobs, status changes, notes, reserved materials, usage, returns, and completion.</p>
       <p class="session-status" data-worker-mobile-status role="status" aria-live="polite">Loading mobile field jobs…</p>
@@ -2655,7 +2648,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
 
-    <section class="card worker-ai-troubleshooting-suite ai-troubleshooting-suite phase54-workspace" id="worker-ai-troubleshooting" data-worker-ai-troubleshooting data-dashboard-section data-views="worker admin" hidden>
+    <section class="card worker-ai-troubleshooting-suite ai-troubleshooting-suite phase54-workspace" id="worker-ai-troubleshooting" data-worker-ai-troubleshooting data-dashboard-section data-views="worker" hidden>
       <strong>AI Troubleshooting Assistant</strong>
       <p>Safety-first field assistant for equipment details, symptoms, error codes, readings, and practical next steps workers can attach to a job.</p>
       <p class="session-status" data-ai-troubleshooting-status role="status" aria-live="polite">Enter the system, issue, readings, and safety conditions to generate a troubleshooting plan.</p>
@@ -2734,7 +2727,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div class="phase54-grid ai-troubleshooting-result-grid" data-ai-troubleshooting-results></div>
     </section>
 
-    <section class="card photo-doc-suite phase54-workspace" data-dashboard-section data-views="worker admin" hidden>
+    <section class="card photo-doc-suite phase54-workspace" id="worker-photo-docs" data-dashboard-section data-views="worker" hidden>
       <strong>Photo Docs &amp; Completion Evidence</strong>
       <p>Track before, progress, and after documentation, completion notes, evidence checklist, and admin review status.</p>
       <p class="session-status" data-photo-doc-status role="status" aria-live="polite">Choose a job to manage evidence.</p>
@@ -2754,7 +2747,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div class="phase54-list" data-photo-doc-list></div>
     </section>
 
-    <section class="card maintenance-suite phase54-workspace" data-dashboard-section data-views="admin client" hidden>
+    <section class="card maintenance-suite phase54-workspace" id="client-project-updates" data-dashboard-section data-views="client" hidden>
       <strong>Maintenance Plans</strong>
       <p>Recurring HVAC, plumbing, electrical, seasonal, and property-care plans tied to client properties and next due dates.</p>
       <p class="session-status" data-maintenance-status role="status" aria-live="polite">Loading maintenance plans…</p>
@@ -2802,7 +2795,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
 
-    <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker admin" hidden>
+    <section class="card worker-jobs" id="worker-jobs" data-worker-jobs data-dashboard-section data-views="worker" hidden>
       <strong>Assigned jobs</strong>
       <p>Workers can see assigned jobs, reserved materials, access details, schedule notes, completion evidence, and mark work orders complete.</p>
       <p class="session-status" data-worker-jobs-status role="status" aria-live="polite">Loading assigned jobs…</p>
@@ -2830,8 +2823,8 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
     <section class="tools" aria-label="Role based dashboard tools">
-      <article class="card" data-dashboard-section data-views="worker"><strong>Worker tools</strong><p>Visible to workers and admins.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
-      <article class="card" data-dashboard-section data-views="admin"><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
+      <article class="card" data-dashboard-section data-views="worker" hidden><strong>Worker tools</strong><p>Visible to workers.</p><ul class="tool-list"><li>Assigned jobs</li><li>Job notes and access details</li><li>Task checklist</li><li>Before/after photo uploads</li></ul></article>
+      <article class="card" data-dashboard-section data-views="admin" hidden><strong>Admin tools</strong><p>Visible only to admins.</p><ul class="tool-list"><li>All client requests</li><li>Quote builder and PDF sending</li><li>Worker assignments</li><li>Invoices, payments, and settings</li></ul></article>
     </section>
   <div hidden>data-main-action-views="admin"</div>
 <div hidden>data-main-action-views="client"</div>

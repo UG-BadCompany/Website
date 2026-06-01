@@ -534,9 +534,9 @@
       let currentDashboardView = '';
       let availableDashboardViews = [];
       const mobileWorkspaceForView = {
-        admin: 'work-orders',
-        client: 'client-requests',
-        worker: 'worker-jobs',
+        admin: 'overview',
+        client: 'overview',
+        worker: 'overview',
       };
       const isMobileDashboardViewport = () => {
         try {
@@ -663,7 +663,12 @@
           const views = (section.dataset.views || '').split(' ').filter(Boolean);
           const requiredPermission = section.dataset.permission;
           const hasRequiredPermission = !requiredPermission || Boolean(user?.permissions?.[requiredPermission]);
-          section.hidden = !views.includes(view) || !hasRequiredPermission;
+          const viewAllowed = views.includes(view) && hasRequiredPermission;
+          section.dataset.dashboardViewAllowed = String(viewAllowed);
+          if (!viewAllowed || section.dataset.dashboardActiveSection !== 'true') {
+            section.hidden = true;
+            section.setAttribute('aria-hidden', 'true');
+          }
         });
       };
 

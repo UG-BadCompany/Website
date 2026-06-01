@@ -1401,3 +1401,17 @@ iframe {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Phase 60 mobile app guard: never allow inactive modules to stack under the selected module. */
+body[data-dashboard-module] [data-dashboard-root] [data-dashboard-section],
+body[data-dashboard-module] [data-dashboard-root] [data-main-dashboard-actions] {
+  display: none !important;
+}
+body[data-dashboard-module] [data-dashboard-root] [data-dashboard-active-section="true"] {
+  display: block !important;
+}
+body[data-dashboard-module]:not([data-dashboard-module="home"]) [data-dashboard-root] [data-role-hero],
+body[data-dashboard-module]:not([data-dashboard-module="home"]) [data-dashboard-root] [data-mobile-clean-dashboard] {
+  display: none !important;
+}

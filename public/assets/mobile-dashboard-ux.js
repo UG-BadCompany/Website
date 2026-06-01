@@ -178,7 +178,7 @@
       jobs: ['work-orders', '#admin-requests'],
       'work-orders': ['work-orders', '#admin-requests'],
       invoices: ['invoices', '#admin-invoices'],
-      customers: ['customer-status', '#customer-experience-center'],
+      customers: ['customers', '#customer-experience-center'],
       employees: ['roles-users', '#admin-access'],
       inventory: ['inventory', '#admin-inventory'],
       reports: ['activity', '#admin-activity'],
@@ -186,21 +186,20 @@
       'ai-tools': ['ai-knowledge', '#ai-knowledge-center'],
       'ai-knowledge': ['ai-knowledge', '#ai-knowledge-center'],
       schedule: ['scheduling', '#smart-schedule-suite'],
-      troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
     },
     client: {
       dashboard: ['overview', '#executive-overview'],
       requests: ['client-requests', '#client-requests'],
       quotes: ['client-quotes', '#client-quotes'],
       invoices: ['client-invoices', '#client-invoices'],
-      'project-updates': ['customer-status', '#customer-experience-center'],
+      'project-updates': ['maintenance', '#client-project-updates'],
       profile: ['client-profile-action', '[data-client-profile-shortcut]'],
       'request-estimate': ['client-requests', '#client-requests'],
     },
     worker: {
       dashboard: ['overview', '#executive-overview'],
       jobs: ['worker-jobs', '#worker-jobs'],
-      schedule: ['scheduling', '#smart-schedule-suite'],
+      schedule: ['scheduling', '#worker-route-suite'],
       materials: ['worker-mobile', '#worker-mobile-field'],
       photos: ['photo-docs', '.photo-doc-suite'],
       troubleshooter: ['ai-troubleshooting', '#worker-ai-troubleshooting'],
@@ -282,14 +281,14 @@
       admin: {
         estimate: () => openWorkspace('quotes', '#admin-quotes-workspace'),
         'work-order': () => openWorkspace('work-orders', '#admin-requests'),
-        customer: () => openWorkspace('customer-status', '#customer-experience-center'),
+        customer: () => openWorkspace('customers', '#customer-experience-center'),
         'inventory-entry': () => { window.location.href = '/inventory/'; return true; },
         'schedule-job': () => openWorkspace('scheduling', '#smart-schedule-suite'),
       },
       client: {
         request: () => openWorkspace('client-requests', '#client-requests'),
         'request-estimate': () => openWorkspace('client-requests', '#client-requests'),
-        support: () => openWorkspace('customer-status', '#customer-experience-center'),
+        support: () => openWorkspace('client-requests', '#client-requests'),
       },
       worker: {
         'start-job': () => openWorkspace('worker-jobs', '#worker-jobs') || openWorkspace('worker-mobile', '#worker-mobile-field'),
@@ -384,8 +383,12 @@
       button.dataset.mobileBottomBound = 'true';
       bindTapOnce(button, (event) => {
         const key = button.dataset.mobileBottomKey;
-        if (key === 'home') return;
         event.preventDefault();
+        if (key === 'home') {
+          if (typeof window.taSetSidebarWorkspace === 'function') window.taSetSidebarWorkspace('overview', { scroll: true });
+          else window.location.href = '/dashboard/';
+          return;
+        }
         routeMobileKey(key);
       });
     });

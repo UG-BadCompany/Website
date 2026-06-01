@@ -72,7 +72,8 @@ test('dashboard view helpers expose admin/owner all-view access and toggle real 
   const worker = new FakeElement('section', { dataset: { views: 'worker' } });
   hooks.applyDashboardSectionVisibility([admin, client, worker], 'client', { permissions: {} });
   assert.equal(admin.hidden, true);
-  assert.equal(client.hidden, false);
+  assert.equal(client.dataset.dashboardViewAllowed, 'true');
+  assert.equal(client.hidden, true, 'view-safe sections stay hidden until the active module router selects them');
   assert.equal(worker.hidden, true);
 
   const adminButton = new FakeElement('button', { dataset: { viewButton: 'admin' } });
@@ -136,7 +137,7 @@ test('mobile dashboard script opens FAB once and routes data-mobile-fab-action a
 
   menu.hidden = false;
   customer.dispatch('pointerup');
-  assert.deepEqual(workspaceCalls.at(-1)?.[0], 'customer-status');
+  assert.deepEqual(workspaceCalls.at(-1)?.[0], 'customers');
   assert.equal(menu.hidden, true);
 });
 
