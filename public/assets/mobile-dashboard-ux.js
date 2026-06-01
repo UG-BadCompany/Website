@@ -138,6 +138,7 @@
       jobs: ['customer-status', '#customer-experience-center'],
       dashboard: ['overview', '#executive-overview'],
       invoices: ['client-invoices', '#client-invoices'],
+      finance: ['client-invoices', '#client-invoices'],
       customers: ['customer-status', '#customer-experience-center'],
       schedule: ['maintenance', '.maintenance-suite'],
       profile: ['client-profile-action', '[data-client-profile-shortcut]'],
