@@ -97,6 +97,15 @@ const mapQuote = (quote) => ({
   title: quote.title,
   summary: quote.summary,
   amountCents: quote.amount_cents,
+  aiEnhanced: Boolean(quote.ai_enhanced || quote.ai_metadata?.aiEnhanced),
+  fallbackUsed: Boolean(quote.fallback_used || quote.ai_metadata?.fallbackUsed),
+  fallbackReason: quote.fallback_reason || quote.ai_metadata?.fallbackReason || '',
+  pricingConfidenceLevel: quote.pricing_confidence_level || quote.ai_metadata?.pricingConfidenceLevel || '',
+  rangeLowCents: quote.range_low_cents ?? quote.ai_metadata?.totalLowCents ?? null,
+  rangeHighCents: quote.range_high_cents ?? quote.ai_metadata?.totalHighCents ?? null,
+  fixedPriceRecommendationCents: quote.fixed_price_recommendation_cents ?? quote.ai_metadata?.fixedPriceRecommendationCents ?? null,
+  aiMetadata: quote.ai_metadata || {},
+  sourcingNotes: quote.sourcing_notes || quote.ai_metadata?.pricingConfidenceReason || '',
   createdAt: quote.created_at,
   updatedAt: quote.updated_at,
 });
@@ -228,7 +237,7 @@ const selectScopedAssignments = async (db, scope) => {
 const selectScopedQuotes = async (db, scope) => {
   if (scope === 'completed') {
     return await db.sql`
-      select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+      select id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at
       from quotes
       where job_request_id in (select id from job_requests where status = ${'completed'} order by coalesce(completion_date, updated_at::date, created_at::date) desc, created_at desc limit 75)
       order by created_at desc
@@ -237,7 +246,7 @@ const selectScopedQuotes = async (db, scope) => {
 
   if (scope === 'all') {
     return await db.sql`
-      select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+      select id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at
       from quotes
       where job_request_id in (select id from job_requests order by created_at desc limit 75)
       order by created_at desc
@@ -245,7 +254,7 @@ const selectScopedQuotes = async (db, scope) => {
   }
 
   return await db.sql`
-    select id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
+    select id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at
     from quotes
     where job_request_id in (select id from job_requests where status not in (${'completed'}, ${'cancelled'}) order by created_at desc limit 75)
     order by created_at desc

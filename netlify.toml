@@ -56,6 +56,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/admin/ai-knowledge"
+  to = "/.netlify/functions/admin-ai-knowledge"
+  status = 200
+
+[[redirects]]
   from = "/api/admin/job-requests"
   to = "/.netlify/functions/admin-job-requests"
   status = 200
@@ -142,6 +147,11 @@
   to = "/.netlify/functions/client-invoices"
   status = 200
 
+
+[[redirects]]
+  from = "/api/job-files"
+  to = "/.netlify/functions/job-files"
+  status = 200
 
 [[redirects]]
   from = "/api/worker/ai-troubleshooting"

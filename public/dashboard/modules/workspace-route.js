@@ -23,6 +23,7 @@
         window.taSetDashboardView('admin');
       }
       if (workspace === 'work-orders') revealDashboardSection('[data-phase3-workflow-suite]');
+      if (workspace === 'quotes') revealDashboardSection('[data-admin-quotes-workspace]');
       if (workspace === 'invoices') revealDashboardSection('[data-admin-invoices]');
       if (workspace === 'audit-activity') {
         revealDashboardSection('[data-admin-activity]');

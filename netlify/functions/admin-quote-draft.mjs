@@ -6,6 +6,7 @@ import {
   loadDatabase,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { runAiFirstQuote } from './ai-intelligence-engine.mjs';
 
 const JOB_PLAYBOOKS = [
   {
@@ -905,6 +906,91 @@ export default async (request) => {
     }
 
     const descriptionText = `${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
+
+    const aiFirstQuote = await runAiFirstQuote({
+      db,
+      jobRequest,
+      inventory,
+      companyRules: ['Admin approval required before sending.', 'Fallback is allowed only after OpenAI failure or invalid JSON after retry.'],
+    });
+    if (aiFirstQuote && aiFirstQuote.aiEnhanced && !aiFirstQuote.fallbackUsed) {
+      const aiMaterials = Array.isArray(aiFirstQuote.materialBreakdown) ? aiFirstQuote.materialBreakdown : [];
+      return json(200, {
+        ok: true,
+        draft: {
+          title: `${aiFirstQuote.jobClassification || jobRequest.service_type || 'Service'} quote draft`,
+          summary: aiFirstQuote.customerReadySummary,
+          amountCents: aiFirstQuote.fixedPriceRecommendationCents,
+          laborHours: aiFirstQuote.laborHoursHigh,
+          laborRateCents: Math.round(Number(aiFirstQuote.laborRateUsed || 0) * 100),
+          materials: aiMaterials.map((item) => ({
+            name: item.name || item.item || 'Material',
+            neededQty: Number(item.quantity ?? item.estimatedQuantity ?? 1) || 1,
+            unit: item.unit || 'each',
+            estimatedUnitCostCents: Number(item.unitCostCents ?? item.estimatedUnitCostCents ?? 0) || 0,
+            estimatedBuyCostCents: Number(item.totalCostCents ?? item.estimatedBuyCostCents ?? 0) || 0,
+            inStockQty: Number(item.quantityInStock ?? item.inStockQty ?? 0) || 0,
+            buyQty: Number(item.quantityToBuy ?? item.buyQty ?? item.quantity ?? 1) || 0,
+            source: 'openai_primary',
+            inventoryMatchHint: item.inventoryMatchHint || item.name || '',
+          })),
+          materialBreakdown: aiMaterials,
+          adminSourcingNotes: [
+            'AI PRIMARY ESTIMATE (OPENAI)',
+            `Model: ${aiFirstQuote.model}`,
+            `Prompt version: ${aiFirstQuote.promptVersion}`,
+            `Historical match used: ${aiFirstQuote.historicalMatchUsed ? 'yes' : 'no'}`,
+            `Recommended fixed price: $${(Number(aiFirstQuote.fixedPriceRecommendationCents || 0) / 100).toFixed(2)}`,
+            `Tight range: $${(Number(aiFirstQuote.totalLowCents || 0) / 100).toFixed(2)} - $${(Number(aiFirstQuote.totalHighCents || 0) / 100).toFixed(2)}`,
+            `Confidence: ${(aiFirstQuote.pricingConfidenceLevel || 'unknown').toUpperCase()} - ${aiFirstQuote.pricingConfidenceReason || 'No reason provided.'}`,
+            `Site visit needed to tighten price: ${aiFirstQuote.needsSiteVisitToTightenPrice || aiFirstQuote.siteVisitRecommended ? 'yes' : 'no'}`,
+            aiFirstQuote.rangeSpreadReason ? `Range spread reason: ${aiFirstQuote.rangeSpreadReason}` : '',
+            '',
+            'Information that would tighten price:',
+            ...(Array.isArray(aiFirstQuote.missingMeasurementsNeeded) && aiFirstQuote.missingMeasurementsNeeded.length ? aiFirstQuote.missingMeasurementsNeeded.map((item) => `- ${item}`) : ['- None listed; verify assumptions before sending.']),
+            '',
+            'Tight-price assumptions:',
+            ...(Array.isArray(aiFirstQuote.assumptionsUsedForTightPrice) && aiFirstQuote.assumptionsUsedForTightPrice.length ? aiFirstQuote.assumptionsUsedForTightPrice.map((item) => `- ${item}`) : ['- AI did not provide assumptions; admin review required.']),
+            '',
+            'Admin review checklist:',
+            ...(Array.isArray(aiFirstQuote.adminReviewChecklist) ? aiFirstQuote.adminReviewChecklist.map((item) => `- ${item}`) : []),
+          ].join('\n'),
+          adminSourcingLinks: [],
+          assumptions: [
+            ...(Array.isArray(aiFirstQuote.inventoryMatchHints) ? aiFirstQuote.inventoryMatchHints : []),
+            ...(Array.isArray(aiFirstQuote.supplierPricingRecommendations) ? aiFirstQuote.supplierPricingRecommendations : []),
+          ],
+          missingInfoQuestions: aiFirstQuote.missingInfoQuestions || [],
+          intakeContext: buildScopeSummary(jobRequest),
+          aiStructuredQuote: aiFirstQuote,
+          pricingConfidenceLevel: aiFirstQuote.pricingConfidenceLevel,
+          pricingConfidenceReason: aiFirstQuote.pricingConfidenceReason,
+          rangeSpreadReason: aiFirstQuote.rangeSpreadReason,
+          fixedPricePreferred: aiFirstQuote.fixedPricePreferred,
+          needsSiteVisitToTightenPrice: aiFirstQuote.needsSiteVisitToTightenPrice,
+          missingMeasurementsNeeded: aiFirstQuote.missingMeasurementsNeeded || [],
+          assumptionsUsedForTightPrice: aiFirstQuote.assumptionsUsedForTightPrice || [],
+          totalLowCents: aiFirstQuote.totalLowCents,
+          totalHighCents: aiFirstQuote.totalHighCents,
+          fixedPriceRecommendationCents: aiFirstQuote.fixedPriceRecommendationCents,
+          aiEnhanced: true,
+          fallbackUsed: false,
+          meta: {
+            model: aiFirstQuote.model,
+            promptVersion: aiFirstQuote.promptVersion,
+            retryCount: aiFirstQuote.retryCount,
+            historicalMatchUsed: aiFirstQuote.historicalMatchUsed,
+            confidenceScore: aiFirstQuote.confidenceScore,
+            pricingConfidenceLevel: aiFirstQuote.pricingConfidenceLevel,
+            pricingConfidenceReason: aiFirstQuote.pricingConfidenceReason,
+            rangeSpreadReason: aiFirstQuote.rangeSpreadReason,
+            quoteReady: aiFirstQuote.quoteReady,
+            siteVisitRecommended: aiFirstQuote.siteVisitRecommended,
+          },
+        },
+      });
+    }
+
     const playbook = choosePlaybook(descriptionText);
     const electricalFeet = extractElectricalFootage(descriptionText);
     const materialsFromPlaybook = (playbook?.materials || []).map((part) => {
@@ -1120,6 +1206,11 @@ export default async (request) => {
           aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
           openAiStrictOnly: OPENAI_STRICT_ONLY,
           strictRecoveryUsed,
+          aiEnhanced: false,
+          fallbackUsed: true,
+          fallbackReason: aiFirstQuote?.fallbackReason || 'OpenAI primary quote unavailable; emergency estimating pipeline used.',
+          fallbackSource: aiFirstQuote?.fallbackSource || 'company_knowledge_then_playbooks',
+          warning: aiFirstQuote?.warning || 'OpenAI primary quote unavailable. Admin review required.',
         },
       },
     });
@@ -1153,6 +1244,11 @@ export default async (request) => {
         materials: [],
         assumptions: ['Fallback mode used due to AI generation failure.'],
         missingInfoQuestions: ['Please provide Work Scope, Type of Work, and detailed project notes/photos.'],
+        aiEnhanced: false,
+        fallbackUsed: true,
+        fallbackReason: error?.message || 'OpenAI primary quote failed and emergency fallback catch path was used.',
+        fallbackSource: 'static_emergency_rules',
+        warning: 'Fallback quote draft used. Admin must verify all labor, materials, risks, exclusions, and price before sending.',
         intakeContext: {
           scope: clean(requestContext?.workScope, 120) || 'Not provided',
           type: clean(requestContext?.typeOfWork || requestContext?.serviceType, 160) || 'Not provided',

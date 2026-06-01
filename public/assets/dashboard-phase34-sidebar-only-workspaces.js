@@ -23,7 +23,7 @@
       title: 'Estimate Review',
       description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
       views: ['admin'],
-      targets: ['#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
+      targets: ['#admin-quotes-workspace', '[data-admin-quotes-workspace]', '#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
     },
     'work-orders': {
       title: 'Work Orders',
@@ -104,6 +104,13 @@
       views: ['admin', 'client'],
       targets: ['.maintenance-suite'],
     },
+
+    'ai-knowledge': {
+      title: 'AI Knowledge Center',
+      description: 'Admin review queue for AI-learned quote, material, labor, and troubleshooting knowledge.',
+      views: ['admin'],
+      targets: ['#ai-knowledge-center', '[data-ai-knowledge-center]', '.ai-knowledge-suite'],
+    },
     'roles-users': {
       title: 'Roles & Users',
       description: 'Access Manager role editor, user editor, permissions, search, create role, and create user.',
@@ -170,7 +177,7 @@
 
     deployment: {
       title: 'Deployment and Readiness',
-      description: 'API route coverage, environment checklist, audit commands, Netlify function notes, and workflow health.',
+      description: 'Deployment and workflow health, API route coverage, environment checklist, audit commands, and Netlify function notes.',
       views: ['admin'],
       targets: ['#system-readiness', '[data-phase8-readiness-suite]', '.readiness-suite'],
     },
