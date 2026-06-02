@@ -9,6 +9,7 @@ const steps = [
   ['node', ['scripts/audit-mobile-ux.mjs']],
   ['node', ['scripts/audit-module-completion.mjs']],
   ['node', ['scripts/audit-ui-consistency.mjs']],
+  ['node', ['scripts/audit-responsive-parity.mjs']],
   ['node', ['scripts/audit-phase24-photo-documentation.mjs']],
   ['node', ['scripts/audit-phase34-sidebar-only-workspaces.mjs']],
   ['node', ['scripts/audit-phase37-estimate-review-editing.mjs']],

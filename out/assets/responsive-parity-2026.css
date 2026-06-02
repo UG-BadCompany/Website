@@ -1,0 +1,152 @@
+/* Phase 16: Responsive Design Parity
+   Desktop and mobile are first-class citizens. This additive layer preserves
+   feature parity while letting each viewport use an appropriate layout.
+*/
+:root {
+  --parity-page-max: 1440px;
+  --parity-desk-gap: clamp(18px, 2vw, 32px);
+  --parity-mobile-gap: clamp(12px, 4vw, 18px);
+  --parity-touch-target: 44px;
+  --parity-card-radius: 24px;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+:where(.wrap, .section-wrap, .dashboard-workspace-v2, .portal-shell, .inventory-shell, main) {
+  min-width: 0;
+}
+
+:where(.card, .panel, .metric, .tool-list li, .admin-request, .client-request, .client-quote, .client-property, .worker-job, .admin-assignment, .inventory-card, .phase54-card, .worker-mobile-card, .inventory-mobile-card) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+:where(.btn, .button, button, input, select, textarea, a.btn) {
+  min-height: var(--parity-touch-target);
+}
+
+:where(img, svg, video, canvas, iframe) {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Desktop review standard: 1024px, 1280px, 1440px, 1920px. */
+@media (min-width: 1024px) {
+  :where(.wrap, .section-wrap, .dashboard-workspace-v2, .portal-shell, .inventory-shell) {
+    max-width: var(--parity-page-max);
+  }
+
+  :where(.dashboard-hero, .hero, .split, .split-panel, .dashboard-layout, .smart-intake-shell) {
+    grid-template-columns: minmax(0, 1.12fr) minmax(340px, .88fr);
+    gap: var(--parity-desk-gap);
+  }
+
+  :where(.grid, .card-grid, .metrics-grid, .gallery-grid, .steps-grid, .inventory-card-grid, .phase54-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--parity-desk-gap);
+    align-items: stretch;
+  }
+
+  :where(.tools, .admin-workspace-grid, .inventory-dashboard-grid, .inventory-ops-grid, .client-request-form-grid, .admin-request-grid, .admin-assignment-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--parity-desk-gap);
+  }
+
+  :where(.admin-request-list, .client-request-list, .client-quote-list, .client-property-list, .worker-job-list, .admin-assignment-list, .inventory-list, .phase54-list) {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: clamp(14px, 1.4vw, 22px);
+  }
+
+  :where(.dashboard-hero-actions, .client-request-form-actions, .client-quote-actions, .actions, .inventory-command-tabs, .phase54-command-list, .worker-mobile-actions, .mobile-field-actions, .mobile-material-actions, .mobile-evidence-actions) {
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  :where(table, .table, .admin-table, .inventory-table) {
+    width: 100%;
+    table-layout: auto;
+  }
+}
+
+/* Tablet review standard: 768px keeps feature parity with fewer columns. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :where(.grid, .card-grid, .metrics-grid, .gallery-grid, .steps-grid, .inventory-card-grid, .phase54-grid, .admin-request-list, .client-request-list, .client-quote-list, .client-property-list, .worker-job-list, .admin-assignment-list) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--parity-mobile-gap);
+  }
+
+  :where(.dashboard-hero, .hero, .split, .split-panel, .dashboard-layout, .tools, .smart-intake-shell) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile review standard: 320px, 375px, 390px, 414px. */
+@media (max-width: 767px) {
+  :where(.wrap, .section-wrap, .dashboard-workspace-v2, .portal-shell, .inventory-shell) {
+    width: min(100% - 24px, 100%) !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+  }
+
+  :where(.dashboard-hero, .hero, .split, .split-panel, .dashboard-layout, .tools, .smart-intake-shell, .wide-card, .client-request-form-grid, .admin-request-grid, .admin-assignment-grid, .inventory-dashboard-grid, .inventory-ops-grid, .inventory-card-grid, .phase54-grid, .grid, .card-grid, .metrics-grid, .gallery-grid, .steps-grid, .footer-grid, .trust-bar) {
+    grid-template-columns: 1fr !important;
+    gap: var(--parity-mobile-gap) !important;
+  }
+
+  :where(.admin-request-list, .client-request-list, .client-quote-list, .client-property-list, .worker-job-list, .admin-assignment-list, .inventory-list, .inventory-mini-list, .phase54-list) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  :where(.card, .panel, .hero-card, .wide-card, .contact-card, .form-card, .gallery-card, .admin-request, .client-request, .client-quote, .client-property, .worker-job, .admin-assignment, .inventory-card, .phase54-card) {
+    border-radius: var(--parity-card-radius) !important;
+    padding: clamp(16px, 4vw, 22px) !important;
+  }
+
+  :where(.button-row, .client-request-form-actions, .client-quote-actions, .actions, .inventory-command-tabs, .phase54-command-list, .worker-mobile-actions, .mobile-field-actions, .mobile-material-actions, .mobile-evidence-actions) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  :where(.btn, .button, button, a.btn, .button-row > *) {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  :where(input, select, textarea) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  :where(table, .table, .admin-table, .inventory-table) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 360px) {
+  :where(.wrap, .section-wrap, .dashboard-workspace-v2, .portal-shell, .inventory-shell) {
+    width: min(100% - 18px, 100%) !important;
+  }
+
+  :where(h1) {
+    font-size: clamp(2rem, 12vw, 2.55rem) !important;
+  }
+
+  :where(.brand, .nav-inner, .site-header) {
+    min-width: 0 !important;
+  }
+}

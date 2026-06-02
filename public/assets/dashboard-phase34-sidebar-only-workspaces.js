@@ -319,6 +319,10 @@
     if (!destination) return false;
     const anchor = ensureModuleTopAnchor(destination, workspace) || destination;
     const scrollToAnchor = (behavior = 'auto') => {
+      if (!window.scrollTo && anchor.scrollIntoView) {
+        anchor.scrollIntoView({ behavior, block: 'start' });
+        return;
+      }
       const stickyOffset = Math.max(0, Math.round(document.querySelector('.nav')?.getBoundingClientRect?.().height || 0));
       const viewportOffset = Math.max(0, Math.round(window.visualViewport?.offsetTop || 0));
       const top = Math.max(0, Math.round(anchor.getBoundingClientRect().top + window.pageYOffset - stickyOffset - viewportOffset - 8));
