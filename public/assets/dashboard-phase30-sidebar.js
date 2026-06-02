@@ -9,31 +9,32 @@
   if (!root) return;
 
   const navItems = [
-    { group: 'Daily work', label: 'Overview', workspace: 'overview', target: '.executive-suite', hint: 'Start', views: ['admin', 'client', 'worker'] },
-    { group: 'Daily work', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'AI quotes', views: ['admin'] },
-    { group: 'Daily work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs', views: ['admin'] },
-    { group: 'Daily work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch', views: ['admin'] },
-    { group: 'Field', label: 'Schedule / Route', workspace: 'scheduling', target: '#worker-route-suite', hint: 'Route', views: ['worker'] },
+    { group: 'Daily Work', label: 'Overview', workspace: 'overview', target: '.executive-suite', hint: 'Dashboard', views: ['admin', 'client', 'worker'] },
+    { group: 'Daily Work', label: 'Requests', workspace: 'work-orders', target: '[data-admin-inbox]', hint: 'Pipeline', views: ['admin'] },
+    { group: 'Daily Work', label: 'Work Orders', workspace: 'work-orders', target: '#admin-requests', hint: 'Jobs', views: ['admin'] },
+    { group: 'Daily Work', label: 'Scheduling', workspace: 'scheduling', target: '#smart-schedule-suite', hint: 'Dispatch', views: ['admin'] },
+    { group: 'Daily Work', label: 'Schedule / Route', workspace: 'scheduling', target: '#worker-route-suite', hint: 'Route', views: ['worker'] },
 
-    { group: 'Client', label: 'Requests', workspace: 'client-requests', target: '#client-requests', hint: 'Requests', views: ['client'] },
-    { group: 'Client', label: 'Quotes', workspace: 'client-quotes', target: '#client-quotes', hint: 'Quotes', views: ['client'] },
-    { group: 'Client', label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', hint: 'Payments', views: ['client'] },
-    { group: 'Client', label: 'Profile', action: 'client-profile', hint: 'Profile', views: ['client'] },
+    { group: 'Customers', label: 'Customers', workspace: 'customers', target: '#customer-experience-center', hint: 'CRM', views: ['admin'] },
+    { group: 'Customers', label: 'Requests', workspace: 'client-requests', target: '#client-requests', hint: 'Requests', views: ['client'] },
+    { group: 'Customers', label: 'Profile', action: 'client-profile', hint: 'Profile', views: ['client'] },
 
-    { group: 'Money', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs', views: ['admin'] },
-    { group: 'Money', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing', views: ['admin'] },
-    { group: 'Money', label: 'Customers', workspace: 'customers', target: '#customer-experience-center', hint: 'Customers', views: ['admin'] },
-
-    { group: 'Field', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field', views: ['worker'] },
-    { group: 'Field', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone', views: ['worker'] },
-    { group: 'Field', label: 'AI Troubleshooting', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', hint: 'AI Help', views: ['worker'] },
-    { group: 'Field', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof', views: ['worker'] },
+    { group: 'Finance', label: 'Estimate Review', workspace: 'estimate-review', target: '#estimate-review', hint: 'Estimates', views: ['admin'] },
+    { group: 'Finance', label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', hint: 'Billing', views: ['admin'] },
+    { group: 'Finance', label: 'Finance Center', workspace: 'finance', target: '.finance-suite', hint: 'KPIs', views: ['admin'] },
+    { group: 'Finance', label: 'Quotes', workspace: 'client-quotes', target: '#client-quotes', hint: 'Quotes', views: ['client'] },
+    { group: 'Finance', label: 'Invoices', workspace: 'client-invoices', target: '#client-invoices', hint: 'Payments', views: ['client'] },
 
     { group: 'Operations', label: 'Inventory', workspace: 'inventory', href: '/inventory/', hint: 'Stock', permission: 'canManageInventory', views: ['admin'] },
+    { group: 'Operations', label: 'Worker Jobs', workspace: 'worker-jobs', target: '#worker-jobs', hint: 'Field', views: ['worker'] },
+    { group: 'Operations', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Health', views: ['admin'] },
     { group: 'Operations', label: 'Project Updates', workspace: 'maintenance', target: '.maintenance-suite', hint: 'Updates', views: ['client'] },
-    { group: 'Operations', label: 'Roles & Users', workspace: 'roles-users', target: '#admin-access', hint: 'Access', views: ['admin'] },
+    { group: 'Operations', label: 'Worker Mobile', workspace: 'worker-mobile', target: '#worker-mobile-field', hint: 'Phone', views: ['worker'] },
+    { group: 'Operations', label: 'AI Troubleshooting', workspace: 'ai-troubleshooting', target: '#worker-ai-troubleshooting', hint: 'AI Help', views: ['worker'] },
+    { group: 'Operations', label: 'Photo Docs', workspace: 'photo-docs', target: '.photo-doc-suite', hint: 'Proof', views: ['worker'] },
 
-    { group: 'Dev', label: 'Deployment Health', workspace: 'deployment', target: '#system-readiness', hint: 'Workflow', views: ['admin'] },
+    { group: 'System', label: 'Settings', workspace: 'roles-users', target: '#admin-access', hint: 'Access', views: ['admin'] },
+    { group: 'System', label: 'Roles & Users', workspace: 'roles-users', target: '#admin-access', hint: 'Users', views: ['admin'] },
   ];
 
   const groupItems = () => navItems.reduce((groups, item) => {
@@ -44,7 +45,7 @@
 
   const mobileQuickActions = [
     { label: 'Requests', workspace: 'work-orders', target: '#admin-requests', views: ['admin'] },
-    { label: 'Quotes', workspace: 'estimate-review', target: '#estimate-review', views: ['admin'] },
+    { label: 'Quotes', workspace: 'estimate-review', target: '#admin-quotes-workspace', views: ['admin'] },
     { label: 'Jobs', workspace: 'work-orders', target: '#admin-requests', views: ['admin'] },
     { label: 'Invoices', workspace: 'invoices', target: '#admin-invoices', views: ['admin'] },
     { label: 'Stock', workspace: 'inventory', href: '/inventory/', views: ['admin'], permission: 'canManageInventory' },
