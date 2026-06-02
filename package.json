@@ -67,7 +67,8 @@
     "audit:phase55": "npm run build && node scripts/check-netlify-functions.mjs && node scripts/audit-dead-buttons.mjs && node scripts/audit-sidebar-workspaces.mjs && node scripts/audit-mobile-ux.mjs && npm run test:mobile-ux",
     "audit:phase56": "npm run build && node scripts/check-netlify-functions.mjs && node scripts/audit-dead-buttons.mjs && node scripts/audit-sidebar-workspaces.mjs && node scripts/audit-module-completion.mjs && node scripts/audit-ui-consistency.mjs && node scripts/audit-mobile-ux.mjs && npm run test:browser && npm run test:sidebar-workspaces && npm run test:mobile-ux && npm run test:module-completion",
     "audit:phase8": "node scripts/audit-phase8.cjs",
-    "audit:phase9": "node scripts/audit-phase9-routes.mjs"
+    "audit:phase9": "node scripts/audit-phase9-routes.mjs",
+    "audit:responsive-parity": "node scripts/audit-responsive-parity.mjs"
   },
   "engines": {
     "node": ">=20.12.2"
