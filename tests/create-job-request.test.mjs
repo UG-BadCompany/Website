@@ -71,7 +71,7 @@ test('normalizes strings and caps long public form fields', () => {
   assert.equal(normalized.name.length, 140);
   assert.equal(normalized.phone, '555-0100');
   assert.equal(normalized.email, 'test@example.com');
-  assert.equal(normalized.city, '');
+  assert.equal(normalized.city, 'Not provided');
   assert.equal(normalized.streetAddress.length, 240);
   assert.equal(normalized.service, 'Home repair');
   assert.equal(normalized.timeframe, 'Flexible');
@@ -79,21 +79,22 @@ test('normalizes strings and caps long public form fields', () => {
   assert.equal(normalized.botField, '');
 });
 
-test('requires the minimum fields needed to create a client account and job request', () => {
-  assert.equal(
-    validatePayload({ name: '', phone: '', email: '', city: '', streetAddress: '', service: '', description: '' }),
-    'Missing required fields: name, phone, email, city, streetAddress, service, description',
-  );
+test('does not require technical or contact fields before saving intake', () => {
+  const normalized = normalizePayload({});
+  assert.equal(validatePayload(normalized), null);
+  assert.equal(normalized.name, 'Customer');
+  assert.equal(normalized.service, 'General service request');
+  assert.equal(normalized.description, 'Customer submitted a request and needs follow-up. Technical details were not required.');
 });
 
 test('rejects invalid required email addresses', () => {
   assert.equal(
-    validatePayload({ name: 'A', phone: 'B', service: 'C', description: 'D', email: 'not-email', city: 'Mesa', streetAddress: '123 Main St' }),
+    validatePayload(normalizePayload({ name: 'A', phone: 'B', service: 'C', description: 'D', email: 'not-email', city: 'Mesa', streetAddress: '123 Main St' })),
     'Enter a valid email address.',
   );
 });
 
-test('returns validation errors before opening a database connection', async () => {
+test('invalid provided emails fail validation before opening a database connection', async () => {
   let openedDatabase = false;
   const handler = createJobRequestHandler({
     getDatabase: async () => {
@@ -102,7 +103,7 @@ test('returns validation errors before opening a database connection', async () 
     },
   });
 
-  const response = await readJson(await handler(request({ name: '', phone: '', service: '', description: '' })));
+  const response = await readJson(await handler(request({ email: 'not-email' })));
 
   assert.equal(response.status, 422);
   assert.equal(response.body.ok, false);
@@ -158,6 +159,8 @@ test('creates or updates a client account, property, job request, and audit even
   assert.equal(response.body.quoteId, 'quote-123');
   assert.equal(response.body.quoteStatus, 'draft');
   assert.equal(typeof response.body.estimateDraft.quoteReady, 'boolean');
+  assert.equal(response.body.intakeAnalysis.quoteCreationBlocked, false);
+  assert.equal(response.body.estimateDraft.informationCompletenessScore >= 25, true);
   assert.equal(response.body.message, 'Estimate request saved. Check your email for a confirmation and secure client portal link.');
   assert.deepEqual(sentEmails, [{
     to: 'jane@example.com',
@@ -175,7 +178,7 @@ test('creates or updates a client account, property, job request, and audit even
   assert.match(db.queries[7].text, /update job_requests/);
   assert.equal(db.queries[8].values[0], 'estimate_draft.created');
   assert.match(db.queries[9].text, /insert into auth_magic_links/);
-  assert.deepEqual(db.queries[4].values, [
+  assert.deepEqual(db.queries[4].values.slice(0, 10), [
     'client-123',
     'property-123',
     'Jane Customer',
@@ -187,6 +190,8 @@ test('creates or updates a client account, property, job request, and audit even
     'This week',
     'Please repair drywall near the garage.',
   ]);
+  assert.match(db.queries[4].text, /information_completeness_score/);
+  assert.equal(db.queries[4].values[11] >= 25, true);
 });
 
 

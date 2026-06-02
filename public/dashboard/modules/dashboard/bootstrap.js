@@ -2846,6 +2846,9 @@ Additional info from client: ${payload.additionalInfo}` : '';
         const address = [quote.streetAddress || quote.request?.streetAddress || '', quote.city || quote.request?.city || ''].filter(Boolean).join(', ') || 'Address not provided';
         const submitted = quote.submittedAt || quote.request?.createdAt || quote.createdAt || '';
         const amount = Number(quote.amountCents || quote.fixedPriceRecommendationCents || 0) > 0 ? formatMoney(quote.amountCents || quote.fixedPriceRecommendationCents || 0) : 'No estimate yet';
+        const complete = Number(quote.informationCompletenessScore || quote.confidenceScores?.overall || 0);
+        const missing = Array.isArray(quote.missingInformation) ? quote.missingInformation : [];
+        const lowWarning = complete && complete < 55 ? '<p class="session-status"><strong>Warning:</strong> Additional information recommended before final pricing. Continue Anyway remains available.</p>' : '';
         return `
           <article class="admin-request admin-quote-card" data-admin-quote-card="${escapeHtml(quote.id || '')}" data-admin-quote-status="${escapeHtml(quote.status || 'draft')}" data-admin-request-only="${quote.isRequestOnly ? 'true' : 'false'}">
             <span class="admin-request-badge">${escapeHtml(status)}</span>
@@ -2856,15 +2859,22 @@ Additional info from client: ${payload.additionalInfo}` : '';
               <span>Submitted ${escapeHtml(submitted ? formatDate(String(submitted).slice(0, 10)) : 'date unknown')}</span>
               <span>${escapeHtml(amount)}</span>
               <span>${escapeHtml(confidence)} confidence</span>
+              <span>${complete || '—'}% Complete</span>
               <span>${escapeHtml(range)}</span>
               <span>Req ${escapeHtml(String(requestId).slice(0, 8) || '—')}</span>
             </div>
             <p>${escapeHtml(quote.summary || quote.request?.description || 'Submitted estimate request needs review before a final quote is sent.')}</p>
+            ${lowWarning}
+            ${missing.length ? `<div class="admin-request-meta"><span>Missing Information: ${escapeHtml(missing.slice(0, 3).map((item) => typeof item === 'string' ? item : item.prompt || item.label || '').join(' • '))}</span></div>` : ''}
             <div class="client-quote-actions">
               <button class="btn btn-primary" type="button" data-admin-edit-quote="${escapeHtml(quote.id || '')}">Review/Edit</button>
-              <button class="btn btn-soft" type="button" data-admin-quote-ai-card="${escapeHtml(quote.id || '')}">AI Draft</button>
+              <button class="btn btn-soft" type="button" data-admin-request-info="${escapeHtml(quote.id || '')}">Request Information</button>
+              <button class="btn btn-soft" type="button" data-admin-quote-ai-card="${escapeHtml(quote.id || '')}">Generate AI Draft</button>
+              <button class="btn btn-soft" type="button" data-admin-create-manual-draft="${escapeHtml(quote.id || '')}">Create Manual Draft</button>
               <button class="btn btn-soft" type="button" data-admin-save-quote-card="${escapeHtml(quote.id || '')}">Save Draft</button>
               <button class="btn btn-soft" type="button" data-admin-send-quote="${escapeHtml(quote.id || '')}">Send to Client</button>
+              <button class="btn btn-soft" type="button" data-admin-continue-anyway="${escapeHtml(quote.id || '')}">Continue Anyway</button>
+              <button class="btn btn-soft" type="button" data-admin-recalculate-estimate="${escapeHtml(quote.id || '')}">Recalculate Estimate</button>
               ${quote.status === 'accepted' ? `<button class="btn btn-soft" type="button" data-admin-open-quote-work-order="${escapeHtml(requestId)}">Open Work Order</button>` : ''}
             </div>
           </article>`;
@@ -3088,11 +3098,20 @@ Additional info from client: ${payload.additionalInfo}` : '';
           const edit = event.target.closest('[data-admin-edit-quote]');
           const ai = event.target.closest('[data-admin-quote-ai-card]');
           const send = event.target.closest('[data-admin-send-quote]');
+          const manual = event.target.closest('[data-admin-create-manual-draft], [data-admin-continue-anyway]');
+          const requestInfo = event.target.closest('[data-admin-request-info]');
+          const recalculate = event.target.closest('[data-admin-recalculate-estimate]');
           const save = event.target.closest('[data-admin-save-quote-card]');
           const workOrder = event.target.closest('[data-admin-open-quote-work-order]');
           try {
             if (edit) return openAdminQuoteEditor(edit.dataset.adminEditQuote);
             if (ai) return openAdminQuoteEditor(ai.dataset.adminQuoteAiCard, { generateAi: true });
+            if (manual) return openAdminQuoteEditor(manual.dataset.adminCreateManualDraft || manual.dataset.adminContinueAnyway);
+            if (requestInfo || recalculate) {
+              const status = document.querySelector('[data-admin-quotes-status]');
+              if (status) status.textContent = `${requestInfo ? 'Request Information' : 'Recalculate Estimate'} selected. Admin can still generate AI draft, create manual draft, edit pricing, save, or send.`;
+              return;
+            }
             if (save) return openAdminQuoteEditor(save.dataset.adminSaveQuoteCard);
             if (send) return await sendAdminQuoteFromCard(send.dataset.adminSendQuote);
             if (workOrder) {

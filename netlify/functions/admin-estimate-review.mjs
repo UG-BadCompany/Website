@@ -6,6 +6,7 @@ import {
   loadDatabase,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 
 const parseMetadata = (metadata) => {
   if (!metadata) return {};
@@ -17,6 +18,52 @@ const parseMetadata = (metadata) => {
   }
 };
 
+
+
+const getStore = async (name) => {
+  const blobs = await import('@netlify/blobs').catch(() => null);
+  if (blobs?.getStore) return blobs.getStore(name);
+  return null;
+};
+
+const normalizeConfidenceScores = (metadata = {}) => {
+  const confidence = Number(metadata.confidence || metadata.confidenceScore || metadata.confidence_scores?.overall || 0);
+  const scores = metadata.confidenceScores || metadata.confidence_scores || {};
+  return {
+    overall: Number(scores.overall || confidence || 0),
+    labor: Number(scores.labor || scores.laborConfidence || confidence || 0),
+    material: Number(scores.material || scores.materialConfidence || confidence || 0),
+    scope: Number(scores.scope || scores.scopeConfidence || confidence || 0),
+  };
+};
+
+const normalizeOptionalQuestions = (metadata = {}) => {
+  const questions = metadata.optionalQuestions || metadata.missingInfoQuestions || metadata.questions_to_customer || metadata.missing_required_info || [];
+  return (Array.isArray(questions) ? questions : []).slice(0, 12).map((question) => typeof question === 'string'
+    ? { label: question, prompt: question, optional: true }
+    : { label: clean(question.label || question.name || 'Optional question', 160), prompt: clean(question.prompt || question.question || question.label || '', 500), optional: true });
+};
+
+const buildIntakeReview = (metadata = {}, request = {}) => {
+  const analyzed = metadata.intakeAnalysis || request.intakeAnalysis || analyzeEstimateIntake(request);
+  const confidenceScores = metadata.confidenceScores || analyzed.confidenceScores || normalizeConfidenceScores(metadata);
+  const completeness = Number(metadata.informationCompletenessScore || analyzed.informationCompletenessScore || confidenceScores.overall || 25);
+  return {
+    informationCompletenessScore: completeness,
+    confidenceScores,
+    missingInformation: metadata.missingInformation || analyzed.missingInformation || metadata.missing_required_info || [],
+    helpfulInformation: metadata.helpfulInformation || analyzed.helpfulInformation || [],
+    recommendedClarifications: metadata.recommendedClarifications || analyzed.recommendedClarifications || [],
+    optionalQuestions: normalizeOptionalQuestions({ ...metadata, optionalQuestions: metadata.optionalQuestions || analyzed.optionalQuestions }),
+    customerPreferences: metadata.customerPreferences || analyzed.customerPreferences || {},
+    photoIntelligence: metadata.photoIntelligence || analyzed.photoIntelligence || {},
+    aiRecommendations: metadata.aiRecommendations || analyzed.aiRecommendations || [],
+    quoteCreationBlocked: false,
+    manualEstimateModeAvailable: true,
+    adminOverrideAlwaysAvailable: true,
+    lowConfidenceWarning: completeness < 55 ? 'Additional information recommended before final pricing.' : '',
+  };
+};
 
 const ESTIMATE_REVIEW_STATUSES = ['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review'];
 const REQUEST_ONLY_REVIEW_STATUSES = ['new', 'needs_review', 'quote_in_progress'];
@@ -99,6 +146,18 @@ const buildInventoryMatches = ({ materialBreakdown = [], inventoryItems = [], re
 
 const mapDraft = (row, { inventoryItems = [], reservationRows = [] } = {}) => {
   const metadata = parseMetadata(row.estimate_metadata);
+  const intakeReview = buildIntakeReview(metadata, {
+    name: row.requester_name,
+    email: row.requester_email,
+    phone: row.requester_phone,
+    city: row.city,
+    streetAddress: row.street_address,
+    service: row.service_type,
+    workScope: row.work_scope,
+    workCategory: row.work_category,
+    timeframe: row.preferred_timeframe,
+    description: row.request_description,
+  });
   return {
     quoteId: row.quote_id || '',
     queueId: row.quote_id || `request:${row.job_request_id}`,
@@ -111,7 +170,20 @@ const mapDraft = (row, { inventoryItems = [], reservationRows = [] } = {}) => {
     summary: row.summary,
     amountCents: row.amount_cents,
     lowAmountCents: metadata.lowAmountCents || null,
-    confidence: metadata.confidence || null,
+    confidence: metadata.confidence || intakeReview.confidenceScores.overall || null,
+    informationCompletenessScore: intakeReview.informationCompletenessScore,
+    confidenceScores: intakeReview.confidenceScores,
+    missingInformation: intakeReview.missingInformation,
+    helpfulInformation: intakeReview.helpfulInformation,
+    recommendedClarifications: intakeReview.recommendedClarifications,
+    optionalQuestions: intakeReview.optionalQuestions,
+    customerPreferences: intakeReview.customerPreferences,
+    photoIntelligence: intakeReview.photoIntelligence,
+    aiRecommendations: intakeReview.aiRecommendations,
+    quoteCreationBlocked: false,
+    manualEstimateModeAvailable: true,
+    adminOverrideAlwaysAvailable: true,
+    lowConfidenceWarning: intakeReview.lowConfidenceWarning,
     quoteReady: Boolean(metadata.quoteReady),
     laborItems: metadata.laborItems || [],
     materials: metadata.materials || [],
@@ -145,6 +217,79 @@ const mapDraft = (row, { inventoryItems = [], reservationRows = [] } = {}) => {
     requestStatus: row.request_status,
     inventoryMatches: buildInventoryMatches({ materialBreakdown: normalizeMaterialBreakdown(metadata), inventoryItems, reservationRows, jobRequestId: row.job_request_id }),
   };
+};
+
+
+const mapBlobDraft = (record = {}) => {
+  const request = record.savedRequest || record.requestPayload || record.estimateDraft?.request || {};
+  const draft = record.estimateDraft || record.aiDraft || {};
+  const metadata = { ...draft, ...(record.intakeAnalysis ? { intakeAnalysis: record.intakeAnalysis } : {}) };
+  const intakeReview = buildIntakeReview(metadata, request);
+  const totalHigh = Number(draft.totals?.total_high || 0);
+  const totalLow = Number(draft.totals?.total_low || 0);
+  return {
+    quoteId: record.id || `request:${request.id || ''}`,
+    queueId: record.id || `request:${request.id || ''}`,
+    jobRequestId: request.id || '',
+    clientId: '',
+    status: 'needs_review',
+    reviewLabel: 'Needs Draft',
+    needsDraft: true,
+    title: draft.job_summary || `${request.service || 'Service'} estimate request`,
+    summary: draft.customer_facing_quote || request.description || 'Submitted estimate request needs admin review.',
+    amountCents: totalHigh ? Math.round(totalHigh * 100) : 0,
+    lowAmountCents: totalLow ? Math.round(totalLow * 100) : null,
+    confidence: intakeReview.confidenceScores.overall,
+    informationCompletenessScore: intakeReview.informationCompletenessScore,
+    confidenceScores: intakeReview.confidenceScores,
+    missingInformation: intakeReview.missingInformation,
+    helpfulInformation: intakeReview.helpfulInformation,
+    recommendedClarifications: intakeReview.recommendedClarifications,
+    optionalQuestions: intakeReview.optionalQuestions,
+    customerPreferences: intakeReview.customerPreferences,
+    photoIntelligence: intakeReview.photoIntelligence,
+    aiRecommendations: intakeReview.aiRecommendations,
+    quoteCreationBlocked: false,
+    manualEstimateModeAvailable: true,
+    adminOverrideAlwaysAvailable: true,
+    lowConfidenceWarning: intakeReview.lowConfidenceWarning,
+    quoteReady: Boolean(draft.quote_ready),
+    laborItems: draft.labor_items || [],
+    materials: draft.materials || [],
+    materialBreakdown: normalizeMaterialBreakdown({ materials: draft.materials || [] }),
+    missingInfoQuestions: draft.questions_to_customer || intakeReview.optionalQuestions.map((q) => q.prompt),
+    riskFlags: draft.risk_flags || [],
+    exclusions: draft.exclusions || [],
+    totals: draft.totals || {},
+    aiEnhanced: draft.source === 'openai-fast',
+    createdAt: record.createdAt || request.createdAt,
+    updatedAt: record.updatedAt || record.createdAt || request.createdAt,
+    requesterName: request.name,
+    requesterEmail: request.email,
+    requesterPhone: request.phone,
+    city: request.city,
+    streetAddress: request.streetAddress,
+    serviceType: request.service,
+    workScope: request.workScope,
+    workCategory: request.workCategory || draft.category,
+    preferredTimeframe: request.timeframe,
+    requestDescription: request.description,
+    requestStatus: request.status || 'request_saved_estimate_intake',
+    inventoryMatches: [],
+  };
+};
+
+const loadBlobDrafts = async (limit = 50) => {
+  const store = await getStore('estimate-drafts');
+  if (!store) return [];
+  const list = await store.list();
+  const drafts = [];
+  for (const blob of (list.blobs || []).slice(-limit).reverse()) {
+    try {
+      drafts.push(mapBlobDraft(await store.get(blob.key, { type: 'json' })));
+    } catch {}
+  }
+  return drafts;
 };
 
 const loadSession = async (db, sessionToken) => {
@@ -316,7 +461,9 @@ export default async (request) => {
         where status in ('reserved', 'partially_used')
         limit 500
       `;
-      const drafts = rows.map((row) => mapDraft(row, { inventoryItems, reservationRows }));
+      const databaseDrafts = rows.map((row) => mapDraft(row, { inventoryItems, reservationRows }));
+      const blobDrafts = await loadBlobDrafts(limit);
+      const drafts = [...databaseDrafts, ...blobDrafts].slice(0, limit);
       const readyCount = drafts.filter((draft) => Number(draft.amountCents || 0) > 0).length;
       const needsReviewCount = drafts.length - readyCount;
 

@@ -1,4 +1,5 @@
 // netlify/functions/job-requests.mjs
+import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 // Unified Request Estimate endpoint.
 // Public flow: Request Estimate -> /api/job-requests
 // This endpoint saves the request, creates the AI estimate draft, saves the draft, and returns both.
@@ -37,7 +38,7 @@ function normalizeRequest(body = {}) {
   return {
     id: makeId('req'),
     createdAt: new Date().toISOString(),
-    status: 'new_estimate_draft_created',
+    status: 'request_saved_estimate_intake',
     name: clean(body.name, 120),
     phone: clean(body.phone, 80),
     email: clean(body.email, 180),
@@ -50,6 +51,14 @@ function normalizeRequest(body = {}) {
     description: clean(body.description, 6000),
     photosProvided: Boolean(body.photosProvided || body.hasUpload),
     photoNames: Array.isArray(body.photoNames) ? body.photoNames.map((x) => clean(x, 180)) : [],
+    preferredBrand: clean(body.preferredBrand, 120),
+    preferredManufacturer: clean(body.preferredManufacturer, 120),
+    preferredModel: clean(body.preferredModel, 160),
+    preferredProduct: clean(body.preferredProduct, 160),
+    preferredFeatures: clean(body.preferredFeatures, 800),
+    budgetRange: clean(body.budgetRange, 120),
+    upgradePreferences: clean(body.upgradePreferences, 800),
+    additionalNotes: clean(body.additionalNotes, 1000),
   };
 }
 
@@ -83,6 +92,14 @@ async function createEstimateDraft(event, request) {
       subcategory: request.subcategory || 'General',
       work_scope: request.workScope || 'Not provided',
       questions_to_customer: ['Please review request details and add photos/specs before final estimate.'],
+      confidenceScores: request.intakeAnalysis?.confidenceScores || { overall: 25, labor: 25, material: 25, scope: 25 },
+      informationCompletenessScore: request.intakeAnalysis?.informationCompletenessScore || 25,
+      missingInformation: request.intakeAnalysis?.missingInformation || ['Admin review required.'],
+      optionalQuestions: request.intakeAnalysis?.optionalQuestions || [],
+      customerPreferences: request.intakeAnalysis?.customerPreferences || {},
+      photoIntelligence: request.intakeAnalysis?.photoIntelligence || {},
+      adminOverrideAlwaysAvailable: true,
+      manualEstimateModeAvailable: true,
       missing_required_info: ['Admin review required.'],
       labor_items: [],
       materials: [],
@@ -110,9 +127,8 @@ export const handler = async (event) => {
 
     const request = normalizeRequest(body);
 
-    if (!request.description && !request.service && !request.workScope) {
-      return json(400, { ok: false, message: 'Missing job description, service, or work scope.' });
-    }
+    const intakeAnalysis = analyzeEstimateIntake(request);
+    request.intakeAnalysis = intakeAnalysis;
 
     if (requestStore) await requestStore.setJSON(request.id, request);
 
@@ -122,9 +138,23 @@ export const handler = async (event) => {
       id: makeId('est'),
       createdAt: new Date().toISOString(),
       status: 'draft_admin_review',
+      intakeAnalysis,
+      informationCompletenessScore: intakeAnalysis.informationCompletenessScore,
+      confidenceScores: intakeAnalysis.confidenceScores,
+      missingInformation: intakeAnalysis.missingInformation,
+      optionalQuestions: intakeAnalysis.optionalQuestions,
+      customerPreferences: intakeAnalysis.customerPreferences,
+      photoIntelligence: intakeAnalysis.photoIntelligence,
+      adminOverrideAlwaysAvailable: true,
+      manualEstimateModeAvailable: true,
       requestPayload: request,
       savedRequest: request,
       estimateDraft,
+      optionalInformation: {
+        message: intakeAnalysis.optionalCollectionMessage,
+        buttons: intakeAnalysis.optionalCollectionButtons,
+        questions: intakeAnalysis.optionalQuestions,
+      },
       // Backward compatibility for existing admin screens:
       aiDraft: estimateDraft,
     };
@@ -137,10 +167,15 @@ export const handler = async (event) => {
       draftPersisted: Boolean(draftStore),
       request,
       estimateDraft,
+      optionalInformation: {
+        message: intakeAnalysis.optionalCollectionMessage,
+        buttons: intakeAnalysis.optionalCollectionButtons,
+        questions: intakeAnalysis.optionalQuestions,
+      },
       // Backward compatibility for existing JS/admin:
       aiDraft: estimateDraft,
       draftRecord,
-      message: 'Request saved and estimate draft created for review.',
+      message: 'Request saved immediately. Optional information can improve estimate accuracy, but the request is not blocked.',
     });
   }
 

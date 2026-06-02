@@ -7,6 +7,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 import { saveAdminAiCorrection } from './ai-intelligence-engine.mjs';
+import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 
 const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review']);
 const QUOTE_LIST_STATUSES = new Set(['all', 'needs_review', ...QUOTE_STATUSES]);
@@ -79,6 +80,13 @@ const mapQuote = (quote = {}) => {
     createdAt: quote.request_created_at,
     updatedAt: quote.request_updated_at,
   } : null;
+  const intake = metadata.intakeAnalysis || analyzeEstimateIntake({
+    service: quote.service_type,
+    city: quote.city,
+    streetAddress: quote.street_address,
+    timeframe: quote.preferred_timeframe,
+    description: quote.description || quote.summary,
+  });
   return {
     id: requestOnly ? `request:${quote.request_id}` : quote.id,
     quoteId: requestOnly ? '' : quote.id,
@@ -103,6 +111,16 @@ const mapQuote = (quote = {}) => {
     fixedPriceRecommendationCents: quote.fixed_price_recommendation_cents ?? metadata.fixedPriceRecommendationCents ?? null,
     aiMetadata: metadata,
     sourcingNotes: quote.sourcing_notes || metadata.pricingConfidenceReason || metadata.rangeSpreadReason || '',
+    informationCompletenessScore: metadata.informationCompletenessScore || intake.informationCompletenessScore,
+    confidenceScores: metadata.confidenceScores || intake.confidenceScores,
+    missingInformation: metadata.missingInformation || intake.missingInformation || [],
+    optionalQuestions: metadata.optionalQuestions || intake.optionalQuestions || [],
+    customerPreferences: metadata.customerPreferences || intake.customerPreferences || {},
+    photoIntelligence: metadata.photoIntelligence || intake.photoIntelligence || {},
+    aiRecommendations: metadata.aiRecommendations || intake.aiRecommendations || [],
+    adminOverrideAlwaysAvailable: true,
+    manualEstimateModeAvailable: true,
+    quoteCreationBlocked: false,
     serviceType: quote.service_type || '',
     city: quote.city || '',
     streetAddress: quote.street_address || '',
@@ -218,6 +236,15 @@ const buildAiMetadata = (payload) => ({
   totalLowCents: payload.rangeLowCents ?? payload.aiMetadata?.totalLowCents ?? payload.aiOriginal?.totalLowCents ?? null,
   totalHighCents: payload.rangeHighCents ?? payload.aiMetadata?.totalHighCents ?? payload.aiOriginal?.totalHighCents ?? null,
   fixedPriceRecommendationCents: payload.fixedPriceRecommendationCents ?? payload.aiMetadata?.fixedPriceRecommendationCents ?? payload.aiOriginal?.fixedPriceRecommendationCents ?? null,
+  informationCompletenessScore: payload.aiMetadata?.informationCompletenessScore ?? payload.aiOriginal?.informationCompletenessScore ?? null,
+  confidenceScores: payload.aiMetadata?.confidenceScores ?? payload.aiOriginal?.confidenceScores ?? null,
+  missingInformation: payload.aiMetadata?.missingInformation ?? payload.aiOriginal?.missingInformation ?? [],
+  optionalQuestions: payload.aiMetadata?.optionalQuestions ?? payload.aiOriginal?.optionalQuestions ?? [],
+  customerPreferences: payload.aiMetadata?.customerPreferences ?? payload.aiOriginal?.customerPreferences ?? {},
+  photoIntelligence: payload.aiMetadata?.photoIntelligence ?? payload.aiOriginal?.photoIntelligence ?? {},
+  adminOverrideAlwaysAvailable: true,
+  manualEstimateModeAvailable: true,
+  quoteCreationBlocked: false,
 });
 
 export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
