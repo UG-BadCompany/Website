@@ -1,4 +1,5 @@
 // netlify/functions/ai-quote-draft.mjs
+import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 // Fast AI quote draft endpoint. Used internally by job-requests.
 // Prevents 504 by falling back to local estimator if OpenAI is slow.
 
@@ -109,6 +110,14 @@ function buildLocalDraft(req) {
     subcategory: req.subcategory || 'General',
     work_scope: req.workScope || 'Not provided',
     confidence: 0.62,
+    confidenceScores: req.intakeAnalysis?.confidenceScores || analyzeEstimateIntake(req).confidenceScores,
+    informationCompletenessScore: req.intakeAnalysis?.informationCompletenessScore || analyzeEstimateIntake(req).informationCompletenessScore,
+    missingInformation: req.intakeAnalysis?.missingInformation || analyzeEstimateIntake(req).missingInformation,
+    optionalQuestions: req.intakeAnalysis?.optionalQuestions || analyzeEstimateIntake(req).optionalQuestions,
+    customerPreferences: req.intakeAnalysis?.customerPreferences || analyzeEstimateIntake(req).customerPreferences,
+    photoIntelligence: req.intakeAnalysis?.photoIntelligence || analyzeEstimateIntake(req).photoIntelligence,
+    adminOverrideAlwaysAvailable: true,
+    manualEstimateModeAvailable: true,
     missing_required_info: miss,
     questions_to_customer: miss,
     assumptions: ['Fast local estimate used. Admin must review before sending.'],
@@ -207,6 +216,7 @@ export const handler = async (event) => {
   try { input = JSON.parse(event.body || '{}'); } catch { return json(400, { ok: false, message: 'Invalid JSON body' }); }
 
   const req = normalize(input);
+  req.intakeAnalysis = input.intakeAnalysis || analyzeEstimateIntake({ ...input, ...req });
   if (!req.description && !req.service && !req.workScope) return json(400, { ok: false, message: 'Missing description, service, or workScope' });
 
   const localDraft = buildLocalDraft(req);

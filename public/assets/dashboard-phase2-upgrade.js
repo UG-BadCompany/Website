@@ -84,7 +84,11 @@
       <section class="estimate-review-panel" id="estimate-review" data-phase2-estimate-review>
         <span class="eyebrow">Admin Review</span>
         <h2>Estimate Review Queue</h2>
-        <p>Drafts created automatically from the public Request Estimate form show here first. Admin should verify labor, materials, licensing, photos, and final price before sending.</p>
+        <p>Drafts created automatically from the public Request Estimate form show here first. Admin should verify labor, materials, licensing, photos, and final price before sending. The Information Needed tab shows missing details without blocking quote creation.</p>
+        <div class="client-request-form-actions admin-quote-inbox-tabs" role="tablist" aria-label="Estimate Review Center information tabs">
+          <button class="btn btn-primary" type="button">Estimate Drafts</button>
+          <button class="btn btn-soft" type="button" data-information-needed-tab>Information Needed</button>
+        </div>
         <p class="session-status" data-phase2-estimate-status>Loading estimate drafts…</p>
         <div class="estimate-review-list" data-phase2-estimate-list></div>
       </section>
@@ -105,6 +109,36 @@
         <h4>${escapeHtml(title)}</h4>
         <ul>${items.slice(0, 8).map((item) => `<li>${escapeHtml(typeof item === 'string' ? item : `${item.name || item.label || 'Item'}: ${item.notes || item.lowHours || item.lowCents || ''}`)}</li>`).join('')}</ul>
       </div>
+    `;
+  };
+
+
+  const renderIntakeReview = (draft = {}) => {
+    const score = Number(draft.informationCompletenessScore || draft.confidenceScores?.overall || draft.confidence || 0);
+    const scores = draft.confidenceScores || {};
+    const missing = draft.missingInformation || draft.missingInfoQuestions || [];
+    const questions = draft.optionalQuestions || [];
+    const recommendations = draft.aiRecommendations || [];
+    const preferences = draft.customerPreferences || {};
+    const preferenceLines = Object.entries(preferences).filter(([, value]) => value).map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1')}: ${value}`);
+    return `
+      <div class="estimate-detail-box information-needed-box">
+        <h4>Information Needed</h4>
+        <p><strong>${score || 25}% Complete</strong> · Overall ${scores.overall || score || 'n/a'} · Labor ${scores.labor || 'n/a'} · Material ${scores.material || 'n/a'} · Scope ${scores.scope || 'n/a'}</p>
+        ${score && score < 55 ? '<p class="estimate-low-confidence">Warning: Additional information recommended before final pricing. Admin can continue anyway.</p>' : ''}
+        ${missing.length ? `<ul>${missing.slice(0, 8).map((item) => `<li>${escapeHtml(typeof item === 'string' ? item : item.prompt || item.label || '')}</li>`).join('')}</ul>` : '<p>No blocking information required. Customer submission is already saved.</p>'}
+        <div class="estimate-info-actions">
+          <button class="btn btn-soft" type="button" data-request-info="${escapeHtml(draft.quoteId || '')}">Request Information</button>
+          <button class="btn btn-soft" type="button" data-edit-questions="${escapeHtml(draft.quoteId || '')}">Edit Questions</button>
+          <button class="btn btn-soft" type="button" data-generate-draft-anyway="${escapeHtml(draft.quoteId || '')}">Generate Draft Anyway</button>
+          <button class="btn btn-soft" type="button" data-create-manual-draft="${escapeHtml(draft.quoteId || '')}">Create Manual Draft</button>
+          <button class="btn btn-primary" type="button" data-generate-ai-draft="${escapeHtml(draft.quoteId || '')}">Generate AI Draft</button>
+          <button class="btn btn-soft" type="button" data-recalculate-estimate="${escapeHtml(draft.quoteId || '')}">Recalculate Estimate</button>
+        </div>
+      </div>
+      ${questions.length ? renderDetailList('Optional customer questions', questions.map((q) => q.prompt || q.label || q), 'estimate-question-list') : ''}
+      ${preferenceLines.length ? renderDetailList('Customer preferences', preferenceLines, 'estimate-preference-list') : ''}
+      ${recommendations.length ? renderDetailList('AI recommendations', recommendations, 'estimate-ai-recommendation-list') : ''}
     `;
   };
 
@@ -512,6 +546,7 @@
                 <span class="estimate-pill ${readyClass}">${readyLabel}</span>
                 <span class="estimate-range">${lowAmount ? `${lowAmount}–${amount}` : amount}</span>
                 ${confidence ? `<span class="estimate-confidence">${confidence}/100 confidence</span>` : ''}
+                ${draft.informationCompletenessScore ? `<span class="estimate-confidence">${escapeHtml(String(draft.informationCompletenessScore))}% complete</span>` : ''}
                 <span class="estimate-pill">${escapeHtml(draft.serviceType || 'service')}</span>
                 <span class="estimate-pill">${escapeHtml(draft.city || '')}</span>
               </div>
@@ -519,6 +554,7 @@
             <div class="estimate-draft-actions">
               <button class="btn btn-soft" type="button" data-copy-estimate="${escapeHtml(draft.quoteId)}">Copy summary</button>
               <button class="btn btn-soft" type="button" data-focus-estimate-editor="${escapeHtml(draft.quoteId)}">Jump to editor</button>
+              <button class="btn btn-soft" type="button" data-create-manual-draft="${escapeHtml(draft.quoteId)}">Create Manual Draft</button>
               <button class="btn btn-primary" type="button" data-send-estimate="${escapeHtml(draft.quoteId)}">Mark/send</button>
             </div>
           </div>
@@ -561,6 +597,7 @@
           </form>
           </section>
           <div class="estimate-draft-detail-grid">
+            ${renderIntakeReview(draft)}
             ${renderAccuracyReview(draft.accuracyReview || [])}
             ${renderQuoteOptions(draft.quoteOptions || [])}
             ${renderSupplierPricing(draft.supplierPricingPlan || {})}
@@ -674,6 +711,16 @@
         if (draft) openQuoteEditorModal(draft);
       }, true);
     }
+
+    list.querySelectorAll('[data-request-info], [data-edit-questions], [data-generate-draft-anyway], [data-create-manual-draft], [data-generate-ai-draft], [data-recalculate-estimate]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const card = button.closest('[data-estimate-draft-card]');
+        const statusNode = card?.querySelector('.estimate-edit-status') || document.querySelector('[data-phase2-estimate-status]');
+        const action = button.textContent || 'Action';
+        if (statusNode) statusNode.textContent = `${action}: admin remains in control. Quote editor and manual estimate mode stay available regardless of confidence.`;
+        if (/manual|draft|ai/i.test(action)) card?.querySelector('[data-estimate-title]')?.focus();
+      });
+    });
 
     window.__latestEstimateDrafts = drafts;
 

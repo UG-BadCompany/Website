@@ -7,8 +7,9 @@ import {
   sendMagicLinkEmail,
 } from './auth-utils.mjs';
 import { verifyRecaptchaToken } from './recaptcha-utils.mjs';
+import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 
-const REQUIRED_FIELDS = ['name', 'phone', 'email', 'city', 'streetAddress', 'service', 'description'];
+const REQUIRED_FIELDS = [];
 const MAX_FIELD_LENGTHS = {
   name: 140,
   phone: 60,
@@ -21,6 +22,14 @@ const MAX_FIELD_LENGTHS = {
   timeframe: 80,
   description: 4000,
   recaptchaToken: 4000,
+  preferredBrand: 120,
+  preferredManufacturer: 120,
+  preferredModel: 160,
+  preferredProduct: 160,
+  preferredFeatures: 800,
+  budgetRange: 120,
+  upgradePreferences: 800,
+  additionalNotes: 1000,
 };
 
 const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
@@ -423,7 +432,14 @@ export const normalizePayload = (payload) => {
     normalized[field] = clean(payload[field]).slice(0, maxLength);
   }
 
-  normalized.email = normalized.email.toLowerCase();
+  normalized.emailProvided = Boolean(normalized.email);
+  normalized.email = normalized.email.toLowerCase() || `request-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@no-email.ta-contracting.local`;
+  normalized.name = normalized.name || 'Customer';
+  normalized.phone = normalized.phone || 'Not provided';
+  normalized.city = normalized.city || 'Not provided';
+  normalized.streetAddress = normalized.streetAddress || 'Not provided';
+  normalized.service = normalized.service || 'General service request';
+  normalized.description = normalized.description || 'Customer submitted a request and needs follow-up. Technical details were not required.';
   normalized.botField = clean(payload['bot-field']);
   normalized.workCategory = normalized.service;
   normalized.customerSupplied = clean(payload.customerSupplied || payload.customer_supplied || '').slice(0, 800);
@@ -440,7 +456,7 @@ export const validatePayload = (payload) => {
     return `Missing required field${missingFields.length > 1 ? 's' : ''}: ${missingFields.join(', ')}`;
   }
 
-  if (payload.email && !/^\S+@\S+\.\S+$/.test(payload.email)) {
+  if (payload.emailProvided && payload.email && !/^\S+@\S+\.\S+$/.test(payload.email)) {
     return 'Enter a valid email address.';
   }
 
@@ -910,11 +926,21 @@ const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload })
     totalHighCents: draft.amountCents || 0,
     quoteReady: Boolean(draft.quoteReady),
     aiStructuredQuote: draft,
+    intakeAnalysis: payload.intakeAnalysis,
+    informationCompletenessScore: payload.intakeAnalysis?.informationCompletenessScore || null,
+    confidenceScores: payload.intakeAnalysis?.confidenceScores || {},
+    missingInformation: payload.intakeAnalysis?.missingInformation || [],
+    optionalQuestions: payload.intakeAnalysis?.optionalQuestions || [],
+    customerPreferences: payload.intakeAnalysis?.customerPreferences || {},
+    photoIntelligence: payload.intakeAnalysis?.photoIntelligence || {},
+    adminOverrideAlwaysAvailable: true,
+    manualEstimateModeAvailable: true,
+    quoteCreationBlocked: false,
   };
 
   const [quote] = await db.sql`
-    insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, created_by, ai_enhanced, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes)
-    values (${jobRequest.id}, ${client.id}, 'draft', ${draft.title}, ${draft.summary || null}, ${draft.amountCents || 0}, null, ${Boolean(draft.aiEnhanced)}, ${draftMetadata.pricingConfidenceLevel}, ${draft.lowAmountCents || null}, ${draft.amountCents || null}, ${draft.amountCents || null}, ${JSON.stringify(draftMetadata)}::jsonb, ${draft.accuracyReview?.join('\n') || null})
+    insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, created_by, ai_enhanced, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, estimate_intake, information_completeness_score, confidence_scores, missing_information, optional_customer_questions, customer_preferences, photo_intelligence)
+    values (${jobRequest.id}, ${client.id}, 'draft', ${draft.title}, ${draft.summary || null}, ${draft.amountCents || 0}, null, ${Boolean(draft.aiEnhanced)}, ${draftMetadata.pricingConfidenceLevel}, ${draft.lowAmountCents || null}, ${draft.amountCents || null}, ${draft.amountCents || null}, ${JSON.stringify(draftMetadata)}::jsonb, ${draft.accuracyReview?.join('\n') || null}, ${JSON.stringify(payload.intakeAnalysis || {})}::jsonb, ${payload.intakeAnalysis?.informationCompletenessScore || null}, ${JSON.stringify(payload.intakeAnalysis?.confidenceScores || {})}::jsonb, ${JSON.stringify(payload.intakeAnalysis?.missingInformation || [])}::jsonb, ${JSON.stringify(payload.intakeAnalysis?.optionalQuestions || [])}::jsonb, ${JSON.stringify(payload.intakeAnalysis?.customerPreferences || {})}::jsonb, ${JSON.stringify(payload.intakeAnalysis?.photoIntelligence || {})}::jsonb)
     returning id, job_request_id, client_id, status, title, summary, amount_cents, created_at, updated_at
   `;
 
@@ -957,6 +983,16 @@ const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload })
         riskFlags: draft.riskFlags || [],
         exclusions: draft.exclusions || [],
         totals: draft.totals || {},
+        intakeAnalysis: payload.intakeAnalysis || {},
+        informationCompletenessScore: payload.intakeAnalysis?.informationCompletenessScore || null,
+        confidenceScores: payload.intakeAnalysis?.confidenceScores || {},
+        missingInformation: payload.intakeAnalysis?.missingInformation || [],
+        optionalQuestions: payload.intakeAnalysis?.optionalQuestions || [],
+        customerPreferences: payload.intakeAnalysis?.customerPreferences || {},
+        photoIntelligence: payload.intakeAnalysis?.photoIntelligence || {},
+        adminOverrideAlwaysAvailable: true,
+        manualEstimateModeAvailable: true,
+        quoteCreationBlocked: false,
       })}::jsonb
     )
   `;
@@ -981,6 +1017,8 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
 
   const validationError = validatePayload(payload);
   if (validationError) return json(422, { ok: false, message: validationError });
+
+  payload.intakeAnalysis = analyzeEstimateIntake(payload);
 
   try {
     const db = await getDatabase();
@@ -1017,7 +1055,14 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         street_address,
         service_type,
         preferred_timeframe,
-        description
+        description,
+        estimate_intake,
+        information_completeness_score,
+        confidence_scores,
+        missing_information,
+        optional_customer_questions,
+        customer_preferences,
+        photo_intelligence
       ) values (
         ${client.id},
         ${property.id},
@@ -1028,7 +1073,14 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         ${payload.streetAddress},
         ${payload.service},
         ${payload.timeframe || null},
-        ${payload.description}
+        ${payload.description},
+        ${JSON.stringify(payload.intakeAnalysis)}::jsonb,
+        ${payload.intakeAnalysis.informationCompletenessScore},
+        ${JSON.stringify(payload.intakeAnalysis.confidenceScores)}::jsonb,
+        ${JSON.stringify(payload.intakeAnalysis.missingInformation)}::jsonb,
+        ${JSON.stringify(payload.intakeAnalysis.optionalQuestions)}::jsonb,
+        ${JSON.stringify(payload.intakeAnalysis.customerPreferences)}::jsonb,
+        ${JSON.stringify(payload.intakeAnalysis.photoIntelligence)}::jsonb
       )
       returning id, created_at
     `;
@@ -1048,25 +1100,30 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
           workScope: payload.workScope,
           service: payload.service,
           subcategory: payload.subcategory,
+          informationCompletenessScore: payload.intakeAnalysis.informationCompletenessScore,
+          confidenceScores: payload.intakeAnalysis.confidenceScores,
+          quoteCreationBlocked: false,
         })}::jsonb
       )
     `;
     const estimateDraft = await createAutomaticEstimateDraft({ db, jobRequest, client, payload });
 
-    const token = makeToken();
-    const magicLinkUrl = createMagicLinkUrl(request, token);
+    let emailResult = { sent: false, reason: payload.emailProvided ? 'Email delivery is not configured.' : 'Customer did not provide email.' };
+    if (payload.emailProvided) {
+      const token = makeToken();
+      const magicLinkUrl = createMagicLinkUrl(request, token);
 
-    await db.sql`
-      insert into auth_magic_links (email, token_hash, purpose, client_name, client_phone, expires_at)
-      values (${payload.email}, ${hashToken(token)}, 'client_account', ${payload.name}, ${payload.phone}, ${minutesFromNow(MAGIC_LINK_TTL_MINUTES)}::timestamptz)
-    `;
+      await db.sql`
+        insert into auth_magic_links (email, token_hash, purpose, client_name, client_phone, expires_at)
+        values (${payload.email}, ${hashToken(token)}, 'client_account', ${payload.name}, ${payload.phone}, ${minutesFromNow(MAGIC_LINK_TTL_MINUTES)}::timestamptz)
+      `;
 
-    let emailResult = { sent: false, reason: 'Email delivery is not configured.' };
-    try {
-      emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'client_account' });
-    } catch (emailError) {
-      console.error('Request confirmation email delivery failed', emailError);
-      emailResult = { sent: false, reason: 'Email delivery failed.' };
+      try {
+        emailResult = await sendEmail({ to: payload.email, magicLinkUrl, purpose: 'client_account' });
+      } catch (emailError) {
+        console.error('Request confirmation email delivery failed', emailError);
+        emailResult = { sent: false, reason: 'Email delivery failed.' };
+      }
     }
 
     return json(201, {
@@ -1078,15 +1135,23 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
       emailSent: emailResult.sent,
       quoteId: estimateDraft.quote?.id || null,
       quoteStatus: estimateDraft.quote?.status || 'draft',
+      intakeAnalysis: payload.intakeAnalysis,
+      optionalInformation: {
+        message: payload.intakeAnalysis.optionalCollectionMessage,
+        buttons: payload.intakeAnalysis.optionalCollectionButtons,
+        questions: payload.intakeAnalysis.optionalQuestions,
+      },
       estimateDraft: {
         title: estimateDraft.draft?.title || '',
         amountCents: estimateDraft.draft?.amountCents || 0,
         lowAmountCents: estimateDraft.draft?.lowAmountCents || 0,
         quoteReady: Boolean(estimateDraft.draft?.quoteReady),
+        informationCompletenessScore: payload.intakeAnalysis.informationCompletenessScore,
+        confidenceScores: payload.intakeAnalysis.confidenceScores,
       },
       message: emailResult.sent
         ? 'Estimate request saved. Check your email for a confirmation and secure client portal link.'
-        : 'Estimate request saved. Email delivery is not configured yet; request a magic link from the portal login to continue.',
+        : 'Estimate request saved immediately. Optional information can improve accuracy, but your request was not blocked.',
     });
   } catch (error) {
     console.error('Failed to create job request', error);
