@@ -9,13 +9,13 @@ const commonPreferenceFields = [
 ];
 
 const tradeDefinitions = [
+  ['mini_splits', 'Mini Splits', ['mini split', 'mini-split', 'ductless'], ['Brand', 'Model', 'BTU', 'Voltage', 'Line Set Length', 'Indoor/Outdoor Distance', 'Condensate Routing']],
   ['hvac', 'HVAC', ['hvac', 'air conditioner', 'ac ', 'furnace', 'heat pump', 'air handler'], ['Equipment make/model', 'Tonnage or BTU size', 'Thermostat type', 'Duct access', 'Refrigerant type', 'Electrical panel distance', 'Filter size', 'Existing failure symptoms']],
-  ['mini_splits', 'Mini Splits', ['mini split', 'mini-split', 'ductless'], ['Brand Preference', 'Desired BTU', 'Voltage', 'Indoor/Outdoor Distance', 'Line Set Length', 'Wall penetration location', 'Condensate route', 'Outdoor pad/bracket preference']],
   ['commercial_hvac', 'Commercial HVAC', ['rtu', 'commercial hvac', 'roof top unit', 'package unit'], ['RTU model', 'Tonnage', 'Roof access', 'Crane/lift requirement', 'Curb adapter need', 'Economizer requirement', 'Business hours access', 'Permit contact']],
-  ['water_heaters', 'Water Heaters', ['water heater', 'tankless', 'gallon'], ['Gas or Electric', 'Tank or Tankless', 'Gallon Size', 'Existing Location', 'Vent type', 'Expansion tank', 'Pan/drain availability', 'Desired brand']],
+  ['water_heaters', 'Water Heaters', ['water heater', 'tankless', 'gallon'], ['Gas/Electric', 'Tank/Tankless', 'Gallon Size', 'Vent Type', 'Existing Location', 'Expansion tank', 'Pan/drain availability', 'Desired brand']],
   ['plumbing', 'Plumbing', ['plumbing', 'leak', 'faucet', 'toilet', 'sink', 'shower', 'drain'], ['Fixture type', 'Pipe material', 'Leak location', 'Shutoff access', 'Wall/floor access', 'Fixture brand preference', 'Water damage visible', 'Photos of connections']],
   ['commercial_plumbing', 'Commercial Plumbing', ['commercial plumbing', 'backflow', 'grease trap', 'flush valve'], ['Fixture count', 'Business hours access', 'Backflow device model', 'Grease interceptor size', 'Floor drain locations', 'Permit requirement', 'Inspection deadline', 'Tenant coordination']],
-  ['electrical', 'Electrical', ['electrical', 'outlet', 'breaker', 'panel', 'switch', 'gfci', 'ev charger', 'light'], ['Voltage', 'Breaker Size', 'Panel brand', 'Panel capacity', 'Circuit distance', 'Device count', 'Access path', 'Permit requirement']],
+  ['electrical', 'Electrical', ['electrical', 'outlet', 'breaker', 'panel', 'switch', 'gfci', 'ev charger', 'light'], ['Voltage', 'Breaker Size', 'Panel Capacity', 'Wire Distance', 'Panel brand', 'Device count', 'Access path', 'Permit requirement']],
   ['commercial_electrical', 'Commercial Electrical', ['commercial electrical', 'three phase', '3 phase', 'tenant panel'], ['Voltage/phase', 'Load requirement', 'Panel schedule', 'Conduit route', 'After-hours access', 'Lift requirement', 'Permit/inspection need', 'Shutdown window']],
   ['roofing', 'Roofing', ['roof', 'shingle', 'tile roof', 'flat roof'], ['Roof type', 'Leak location', 'Approximate square footage', 'Number of stories', 'Pitch/access', 'Underlayment condition', 'HOA requirement', 'Photos of damage']],
   ['drywall', 'Drywall', ['drywall', 'sheetrock', 'texture', 'wall patch'], ['Damage size', 'Texture type', 'Paint match need', 'Ceiling or wall', 'Moisture source', 'Stud access', 'Number of patches', 'Photos of area']],
@@ -155,10 +155,13 @@ export const analyzeEstimateIntake = (input = {}) => {
     customerPreferences: extractPreferences(request),
     photoIntelligence,
     aiRecommendations: [
+      'Act like a senior estimator: analyze the request before drafting a quote.',
+      'Identify missing information and generate optional customer questions without blocking submission.',
+      'Recommend labor, materials, assumptions, exclusions, and pricing ranges for admin review.',
       'Save the request immediately and keep it visible to admin.',
       'Use optional questions only to improve estimate accuracy; never require customer completion.',
       lowConfidence ? 'Low confidence: show a warning, then allow Request Information, Generate AI Draft, Create Manual Draft, or Continue Anyway.' : 'Information is sufficient for an admin-reviewed draft.',
-      'Admin can always create, edit, override, save, and send quotes regardless of confidence.',
+      'Admin can always create, edit, override, save, and send quotes regardless of confidence or AI availability.',
     ],
     status: lowConfidence ? 'additional_information_recommended' : 'ready_for_admin_review',
     optionalCollectionMessage: 'Additional information may improve estimate accuracy. Answer any questions you know. Skip anything you are unsure about.',

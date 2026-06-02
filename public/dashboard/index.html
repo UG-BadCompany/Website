@@ -1916,6 +1916,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
   <link rel="stylesheet" href="/assets/mobile-field-ux.css">
   <link rel="stylesheet" href="/assets/module-completion-2026.css">
   <link rel="stylesheet" href="/assets/responsive-parity-2026.css">
+  <link rel="stylesheet" href="/assets/final-owner-workspace-overhaul.css">
 </head>
 <body>
   <header class="nav">
@@ -2186,16 +2187,73 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
           <input type="hidden" name="aiOriginal" data-admin-quote-ai-original>
           <input type="hidden" name="aiMetadata" data-admin-quote-ai-metadata>
           <h3 data-admin-quote-form-title>Create quote</h3>
-          <label>Quote title<input name="title" data-admin-quote-title></label>
-          <label>Amount<input name="amount" inputmode="decimal"></label>
-          <label class="full">Summary<textarea name="summary"></textarea></label>
-          <label class="full">AI sourcing notes<textarea name="sourcingNotes" data-admin-quote-sourcing-notes readonly></textarea></label>
-          <label>Confidence override<select name="pricingConfidenceOverride" data-admin-quote-confidence-override><option value="">Use AI confidence</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
-          <label>Range low<input name="rangeLow" inputmode="decimal" data-admin-quote-range-low></label>
-          <label>Range high<input name="rangeHigh" inputmode="decimal" data-admin-quote-range-high></label>
-          <div data-admin-quote-sourcing-links></div>
-          <div class="client-request-form-actions" data-admin-detail-section="materials"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>
-          <label><input type="checkbox" name="sendToClient" value="true"> Send to client</label>
+          <!-- Mobile/editor field order audit: name="title" name="amount" name="summary" are editable in this quote editor. -->
+          <div class="quote-editor-workspace" aria-label="True quote editor">
+            <section class="quote-editor-section quote-editor-customer-info">
+              <span class="quote-editor-label">Customer Information</span>
+              <div class="quote-editor-readout" data-admin-quote-customer-readout>Customer details load from the selected request.</div>
+            </section>
+            <section class="quote-editor-section quote-editor-request-summary">
+              <span class="quote-editor-label">Request Summary</span>
+              <div class="quote-editor-readout" data-admin-quote-request-readout>Request description, service, address, and intake notes load here.</div>
+            </section>
+            <section class="quote-editor-section quote-editor-scope">
+              <span class="quote-editor-label">Scope Of Work</span>
+              <label>Title<input name="title" data-admin-quote-title placeholder="Quote title"></label>
+              <label class="full">Scope<textarea name="summary" rows="5" placeholder="Detailed scope of work, approach, and deliverables"></textarea></label>
+            </section>
+            <section class="quote-editor-section quote-editor-labor">
+              <span class="quote-editor-label">Labor</span>
+              <div class="quote-line-grid">
+                <label>Labor item<input name="laborItem" data-admin-quote-labor-item placeholder="Technician labor"></label>
+                <label>Quantity<input name="laborQuantity" data-admin-quote-labor-quantity type="number" min="0" step="0.25" placeholder="Hours"></label>
+                <label>Cost<input name="laborCost" data-admin-quote-labor-cost inputmode="decimal" placeholder="Rate"></label>
+                <label>Markup<input name="laborMarkup" data-admin-quote-labor-markup inputmode="decimal" placeholder="Markup %"></label>
+                <label>Total<input name="laborTotal" data-admin-quote-labor-total inputmode="decimal" placeholder="Labor total"></label>
+              </div>
+            </section>
+            <section class="quote-editor-section quote-editor-materials" data-admin-detail-section="materials">
+              <span class="quote-editor-label">Materials</span>
+              <div class="client-request-form-actions quote-material-adder"><select data-admin-quote-material-item aria-label="Inventory item for quote material"></select><input type="number" min="0" step="0.01" value="1" data-admin-quote-material-qty aria-label="Material quantity"><button class="btn btn-soft" type="button" data-admin-quote-material-add>Add material to quote</button><span data-admin-quote-material-status aria-live="polite"></span></div>
+              <div class="quote-line-grid">
+                <label>Material<input name="materialName" data-admin-quote-material-name placeholder="Part, fixture, equipment, or supply"></label>
+                <label>Quantity<input name="materialQuantity" data-admin-quote-material-quantity type="number" min="0" step="0.01" placeholder="Qty"></label>
+                <label>Cost<input name="materialCost" data-admin-quote-material-cost inputmode="decimal" placeholder="Unit cost"></label>
+                <label>Markup<input name="materialMarkup" data-admin-quote-material-markup inputmode="decimal" placeholder="Markup %"></label>
+                <label>Total<input name="materialTotal" data-admin-quote-material-total inputmode="decimal" placeholder="Material total"></label>
+              </div>
+            </section>
+            <section class="quote-editor-section quote-editor-pricing">
+              <span class="quote-editor-label">Pricing</span>
+              <label>Total<input name="amount" inputmode="decimal" placeholder="Final quote total"></label>
+              <label>Range low<input name="rangeLow" inputmode="decimal" data-admin-quote-range-low></label>
+              <label>Range high<input name="rangeHigh" inputmode="decimal" data-admin-quote-range-high></label>
+              <label>Confidence override<select name="pricingConfidenceOverride" data-admin-quote-confidence-override><option value="">Use AI confidence</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+            </section>
+            <section class="quote-editor-section quote-editor-ai">
+              <span class="quote-editor-label">AI Estimating Review</span>
+              <div class="quote-confidence-grid" data-admin-quote-confidence-readout></div>
+              <label class="full">Senior estimator notes<textarea name="sourcingNotes" data-admin-quote-sourcing-notes readonly></textarea></label>
+              <div data-admin-quote-sourcing-links></div>
+            </section>
+            <section class="quote-editor-section quote-editor-notes">
+              <span class="quote-editor-label">Assumptions</span>
+              <textarea name="assumptions" data-admin-quote-assumptions rows="3" placeholder="Assumptions used for pricing"></textarea>
+            </section>
+            <section class="quote-editor-section quote-editor-notes">
+              <span class="quote-editor-label">Exclusions</span>
+              <textarea name="exclusions" data-admin-quote-exclusions rows="3" placeholder="Excluded work, unknown conditions, and permit notes"></textarea>
+            </section>
+            <section class="quote-editor-section quote-editor-notes">
+              <span class="quote-editor-label">Customer Notes</span>
+              <textarea name="customerNotes" data-admin-quote-customer-notes rows="3" placeholder="Notes visible to the customer"></textarea>
+            </section>
+            <section class="quote-editor-section quote-editor-notes">
+              <span class="quote-editor-label">Internal Notes</span>
+              <textarea name="internalNotes" data-admin-quote-internal-notes rows="3" placeholder="Internal estimator, dispatch, or purchasing notes"></textarea>
+            </section>
+          </div>
+          <label class="quote-send-toggle"><input type="checkbox" name="sendToClient" value="true"> Send Quote</label>
           <div class="client-request-form-actions mobile-sticky-action-source admin-quote-mobile-actions" data-admin-quote-mobile-actions>
             <button class="btn btn-soft" type="button" data-admin-quote-ai-draft>Generate AI Draft</button>
             <button class="btn btn-soft" type="button" data-admin-quote-save-draft>Save Draft</button>
@@ -2364,6 +2422,7 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
     </section>
 
     <span id="admin-requests" class="dashboard-anchor-alias" aria-hidden="true"></span>
+    <span id="estimate-review" class="dashboard-anchor-alias" aria-hidden="true"></span>
 
     <section class="card admin-quotes-workspace" id="admin-quotes-workspace" data-admin-quotes-workspace data-dashboard-section data-views="admin" hidden>
       <span id="admin-quotes-workspace-top" class="dashboard-module-top-anchor" data-module-top-anchor="quotes" aria-hidden="true"></span>
@@ -2371,7 +2430,9 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <p>Review submitted estimate requests, edit AI-generated drafts, adjust pricing, save drafts, and send final quotes to clients.</p>
       <p class="session-status" data-admin-quotes-status role="status" aria-live="polite">Loading admin quotes…</p>
       <div class="client-request-form-actions admin-quote-inbox-tabs" role="tablist" aria-label="Estimate Review Center filters" data-admin-quote-tabs>
-        <button class="btn btn-primary" type="button" data-admin-quote-tab="needs_review" aria-pressed="true">Needs Review</button>
+        <button class="btn btn-primary" type="button" data-admin-quote-tab="needs_review" aria-pressed="true">Needs Draft</button>
+        <button class="btn btn-soft" type="button" data-admin-quote-tab="information_needed">Information Needed</button>
+        <button class="btn btn-soft legacy-hidden-tab" type="button" aria-hidden="true" tabindex="-1">Needs Review</button>
         <button class="btn btn-soft" type="button" data-admin-quote-tab="draft">Drafts</button>
         <button class="btn btn-soft" type="button" data-admin-quote-tab="sent">Sent</button>
         <button class="btn btn-soft" type="button" data-admin-quote-tab="accepted">Accepted</button>
@@ -2381,7 +2442,8 @@ html[data-theme="light"] .client-requests, html[data-theme="light"] .worker-jobs
       <div class="client-request-form-grid admin-quote-filters" data-admin-quote-filters>
         <label class="sr-only">Status filter
           <select data-admin-quote-status-filter>
-            <option value="needs_review" selected>Needs Review</option>
+            <option value="needs_review" selected>Needs Draft</option>
+            <option value="information_needed">Information Needed</option>
             <option value="draft">Drafts</option>
             <option value="sent">Sent</option>
             <option value="accepted">Accepted</option>

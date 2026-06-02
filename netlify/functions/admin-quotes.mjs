@@ -10,7 +10,7 @@ import { saveAdminAiCorrection } from './ai-intelligence-engine.mjs';
 import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 
 const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review']);
-const QUOTE_LIST_STATUSES = new Set(['all', 'needs_review', ...QUOTE_STATUSES]);
+const QUOTE_LIST_STATUSES = new Set(['all', 'needs_review', 'information_needed', ...QUOTE_STATUSES]);
 const NEEDS_REVIEW_QUOTE_STATUSES = ['draft', 'pending_review', 'needs_review'];
 const REQUEST_ONLY_STATUSES = ['new', 'needs_review', 'quote_in_progress'];
 
@@ -190,7 +190,7 @@ const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
       where (${quoteId || ''} = '' or quotes.id::text = ${quoteId || ''})
         and (
           ${status} = 'all'
-          or (${status} = 'needs_review' and quotes.status = any(${NEEDS_REVIEW_QUOTE_STATUSES}))
+          or (${status} in ('needs_review', 'information_needed') and quotes.status = any(${NEEDS_REVIEW_QUOTE_STATUSES}))
           or quotes.status = ${status}
         )
         and (${search || ''} = '' or lower(concat_ws(' ', quotes.title, quotes.summary, quotes.status, quotes.amount_cents::text, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.id::text, quotes.id::text)) like ${likeSearch})
@@ -216,7 +216,7 @@ const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
       where not exists (select 1 from quotes where quotes.job_request_id = job_requests.id)
         and job_requests.status = any(${REQUEST_ONLY_STATUSES})
         and (${quoteId || ''} = '' or job_requests.id::text = ${quoteId || ''})
-        and (${status} in ('all', 'needs_review') or ${status} = job_requests.status)
+        and (${status} in ('all', 'needs_review', 'information_needed') or ${status} = job_requests.status)
         and (${search || ''} = '' or lower(concat_ws(' ', job_requests.status, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.description, job_requests.id::text)) like ${likeSearch})
     )
     select * from quote_rows

@@ -14,25 +14,25 @@
 
   const workspaces = {
     overview: {
-      title: 'Overview',
-      description: 'Role-specific dashboard home with one summary surface and clean app actions.',
+      title: 'Business Operations Dashboard',
+      description: 'Business snapshot only. Use the sidebar to open one standalone workspace at a time.',
       views: ['admin', 'client', 'worker'],
       module: 'home',
       targets: ['#executive-overview', '.executive-suite', '[data-overview-workspace]'],
     },
     'estimate-review': {
-      title: 'Admin Quotes',
-      description: 'AI estimate review, quote editing, inventory matches, draft saving, and customer sending.',
+      title: 'Estimate Review Center',
+      description: 'Request intake, information-needed review, quote workflow states, AI draft controls, and the quote editor.',
       views: ['admin'],
       module: 'quotes',
-      targets: ['#admin-quotes-workspace', '[data-admin-quotes-workspace]', '#estimate-review', '#admin-quotes', '[data-phase2-command-center]'],
+      targets: ['#admin-quotes-workspace', '[data-admin-quotes-workspace]'],
     },
     'work-orders': {
-      title: 'Admin Requests / Work Orders',
-      description: 'Active jobs, blocked work, assignments, status updates, materials, completion review, and invoice readiness.',
+      title: 'Work Order Pipeline',
+      description: 'Submitted requests and work orders only: status, assignments, materials, completion review, and invoice readiness.',
       views: ['admin'],
       module: 'requests',
-      targets: ['#admin-requests', '[data-admin-inbox]', '[data-phase3-workflow-suite]', '.workflow-suite'],
+      targets: ['#admin-requests', '[data-admin-inbox]'],
     },
     'client-requests': {
       title: 'My Requests',
@@ -70,8 +70,8 @@
       targets: ['#smart-schedule-suite', '.smart-schedule-suite', '#worker-route-suite', '.worker-route-suite'],
     },
     finance: {
-      title: 'Admin Finance',
-      description: 'Open invoices, open amount, paid amount, overdue count, Square checkout readiness, and finance action queue.',
+      title: 'Finance Workspace',
+      description: 'Finance KPIs, payment risk, invoice readiness, and billing work in one finance workspace.',
       views: ['admin'],
       module: 'finance',
       targets: ['.finance-suite', '[data-phase4-finance-suite]', '#finance-command-center', '.finance-command-panel'],
@@ -84,8 +84,8 @@
       targets: ['#admin-invoices', '[data-admin-invoices]'],
     },
     customers: {
-      title: 'Admin Customers',
-      description: 'Customer list, customer status, service history, and account follow-up for admins.',
+      title: 'Customer Workspace',
+      description: 'Customer records, service history, follow-up, and account health for admins.',
       views: ['admin'],
       module: 'customers',
       targets: ['#customer-experience-center', '.customer-experience-suite'],
