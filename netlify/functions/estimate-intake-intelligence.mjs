@@ -9,18 +9,13 @@ const commonPreferenceFields = [
 ];
 
 const tradeDefinitions = [
-  ['mini_splits', 'Mini Splits', ['mini split', 'mini-split', 'ductless'], ['Brand', 'Model', 'BTU', 'Voltage', 'Line Set Length', 'Indoor/Outdoor Distance', 'Condensate Routing']],
-  ['hvac', 'HVAC', ['hvac', 'air conditioner', 'ac ', 'furnace', 'heat pump', 'air handler'], ['Equipment make/model', 'Tonnage or BTU size', 'Thermostat type', 'Duct access', 'Refrigerant type', 'Electrical panel distance', 'Filter size', 'Existing failure symptoms']],
+  ['hvac', 'HVAC', ['hvac', 'air conditioner', 'ac ', 'furnace', 'heat pump', 'air handler', 'mini split', 'mini-split', 'ductless', 'split system', 'package unit', 'thermostat', 'ductwork', 'condensate', 'iaq'], ['Equipment make/model', 'Tonnage or BTU size', 'mini split details if applicable', 'Split system / heat pump / package unit type', 'Furnace or air handler details', 'Thermostat or controls need', 'Ductwork access', 'IAQ equipment', 'Condensate routing', 'Filter size', 'Troubleshooting symptoms', 'Maintenance / repair / replacement / installation scope']],
   ['commercial_hvac', 'Commercial HVAC', ['rtu', 'commercial hvac', 'roof top unit', 'package unit'], ['RTU model', 'Tonnage', 'Roof access', 'Crane/lift requirement', 'Curb adapter need', 'Economizer requirement', 'Business hours access', 'Permit contact']],
   ['water_heaters', 'Water Heaters', ['water heater', 'tankless', 'gallon'], ['Gas/Electric', 'Tank/Tankless', 'Gallon Size', 'Vent Type', 'Existing Location', 'Expansion tank', 'Pan/drain availability', 'Desired brand']],
-  ['plumbing', 'Plumbing', ['plumbing', 'leak', 'faucet', 'toilet', 'sink', 'shower', 'drain'], ['Fixture type', 'Pipe material', 'Leak location', 'Shutoff access', 'Wall/floor access', 'Fixture brand preference', 'Water damage visible', 'Photos of connections']],
-  ['commercial_plumbing', 'Commercial Plumbing', ['commercial plumbing', 'backflow', 'grease trap', 'flush valve'], ['Fixture count', 'Business hours access', 'Backflow device model', 'Grease interceptor size', 'Floor drain locations', 'Permit requirement', 'Inspection deadline', 'Tenant coordination']],
-  ['electrical', 'Electrical', ['electrical', 'outlet', 'breaker', 'panel', 'switch', 'gfci', 'ev charger', 'light'], ['Voltage', 'Breaker Size', 'Panel Capacity', 'Wire Distance', 'Panel brand', 'Device count', 'Access path', 'Permit requirement']],
-  ['commercial_electrical', 'Commercial Electrical', ['commercial electrical', 'three phase', '3 phase', 'tenant panel'], ['Voltage/phase', 'Load requirement', 'Panel schedule', 'Conduit route', 'After-hours access', 'Lift requirement', 'Permit/inspection need', 'Shutdown window']],
-  ['roofing', 'Roofing', ['roof', 'shingle', 'tile roof', 'flat roof'], ['Roof type', 'Leak location', 'Approximate square footage', 'Number of stories', 'Pitch/access', 'Underlayment condition', 'HOA requirement', 'Photos of damage']],
+  ['plumbing', 'Plumbing', ['plumbing', 'commercial plumbing', 'backflow', 'grease trap', 'flush valve', 'leak', 'faucet', 'toilet', 'sink', 'shower', 'drain'], ['Fixture type', 'Pipe material', 'Leak location', 'Shutoff access', 'Wall/floor access', 'Fixture brand preference', 'Water damage visible', 'Photos of connections', 'Inspection or tenant coordination if commercial']],
+  ['electrical', 'Electrical', ['electrical', 'commercial electrical', 'three phase', '3 phase', 'tenant panel', 'outlet', 'breaker', 'panel', 'switch', 'gfci', 'ev charger', 'light'], ['Voltage', 'Breaker Size', 'Panel Capacity', 'Wire Distance', 'Panel brand', 'Device count', 'Access path', 'Permit requirement', 'Shutdown window if commercial']],
   ['drywall', 'Drywall', ['drywall', 'sheetrock', 'texture', 'wall patch'], ['Damage size', 'Texture type', 'Paint match need', 'Ceiling or wall', 'Moisture source', 'Stud access', 'Number of patches', 'Photos of area']],
   ['painting', 'Painting', ['paint', 'painting', 'stain'], ['Interior or exterior', 'Room count', 'Paint brand preference', 'Color count', 'Surface condition', 'Prep level', 'Ceiling/trim included', 'Occupied access']],
-  ['flooring', 'Flooring', ['floor', 'flooring', 'tile', 'vinyl plank', 'carpet', 'laminate'], ['Material preference', 'Square footage', 'Subfloor condition', 'Removal required', 'Baseboards included', 'Transition count', 'Stair count', 'Moisture concerns']],
   ['doors', 'Doors', ['door', 'hinge', 'lockset', 'deadbolt'], ['Door size', 'Interior/exterior', 'Slab or prehung', 'Hardware preference', 'Frame condition', 'Swing direction', 'Fire rating need', 'Paint/stain included']],
   ['windows', 'Windows', ['window', 'glass', 'slider'], ['Window size', 'Frame type', 'Glass type', 'Quantity', 'Tempered requirement', 'Exterior access', 'Stucco/trim condition', 'Energy efficiency preference']],
   ['appliances', 'Appliances', ['appliance', 'dishwasher', 'range', 'microwave', 'washer', 'dryer'], ['Appliance make/model', 'New unit on site', 'Connection type', 'Haul-away need', 'Cabinet modification', 'Water/electric/gas access', 'Warranty constraints', 'Install kit available']],
@@ -45,6 +40,7 @@ export const TRADE_INTELLIGENCE_LIBRARY = Object.fromEntries(tradeDefinitions.ma
 
 const detectTrade = (request = {}) => {
   const haystack = slug(`${request.workScope} ${request.service} ${request.subcategory} ${request.description} ${request.tradeType} ${request.workCategory}`);
+  if (/mini\s?-?split|ductless/i.test(haystack)) return TRADE_INTELLIGENCE_LIBRARY.hvac;
   const match = Object.values(TRADE_INTELLIGENCE_LIBRARY).find((trade) => trade.keywords.some((keyword) => haystack.includes(slug(keyword))));
   return match || TRADE_INTELLIGENCE_LIBRARY.handyman;
 };
