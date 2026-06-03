@@ -3,8 +3,10 @@ import { json, parseJsonBody } from './auth-utils.mjs';
 const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
 const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('AI timed out')), ms));
 
+const normalizeTrade = (value = '') => /mini\s?-?split|ductless/i.test(String(value)) ? 'HVAC' : (value || 'General Contracting');
+
 const fallbackDraft = (body) => ({
-  trade: body.workCategory || body.service || 'General Contracting',
+  trade: normalizeTrade(body.workCategory || body.workScope || body.service),
   scope: body.description || 'Manual scope needed.',
   missingInfo: ['photos', 'measurements', 'access conditions'].filter(Boolean),
   optionalQuestions: ['Can you provide photos?', 'Do you know the model or measurements?', 'Is there any access restriction?'],
@@ -24,7 +26,7 @@ const callOpenAI = async (payload) => {
       headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        input: [{ role: 'system', content: 'You draft contractor estimates as structured JSON. AI never blocks an admin. Questions are optional.' }, { role: 'user', content: JSON.stringify(payload) }],
+        input: [{ role: 'system', content: 'You draft contractor estimates as structured JSON. Mini splits are handled under HVAC. AI never blocks an admin. Questions are optional.' }, { role: 'user', content: JSON.stringify(payload) }],
         text: { format: { type: 'json_object' } },
       }),
     }),
