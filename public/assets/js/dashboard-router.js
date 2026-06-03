@@ -8,8 +8,7 @@
     as('owner','theme-manager','Theme Manager','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
     as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
     as('admin','overview','Overview','🏠','/dashboard/modules/admin/overview'),
-    as('admin','quotes','Estimate Review Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
-    as('admin','requests','Requests','📋','/dashboard/modules/admin/requests','admin.requests',['requests.manage']),
+    as('admin','estimate-request-center','Estimate & Request Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
     as('admin','work-orders','Work Orders','🔧','/dashboard/modules/admin/work-orders','admin.work-orders',['requests.manage']),
     as('admin','schedule','Schedule','📅','/dashboard/modules/admin/schedule','admin.schedule',['scheduling.manage']),
     as('admin','customers','Customers','👥','/dashboard/modules/admin/customers','admin.customers',['customers.manage']),
@@ -23,8 +22,7 @@
     as('admin','brand-settings','Branding','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
     as('admin','settings','Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
     as('manager','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
-    as('manager','quotes','Quotes','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
-    as('manager','requests','Requests','📋','/dashboard/modules/admin/requests','admin.requests',['requests.manage']),
+    as('manager','estimate-request-center','Estimate & Request Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
     as('manager','work-orders','Work Orders','🔧','/dashboard/modules/admin/work-orders','admin.work-orders',['requests.manage']),
     as('manager','schedule','Schedule','📅','/dashboard/modules/admin/schedule','admin.schedule',['scheduling.manage']),
     as('manager','customers','Customers','👥','/dashboard/modules/admin/customers','admin.customers',['customers.manage']),
@@ -73,7 +71,7 @@
     const jobSlug = workspace === 'worker' ? 'jobs' : workspace === 'admin' || workspace === 'manager' ? 'work-orders' : workspace === 'client' ? 'project-updates' : 'system-center';
     return [
       { label:'🏠 Home', module: moduleFor(workspace, 'overview')?.id },
-      { label:'📋 Requests', module: moduleFor(workspace, 'requests')?.id || moduleFor(workspace, 'audit-logs')?.id },
+      { label:'💰 Estimates', module: moduleFor(workspace, 'estimate-request-center')?.id || moduleFor(workspace, 'requests')?.id || moduleFor(workspace, 'audit-logs')?.id },
       { label:'💰 Quotes', module: moduleFor(workspace, 'quotes')?.id || moduleFor(workspace, 'system-center')?.id },
       { label:'🔧 Jobs', module: moduleFor(workspace, jobSlug)?.id },
       { label:'☰ More', more:true },

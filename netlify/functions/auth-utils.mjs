@@ -57,6 +57,13 @@ export const PORTAL_PERMISSIONS = [
 
 export const ALL_PERMISSION_KEYS = PORTAL_PERMISSIONS.map((permission) => permission.key);
 
+
+export const ROLE_HIERARCHY = { owner: 100, admin: 80, manager: 60, worker: 40, client: 20, guest: 10 };
+export const roleRank = (roleKey = '') => ROLE_HIERARCHY[normalizeRoleKey(roleKey)] || ROLE_HIERARCHY.guest;
+export const highestRoleRank = (roleKeys = []) => Math.max(0, ...(Array.isArray(roleKeys) ? roleKeys : []).map((roleKey) => roleRank(roleKey)));
+export const canManageRoleKey = (actorRoleKeys = [], targetRoleKey = '') => actorRoleKeys.includes('owner') || roleRank(targetRoleKey) < highestRoleRank(actorRoleKeys);
+export const grantablePermissionKeys = (roleKeys = [], assignedPermissionKeys = []) => roleKeys.includes('owner') ? ALL_PERMISSION_KEYS : [...new Set(assignedPermissionKeys)].sort();
+
 export const DEFAULT_ROLE_PERMISSIONS = {
   owner: ALL_PERMISSION_KEYS,
   admin: ALL_PERMISSION_KEYS.filter((permission) => !['ranks.delete'].includes(permission)),
@@ -80,18 +87,12 @@ export const normalizePermissionKeys = (permissions) => {
 };
 
 export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = []) => {
-  const permissionKeys = new Set(assignedPermissionKeys);
-
+  if (roleKeys.includes('owner')) return [...ALL_PERMISSION_KEYS].sort();
+  if (Array.isArray(assignedPermissionKeys) && assignedPermissionKeys.length) return [...new Set(assignedPermissionKeys)].sort();
+  const permissionKeys = new Set();
   roleKeys.forEach((roleKey) => {
     (DEFAULT_ROLE_PERMISSIONS[roleKey] || []).forEach((permission) => permissionKeys.add(permission));
   });
-
-  if (roleKeys.includes('owner')) {
-    ALL_PERMISSION_KEYS.forEach((permission) => permissionKeys.add(permission));
-  } else if (roleKeys.includes('admin')) {
-    DEFAULT_ROLE_PERMISSIONS.admin.forEach((permission) => permissionKeys.add(permission));
-  }
-
   return [...permissionKeys].sort();
 };
 

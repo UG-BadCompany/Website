@@ -1,5 +1,6 @@
 import {
   clean,
+  canManageRoleKey,
   getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
@@ -7,6 +8,7 @@ import {
   loadDatabase,
   loadRolePermissionKeys,
   normalizeRoleKey,
+  roleRank,
   validateEmail,
 } from './auth-utils.mjs';
 
@@ -185,7 +187,7 @@ const loadUsersSafely = async (db) => {
   return users.map(mapUser);
 };
 
-const loadRolesSafely = async (db) => {
+const loadRolesSafely = async (db, adminSession = { roleKeys: [] }) => {
   try {
     const availableRoles = await db.sql`
       select roles.id,
@@ -201,7 +203,7 @@ const loadRolesSafely = async (db) => {
     `;
 
     return {
-      roles: availableRoles.map(mapRole),
+      roles: availableRoles.map((role) => ({ ...mapRole(role), canAssign: canManageRoleKey(adminSession.roleKeys, role.key), rank: roleRank(role.key) })),
       warning: '',
     };
   } catch (error) {
@@ -214,7 +216,7 @@ const loadRolesSafely = async (db) => {
     `;
 
     return {
-      roles: fallbackRoles.map((role) => mapRole({ ...role, permissions: [] })),
+      roles: fallbackRoles.map((role) => ({ ...mapRole({ ...role, permissions: [] }), canAssign: canManageRoleKey(adminSession.roleKeys, role.key), rank: roleRank(role.key) })),
       warning: 'Role permissions could not be fully loaded. User editing can continue with limited role details.',
     };
   }
@@ -239,7 +241,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
     if (request.method === 'GET') {
       const [users, roleResult] = await Promise.all([
         loadUsersSafely(db),
-        loadRolesSafely(db),
+        loadRolesSafely(db, adminSession),
       ]);
 
       return safeJson(200, {
@@ -281,6 +283,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       }
 
       const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
+      if (ownerRoles.some((owner) => String(owner.id) === String(payload.userId)) && !adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
       if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot be deactivated.' });
 
       const [deletedUser] = await db.sql`
@@ -361,6 +364,17 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         ok: false,
         message: 'At least one valid role is required.',
       });
+    }
+
+    if (request.method === 'PATCH' && String(payload.userId) === String(adminSession.session.user_id) && !adminSession.roleKeys.includes('owner')) {
+      return safeJson(403, { ok: false, message: 'Users cannot escalate themselves.' });
+    }
+
+    const requestedRoleRows = await db.sql`select key from roles where key = any(${payload.roles})`;
+    const requestedRoleKeys = requestedRoleRows.map((role) => role.key);
+    const blockedRoles = requestedRoleKeys.filter((roleKey) => !canManageRoleKey(adminSession.roleKeys, roleKey));
+    if (blockedRoles.length) {
+      return safeJson(403, { ok: false, message: blockedRoles.includes('owner') ? 'Only Owner can modify this role.' : 'You can only assign roles below your authority level.', blockedRoles });
     }
 
     const [user] = request.method === 'POST'

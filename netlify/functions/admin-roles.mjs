@@ -2,9 +2,11 @@ import {
   ALL_PERMISSION_KEYS,
   clean,
   DEFAULT_ROLE_PERMISSIONS,
+  canManageRoleKey,
   getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
+  grantablePermissionKeys,
   json,
   loadDatabase,
   loadRolePermissionKeys,
@@ -12,6 +14,7 @@ import {
   normalizeRoleKey,
   parseJsonBody,
   PORTAL_PERMISSIONS,
+  roleRank,
 } from './auth-utils.mjs';
 
 const safeJson = (status, body) => json(status, body, {
@@ -37,7 +40,7 @@ const mapRole = (role, permissions = []) => ({
   name: clean(role.name, 120),
   description: clean(role.description || '', 500),
   isSystem: Boolean(role.is_system),
-  permissions: getPermissionKeysForRoles([role.key], permissions),
+  permissions: role.key === 'owner' ? ALL_PERMISSION_KEYS : [...new Set(permissions)].sort(),
   createdAt: role.created_at ? String(role.created_at) : null,
   updatedAt: role.updated_at ? String(role.updated_at) : null,
 });
@@ -96,6 +99,7 @@ const loadAdminSession = async (db, request) => {
   });
 
   const permissionKeys = getPermissionKeysForRoles(roleKeys, assignedPermissionKeys);
+  const grantablePermissions = grantablePermissionKeys(roleKeys, assignedPermissionKeys);
 
   if (!permissionKeys.includes('admin.roles.manage')) {
     return {
@@ -112,6 +116,8 @@ const loadAdminSession = async (db, request) => {
     session,
     roleKeys,
     permissionKeys,
+    assignedPermissionKeys,
+    grantablePermissions,
   };
 };
 
@@ -168,7 +174,7 @@ const loadRolesSafely = async (db) => {
   return {
     roles: roles.map((role) => {
       const assignedPermissions = permissionsByRole[role.key] || DEFAULT_ROLE_PERMISSIONS[role.key] || [];
-      return mapRole(role, role.key === 'admin' ? ALL_PERMISSION_KEYS : assignedPermissions);
+      return mapRole(role, assignedPermissions);
     }),
     permissionWarning,
   };
@@ -197,8 +203,11 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
         ok: true,
         authenticated: true,
         authorized: true,
-        permissions: PORTAL_PERMISSIONS,
-        roles,
+        permissions: PORTAL_PERMISSIONS.map((permission) => ({ ...permission, canGrant: adminSession.roleKeys.includes('owner') || adminSession.grantablePermissions.includes(permission.key) })),
+        grantablePermissions: adminSession.grantablePermissions,
+        roleHierarchy: { owner: 100, admin: 80, manager: 60, worker: 40, client: 20, guest: 10 },
+        editorRoleKeys: adminSession.roleKeys,
+        roles: roles.map((role) => ({ ...role, canEdit: canManageRoleKey(adminSession.roleKeys, role.key), canDelete: !role.isSystem && role.key !== 'owner' && canManageRoleKey(adminSession.roleKeys, role.key) })),
         warning: permissionWarning || '',
       });
     }
@@ -211,6 +220,7 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
       const [role] = await db.sql`select id, key, coalesce(is_system, false) as is_system from roles where id = ${roleId} limit 1`;
       if (!role) return safeJson(404, { ok: false, message: 'Role not found.' });
       if (role.key === 'owner' || role.is_system) return safeJson(409, { ok: false, message: 'System roles, including Owner, cannot be deleted.' });
+      if (!canManageRoleKey(adminSession.roleKeys, role.key)) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
       const [used] = await db.sql`select count(*) from user_roles where role_id = ${roleId}`;
       if (Number(used?.count || 0) > 0) return safeJson(409, { ok: false, message: 'Role is assigned to users and cannot be deleted.' });
       await db.sql`delete from roles where id = ${roleId}`;
@@ -248,9 +258,17 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
       });
     }
 
-    const effectivePermissions = payload.key === 'admin'
-      ? ALL_PERMISSION_KEYS
-      : (payload.permissions.length ? payload.permissions : DEFAULT_ROLE_PERMISSIONS[payload.key] || []);
+    const [targetRole] = request.method === 'PATCH'
+      ? await db.sql`select id, key, coalesce(is_system, false) as is_system from roles where id = ${payload.roleId} limit 1`
+      : [null];
+    const targetKey = targetRole?.key || payload.key;
+    if (targetKey === 'owner' && !adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
+    if (!canManageRoleKey(adminSession.roleKeys, targetKey)) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
+    const requestedPermissions = payload.permissions.length ? payload.permissions : (DEFAULT_ROLE_PERMISSIONS[targetKey] || []).filter((permission) => adminSession.roleKeys.includes('owner') || adminSession.grantablePermissions.includes(permission));
+    const cannotGrant = requestedPermissions.filter((permission) => !adminSession.roleKeys.includes('owner') && !adminSession.grantablePermissions.includes(permission));
+    if (cannotGrant.length) return safeJson(403, { ok: false, message: 'You cannot grant permissions you do not currently have.', blockedPermissions: cannotGrant });
+
+    const effectivePermissions = requestedPermissions;
 
     const [role] = request.method === 'POST'
       ? await db.sql`
@@ -279,7 +297,7 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
     await savePermissions(
       db,
       role.id,
-      role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions,
+      effectivePermissions,
     );
 
     await db.sql`
@@ -291,7 +309,7 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
         ${role.id},
         ${JSON.stringify({
           key: role.key,
-          permissions: role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions,
+          permissions: effectivePermissions,
         })}::jsonb
       )
     `;
@@ -302,7 +320,7 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
       authorized: true,
       role: mapRole(
         role,
-        role.key === 'admin' ? ALL_PERMISSION_KEYS : effectivePermissions,
+        effectivePermissions,
       ),
     });
   } catch (error) {

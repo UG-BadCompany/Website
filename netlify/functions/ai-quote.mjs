@@ -66,6 +66,33 @@ const performLiveResearch = async ({ payload, materials, mode }) => {
   }
 };
 
+
+const score01 = (points, total) => Math.max(0, Math.min(1, Math.round((total ? points / total : 0) * 100) / 100));
+const has = (value) => Boolean(normalizeText(value));
+const computeConfidence = ({ estimate = {}, payload = {}, research = {} }) => {
+  const text = `${payload.description || ''} ${payload.projectDetails || ''} ${payload.workScope || ''}`;
+  const materials = toArray(estimate.material_line_items).length ? toArray(estimate.material_line_items) : internalMaterials(payload);
+  const labor = toArray(estimate.labor_line_items);
+  const info = score01([
+    has(text), has(payload.service || payload.service_category), has(payload.address || payload.streetAddress || payload.propertySummary), Boolean(payload.photosProvided || payload.files?.length || payload.photos?.length), /model|serial|btu|ton|amp|volt|brand/i.test(text), /\d+\s*(ft|feet|inch|in|ton|btu|amp|volt)/i.test(text), has(payload.timeframe || payload.preferredTimeframe), text.length > 40,
+  ].filter(Boolean).length, 8);
+  const knownJob = /mini\s*-?split|ductless|faucet|toilet|water heater|outlet|switch|drywall/i.test(text);
+  const laborScore = score01([knownJob, labor.length > 0, text.length > 40, /access|attic|roof|crawl|panel|wall|ceiling/i.test(text), Boolean(estimate.historical_matches?.length)].filter(Boolean).length, 5);
+  const materialScore = score01([materials.length > 0, materials.every((m) => Number(m.quantity || m.neededQty || 1) > 0), /model|brand|part|sku/i.test(text), Boolean(research.priceFindings?.length), materials.some((m) => /internal|catalog|playbook/i.test(m.pricing_source || m.source || ''))].filter(Boolean).length, 5);
+  const pricingScore = score01([Boolean(research.priceFindings?.length), materials.some((m) => m.estimated_cost_low || m.estimatedUnitCostCents || m.unit_cost), Boolean(estimate.historical_matches?.length), true, Boolean(estimate.pricing_summary && Object.keys(estimate.pricing_summary).length)].filter(Boolean).length, 5);
+  const researchScore = score01([materials.length > 0, Boolean(research.priceFindings?.length), Boolean(research.productFindings?.length), (research.priceFindings?.length || 0) > 2].filter(Boolean).length, 4);
+  const scopeScore = score01([text.length > 40, has(payload.workScope || estimate.scope_of_work), knownJob, !/\b(fix|broken|issue|problem)\b/i.test(text) || text.length > 80].filter(Boolean).length, 4);
+  const scores = { labor: laborScore, materials: materialScore, pricing: pricingScore, scope: scopeScore, information_completeness: info, research: researchScore };
+  scores.overall = Math.round(((scores.labor + scores.materials + scores.pricing + scores.scope + scores.information_completeness + scores.research) / 6) * 100) / 100;
+  const reasons = [];
+  if (text.length > 40) reasons.push('Customer described the issue clearly.'); else reasons.push('Customer description is short or missing.');
+  if (!/model|serial|btu|ton|brand/i.test(text)) reasons.push('No model number or equipment brand was provided.');
+  if (!research.priceFindings?.length) reasons.push('Live pricing was not found for all materials.'); else reasons.push('Live pricing/product research returned supplier evidence.');
+  if (!payload.photosProvided && !payload.files?.length && !payload.photos?.length) reasons.push('No photos/files were provided.');
+  const recommended_action = scores.overall >= 0.8 ? 'Ready for admin review.' : scores.overall >= 0.55 ? 'Review assumptions before sending.' : 'Request more information or continue manually.';
+  return { scores, reasons, recommended_action };
+};
+
 const parseOpenAiJson = (data = {}) => {
   const raw = data.output_text || data.output?.flatMap((item) => item.content || []).map((content) => content.text).filter(Boolean).join('\n') || data.choices?.[0]?.message?.content || '';
   if (!raw) return null;
@@ -75,32 +102,28 @@ const parseOpenAiJson = (data = {}) => {
   try { return JSON.parse(match[0]); } catch { return null; }
 };
 
-const normalizeEstimate = (estimate = {}, payload = {}, research = {}) => ({
-  service_category: normalizeText(estimate.service_category || detectTrade(payload)),
-  trade: normalizeText(estimate.trade || detectTrade(payload)),
-  customer_summary: normalizeText(estimate.customer_summary || payload.customerSummary || payload.name || payload.email || 'Original customer request'),
-  property_summary: normalizeText(estimate.property_summary || payload.propertySummary || payload.address || payload.streetAddress || payload.city || 'Original property request'),
-  scope_of_work: toArray(estimate.scope_of_work).length ? toArray(estimate.scope_of_work) : [normalizeText(estimate.scope_of_work || payload.description || payload.projectDetails || 'Admin review required to finalize scope.')],
-  labor_line_items: toArray(estimate.labor_line_items).map((item) => typeof item === 'string' ? { name: item, hours_low: 1, hours_high: 2 } : item),
-  material_line_items: toArray(estimate.material_line_items).length ? toArray(estimate.material_line_items) : internalMaterials(payload),
-  pricing_summary: estimate.pricing_summary && typeof estimate.pricing_summary === 'object' ? estimate.pricing_summary : { total_low: null, total_high: null, status: 'admin_review_required' },
-  assumptions: toArray(estimate.assumptions),
-  exclusions: toArray(estimate.exclusions),
-  warranty_notes: normalizeText(estimate.warranty_notes || 'Warranty terms require admin review before sending.'),
-  customer_notes: normalizeText(estimate.customer_notes || 'Estimate draft is pending admin review.'),
-  internal_admin_notes: normalizeText(estimate.internal_admin_notes || 'AI generated this draft for admin review only. Do not send without approval.'),
-  recommended_questions: toArray(estimate.recommended_questions),
-  confidence_scores: {
-    overall: clampPercent(estimate.confidence_scores?.overall, 75),
-    labor: clampPercent(estimate.confidence_scores?.labor, 75),
-    materials: clampPercent(estimate.confidence_scores?.materials, research.priceFindings?.length ? 78 : 62),
-    scope: clampPercent(estimate.confidence_scores?.scope, 72),
-    pricing: clampPercent(estimate.confidence_scores?.pricing, research.priceFindings?.length ? 75 : 58),
-    information_completeness: clampPercent(estimate.confidence_scores?.information_completeness, payload.description ? 72 : 45),
-  },
-  research_context: research,
-  admin_approval_required: true,
-});
+const normalizeEstimate = (estimate = {}, payload = {}, research = {}) => {
+  const base = {
+    service_category: normalizeText(estimate.service_category || detectTrade(payload)),
+    trade: normalizeText(estimate.trade || detectTrade(payload)),
+    customer_summary: normalizeText(estimate.customer_summary || payload.customerSummary || payload.name || payload.email || 'Original customer request'),
+    property_summary: normalizeText(estimate.property_summary || payload.propertySummary || payload.address || payload.streetAddress || payload.city || 'Original property request'),
+    scope_of_work: toArray(estimate.scope_of_work).length ? toArray(estimate.scope_of_work) : [normalizeText(estimate.scope_of_work || payload.description || payload.projectDetails || 'Admin review required to finalize scope.')],
+    labor_line_items: toArray(estimate.labor_line_items).map((item) => typeof item === 'string' ? { name: item, hours_low: 1, hours_high: 2 } : item),
+    material_line_items: toArray(estimate.material_line_items).length ? toArray(estimate.material_line_items) : internalMaterials(payload),
+    pricing_summary: estimate.pricing_summary && typeof estimate.pricing_summary === 'object' ? estimate.pricing_summary : { total_low: null, total_high: null, status: 'admin_review_required' },
+    assumptions: toArray(estimate.assumptions),
+    exclusions: toArray(estimate.exclusions),
+    warranty_notes: normalizeText(estimate.warranty_notes || 'Warranty terms require admin review before sending.'),
+    customer_notes: normalizeText(estimate.customer_notes || 'Estimate draft is pending admin review.'),
+    internal_admin_notes: normalizeText(estimate.internal_admin_notes || 'AI generated this draft for admin review only. Do not send without approval.'),
+    recommended_questions: toArray(estimate.recommended_questions),
+    research_context: research,
+    admin_approval_required: true,
+  };
+  const confidence = computeConfidence({ estimate: base, payload, research });
+  return { ...base, confidence_scores: confidence.scores, confidence_reasons: confidence.reasons, recommended_action: confidence.recommended_action };
+};
 
 const callOpenAI = async ({ payload, research }) => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -117,7 +140,7 @@ const callOpenAI = async ({ payload, research }) => {
           { role: 'system', content: 'You are a server-side contractor estimating engine. Return structured JSON only. Do not approve, send, or finalize quotes. Never put status text into customer/property/scope/labor/material fields.' },
           { role: 'user', content: JSON.stringify({
             task: 'Generate a usable estimate draft even when optional information is missing. Use assumptions and recommended questions rather than blocking. Mini-splits are HVAC. Include full scope, labor, materials, pricing, notes, exclusions, and confidence.',
-            required_json_keys: ['service_category','trade','customer_summary','property_summary','scope_of_work','labor_line_items','material_line_items','pricing_summary','assumptions','exclusions','warranty_notes','customer_notes','internal_admin_notes','recommended_questions','confidence_scores'],
+            required_json_keys: ['service_category','trade','customer_summary','property_summary','scope_of_work','labor_line_items','material_line_items','pricing_summary','assumptions','exclusions','warranty_notes','customer_notes','internal_admin_notes','recommended_questions','confidence_scores','confidence_reasons','recommended_action'],
             customer_request: payload,
             internal_material_playbook: internalMaterials(payload),
             live_research: research,

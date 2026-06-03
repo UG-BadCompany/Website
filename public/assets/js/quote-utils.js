@@ -1,6 +1,7 @@
 window.TAQuotes={
   blankLine(){return{description:'',quantity:1,unitCost:0,type:'labor'}},
-  confidenceLabel(v){v=Number(v||0);return v>=80?'High':v>=55?'Medium':'Low'},
+  confidenceLabel(v){v=Number(v||0);if(v<=1)v*=100;return v>=80?'High':v>=55?'Medium':'Low'},
+  confidencePercent(v){v=Number(v||0);if(v<=1)v*=100;return Math.round(v)},
   normalizeAiDraft(draft={}){
     const structured=draft.structuredEstimate||draft.aiStructuredQuote||draft.result||draft;
     return {
@@ -16,6 +17,8 @@ window.TAQuotes={
       pricingSummary:structured.pricing_summary||draft.pricingSummary||{},
       confidenceScores:structured.confidence_scores||draft.confidenceScores||{},
       recommendedQuestions:structured.recommended_questions||draft.recommendedQuestions||draft.missingInfoQuestions||[],
+      confidenceReasons:structured.confidence_reasons||draft.confidenceReasons||[],
+      recommendedAction:structured.recommended_action||draft.recommendedAction||'',
       status:draft.status||'draft'
     };
   }

@@ -13,25 +13,59 @@
       const current = ctx.router?.state?.currentModule;
       if (current === 'owner.system-center') return mountSystemCenter(ctx);
       if (current === 'owner.audit-logs') return mountAuditLogs(ctx);
-      return TAModuleKit.mount(ctx, {
-        title: 'Settings',
-        icon: '⚙️',
-        description: 'Business settings and platform configuration for admins.',
-        endpoints: ['/.netlify/functions/install-status', '/.netlify/functions/company-settings', '/api/system-health'],
-        recordPaths: ['checks', 'items'],
-        metrics: [
-          { label: 'Install Complete', icon: '✅', path: 'installed' },
-          { label: 'Installer Locked', icon: '🔒', path: 'installer_locked' },
-          { label: 'Owner Exists', icon: '👑', path: 'owner_exists' },
-          { label: 'Settings Loaded', icon: '⚙️', path: 'company.installationComplete' },
-        ],
-        actions: ['Open Settings', 'Review Installer Lock'],
-        recordActions: ['View Detail'],
-      });
+      return mountAdminSettings(ctx);
     },
     async destroy() {},
     async refresh() {},
   });
+
+
+  async function mountAdminSettings({ root, api }) {
+    const tabs = {
+      general: ['Business hours','Service area','Default contact methods','Default timezone','Default currency'],
+      quotes: ['Default labor rate','Default markup','Default material markup','Trip charge','Quote expiration days','Require admin review before sending'],
+      requests: ['Enable customer follow-up questions','Enable information needed queue','Require photos optional/required toggle','Default request status'],
+      workorders: ['Enable worker assignments','Enable scheduling','Enable photos/completion evidence','Enable material tracking'],
+      ai: ['AI quoting enabled','AI troubleshooting enabled','Research mode','Admin review required','Confidence threshold warning'],
+      notifications: ['Magic link email sender','Quote email sender','Request notification email','Admin notification toggles'],
+    };
+    const labels = { general:'General', quotes:'Quotes', requests:'Requests', workorders:'Work Orders', ai:'AI', notifications:'Notifications' };
+    let active = 'general';
+    let company = {};
+    let saved = JSON.parse(localStorage.getItem('taAdminSettings') || '{}');
+    const defaults = { timezone:'America/Phoenix', currency:'USD', researchMode:'internal_live', confidenceThreshold:'55', requireAdminReview:'true', defaultRequestStatus:'new' };
+    const valueFor = (key) => saved[key] ?? defaults[key] ?? '';
+    const fieldName = (label) => label.toLowerCase().replace(/[^a-z0-9]+(.)/g, (_, chr) => chr.toUpperCase()).replace(/[^a-z0-9]/g, '');
+    const renderFields = () => tabs[active].map((label) => {
+      const name = fieldName(label);
+      if (/enabled|required|review|toggle|tracking|scheduling|assignments|photos/i.test(label)) return `<label class="pill"><input type="checkbox" name="${name}" ${String(valueFor(name)) === 'true' ? 'checked' : ''}> ${escapeHtml(label)}</label>`;
+      if (label === 'Research mode') return `<label class="field"><span>${label}</span><select name="researchMode"><option value="off">OFF</option><option value="internal_only">INTERNAL KNOWLEDGE ONLY</option><option value="internal_live" ${valueFor('researchMode') === 'internal_live' ? 'selected' : ''}>INTERNAL + LIVE RESEARCH</option><option value="aggressive">LIVE RESEARCH AGGRESSIVE</option></select></label>`;
+      return `<label class="field"><span>${escapeHtml(label)}</span><input name="${name}" value="${escapeHtml(valueFor(name))}" placeholder="${escapeHtml(label)}"></label>`;
+    }).join('');
+    const render = () => {
+      root.innerHTML = `<section class="module-page stack admin-settings-page"><div class="module-hero module-header card"><div><p class="eyebrow">Admin Workspace</p><h2 class="module-title">⚙️ Settings</h2><p class="module-description">Business/admin settings only. Owner-only installer reset, destructive database actions, secret environment variables, and Owner role controls are not shown here.</p></div></div><article class="card module-section stack"><div class="module-tabs">${Object.entries(labels).map(([key,label]) => `<button class="btn secondary ${active===key?'active':''}" type="button" data-settings-tab="${key}">${label}</button>`).join('')}</div><form data-admin-settings class="stack"><div class="form-grid">${renderFields()}</div><p class="notice" data-settings-status>Loaded ${escapeHtml(labels[active])} settings. Changes are not saved yet.</p><div class="action-row"><button class="btn" type="submit">Save ${escapeHtml(labels[active])} Settings</button><button class="btn secondary" type="button" data-reset-section>Reset Section</button></div></form></article><div class="module-grid"><article class="module-card card"><h3>Safe Admin Scope</h3><p>General, quote, request, work order, AI, and notification settings are available without duplicating Owner-only platform controls.</p></article><article class="module-card card"><h3>AI Review Controls</h3><p>Research mode and confidence warning threshold are admin-visible while API keys remain server-side only.</p></article></div></section>`;
+      root.querySelectorAll('[data-settings-tab]').forEach((button) => button.addEventListener('click', () => { active = button.dataset.settingsTab; render(); }));
+      root.querySelector('[data-admin-settings]').addEventListener('input', () => { const status = root.querySelector('[data-settings-status]'); if (status) status.textContent = 'Unsaved changes — save this section before leaving.'; });
+      root.querySelector('[data-reset-section]').addEventListener('click', () => { tabs[active].forEach((label) => delete saved[fieldName(label)]); if (active === 'ai') delete saved.researchMode; localStorage.setItem('taAdminSettings', JSON.stringify(saved)); TAUi.toast('Section reset.', 'success'); render(); });
+      root.querySelector('[data-admin-settings]').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const values = Object.fromEntries(new FormData(form).entries());
+        form.querySelectorAll('input[type="checkbox"]').forEach((input) => { values[input.name] = input.checked ? 'true' : 'false'; });
+        saved = { ...saved, ...values };
+        localStorage.setItem('taAdminSettings', JSON.stringify(saved));
+        if (active === 'general') {
+          try { await api.patch('/.netlify/functions/company-settings', { ...company, serviceArea: values.serviceArea || company.serviceArea, timezone: values.defaultTimezone || values.timezone || company.timezone, currency: values.defaultCurrency || values.currency || company.currency }); } catch {}
+        }
+        TAUi.toast(`${labels[active]} settings saved.`, 'success');
+        render();
+      });
+    };
+    root.innerHTML = '<article class="card module-loading"><h3>Loading Admin Settings</h3><p>Preparing allowed business settings.</p></article>';
+    try { const response = await api.get('/.netlify/functions/company-settings'); company = response.company || {}; saved = { serviceArea: company.serviceArea || '', defaultTimezone: company.timezone || defaults.timezone, defaultCurrency: company.currency || defaults.currency, ...saved }; }
+    catch (error) { root.innerHTML = `<article class="card module-error"><h3>Settings loaded with limited data</h3><p>${escapeHtml(error.message || 'Company settings unavailable.')}</p></article>`; }
+    render();
+  }
 
   async function fetchAll(api) {
     const endpoints = ['/.netlify/functions/install-status', '/.netlify/functions/company-settings', '/api/system-health'];
