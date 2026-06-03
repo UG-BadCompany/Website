@@ -64,14 +64,17 @@
         preview.style.setProperty('--preview-primary', state.primaryColor || defaults().primaryColor);
         preview.style.setProperty('--preview-button', state.buttonColor || state.primaryColor || defaults().buttonColor);
         preview.innerHTML = `<div class="brand-preview-shell">
-          <div class="brand-preview-brand">
-            ${state.logoUrl ? `<img class="brand-logo" src="${escapeHtml(state.logoUrl)}" alt="Logo preview">` : `<span class="brand-logo">${escapeHtml(initials)}</span>`}
-            ${state.showCompanyNameInHeader ? `<strong>${escapeHtml(state.displayName || state.companyName || 'Contractor Portal')}</strong>` : ''}
-          </div>
+          <header class="brand-preview-header">
+            <div class="brand-preview-brand">
+              ${state.logoUrl ? `<img class="brand-logo" src="${escapeHtml(state.logoUrl)}" alt="Logo preview">` : `<span class="brand-logo">${escapeHtml(initials)}</span>`}
+              ${state.showCompanyNameInHeader ? `<strong>${escapeHtml(state.displayName || state.companyName || 'Contractor Portal')}</strong>` : ''}
+            </div>
+            <nav class="brand-preview-nav" aria-label="Preview navigation"><span>Overview</span><span>Requests</span><span>Invoices</span></nav>
+          </header>
           <article class="brand-preview-card">
-            <span class="status-badge success">Live preview</span>
+            <span class="status-badge success">Live preview badge</span>
             <h3>${escapeHtml(state.displayName || state.companyName || 'Contractor Portal')}</h3>
-            <p>Sample customer-facing card using your saved theme colors.</p>
+            <p>Sample dashboard card using your saved theme colors.</p>
             <input value="Readable sample input" readonly>
             <div class="action-row">
               <button class="btn" type="button">Primary button</button>

@@ -3,15 +3,10 @@
   const defs = [
     as('owner','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
     as('owner','company-management','Company Management','👥','/dashboard/modules/admin/users','admin.users',['users.manage']),
-    as('owner','permission-matrix','Permission Matrix','🛡','/dashboard/modules/admin/roles','admin.roles',['roles.manage']),
-    as('owner','system-health','System Health','📊','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
-    as('owner','module-registry','Module Registry','📦','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
-    as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
+    as('owner','permissions-workspaces','Permissions & Workspaces','🛡','/dashboard/modules/admin/roles','admin.roles',['roles.manage']),
+    as('owner','system-center','System Center','📊','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
     as('owner','theme-manager','Theme Manager','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
-    as('owner','platform-settings','Platform Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
-    as('owner','installer-management','Installer Management','🔄','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
-    as('owner','ai-system-settings','AI System Settings','🤖','/dashboard/modules/admin/ai-knowledge','admin.ai-knowledge',['ai.knowledge.manage']),
-    as('owner','workspace-manager','Workspace Manager','🧩','/dashboard/modules/admin/roles','admin.roles',['roles.manage']),
+    as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
     as('admin','overview','Overview','🏠','/dashboard/modules/admin/overview'),
     as('admin','quotes','Estimate Review Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
     as('admin','requests','Requests','📋','/dashboard/modules/admin/requests','admin.requests',['requests.manage']),
@@ -75,11 +70,11 @@
   const currentWorkspace = () => state.currentWorkspace || allowedWorkspaces()[0] || state.user?.permissions?.defaultView || 'client';
   const mobileTargets = () => {
     const workspace = currentWorkspace();
-    const jobSlug = workspace === 'worker' ? 'jobs' : workspace === 'admin' || workspace === 'manager' ? 'work-orders' : workspace === 'client' ? 'project-updates' : 'module-registry';
+    const jobSlug = workspace === 'worker' ? 'jobs' : workspace === 'admin' || workspace === 'manager' ? 'work-orders' : workspace === 'client' ? 'project-updates' : 'system-center';
     return [
       { label:'🏠 Home', module: moduleFor(workspace, 'overview')?.id },
       { label:'📋 Requests', module: moduleFor(workspace, 'requests')?.id || moduleFor(workspace, 'audit-logs')?.id },
-      { label:'💰 Quotes', module: moduleFor(workspace, 'quotes')?.id || moduleFor(workspace, 'system-health')?.id },
+      { label:'💰 Quotes', module: moduleFor(workspace, 'quotes')?.id || moduleFor(workspace, 'system-center')?.id },
       { label:'🔧 Jobs', module: moduleFor(workspace, jobSlug)?.id },
       { label:'☰ More', more:true },
     ].filter((item) => item.more || item.module);

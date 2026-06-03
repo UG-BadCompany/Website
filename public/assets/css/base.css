@@ -136,7 +136,7 @@ img { max-width: 100%; }
   border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
   box-shadow: none;
 }
-.btn.danger { background: var(--color-danger); color: #fff; }
+.btn.danger { background: var(--color-danger); color:var(--button-text,#fff); }
 .btn:disabled, button:disabled, .btn.disabled, [aria-disabled="true"] {
   opacity: .65;
   cursor: not-allowed;

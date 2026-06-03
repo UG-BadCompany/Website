@@ -96,14 +96,14 @@ body {
 .side-nav button:focus-visible,
 .workspace-switcher button:focus-visible {
   background: rgba(30, 41, 59, 0.72);
-  color: #fff;
+  color:var(--button-text,#fff);
   outline: none;
 }
 
 .side-nav button.active,
 .workspace-switcher button.active {
   background: #1e293b;
-  color: #fff;
+  color:var(--button-text,#fff);
   box-shadow: inset 3px 0 0 var(--primary, #38bdf8);
 }
 
@@ -164,7 +164,7 @@ body {
   right: 1rem;
   bottom: 1rem;
   background: #0f172a;
-  color: white;
+  color:var(--button-text,#fff);
   padding: 0.8rem 1rem;
   border-radius: 14px;
   z-index: 100;
@@ -356,7 +356,7 @@ body {
 
 .module-tabs .active {
   background: var(--button);
-  color: white;
+  color:var(--button-text,#fff);
 }
 
 .module-record-list {
@@ -693,7 +693,7 @@ body {
 
 #dashboard-app .btn {
   background: var(--color-button);
-  color: #fff;
+  color:var(--button-text,#fff);
   border: 1px solid transparent;
 }
 
@@ -710,7 +710,7 @@ body {
 
 #dashboard-app .btn.danger {
   background: var(--color-danger);
-  color: #fff;
+  color:var(--button-text,#fff);
 }
 
 #dashboard-app .btn:disabled,
@@ -753,4 +753,63 @@ body {
   height: 44px;
   padding: 4px;
   background: var(--field-bg);
+}
+
+/* Consolidated owner module and Theme Manager refinements. */
+.brand-preview-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  border-radius: 16px;
+  padding: .85rem;
+  background: var(--preview-surface, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--preview-primary, var(--color-primary)) 24%, var(--color-border));
+}
+
+.brand-preview-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  color: var(--preview-text, var(--color-text));
+  font-size: .82rem;
+  font-weight: 850;
+}
+
+.brand-preview-nav span {
+  border-radius: 999px;
+  padding: .35rem .6rem;
+  background: color-mix(in srgb, var(--preview-primary, var(--color-primary)) 12%, var(--preview-surface, var(--color-surface)));
+  color: var(--preview-text, var(--color-text));
+}
+
+.permissions-workspaces-page .module-tabs,
+.system-center-page .module-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.permissions-workspaces-page .module-tabs .active,
+.system-center-page .module-tabs .active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+.system-center-page .module-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.audit-logs-page .module-record-card {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 760px) {
+  .brand-preview-header,
+  .permissions-workspaces-page .module-tabs,
+  .system-center-page .module-tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 }
