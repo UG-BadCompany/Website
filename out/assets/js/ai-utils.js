@@ -1,0 +1,1 @@
+window.TAAI={quote:(payload)=>TAApi.post('/.netlify/functions/ai-quote',payload),troubleshoot:(payload)=>TAApi.post('/.netlify/functions/ai-troubleshooting',payload)};

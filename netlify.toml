@@ -218,3 +218,28 @@
   from = "/api/system-health"
   to = "/.netlify/functions/system-health"
   status = 200
+
+[[redirects]]
+  from = "/api/install"
+  to = "/.netlify/functions/install"
+  status = 200
+
+[[redirects]]
+  from = "/api/company-settings"
+  to = "/.netlify/functions/company-settings"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai/quote"
+  to = "/.netlify/functions/ai-quote"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai/troubleshooting"
+  to = "/.netlify/functions/ai-troubleshooting"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/auth-login"
+  status = 200

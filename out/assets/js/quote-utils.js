@@ -1,0 +1,1 @@
+window.TAQuotes={blankLine(){return{description:'',quantity:1,unitCost:0,type:'labor'}},confidenceLabel(v){v=Number(v||0);return v>=80?'High':v>=55?'Medium':'Low'}};
