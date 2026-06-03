@@ -1,84 +1,111 @@
 (() => {
+  const as = (workspace, slug, title, icon, base, registerId, permissions = []) => ({ id: `${workspace}.${slug}`, role: workspace, slug, title, icon, base, registerId, permissions });
   const defs = [
-    { id:'admin.overview', role:'admin', slug:'overview', title:'Overview', icon:'🏠', base:'/dashboard/modules/admin/overview' },
-    { id:'admin.quotes', role:'admin', slug:'quotes', title:'Quotes', icon:'💰', base:'/dashboard/modules/admin/quotes' },
-    { id:'admin.requests', role:'admin', slug:'requests', title:'Requests', icon:'📋', base:'/dashboard/modules/admin/requests' },
-    { id:'admin.work-orders', role:'admin', slug:'work-orders', title:'Jobs', icon:'🔧', base:'/dashboard/modules/admin/work-orders' },
-    { id:'admin.schedule', role:'admin', slug:'schedule', title:'Schedule', icon:'📅', base:'/dashboard/modules/admin/schedule' },
-    { id:'admin.customers', role:'admin', slug:'customers', title:'Customers', icon:'👥', base:'/dashboard/modules/admin/customers' },
-    { id:'admin.invoices', role:'admin', slug:'invoices', title:'Invoices', icon:'🧾', base:'/dashboard/modules/admin/invoices' },
-    { id:'admin.finance', role:'admin', slug:'finance', title:'Finance', icon:'📊', base:'/dashboard/modules/admin/finance' },
-    { id:'admin.inventory', role:'admin', slug:'inventory', title:'Inventory', icon:'📦', base:'/dashboard/modules/admin/inventory' },
-    { id:'admin.users', role:'admin', slug:'users', title:'Users', icon:'👥', base:'/dashboard/modules/admin/users' },
-    { id:'admin.roles', role:'admin', slug:'roles', title:'Roles', icon:'🛡️', base:'/dashboard/modules/admin/roles' },
-    { id:'admin.ai-knowledge', role:'admin', slug:'ai-knowledge', title:'AI Center', icon:'🤖', base:'/dashboard/modules/admin/ai-knowledge' },
-    { id:'admin.brand-settings', role:'admin', slug:'brand-settings', title:'Brand Settings', icon:'🎨', base:'/dashboard/modules/admin/brand-settings' },
-    { id:'admin.settings', role:'admin', slug:'settings', title:'Settings', icon:'⚙️', base:'/dashboard/modules/admin/settings' },
-    { id:'client.overview', role:'client', slug:'overview', title:'Overview', icon:'🏠', base:'/dashboard/modules/client/overview' },
-    { id:'client.requests', role:'client', slug:'requests', title:'Requests', icon:'📋', base:'/dashboard/modules/client/requests' },
-    { id:'client.quotes', role:'client', slug:'quotes', title:'Quotes', icon:'💰', base:'/dashboard/modules/client/quotes' },
-    { id:'client.invoices', role:'client', slug:'invoices', title:'Invoices', icon:'🧾', base:'/dashboard/modules/client/invoices' },
-    { id:'client.project-updates', role:'client', slug:'project-updates', title:'Project Updates', icon:'🔧', base:'/dashboard/modules/client/project-updates' },
-    { id:'client.profile', role:'client', slug:'profile', title:'Profile', icon:'⚙️', base:'/dashboard/modules/client/profile' },
-    { id:'client.properties', role:'client', slug:'properties', title:'Properties', icon:'🏠', base:'/dashboard/modules/client/properties' },
-    { id:'worker.overview', role:'worker', slug:'overview', title:'Overview', icon:'🏠', base:'/dashboard/modules/worker/overview' },
-    { id:'worker.jobs', role:'worker', slug:'jobs', title:'Jobs', icon:'🔧', base:'/dashboard/modules/worker/jobs' },
-    { id:'worker.schedule', role:'worker', slug:'schedule', title:'Schedule', icon:'📅', base:'/dashboard/modules/worker/schedule' },
-    { id:'worker.materials', role:'worker', slug:'materials', title:'Materials', icon:'📦', base:'/dashboard/modules/worker/materials' },
-    { id:'worker.photos', role:'worker', slug:'photos', title:'Photos', icon:'📷', base:'/dashboard/modules/worker/photos' },
-    { id:'worker.notes', role:'worker', slug:'notes', title:'Notes', icon:'📝', base:'/dashboard/modules/worker/notes' },
-    { id:'worker.troubleshooting', role:'worker', slug:'troubleshooting', title:'AI Center', icon:'🤖', base:'/dashboard/modules/worker/troubleshooting' },
+    as('owner','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
+    as('owner','company-management','Company Management','👥','/dashboard/modules/admin/users','admin.users',['users.manage']),
+    as('owner','permission-matrix','Permission Matrix','🛡','/dashboard/modules/admin/roles','admin.roles',['roles.manage']),
+    as('owner','system-health','System Health','📊','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('owner','module-registry','Module Registry','📦','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
+    as('owner','theme-manager','Theme Manager','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
+    as('owner','platform-settings','Platform Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('owner','installer-management','Installer Management','🔄','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('owner','ai-system-settings','AI System Settings','🤖','/dashboard/modules/admin/ai-knowledge','admin.ai-knowledge',['ai.knowledge.manage']),
+    as('owner','workspace-manager','Workspace Manager','🧩','/dashboard/modules/admin/roles','admin.roles',['roles.manage']),
+    as('admin','overview','Overview','🏠','/dashboard/modules/admin/overview'),
+    as('admin','quotes','Estimate Review Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
+    as('admin','requests','Requests','📋','/dashboard/modules/admin/requests','admin.requests',['requests.manage']),
+    as('admin','work-orders','Work Orders','🔧','/dashboard/modules/admin/work-orders','admin.work-orders',['requests.manage']),
+    as('admin','schedule','Schedule','📅','/dashboard/modules/admin/schedule','admin.schedule',['scheduling.manage']),
+    as('admin','customers','Customers','👥','/dashboard/modules/admin/customers','admin.customers',['customers.manage']),
+    as('admin','invoices','Invoices','🧾','/dashboard/modules/admin/invoices','admin.invoices',['invoices.manage']),
+    as('admin','finance','Finance','📊','/dashboard/modules/admin/finance','admin.finance'),
+    as('admin','inventory','Inventory','📦','/dashboard/modules/admin/inventory','admin.inventory',['inventory.manage']),
+    as('admin','users','Users','👤','/dashboard/modules/admin/users','admin.users',['users.manage']),
+    as('admin','roles','Roles & Permissions','🛡','/dashboard/modules/admin/roles','admin.roles',['roles.manage']),
+    as('admin','ai-knowledge','AI Knowledge','🤖','/dashboard/modules/admin/ai-knowledge','admin.ai-knowledge',['ai.knowledge.manage']),
+    as('admin','brand-settings','Branding','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
+    as('admin','settings','Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('manager','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
+    as('manager','quotes','Quotes','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage']),
+    as('manager','requests','Requests','📋','/dashboard/modules/admin/requests','admin.requests',['requests.manage']),
+    as('manager','work-orders','Work Orders','🔧','/dashboard/modules/admin/work-orders','admin.work-orders',['requests.manage']),
+    as('manager','schedule','Schedule','📅','/dashboard/modules/admin/schedule','admin.schedule',['scheduling.manage']),
+    as('manager','customers','Customers','👥','/dashboard/modules/admin/customers','admin.customers',['customers.manage']),
+    as('manager','workers','Workers','👷','/dashboard/modules/admin/users','admin.users',['workers.manage']),
+    as('manager','materials','Materials','📦','/dashboard/modules/admin/inventory','admin.inventory',['inventory.manage']),
+    as('manager','ai-tools','AI Tools','🤖','/dashboard/modules/admin/ai-knowledge','admin.ai-knowledge',['ai.quote.use']),
+    as('manager','reports','Reports','📈','/dashboard/modules/admin/finance','admin.finance',['reports.view']),
+    as('worker','overview','Overview','🏠','/dashboard/modules/worker/overview','worker.overview'),
+    as('worker','jobs','Jobs','🔧','/dashboard/modules/worker/jobs','worker.jobs'),
+    as('worker','schedule','Schedule','📅','/dashboard/modules/worker/schedule','worker.schedule'),
+    as('worker','materials','Materials','📦','/dashboard/modules/worker/materials','worker.materials'),
+    as('worker','photos','Photos','📸','/dashboard/modules/worker/photos','worker.photos'),
+    as('worker','notes','Notes','📝','/dashboard/modules/worker/notes','worker.notes'),
+    as('worker','troubleshooting','Troubleshooting','🤖','/dashboard/modules/worker/troubleshooting','worker.troubleshooting'),
+    as('client','overview','Overview','🏠','/dashboard/modules/client/overview','client.overview'),
+    as('client','requests','My Requests','📋','/dashboard/modules/client/requests','client.requests'),
+    as('client','quotes','My Quotes','💰','/dashboard/modules/client/quotes','client.quotes'),
+    as('client','invoices','My Invoices','🧾','/dashboard/modules/client/invoices','client.invoices'),
+    as('client','project-updates','Project Updates','📈','/dashboard/modules/client/project-updates','client.project-updates'),
+    as('client','properties','Properties','🏡','/dashboard/modules/client/properties','client.properties'),
+    as('client','profile','Profile','👤','/dashboard/modules/client/profile','client.profile'),
   ];
-  const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null };
   const workspaceLabels = { owner:'👑 Owner', admin:'🛠 Admin', manager:'📋 Manager', worker:'👷 Worker', client:'🏠 Client' };
-  const roleToWorkspace = (role) => role === 'owner' || role === 'manager' ? 'admin' : role;
+  const workspaceOrder = ['owner','admin','manager','worker','client'];
+  const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null };
+  const permissionKeys = () => state.user?.permissions?.permissionKeys || state.user?.permissionKeys || [];
+  const hasAllPermissions = (perms = []) => !perms.length || state.user?.roles?.includes('owner') || perms.every((perm) => permissionKeys().includes(perm) || permissionKeys().includes('admin.tools'));
   const userRoles = () => state.user?.roles || ['client'];
   const allowedWorkspaces = () => {
     const roles = userRoles();
     const views = state.user?.permissions?.availableViews || [];
     const keys = new Set([...roles, ...views]);
-    if (roles.includes('owner')) keys.add('owner');
-    if (roles.includes('manager')) keys.add('manager');
-    return ['owner','admin','manager','worker','client'].filter((role) => keys.has(role) || keys.has(roleToWorkspace(role)));
+    if (roles.includes('owner')) return workspaceOrder;
+    if (permissionKeys().includes('dashboard.view.admin') || permissionKeys().includes('admin.tools')) keys.add('admin');
+    if (permissionKeys().includes('dashboard.view.worker') || permissionKeys().includes('worker.tools')) keys.add('worker');
+    if (permissionKeys().includes('dashboard.view.client') || permissionKeys().includes('client.tools')) keys.add('client');
+    return workspaceOrder.filter((workspace) => keys.has(workspace));
   };
-  const moduleAllowed = (def) => allowedWorkspaces().some((workspace) => roleToWorkspace(workspace) === def.role);
-  const moduleFor = (workspace, slug) => defs.find((def) => def.role === roleToWorkspace(workspace) && def.slug === slug && moduleAllowed(def));
-  const defaultModuleFor = (workspace) => moduleFor(workspace, 'overview') || defs.find((def) => def.role === roleToWorkspace(workspace) && moduleAllowed(def));
+  const moduleAllowed = (def) => allowedWorkspaces().includes(def.role) && hasAllPermissions(def.permissions);
+  const moduleFor = (workspace, slug) => defs.find((def) => def.role === workspace && def.slug === slug && moduleAllowed(def));
+  const modulesForWorkspace = (workspace) => defs.filter((def) => def.role === workspace && moduleAllowed(def));
+  const defaultModuleFor = (workspace) => moduleFor(workspace, 'overview') || modulesForWorkspace(workspace)[0];
   const currentWorkspace = () => state.currentWorkspace || allowedWorkspaces()[0] || state.user?.permissions?.defaultView || 'client';
   const mobileTargets = () => {
     const workspace = currentWorkspace();
-    const mapped = roleToWorkspace(workspace);
+    const jobSlug = workspace === 'worker' ? 'jobs' : workspace === 'admin' || workspace === 'manager' ? 'work-orders' : workspace === 'client' ? 'project-updates' : 'module-registry';
     return [
       { label:'🏠 Home', module: moduleFor(workspace, 'overview')?.id },
-      { label:'📋 Requests', module: moduleFor(workspace, 'requests')?.id },
-      { label:'💰 Quotes', module: moduleFor(workspace, 'quotes')?.id },
-      { label:'🔧 Jobs', module: mapped === 'worker' ? moduleFor(workspace, 'jobs')?.id : mapped === 'admin' ? moduleFor(workspace, 'work-orders')?.id : moduleFor(workspace, 'project-updates')?.id },
+      { label:'📋 Requests', module: moduleFor(workspace, 'requests')?.id || moduleFor(workspace, 'audit-logs')?.id },
+      { label:'💰 Quotes', module: moduleFor(workspace, 'quotes')?.id || moduleFor(workspace, 'system-health')?.id },
+      { label:'🔧 Jobs', module: moduleFor(workspace, jobSlug)?.id },
       { label:'☰ More', more:true },
     ].filter((item) => item.more || item.module);
   };
   const moreModules = () => {
-    const workspace = currentWorkspace();
-    const slugs = ['customers','schedule','invoices','inventory','ai-knowledge','troubleshooting','users','roles','brand-settings','settings','profile','properties','materials','photos','notes','finance'];
-    return slugs.map((slug) => moduleFor(workspace, slug)).filter(Boolean);
+    const primary = new Set(mobileTargets().map((item) => item.module).filter(Boolean));
+    return modulesForWorkspace(currentWorkspace()).filter((def) => !primary.has(def.id));
   };
   function renderNav() {
     state.currentWorkspace ||= allowedWorkspaces()[0] || 'client';
     const workspace = currentWorkspace();
-    const sidebarItems = defs.filter((def) => def.role === roleToWorkspace(workspace) && moduleAllowed(def));
+    const sidebarItems = modulesForWorkspace(workspace);
     const sidebar = document.getElementById('dashboard-sidebar');
-    sidebar.innerHTML = `<div class="brand" data-brand></div><div class="workspace-switcher">${allowedWorkspaces().map((role) => `<button data-workspace="${role}">${workspaceLabels[role]}</button>`).join('')}</div><div class="side-nav">${sidebarItems.map((def) => `<button data-module="${def.id}">${def.icon} ${def.title}</button>`).join('')}</div>`;
+    sidebar.innerHTML = `<div class="sidebar-brand-row"><div class="brand" data-brand></div><span class="workspace-badge">${workspaceLabels[workspace]} Workspace</span></div><div class="sidebar-section"><h2>Views</h2><div class="workspace-switcher">${allowedWorkspaces().map((role) => `<button data-workspace="${role}">${workspaceLabels[role]}</button>`).join('')}</div></div><div class="sidebar-section"><h2>${workspaceLabels[workspace]} Modules</h2><div class="side-nav">${sidebarItems.map((def) => `<button data-module="${def.id}">${def.icon} ${def.title}</button>`).join('')}</div></div>`;
     const mobile = document.getElementById('mobile-bottom-nav');
     mobile.className = 'mobile-nav';
     mobile.innerHTML = mobileTargets().map((item) => `<button ${item.more ? 'data-more-menu="1"' : `data-module="${item.module}"`}>${item.label}</button>`).join('');
     TACompany.apply(state.company);
     document.querySelectorAll('[data-module]').forEach((button) => { button.onclick = () => go(button.dataset.module); });
     document.querySelectorAll('[data-workspace]').forEach((button) => { button.onclick = () => switchWorkspace(button.dataset.workspace); });
-    document.querySelector('[data-more-menu]')?.addEventListener('click', showMoreMenu);
+    const moreButton = document.querySelector('[data-more-menu]');
+    if (moreButton) moreButton.onclick = showMoreMenu;
     markActive();
   }
   function showMoreMenu() {
     const modal = document.getElementById('modal-root');
-    modal.innerHTML = `<div class="mobile-more-panel"><div class="card stack"><h2>More</h2><h3>Workspace</h3><div class="grid grid-2">${allowedWorkspaces().map((role) => `<button class="btn secondary" data-workspace="${role}">${workspaceLabels[role]}</button>`).join('')}</div><h3>Tools</h3><div class="grid grid-2">${moreModules().map((def) => `<button class="btn secondary" data-module="${def.id}">${def.icon} ${def.title}</button>`).join('')}</div><button class="btn" data-close-more>Close</button></div></div>`;
+    modal.innerHTML = `<div class="mobile-more-panel"><div class="card stack"><h2>More</h2><h3>Switch View</h3><div class="grid grid-2">${allowedWorkspaces().map((role) => `<button class="btn secondary" data-workspace="${role}">${workspaceLabels[role]}</button>`).join('')}</div><h3>${workspaceLabels[currentWorkspace()]} Tools</h3><div class="grid grid-2">${moreModules().map((def) => `<button class="btn secondary" data-module="${def.id}">${def.icon} ${def.title}</button>`).join('')}</div><button class="btn" data-close-more>Close</button></div></div>`;
     modal.querySelectorAll('[data-workspace]').forEach((button) => { button.onclick = () => { modal.innerHTML = ''; switchWorkspace(button.dataset.workspace); }; });
     modal.querySelectorAll('[data-module]').forEach((button) => { button.onclick = () => { modal.innerHTML = ''; go(button.dataset.module); }; });
     modal.querySelector('[data-close-more]').onclick = () => { modal.innerHTML = ''; };
@@ -100,7 +127,7 @@
     if (!allowedWorkspaces().includes(workspace)) return;
     await cleanupCurrentModule();
     state.currentWorkspace = workspace;
-    state.currentView = roleToWorkspace(workspace);
+    state.currentView = workspace;
     state.currentModule = null;
     renderNav();
     await go(defaultModuleFor(workspace)?.id);
@@ -111,19 +138,19 @@
     if (!def) return;
     if (state.currentModule === def.id && state.currentModuleInstance) return;
     await cleanupCurrentModule();
+    state.currentWorkspace = def.role;
     state.currentView = def.role;
-    state.currentWorkspace ||= allowedWorkspaces().find((workspace) => roleToWorkspace(workspace) === def.role) || def.role;
     state.currentModule = def.id;
     history.replaceState(null, '', `#${def.id}`);
     markActive();
-    document.getElementById('workspace-header').innerHTML = `<span class="pill">${workspaceLabels[state.currentWorkspace] || def.role}</span><h1>${def.title}</h1>`;
+    document.getElementById('workspace-header').innerHTML = `<span class="pill">${workspaceLabels[state.currentWorkspace]} Workspace</span><h1>${def.title}</h1>`;
     const root = document.getElementById('module-root');
     root.innerHTML = `<div class="card">Loading ${def.title}...</div>`;
     state.currentController = new AbortController();
     const mod = await TAModules.load(def);
     state.currentModuleInstance = mod;
     root.replaceChildren();
-    if (mod?.mount) await mod.mount({ root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal });
+    if (mod?.mount) await mod.mount({ root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace });
     renderNav();
     window.scrollTo({ top:0, behavior:'smooth' });
   }
@@ -133,13 +160,12 @@
     const me = await TAAuth.me().catch(() => ({ authenticated:false }));
     if (!me.authenticated) { location.href = '/login/'; return; }
     state.user = me.user;
-    state.currentWorkspace = me.user?.roles?.includes('owner') ? 'owner' : (me.user?.roles?.includes('manager') ? 'manager' : me.user?.permissions?.defaultView || allowedWorkspaces()[0] || 'client');
-    document.getElementById('dashboard-topbar').innerHTML = `<div><strong>${state.company.displayName || 'Contractor Portal'}</strong><br><small>${(userRoles()).join(', ') || 'user'}</small></div><button class="btn secondary" id="logout">Log out</button>`;
+    state.currentWorkspace = userRoles().includes('owner') ? 'owner' : userRoles().includes('manager') ? 'manager' : (state.user?.permissions?.defaultView && allowedWorkspaces().includes(state.user.permissions.defaultView) ? state.user.permissions.defaultView : allowedWorkspaces()[0] || 'client');
+    document.getElementById('dashboard-topbar').innerHTML = `<div><strong>${state.company.displayName || 'Contractor Portal'}</strong><br><small>${userRoles().join(', ') || 'user'}</small></div><button class="btn secondary" id="logout">Log out</button>`;
     document.getElementById('logout').onclick = async () => { await TAAuth.logout(); location.href = '/login/'; };
     renderNav();
     const requested = location.hash.slice(1);
     const requestedDef = defs.find((def) => def.id === requested && moduleAllowed(def));
-    if (requestedDef) state.currentWorkspace = allowedWorkspaces().find((workspace) => roleToWorkspace(workspace) === requestedDef.role) || state.currentWorkspace;
     await go(requestedDef?.id || defaultModuleFor(state.currentWorkspace)?.id);
   }
   window.TADashboardRouter = { start, go, switchWorkspace, state, defs, allowedWorkspaces };
