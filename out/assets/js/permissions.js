@@ -1,1 +1,0 @@
-window.TAPermissions={has(user,perms=[]){if(!perms.length)return true;const keys=user?.permissions?.permissionKeys||user?.permissionKeys||[];return perms.every(p=>keys.includes(p)||keys.includes('admin.tools'))}};

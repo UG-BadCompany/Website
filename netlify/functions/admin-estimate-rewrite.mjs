@@ -192,7 +192,7 @@ const aiRewrite = async ({ quote, job, metadata, payload }) => {
           {
             role: 'system',
             content: [
-              'You are a senior handyman/contractor estimator for T&A Contracting in Arizona.',
+              'You are a senior contractor estimator for the installed company.',
               'Rewrite the quote into a clear admin-review-ready and customer-ready format.',
               'Think like a real handyman estimator in Arizona.',
               'The quote must be specific, realistic, itemized, and easy for an admin to review before sending.',
