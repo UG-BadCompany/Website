@@ -1,1 +1,0 @@
-window.TAUi={toast(msg,type='info'){const root=document.getElementById('toast-root')||document.body;const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;root.appendChild(el);setTimeout(()=>el.remove(),3500)},money(v){return new Intl.NumberFormat(undefined,{style:'currency',currency:'USD'}).format(Number(v||0))}};

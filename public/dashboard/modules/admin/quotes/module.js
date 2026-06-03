@@ -1,1 +1,65 @@
-window.TAModules.register({id:'admin.quotes',role:'admin',title:'Quotes',icon:'⚙️',permissions:[],async mount({root,api,user,company}){root.innerHTML="<section class=\"stack\"><div class=\"card\"><h2>Quotes</h2><div class=\"module-toolbar\"><button class=\"btn secondary\" data-tab=\"Needs Review\">Needs Review</button><button class=\"btn secondary\" data-tab=\"Information Needed\">Information Needed</button><button class=\"btn secondary\" data-tab=\"Drafts\">Drafts</button><button class=\"btn secondary\" data-tab=\"Sent\">Sent</button><button class=\"btn secondary\" data-tab=\"Accepted\">Accepted</button><button class=\"btn secondary\" data-tab=\"Declined\">Declined</button><button class=\"btn secondary\" data-tab=\"All\">All</button></div><div id=\"quote-list\" class=\"stack\"></div><dialog id=\"quote-editor\"><form method=\"dialog\" class=\"card stack\" style=\"width:min(1100px,95vw)\"><h2>Real Quote Editor</h2><div class=\"quote-editor\"><div class=\"field\"><label>Customer information</label><textarea></textarea></div><div class=\"field\"><label>Request summary</label><textarea></textarea></div><div class=\"field\"><label>Uploaded files/photos</label><textarea></textarea></div><div class=\"field\"><label>Scope of work</label><textarea></textarea></div><div class=\"field\"><label>Labor line items</label><textarea></textarea></div><div class=\"field\"><label>Material line items</label><textarea></textarea></div><div class=\"field\"><label>Pricing</label><textarea></textarea></div><div class=\"field\"><label>Tax / markup / discounts</label><textarea></textarea></div><div class=\"field\"><label>Assumptions</label><textarea></textarea></div><div class=\"field\"><label>Exclusions</label><textarea></textarea></div><div class=\"field\"><label>Warranty/notes</label><textarea></textarea></div><div class=\"field\"><label>Customer-facing notes</label><textarea></textarea></div><div class=\"field\"><label>Internal admin notes</label><textarea></textarea></div><div class=\"field\"><label>AI confidence</label><textarea></textarea></div><div class=\"field\"><label>AI recommendations</label><textarea></textarea></div></div><div class=\"module-toolbar\"><button class=\"btn\" value=\"save\">Save Draft</button><button class=\"btn\" value=\"send\">Send to Client</button><button class=\"btn secondary\" value=\"cancel\">Close</button><button class=\"btn secondary\" type=\"button\" id=\"regen-ai\">Regenerate AI</button></div></form></dialog></div></section>";const list=root.querySelector('#quote-list');function card(kind){const actions={request:['View Request','Generate AI Draft','Create Manual Draft','Request Information'],draft:['Review/Edit','Save Draft','Send to Client','Request Information','Recalculate AI'],sent:['View Quote','Resend','Mark Accepted','Request Information'],accepted:['Convert to Work Order','Schedule Job','View Quote']}[kind];const el=document.createElement('article');el.className='card';el.innerHTML='<h3>'+kind.replace(/^./,c=>c.toUpperCase())+' item</h3><p>'+kind+' quote workflow with admin manual override.</p><div class="module-toolbar">'+actions.map(a=>'<button class="btn secondary" data-action="'+a+'">'+a+'</button>').join('')+'</div>';return el}list.append(card('request'),card('draft'),card('sent'),card('accepted'));root.querySelectorAll('[data-action="Review/Edit"],[data-action="Create Manual Draft"],[data-action="Generate AI Draft"]').forEach(b=>b.onclick=()=>root.querySelector('#quote-editor').showModal());root.querySelector('#regen-ai').onclick=()=>TAUi.toast('AI recalculation requested. Admin can continue manually.');},async destroy(){},async refresh(){}});
+window.TAModules.register({
+  id:'admin.quotes', role:'admin', title:'Estimate Review Center', icon:'💰', permissions:['quotes.manage'],
+  async mount(ctx) {
+    const quoteSections = ['Customer information','Address/property','Request summary','Uploaded files/photos','Scope of work','Labor line items','Material line items','Pricing','Tax / markup / discounts','Assumptions','Exclusions','Warranty/notes','Customer-facing notes','Internal admin notes','AI confidence','AI recommendations','Status'];
+    const openManual = (root, config, record = {}) => TAModuleKit.openDetail(root, { ...config, detailSections: quoteSections }, TAQuotes.normalizeAiDraft({ ...record, status:'draft' }));
+    const generateAiDraft = async ({ root, api, config, record }) => {
+      const target = record || {};
+      const jobRequestId = target.jobRequestId || target.job_request_id || target.requestId || target.request_id || target.id;
+      if (!jobRequestId) return TAUi.toast('Select a request before generating an AI draft.');
+      TAUi.toast('Generating AI draft with internal knowledge and live research context...');
+      try {
+        const response = await TAAI.draftQuote({
+          jobRequestId,
+          requestContext: {
+            name: target.customerName || target.customer_name || target.requesterName || target.requester_name || '',
+            email: target.email || target.requester_email || '',
+            streetAddress: target.streetAddress || target.street_address || target.address || '',
+            city: target.city || '',
+            serviceType: target.serviceType || target.service_type || target.title || '',
+            typeOfWork: target.workCategory || target.work_category || '',
+            workScope: target.workScope || target.work_scope || '',
+            description: target.description || target.summary || '',
+            createdAt: target.createdAt || target.created_at || '',
+          },
+          researchMode:'internal_live',
+        });
+        const draft = TAQuotes.normalizeAiDraft(response.draft || response.result || response);
+        TAModuleKit.openDetail(root, { ...config, detailSections: quoteSections }, draft);
+        TAUi.toast('AI draft generated. Review and edit before sending.');
+      } catch (error) {
+        const manualDraft = TAQuotes.normalizeAiDraft(error.data?.manualDraft || { ...target, status:'draft' });
+        TAModuleKit.openDetail(root, { ...config, detailSections: quoteSections }, manualDraft);
+        TAUi.toast(error.data?.message || 'AI estimate generation failed. Continue manually?');
+      }
+    };
+    return TAModuleKit.mount(ctx, {
+      title:'Estimate Review Center', icon:'💰',
+      description:'Review submitted requests, generate AI/manual drafts, edit quotes, send estimates, request information, and convert accepted work into jobs. Status text stays only in the status field.',
+      endpoints:['/api/admin/quotes','/api/admin/job-requests'],
+      recordPaths:['quotes','requests'],
+      tabs:[{label:'Needs Review',key:'needs_review'},{label:'Information Needed',key:'information_needed'},{label:'Drafts',key:'draft'},{label:'Sent',key:'sent'},{label:'Accepted',key:'accepted'},{label:'Declined',key:'declined'},{label:'All',key:'all'}],
+      metrics:[{label:'Needs Review',icon:'🧭',status:'needs_review'},{label:'Information Needed',icon:'❓',status:'information_needed'},{label:'Drafts',icon:'📝',status:'draft'},{label:'Sent',icon:'📬',status:'sent'},{label:'Accepted',icon:'✅',status:'accepted'}],
+      actions:[{label:'Generate AI Draft',action:'generate-ai-draft',primary:true},'Create Manual Draft','Request Information','Open AI Assistant'],
+      recordActions:[{label:'View Request',action:'view-request'},{label:'Generate AI Draft',action:'generate-ai-draft',primary:true},{label:'Create Manual Draft',action:'create-manual-draft'},{label:'Review/Edit',action:'review-edit'},{label:'Request Information',action:'request-info'},{label:'Recalculate AI',action:'generate-ai-draft'}],
+      detailSections: quoteSections,
+      emptyTitle:'No estimate records in this queue',
+      emptyText:'Submitted requests and draft quotes will appear here. Admins can still create a manual draft if AI is unavailable.',
+      onAction(action, context) {
+        if (action === 'generate-ai-draft') return generateAiDraft({ ...context, record: context.records[0] });
+        if (action === 'Create Manual Draft' || action === 'create-manual-draft') return openManual(context.root, context.config, context.records[0] || { title:'Manual draft' });
+        TAModuleKit.openDetail(context.root, { ...context.config, detailSections: quoteSections }, context.records[0] || { title: action, status:'draft', summary:'Manual admin override is available when AI is unavailable.' });
+      },
+      onRecordAction(action, context) {
+        if (action === 'generate-ai-draft') return generateAiDraft(context);
+        if (action === 'create-manual-draft') return openManual(context.root, context.config, context.record);
+        return TAModuleKit.openDetail(context.root, { ...context.config, detailSections: quoteSections }, TAQuotes.normalizeAiDraft(context.record));
+      },
+      secondary:[
+        {icon:'🤖',title:'AI with admin approval',text:'AI can research, recommend, calculate, and draft; admins must review before any customer receives an estimate.'},
+        {icon:'🧾',title:'Correct field mapping',text:'Customer, property, scope, labor, materials, pricing, assumptions, exclusions, notes, confidence, and recommended questions map to their own fields.'}
+      ]
+    });
+  },
+  async destroy(){}, async refresh(){}
+});

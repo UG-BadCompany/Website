@@ -50,7 +50,7 @@ export default async (request) => {
 
   return json(200, {
     ok: true,
-    service: 'T&A Contracting Portal',
+    service: 'Contractor Portal',
     phase: 'Phase 8 cleanup / readiness',
     checkedAt: new Date().toISOString(),
     env,
