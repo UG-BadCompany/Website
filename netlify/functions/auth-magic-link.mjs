@@ -53,10 +53,10 @@ async function sendResendEmail({ to, link }) {
     body: JSON.stringify({
       from,
       to,
-      subject: 'Your secure T&A Contracting portal link',
+      subject: 'Your secure contractor portal link',
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
-          <h2>Sign in to T&A Contracting</h2>
+          <h2>Sign in to your contractor portal</h2>
           <p>Use this secure one-time link to access your portal:</p>
           <p><a href="${link}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#f97316;color:#fff;text-decoration:none;font-weight:700">Open Client Portal</a></p>
           <p>This link expires in 20 minutes. If you did not request it, ignore this email.</p>

@@ -1,1 +1,0 @@
-window.TAForms={values(form){return Object.fromEntries(new FormData(form).entries())},checkedValues(form,name){return [...form.querySelectorAll('[name="'+name+'"]:checked')].map(i=>i.value)}};

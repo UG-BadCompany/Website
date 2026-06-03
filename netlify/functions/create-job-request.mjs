@@ -859,7 +859,7 @@ const tryImproveDraftWithOpenAi = async (payload, draft) => {
           {
             role: 'system',
             content: [
-              'You are a senior handyman estimator for T&A Contracting in Arizona.',
+              'You are a senior contractor estimator for the installed company.',
               'Your job is to make estimates realistic, itemized, and admin-review ready.',
               'Return strict JSON only.',
               'Never tell the customer this is final.',

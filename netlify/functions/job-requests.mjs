@@ -104,7 +104,7 @@ async function createEstimateDraft(event, request) {
       labor_items: [],
       materials: [],
       totals: { total_low: 0, total_high: 0 },
-      customer_facing_quote: 'Request received. T&A Contracting will review and follow up before sending a final estimate.',
+      customer_facing_quote: 'Request received. The contractor will review and follow up before sending a final estimate.',
       internal_technician_notes: 'Estimate engine timed out or failed. Admin should manually review this request.',
       request,
     };
