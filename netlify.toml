@@ -243,3 +243,23 @@
   from = "/api/auth/login"
   to = "/.netlify/functions/auth-login"
   status = 200
+
+[[redirects]]
+  from = "/api/install-status"
+  to = "/.netlify/functions/install-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/permissions"
+  to = "/.netlify/functions/admin-permissions"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/role-permissions"
+  to = "/.netlify/functions/admin-role-permissions"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/user-role"
+  to = "/.netlify/functions/admin-user-role"
+  status = 200

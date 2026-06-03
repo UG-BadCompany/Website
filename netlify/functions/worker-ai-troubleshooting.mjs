@@ -196,6 +196,17 @@ export default async (request) => {
     const payload = normalizePayload(body);
     if (payload.action === 'save_notes') return await saveNotesToJob({ db, session, payload });
     if (!payload.systemType || !payload.component || !payload.issue) return json(422, { ok: false, message: 'System/trade, equipment/component, and issue/complaint are required.' });
+    if (!process.env.OPENAI_API_KEY) {
+      return json(503, {
+        ok: false,
+        message: 'OPENAI_API_KEY is not configured. AI troubleshooting is unavailable; continue manually.',
+        manualTroubleshooting: {
+          safetyWarning: 'Use PPE, isolate hazards, and stop for electrical, gas, refrigerant, structural, or active water hazards outside company policy.',
+          customerSummary: payload.issue,
+          technicianNotes: 'AI troubleshooting did not run. Continue with manual diagnostic process and document findings.',
+        },
+      });
+    }
     const fallback = fallbackPlan(payload);
     const aiPlan = await runAiFirstTroubleshooting({
       db,

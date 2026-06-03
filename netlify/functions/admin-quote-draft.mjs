@@ -892,6 +892,22 @@ export default async (request) => {
     }
     if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
 
+    if (!process.env.OPENAI_API_KEY) {
+      return json(503, {
+        ok: false,
+        message: 'OPENAI_API_KEY is not configured. AI estimate generation failed. Continue manually?',
+        manualOverride: true,
+        manualDraft: {
+          title: `${jobRequest.service_type || 'Service'} manual draft`,
+          customer_summary: clean(requestContext?.customerSummary || requestContext?.name || requestContext?.email || '', 1000),
+          property_summary: [clean(requestContext?.streetAddress || requestContext?.address || '', 240), clean(jobRequest.city, 120)].filter(Boolean).join(', ') || 'Property details from original request',
+          description: clean(jobRequest.description, 4000),
+          service_category: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (clean(jobRequest.service_type || jobRequest.work_category, 160) || 'General Contracting'),
+          trade: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (clean(jobRequest.work_category || jobRequest.service_type, 160) || 'General Contracting'),
+        },
+      });
+    }
+
     let inventory = [];
     try {
       inventory = asRows(await db.sql`
@@ -913,6 +929,23 @@ export default async (request) => {
       inventory,
       companyRules: ['Admin approval required before sending.', 'Fallback is allowed only after OpenAI failure or invalid JSON after retry.'],
     });
+    if (aiFirstQuote && aiFirstQuote.fallbackUsed) {
+      return json(502, {
+        ok: false,
+        message: 'AI estimate generation failed. Continue manually?',
+        manualOverride: true,
+        fallbackReason: aiFirstQuote.fallbackReason || 'OpenAI quote generation failed.',
+        manualDraft: {
+          title: `${jobRequest.service_type || 'Service'} manual draft`,
+          customer_summary: clean(requestContext?.customerSummary || requestContext?.name || requestContext?.email || '', 1000),
+          property_summary: [clean(requestContext?.streetAddress || requestContext?.address || '', 240), clean(jobRequest.city, 120)].filter(Boolean).join(', ') || 'Property details from original request',
+          description: clean(jobRequest.description, 4000),
+          service_category: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (clean(jobRequest.service_type || jobRequest.work_category, 160) || 'General Contracting'),
+          trade: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (clean(jobRequest.work_category || jobRequest.service_type, 160) || 'General Contracting'),
+        },
+      });
+    }
+
     if (aiFirstQuote && aiFirstQuote.aiEnhanced && !aiFirstQuote.fallbackUsed) {
       const aiMaterials = Array.isArray(aiFirstQuote.materialBreakdown) ? aiFirstQuote.materialBreakdown : [];
       return json(200, {
@@ -963,6 +996,25 @@ export default async (request) => {
           missingInfoQuestions: aiFirstQuote.missingInfoQuestions || [],
           intakeContext: buildScopeSummary(jobRequest),
           aiStructuredQuote: aiFirstQuote,
+          structuredEstimate: {
+            service_category: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (jobRequest.service_type || aiFirstQuote.tradeCategory || 'General Contracting'),
+            trade: aiFirstQuote.tradeCategory || (/mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (jobRequest.work_category || jobRequest.service_type || 'General Contracting')),
+            customer_summary: clean(requestContext?.customerSummary || requestContext?.name || requestContext?.email || 'Original customer request', 1000),
+            property_summary: [clean(requestContext?.streetAddress || requestContext?.address || '', 240), clean(jobRequest.city, 120)].filter(Boolean).join(', ') || 'Original property request',
+            scope_of_work: aiFirstQuote.customerReadySummary || jobRequest.description || '',
+            labor_line_items: aiFirstQuote.laborPhases || [],
+            material_line_items: aiMaterials,
+            pricing_summary: { total_low_cents: aiFirstQuote.totalLowCents, total_high_cents: aiFirstQuote.totalHighCents, fixed_price_recommendation_cents: aiFirstQuote.fixedPriceRecommendationCents },
+            assumptions: aiFirstQuote.assumptionsUsedForTightPrice || [],
+            exclusions: aiFirstQuote.exclusions || [],
+            warranty_notes: '',
+            customer_notes: aiFirstQuote.customerReadySummary || '',
+            internal_admin_notes: (aiFirstQuote.adminReviewChecklist || []).join('\n'),
+            recommended_questions: aiFirstQuote.missingInfoQuestions || [],
+            confidence_scores: { overall: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScore || 0))), labor: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScore || 0))), materials: aiMaterials.length ? 0.74 : 0.35, pricing: aiFirstQuote.pricingConfidenceLevel === 'high' ? 0.85 : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 0.67 : 0.45, scope: aiFirstQuote.quoteReady ? 0.82 : 0.58, information_completeness: (aiFirstQuote.missingInfoQuestions || []).length ? 0.58 : 0.78, research: aiFirstQuote.historicalMatchUsed ? 0.76 : 0.52 },
+            confidence_reasons: [aiFirstQuote.pricingConfidenceReason || 'Pricing confidence is based on AI review, material evidence, and available request details.', ...(aiFirstQuote.missingInfoQuestions || []).slice(0, 2)],
+            recommended_action: aiFirstQuote.pricingConfidenceLevel === 'high' ? 'Ready for admin review.' : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 'Review assumptions before sending.' : 'Request more information or continue manually.',
+          },
           pricingConfidenceLevel: aiFirstQuote.pricingConfidenceLevel,
           pricingConfidenceReason: aiFirstQuote.pricingConfidenceReason,
           rangeSpreadReason: aiFirstQuote.rangeSpreadReason,
@@ -1219,7 +1271,7 @@ export default async (request) => {
     const fallbackTitle = clean(requestContext?.serviceType, 160) || 'Service request quote draft';
     const fallbackDescription = clean(requestContext?.projectDetails || requestContext?.description, 4000) || 'Review project details and confirm exact scope.';
     const fallbackSummary = [
-      `AI draft fallback for ${fallbackTitle}.`,
+      `Manual draft shell for ${fallbackTitle}.`,
       '',
       'Project details received:',
       fallbackDescription,
@@ -1231,24 +1283,25 @@ export default async (request) => {
       '',
       `System note: live AI draft generation failed (${error?.message || 'unknown error'}).`,
     ].join('\n');
-    return json(200, {
-      ok: true,
+    return json(502, {
+      ok: false,
       degraded: true,
-      message: 'AI draft generated in fallback mode. Please review before sending.',
-      draft: {
+      message: 'AI estimate generation failed. Continue manually?',
+      manualOverride: true,
+      manualDraft: {
         title: fallbackTitle,
         summary: fallbackSummary,
         amountCents: 0,
         laborHours: 2,
         laborRateCents: phoenixLaborRateByTime(new Date()),
         materials: [],
-        assumptions: ['Fallback mode used due to AI generation failure.'],
+        assumptions: ['Manual mode used because AI generation failed.'],
         missingInfoQuestions: ['Please provide Work Scope, Type of Work, and detailed project notes/photos.'],
         aiEnhanced: false,
         fallbackUsed: true,
         fallbackReason: error?.message || 'OpenAI primary quote failed and emergency fallback catch path was used.',
         fallbackSource: 'static_emergency_rules',
-        warning: 'Fallback quote draft used. Admin must verify all labor, materials, risks, exclusions, and price before sending.',
+        warning: 'Manual draft shell returned. Admin must enter and verify labor, materials, risks, exclusions, and price before sending.',
         intakeContext: {
           scope: clean(requestContext?.workScope, 120) || 'Not provided',
           type: clean(requestContext?.typeOfWork || requestContext?.serviceType, 160) || 'Not provided',

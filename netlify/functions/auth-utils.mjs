@@ -9,29 +9,68 @@ export const STAFF_SESSION_TTL_MINUTES = Number(process.env.STAFF_SESSION_TTL_MI
 
 
 export const PORTAL_PERMISSIONS = [
-  { key: 'client.tools', label: 'Client dashboard tools', description: 'View client dashboard sections.' },
-  { key: 'client.requests.manage', label: 'Client request management', description: 'Create and view own client job requests.' },
-  { key: 'client.quotes.manage', label: 'Client quote decisions', description: 'View, accept, and decline own quotes.' },
-  { key: 'client.invoices.manage', label: 'Client invoices and payments', description: 'View own invoices and payment status.' },
-  { key: 'worker.tools', label: 'Worker dashboard tools', description: 'View worker dashboard sections and assigned job tools.' },
-  { key: 'worker.jobs.manage', label: 'Worker assigned jobs', description: 'View and update assigned worker jobs.' },
-  { key: 'admin.tools', label: 'Admin dashboard tools', description: 'View admin dashboard sections.' },
-  { key: 'admin.requests.manage', label: 'Admin request management', description: 'View and update all job requests.' },
-  { key: 'admin.quotes.manage', label: 'Admin quote management', description: 'Create and send quotes.' },
-  { key: 'admin.invoices.manage', label: 'Admin invoice and payment management', description: 'Create invoices and confirm payments.' },
-  { key: 'admin.activity.view', label: 'Admin audit activity', description: 'View recent admin activity and audit events.' },
-  { key: 'admin.inventory.manage', label: 'Admin inventory management', description: 'Manage inventory items, stock changes, and work order material usage.' },
-  { key: 'admin.users.manage', label: 'Admin user management', description: 'Create users and assign roles.' },
-  { key: 'admin.roles.manage', label: 'Admin role management', description: 'Create roles and manage permissions.' },
-  { key: 'dashboard.switch_views', label: 'Dashboard view switching', description: 'Switch between role views for support.' },
+  { key: 'dashboard.view.admin', label: 'dashboard.view.admin', description: 'Allows dashboard view admin.' },
+  { key: 'dashboard.view.client', label: 'dashboard.view.client', description: 'Allows dashboard view client.' },
+  { key: 'dashboard.view.worker', label: 'dashboard.view.worker', description: 'Allows dashboard view worker.' },
+  { key: 'users.manage', label: 'users.manage', description: 'Allows users manage.' },
+  { key: 'users.create', label: 'users.create', description: 'Allows users create.' },
+  { key: 'users.edit', label: 'users.edit', description: 'Allows users edit.' },
+  { key: 'users.deactivate', label: 'users.deactivate', description: 'Allows users deactivate.' },
+  { key: 'roles.manage', label: 'roles.manage', description: 'Allows roles manage.' },
+  { key: 'roles.create', label: 'roles.create', description: 'Allows roles create.' },
+  { key: 'roles.edit', label: 'roles.edit', description: 'Allows roles edit.' },
+  { key: 'roles.delete', label: 'roles.delete', description: 'Allows roles delete.' },
+  { key: 'ranks.manage', label: 'ranks.manage', description: 'Allows ranks manage.' },
+  { key: 'ranks.create', label: 'ranks.create', description: 'Allows ranks create.' },
+  { key: 'ranks.edit', label: 'ranks.edit', description: 'Allows ranks edit.' },
+  { key: 'ranks.delete', label: 'ranks.delete', description: 'Allows ranks delete.' },
+  { key: 'permissions.manage', label: 'permissions.manage', description: 'Allows permissions manage.' },
+  { key: 'company.manage', label: 'company.manage', description: 'Allows company manage.' },
+  { key: 'branding.manage', label: 'branding.manage', description: 'Allows branding manage.' },
+  { key: 'requests.manage', label: 'requests.manage', description: 'Allows requests manage.' },
+  { key: 'quotes.manage', label: 'quotes.manage', description: 'Allows quotes manage.' },
+  { key: 'quotes.create', label: 'quotes.create', description: 'Allows quotes create.' },
+  { key: 'quotes.edit', label: 'quotes.edit', description: 'Allows quotes edit.' },
+  { key: 'quotes.send', label: 'quotes.send', description: 'Allows quotes send.' },
+  { key: 'invoices.manage', label: 'invoices.manage', description: 'Allows invoices manage.' },
+  { key: 'inventory.manage', label: 'inventory.manage', description: 'Allows inventory manage.' },
+  { key: 'customers.manage', label: 'customers.manage', description: 'Allows customers manage.' },
+  { key: 'workers.manage', label: 'workers.manage', description: 'Allows workers manage.' },
+  { key: 'scheduling.manage', label: 'scheduling.manage', description: 'Allows scheduling manage.' },
+  { key: 'ai.quote.use', label: 'ai.quote.use', description: 'Allows ai quote use.' },
+  { key: 'ai.quote.manage', label: 'ai.quote.manage', description: 'Allows ai quote manage.' },
+  { key: 'ai.troubleshooting.use', label: 'ai.troubleshooting.use', description: 'Allows ai troubleshooting use.' },
+  { key: 'ai.knowledge.manage', label: 'ai.knowledge.manage', description: 'Allows ai knowledge manage.' },
+  { key: 'reports.view', label: 'reports.view', description: 'Allows reports view.' },
+  { key: 'settings.manage', label: 'settings.manage', description: 'Allows settings manage.' },
+  { key: 'admin.tools', label: 'admin.tools', description: 'Allows admin tools.' },
+  { key: 'client.tools', label: 'client.tools', description: 'Allows client tools.' },
+  { key: 'worker.tools', label: 'worker.tools', description: 'Allows worker tools.' },
+  { key: 'admin.users.manage', label: 'admin.users.manage', description: 'Allows admin users manage.' },
+  { key: 'admin.roles.manage', label: 'admin.roles.manage', description: 'Allows admin roles manage.' },
+  { key: 'admin.requests.manage', label: 'admin.requests.manage', description: 'Allows admin requests manage.' },
+  { key: 'admin.quotes.manage', label: 'admin.quotes.manage', description: 'Allows admin quotes manage.' },
+  { key: 'admin.invoices.manage', label: 'admin.invoices.manage', description: 'Allows admin invoices manage.' },
+  { key: 'admin.inventory.manage', label: 'admin.inventory.manage', description: 'Allows admin inventory manage.' },
+  { key: 'dashboard.switch_views', label: 'dashboard.switch_views', description: 'Allows dashboard switch_views.' }
 ];
 
 export const ALL_PERMISSION_KEYS = PORTAL_PERMISSIONS.map((permission) => permission.key);
 
+
+export const ROLE_HIERARCHY = { owner: 100, admin: 80, manager: 60, worker: 40, client: 20, guest: 10 };
+export const roleRank = (roleKey = '') => ROLE_HIERARCHY[normalizeRoleKey(roleKey)] || ROLE_HIERARCHY.guest;
+export const highestRoleRank = (roleKeys = []) => Math.max(0, ...(Array.isArray(roleKeys) ? roleKeys : []).map((roleKey) => roleRank(roleKey)));
+export const canManageRoleKey = (actorRoleKeys = [], targetRoleKey = '') => actorRoleKeys.includes('owner') || roleRank(targetRoleKey) < highestRoleRank(actorRoleKeys);
+export const grantablePermissionKeys = (roleKeys = [], assignedPermissionKeys = []) => roleKeys.includes('owner') ? ALL_PERMISSION_KEYS : [...new Set(assignedPermissionKeys)].sort();
+
 export const DEFAULT_ROLE_PERMISSIONS = {
-  client: ['client.tools', 'client.requests.manage', 'client.quotes.manage', 'client.invoices.manage'],
-  worker: ['worker.tools', 'worker.jobs.manage'],
-  admin: ALL_PERMISSION_KEYS,
+  owner: ALL_PERMISSION_KEYS,
+  admin: ALL_PERMISSION_KEYS.filter((permission) => !['ranks.delete'].includes(permission)),
+  manager: ['dashboard.view.admin', 'requests.manage', 'quotes.manage', 'quotes.create', 'quotes.edit', 'scheduling.manage', 'customers.manage', 'workers.manage', 'invoices.manage', 'ai.quote.use'],
+  worker: ['dashboard.view.worker', 'worker.tools', 'ai.troubleshooting.use'],
+  client: ['dashboard.view.client', 'client.tools'],
+  guest: [],
 };
 
 export const normalizeRoleKey = (value) => clean(value, 80)
@@ -48,16 +87,12 @@ export const normalizePermissionKeys = (permissions) => {
 };
 
 export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = []) => {
-  const permissionKeys = new Set(assignedPermissionKeys);
-
+  if (roleKeys.includes('owner')) return [...ALL_PERMISSION_KEYS].sort();
+  if (Array.isArray(assignedPermissionKeys) && assignedPermissionKeys.length) return [...new Set(assignedPermissionKeys)].sort();
+  const permissionKeys = new Set();
   roleKeys.forEach((roleKey) => {
     (DEFAULT_ROLE_PERMISSIONS[roleKey] || []).forEach((permission) => permissionKeys.add(permission));
   });
-
-  if (roleKeys.includes('admin')) {
-    ALL_PERMISSION_KEYS.forEach((permission) => permissionKeys.add(permission));
-  }
-
   return [...permissionKeys].sort();
 };
 
@@ -237,12 +272,12 @@ export const sendMagicLinkEmail = async ({ fetchImpl = fetch, to, magicLinkUrl, 
     body: JSON.stringify({
       from: getFromEmail(),
       to,
-      subject: purpose === 'client_account' ? 'We received your T&A Contracting request' : 'Sign in to your T&A Contracting portal',
+      subject: purpose === 'client_account' ? 'We received your contractor request' : 'Sign in to your contractor portal',
       html: purpose === 'client_account'
-        ? `<p>We received your request for T&A Contracting.</p><p>Use this secure link to open your client portal, review your request, and add any property details:</p><p><a href="${magicLinkUrl}">Open your secure client portal</a></p><p>This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>`
+        ? `<p>We received your request for the contractor.</p><p>Use this secure link to open your client portal, review your request, and add any property details:</p><p><a href="${magicLinkUrl}">Open your secure client portal</a></p><p>This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>`
         : `<p>Use this secure link to sign in:</p><p><a href="${magicLinkUrl}">Open your secure portal link</a></p><p>This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>`,
       text: purpose === 'client_account'
-        ? `We received your request for T&A Contracting. Use this secure link to open your client portal, review your request, and add any property details: ${magicLinkUrl}\n\nThis link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`
+        ? `We received your request for the contractor. Use this secure link to open your client portal, review your request, and add any property details: ${magicLinkUrl}\n\nThis link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`
         : `Use this secure link to sign in: ${magicLinkUrl}\n\nThis link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.`,
     }),
   });
