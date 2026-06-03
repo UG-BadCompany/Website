@@ -91,7 +91,7 @@ function flags(req) {
   if (/panel|breaker|new circuit|disconnect|meter/.test(text)) licensed.push('Electrical panel/new circuit/disconnect scope may require a licensed electrician.');
   if (/gas|propane/.test(text)) licensed.push('Gas work requires licensed trade review.');
   if (/mini split|hvac|refrigerant|condenser/.test(text)) licensed.push('HVAC/refrigerant/startup scope may require licensed HVAC review.');
-  if (/roof|structural|truss|rafter/.test(text)) licensed.push('Roofing/structural work requires specialty review.');
+  if (/roof|structural|truss|rafter/.test(text)) licensed.push('Roof/structural work requires specialty review.');
   if (/mold|asbestos|lead|sewage/.test(text)) risk.push('Hazardous condition may stop work until remediated.');
   if (/leak|water damage|rot|rust|corrosion/.test(text)) risk.push('Hidden damage may change price.');
   if (licensed.length) permit.push('Verify local code and permit requirements.');

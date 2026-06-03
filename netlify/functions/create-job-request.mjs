@@ -684,7 +684,7 @@ const buildRiskFlags = (payload, job) => {
   if (/panel|breaker|new circuit|dedicated circuit|disconnect|meter|service upgrade/.test(text)) risks.push('Electrical panel/new circuit/disconnect work may require licensed electrician review and permit verification.');
   if (/gas|propane|natural gas/.test(text)) risks.push('Gas work requires licensed trade review.');
   if (/mini split|hvac|refrigerant|condenser|line set/.test(text)) risks.push('HVAC/refrigerant/startup scope may require licensed HVAC review, startup procedure, and permit verification.');
-  if (/roof|truss|rafter|structural|load bearing/.test(text)) risks.push('Roofing/structural work is excluded or requires specialty contractor review.');
+  if (/roof|truss|rafter|structural|load bearing/.test(text)) risks.push('Roof/structural work is excluded or requires specialty contractor review.');
   if (/mold|asbestos|lead|sewage/.test(text)) risks.push('Hazardous condition may stop work until properly remediated.');
   if (/leak|water damage|rot|rust|corrosion|termite/.test(text)) risks.push('Hidden damage, corrosion, or rot may require change order after inspection.');
   if (!payload.photosProvided) risks.push('Estimate confidence is lower without photos.');
