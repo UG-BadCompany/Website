@@ -42,13 +42,27 @@
     modal.querySelector('[data-close-module-drawer]').onclick = () => { modal.innerHTML = ''; };
     modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => TAUi.toast(`${control.textContent} is ready. Connected endpoint actions will run when the backend supports this record type.`));
   };
+  const stringify = (value) => Array.isArray(value) || (value && typeof value === 'object') ? JSON.stringify(value, null, 2) : (value || '');
   const sectionValue = (section, record) => {
     const key = section.toLowerCase();
-    if (key.includes('customer')) return record.customerName || record.clientName || record.email || '';
-    if (key.includes('summary') || key.includes('scope')) return record.summary || record.description || record.scope || '';
-    if (key.includes('price') || key.includes('tax') || key.includes('markup')) return record.amountCents ? currency(record.amountCents) : '';
-    if (key.includes('confidence')) return JSON.stringify(record.confidenceScores || record.aiMetadata || {}, null, 2);
-    return record.notes || record.status || '';
+    const ai = record.structuredEstimate || record.aiStructuredQuote || record.aiMetadata?.structuredEstimate || record.aiMetadata || {};
+    if (key.includes('customer')) return record.customerName || record.customer_name || record.requesterName || record.requester_name || record.clientName || record.client_name || record.email || record.requester_email || ai.customer_summary || '';
+    if (key.includes('property') || key.includes('address')) return record.propertySummary || record.property_summary || record.streetAddress || record.street_address || record.address || [record.city, record.state].filter(Boolean).join(', ') || ai.property_summary || '';
+    if (key.includes('request summary') || key.includes('description')) return record.description || record.summary || record.requestSummary || ai.customer_summary || '';
+    if (key.includes('uploaded') || key.includes('file') || key.includes('photo')) return stringify(record.files || record.photos || record.attachments || record.photoContext || '');
+    if (key.includes('scope')) return stringify(ai.scope_of_work || record.scopeOfWork || record.scope || record.summary || record.description || '');
+    if (key.includes('labor')) return stringify(ai.labor_line_items || record.laborLineItems || record.labor_items || record.laborPhases || record.labor || '');
+    if (key.includes('material')) return stringify(ai.material_line_items || record.materialLineItems || record.materials || record.materialBreakdown || '');
+    if (key.includes('price') || key.includes('pricing') || key.includes('tax') || key.includes('markup')) return stringify(ai.pricing_summary || record.pricingSummary || (record.amountCents ? currency(record.amountCents) : ''));
+    if (key.includes('assumption')) return stringify(ai.assumptions || record.assumptions || '');
+    if (key.includes('exclusion')) return stringify(ai.exclusions || record.exclusions || '');
+    if (key.includes('warranty')) return stringify(ai.warranty_notes || record.warrantyNotes || record.notes || '');
+    if (key.includes('customer-facing') || key.includes('customer notes')) return stringify(ai.customer_notes || record.customerNotes || record.customer_facing_quote || '');
+    if (key.includes('internal')) return stringify(ai.internal_admin_notes || record.internalAdminNotes || record.admin_notes || record.notes || '');
+    if (key.includes('recommend')) return stringify(ai.recommended_questions || record.recommendedQuestions || record.missingInfoQuestions || record.questions || '');
+    if (key.includes('confidence')) return stringify(ai.confidence_scores || record.confidenceScores || record.confidence || record.aiMetadata || '');
+    if (key.includes('status')) return record.status || record.reviewStatus || '';
+    return record.notes || '';
   };
   const renderRecords = (root, config, data, allRecords) => {
     const query = root.querySelector('[data-module-search]')?.value || '';
@@ -60,7 +74,7 @@
       return;
     }
     list.innerHTML = records.map((record, index) => `<article class="module-record-card" data-record-index="${index}"><div><p class="eyebrow">${escapeHtml(statusText(record.status || record.reviewStatus || config.title))}</p><h3>${escapeHtml(defaultRecordTitle(record, config.title))}</h3><p>${escapeHtml(record.description || record.summary || record.address || record.notes || config.recordDescription || 'Open this record to review details, notes, timeline, and next actions.')}</p><small>${escapeHtml(defaultRecordMeta(record) || config.title)}</small></div><div class="module-record-actions">${renderRecordActions(config.recordActions || ['View Detail','Add Note'])}</div></article>`).join('');
-    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => openDetail(root, config, records[index])));
+    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data }) : openDetail(root, config, records[index])));
   };
   const endpointFetch = async (api, endpoint) => {
     if (!endpoint) return { ok:false, missing:true, message:'No endpoint configured yet.' };

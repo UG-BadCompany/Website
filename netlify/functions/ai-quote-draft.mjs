@@ -55,9 +55,16 @@ function materials(req) {
     add('Line set kit', 1, 120, 320),
     add('Line hide kit and fittings', 1, 90, 320),
     add('Communication wire', 1, 45, 150),
-    add('Disconnect, whip, breaker, conduit, fittings allowance', 1, 120, 525),
-    add('Condenser pad/bracket and anchors', 1, 40, 220),
-    add('Condensate drain kit and sealants', 1, 45, 180),
+    add('Disconnect', 1, 45, 140),
+    add('Fuses', 1, 15, 55),
+    add('Electrical whip', 1, 25, 85),
+    add('Breaker', 1, 45, 140),
+    add('Wire and SO cord allowance', 1, 90, 360),
+    add('Conduit and conduit fittings', 1, 85, 260),
+    add('Condenser pad/bracket and mounting hardware', 1, 40, 220),
+    add('Fasteners', 1, 12, 45),
+    add('Condensate tubing', 1, 20, 90),
+    add('Sealants and miscellaneous consumables', 1, 45, 180),
   ];
   if (/faucet/.test(text)) return [add('Faucet', 1, 45, 280), add('Supply lines', 1, 15, 45), add('Putty/silicone', 1, 6, 18), add('Drain/shutoff allowance', 1, 25, 120)];
   if (/toilet/.test(text)) return [add('Toilet', 1, 120, 450), add('Wax ring and bolts', 1, 9, 27), add('Supply line/shutoff allowance', 1, 17, 60), add('Caulk', 1, 5, 18)];
@@ -138,7 +145,7 @@ function buildLocalDraft(req) {
 
 async function tryOpenAi(req) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { __aiError: true, status: 503, message: 'OPENAI_API_KEY is not configured. AI estimate generation failed. Continue manually?' };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Number(process.env.AI_OPENAI_TIMEOUT_MS || 9000));
   try {
@@ -221,13 +228,27 @@ export const handler = async (event) => {
 
   const localDraft = buildLocalDraft(req);
   const ai = await tryOpenAi(req);
+  if (ai?.__aiError || !ai) {
+    return json(ai?.status || 502, {
+      ok: false,
+      message: ai?.message || 'AI estimate generation failed. Continue manually?',
+      manualOverride: true,
+      manualDraft: {
+        customer_summary: req.name || req.email || req.phone || 'Original customer request',
+        property_summary: [req.streetAddress, req.city].filter(Boolean).join(', ') || 'Original property request',
+        description: req.description,
+        service_category: /mini split|mini-split|ductless/i.test(`${req.service} ${req.description}`) ? 'HVAC' : (req.service || 'General Contracting'),
+        trade: /mini split|mini-split|ductless/i.test(`${req.service} ${req.description}`) ? 'HVAC' : (req.service || 'General Contracting'),
+      },
+    });
+  }
   const draft = { ...localDraft, ...(ai && typeof ai === 'object' ? ai : {}) };
   const totals = calculate(draft);
   draft.totals = totals;
   draft.customer_facing_quote = customerQuote(draft, totals);
   draft.request = req;
   draft.ok = true;
-  draft.source = ai ? 'openai-fast' : 'local-fallback-fast';
+  draft.source = 'openai-fast';
   draft.createdAt = new Date().toISOString();
   return json(200, draft);
 };
