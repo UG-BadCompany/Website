@@ -1,8 +1,0 @@
-/* Phase 27 maintenance plans */
-.maintenance-suite{display:grid;gap:18px;margin:24px 0}
-.maintenance-card{border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:18px;background:rgba(15,23,42,.82);color:#f8fafc}
-.maintenance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
-.maintenance-tile{border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;background:rgba(2,6,23,.45)}
-.maintenance-tile h4{margin:0 0 8px;color:#fff}
-.maintenance-tile p{margin:0;color:#dbeafe}
-.maintenance-badge{display:inline-flex;padding:4px 10px;border-radius:999px;background:rgba(59,130,246,.16);border:1px solid rgba(59,130,246,.34);color:#dbeafe;font-size:.75rem;font-weight:900}

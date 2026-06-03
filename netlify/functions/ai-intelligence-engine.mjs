@@ -269,7 +269,7 @@ export const runOpenAiWithValidation = async ({ kind, apiKey, model, timeoutMs, 
 
 export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPricing = [], historicalContext = [], companyRules = [], photoContext = [] }) => ({
   promptVersion: AI_QUOTE_PROMPT_VERSION,
-  task: 'Create a contractor-grade AI-first estimate for T&A Contracting. OpenAI is the decision maker; company playbooks/history are context only.',
+  task: 'Create a contractor-grade AI-first estimate. OpenAI is the decision maker; company playbooks/history are context only.',
   requiredFields: REQUIRED_QUOTE_FIELDS,
   validationRules: [
     'Return strict JSON only.',
@@ -296,7 +296,7 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
 
 export const buildTroubleshootingPrompt = ({ payload = {}, historicalContext = [], companyRules = [], photoContext = [] }) => ({
   promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION,
-  task: 'Create a trade-specific diagnostic tree for T&A Contracting. OpenAI is primary; fallback is emergency only.',
+  task: 'Create a trade-specific diagnostic tree for the contractor. OpenAI is primary; fallback is emergency only.',
   requiredFields: REQUIRED_TROUBLESHOOTING_FIELDS,
   supportedTrades: ['HVAC', 'mini splits', 'water source heat pumps', 'plumbing', 'drains', 'water heaters', 'electrical', 'outlets', 'switches', 'lights', 'ceiling fans', 'exhaust fans', 'appliances', 'doors', 'locks', 'drywall', 'irrigation', 'pumps', 'general handyman work'],
   validationRules: ['Return strict JSON only.', 'Include safety warnings, expected readings, tools/meters, likely causes ranked by probability, stop/escalate conditions, customer explanation, work-order notes, and repair estimate recommendation.'],
@@ -433,7 +433,7 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, city: jobRequest.city });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: jobRequest.id });
   const prompt = buildQuotePrompt({ jobRequest, inventory, supplierPricing, historicalContext, companyRules, photoContext: resolvedPhotoContext });
-  const system = 'You are the AI-first estimating engine for T&A Contracting. Use company history, inventory, supplier pricing, photos, and request details. Return strict JSON only with the required fields. Do not omit high-risk safety/stop guidance.';
+  const system = 'You are the AI-first estimating engine for the contractor. Use company history, inventory, supplier pricing, photos, and request details. Return strict JSON only with the required fields. Do not omit high-risk safety/stop guidance.';
   const result = await runOpenAiWithValidation({ kind: 'quote', apiKey, model, timeoutMs, system, user: prompt, validate: validateQuoteAiOutput, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description }, fetchImpl });
   if (result.ok) {
     await saveAiRun({ db, kind: 'quote', entityId: jobRequest.id, model, promptVersion: AI_QUOTE_PROMPT_VERSION, inputSummary: prompt, output: result.output, validation: { ok: true, errors: [] }, retryCount: result.retryCount });
@@ -458,7 +458,7 @@ export const runAiFirstTroubleshooting = async ({ db, payload, companyRules = []
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: payload.systemType, workCategory: payload.component, city: '', limit: 6 });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: payload.workOrderId, workOrderId: payload.workOrderId });
   const prompt = buildTroubleshootingPrompt({ payload, historicalContext, companyRules, photoContext: resolvedPhotoContext });
-  const system = 'You are the AI-first field troubleshooting engine for T&A Contracting. Return strict JSON only. Be safety-first and trade-specific. Include stop/escalate guidance for high-risk work.';
+  const system = 'You are the AI-first field troubleshooting engine for the contractor. Return strict JSON only. Be safety-first and trade-specific. Include stop/escalate guidance for high-risk work.';
   const result = await runOpenAiWithValidation({ kind: 'troubleshooting', apiKey, model, timeoutMs, system, user: prompt, validate: validateTroubleshootingAiOutput, context: payload, fetchImpl });
   if (result.ok) {
     await saveAiRun({ db, kind: 'troubleshooting', entityId: payload.workOrderId || null, model, promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION, inputSummary: prompt, output: result.output, validation: { ok: true, errors: [] }, retryCount: result.retryCount });

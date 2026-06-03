@@ -175,7 +175,7 @@ const loadRolesSafely = async (db) => {
 };
 
 export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'POST', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method)) {
     return safeJson(405, {
       ok: false,
       message: 'Method not allowed.',
@@ -203,6 +203,19 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
       });
     }
 
+
+    if (request.method === 'DELETE') {
+      const body = await parseJsonBody(request);
+      const roleId = clean(body?.roleId || body?.id, 80);
+      if (!roleId) return safeJson(422, { ok: false, message: 'Role ID is required.' });
+      const [role] = await db.sql`select id, key, coalesce(is_system, false) as is_system from roles where id = ${roleId} limit 1`;
+      if (!role) return safeJson(404, { ok: false, message: 'Role not found.' });
+      if (role.key === 'owner' || role.is_system) return safeJson(409, { ok: false, message: 'System roles, including Owner, cannot be deleted.' });
+      const [used] = await db.sql`select count(*) from user_roles where role_id = ${roleId}`;
+      if (Number(used?.count || 0) > 0) return safeJson(409, { ok: false, message: 'Role is assigned to users and cannot be deleted.' });
+      await db.sql`delete from roles where id = ${roleId}`;
+      return safeJson(200, { ok: true, deleted: true });
+    }
     const body = await parseJsonBody(request);
 
     if (!body) {

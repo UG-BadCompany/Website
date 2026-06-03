@@ -1,4 +1,4 @@
--- T&A Contracting Netlify Database initial portal schema.
+-- the contractor Netlify Database initial portal schema.
 -- Netlify Database is Postgres, so this schema avoids provider-specific auth tables.
 -- Authentication users are mapped into app_users by auth_provider + auth_subject.
 
