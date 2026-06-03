@@ -44,5 +44,5 @@ createServer(async (request, response) => {
     response.end(body);
   }
 }).listen(port, () => {
-  console.log(`T&A Contracting site available at http://localhost:${port} from ${path.relative(process.cwd(), root)}`);
+  console.log(`the contractor site available at http://localhost:${port} from ${path.relative(process.cwd(), root)}`);
 });

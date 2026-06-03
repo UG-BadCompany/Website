@@ -1,8 +1,0 @@
-/* Phase 25 inventory + asset tracking */
-.inventory-suite{display:grid;gap:18px;margin:24px 0}
-.inventory-card{border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:18px;background:rgba(15,23,42,.82);color:#f8fafc}
-.inventory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
-.inventory-tile{border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;background:rgba(2,6,23,.45)}
-.inventory-tile h4{margin:0 0 8px;color:#fff}
-.inventory-tile p{margin:0;color:#dbeafe}
-.inventory-pill{display:inline-flex;padding:4px 10px;border-radius:999px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.34);color:#fff7ed;font-size:.75rem;font-weight:900}

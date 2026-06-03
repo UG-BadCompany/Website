@@ -280,6 +280,9 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         });
       }
 
+      const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
+      if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot be deactivated.' });
+
       const [deletedUser] = await db.sql`
         update app_users
         set is_active = false,
@@ -346,6 +349,11 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         ok: false,
         message: 'userId is required to update roles.',
       });
+    }
+
+    if (request.method === 'PATCH' && payload.userId) {
+      const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
+      if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId) && !payload.roles.includes('owner')) return safeJson(409, { ok: false, message: 'The final Owner account cannot lose the Owner role.' });
     }
 
     if (payload.roles.length === 0) {
