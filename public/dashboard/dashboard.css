@@ -482,3 +482,275 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Theme-safe module polish and Brand Settings preview controls */
+.module-page {
+  color: var(--color-text);
+  max-width: 1440px;
+}
+
+.module-header,
+.module-hero,
+.module-panel,
+.module-card,
+.module-record-card,
+.user-card,
+.role-card,
+.system-health-card {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.module-title,
+.module-header h2,
+.module-card h3,
+.user-card h3,
+.role-card h3 {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.module-description,
+.module-header p,
+.module-card p,
+.user-card p,
+.role-card p {
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.module-grid,
+.color-settings-grid,
+.user-card-grid,
+.role-card-grid,
+.system-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.brand-settings-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.color-settings-grid {
+  align-items: end;
+}
+
+.brand-preview-grid {
+  align-items: stretch;
+}
+
+.brand-preview {
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  background: var(--preview-bg, var(--color-background));
+  color: var(--preview-text, var(--color-text));
+}
+
+.brand-preview-shell {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.brand-preview-brand {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  color: var(--preview-text, var(--color-text));
+}
+
+.brand-preview-card {
+  display: grid;
+  gap: .85rem;
+  border-radius: 18px;
+  padding: 1rem;
+  background: var(--preview-surface, var(--color-surface));
+  color: var(--preview-text, var(--color-text));
+  border: 1px solid color-mix(in srgb, var(--preview-primary, var(--color-primary)) 34%, var(--color-border));
+}
+
+.brand-preview-card .btn {
+  background: var(--preview-button, var(--color-button));
+}
+
+.brand-preview-card .btn.secondary {
+  background: color-mix(in srgb, var(--preview-surface, var(--color-surface)) 86%, var(--preview-bg, var(--color-background)));
+  color: var(--preview-text, var(--color-text));
+}
+
+.user-card,
+.role-card,
+.system-health-card {
+  display: grid;
+  gap: .9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, .08);
+}
+
+.user-card-head,
+.role-card-head,
+.system-health-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: .8rem;
+  align-items: flex-start;
+}
+
+.user-meta-grid,
+.role-meta-grid,
+.system-health-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: .7rem;
+}
+
+.meta-tile {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: .75rem;
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
+}
+
+.meta-tile small {
+  display: block;
+  color: var(--color-muted);
+  font-weight: 800;
+  margin-bottom: .25rem;
+}
+
+.meta-tile strong {
+  color: var(--color-text);
+}
+
+.role-card.protected {
+  border-color: color-mix(in srgb, var(--color-warning) 42%, var(--color-border));
+}
+
+@media (max-width: 760px) {
+  .brand-settings-head,
+  .user-card-head,
+  .role-card-head,
+  .system-health-card-head {
+    display: grid;
+  }
+
+  .module-actions,
+  .action-row {
+    width: 100%;
+  }
+
+  .color-settings-grid,
+  .user-card-grid,
+  .role-card-grid,
+  .system-health-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dashboard-level contrast overrides load after dashboard-shell.css to prevent white unreadable controls. */
+#dashboard-app,
+#module-root,
+#workspace-header,
+#dashboard-topbar,
+#mobile-bottom-nav {
+  color: var(--color-text);
+}
+
+#dashboard-topbar,
+#mobile-bottom-nav {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+#dashboard-app .brand-logo,
+#dashboard-app .pill,
+#dashboard-app .card,
+#dashboard-app .btn.secondary,
+#dashboard-app input,
+#dashboard-app select,
+#dashboard-app textarea,
+.module-drawer input,
+.module-drawer select,
+.module-drawer textarea {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+#dashboard-app .brand-logo,
+#dashboard-app .card,
+#dashboard-app .pill {
+  background: var(--color-surface);
+}
+
+#dashboard-app .btn {
+  background: var(--color-button);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+#dashboard-app .btn.secondary {
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+#dashboard-app .btn.ghost {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+#dashboard-app .btn.danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+#dashboard-app .btn:disabled,
+#dashboard-app button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-text) 75%, var(--color-muted));
+  background: color-mix(in srgb, var(--color-surface) 90%, var(--color-border));
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+#dashboard-app .field label,
+#dashboard-app .field span,
+#dashboard-app label,
+#dashboard-app legend {
+  color: var(--color-text);
+}
+
+#dashboard-app input,
+#dashboard-app select,
+#dashboard-app textarea,
+.module-drawer input,
+.module-drawer select,
+.module-drawer textarea {
+  background: var(--field-bg);
+  color: var(--field-text);
+  min-height: 44px;
+}
+
+#dashboard-app input::placeholder,
+#dashboard-app textarea::placeholder {
+  color: var(--field-placeholder);
+  opacity: 1;
+}
+
+#dashboard-app input[type="color"] {
+  width: 48px;
+  min-width: 48px;
+  height: 44px;
+  padding: 4px;
+  background: var(--field-bg);
+}
