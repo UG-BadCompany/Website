@@ -65,7 +65,7 @@ for (const file of htmlFiles) {
     if (/coming soon|placeholder|todo|not wired|fake/i.test(label) && !/\bdisabled\b|aria-disabled=["']true["']/.test(a)) fail(`${file}: placeholder-like button "${label}" is not disabled with an explanation`);
   }
 
-  if (/workspace-route-tabs/.test(html) && !/display:\s*none\s*!important/.test(html)) fail(`${file}: old workspace tabs appear to be restored`);
+  if (/legacy-workspace-tabs/.test(html) && !/display:\s*none\s*!important/.test(html)) fail(`${file}: old workspace tabs appear to be restored`);
 }
 
 const apiCalls = new Set();
