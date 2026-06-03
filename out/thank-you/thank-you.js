@@ -1,1 +1,0 @@
-TACompany.load();document.getElementById('skip-extra').onclick=()=>document.getElementById('thanks-status').textContent='No problem. You can provide more details later.';document.getElementById('submit-extra').onclick=async()=>{const s=document.getElementById('thanks-status');s.textContent='Saved. Thank you.'};

@@ -1,1 +1,76 @@
-window.TAModules.register({id:'admin.settings',role:'admin',title:'Settings',icon:'⚙️',permissions:[],async mount({root,api,user,company}){root.innerHTML="<section class=\"stack\"><div class=\"card\"><h2>Settings</h2><p>This drop-in module is ready for settings workflows.</p><div class=\"grid grid-3\"><div class=\"card\"><h3>Queue</h3><p>View, filter, and act on records.</p></div><div class=\"card\"><h3>Actions</h3><p>Create, edit, assign, send, or update items when permission allows.</p></div><div class=\"card\"><h3>Audit-ready</h3><p>Designed for server APIs and role-aware data loading.</p></div></div></div></section>";},async destroy(){},async refresh(){}});
+window.TAModules.register({
+  id: 'admin.settings',
+  role: 'admin',
+  title: 'Settings',
+  icon: '⚙️',
+  permissions: ['settings.manage'],
+  async mount(ctx) {
+    return TAModuleKit.mount(ctx, {
+      title: 'Settings',
+      icon: '⚙️',
+      description: 'Business settings, platform status, installer lock awareness, module registry, audit activity, AI settings, and workspace configuration.',
+      endpoints: ['/.netlify/functions/install-status', '/.netlify/functions/company-settings', '/api/system-health'],
+      recordPaths: ['checks', 'modules', 'events', 'items'],
+      metrics: [
+        { label: 'Install Complete', icon: '✅', path: 'installed' },
+        { label: 'Installer Locked', icon: '🔒', path: 'installer_locked' },
+        { label: 'Owner Exists', icon: '👑', path: 'owner_exists' },
+        { label: 'Settings Loaded', icon: '⚙️', path: 'company.installationComplete' },
+      ],
+      actions: ['Open Platform Settings', 'Review Installer Lock', 'Module Registry', 'Workspace Manager'],
+      recordActions: ['View Setting', 'Edit Setting', 'Audit Change'],
+      aliases: {
+        'owner.system-health': {
+          title: 'System Health',
+          icon: '📊',
+          description: 'Compact, readable health checks for database readiness, Netlify Functions, auth, AI, theme, installer lock status, missing settings warnings, and recent issues.',
+          mainTitle: 'Health Check Details',
+          mainDescription: 'Review live checks when endpoints respond; otherwise this panel stays useful with safe limited-data states.',
+          metrics: [
+            { label: 'Database', icon: '🗄️', path: 'database.ok' },
+            { label: 'Functions', icon: 'λ', path: 'functions.ok' },
+            { label: 'Auth', icon: '🔐', path: 'auth.ok' },
+            { label: 'AI', icon: '🤖', path: 'ai.ok' },
+            { label: 'Theme', icon: '🎨', value: () => document.documentElement.dataset.theme || 'system' },
+            { label: 'Installer', icon: '🔒', path: 'installer_locked' },
+          ],
+          secondary: [
+            { icon: '🗄️', title: 'Database', text: 'Shows migration/database availability if the system-health endpoint provides it, with a readable limited-data fallback.' },
+            { icon: 'λ', title: 'Functions', text: 'Tracks API availability for Netlify Functions without stretching cards or shrinking text.' },
+            { icon: '🔐', title: 'Auth', text: 'Surfaces magic-link/session readiness and missing-email-provider warnings without exposing secrets.' },
+            { icon: '🤖', title: 'AI', text: 'Shows AI configuration status only as safe present/missing checks; API keys are never displayed.' },
+            { icon: '🎨', title: 'Theme', text: 'Confirms the active light, dark, or system theme and brand color variables are applied.' },
+            { icon: '🔄', title: 'Installer', text: 'Shows install lock and owner-exists status with warning-only operational actions.' },
+          ],
+          actions: ['Run Health Check', 'Review Missing Settings', 'Open Logs'],
+        },
+        'owner.module-registry': {
+          title: 'Module Registry',
+          icon: '📦',
+          description: 'Enable/disable modules, review workspace assignment, and confirm permission requirements.',
+          actions: ['Enable Module', 'Disable Module', 'Review Permissions'],
+        },
+        'owner.audit-logs': {
+          title: 'Audit Logs',
+          icon: '📋',
+          description: 'Recent user activity, permission changes, quote actions, work order actions, and system events.',
+          actions: ['Filter Activity', 'Export Audit', 'Open User'],
+        },
+        'owner.platform-settings': {
+          title: 'Platform Settings',
+          icon: '⚙️',
+          description: 'Owner-level business and platform configuration with safe, auditable settings workflows.',
+          actions: ['Save Platform Settings', 'Review Business Rules'],
+        },
+        'owner.installer-management': {
+          title: 'Installer Management',
+          icon: '🔄',
+          description: 'Install lock and maintenance-mode awareness. Reinstall/reset actions are intentionally warning-only unless an owner-safe backend unlock exists.',
+          actions: ['Review Lock Status', 'Open Maintenance Warning'],
+        },
+      },
+    });
+  },
+  async destroy() {},
+  async refresh() {},
+});
