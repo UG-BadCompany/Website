@@ -104,3 +104,26 @@
   .hero-actions { width: 100%; }
 }
 .homepage-hero{background-size:cover;background-position:center}.service-card span,.job-photo-card span{color:var(--accent-color,#22c55e);font-weight:800;text-transform:uppercase;font-size:.76rem;letter-spacing:.06em}.about-section .card strong{font-size:1.2rem}.why-card strong{font-size:2rem}.job-photo-card{cursor:pointer;overflow:hidden}.job-photo-card img{width:100%;height:220px;object-fit:cover;border-radius:1rem;background:rgba(148,163,184,.12);display:block}.before-after-strip{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.75rem 0}.before-after-strip img{height:110px}.homepage-lightbox{position:fixed;inset:0;background:rgba(2,6,23,.86);z-index:9999;display:grid;place-items:center;padding:1rem}.homepage-lightbox img{max-width:min(980px,94vw);max-height:86vh;border-radius:1rem;box-shadow:0 24px 70px rgba(0,0,0,.4)}.homepage-lightbox button{position:fixed;top:1rem;right:1rem;border:0;border-radius:999px;width:44px;height:44px;font-size:2rem;line-height:1;background:#fff;color:#0f172a;cursor:pointer}.customer-footer:empty{display:none}.footer-grid-customer a{display:block;margin:.35rem 0;color:inherit}@media (max-width:720px){.job-photo-card img{height:180px}.before-after-strip img{height:90px}}
+
+/* Theme-synced customer homepage overrides */
+.customer-homepage { background: var(--color-background); color: var(--color-text); }
+.customer-public-header { background: color-mix(in srgb, var(--color-surface) 92%, transparent); border-bottom-color: var(--color-border); }
+.customer-public-header .nav-links a:not(.btn) { color: var(--color-muted); }
+.customer-landing-hero { background: radial-gradient(circle at 80% 12%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 34%), linear-gradient(135deg, var(--color-background) 0%, color-mix(in srgb, var(--color-surface) 76%, var(--color-background)) 100%); }
+.customer-landing-hero h1, .customer-service-grid h3, .job-photo-card h3 { color: var(--color-text); }
+.customer-landing-hero p, .section-heading p, .customer-service-grid p, .job-photo-card p, .portal-explainer p, .service-area-section p, .checkbox-line { color: var(--color-muted); }
+.customer-landing-hero .pill, .section-heading .pill, .portal-explainer .pill, .service-area-section .pill, #estimate .pill { border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border)); background: color-mix(in srgb, var(--color-surface) 78%, transparent); color: var(--color-primary); }
+.service-area-line, .job-photo-card > span, .request-status, .service-card span { color: var(--color-accent) !important; }
+.customer-service-grid .card, .portal-card, .area-card { background: color-mix(in srgb, var(--color-surface) 92%, transparent); border-color: var(--color-border); }
+.customer-help-card, .final-customer-cta { background: linear-gradient(145deg, color-mix(in srgb, var(--color-surface) 82%, black), color-mix(in srgb, var(--color-primary) 34%, var(--color-surface))); border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border)); color: var(--color-text); }
+.customer-help-card h2, .final-customer-cta h2 { color: var(--color-text); }
+.clean-list li { background: color-mix(in srgb, var(--color-surface) 70%, transparent); border-color: var(--color-border); color: var(--color-muted); }
+.recent-work-section { background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 44%, transparent), transparent); }
+.area-card strong, .estimate-type-list span, .portal-step { background: color-mix(in srgb, var(--color-surface) 86%, var(--color-background)); border-color: var(--color-border); color: var(--color-text); }
+.request-estimate-card .field input, .request-estimate-card .field select, .request-estimate-card .field textarea { background: var(--field-bg, var(--color-surface)); border-color: var(--color-border); color: var(--color-text); }
+.final-customer-cta p { color: var(--color-muted); }
+.final-customer-cta .btn.secondary { background: color-mix(in srgb, var(--color-surface) 72%, transparent); color: var(--color-text); border-color: var(--color-border); }
+.customer-footer { background: color-mix(in srgb, var(--color-surface) 82%, black); color: var(--color-muted); border-top: 1px solid var(--color-border); }
+.footer-grid-customer h2, .footer-grid-customer h3, .footer-grid-customer a { color: var(--color-text); }
+.homepage-lightbox button { background: var(--color-surface); color: var(--color-text); }
+@media (max-width: 820px) { .customer-public-header .nav-links a:not(.btn):nth-child(3) { display: inline-flex; } }
