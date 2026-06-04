@@ -1,112 +1,107 @@
 import Link from "next/link";
+import { estimateWorkTypes, galleryProjects, serviceAreaCities, serviceCategories } from "./components/site-data";
 
-const stats = [
-  ["48K+", "Quotes Generated"],
-  ["112K+", "Jobs Managed"],
-  ["$38M", "Revenue Tracked"],
-  ["19K+", "AI Estimates Created"],
-];
+const portalItems = ["Requests", "Quotes", "Approvals", "Invoices", "Job updates"];
 
-const features = [
-  ["AI Quoting", "Analyze customer requests, generate scopes, surface risks, and prepare reviewer-ready estimates."],
-  ["Work Orders", "Convert approved quotes into schedules, assignments, notes, photos, closeout, and invoices."],
-  ["Inventory", "Track materials, low-stock alerts, supplier costs, and truck/warehouse availability."],
-  ["Maintenance Plans", "Manage recurring service agreements, renewals, visits, and customer communications."],
-  ["Scheduling", "Coordinate technicians, job windows, priority work, and dispatch visibility."],
-  ["Client Portal", "Give customers a polished place to request, approve, pay, and track work."],
-  ["Technician Portal", "Field crews can see jobs, materials, notes, photos, and AI troubleshooting."],
-  ["Analytics", "Watch revenue, quote velocity, technician activity, open jobs, and AI performance."],
-  ["Role Management", "Owner, admin, manager, worker, and client access stays clean and permission-safe."],
-];
-
-const comparison = [
-  ["AI estimate drafting", "Included", "Manual add-ons"],
-  ["CMMS + quoting workflow", "Unified", "Split tools"],
-  ["Client + technician portals", "Included", "Limited"],
-  ["White-label branding", "Built in", "Enterprise only"],
+const processSteps = [
+  ["Tell us what you need", "Share the property, work type, photos if available, and a short description."],
+  ["We review the scope", "T&A Contracting confirms the right next step, service fit, and any needed follow-up details."],
+  ["Receive an estimate", "Review the quote, approve the work, and track updates through the client portal."],
 ];
 
 export default function Home() {
   return (
     <>
-      <section className="hero section-wrap premium-hero">
+      <section className="hero section-wrap customer-hero">
         <div className="hero-copy">
-          <p className="eyebrow">Contractor CMMS + AI Quoting Platform</p>
-          <h1>Run Your Entire Contracting Business From One Platform</h1>
-          <p className="hero-text">Manage clients, estimates, work orders, inventory, technicians, maintenance plans, invoices, and AI-powered quoting from one premium operating system.</p>
+          <p className="eyebrow">T&A Contracting • Arizona property services</p>
+          <h1>Contracting help without the runaround.</h1>
+          <p className="hero-text">T&A Contracting helps homeowners, landlords, property managers, and small businesses handle repairs, maintenance, installations, punch lists, and property improvements.</p>
+          <p className="service-area">Serving {serviceAreaCities.join(", ")} and nearby Arizona communities.</p>
           <div className="button-row">
-            <Link className="button" href="/request-estimate">Start Free</Link>
-            <Link className="button button-dark" href="/contact">Request Demo</Link>
-          </div>
-          <div className="hero-stats" aria-label="Platform statistics">
-            {stats.map(([value, label]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}
+            <Link className="button" href="/request-estimate">Request Estimate</Link>
+            <Link className="button button-dark" href="/services">View Services</Link>
           </div>
         </div>
-        <aside className="dashboard-preview" aria-label="Dashboard preview">
-          <div className="preview-top"><span /> <span /> <span /></div>
-          <div className="preview-kpis">
-            <div><small>Revenue</small><strong>$128k</strong></div>
-            <div><small>Open Jobs</small><strong>42</strong></div>
-            <div><small>AI Confidence</small><strong>94%</strong></div>
+        <aside className="hero-card customer-help-card" aria-label="How T&A Contracting helps customers">
+          <span className="eyebrow">Simple next steps</span>
+          <h2>One request starts the conversation.</h2>
+          <div className="check-list">
+            <p>Repair, troubleshooting, maintenance, and installation requests.</p>
+            <p>Property punch lists, rental turns, tenant improvements, and commercial maintenance.</p>
+            <p>Clear quotes, approvals, invoices, and job updates through the client portal.</p>
           </div>
-          <div className="preview-chart"><span style={{ height: "42%" }} /><span style={{ height: "64%" }} /><span style={{ height: "56%" }} /><span style={{ height: "82%" }} /><span style={{ height: "74%" }} /></div>
-          <div className="preview-list"><p><b>AI quote ready</b><span>Kitchen remodel scope</span></p><p><b>Technician dispatched</b><span>HVAC preventive maintenance</span></p><p><b>Inventory alert</b><span>Low stock: shutoff valves</span></p></div>
         </aside>
       </section>
 
-      <section className="trust-bar" aria-label="Trust highlights">
-        <strong>AI-powered estimates</strong><strong>CMMS operations</strong><strong>White-label branding</strong><strong>Mobile-first portals</strong>
+      <section className="trust-bar customer-trust" aria-label="Customer service highlights">
+        <strong>Home repairs</strong><strong>Property maintenance</strong><strong>Installations</strong><strong>Commercial support</strong>
+      </section>
+
+      <section className="section-wrap" id="services">
+        <div className="section-heading centered">
+          <p className="eyebrow">Services</p>
+          <h2>Repair, maintenance, installation, and property work made easier to request.</h2>
+          <p className="lead">Choose the closest category when you request an estimate. If you are not sure, select Other / Not Sure and describe the issue.</p>
+        </div>
+        <div className="card-grid three service-card-grid">
+          {serviceCategories.map((service) => <article className="card service-card" key={service.title}><h3>{service.title}</h3><p>{service.summary}</p></article>)}
+        </div>
+      </section>
+
+      <section className="section-wrap">
+        <div className="section-heading">
+          <p className="eyebrow">Recent job photos</p>
+          <h2>Project photo gallery prepared for real job updates.</h2>
+          <p className="lead">Recent work cards keep completed repairs, maintenance visits, and improvements easy for customers to understand.</p>
+        </div>
+        <div className="gallery-grid homepage-gallery">
+          {galleryProjects.map((project) => (
+            <article className="gallery-card" key={project.title}>
+              <div className="photo-placeholder">Job Photo</div>
+              <p>{project.category}</p>
+              <h3>{project.title}</h3>
+              <span>{project.detail}</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-wrap split-panel portal-panel">
+        <div>
+          <p className="eyebrow">Client portal</p>
+          <h2>Track requests, quotes, approvals, invoices, and job updates in one place.</h2>
+          <p>After your request is submitted, the client portal gives you a simple place to follow the work without digging through texts or emails.</p>
+        </div>
+        <div className="pipeline portal-pills">
+          {portalItems.map((item) => <span key={item}>{item}</span>)}
+        </div>
       </section>
 
       <section className="section-wrap">
         <div className="section-heading centered">
-          <p className="eyebrow">Premium platform modules</p>
-          <h2>Everything contractors need to quote faster, operate cleaner, and scale with confidence.</h2>
+          <p className="eyebrow">How to request an estimate</p>
+          <h2>A short form is enough to get started.</h2>
         </div>
-        <div className="card-grid three feature-grid">
-          {features.map(([title, text]) => <article className="card" key={title}><h3>{title}</h3><p>{text}</p></article>)}
-        </div>
-      </section>
-
-      <section className="section-wrap split-panel ai-panel">
-        <div>
-          <p className="eyebrow">Flagship AI</p>
-          <h2>Reviewer-ready AI quoting and troubleshooting built for field reality.</h2>
-        </div>
-        <div className="check-list">
-          <p>Identifies trade, scope, labor, materials, equipment, permits, code concerns, risk flags, confidence, and follow-up questions.</p>
-          <p>Creates troubleshooting plans with likely causes, tests, repair recommendations, safety warnings, and next diagnostic steps.</p>
-          <p>Explains confidence with scope, photo, trade, material, pricing, regional, and data-completeness signals.</p>
+        <div className="steps-grid">
+          {processSteps.map(([title, text], index) => <article className="card" key={title}><strong className="step-number">{index + 1}</strong><h3>{title}</h3><p>{text}</p></article>)}
         </div>
       </section>
 
-      <section className="section-wrap">
-        <div className="metrics-grid stats-grid">
-          {stats.map(([value, label]) => <article className="metric" key={label}><span>{label}</span><strong>{value}</strong><p>Production workflow capacity for growing contractor teams.</p></article>)}
+      <section className="section-wrap estimate-preview" id="estimate">
+        <div className="section-heading centered">
+          <p className="eyebrow">Type of work</p>
+          <h2>Common request categories.</h2>
+        </div>
+        <div className="service-chip-grid">
+          {estimateWorkTypes.map((type) => <span key={type}>{type}</span>)}
         </div>
       </section>
 
-      <section className="section-wrap comparison-section">
-        <div className="section-heading">
-          <p className="eyebrow">Comparison</p>
-          <h2>A unified platform instead of disconnected point tools.</h2>
-        </div>
-        <div className="comparison-table" role="table" aria-label="Feature comparison">
-          <div role="row"><strong>Capability</strong><strong>This platform</strong><strong>Typical tools</strong></div>
-          {comparison.map((row) => <div role="row" key={row[0]}>{row.map((cell) => <span key={cell}>{cell}</span>)}</div>)}
-        </div>
-      </section>
-
-      <section className="section-wrap testimonials">
-        <article className="card"><p>“The dashboard finally gives our office, field, and customers the same source of truth.”</p><strong>Operations Manager</strong></article>
-        <article className="card"><p>“AI quote drafts cut back-and-forth while still keeping admin approval in control.”</p><strong>General Contractor</strong></article>
-        <article className="card"><p>“Mobile work orders, notes, and materials made technician handoffs dramatically cleaner.”</p><strong>Service Lead</strong></article>
-      </section>
-
-      <section className="final-cta premium-cta">
-        <h2>Ready to run quoting, jobs, inventory, and customer updates from one branded platform?</h2>
-        <p>Launch a premium contractor CMMS and AI estimating experience for owners, admins, technicians, and clients.</p>
-        <div className="button-row centered-buttons"><Link className="button" href="/request-estimate">Start Free</Link><Link className="button button-dark" href="/contact">Request Demo</Link></div>
+      <section className="final-cta customer-cta">
+        <h2>Need repair, maintenance, installation, or property work?</h2>
+        <p>Send a few details and T&A Contracting will review your estimate request.</p>
+        <div className="button-row centered-buttons"><Link className="button" href="/request-estimate">Request Estimate</Link><Link className="button button-dark" href="/services">Explore Services</Link></div>
       </section>
     </>
   );
