@@ -59,17 +59,34 @@ const stripInternalClientText = (value = '') => clean(String(value || '')
 const sanitizeClientQuotePayload = (payload = {}, fallbackQuote = {}) => {
   const metadata = payload.aiMetadata || {};
   const structured = metadata.aiStructuredQuote || {};
-  const customer = structured.customer_quote || structured.customerQuote || metadata.clientQuotePayload || {};
-  const scope = stripInternalClientText(customer.scope_of_work || structured.scope_of_work || structured.scopeOfWork || payload.summary || fallbackQuote.summary || '');
+  const existing = metadata.clientQuotePayload || {};
+  const customer = structured.customer_quote || structured.customerQuote || existing || {};
+  const scope = stripInternalClientText(existing.scopeOfWork || customer.scope_of_work || structured.scope_of_work || structured.scopeOfWork || payload.summary || fallbackQuote.summary || '');
+  const cleanArray = (items = []) => (Array.isArray(items) ? items : items ? [items] : []).map((item) => stripInternalClientText(typeof item === 'string' ? item : item.description || item.name || item.label || '')).filter(Boolean);
   const clientQuotePayload = {
-    title: stripInternalClientText(payload.title || fallbackQuote.title || 'Service quote'),
+    ...existing,
+    company: existing.company || { name: process.env.COMPANY_NAME || 'Ugly Guys Bad Company', phone: process.env.COMPANY_PHONE || '(602) 560-0455', email: process.env.COMPANY_EMAIL || '' },
+    quoteNumber: existing.quoteNumber || fallbackQuote.id || payload.quoteId || '',
+    quoteDate: existing.quoteDate || fallbackQuote.created_at || new Date().toISOString(),
+    expirationDate: existing.expirationDate || payload.expirationDate || '',
+    title: stripInternalClientText(existing.title || payload.title || fallbackQuote.title || 'Service quote'),
+    customerName: stripInternalClientText(existing.customerName || payload.customerName || ''),
+    serviceType: stripInternalClientText(existing.serviceType || structured.service_category || structured.trade || ''),
+    propertySummary: stripInternalClientText(existing.propertySummary || structured.property_summary || ''),
+    jobSummary: stripInternalClientText(existing.jobSummary || customer.summary || structured.job_summary || scope).slice(0, 800),
     scopeOfWork: scope,
-    customerNotes: stripInternalClientText(customer.customer_notes || structured.customer_notes || structured.customerNotes || ''),
-    assumptions: Array.isArray(customer.assumptions || structured.assumptions) ? (customer.assumptions || structured.assumptions) : [],
-    exclusions: Array.isArray(customer.exclusions || structured.exclusions) ? (customer.exclusions || structured.exclusions) : [],
-    warrantyNotes: stripInternalClientText(customer.warranty_notes || structured.warranty_notes || structured.warrantyNotes || ''),
-    detailMode: metadata.clientQuoteDetailMode || structured.client_quote_detail_mode || 'summary',
-    totalCents: payload.amountCents || fallbackQuote.amount_cents || 0,
+    included: cleanArray(existing.included || ['Labor, materials, and service items listed in this quote.']),
+    materialsSummary: stripInternalClientText(existing.materialsSummary || ''),
+    laborSummary: stripInternalClientText(existing.laborSummary || ''),
+    customerNotes: stripInternalClientText(existing.customerNotes || customer.customer_notes || structured.customer_notes || structured.customerNotes || ''),
+    assumptions: cleanArray(existing.assumptions || customer.assumptions || structured.assumptions),
+    exclusions: cleanArray(existing.exclusions || customer.exclusions || structured.exclusions),
+    warrantyNotes: stripInternalClientText(existing.warrantyNotes || customer.warranty_notes || structured.warranty_notes || structured.warrantyNotes || ''),
+    estimatedTimeline: stripInternalClientText(existing.estimatedTimeline || structured.estimated_timeline || ''),
+    detailMode: metadata.clientQuoteDetailMode || existing.detailMode || structured.client_quote_detail_mode || 'summary',
+    totalCents: payload.amountCents || existing.totalCents || fallbackQuote.amount_cents || 0,
+    groupedPricing: existing.groupedPricing || null,
+    lineItems: Array.isArray(existing.lineItems) ? existing.lineItems.map((line) => ({ ...line, name: stripInternalClientText(line.name || line.description || ''), description: stripInternalClientText(line.description || line.name || '') })) : [],
   };
   return { summary: scope, metadata: { ...metadata, clientQuotePayload, clientQuoteDetailMode: clientQuotePayload.detailMode } };
 };
