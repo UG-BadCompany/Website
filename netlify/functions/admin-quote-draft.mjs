@@ -580,6 +580,104 @@ const fetchSerpApiPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) 
     return [];
   }
 };
+
+const parseOpenAiJsonText = (data = {}) => {
+  const candidates = [
+    data.output_text,
+    data?.choices?.[0]?.message?.content,
+    ...(Array.isArray(data.output) ? data.output.flatMap((item) => Array.isArray(item.content) ? item.content.map((content) => content.text) : []) : []),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const raw = String(candidate || '').trim();
+    if (!raw) continue;
+    try { return JSON.parse(raw); } catch {}
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch {}
+    }
+  }
+  return null;
+};
+
+const normalizeOpenAiPriceResult = (item = {}, partLabel = '') => {
+  const cents = Number.isFinite(Number(item.cents)) ? Math.round(Number(item.cents)) : parseUsdToCents(item.price || item.averagePrice || item.recommendedPrice || item.extracted_price);
+  const link = normalizeProductLink(item.link || item.url || item.sourceUrl || '');
+  if (!Number.isInteger(cents) || cents <= 0 || !link) return null;
+  return {
+    title: clean(item.title || item.name || partLabel, 180),
+    source: clean(item.source || item.sourceName || domainFromUrl(link) || 'OpenAI live search', 120),
+    cents,
+    link,
+    dateChecked: clean(item.dateChecked || new Date().toISOString().slice(0, 10), 40),
+    confidence: Math.max(0, Math.min(1, Number(item.confidence || 0.72))),
+    lowCents: Number.isFinite(Number(item.lowCents)) ? Math.round(Number(item.lowCents)) : null,
+    averageCents: Number.isFinite(Number(item.averageCents)) ? Math.round(Number(item.averageCents)) : cents,
+    highCents: Number.isFinite(Number(item.highCents)) ? Math.round(Number(item.highCents)) : null,
+    searchProvider: 'openai_live_search',
+  };
+};
+
+const fetchOpenAiLivePrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
+  const apiKey = clean(process.env.OPENAI_API_KEY, 200);
+  if (!apiKey) return [];
+  const cacheKey = `openai|${slug(partLabel)}|${slug(location)}`;
+  if (webLookupCache.has(cacheKey)) return webLookupCache.get(cacheKey);
+  if (webLookupCount >= MAX_WEB_PRICE_LOOKUPS) return [];
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SERP_TIMEOUT_MS + 2500);
+  try {
+    webLookupCount += 1;
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: OPENAI_MODEL || 'gpt-5-mini',
+        tools: [{ type: 'web_search_preview' }],
+        input: [
+          { role: 'system', content: 'Use live web/product research for current contractor material pricing. Return strict JSON only. Do not use memory alone for prices.' },
+          { role: 'user', content: JSON.stringify({ task: 'Find current product/material prices for this quote line item. Prefer supplier/retail product pages and include source URL, source name, date checked, low/average/high price when available, recommended price, and confidence.', partLabel, location, outputSchema: { results: [{ title: 'string', sourceName: 'string', sourceUrl: 'https://...', recommendedPrice: 'number dollars', lowPrice: 'number dollars', averagePrice: 'number dollars', highPrice: 'number dollars', dateChecked: 'YYYY-MM-DD', confidence: 'number 0..1' }] } }) },
+        ],
+        text: { format: { type: 'json_object' } },
+        max_output_tokens: 1300,
+      }),
+    });
+    clearTimeout(timer);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return [];
+    const parsed = parseOpenAiJsonText(data);
+    const results = Array.isArray(parsed?.results) ? parsed.results : Array.isArray(parsed?.pricingSources) ? parsed.pricingSources : [];
+    const prices = results
+      .map((item) => normalizeOpenAiPriceResult({
+        ...item,
+        url: item.sourceUrl || item.url || item.link,
+        sourceName: item.sourceName || item.source,
+        price: item.recommendedPrice ?? item.averagePrice ?? item.price,
+        lowCents: parseUsdToCents(item.lowPrice),
+        averageCents: parseUsdToCents(item.averagePrice),
+        highCents: parseUsdToCents(item.highPrice),
+      }, partLabel))
+      .filter(Boolean)
+      .filter((item) => isAllowedPriceSource(item.source, item.title) || item.link)
+      .slice(0, 5);
+    webLookupCache.set(cacheKey, prices);
+    return prices;
+  } catch (error) {
+    console.warn('OpenAI live price lookup failed, falling back to SERP/supplier pricing.', { partLabel, message: error?.message || String(error) });
+    webLookupCache.set(cacheKey, []);
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const fetchLiveMaterialPrices = async ({ partLabel, location = 'Phoenix, Arizona' }) => {
+  const openAiPrices = await fetchOpenAiLivePrices({ partLabel, location });
+  if (openAiPrices.length) return openAiPrices;
+  const serpPrices = await fetchSerpApiPrices({ partLabel, location });
+  return serpPrices.map((item) => ({ ...item, searchProvider: 'serpapi_fallback' }));
+};
+
 const normalizeKey = (value = '') => slug(value).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
 const confidenceFromEvidence = (evidence = []) => {
   const count = Array.isArray(evidence) ? evidence.length : 0;
@@ -617,13 +715,19 @@ const persistLivePriceEvidence = async ({ db, jobRequest, materials, description
 
     for (const price of evidence.slice(0, 3)) {
       await db.sql`
-        insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at)
+        insert into supplier_prices (item_key, supplier_name, unit_cost_cents, source_url, fetched_at, low_price_cents, average_price_cents, high_price_cents, pricing_confidence, search_provider, source_payload)
         values (
           ${itemKey},
           ${clean(price.source, 160) || 'web'},
           ${Number(price.cents || 0)},
           ${clean(price.link || '', 600) || null},
-          now()
+          now(),
+          ${Number.isFinite(Number(price.lowCents)) ? Number(price.lowCents) : null},
+          ${Number.isFinite(Number(price.averageCents)) ? Number(price.averageCents) : Number(price.cents || 0)},
+          ${Number.isFinite(Number(price.highCents)) ? Number(price.highCents) : null},
+          ${Number.isFinite(Number(price.confidence)) ? Number(price.confidence) : confidence},
+          ${clean(price.searchProvider || 'supplier_database', 80)},
+          ${JSON.stringify(price)}::jsonb
         )
       `;
     }
@@ -660,7 +764,7 @@ const buildGeneralMaterialsFromProjectDetails = async ({ projectDetails, invento
   for (const keyword of keywords.slice(0, 6)) {
     if (['mini', 'split', 'air', 'conditioner', 'unit'].includes(keyword)) continue;
     const label = keyword.split('-').map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1)).join(' ');
-    const livePrices = await fetchSerpApiPrices({ partLabel: `${label} part`, location });
+    const livePrices = await fetchLiveMaterialPrices({ partLabel: `${label} part`, location });
     if (!livePrices.length) continue;
     const medianLivePriceCents = livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)];
     const inventoryMatch = inventory.find((item) => slug(item.name).includes(keyword));
@@ -812,7 +916,7 @@ const buildInternetFallbackMaterials = async ({ descriptionText, inventory, loca
   ];
   const candidates = [];
   for (const seed of searchSeeds) {
-    const livePrices = await fetchSerpApiPrices({ partLabel: seed, location });
+    const livePrices = await fetchLiveMaterialPrices({ partLabel: seed, location });
     livePrices.forEach((item) => {
       const name = clean(item.title, 120) || seed;
       if (!name) return;
@@ -1103,7 +1207,7 @@ export default async (request) => {
 
     const materials = [];
     for (const part of baseMaterials) {
-      const livePrices = part.livePriceEvidence || await fetchSerpApiPrices({ partLabel: part.name, location });
+      const livePrices = part.livePriceEvidence || await fetchLiveMaterialPrices({ partLabel: part.name, location });
       const medianLivePriceCents = livePrices.length
         ? livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)]
         : null;
@@ -1114,7 +1218,7 @@ export default async (request) => {
         estimatedUnitCostCents: effectiveUnitCostCents,
         estimatedBuyCostCents: buyCostCents,
         livePriceEvidence: livePrices,
-        pricingSource: medianLivePriceCents ? 'live_web' : 'local_catalog',
+        pricingSource: medianLivePriceCents ? (livePrices.some((item) => item.searchProvider === 'openai_live_search') ? 'openai_live_search' : 'serpapi_or_supplier_fallback') : 'local_catalog',
       });
     }
     let pricedMaterials = materials.map((part) => withPartsSurcharge(part, { requestText: descriptionText }));
@@ -1224,7 +1328,7 @@ export default async (request) => {
     const assumptions = [
       scopeSummary.scope === 'Not provided' ? 'Work Scope inferred from project details.' : `Work Scope used: ${scopeSummary.scope}.`,
       scopeSummary.type === 'Not provided' ? 'Type of Work inferred from service + keywords.' : `Type of Work used: ${scopeSummary.type}.`,
-      'Pricing uses live supplier evidence when available and model-adjusted estimate when not available.',
+      'Pricing uses OpenAI live search evidence first when available, then SERPAPI/supplier fallback, and model-adjusted estimate only when live pricing is not verified.',
     ];
 
     const summaryLines = [
