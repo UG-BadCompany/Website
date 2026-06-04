@@ -56,10 +56,16 @@ export const ensureCompanyTables = async (db) => {
 
 const loadCompany = async (db) => { await ensureCompanyTables(db); const [row] = await db.sql`select * from company_settings order by created_at asc limit 1`; return row ? camel(row) : FALLBACK_COMPANY; };
 
-const isOwnerOrAdmin = async (db, request) => {
+const canManageCompanySettings = async (db, request) => {
   const token = getSessionToken(request); if (!token) return false;
-  const rows = await db.sql`select roles.key from auth_sessions join user_roles on user_roles.user_id = auth_sessions.user_id join roles on roles.id = user_roles.role_id where auth_sessions.session_hash = ${hashToken(token)} and auth_sessions.revoked_at is null and auth_sessions.expires_at > now() and roles.key in ('owner', 'admin')`;
-  return rows.length > 0;
+  const [session] = await db.sql`select auth_sessions.user_id from auth_sessions join app_users on app_users.id = auth_sessions.user_id where auth_sessions.session_hash = ${hashToken(token)} and auth_sessions.revoked_at is null and auth_sessions.expires_at > now() and app_users.is_active = true limit 1`;
+  if (!session) return false;
+  const roles = await db.sql`select roles.key from user_roles join roles on roles.id = user_roles.role_id where user_roles.user_id = ${session.user_id}`;
+  const roleKeys = roles.map((role) => role.key);
+  if (roleKeys.includes('owner')) return true;
+  const rolePermissions = await db.sql`select distinct role_permissions.permission_key from user_roles join roles on roles.id = user_roles.role_id join role_permissions on role_permissions.role_id = roles.id and role_permissions.enabled = true where user_roles.user_id = ${session.user_id}`;
+  const permissionKeys = rolePermissions.map((permission) => permission.permission_key);
+  return ['branding.manage', 'company.manage', 'settings.manage'].some((permission) => permissionKeys.includes(permission));
 };
 
 const payloadFrom = (body) => ({
@@ -72,7 +78,7 @@ export default async (request) => {
   try {
     const db = await loadDatabase();
     if (request.method === 'GET') return json(200, { ok: true, company: await loadCompany(db) });
-    if (!await isOwnerOrAdmin(db, request)) return json(403, { ok: false, message: 'Owner or Admin access is required.' });
+    if (!await canManageCompanySettings(db, request)) return json(403, { ok: false, message: 'Branding, Company, Settings, or Owner access is required.' });
     const body = await parseJsonBody(request); if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
     await ensureCompanyTables(db); const [existing] = await db.sql`select id from company_settings order by created_at asc limit 1`; const p = payloadFrom(body);
     const [row] = existing ? await db.sql`update company_settings set company_name=${p.companyName}, legal_name=${p.legalName || null}, display_name=${p.displayName || p.companyName}, website_url=${p.websiteUrl || null}, support_email=${p.supportEmail || null}, support_phone=${p.supportPhone || null}, business_phone=${p.businessPhone || null}, business_address=${p.businessAddress || null}, city=${p.city || null}, state=${p.state || null}, zip=${p.zip || null}, service_area=${p.serviceArea || null}, timezone=${p.timezone}, currency=${p.currency}, license_number=${p.licenseNumber || null}, contractor_license_number=${p.contractorLicenseNumber || null}, tax_id=${p.taxId || null}, business_type=${p.businessType || null}, logo_url=${p.logoUrl || null}, favicon_url=${p.faviconUrl || null}, primary_color=${p.primaryColor}, accent_color=${p.accentColor}, background_color=${p.backgroundColor}, surface_color=${p.surfaceColor}, text_color=${p.textColor}, button_color=${p.buttonColor}, success_color=${p.successColor}, warning_color=${p.warningColor}, danger_color=${p.dangerColor}, theme_mode=${p.themeMode}, default_theme=${p.defaultTheme}, enable_theme_toggle=${Boolean(p.enableThemeToggle)}, show_company_name_in_header=${p.showCompanyNameInHeader}, admin_settings=${JSON.stringify(p.adminSettings)}::jsonb, updated_at=now() where id=${existing.id} returning *`
