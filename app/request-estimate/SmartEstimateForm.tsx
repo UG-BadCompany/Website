@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { serviceCategories } from "../components/site-data";
+import { estimateWorkTypes } from "../components/site-data";
 
 type OptionalQuestion = { label?: string; prompt?: string; optional?: boolean };
 
@@ -89,7 +89,7 @@ export default function SmartEstimateForm() {
         <label>Phone, if available<input name="phone" type="tel" placeholder="(000) 000-0000" /></label>
         <label>Property address<input name="streetAddress" placeholder="Street address" /></label>
         <label>City<input name="city" placeholder="City" /></label>
-        <label>Service category<select name="service">{serviceCategories.map((service) => <option key={service.title}>{service.title}</option>)}</select></label>
+        <label>Type of work<select name="service">{estimateWorkTypes.map((service) => <option key={service}>{service}</option>)}</select></label>
         <label>Work scope<select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Work order request</option></select></label>
         <label>Desired timeframe<select name="timeframe"><option>Flexible</option><option>This week</option><option>Next 2 weeks</option><option>Urgent review requested</option></select></label>
         <label>Description<textarea name="description" rows={6} placeholder="Describe the work needed in your own words. Technical details are optional." /></label>
@@ -110,7 +110,7 @@ export default function SmartEstimateForm() {
         <aside className="form-card smart-intake-result" aria-live="polite">
           <span className="eyebrow">Request saved</span>
           <h2>Your request was submitted.</h2>
-          <p>{result.message || "The request is visible to admin now. Optional information below can improve estimate accuracy, but you may skip anything."}</p>
+          <p>{result.message || "Your request has been received. Optional information below can improve estimate accuracy, but you may skip anything."}</p>
           {typeof score === "number" && <strong>{score}% information complete</strong>}
           <p>Additional information may improve estimate accuracy. Answer any questions you know. Skip anything you are unsure about.</p>
           <div className="client-request-form-actions">

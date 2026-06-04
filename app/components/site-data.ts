@@ -28,6 +28,25 @@ export const serviceCategories = [
   },
 ];
 
+export const estimateWorkTypes = [
+  "HVAC",
+  "Water Heaters",
+  "Plumbing",
+  "Electrical",
+  "Drywall",
+  "Painting",
+  "Doors",
+  "Windows",
+  "Appliances",
+  "Handyman",
+  "Facilities Maintenance",
+  "Property Maintenance",
+  "Commercial Maintenance",
+  "General Contracting",
+  "Tenant Improvements",
+  "Other / Not Sure",
+];
+
 export const galleryProjects = [
   { title: "Rental Turn Punch List", category: "Property Maintenance", detail: "Drywall patching, fixture swaps, door adjustments, and touch-up paint before move-in." },
   { title: "Interior Refresh", category: "Painting & Finishing", detail: "Surface prep, caulking, patching, and clean finish work for a brighter interior." },

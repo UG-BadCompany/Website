@@ -6,26 +6,26 @@ export function Footer() {
     <footer className="site-footer">
       <div className="footer-brand-panel">
         <h2>T&A Contracting</h2>
-        <p>Premium Contractor CMMS, AI quoting, work orders, maintenance plans, and customer portals for Arizona service teams.</p>
-        <Link className="button" href="/request-estimate">Start Free</Link>
+        <p>Repair, maintenance, installation, punch-list, and property improvement help for homeowners, landlords, property managers, and small businesses.</p>
+        <Link className="button" href="/request-estimate">Request Estimate</Link>
       </div>
       <div className="footer-grid">
         <section>
-          <h3>Platform</h3>
-          <Link href="/services">Features</Link>
-          <Link href="/request-estimate">AI Quote Intake</Link>
-          <Link href="/login">Portal Login</Link>
+          <h3>Customer Links</h3>
+          <Link href="/services">Services</Link>
+          <Link href="/request-estimate">Request Estimate</Link>
+          <Link href="/login">Client Portal / Dashboard</Link>
         </section>
         <section>
-          <h3>Operations</h3>
-          <p>Work orders, inventory, scheduling, maintenance plans, analytics, users, roles, and brand controls.</p>
+          <h3>Work We Handle</h3>
+          <p>Repairs, maintenance, installations, tenant improvements, commercial maintenance, and general property work.</p>
         </section>
         <section>
           <h3>Service Area</h3>
           <p>{serviceAreaCities.join(", ")} and surrounding Arizona communities.</p>
         </section>
       </div>
-      <p className="fine-print">Every AI-generated quote remains subject to contractor review, licensing, site conditions, and approval workflows before scheduling or invoicing.</p>
+      <p className="fine-print">Estimate availability depends on project scope, site conditions, licensing requirements, and service area confirmation.</p>
     </footer>
   );
 }
