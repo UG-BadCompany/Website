@@ -8,15 +8,15 @@ const defaultWhy = () => [
 ].map(([icon,title,description], index) => ({ icon, title, description, visible: true, sortOrder: index + 1 }));
 
 export const DEFAULT_HOMEPAGE_SETTINGS = {
-  heroHeadline: 'Reliable maintenance, repairs, and improvements for Arizona properties.',
-  heroSubheadline: 'T&A Contracting helps homeowners, landlords, property managers, and small businesses handle repairs, maintenance, installations, punch lists, and property improvements.',
+  heroHeadline: 'Reliable maintenance, repairs, and improvements for your property.',
+  heroSubheadline: 'Our team helps homeowners, landlords, property managers, and small businesses handle repairs, maintenance, installations, punch lists, and property improvements.',
   primaryButtonText: 'Request Estimate', primaryButtonLink: '#estimate', secondaryButtonText: 'View Services', secondaryButtonLink: '#services', showSecondaryButton: true, heroBackgroundUrl: '',
   servicesTitle: 'Repair, maintenance, installation, and property work made easier to request.', servicesSubtitle: 'Choose the closest category when you request an estimate. If you are not sure, choose Other / Not Sure and describe the issue.', servicesConfig: defaultServices(),
-  aboutTitle: 'About T&A Contracting', aboutText: 'We help Arizona homeowners, property managers, and small businesses handle the repairs, installs, and maintenance work that keep properties safe, clean, and running right.', aboutText2: '', yearsExperienceText: '', localText: 'Local Arizona property service support.', showAbout: true,
-  whyChooseTitle: 'Why choose T&A Contracting', whyChooseCards: defaultWhy(),
-  serviceAreaTitle: 'Serving Phoenix and surrounding Arizona communities.', serviceAreaText: 'Current focus areas include Phoenix, Goodyear, Surprise, Scottsdale, Chandler, and surrounding communities. If your property is nearby, submit the request and we will confirm availability.', citiesServed: ['Phoenix','Goodyear','Surprise','Scottsdale','Chandler','Nearby communities'], travelNotes: '',
+  aboutTitle: 'About our company', aboutText: 'We help homeowners, property managers, and small businesses handle the repairs, installs, and maintenance work that keep properties safe, clean, and running right.', aboutText2: '', yearsExperienceText: '', localText: 'Local property service support.', showAbout: true,
+  whyChooseTitle: 'Why choose our team', whyChooseCards: defaultWhy(),
+  serviceAreaTitle: 'Serving our local community.', serviceAreaText: 'Submit your request and we will confirm availability for your property.', citiesServed: ['Local service area','Nearby communities'], travelNotes: '',
   ctaHeadline: 'Need help with a repair or project?', ctaSubheadline: 'Request an estimate and we’ll follow up with the next steps.', ctaButtonText: 'Request Estimate', ctaButtonLink: '#estimate',
-  footerText: 'Customer-focused repair, maintenance, installation, punch-list, and property improvement help in Arizona.', footerPhone: '', footerEmail: '', footerAddress: '', socialLinks: {}, licenseText: '', sectionVisibility: DEFAULT_VISIBILITY,
+  footerText: 'Customer-focused repair, maintenance, installation, punch-list, and property improvement help.', footerPhone: '', footerEmail: '', footerAddress: '', socialLinks: {}, licenseText: '', sectionVisibility: DEFAULT_VISIBILITY,
 };
 
 export const ensureHomepageTables = async (db) => {
@@ -67,7 +67,7 @@ const camel = (row) => row ? ({
   whyChooseTitle: row.why_choose_title, whyChooseCards: row.why_choose_cards, serviceAreaTitle: row.service_area_title, serviceAreaText: row.service_area_text, citiesServed: row.cities_served, travelNotes: row.travel_notes, ctaHeadline: row.cta_headline, ctaSubheadline: row.cta_subheadline, ctaButtonText: row.cta_button_text, ctaButtonLink: row.cta_button_link,
   footerText: row.footer_text, footerPhone: row.footer_phone, footerEmail: row.footer_email, footerAddress: row.footer_address, socialLinks: row.social_links, licenseText: row.license_text, sectionVisibility: row.section_visibility, createdAt: row.created_at, updatedAt: row.updated_at,
 }) : DEFAULT_HOMEPAGE_SETTINGS;
-const merged = (settings) => normalizePayload({ ...DEFAULT_HOMEPAGE_SETTINGS, ...settings, sectionVisibility: { ...DEFAULT_VISIBILITY, ...(settings?.sectionVisibility || {}) } });
+const merged = (settings) => ({ id: settings?.id || null, ...normalizePayload({ ...DEFAULT_HOMEPAGE_SETTINGS, ...settings, sectionVisibility: { ...DEFAULT_VISIBILITY, ...(settings?.sectionVisibility || {}) } }) });
 
 export default async (request) => {
   if (!['GET','PATCH'].includes(request.method)) return json(405, { ok:false, message:'Method not allowed.' });
