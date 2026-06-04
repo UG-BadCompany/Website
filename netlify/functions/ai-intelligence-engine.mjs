@@ -1,7 +1,7 @@
 import { clean } from './auth-utils.mjs';
 
 export const AI_QUOTE_PROMPT_VERSION = 'phase59-ai-quote-2-component-pricing-v1';
-export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase59-ai-troubleshooting-2-diagnostic-v1';
+export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase60-ai-troubleshooting-research-cache-v1';
 
 export const REQUIRED_QUOTE_FIELDS = [
   'jobClassification',
@@ -77,6 +77,10 @@ export const REQUIRED_TROUBLESHOOTING_FIELDS = [
   'confidenceExplanation',
   'equipmentIdentification',
   'photoAnalysis',
+  'officialErrorMeaning',
+  'detectedFault',
+  'researchSourcesUsed',
+  'confidenceBreakdown',
 ];
 
 const HIGH_RISK_PATTERN = /electrical|outlet|switch|light|ceiling fan|panel|breaker|hvac|mini\s*split|heat\s*pump|water\s*source|gas|refrigerant|roof|structural|water\s*heater|plumbing/i;
@@ -84,6 +88,226 @@ const VAGUE_PATTERN = /\b(fix|repair|broken|not working|issue|problem|help|thing
 
 const toArray = (value) => Array.isArray(value) ? value.filter((item) => item !== null && item !== undefined).map((item) => typeof item === 'string' ? clean(item, 1200) : item).filter(Boolean) : [];
 const toNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+const normalizeLookupText = (value = '') => clean(String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(), 240);
+const normalizeErrorCode = (value = '') => clean(String(value || '').toUpperCase().replace(/[^A-Z0-9-]+/g, ''), 80);
+
+const SEEDED_ERROR_DATABASE = [
+  {
+    manufacturer: 'Daikin',
+    modelFamily: 'RXC / CTX ductless mini split',
+    modelPattern: /\b(RXC|CTX)\d{2}AXVJU\b/i,
+    equipmentType: 'Mini Split Heat Pump',
+    errorCode: 'E3',
+    meaning: 'High Pressure Protection',
+    confidence: 0.94,
+    sources: [{ title: 'Seeded Daikin RXC/CTX field error database', url: 'internal://seeded-error-database/daikin-rxc-e3', snippet: 'Daikin RXC/CTX AXVJU E3 fault is high pressure protection; verify against the current Daikin service manual for the exact matched indoor/outdoor pair.' }],
+    diagnosticFlow: [
+      'Confirm the displayed fault is E3 and record indoor and outdoor model numbers before resetting power.',
+      'Verify outdoor fan operation and condenser coil airflow; high head pressure is commonly caused by airflow restriction or fan failure.',
+      'Check for blocked/dirty outdoor coil, recirculating discharge air, incorrect clearances, or outdoor ambient/load conditions outside the operating envelope.',
+      'Verify service valves are fully open and the refrigerant circuit is not restricted/kinked.',
+      'If airflow and valves are correct, connect approved gauges/temperature probes and compare high-side pressure, saturation temperature, superheat/subcooling, and discharge temperature to Daikin service data.',
+      'Evaluate overcharge, non-condensables, restriction, high-pressure switch/pressure sensor wiring, and outdoor PCB logic only after airflow/installation causes are eliminated.',
+    ],
+    repairFlow: [
+      'Clean condenser coil and correct airflow/clearance/recirculation issues.',
+      'Repair or replace failed outdoor fan motor, fan capacitor/module, blade, or outdoor fan wiring after confirmed readings.',
+      'Correct refrigerant charge/restriction/non-condensables using EPA-compliant recovery/evacuation/charging practices when measurements support sealed-system work.',
+      'Replace pressure switch/sensor harness or outdoor PCB only after confirming the pressure condition and wiring/sensor signal.'
+    ],
+    commonParts: ['Outdoor fan motor or fan module', 'Outdoor fan blade', 'Pressure switch/sensor or harness', 'Outdoor PCB', 'Filter drier/refrigerant circuit repair materials if restriction is confirmed'],
+    safetyNotes: ['High-pressure faults can involve hot discharge lines and high refrigerant pressure. Use EPA-compliant refrigerant procedures and do not vent refrigerant.', 'Use lockout/tagout before opening panels; perform live measurements only by qualified technicians with proper PPE and meters.'],
+  },
+];
+
+const buildResearchQueries = (payload = {}) => {
+  const manufacturer = clean(payload.manufacturer || payload.make, 120);
+  const model = clean(payload.model || payload.modelNumber, 120);
+  const errorCode = normalizeErrorCode(payload.errorCode || payload.errorCodes);
+  const equipment = clean(payload.component || payload.equipment || payload.equipmentType, 120);
+  const symptoms = clean(payload.issue || payload.symptoms || payload.customerComplaint, 240);
+  const queries = [];
+  if (manufacturer && model && errorCode) queries.push({ priority: 1, query: `${manufacturer} ${model} ${errorCode}` });
+  if (manufacturer && model) queries.push({ priority: 2, query: `${manufacturer} ${model} service manual fault code` });
+  if (manufacturer && equipment && errorCode) queries.push({ priority: 3, query: `${manufacturer} ${equipment} ${errorCode} error code` });
+  if (equipment && symptoms) queries.push({ priority: 4, query: `${equipment} ${symptoms} troubleshooting` });
+  return queries.filter((item, index, all) => all.findIndex((other) => other.query.toLowerCase() === item.query.toLowerCase()) === index).slice(0, 4);
+};
+
+const lookupSeededError = (payload = {}) => {
+  const manufacturer = normalizeLookupText(payload.manufacturer || payload.make);
+  const model = clean(payload.model || payload.modelNumber, 160);
+  const errorCode = normalizeErrorCode(payload.errorCode || payload.errorCodes);
+  return SEEDED_ERROR_DATABASE.find((entry) => normalizeLookupText(entry.manufacturer) === manufacturer && entry.errorCode === errorCode && (!model || entry.modelPattern.test(model))) || null;
+};
+
+const stripHtml = (value = '') => clean(String(value).replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/\s+/g, ' ').trim(), 500);
+
+const fetchSearchResults = async ({ query, fetchImpl = fetch, timeoutMs = 7000 }) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+      signal: controller.signal,
+      headers: { 'user-agent': 'Mozilla/5.0 TroubleshootingResearchBot/1.0', accept: 'text/html' },
+    });
+    const html = await response.text();
+    if (!response.ok) return [];
+    const blocks = html.split(/<div class="result[\s\S]*?>/i).slice(1, 5);
+    return blocks.map((block) => {
+      const linkMatch = block.match(/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+      const snippetMatch = block.match(/<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>|<div[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/div>/i);
+      if (!linkMatch) return null;
+      const url = stripHtml(decodeURIComponent(linkMatch[1].replace(/^\/l\/\?kh=-1&uddg=/, '')), 800);
+      return { title: stripHtml(linkMatch[2]), url, snippet: stripHtml(snippetMatch?.[1] || snippetMatch?.[2] || '') };
+    }).filter(Boolean);
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+
+const buildKnownErrorTroubleshootingPatch = ({ payload = {}, definition = {}, researchContext = {} }) => {
+  if (!definition?.meaning) return {};
+  const manufacturer = clean(payload.manufacturer || payload.make || definition.manufacturer, 120) || 'Unknown';
+  const model = clean(payload.model || payload.modelNumber || definition.modelFamily, 160) || 'Unknown';
+  const code = normalizeErrorCode(payload.errorCode || definition.errorCode);
+  const causes = [
+    { cause: 'Outdoor condenser airflow restriction, dirty coil, blocked discharge, or poor clearance causing high head pressure.', probability: 32, probabilityPercent: 32 },
+    { cause: 'Outdoor fan motor/module/capacitor/blade failure or intermittent fan operation.', probability: 24, probabilityPercent: 24 },
+    { cause: 'Refrigerant overcharge, non-condensables, restriction/kink, or closed service valve causing elevated pressure.', probability: 22, probabilityPercent: 22 },
+    { cause: 'High-pressure switch/pressure sensor wiring, sensor, or outdoor PCB fault after true high pressure is ruled out.', probability: 14, probabilityPercent: 14 },
+    { cause: 'Operating conditions outside manufacturer envelope or indoor/outdoor mismatch/installation issue.', probability: 8, probabilityPercent: 8 },
+  ];
+  return {
+    firstThingToCheck: `${manufacturer} ${model} ${code}: ${definition.meaning}. Start by proving whether the unit is actually entering high pressure protection: confirm outdoor coil airflow, outdoor fan operation, clearances, service valves, and site conditions before condemning controls.`,
+    officialErrorMeaning: definition.meaning,
+    detectedFault: `${code} — ${definition.meaning}`,
+    researchSourcesUsed: researchContext.sources || definition.sources || [],
+    likelyCauses: causes,
+    diagnosticSteps: definition.diagnosticFlow || [],
+    expectedReadings: [
+      'Outdoor supply voltage should match the nameplate while running; low/incorrect voltage can raise motor/compressor amperage.',
+      'Outdoor fan should run at commanded speed with unobstructed airflow through a clean condenser coil.',
+      'High-side pressure/saturation temperature should be appropriate for outdoor ambient and load when compared with Daikin service data; abnormal high head supports an actual pressure problem.',
+      'Temperature split, liquid-line/subcooling, suction/superheat, and discharge temperature must be evaluated together before adjusting charge.',
+      'Pressure switch/sensor circuit should match Daikin service-manual logic; verify wiring continuity and connector condition with power isolated before PCB replacement.',
+    ],
+    diagnosticTests: [
+      { test: 'Confirm model pair and E3 display/fault history', expectedReading: 'Fault code and model numbers match documented Daikin E3 high pressure protection workflow', tool: 'Nameplate/service manual' },
+      { test: 'Outdoor fan and condenser airflow inspection', expectedReading: 'Fan runs smoothly at commanded speed; coil clean; discharge air not recirculating; clearances meet installation manual', tool: 'Visual inspection, tachometer/anemometer if available' },
+      { test: 'Supply voltage and outdoor fan amperage', expectedReading: 'Voltage within nameplate tolerance; fan amperage below FLA/rating', tool: 'CAT-rated multimeter/clamp meter' },
+      { test: 'Refrigerant pressure/temperature evaluation by qualified tech', expectedReading: 'High-side pressure and saturation temperature align with Daikin pressure-temperature/service data for ambient/load', tool: 'Approved gauges/probes/thermometers' },
+      { test: 'Pressure switch/sensor and harness verification after pressure condition is ruled out', expectedReading: 'Circuit/signal matches service manual; no loose, corroded, open, or shorted wiring', tool: 'Multimeter, service data' },
+    ],
+    toolsMetersNeeded: ['Daikin service manual/fault chart', 'CAT-rated multimeter', 'Clamp meter', 'Manifold/digital gauges and temperature clamps for qualified refrigerant tech', 'Coil-cleaning tools', 'PPE and lockout/tagout kit'],
+    requiredTools: ['Daikin service manual/fault chart', 'CAT-rated multimeter', 'Clamp meter', 'Digital gauges/temperature clamps', 'PPE and lockout/tagout kit'],
+    partsLikelyNeeded: definition.commonParts || [],
+    repairEstimateRecommendation: (definition.repairFlow || []).join(' ') || 'Quote repair only after confirming whether high pressure is caused by airflow, fan failure, refrigerant circuit condition, pressure sensor/harness, or PCB logic.',
+    replacementRecommendation: 'Do not recommend full equipment replacement for a single E3 fault until coil/fan/airflow and refrigerant diagnostics are complete; consider replacement only for major sealed-system failure, unavailable parts, repeated compressor/PCB failures, or poor overall equipment condition.',
+    safetyWarnings: definition.safetyNotes || [],
+    stopAndEscalateIf: ['Escalate if refrigerant recovery/charging, sealed-system repair, high-voltage live testing, or PCB-level diagnosis is outside licensing/company policy.', 'Stop if pressure readings are unsafe, fan wiring is overheated, compressor amperage is above nameplate limits, or the unit cannot be tested without bypassing safeties.'],
+    nextDiagnosticSteps: definition.diagnosticFlow || [],
+    technicianMode: {
+      quickFix: ['Confirm E3 code, clean obvious outdoor coil debris, remove airflow obstructions, verify outdoor fan spins freely with power off, and reset only after documenting conditions.'],
+      advancedDiagnosis: ['Measure supply voltage/fan amperage, verify fan command and operation, inspect service valves and line-set restrictions, then compare pressures/temperatures to service data.'],
+      expertMode: ['Use Daikin service manual logic to isolate true high pressure versus pressure sensor/harness/PCB fault; evaluate pressure-temperature relationship, subcooling/superheat, discharge temperature, non-condensables, overcharge, restrictions, and control-board inputs.'],
+    },
+    customerExplanation: `${manufacturer} ${model} code ${code} points to ${definition.meaning}. The diagnostic should focus on why pressure is getting too high, especially outdoor airflow/fan, coil condition, service valves, refrigerant condition, and pressure-sensing controls.`,
+    workOrderNotes: `Research-backed diagnostic: ${manufacturer} ${model} code ${code} = ${definition.meaning}. Prioritize high-pressure workflow, not generic communication-failure troubleshooting.`,
+    confidenceScore: Math.max(0.72, Number(definition.confidence || 0.8)),
+    confidenceExplanation: { label: 'High', explanation: `Manufacturer/model/error-code match found for ${manufacturer} ${model} ${code}; verify against current manufacturer service literature before repair authorization.` },
+    confidenceBreakdown: { modelMatch: 0.9, manufacturerMatch: 1, errorCodeMatch: 1, researchCoverage: researchContext.sources?.length ? 0.8 : 0.65, symptomMatch: payload.issue ? 0.72 : 0.5, photoMatch: payload.photos?.length ? 0.75 : 0.35, dataCompleteness: payload.readings ? 0.75 : 0.55, researchConfidence: definition.confidence || 0.85, equipmentConfidence: 0.9, repairConfidence: 0.72, overallConfidence: Math.max(0.72, Number(definition.confidence || 0.8)) },
+    equipmentIdentification: { manufacturer, model, serial: payload.serial || 'Unknown', equipmentType: definition.equipmentType || payload.component || 'Unknown', age: payload.age || 'Unknown', modelFamily: definition.modelFamily || '' },
+    photoAnalysis: { quality: payload.photos?.length ? 'Photos referenced' : 'No photos supplied', confidenceImpact: payload.photos?.length ? 'Photos may confirm coil condition, clearance, fan condition, and nameplate.' : 'Missing photos reduce confidence in airflow/installation findings.' },
+  };
+};
+
+export const loadCachedErrorDefinition = async ({ db, payload }) => {
+  const manufacturer = normalizeLookupText(payload.manufacturer || payload.make);
+  const model = normalizeLookupText(payload.model || payload.modelNumber);
+  const errorCode = normalizeErrorCode(payload.errorCode || payload.errorCodes);
+  if (!manufacturer || !errorCode) return null;
+  const rows = await safeSql(db, (sql) => sql`
+    select manufacturer, model_family, error_code, equipment_type, meaning, diagnostic_flow, repair_flow, common_parts, safety_notes, research_sources, confidence, updated_at
+    from ai_error_code_cache
+    where lower(manufacturer) = ${manufacturer}
+      and upper(error_code) = ${errorCode}
+    order by case when ${model || ''} <> '' and (lower(model_family) = ${model} or ${model} like concat('%', lower(model_family), '%') or lower(model_family) like concat('%', ${model}, '%')) then 0 else 1 end,
+      confidence desc,
+      updated_at desc
+    limit 1
+  `);
+  return rows?.[0] ? {
+    source: 'database_cache', manufacturer: rows[0].manufacturer, modelFamily: rows[0].model_family, errorCode: rows[0].error_code,
+    equipmentType: rows[0].equipment_type, meaning: rows[0].meaning, diagnosticFlow: rows[0].diagnostic_flow || [], repairFlow: rows[0].repair_flow || [], commonParts: rows[0].common_parts || [], safetyNotes: rows[0].safety_notes || [], sources: rows[0].research_sources || [], confidence: Number(rows[0].confidence || 0.75), cachedAt: rows[0].updated_at,
+  } : null;
+};
+
+export const saveCachedErrorDefinition = async ({ db, payload, definition }) => {
+  if (!definition?.meaning) return;
+  const manufacturer = clean(definition.manufacturer || payload.manufacturer || payload.make, 120);
+  const modelFamily = clean(definition.modelFamily || payload.model || payload.modelNumber || payload.component, 160);
+  const errorCode = normalizeErrorCode(definition.errorCode || payload.errorCode || payload.errorCodes);
+  if (!manufacturer || !modelFamily || !errorCode) return;
+  await safeSql(db, (sql) => sql`
+    insert into ai_error_code_cache (manufacturer, model_family, equipment_type, error_code, meaning, diagnostic_flow, repair_flow, common_parts, safety_notes, research_sources, confidence, source_payload)
+    values (${manufacturer}, ${modelFamily}, ${clean(definition.equipmentType || payload.component, 120)}, ${errorCode}, ${clean(definition.meaning, 500)}, ${JSON.stringify(definition.diagnosticFlow || [])}::jsonb, ${JSON.stringify(definition.repairFlow || [])}::jsonb, ${JSON.stringify(definition.commonParts || [])}::jsonb, ${JSON.stringify(definition.safetyNotes || [])}::jsonb, ${JSON.stringify(definition.sources || [])}::jsonb, ${Number(definition.confidence || 0.7)}, ${JSON.stringify(definition)}::jsonb)
+    on conflict (manufacturer, model_family, error_code) do update set
+      equipment_type = excluded.equipment_type,
+      meaning = excluded.meaning,
+      diagnostic_flow = excluded.diagnostic_flow,
+      repair_flow = excluded.repair_flow,
+      common_parts = excluded.common_parts,
+      safety_notes = excluded.safety_notes,
+      research_sources = excluded.research_sources,
+      confidence = greatest(ai_error_code_cache.confidence, excluded.confidence),
+      successful_lookup_count = ai_error_code_cache.successful_lookup_count + 1,
+      source_payload = excluded.source_payload,
+      updated_at = now()
+  `);
+};
+
+export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fetch }) => {
+  const queries = buildResearchQueries(payload);
+  const seeded = lookupSeededError(payload);
+  const cached = await loadCachedErrorDefinition({ db, payload });
+  const status = [
+    { label: 'Searching Manufacturer Data...', state: queries.length ? 'queued' : 'skipped' },
+    { label: 'Searching Model Database...', state: (payload.model || payload.modelNumber) ? 'queued' : 'skipped' },
+    { label: 'Searching Error Code Database...', state: (payload.errorCode || payload.errorCodes) ? 'queued' : 'skipped' },
+  ];
+  const onlineResults = [];
+  for (const item of queries) {
+    const results = await fetchSearchResults({ query: item.query, fetchImpl });
+    onlineResults.push({ ...item, results });
+  }
+  const definition = cached || seeded;
+  if (seeded && !cached) await saveCachedErrorDefinition({ db, payload, definition: seeded });
+  const sources = [
+    ...(definition?.sources || []),
+    ...onlineResults.flatMap((item) => item.results.map((result) => ({ ...result, query: item.query, priority: item.priority }))),
+  ].filter(Boolean).slice(0, 12);
+  return {
+    required: queries.length > 0,
+    completed: queries.length > 0,
+    usedCache: Boolean(cached),
+    usedSeededDatabase: Boolean(seeded),
+    exactKnownDefinition: definition || null,
+    queries,
+    onlineResults,
+    sources,
+    status: [
+      ...status.map((item) => ({ ...item, state: item.state === 'queued' ? 'complete' : item.state })),
+      { label: 'Analyzing Results...', state: 'complete' },
+      { label: 'Building Diagnostic Workflow...', state: 'complete' },
+    ],
+    confidence: definition?.confidence || (sources.length ? 0.58 : 0.25),
+  };
+};
 
 const TRADE_ESTIMATING_RULES = {
   hvac: { rate: 145, markup: 0.22, overhead: 0.12, travelCents: 8500, permitCents: 6500, disposalCents: 3500, phases: ['Protect work area and verify equipment data', 'Diagnose/install HVAC scope', 'Start-up, readings, and commissioning'], materials: ['Electrical whip/disconnect or controls allowance', 'Condensate/drain materials', 'Fasteners, sealants, and consumables'] },
@@ -311,6 +535,10 @@ export const validateQuoteAiOutput = (quote = {}, context = {}) => {
 };
 
 export const normalizeTroubleshootingAiOutput = (plan = {}) => ({
+  officialErrorMeaning: clean(plan.officialErrorMeaning, 500),
+  detectedFault: clean(plan.detectedFault, 700),
+  researchSourcesUsed: toArray(plan.researchSourcesUsed).map((item) => typeof item === 'string' ? { title: clean(item, 300) } : item).slice(0, 12),
+  confidenceBreakdown: plan.confidenceBreakdown && typeof plan.confidenceBreakdown === 'object' ? plan.confidenceBreakdown : {},
   firstThingToCheck: clean(plan.firstThingToCheck || plan.summary, 1200),
   safetyWarnings: toArray(plan.safetyWarnings).map((item) => clean(String(item), 800)),
   diagnosticSteps: toArray(plan.diagnosticSteps).map((item) => clean(String(item), 1000)),
@@ -348,6 +576,8 @@ export const validateTroubleshootingAiOutput = (plan = {}, context = {}) => {
   if (!normalized.technicianMode || !normalized.technicianMode.quickFix || !normalized.technicianMode.advancedDiagnosis || !normalized.technicianMode.expertMode) errors.push('technicianMode must include quickFix, advancedDiagnosis, and expertMode.');
   if (!normalized.confidenceScore) errors.push('confidenceScore is required.');
   if (!normalized.confidenceExplanation || !Object.keys(normalized.confidenceExplanation).length) errors.push('confidenceExplanation is required.');
+  if ((context.manufacturer || context.make || context.model || context.errorCode) && !normalized.researchSourcesUsed.length) errors.push('researchSourcesUsed is required when manufacturer, model, or error code is supplied.');
+  if ((context.errorCode || context.errorCodes) && !normalized.officialErrorMeaning) errors.push('officialErrorMeaning is required when an error code is supplied; use uncertainty wording if not positively identified.');
   if (HIGH_RISK_PATTERN.test(`${context.systemType || ''} ${context.component || ''} ${context.issue || ''}`)) {
     const safetyText = `${normalized.safetyWarnings.join(' ')} ${normalized.stopAndEscalateIf.join(' ')}`;
     if (!/stop|escalate|lockout|tagout|licensed|supervisor|gas|refrigerant|electrical/i.test(safetyText)) {
@@ -435,14 +665,18 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
   photoContext,
 });
 
-export const buildTroubleshootingPrompt = ({ payload = {}, historicalContext = [], companyRules = [], photoContext = [] }) => ({
+export const buildTroubleshootingPrompt = ({ payload = {}, historicalContext = [], companyRules = [], photoContext = [], researchContext = {} }) => ({
   promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION,
-  task: 'Create a trade-specific diagnostic tree for the contractor. OpenAI is primary; fallback is emergency only.',
+  task: 'Create a model-specific, technician-grade diagnostic workflow. Research is the factual engine; OpenAI is the reasoning engine. Never invent manufacturer error meanings.',
   requiredFields: REQUIRED_TROUBLESHOOTING_FIELDS,
   supportedTrades: ['HVAC', 'mini splits', 'heat pumps', 'water source heat pumps', 'plumbing', 'drains', 'water heaters', 'electrical', 'outlets', 'switches', 'lights', 'ceiling fans', 'exhaust fans', 'appliances', 'roofing', 'drywall', 'painting', 'flooring', 'doors', 'windows', 'commercial maintenance', 'property maintenance', 'general handyman work'],
-  manufacturerSpecificInstruction: 'When make/manufacturer + model/serial exists, use it heavily. Tailor likely causes, expected readings, fault-code interpretation cautions, parts, and diagnostic sequence to the equipment family instead of returning generic advice.',
-  validationRules: ['Return strict JSON only.', 'Include safety warnings, expected readings, tools/meters, likely causes ranked by probability %, diagnosticTests with expected readings, quickFix/advancedDiagnosis/expertMode technicianMode, likely repair, replacement recommendation, likely parts, next steps, stop/escalate conditions, customer explanation, work-order notes, and confidence explanation.', 'For no-cooling HVAC examples, separate capacitor, contactor, low-voltage/control, airflow, refrigerant, and compressor probabilities when relevant.'],
+  manufacturerSpecificInstruction: 'If make/manufacturer, model, or error code is supplied, base the workflow on cached/researched findings. If the exact model/error combination is not positively identified, say: I could not positively identify this exact model/error combination. Then provide most-likely causes without claiming an official definition. Do not output generic communication-failure advice unless research supports it.',
+  validationRules: ['Return strict JSON only.', 'Include officialErrorMeaning, detectedFault, researchSourcesUsed, safety warnings, expected readings, tools/meters, likely causes ranked by probability %, diagnosticTests with expected readings, quickFix/advancedDiagnosis/expertMode technicianMode, likely repair, replacement recommendation, likely parts, next steps, stop/escalate conditions, customer explanation, work-order notes, confidenceBreakdown, and confidence explanation.', 'For no-cooling HVAC examples, separate airflow/high-pressure, fan, coil, refrigerant/overcharge, restriction, sensors/switches, control board, low-voltage/control, and compressor probabilities when relevant.', 'Confidence must include modelMatch, manufacturerMatch, errorCodeMatch, researchCoverage, symptomMatch, photoMatch, dataCompleteness, researchConfidence, equipmentConfidence, repairConfidence, and overallConfidence on a 0..1 scale.'],
   fieldInput: payload,
+  researchContext,
+  cachedKnownErrorDefinition: researchContext.exactKnownDefinition || null,
+  researchQueries: researchContext.queries || [],
+  researchSources: researchContext.sources || [],
   historicalCompanyContext: historicalContext,
   companyRules,
   photoContext,
@@ -602,22 +836,29 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
 export const runAiFirstTroubleshooting = async ({ db, payload, companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 12000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: payload.systemType, workCategory: payload.component, city: '', limit: 6 });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: payload.workOrderId, workOrderId: payload.workOrderId });
-  const prompt = buildTroubleshootingPrompt({ payload, historicalContext, companyRules, photoContext: resolvedPhotoContext });
-  const system = 'You are the AI-first field troubleshooting engine for the contractor. Return strict JSON only. Be safety-first and trade-specific. Include stop/escalate guidance for high-risk work.';
+  const researchContext = await researchEquipmentFault({ db, payload, fetchImpl });
+  const prompt = buildTroubleshootingPrompt({ payload, historicalContext, companyRules, photoContext: resolvedPhotoContext, researchContext });
+  const system = 'You are the AI-first field troubleshooting engine for the contractor. Return strict JSON only. Be safety-first, trade-specific, and model-specific. Use researchContext as factual evidence. Never invent manufacturer error-code meanings; if exact evidence is missing, explicitly state that the exact model/error combination could not be positively identified.';
   const result = await runOpenAiWithValidation({ kind: 'troubleshooting', apiKey, model, timeoutMs, system, user: prompt, validate: validateTroubleshootingAiOutput, context: payload, fetchImpl });
   if (result.ok) {
-    await saveAiRun({ db, kind: 'troubleshooting', entityId: payload.workOrderId || null, model, promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION, inputSummary: prompt, output: result.output, validation: { ok: true, errors: [] }, retryCount: result.retryCount });
-    await saveKnowledgeFromTroubleshooting({ db, plan: result.output, payload });
-    return { ...result.output, aiEnhanced: true, fallbackUsed: false, historicalMatchUsed: historicalContext.length > 0, model, promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION, retryCount: result.retryCount };
+    const enrichedOutput = { ...result.output, researchContext, researchStatus: researchContext.status };
+    await saveAiRun({ db, kind: 'troubleshooting', entityId: payload.workOrderId || null, model, promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION, inputSummary: prompt, output: enrichedOutput, validation: { ok: true, errors: [] }, retryCount: result.retryCount });
+    await saveKnowledgeFromTroubleshooting({ db, plan: enrichedOutput, payload });
+    if (researchContext.exactKnownDefinition) await saveCachedErrorDefinition({ db, payload, definition: researchContext.exactKnownDefinition });
+    return { ...enrichedOutput, aiEnhanced: true, fallbackUsed: false, historicalMatchUsed: historicalContext.length > 0, model, promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION, retryCount: result.retryCount };
   }
-  const fallback = fallbackBuilder ? await fallbackBuilder({ reason: result.error, attempts: result.attempts, historicalContext }) : null;
+  const fallback = fallbackBuilder ? await fallbackBuilder({ reason: result.error, attempts: result.attempts, historicalContext, researchContext }) : null;
+  const knownErrorPatch = buildKnownErrorTroubleshootingPatch({ payload, definition: researchContext.exactKnownDefinition, researchContext });
   const fallbackPayload = {
     ...(fallback || {}),
+    ...knownErrorPatch,
     aiEnhanced: false,
     fallbackUsed: true,
     fallbackReason: result.error || 'OpenAI troubleshooting failed validation after retry.',
     fallbackSource: fallback?.fallbackSource || (historicalContext.length ? 'company_troubleshooting_history' : 'static_emergency_rules'),
-    warning: 'OpenAI troubleshooting failed or returned invalid JSON after retry. Emergency fallback used; verify before dispatch.',
+    warning: 'OpenAI troubleshooting failed or returned invalid JSON after retry. Research-backed emergency fallback used when available; verify before dispatch.',
+    researchContext,
+    researchStatus: researchContext.status,
     openAiAttempts: result.attempts,
   };
   await saveAiRun({ db, kind: 'troubleshooting', entityId: payload.workOrderId || null, model, promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION, inputSummary: prompt, output: fallbackPayload, validation: { ok: false, errors: result.attempts.flatMap((a) => a.validationErrors || a.error || []) }, fallbackUsed: true, fallbackReason: fallbackPayload.fallbackReason, fallbackSource: fallbackPayload.fallbackSource, retryCount: result.retryCount });
