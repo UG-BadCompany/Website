@@ -3,7 +3,7 @@
     if (['company-management','customers','users','roles','permissions-workspaces','workers'].includes(slug)) return 'People';
     if (['estimate-management-center','estimate-request-center','work-orders','schedule','inventory','materials','finance','invoices','requests','quotes','jobs','project-updates','properties','maintenance-plans'].includes(slug)) return 'Operations';
     if (['ai-knowledge','ai-tools','troubleshooting'].includes(slug)) return 'AI';
-    if (['theme-manager','brand-settings','settings','system-center','audit-logs','reports'].includes(slug)) return 'Administration';
+    if (['theme-manager','brand-settings','homepage-editor','settings','system-center','audit-logs','reports'].includes(slug)) return 'Administration';
     if (workspace === 'owner') return 'Business';
     return 'Business';
   };
@@ -14,6 +14,7 @@
     as('owner','workspace-permissions-center','Workspace & Permissions Center','🛡','/dashboard/modules/admin/roles','admin.roles',['roles.manage'],'Administration'),
     as('owner','system-center','System Center','📊','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
     as('owner','theme-manager','Theme Manager','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
+    as('owner','homepage-editor','Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor','admin.homepage-editor',['homepage.manage']),
     as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
     as('admin','overview','Overview','🏠','/dashboard/modules/admin/overview'),
     as('admin','estimate-management-center','Estimate Management Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage'],'Operations'),
@@ -28,6 +29,7 @@
     as('admin','ai-knowledge','AI Knowledge','🤖','/dashboard/modules/admin/ai-knowledge','admin.ai-knowledge',['ai.knowledge.manage']),
     as('admin','reports','Reports','📈','/dashboard/modules/admin/reports','admin.reports',['reports.view']),
     as('admin','brand-settings','Branding','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
+    as('admin','homepage-editor','Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor','admin.homepage-editor',['homepage.manage']),
     as('admin','settings','Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
     as('manager','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
     as('manager','estimate-management-center','Estimate Management Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage'],'Operations'),
@@ -57,7 +59,11 @@
   const workspaceOrder = ['owner','admin','manager','worker','client'];
   const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null };
   const permissionKeys = () => state.user?.permissions?.permissionKeys || state.user?.permissionKeys || [];
-  const hasAllPermissions = (perms = []) => !perms.length || state.user?.roles?.includes('owner') || perms.every((perm) => permissionKeys().includes(perm) || permissionKeys().includes('admin.tools'));
+  const hasAllPermissions = (perms = []) => {
+    if (!perms.length || state.user?.roles?.includes('owner')) return true;
+    if (perms.includes('homepage.manage')) return perms.every((perm) => permissionKeys().includes(perm));
+    return perms.every((perm) => permissionKeys().includes(perm) || permissionKeys().includes('admin.tools'));
+  };
   const userRoles = () => state.user?.roles || ['client'];
   const allowedWorkspaces = () => {
     const roles = userRoles();

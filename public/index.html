@@ -21,170 +21,63 @@
     </div>
   </header>
 
-  <main>
+  <main id="homepage-dynamic-sections" aria-live="polite">
     <section class="hero premium-landing-hero customer-landing-hero">
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="pill">T&amp;A Contracting • Arizona property services</span>
-          <h1>Contracting help without the runaround.</h1>
+          <h1>Reliable maintenance, repairs, and improvements for Arizona properties.</h1>
           <p>T&amp;A Contracting helps homeowners, landlords, property managers, and small businesses handle repairs, maintenance, installations, punch lists, and property improvements.</p>
-          <p class="service-area-line">Serving Phoenix, Goodyear, Surprise, Scottsdale, Chandler, and nearby Arizona communities.</p>
           <p class="hero-actions"><a class="btn" href="#estimate">Request Estimate</a> <a class="btn secondary" href="#services">View Services</a></p>
         </div>
-        <aside class="card customer-help-card" aria-label="How T&amp;A Contracting helps customers">
-          <span class="pill">Simple customer process</span>
-          <h2>One request starts the conversation.</h2>
-          <ul class="clean-list">
-            <li>Tell us the property, work type, timeframe, and what is happening.</li>
-            <li>We review the scope and ask any needed follow-up questions.</li>
-            <li>You receive an estimate and can track updates in the client portal.</li>
-          </ul>
-        </aside>
       </div>
-    </section>
-
-    <section class="trust-strip customer-trust-strip" aria-label="Service highlights">
-      <strong>Home repairs</strong>
-      <strong>Property maintenance</strong>
-      <strong>Installations</strong>
-      <strong>Punch lists</strong>
-      <strong>Tenant improvements</strong>
-      <strong>Commercial maintenance</strong>
     </section>
 
     <section class="section" id="services">
-      <div class="container">
-        <div class="section-heading centered">
-          <span class="pill">Services</span>
-          <h2>Repair, maintenance, installation, and property work made easier to request.</h2>
-          <p>Choose the closest category when you request an estimate. If you are not sure, choose Other / Not Sure and describe the issue.</p>
-        </div>
-        <div class="grid grid-3 customer-service-grid" id="service-list"></div>
-      </div>
+      <div class="container"><div class="section-heading centered"><span class="pill">Services</span><h2>Repair, maintenance, installation, and property work made easier to request.</h2><p>Loading editable service cards...</p></div></div>
     </section>
-
-    <section class="section recent-work-section" id="recent-work">
-      <div class="container">
-        <div class="section-heading">
-          <span class="pill">Recent job photos</span>
-          <h2>Recent work cards for repairs, maintenance, and improvements.</h2>
-          <p>These cards are ready for real job photos and quick captions so customers can see the type of work T&amp;A Contracting handles.</p>
-        </div>
-        <div class="grid grid-3 job-photo-grid">
-          <article class="card job-photo-card">
-            <div class="job-photo-placeholder">Job Photo</div>
-            <span>Property Maintenance</span>
-            <h3>Rental turn punch list</h3>
-            <p>Drywall patching, fixture swaps, door adjustments, and touch-up paint before move-in.</p>
-          </article>
-          <article class="card job-photo-card">
-            <div class="job-photo-placeholder">Job Photo</div>
-            <span>Painting &amp; Finishing</span>
-            <h3>Interior refresh</h3>
-            <p>Surface prep, caulking, patching, and clean finish work for a brighter interior.</p>
-          </article>
-          <article class="card job-photo-card">
-            <div class="job-photo-placeholder">Job Photo</div>
-            <span>Installations</span>
-            <h3>Fixture and appliance support</h3>
-            <p>Coordinated fan, hardware, faucet, and small installation updates in one request.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section portal-explainer-section" id="portal">
-      <div class="container grid grid-2 portal-explainer">
-        <div>
-          <span class="pill">Client portal</span>
-          <h2>Track requests, quotes, approvals, invoices, and job updates in one place.</h2>
-          <p>The portal is there to make customer communication easier after you submit a request. It is not a separate software product to buy.</p>
-        </div>
-        <div class="card portal-card">
-          <div class="portal-step">Requests</div>
-          <div class="portal-step">Quotes</div>
-          <div class="portal-step">Approvals</div>
-          <div class="portal-step">Invoices</div>
-          <div class="portal-step">Job updates</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section service-area-section" id="service-area">
-      <div class="container grid grid-2">
-        <div>
-          <span class="pill">Service area</span>
-          <h2>Serving Arizona customers in the Phoenix metro area.</h2>
-          <p>Current focus areas include Phoenix, Goodyear, Surprise, Scottsdale, Chandler, and surrounding communities. If your property is nearby, submit the request and we will confirm availability.</p>
-        </div>
-        <div class="card area-card">
-          <strong>Phoenix</strong><strong>Goodyear</strong><strong>Surprise</strong><strong>Scottsdale</strong><strong>Chandler</strong><strong>Nearby communities</strong>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="estimate">
-      <div class="container grid grid-2 estimate-section-grid">
-        <div>
-          <span class="pill">Request Estimate</span>
-          <h2>Tell us what you need.</h2>
-          <p>Send the basics and T&amp;A Contracting will review your repair, maintenance, installation, or property work request. Photos and technical details are helpful, but not required to get started.</p>
-          <div class="estimate-type-list" aria-label="Available type of work categories">
-            <span>HVAC</span><span>Water Heaters</span><span>Plumbing</span><span>Electrical</span><span>Drywall</span><span>Painting</span><span>Doors</span><span>Windows</span><span>Appliances</span><span>Handyman</span><span>Facilities Maintenance</span><span>Property Maintenance</span><span>Commercial Maintenance</span><span>General Contracting</span><span>Tenant Improvements</span><span>Other / Not Sure</span>
-          </div>
-        </div>
-        <form class="card stack request-estimate-card" id="request-form">
-          <div class="grid grid-2 form-grid">
-            <div class="field"><label>Name</label><input name="name" autocomplete="name" required></div>
-            <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" required></div>
-            <div class="field"><label>Phone</label><input name="phone" type="tel" autocomplete="tel" required></div>
-            <div class="field"><label>Property address</label><input name="streetAddress" autocomplete="street-address"></div>
-            <div class="field"><label>City</label><input name="city" autocomplete="address-level2"></div>
-            <div class="field"><label>Type of work</label><select name="service"><option>HVAC</option><option>Water Heaters</option><option>Plumbing</option><option>Electrical</option><option>Drywall</option><option>Painting</option><option>Doors</option><option>Windows</option><option>Appliances</option><option>Handyman</option><option>Facilities Maintenance</option><option>Property Maintenance</option><option>Commercial Maintenance</option><option>General Contracting</option><option>Tenant Improvements</option><option>Other / Not Sure</option></select></div>
-            <div class="field"><label>Work scope</label><select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Property punch list</option><option>Tenant improvement</option></select></div>
-            <div class="field"><label>Preferred timeframe</label><input name="timeframe" placeholder="Flexible, this week, urgent..."></div>
-          </div>
-          <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the issue or work needed in your own words." required></textarea></div>
-          <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
-          <label class="checkbox-line"><input type="checkbox" name="permissionToContact" required> I authorize contact about this request.</label>
-          <button class="btn" type="submit">Submit Request</button>
-          <p id="request-status" class="request-status"></p>
-        </form>
-      </div>
-    </section>
-
-    <section class="section contact-cta-section">
-      <div class="container card final-customer-cta">
-        <h2>Need repair, maintenance, installation, or property work?</h2>
-        <p>Start with an estimate request and we will review the next step.</p>
-        <p class="hero-actions"><a class="btn" href="#estimate">Request Estimate</a> <a class="btn secondary" href="#services">Explore Services</a></p>
-      </div>
+    <section class="section" id="estimate" aria-label="Request estimate form loading">
+      <div class="container"><p>Loading request estimate form...</p></div>
     </section>
   </main>
 
-  <footer class="customer-footer">
-    <div class="container footer-premium footer-grid-customer">
+  <template id="estimate-template">
+    <div class="container grid grid-2 estimate-section-grid">
       <div>
-        <h2><span data-company-name>T&amp;A Contracting</span></h2>
-        <p>Customer-focused repair, maintenance, installation, punch-list, and property improvement help in Arizona.</p>
+        <span class="pill">Request Estimate</span>
+        <h2>Tell us what you need.</h2>
+        <p>Send the basics and T&amp;A Contracting will review your repair, maintenance, installation, or property work request. Photos and technical details are helpful, but not required to get started.</p>
+        <div class="estimate-type-list" aria-label="Available type of work categories">
+          <span>HVAC</span><span>Water Heaters</span><span>Plumbing</span><span>Electrical</span><span>Drywall</span><span>Painting</span><span>Doors</span><span>Windows</span><span>Appliances</span><span>Handyman</span><span>Facilities Maintenance</span><span>Property Maintenance</span><span>Commercial Maintenance</span><span>General Contracting</span><span>Tenant Improvements</span><span>Other / Not Sure</span>
+        </div>
       </div>
-      <div>
-        <h3>Customer Links</h3>
-        <a href="#services">Services</a>
-        <a href="#estimate">Request Estimate</a>
-        <a href="/login/">Client Portal / Dashboard</a>
-      </div>
-      <div>
-        <h3>Service Area</h3>
-        <p>Phoenix, Goodyear, Surprise, Scottsdale, Chandler, and surrounding Arizona communities.</p>
-      </div>
+      <form class="card stack request-estimate-card" id="request-form">
+        <div class="grid grid-2 form-grid">
+          <div class="field"><label>Name</label><input name="name" autocomplete="name" required></div>
+          <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" required></div>
+          <div class="field"><label>Phone</label><input name="phone" type="tel" autocomplete="tel" required></div>
+          <div class="field"><label>Property address</label><input name="streetAddress" autocomplete="street-address"></div>
+          <div class="field"><label>City</label><input name="city" autocomplete="address-level2"></div>
+          <div class="field"><label>Type of work</label><select name="service"><option>HVAC</option><option>Water Heaters</option><option>Plumbing</option><option>Electrical</option><option>Drywall</option><option>Painting</option><option>Doors</option><option>Windows</option><option>Appliances</option><option>Handyman</option><option>Facilities Maintenance</option><option>Property Maintenance</option><option>Commercial Maintenance</option><option>General Contracting</option><option>Tenant Improvements</option><option>Other / Not Sure</option></select></div>
+          <div class="field"><label>Work scope</label><select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Property punch list</option><option>Tenant improvement</option></select></div>
+          <div class="field"><label>Preferred timeframe</label><input name="timeframe" placeholder="Flexible, this week, urgent..."></div>
+        </div>
+        <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the issue or work needed in your own words." required></textarea></div>
+        <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
+        <label class="checkbox-line"><input type="checkbox" name="permissionToContact" required> I authorize contact about this request.</label>
+        <button class="btn" type="submit">Submit Request</button>
+        <p id="request-status" class="request-status"></p>
+      </form>
     </div>
-  </footer>
+  </template>
+
+  <footer class="customer-footer" data-dynamic-footer></footer>
 
   <script src="/assets/js/api-client.js"></script>
   <script src="/assets/js/theme.js"></script>
   <script src="/assets/js/company-settings.js"></script>
   <script src="/assets/js/form-utils.js"></script>
+  <script src="/assets/js/homepage.js"></script>
   <script src="/assets/js/request-form.js"></script>
 </body>
 </html>
