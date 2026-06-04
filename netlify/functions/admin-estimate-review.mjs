@@ -342,8 +342,8 @@ const requireAdmin = async (request) => {
 
   const roleKeys = await loadRoleKeys(db, session.user_id);
 
-  if (!roleKeys.includes('admin')) {
-    return { error: json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' }) };
+  if (!roleKeys.some((role) => ['owner', 'admin', 'manager'].includes(role))) {
+    return { error: json(403, { ok: false, authenticated: true, authorized: false, message: 'Owner, admin, or manager role required.' }) };
   }
 
   return { db, session, roleKeys };

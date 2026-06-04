@@ -1,28 +1,37 @@
 import {
   clean,
+  getPermissionKeysForRoles,
+  getFromEmail,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
   parseJsonBody,
+  shouldSendEmail,
 } from './auth-utils.mjs';
 import { saveAdminAiCorrection } from './ai-intelligence-engine.mjs';
 import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
 
-const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review']);
+const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review', 'quote_in_progress', 'information_needed', 'cancelled']);
 const QUOTE_LIST_STATUSES = new Set(['all', 'needs_review', 'information_needed', ...QUOTE_STATUSES]);
 const NEEDS_REVIEW_QUOTE_STATUSES = ['draft', 'pending_review', 'needs_review'];
-const REQUEST_ONLY_STATUSES = ['new', 'needs_review', 'quote_in_progress'];
+const REQUEST_ONLY_STATUSES = ['new', 'needs_review', 'quote_in_progress', 'information_needed'];
+
+const ACTIONS = new Set(['save_draft', 'send', 'delete_draft', 'cancel_quote', 'mark_accepted', 'mark_declined', 'request_info', 'reopen_draft', 'restore_draft', 'convert_work_order', 'create_invoice']);
 
 const normalizePayload = (body = {}) => {
   const aiMetadata = body.aiMetadata && typeof body.aiMetadata === 'object' ? body.aiMetadata : null;
   const aiOriginal = body.aiOriginal && typeof body.aiOriginal === 'object' ? body.aiOriginal : null;
   const fallbackReason = clean(aiMetadata?.fallbackReason || aiOriginal?.fallbackReason || body.fallbackReason, 800);
   return {
+    action: ACTIONS.has(clean(body.action, 40)) ? clean(body.action, 40) : (body.sendToClient ? 'send' : 'save_draft'),
     quoteId: clean(body.quoteId, 80),
     jobRequestId: clean(body.jobRequestId, 80),
     title: clean(body.title, 180),
-    summary: clean(body.summary, 4000),
+    summary: clean(body.summary, 8000),
+    status: clean(body.status, 40),
+    expirationDate: clean(body.expirationDate, 40),
     amountCents: Number(body.amountCents),
     sendToClient: Boolean(body.sendToClient),
     pricingConfidenceOverride: ['high', 'medium', 'low'].includes(clean(body.pricingConfidenceOverride, 20)) ? clean(body.pricingConfidenceOverride, 20) : '',
@@ -47,11 +56,11 @@ const validatePayload = (payload, method = 'POST') => {
     return 'Job request is required.';
   }
 
-  if (!payload.title) {
+  if (['save_draft', 'send'].includes(payload.action) && !payload.title) {
     return 'Quote title is required.';
   }
 
-  if (!Number.isInteger(payload.amountCents) || payload.amountCents < 0) {
+  if (['save_draft', 'send'].includes(payload.action) && (!Number.isInteger(payload.amountCents) || payload.amountCents < 0)) {
     return 'Quote amount must be a non-negative amount in cents.';
   }
 
@@ -156,7 +165,7 @@ const loadSession = async (db, sessionToken) => {
   return session;
 };
 
-const loadRoleKeys = async (db, userId) => {
+const loadAccess = async (db, userId) => {
   const roles = await db.sql`
     select roles.key, roles.name
     from user_roles
@@ -165,8 +174,47 @@ const loadRoleKeys = async (db, userId) => {
     order by roles.key
   `;
 
-  return roles.map((role) => role.key);
+  const roleKeys = roles.map((role) => role.key);
+  const assignedPermissionKeys = await loadRolePermissionKeys(db, userId, { logPrefix: 'Failed to load quote role permissions; using defaults' });
+  return { roleKeys, permissionKeys: getPermissionKeysForRoles(roleKeys, assignedPermissionKeys) };
 };
+
+
+const hasPermission = (roleKeys = [], permissionKeys = [], permission) => (
+  roleKeys.includes('owner')
+  || permissionKeys.includes(permission)
+  || permissionKeys.includes('admin.tools')
+);
+
+const sendQuoteEmail = async ({ quote, request }) => {
+  if (!shouldSendEmail()) {
+    throw new Error('Email service is not configured. Add RESEND_API_KEY and MAGIC_LINK_FROM_EMAIL or QUOTE_FROM_EMAIL in Netlify before sending quotes.');
+  }
+  const to = quote.client_email || quote.requester_email || request?.requester_email;
+  if (!to) throw new Error('Customer email is required before sending a quote.');
+  const origin = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://ta-contracting.org';
+  const quoteUrl = `${origin.replace(/\/$/, '')}/dashboard/#client.quotes`;
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      from: getFromEmail(),
+      to,
+      subject: `Your quote is ready: ${quote.title}`,
+      html: `<p>Hello,</p><p>Your quote is ready for review.</p><p><strong>${quote.title}</strong></p><p>${quote.summary || ''}</p><p>Total: $${(Number(quote.amount_cents || 0) / 100).toFixed(2)}</p><p><a href="${quoteUrl}">Open your client portal to review the quote</a></p>`,
+      text: `Your quote is ready: ${quote.title}\nTotal: $${(Number(quote.amount_cents || 0) / 100).toFixed(2)}\nReview it in your client portal: ${quoteUrl}`,
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Quote email failed with ${response.status}: ${detail}`);
+  }
+};
+
+const audit = async (db, session, eventType, entityId, metadata = {}) => db.sql`
+  insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+  values (${session.user_id}, ${eventType}, ${'quote'}, ${entityId}, ${JSON.stringify(metadata)}::jsonb)
+`;
 
 const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
   const likeSearch = `%${String(search || '').toLowerCase()}%`;
@@ -190,14 +238,15 @@ const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
       where (${quoteId || ''} = '' or quotes.id::text = ${quoteId || ''})
         and (
           ${status} = 'all'
-          or (${status} in ('needs_review', 'information_needed') and quotes.status = any(${NEEDS_REVIEW_QUOTE_STATUSES}))
+          or (${status} = 'needs_review' and quotes.status = any(${NEEDS_REVIEW_QUOTE_STATUSES}))
+          or (${status} = 'information_needed' and quotes.status = 'information_needed')
           or quotes.status = ${status}
         )
         and (${search || ''} = '' or lower(concat_ws(' ', quotes.title, quotes.summary, quotes.status, quotes.amount_cents::text, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.id::text, quotes.id::text)) like ${likeSearch})
     ), request_rows as (
       select
         null::uuid as id, job_requests.id as job_request_id, job_requests.client_id,
-        'needs_review'::text as status,
+        job_requests.status as status,
         concat(coalesce(job_requests.service_type, 'Service'), ' estimate request') as title,
         job_requests.description as summary,
         null::integer as amount_cents,
@@ -216,7 +265,7 @@ const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
       where not exists (select 1 from quotes where quotes.job_request_id = job_requests.id)
         and job_requests.status = any(${REQUEST_ONLY_STATUSES})
         and (${quoteId || ''} = '' or job_requests.id::text = ${quoteId || ''})
-        and (${status} in ('all', 'needs_review', 'information_needed') or ${status} = job_requests.status)
+        and (${status} = 'all' or (${status} = 'needs_review' and job_requests.status = any(${REQUEST_ONLY_STATUSES})) or ${status} = job_requests.status)
         and (${search || ''} = '' or lower(concat_ws(' ', job_requests.status, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.description, job_requests.id::text)) like ${likeSearch})
     )
     select * from quote_rows
@@ -282,10 +331,10 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       return json(401, { ok: false, authenticated: false, message: 'Your session expired. Request a new magic link.' });
     }
 
-    const roleKeys = await loadRoleKeys(db, session.user_id);
+    const { roleKeys, permissionKeys } = await loadAccess(db, session.user_id);
 
-    if (!roleKeys.includes('admin')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to manage quotes.' });
+    if (!roleKeys.some((role) => ['owner', 'admin', 'manager'].includes(role)) || !hasPermission(roleKeys, permissionKeys, 'quotes.manage')) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Quote management permission is required.' });
     }
 
     if (request.method === 'GET') {
@@ -300,7 +349,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         authorized: true,
         status,
         search,
-        user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys },
+        user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys, permissionKeys },
         quotes: quotes.map(mapQuote),
       });
     }
@@ -310,93 +359,107 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
 
     if (request.method === 'PATCH') {
       const [existingQuote] = await db.sql`
-        select id, job_request_id, client_id, status
+        select quotes.id, quotes.job_request_id, quotes.client_id, quotes.status, quotes.title, quotes.summary, quotes.amount_cents,
+               quotes.ai_metadata, quotes.created_at, quotes.updated_at,
+               clients.email as client_email, job_requests.requester_email
         from quotes
-        where id = ${payload.quoteId}
+        left join app_users clients on clients.id = quotes.client_id
+        left join job_requests on job_requests.id = quotes.job_request_id
+        where quotes.id = ${payload.quoteId}
         limit 1
       `;
 
-      if (!existingQuote) {
-        return json(404, { ok: false, authenticated: true, authorized: true, message: 'Quote not found.' });
+      if (!existingQuote) return json(404, { ok: false, authenticated: true, authorized: true, message: 'Quote not found.' });
+
+      const actionPermission = {
+        save_draft: 'quotes.edit', send: 'quotes.send', delete_draft: 'quotes.delete', cancel_quote: 'quotes.delete',
+        mark_accepted: 'quotes.manage', mark_declined: 'quotes.manage', request_info: 'requests.manage', reopen_draft: 'quotes.edit',
+        restore_draft: 'quotes.edit', convert_work_order: 'workorders.create', create_invoice: 'invoices.create',
+      }[payload.action] || 'quotes.manage';
+      if (!hasPermission(roleKeys, permissionKeys, actionPermission)) {
+        return json(403, { ok: false, authenticated: true, authorized: false, message: `${actionPermission} permission is required for this quote action.` });
       }
 
-      const quoteStatus = payload.sendToClient ? 'sent' : existingQuote.status;
+      if (payload.action === 'delete_draft') {
+        if (!['draft', 'pending_review', 'needs_review', 'quote_in_progress'].includes(existingQuote.status)) {
+          return json(409, { ok: false, message: 'Only draft quotes can be deleted. Sent or accepted quotes must be cancelled.' });
+        }
+        await db.sql`delete from quotes where id = ${existingQuote.id}`;
+        if (existingQuote.job_request_id) await db.sql`update job_requests set status = 'needs_review', updated_at = now() where id = ${existingQuote.job_request_id}`;
+        await audit(db, session, 'quote.deleted_draft', existingQuote.id, { source: 'estimate_quote_center' });
+        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Draft deleted safely.' });
+      }
+
+      if (payload.action === 'cancel_quote') {
+        const [quote] = await db.sql`update quotes set status = 'cancelled', updated_at = now() where id = ${existingQuote.id} returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at`;
+        if (quote.job_request_id) await db.sql`update job_requests set status = 'cancelled', updated_at = now() where id = ${quote.job_request_id}`;
+        await audit(db, session, 'quote.cancelled', quote.id, { source: 'estimate_quote_center' });
+        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Quote cancelled.', quote: mapQuote(quote) });
+      }
+
+      if (payload.action === 'mark_accepted' || payload.action === 'mark_declined' || payload.action === 'reopen_draft' || payload.action === 'restore_draft' || payload.action === 'request_info') {
+        const nextStatus = payload.action === 'mark_accepted' ? 'accepted' : payload.action === 'mark_declined' ? 'declined' : payload.action === 'request_info' ? 'information_needed' : 'draft';
+        const [quote] = await db.sql`
+          update quotes set status = ${nextStatus},
+            accepted_at = case when ${nextStatus === 'accepted'} then now() else accepted_at end,
+            declined_at = case when ${nextStatus === 'declined'} then now() else declined_at end,
+            updated_at = now()
+          where id = ${existingQuote.id}
+          returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at`;
+        if (quote.job_request_id) await db.sql`update job_requests set status = ${nextStatus === 'information_needed' ? 'information_needed' : nextStatus === 'draft' ? 'quote_in_progress' : nextStatus}, updated_at = now() where id = ${quote.job_request_id}`;
+        await audit(db, session, `quote.${payload.action}`, quote.id, { source: 'estimate_quote_center' });
+        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Quote status updated.', quote: mapQuote(quote) });
+      }
+
+      if (payload.action === 'convert_work_order') {
+        if (existingQuote.status !== 'accepted') return json(409, { ok: false, message: 'Only accepted quotes can be converted to work orders.' });
+        await db.sql`update job_requests set status = 'scheduled', updated_at = now() where id = ${existingQuote.job_request_id}`;
+        await audit(db, session, 'quote.converted_work_order', existingQuote.id, { source: 'estimate_quote_center', jobRequestId: existingQuote.job_request_id });
+        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Accepted quote converted to a work order.' });
+      }
+
+      if (payload.action === 'create_invoice') {
+        if (existingQuote.status !== 'accepted') return json(409, { ok: false, message: 'Only accepted quotes can create invoices.' });
+        const [invoice] = await db.sql`
+          insert into invoices (job_request_id, client_id, quote_id, status, title, amount_cents, due_at, created_by)
+          values (${existingQuote.job_request_id}, ${existingQuote.client_id}, ${existingQuote.id}, 'open', ${existingQuote.title || 'Accepted quote invoice'}, ${existingQuote.amount_cents || 0}, now() + interval '14 days', ${session.user_id})
+          on conflict (job_request_id) do update set quote_id = excluded.quote_id, amount_cents = excluded.amount_cents, updated_at = now()
+          returning id`;
+        await db.sql`update job_requests set status = 'waiting_payment', updated_at = now() where id = ${existingQuote.job_request_id}`;
+        await audit(db, session, 'quote.invoice_created', existingQuote.id, { source: 'estimate_quote_center', invoiceId: invoice.id });
+        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Invoice created from accepted quote.', invoice });
+      }
+
+      const nextStatus = payload.action === 'send' ? 'sent' : (payload.status && ['draft', 'quote_in_progress', 'needs_review', 'pending_review'].includes(payload.status) ? payload.status : existingQuote.status);
+      let quoteForEmail = null;
+      if (payload.action === 'send' && (!payload.summary || !payload.amountCents)) {
+        return json(422, { ok: false, message: 'Scope and pricing are required before sending.' });
+      }
+      if (payload.action === 'send') {
+        quoteForEmail = { ...existingQuote, title: payload.title, summary: payload.summary, amount_cents: payload.amountCents };
+        await sendQuoteEmail({ quote: quoteForEmail });
+      }
       const [quote] = await db.sql`
         update quotes
-        set title = ${payload.title},
-            summary = ${payload.summary || null},
-            amount_cents = ${payload.amountCents},
-            status = ${quoteStatus},
-            sent_at = case when ${payload.sendToClient} then coalesce(sent_at, now()) else sent_at end,
-            ai_enhanced = ${payload.aiEnhanced},
-            fallback_used = ${payload.fallbackUsed},
-            fallback_reason = ${payload.fallbackReason || null},
-            pricing_confidence_level = ${pricingConfidenceLevel},
-            range_low_cents = ${payload.rangeLowCents},
-            range_high_cents = ${payload.rangeHighCents},
-            fixed_price_recommendation_cents = ${payload.fixedPriceRecommendationCents},
-            ai_metadata = ${JSON.stringify(aiMetadataForStorage)}::jsonb,
-            sourcing_notes = ${payload.sourcingNotes || null},
-            updated_at = now()
+        set title = ${payload.title}, summary = ${payload.summary || null}, amount_cents = ${payload.amountCents}, status = ${nextStatus},
+            sent_at = case when ${payload.action === 'send'} then now() else sent_at end,
+            ai_enhanced = ${payload.aiEnhanced}, fallback_used = ${payload.fallbackUsed}, fallback_reason = ${payload.fallbackReason || null},
+            pricing_confidence_level = ${pricingConfidenceLevel}, range_low_cents = ${payload.rangeLowCents}, range_high_cents = ${payload.rangeHighCents},
+            fixed_price_recommendation_cents = ${payload.fixedPriceRecommendationCents}, ai_metadata = ${JSON.stringify(aiMetadataForStorage)}::jsonb,
+            sourcing_notes = ${payload.sourcingNotes || null}, updated_at = now()
         where id = ${existingQuote.id}
-        returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at
-      `;
-
-      if (payload.sendToClient) {
-        await db.sql`
-          update job_requests
-          set status = ${'quote_sent'}, updated_at = now()
-          where id = ${existingQuote.job_request_id}
-            and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent')
-        `;
-      }
-
-      if (payload.aiOriginal || payload.aiMetadata) await saveAdminAiCorrection({
-        db,
-        quoteId: quote.id,
-        jobRequestId: quote.job_request_id,
-        actorUserId: session.user_id,
-        originalAiResult: payload.aiOriginal || payload.aiMetadata?.aiStructuredQuote || {},
-        adminChanges: {
-          title: payload.title,
-          summary: payload.summary,
-          amountCents: payload.amountCents,
-          priceAdjustmentCents: payload.aiMetadata?.fixedPriceRecommendationCents ? payload.amountCents - Number(payload.aiMetadata.fixedPriceRecommendationCents) : null,
-          pricingConfidenceOverride: payload.pricingConfidenceOverride,
-          rangeLowCents: payload.rangeLowCents,
-          rangeHighCents: payload.rangeHighCents,
-          originalPricingConfidenceLevel: payload.aiMetadata?.pricingConfidenceLevel || payload.aiOriginal?.pricingConfidenceLevel || '',
-          originalTotalLowCents: payload.aiMetadata?.totalLowCents || payload.aiOriginal?.totalLowCents || null,
-          originalTotalHighCents: payload.aiMetadata?.totalHighCents || payload.aiOriginal?.totalHighCents || null,
-          sentToClient: payload.sendToClient,
-        },
-        finalQuote: quote,
-      });
-
-      await db.sql`
-        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-        values (
-          ${session.user_id},
-          ${'quote.updated'},
-          ${'quote'},
-          ${quote.id},
-          ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: quote.job_request_id, clientId: quote.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient, aiCorrectionSaved: true })}::jsonb
-        )
-      `;
-
-      return json(200, {
-        ok: true,
-        authenticated: true,
-        authorized: true,
-        user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys },
-        quote: mapQuote(quote),
-      });
+        returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at`;
+      if (quote.job_request_id) await db.sql`update job_requests set status = ${payload.action === 'send' ? 'quote_sent' : 'quote_in_progress'}, updated_at = now() where id = ${quote.job_request_id}`;
+      if (payload.aiOriginal || payload.aiMetadata) await saveAdminAiCorrection({ db, quoteId: quote.id, jobRequestId: quote.job_request_id, actorUserId: session.user_id, originalAiResult: payload.aiOriginal || payload.aiMetadata?.aiStructuredQuote || {}, adminChanges: { title: payload.title, summary: payload.summary, amountCents: payload.amountCents, sentToClient: payload.action === 'send' }, finalQuote: quote });
+      await audit(db, session, payload.action === 'send' ? 'quote.sent' : 'quote.saved_draft', quote.id, { source: 'estimate_quote_center', jobRequestId: quote.job_request_id, amountCents: payload.amountCents });
+      return json(200, { ok: true, authenticated: true, authorized: true, user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys, permissionKeys }, quote: mapQuote(quote), message: payload.action === 'send' ? 'Quote sent to client.' : 'Draft saved.' });
     }
 
     const [jobRequest] = await db.sql`
-      select id, client_id
+      select job_requests.id, job_requests.client_id, job_requests.requester_email, clients.email as client_email
       from job_requests
-      where id = ${payload.jobRequestId}
+      left join app_users clients on clients.id = job_requests.client_id
+      where job_requests.id = ${payload.jobRequestId}
       limit 1
     `;
 
@@ -420,17 +483,32 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       return json(409, { ok: false, authenticated: true, authorized: true, message: 'This request already has a quote. Open the request and edit the saved quote.' });
     }
 
-    const quoteStatus = payload.sendToClient ? 'sent' : 'draft';
+    const createPermission = payload.action === 'send' ? 'quotes.send' : 'quotes.create';
+    if (!hasPermission(roleKeys, permissionKeys, createPermission)) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: `${createPermission} permission is required.` });
+    }
 
-    const [quote] = await db.sql`
+    const quoteStatus = 'draft';
+
+    let [quote] = await db.sql`
       insert into quotes (job_request_id, client_id, status, title, summary, amount_cents, sent_at, created_by, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes)
-      values (${jobRequest.id}, ${jobRequest.client_id}, ${quoteStatus}, ${payload.title}, ${payload.summary || null}, ${payload.amountCents}, ${payload.sendToClient ? new Date().toISOString() : null}::timestamptz, ${session.user_id}, ${payload.aiEnhanced}, ${payload.fallbackUsed}, ${payload.fallbackReason || null}, ${pricingConfidenceLevel}, ${payload.rangeLowCents}, ${payload.rangeHighCents}, ${payload.fixedPriceRecommendationCents}, ${JSON.stringify(aiMetadataForStorage)}::jsonb, ${payload.sourcingNotes || null})
+      values (${jobRequest.id}, ${jobRequest.client_id}, ${quoteStatus}, ${payload.title}, ${payload.summary || null}, ${payload.amountCents}, ${null}::timestamptz, ${session.user_id}, ${payload.aiEnhanced}, ${payload.fallbackUsed}, ${payload.fallbackReason || null}, ${pricingConfidenceLevel}, ${payload.rangeLowCents}, ${payload.rangeHighCents}, ${payload.fixedPriceRecommendationCents}, ${JSON.stringify(aiMetadataForStorage)}::jsonb, ${payload.sourcingNotes || null})
       returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at
     `;
 
+    if (payload.action === 'send') {
+      await sendQuoteEmail({ quote: { ...quote, client_email: jobRequest.client_email, requester_email: jobRequest.requester_email } });
+      [quote] = await db.sql`
+        update quotes
+        set status = 'sent', sent_at = now(), updated_at = now()
+        where id = ${quote.id}
+        returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at
+      `;
+    }
+
     await db.sql`
       update job_requests
-      set status = ${payload.sendToClient ? 'quote_sent' : 'quote_in_progress'}, updated_at = now()
+      set status = ${payload.action === 'send' ? 'quote_sent' : 'quote_in_progress'}, updated_at = now()
       where id = ${jobRequest.id}
         and status in ('new', 'needs_review', 'quote_in_progress')
     `;
@@ -449,7 +527,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         pricingConfidenceOverride: payload.pricingConfidenceOverride,
         rangeLowCents: payload.rangeLowCents,
         rangeHighCents: payload.rangeHighCents,
-        sentToClient: payload.sendToClient,
+        sentToClient: payload.action === 'send',
       },
       finalQuote: quote,
     });
@@ -461,7 +539,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
         ${'quote.created'},
         ${'quote'},
         ${quote.id},
-        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.sendToClient, aiCorrectionSaved: true })}::jsonb
+        ${JSON.stringify({ source: 'admin_dashboard', jobRequestId: jobRequest.id, clientId: jobRequest.client_id, amountCents: payload.amountCents, sentToClient: payload.action === 'send', aiCorrectionSaved: true })}::jsonb
       )
     `;
 
@@ -469,7 +547,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       ok: true,
       authenticated: true,
       authorized: true,
-      user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys },
+      user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys, permissionKeys },
       quote: mapQuote(quote),
     });
   } catch (error) {

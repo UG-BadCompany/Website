@@ -33,6 +33,9 @@ export const PORTAL_PERMISSIONS = [
   { key: 'quotes.create', label: 'quotes.create', description: 'Allows quotes create.' },
   { key: 'quotes.edit', label: 'quotes.edit', description: 'Allows quotes edit.' },
   { key: 'quotes.send', label: 'quotes.send', description: 'Allows quotes send.' },
+  { key: 'quotes.delete', label: 'quotes.delete', description: 'Allows quotes delete/cancel.' },
+  { key: 'workorders.create', label: 'workorders.create', description: 'Allows creating work orders from accepted quotes.' },
+  { key: 'invoices.create', label: 'invoices.create', description: 'Allows creating invoices from accepted quotes.' },
   { key: 'invoices.manage', label: 'invoices.manage', description: 'Allows invoices manage.' },
   { key: 'inventory.manage', label: 'inventory.manage', description: 'Allows inventory manage.' },
   { key: 'customers.manage', label: 'customers.manage', description: 'Allows customers manage.' },
@@ -68,7 +71,7 @@ export const grantablePermissionKeys = (roleKeys = [], assignedPermissionKeys = 
 export const DEFAULT_ROLE_PERMISSIONS = {
   owner: ALL_PERMISSION_KEYS,
   admin: ALL_PERMISSION_KEYS.filter((permission) => !['ranks.delete', 'homepage.manage'].includes(permission)),
-  manager: ['dashboard.view.admin', 'requests.manage', 'quotes.manage', 'quotes.create', 'quotes.edit', 'scheduling.manage', 'customers.manage', 'workers.manage', 'invoices.manage', 'ai.quote.use'],
+  manager: ['dashboard.view.admin', 'requests.manage', 'quotes.manage', 'quotes.create', 'quotes.edit', 'workorders.create', 'invoices.create', 'scheduling.manage', 'customers.manage', 'workers.manage', 'invoices.manage', 'ai.quote.use'],
   worker: ['dashboard.view.worker', 'worker.tools', 'ai.troubleshooting.use'],
   client: ['dashboard.view.client', 'client.tools'],
   guest: [],
