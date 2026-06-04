@@ -82,15 +82,21 @@ const computeConfidence = ({ estimate = {}, payload = {}, research = {} }) => {
   const pricingScore = score01([Boolean(research.priceFindings?.length), materials.some((m) => m.estimated_cost_low || m.estimatedUnitCostCents || m.unit_cost), Boolean(estimate.historical_matches?.length), true, Boolean(estimate.pricing_summary && Object.keys(estimate.pricing_summary).length)].filter(Boolean).length, 5);
   const researchScore = score01([materials.length > 0, Boolean(research.priceFindings?.length), Boolean(research.productFindings?.length), (research.priceFindings?.length || 0) > 2].filter(Boolean).length, 4);
   const scopeScore = score01([text.length > 40, has(payload.workScope || estimate.scope_of_work), knownJob, !/\b(fix|broken|issue|problem)\b/i.test(text) || text.length > 80].filter(Boolean).length, 4);
-  const scores = { labor: laborScore, materials: materialScore, pricing: pricingScore, scope: scopeScore, information_completeness: info, research: researchScore };
-  scores.overall = Math.round(((scores.labor + scores.materials + scores.pricing + scores.scope + scores.information_completeness + scores.research) / 6) * 100) / 100;
+  const photoScore = score01([Boolean(payload.photosProvided || payload.files?.length || payload.photos?.length), /photo|image|picture/i.test(text), Boolean(estimate.photo_findings?.length)].filter(Boolean).length, 3);
+  const tradeCertainty = score01([knownJob, detectTrade(payload) !== 'General Contracting', has(payload.trade || payload.service || payload.workCategory), text.length > 24].filter(Boolean).length, 4);
+  const regionalCertainty = score01([has(payload.city || payload.state || payload.zip), /permit|code|hoa|inspection|utility/i.test(text), has(payload.address || payload.streetAddress)].filter(Boolean).length, 3);
+  const scores = { labor: laborScore, materials: materialScore, pricing: pricingScore, scope: scopeScore, scope_completeness: scopeScore, photo_analysis: photoScore, trade_certainty: tradeCertainty, material_certainty: materialScore, pricing_certainty: pricingScore, regional_certainty: regionalCertainty, data_completeness: info, information_completeness: info, research: researchScore };
+  scores.overall = Math.round(((scores.scope_completeness + scores.photo_analysis + scores.trade_certainty + scores.material_certainty + scores.pricing_certainty + scores.regional_certainty + scores.data_completeness) / 7) * 100) / 100;
+  scores.level = scores.overall >= 0.9 ? 'Very High' : scores.overall >= 0.75 ? 'High' : scores.overall >= 0.5 ? 'Medium' : 'Low';
   const reasons = [];
   if (text.length > 40) reasons.push('Customer described the issue clearly.'); else reasons.push('Customer description is short or missing.');
   if (!/model|serial|btu|ton|brand/i.test(text)) reasons.push('No model number or equipment brand was provided.');
   if (!research.priceFindings?.length) reasons.push('Live pricing was not found for all materials.'); else reasons.push('Live pricing/product research returned supplier evidence.');
   if (!payload.photosProvided && !payload.files?.length && !payload.photos?.length) reasons.push('No photos/files were provided.');
-  const recommended_action = scores.overall >= 0.8 ? 'Ready for admin review.' : scores.overall >= 0.55 ? 'Review assumptions before sending.' : 'Request more information or continue manually.';
-  return { scores, reasons, recommended_action };
+  const recommended_action = scores.level === 'Very High' || scores.level === 'High' ? 'Ready for admin review.' : scores.level === 'Medium' ? 'Review assumptions before sending.' : 'Request more information or continue manually.';
+  const explanation = `${scores.level} confidence: scope ${Math.round(scores.scope_completeness * 100)}%, photos ${Math.round(scores.photo_analysis * 100)}%, trade ${Math.round(scores.trade_certainty * 100)}%, materials ${Math.round(scores.material_certainty * 100)}%, pricing ${Math.round(scores.pricing_certainty * 100)}%, regional ${Math.round(scores.regional_certainty * 100)}%, data ${Math.round(scores.data_completeness * 100)}%.`;
+  reasons.unshift(explanation);
+  return { scores, reasons, recommended_action, level: scores.level, explanation };
 };
 
 const parseOpenAiJson = (data = {}) => {
@@ -112,6 +118,14 @@ const normalizeEstimate = (estimate = {}, payload = {}, research = {}) => {
     labor_line_items: toArray(estimate.labor_line_items).map((item) => typeof item === 'string' ? { name: item, hours_low: 1, hours_high: 2 } : item),
     material_line_items: toArray(estimate.material_line_items).length ? toArray(estimate.material_line_items) : internalMaterials(payload),
     pricing_summary: estimate.pricing_summary && typeof estimate.pricing_summary === 'object' ? estimate.pricing_summary : { total_low: null, total_high: null, status: 'admin_review_required' },
+    suggested_price_range: estimate.suggested_price_range || estimate.price_range || estimate.pricing_summary?.suggested_price_range || null,
+    equipment: toArray(estimate.equipment),
+    permits: toArray(estimate.permits || estimate.permit_requirements),
+    code_requirements: toArray(estimate.code_requirements || estimate.codeRequirements),
+    maintenance_items: toArray(estimate.maintenance_items || estimate.maintenanceItems),
+    recommendations: toArray(estimate.recommendations),
+    risk_flags: toArray(estimate.risk_flags || estimate.riskFlags),
+    questions_needed: toArray(estimate.questions_needed || estimate.recommended_questions),
     assumptions: toArray(estimate.assumptions),
     exclusions: toArray(estimate.exclusions),
     warranty_notes: normalizeText(estimate.warranty_notes || 'Warranty terms require admin review before sending.'),
@@ -122,7 +136,7 @@ const normalizeEstimate = (estimate = {}, payload = {}, research = {}) => {
     admin_approval_required: true,
   };
   const confidence = computeConfidence({ estimate: base, payload, research });
-  return { ...base, confidence_scores: confidence.scores, confidence_reasons: confidence.reasons, recommended_action: confidence.recommended_action };
+  return { ...base, confidence_scores: confidence.scores, confidence_level: confidence.level, confidence_explanation: confidence.explanation, confidence_reasons: confidence.reasons, recommended_action: confidence.recommended_action };
 };
 
 const callOpenAI = async ({ payload, research }) => {
@@ -139,8 +153,8 @@ const callOpenAI = async ({ payload, research }) => {
         input: [
           { role: 'system', content: 'You are a server-side contractor estimating engine. Return structured JSON only. Do not approve, send, or finalize quotes. Never put status text into customer/property/scope/labor/material fields.' },
           { role: 'user', content: JSON.stringify({
-            task: 'Generate a usable estimate draft even when optional information is missing. Use assumptions and recommended questions rather than blocking. Mini-splits are HVAC. Include full scope, labor, materials, pricing, notes, exclusions, and confidence.',
-            required_json_keys: ['service_category','trade','customer_summary','property_summary','scope_of_work','labor_line_items','material_line_items','pricing_summary','assumptions','exclusions','warranty_notes','customer_notes','internal_admin_notes','recommended_questions','confidence_scores','confidence_reasons','recommended_action'],
+            task: 'Generate a usable estimate draft even when optional information is missing. Use assumptions and recommended questions rather than blocking. Mini-splits are HVAC. Include summary, scope, labor, materials, equipment, permits, code requirements, maintenance items, recommendations, confidence score/level, suggested price range, risk flags, questions needed, notes, and exclusions.',
+            required_json_keys: ['service_category','trade','customer_summary','property_summary','scope_of_work','labor_line_items','material_line_items','pricing_summary','assumptions','exclusions','warranty_notes','customer_notes','internal_admin_notes','recommended_questions','equipment','permits','code_requirements','maintenance_items','recommendations','risk_flags','questions_needed','suggested_price_range','confidence_scores','confidence_reasons','recommended_action'],
             customer_request: payload,
             internal_material_playbook: internalMaterials(payload),
             live_research: research,
