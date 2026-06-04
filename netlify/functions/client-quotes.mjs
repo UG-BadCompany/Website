@@ -1,9 +1,11 @@
 import {
   clean,
+  getPermissionKeysForRoles,
   getSessionToken,
   hashToken,
   json,
   loadDatabase,
+  loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
 
@@ -118,6 +120,11 @@ const loadRoleKeys = async (db, userId) => {
   return roleKeys.length ? roleKeys : ['client'];
 };
 
+const isStaffRole = (roleKeys = []) => roleKeys.some((role) => ['owner', 'admin', 'manager'].includes(role));
+const resolveClientUserId = (request, session, roleKeys) => {
+  const requested = clean(new URL(request.url).searchParams.get('clientId'), 80);
+  return requested && isStaffRole(roleKeys) ? requested : session.user_id;
+};
 const buildUser = (session, roleKeys) => ({
   id: session.user_id,
   email: session.email,
@@ -169,12 +176,12 @@ const listClientQuotes = async (db, userId) => {
   };
 };
 
-const handleGet = async ({ db, session, roleKeys }) => json(200, {
+const handleGet = async ({ request, db, session, roleKeys }) => json(200, {
   ok: true,
   authenticated: true,
   authorized: true,
   user: buildUser(session, roleKeys),
-  ...(await listClientQuotes(db, session.user_id)),
+  ...(await listClientQuotes(db, resolveClientUserId(request, session, roleKeys))),
 });
 
 const handlePatch = async ({ request, db, session, roleKeys }) => {
@@ -249,7 +256,9 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
 };
 
 export const createClientQuotesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'PATCH'].includes(request.method)) {
+  if (request.method === 'OPTIONS') return json(204, { ok: true });
+  if (request.method === 'HEAD') return json(200, { ok: true });
+  if (!['GET', 'PATCH', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -268,16 +277,18 @@ export const createClientQuotesHandler = ({ getDatabase = loadDatabase } = {}) =
     }
 
     const roleKeys = await loadRoleKeys(db, session.user_id);
-
-    if (!roleKeys.includes('client') && !roleKeys.includes('admin')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client role required to view quotes.' });
+    const assignedPermissionKeys = await loadRolePermissionKeys(db, session.user_id, { logPrefix: 'Failed to load client quote permissions; using role defaults' });
+    const permissionKeys = getPermissionKeysForRoles(roleKeys, assignedPermissionKeys);
+    const canUseClientWorkspace = roleKeys.includes('client') || permissionKeys.includes('dashboard.view.client') || permissionKeys.includes('client.tools') || permissionKeys.includes('dashboard.switch_views') || isStaffRole(roleKeys);
+    if (!canUseClientWorkspace) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client workspace access is required to view quotes.' });
     }
 
-    if (request.method === 'PATCH') {
+    if (request.method === 'PATCH' || request.method === 'POST') {
       return await handlePatch({ request, db, session, roleKeys });
     }
 
-    return await handleGet({ db, session, roleKeys });
+    return await handleGet({ request, db, session, roleKeys });
   } catch (error) {
     console.error('Failed to load client quotes', error);
 

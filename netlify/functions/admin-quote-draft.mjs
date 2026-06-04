@@ -238,12 +238,14 @@ const PREMIUM_BRAND_HINTS = [
   'trane',
   'mr cool',
 ];
-const SERP_TIMEOUT_MS = 3500;
-const MAX_WEB_PRICE_LOOKUPS = 8;
+const SERP_TIMEOUT_MS = Number(process.env.QUOTE_DRAFT_SERP_TIMEOUT_MS || 1500);
+const MAX_WEB_PRICE_LOOKUPS = Number(process.env.QUOTE_DRAFT_MAX_WEB_LOOKUPS || 3);
+const QUOTE_DRAFT_SOFT_TIMEOUT_MS = Number(process.env.QUOTE_DRAFT_SOFT_TIMEOUT_MS || 8500);
 
 const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
-const OPENAI_TIMEOUT_MS = 4500;
+const OPENAI_TIMEOUT_MS = Number(process.env.QUOTE_DRAFT_OPENAI_TIMEOUT_MS || 3500);
 const OPENAI_STRICT_ONLY = true;
+const withTimeout = (promise, ms, fallback) => Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
 
 
 const deriveMissingInfoQuestions = ({ jobRequest, descriptionText, materials = [] }) => {
@@ -982,16 +984,18 @@ const ensureStructuredQuoteLines = ({ quote = {}, laborLineItems = [], materialL
   let summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
   if (desiredGrand > 0 && !labor.length && !materials.length) {
     const allocatable = Math.max(0, desiredGrand - Number(other.trip_charge_cents || 0) - Number(other.tax_cents || 0) + Number(other.discount_cents || 0));
-    const laborCents = Math.round(allocatable * 0.6);
+    const laborCents = Math.round(allocatable * 0.55);
     const materialCents = allocatable - laborCents;
-    labor = [{ name: 'Labor allowance', description: 'AI returned total pricing but incomplete labor line-item pricing. Allowance line created for review.', hours: 1, quantity: 1, unit: 'allowance', rate: dollars(laborCents), rate_cents: laborCents, unitCostCents: laborCents, unit_cost_cents: laborCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low' }];
-    materials = [{ name: 'Materials allowance', description: 'AI returned total pricing but incomplete material line-item pricing. Allowance line created for review.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'estimated allowance', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' }];
-    warnings.push('AI returned total pricing but incomplete line-item pricing. Allowance lines were created for review.');
+    const backfillRateCents = phoenixLaborRateByTime(new Date());
+    const laborHours = Math.max(1, Math.round((laborCents / backfillRateCents) * 100) / 100);
+    labor = [{ name: 'Service labor / site prep / installation', description: 'Created from legacy AI pricing. Review before sending.', hours: laborHours, quantity: laborHours, unit: 'hours', rate: dollars(backfillRateCents), rate_cents: backfillRateCents, unitCostCents: backfillRateCents, unit_cost_cents: backfillRateCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low', source: 'legacy AI pricing backfill', backfilled: true }];
+    materials = [{ name: 'Materials, fasteners, and consumables allowance', description: 'Created from legacy AI pricing. Review quantities and supplier costs before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'legacy AI pricing backfill', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low', backfilled: true }];
+    warnings.push('Line items were backfilled from legacy AI total. Review before sending.');
   }
   summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
   if (desiredGrand > 0 && Math.abs(summary.grand_total_cents - desiredGrand) > 1 && desiredGrand > summary.grand_total_cents) {
     const delta = desiredGrand - summary.grand_total_cents;
-    materials.push({ name: 'Pricing allowance adjustment', description: 'Backfilled allowance so editable line-item pricing matches the AI grand total.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'AI total backfill', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
+    materials.push({ name: 'Pricing allowance adjustment', description: 'Created from legacy AI pricing. Review before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'legacy AI pricing backfill', backfilled: true, source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
     warnings.push('AI total did not match editable line totals. A pricing allowance adjustment was created for review.');
   }
   summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
@@ -1074,12 +1078,13 @@ export default async (request) => {
 
     const descriptionText = `${jobRequest.work_scope || ''} ${jobRequest.work_category || ''} ${jobRequest.service_type || ''} ${jobRequest.description || ''}`;
 
-    const aiFirstQuote = await runAiFirstQuote({
+    const startedAt = Date.now();
+    const aiFirstQuote = await withTimeout(runAiFirstQuote({
       db,
       jobRequest,
       inventory,
-      companyRules: ['Admin approval required before sending.', 'Fallback is allowed only after OpenAI failure or invalid JSON after retry.'],
-    });
+      companyRules: ['Admin approval required before sending.', 'Fallback is allowed when OpenAI or live research is slow, unavailable, or invalid.'],
+    }), QUOTE_DRAFT_SOFT_TIMEOUT_MS, { fallbackUsed: true, aiEnhanced: false, fallbackReason: 'AI quote draft soft timeout; fast local estimate returned and live research queued.', warning: 'Live AI/research timed out. Draft uses estimated allowances for admin review.' });
     if (aiFirstQuote && aiFirstQuote.fallbackUsed) {
       console.warn('OpenAI primary quote unavailable; continuing with resilient local quote draft fallback.', aiFirstQuote.fallbackReason || aiFirstQuote.warning || 'fallback used');
     }
@@ -1271,7 +1276,7 @@ export default async (request) => {
 
     const materials = [];
     for (const part of baseMaterials) {
-      const livePrices = part.livePriceEvidence || await fetchLiveMaterialPrices({ partLabel: part.name, location });
+      const livePrices = part.livePriceEvidence || (Date.now() - startedAt > QUOTE_DRAFT_SOFT_TIMEOUT_MS ? [] : await withTimeout(fetchLiveMaterialPrices({ partLabel: part.name, location }), SERP_TIMEOUT_MS + 500, []));
       const medianLivePriceCents = livePrices.length
         ? livePrices.map((item) => item.cents).sort((a, b) => a - b)[Math.floor(livePrices.length / 2)]
         : null;
@@ -1386,9 +1391,9 @@ export default async (request) => {
 
     const scopeSummary = buildScopeSummary(jobRequest);
     const missingInfoQuestions = deriveMissingInfoQuestions({ jobRequest, descriptionText, materials: pricedMaterials });
-    const structuredAiQuote = await generateStructuredAiQuote({
+    const structuredAiQuote = Date.now() - startedAt > QUOTE_DRAFT_SOFT_TIMEOUT_MS ? {} : await withTimeout(generateStructuredAiQuote({
       jobRequest, descriptionText, pricedMaterials, laborHours, laborRateCents, totalCents, missingInfoQuestions,
-    });
+    }), 1500, {});
     const assumptions = [
       scopeSummary.scope === 'Not provided' ? 'Work Scope inferred from project details.' : `Work Scope used: ${scopeSummary.scope}.`,
       scopeSummary.type === 'Not provided' ? 'Type of Work inferred from service + keywords.' : `Type of Work used: ${scopeSummary.type}.`,
@@ -1437,6 +1442,8 @@ export default async (request) => {
           aiLearningApplied: Boolean(aiAdjustments),
           aiLearningRationale: clean(aiAdjustments?.rationale || '', 240),
           openAiStrictOnly: OPENAI_STRICT_ONLY,
+          researchQueued: pricedMaterials.some((part) => part.pricingSource === 'queued_research_allowance'),
+          timedOutFastPath: Date.now() - startedAt > QUOTE_DRAFT_SOFT_TIMEOUT_MS,
           strictRecoveryUsed,
           aiEnhanced: false,
           fallbackUsed: true,

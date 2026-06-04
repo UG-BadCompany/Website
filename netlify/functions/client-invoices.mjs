@@ -95,6 +95,11 @@ const loadAccess = async (db, userId) => {
   };
 };
 
+const isStaffRole = (roleKeys = []) => roleKeys.some((role) => ['owner', 'admin', 'manager'].includes(role));
+const resolveClientUserId = (request, session, roleKeys) => {
+  const requested = clean(new URL(request.url).searchParams.get('clientId'), 80);
+  return requested && isStaffRole(roleKeys) ? requested : session.user_id;
+};
 const listClientInvoices = async (db, userId) => {
   const invoices = await db.sql`
     select
@@ -176,6 +181,8 @@ const ensureClientInvoiceLinks = async (db, request, invoices = []) => {
 };
 
 export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
+  if (request.method === 'OPTIONS') return json(204, { ok: true });
+  if (request.method === 'HEAD') return json(200, { ok: true });
   if (request.method !== 'GET') {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
@@ -196,11 +203,12 @@ export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {})
 
     const { roleKeys, permissionKeys } = await loadAccess(db, session.user_id);
 
-    if (!permissionKeys.includes('client.invoices.manage')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client invoice permission is required.' });
+    const canUseClientWorkspace = roleKeys.includes('client') || permissionKeys.includes('dashboard.view.client') || permissionKeys.includes('client.tools') || permissionKeys.includes('dashboard.switch_views') || isStaffRole(roleKeys);
+    if (!canUseClientWorkspace) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client workspace access is required to view invoices.' });
     }
 
-    const invoiceData = await listClientInvoices(db, session.user_id);
+    const invoiceData = await listClientInvoices(db, resolveClientUserId(request, session, roleKeys));
     await ensureClientInvoiceLinks(db, request, invoiceData.invoices.map((invoice) => ({
       id: invoice.id,
       title: invoice.title,
