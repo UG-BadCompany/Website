@@ -169,6 +169,11 @@ const normalizePlan = (plan, fallback) => {
   const arr = (value, fallbackValue = []) => Array.isArray(value) ? value.map((item) => typeof item === 'string' ? clean(item, 900) : item).filter(Boolean).slice(0, 12) : fallbackValue;
   return {
     summary: clean(source.summary || source.firstThingToCheck, 1200) || fallback.summary,
+    officialErrorMeaning: clean(source.officialErrorMeaning, 500) || '',
+    detectedFault: clean(source.detectedFault, 700) || '',
+    researchSourcesUsed: arr(source.researchSourcesUsed || source.researchContext?.sources, []),
+    researchStatus: arr(source.researchStatus || source.researchContext?.status, []),
+    confidenceBreakdown: source.confidenceBreakdown || {},
     likelyCauses: arr(source.likelyCauses, fallback.likelyCauses).map((item) => typeof item === 'string' ? { cause: item, probability: 'unknown' } : item),
     safetyWarnings: arr(source.safetyWarnings, fallback.safetyWarnings),
     diagnosticSteps: arr(source.diagnosticSteps, fallback.diagnosticSteps),
@@ -230,17 +235,6 @@ export default async (request) => {
     const payload = normalizePayload(body);
     if (payload.action === 'save_notes') return await saveNotesToJob({ db, session, payload });
     if (!payload.systemType || !payload.component || !payload.issue) return json(422, { ok: false, message: 'System/trade, equipment/component, and issue/complaint are required.' });
-    if (!process.env.OPENAI_API_KEY) {
-      return json(503, {
-        ok: false,
-        message: 'OPENAI_API_KEY is not configured. AI troubleshooting is unavailable; continue manually.',
-        manualTroubleshooting: {
-          safetyWarning: 'Use PPE, isolate hazards, and stop for electrical, gas, refrigerant, structural, or active water hazards outside company policy.',
-          customerSummary: payload.issue,
-          technicianNotes: 'AI troubleshooting did not run. Continue with manual diagnostic process and document findings.',
-        },
-      });
-    }
     const fallback = fallbackPlan(payload);
     const aiPlan = await runAiFirstTroubleshooting({
       db,
@@ -260,6 +254,8 @@ export default async (request) => {
       fallbackSource: aiPlan?.fallbackSource || null,
       warning: aiPlan?.warning || null,
       model: aiPlan?.model || null,
+      researchStatus: aiPlan?.researchStatus || aiPlan?.researchContext?.status || [],
+      researchContext: aiPlan?.researchContext || null,
       promptVersion: aiPlan?.promptVersion || null,
       historicalMatchUsed: Boolean(aiPlan?.historicalMatchUsed),
     });
