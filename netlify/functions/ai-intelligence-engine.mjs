@@ -1,7 +1,7 @@
 import { clean } from './auth-utils.mjs';
 
-export const AI_QUOTE_PROMPT_VERSION = 'phase58-ai-tight-confidence-quote-v1';
-export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase57-ai-first-troubleshooting-v1';
+export const AI_QUOTE_PROMPT_VERSION = 'phase59-ai-quote-2-component-pricing-v1';
+export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase59-ai-troubleshooting-2-diagnostic-v1';
 
 export const REQUIRED_QUOTE_FIELDS = [
   'jobClassification',
@@ -42,6 +42,18 @@ export const REQUIRED_QUOTE_FIELDS = [
   'measurementNeeded',
   'modelPlateNeeded',
   'photoConfidenceImpact',
+  'jobSummary',
+  'detailedScope',
+  'equipmentBreakdown',
+  'permitBreakdown',
+  'recommendedUpsells',
+  'maintenanceOpportunities',
+  'safetyNotes',
+  'warrantyNotes',
+  'aiAnalysis',
+  'pricingEngine',
+  'confidenceExplanation',
+  'photoAnalysis',
 ];
 
 export const REQUIRED_TROUBLESHOOTING_FIELDS = [
@@ -56,6 +68,15 @@ export const REQUIRED_TROUBLESHOOTING_FIELDS = [
   'customerExplanation',
   'workOrderNotes',
   'repairEstimateRecommendation',
+  'technicianMode',
+  'diagnosticTests',
+  'requiredTools',
+  'replacementRecommendation',
+  'nextDiagnosticSteps',
+  'confidenceScore',
+  'confidenceExplanation',
+  'equipmentIdentification',
+  'photoAnalysis',
 ];
 
 const HIGH_RISK_PATTERN = /electrical|outlet|switch|light|ceiling fan|panel|breaker|hvac|mini\s*split|heat\s*pump|water\s*source|gas|refrigerant|roof|structural|water\s*heater|plumbing/i;
@@ -63,6 +84,86 @@ const VAGUE_PATTERN = /\b(fix|repair|broken|not working|issue|problem|help|thing
 
 const toArray = (value) => Array.isArray(value) ? value.filter((item) => item !== null && item !== undefined).map((item) => typeof item === 'string' ? clean(item, 1200) : item).filter(Boolean) : [];
 const toNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+const TRADE_ESTIMATING_RULES = {
+  hvac: { rate: 145, markup: 0.22, overhead: 0.12, travelCents: 8500, permitCents: 6500, disposalCents: 3500, phases: ['Protect work area and verify equipment data', 'Diagnose/install HVAC scope', 'Start-up, readings, and commissioning'], materials: ['Electrical whip/disconnect or controls allowance', 'Condensate/drain materials', 'Fasteners, sealants, and consumables'] },
+  electrical: { rate: 145, markup: 0.20, overhead: 0.12, travelCents: 7500, permitCents: 6500, disposalCents: 2000, phases: ['Lockout/tagout and verify circuit', 'Install/repair listed electrical components', 'Test polarity, load, GFCI/AFCI, and labeling'], materials: ['Device/fixture allowance', 'Box, connectors, wire nuts, pigtails', 'Breaker/wire/conduit allowance when needed'] },
+  plumbing: { rate: 135, markup: 0.22, overhead: 0.12, travelCents: 7500, permitCents: 4500, disposalCents: 3500, phases: ['Isolate water and protect finishes', 'Repair/replace plumbing assembly', 'Pressure/leak test and cleanup'], materials: ['Fixture/valve/fitting allowance', 'Supply/drain connectors', 'Sealants, tape, and consumables'] },
+  handyman: { rate: 105, markup: 0.18, overhead: 0.10, travelCents: 6500, permitCents: 0, disposalCents: 2000, phases: ['Site protection and layout', 'Complete repair/install', 'Final adjustment and cleanup'], materials: ['Standard hardware allowance', 'Fasteners/adhesives/consumables'] },
+  appliance: { rate: 120, markup: 0.20, overhead: 0.10, travelCents: 7500, permitCents: 0, disposalCents: 2500, phases: ['Identify appliance and fault', 'Replace confirmed failed component', 'Cycle test and verify no leaks/overheating'], materials: ['Model-specific part allowance', 'Connectors and consumables'] },
+  roofing: { rate: 125, markup: 0.24, overhead: 0.14, travelCents: 9500, permitCents: 7500, disposalCents: 9500, phases: ['Access/roof safety setup', 'Remove damaged material', 'Install roofing repair and water test'], materials: ['Shingles/membrane/flashing allowance', 'Underlayment, sealant, and fasteners'] },
+  drywall: { rate: 95, markup: 0.18, overhead: 0.10, travelCents: 6500, permitCents: 0, disposalCents: 3500, phases: ['Mask and protect area', 'Patch/hang/tape/mud', 'Sand texture-ready finish'], materials: ['Drywall sheet/patch allowance', 'Tape, compound, corner bead, texture'] },
+  painting: { rate: 85, markup: 0.18, overhead: 0.10, travelCents: 6500, permitCents: 0, disposalCents: 1500, phases: ['Prep/mask/sand', 'Prime and paint coats', 'Touch-up and cleanup'], materials: ['Primer/paint allowance', 'Tape, plastic, rollers, brushes'] },
+  flooring: { rate: 105, markup: 0.22, overhead: 0.12, travelCents: 7500, permitCents: 0, disposalCents: 7500, phases: ['Remove/prepare floor', 'Install flooring and transitions', 'Clean and inspect'], materials: ['Flooring quantity allowance', 'Underlayment/adhesive/transitions'] },
+  doors: { rate: 105, markup: 0.20, overhead: 0.10, travelCents: 6500, permitCents: 0, disposalCents: 3500, phases: ['Measure and remove old door/hardware', 'Fit, hang, shim, and fasten', 'Install hardware and adjust reveal'], materials: ['Door slab/pre-hung allowance', 'Hinges, lockset, shims, trim'] },
+  windows: { rate: 115, markup: 0.22, overhead: 0.12, travelCents: 8500, permitCents: 6500, disposalCents: 5500, phases: ['Measure/protect opening', 'Remove and install window', 'Flash, seal, trim, and water-check'], materials: ['Window unit allowance', 'Flashing, sealant, foam, trim'] },
+  'water heater': { rate: 145, markup: 0.24, overhead: 0.12, travelCents: 8500, permitCents: 9500, disposalCents: 8500, phases: ['Drain/disconnect and remove existing unit', 'Install water heater and code upgrades', 'Fill, fire/cycle, and leak/CO checks'], materials: ['Water heater allowance', 'Expansion tank, pan, valves, connectors'] },
+  'mini split': { rate: 155, markup: 0.24, overhead: 0.14, travelCents: 9500, permitCents: 12500, disposalCents: 5500, rentalCents: 4500, phases: ['Layout, wall penetration, and mounting', 'Line set/electrical/drain installation', 'Evacuation/start-up and commissioning'], materials: ['Mini split equipment allowance', 'Line set, disconnect, whip, pad/bracket', 'Drain/control wire/line hide materials'] },
+  'heat pump': { rate: 155, markup: 0.24, overhead: 0.14, travelCents: 9500, permitCents: 12500, disposalCents: 7500, rentalCents: 6500, phases: ['Recover/isolate per policy and remove equipment', 'Install heat pump equipment and accessories', 'Commission airflow/refrigerant/electrical readings'], materials: ['Heat pump equipment allowance', 'Electrical/refrigerant/drain accessories'] },
+  commercial: { rate: 135, markup: 0.20, overhead: 0.14, travelCents: 9500, permitCents: 6500, disposalCents: 4500, phases: ['Coordinate access and safety plan', 'Complete maintenance/repair scope', 'Document readings and closeout'], materials: ['Commercial maintenance material allowance', 'Filters/belts/consumables as applicable'] },
+  property: { rate: 105, markup: 0.18, overhead: 0.10, travelCents: 6500, permitCents: 0, disposalCents: 3500, phases: ['Tenant/property coordination', 'Complete maintenance items', 'Photo closeout and notes'], materials: ['Standard property maintenance allowance', 'Hardware/consumables'] },
+};
+const TRADE_ALIASES = [
+  ['mini split', /mini\s*split|ductless/i], ['water heater', /water\s*heater|tankless/i], ['heat pump', /heat\s*pump/i], ['commercial', /commercial|facility/i], ['property', /property maintenance|turnover|tenant/i], ['hvac', /hvac|furnace|air\s*condition|condenser|air handler|thermostat/i], ['electrical', /electrical|outlet|switch|breaker|panel|light|ceiling fan/i], ['plumbing', /plumbing|faucet|toilet|leak|drain|pipe|valve/i], ['appliance', /appliance|dishwasher|washer|dryer|oven|range|refrigerator|microwave/i], ['roofing', /roof|shingle|flashing|gutter/i], ['drywall', /drywall|sheetrock|wall patch|ceiling patch/i], ['painting', /paint|stain|primer/i], ['flooring', /floor|tile|vinyl|laminate|carpet/i], ['doors', /door|lock|hinge|threshold/i], ['windows', /window|glass|sash/i], ['handyman', /handyman|repair|install|mount|assembly/i],
+];
+const detectTradeKey = (text = '') => (TRADE_ALIASES.find(([, pattern]) => pattern.test(text)) || ['handyman'])[0];
+const estimateComplexity = (text = '', photos = []) => Math.max(1, Math.min(10, 3 + (/permit|panel|roof|gas|refrigerant|structural|commercial|multi|replace|install/i.test(text) ? 2 : 0) + (/unsafe|leak|water damage|mold|no access|crawl|attic/i.test(text) ? 2 : 0) + (photos.length ? -1 : 0)));
+const confidenceLabelFromScore = (score = 0) => score >= 0.88 ? 'Very High' : score >= 0.74 ? 'High' : score >= 0.55 ? 'Medium' : 'Low';
+const currencyCents = (amount = 0) => Math.max(0, Math.round(Number(amount || 0) * 100));
+const buildComponentPricingEngine = ({ quote = {}, context = {}, photoContext = [] }) => {
+  const text = `${context.serviceType || ''} ${context.workCategory || ''} ${context.description || ''} ${quote.tradeCategory || ''} ${quote.jobClassification || ''}`;
+  const tradeKey = detectTradeKey(text);
+  const rule = TRADE_ESTIMATING_RULES[tradeKey] || TRADE_ESTIMATING_RULES.handyman;
+  const lowHours = Math.max(1, toNumber(quote.laborHoursLow, estimateComplexity(text, photoContext)));
+  const highHours = Math.max(lowHours, toNumber(quote.laborHoursHigh, lowHours + 2));
+  const recommendedHours = Math.round(((lowHours + highHours) / 2) * 2) / 2;
+  const rate = toNumber(quote.laborRateUsed, rule.rate);
+  const materials = toArray(quote.materialBreakdown).map((item, index) => {
+    const quantity = Math.max(1, toNumber(item.quantity ?? item.estimatedQuantity ?? item.neededQty, 1));
+    const unitCostCents = Math.max(0, Math.round(toNumber(item.unitCostCents ?? item.estimatedUnitCostCents ?? item.unit_cost_cents, index === 0 ? 12500 : 3500)));
+    return { name: clean(item.name || item.label || rule.materials[index] || 'Material allowance', 180), quantity, unit: clean(item.unit || 'each', 40), unitCostCents, totalCostCents: Math.round(quantity * unitCostCents), pricingSource: clean(item.pricingSource || item.source || 'ai_allowance', 80), notes: clean(item.notes || 'Verify exact SKU/quantity before purchasing.', 500) };
+  });
+  const materialCostCents = materials.reduce((sum, item) => sum + item.totalCostCents, 0);
+  const laborCents = currencyCents(recommendedHours * rate);
+  const equipmentCents = Math.max(0, Math.round(toNumber(quote.equipmentCostCents ?? quote.equipmentBreakdown?.totalCostCents, 0)));
+  const permitCents = Math.max(0, Math.round(toNumber(quote.permitCostCents ?? quote.permitBreakdown?.totalCostCents, rule.permitCents || 0)));
+  const travelCents = Math.max(0, Math.round(toNumber(quote.travelCents, rule.travelCents || 0)));
+  const disposalCents = Math.max(0, Math.round(toNumber(quote.disposalCents, rule.disposalCents || 0)));
+  const rentalCents = Math.max(0, Math.round(toNumber(quote.rentalEquipmentCents, rule.rentalCents || 0)));
+  const overheadRate = Math.max(0, toNumber(quote.overheadRate, rule.overhead));
+  const markupRate = Math.max(0, toNumber(quote.markupRate, rule.markup));
+  const subtotalBeforeMarkupCents = laborCents + materialCostCents + equipmentCents + permitCents + travelCents + disposalCents + rentalCents;
+  const overheadCents = Math.round(subtotalBeforeMarkupCents * overheadRate);
+  const markupCents = Math.round((materialCostCents + equipmentCents + rentalCents + overheadCents) * markupRate);
+  const recommendedTotalCents = subtotalBeforeMarkupCents + overheadCents + markupCents;
+  return {
+    tradeKey, laborHours: recommendedHours, laborRate: rate, laborCents, materials, materialCostCents,
+    equipmentCents, permitCents, travelCents, disposalCents, rentalCents, overheadRate, overheadCents, markupRate, markupCents,
+    lowRangeCents: Math.round(recommendedTotalCents * 0.9), recommendedRangeCents: recommendedTotalCents, premiumRangeCents: Math.round(recommendedTotalCents * 1.18),
+    totalFormula: `Labor ${recommendedHours} hrs × $${rate}/hr + materials + equipment + permit + travel + disposal/rental + overhead ${(overheadRate*100).toFixed(0)}% + markup ${(markupRate*100).toFixed(0)}%`,
+    why: [`Trade rule: ${tradeKey}`, `Labor built from ${lowHours}-${highHours} estimated hours at $${rate}/hr.`, `Materials are quantity × unit-cost allowances, not a flat random total.`, `Permit/travel/disposal/rental/overhead/markup are explicit components.`],
+  };
+};
+const buildQuoteConfidenceExplanation = ({ quote = {}, context = {}, photoContext = [] }) => {
+  const scores = quote.confidenceScores || {};
+  const text = `${context.serviceType || ''} ${context.workCategory || ''} ${context.description || ''}`;
+  const base = Math.max(0, Math.min(1, toNumber(quote.confidenceScore, 0.55)));
+  const factors = {
+    tradeCertainty: Math.max(toNumber(scores.trade_certainty, 0), detectTradeKey(text) !== 'handyman' ? 0.82 : 0.55),
+    scopeCertainty: toNumber(scores.scope ?? scores.scope_certainty, String(context.description || '').length > 80 ? 0.72 : 0.45),
+    photoQuality: photoContext.length ? 0.76 : 0.42,
+    equipmentIdentification: /model|serial|manufacturer|make|equipment/i.test(text) ? 0.72 : 0.45,
+    pricingCertainty: toNumber(scores.pricing, quote.pricingConfidenceLevel === 'high' ? 0.82 : quote.pricingConfidenceLevel === 'medium' ? 0.64 : 0.45),
+    measurementCertainty: quote.measurementNeeded ? 0.38 : 0.68,
+    materialCertainty: toArray(quote.materialBreakdown).length ? 0.72 : 0.40,
+    regionalDataAvailability: context.city ? 0.66 : 0.48,
+    codeRequirementCertainty: /permit|electrical|hvac|water heater|roof|gas/i.test(text) ? 0.58 : 0.72,
+    customerDescriptionQuality: String(context.description || '').length > 120 ? 0.78 : 0.48,
+  };
+  const blended = Object.values(factors).reduce((sum, value) => sum + value, 0) / Object.values(factors).length;
+  const score = Math.max(0.1, Math.min(0.98, (base * 0.45) + (blended * 0.55)));
+  return { score, label: confidenceLabelFromScore(score), factors, explanation: `Confidence is ${confidenceLabelFromScore(score)} because trade, scope, photos, equipment ID, pricing, measurements, materials, regional data, code certainty, and customer description quality were scored separately.` };
+};
 
 export const parseOpenAiJson = (result = {}) => {
   const candidates = [
@@ -128,6 +229,18 @@ export const normalizeQuoteAiOutput = (quote = {}) => {
     measurementNeeded: Boolean(quote.measurementNeeded),
     modelPlateNeeded: Boolean(quote.modelPlateNeeded),
     photoConfidenceImpact: clean(quote.photoConfidenceImpact, 1200),
+    jobSummary: clean(quote.jobSummary || quote.customerReadySummary, 3000),
+    detailedScope: toArray(quote.detailedScope || quote.scopeOfWork).map((item) => clean(String(item), 800)),
+    equipmentBreakdown: toArray(quote.equipmentBreakdown).map((item) => typeof item === 'string' ? { name: clean(item, 240), quantity: 1, costCents: 0 } : item),
+    permitBreakdown: toArray(quote.permitBreakdown).map((item) => typeof item === 'string' ? { name: clean(item, 240), costCents: 0 } : item),
+    recommendedUpsells: toArray(quote.recommendedUpsells).map((item) => clean(String(item), 500)),
+    maintenanceOpportunities: toArray(quote.maintenanceOpportunities).map((item) => clean(String(item), 500)),
+    safetyNotes: toArray(quote.safetyNotes).map((item) => clean(String(item), 700)),
+    warrantyNotes: clean(quote.warrantyNotes, 1600),
+    aiAnalysis: quote.aiAnalysis && typeof quote.aiAnalysis === 'object' ? quote.aiAnalysis : {},
+    pricingEngine: quote.pricingEngine && typeof quote.pricingEngine === 'object' ? quote.pricingEngine : {},
+    confidenceExplanation: quote.confidenceExplanation && typeof quote.confidenceExplanation === 'object' ? quote.confidenceExplanation : {},
+    photoAnalysis: quote.photoAnalysis && typeof quote.photoAnalysis === 'object' ? quote.photoAnalysis : {},
   };
 };
 
@@ -153,6 +266,11 @@ export const validateQuoteAiOutput = (quote = {}, context = {}) => {
   }
   if (!normalized.customerReadySummary) errors.push('customerReadySummary is required.');
   if (!normalized.adminReviewChecklist.length) errors.push('adminReviewChecklist is required.');
+  if (!normalized.jobSummary) errors.push('jobSummary is required.');
+  if (!normalized.detailedScope.length) errors.push('detailedScope is required.');
+  if (!normalized.pricingEngine || !Object.keys(normalized.pricingEngine).length) errors.push('pricingEngine is required with component pricing.');
+  if (!normalized.aiAnalysis || !Object.keys(normalized.aiAnalysis).length) errors.push('aiAnalysis is required.');
+  if (!normalized.confidenceExplanation || !Object.keys(normalized.confidenceExplanation).length) errors.push('confidenceExplanation is required.');
   if (!normalized.pricingConfidenceLevel) errors.push('pricingConfidenceLevel must be high, medium, or low.');
   if (!normalized.pricingConfidenceReason) errors.push('pricingConfidenceReason is required.');
   if (!normalized.assumptionsUsedForTightPrice.length) errors.push('assumptionsUsedForTightPrice is required to support tight pricing.');
@@ -197,13 +315,22 @@ export const normalizeTroubleshootingAiOutput = (plan = {}) => ({
   safetyWarnings: toArray(plan.safetyWarnings).map((item) => clean(String(item), 800)),
   diagnosticSteps: toArray(plan.diagnosticSteps).map((item) => clean(String(item), 1000)),
   expectedReadings: toArray(plan.expectedReadings).map((item) => clean(String(item), 800)),
-  toolsMetersNeeded: toArray(plan.toolsMetersNeeded).map((item) => clean(String(item), 300)),
-  likelyCauses: toArray(plan.likelyCauses).map((item) => typeof item === 'string' ? { cause: clean(item, 500), probability: 'unknown' } : item),
+  toolsMetersNeeded: toArray(plan.toolsMetersNeeded || plan.requiredTools).map((item) => clean(String(item), 300)),
+  likelyCauses: toArray(plan.likelyCauses).map((item) => typeof item === 'string' ? { cause: clean(item, 500), probability: 'unknown', probabilityPercent: null } : { ...item, cause: clean(item.cause || item.name || '', 500), probability: item.probability ?? item.probabilityPercent ?? 'unknown' }),
   partsLikelyNeeded: toArray(plan.partsLikelyNeeded).map((item) => clean(typeof item === 'string' ? item : item?.name || JSON.stringify(item), 400)),
   stopAndEscalateIf: toArray(plan.stopAndEscalateIf).map((item) => clean(String(item), 800)),
   customerExplanation: clean(plan.customerExplanation, 2000),
   workOrderNotes: clean(plan.workOrderNotes, 3000),
   repairEstimateRecommendation: clean(plan.repairEstimateRecommendation || plan.estimateRecommendation, 1600),
+  technicianMode: plan.technicianMode && typeof plan.technicianMode === 'object' ? plan.technicianMode : {},
+  diagnosticTests: toArray(plan.diagnosticTests).map((item) => typeof item === 'string' ? { test: clean(item, 500) } : item),
+  requiredTools: toArray(plan.requiredTools || plan.toolsMetersNeeded).map((item) => clean(String(item), 300)),
+  replacementRecommendation: clean(plan.replacementRecommendation, 1200),
+  nextDiagnosticSteps: toArray(plan.nextDiagnosticSteps).map((item) => clean(String(item), 800)),
+  confidenceScore: Math.max(0, Math.min(1, toNumber(plan.confidenceScore, 0))),
+  confidenceExplanation: plan.confidenceExplanation && typeof plan.confidenceExplanation === 'object' ? plan.confidenceExplanation : {},
+  equipmentIdentification: plan.equipmentIdentification && typeof plan.equipmentIdentification === 'object' ? plan.equipmentIdentification : {},
+  photoAnalysis: plan.photoAnalysis && typeof plan.photoAnalysis === 'object' ? plan.photoAnalysis : {},
 });
 
 export const validateTroubleshootingAiOutput = (plan = {}, context = {}) => {
@@ -216,6 +343,11 @@ export const validateTroubleshootingAiOutput = (plan = {}, context = {}) => {
   if (!normalized.safetyWarnings.length) errors.push('safetyWarnings are required.');
   if (!normalized.diagnosticSteps.length) errors.push('diagnosticSteps are required.');
   if (!normalized.stopAndEscalateIf.length) errors.push('stopAndEscalateIf is required.');
+  if (!normalized.likelyCauses.length || !normalized.likelyCauses.every((item) => item && item.cause && item.probability !== undefined)) errors.push('likelyCauses must include ranked causes with probability.');
+  if (!normalized.diagnosticTests.length) errors.push('diagnosticTests are required.');
+  if (!normalized.technicianMode || !normalized.technicianMode.quickFix || !normalized.technicianMode.advancedDiagnosis || !normalized.technicianMode.expertMode) errors.push('technicianMode must include quickFix, advancedDiagnosis, and expertMode.');
+  if (!normalized.confidenceScore) errors.push('confidenceScore is required.');
+  if (!normalized.confidenceExplanation || !Object.keys(normalized.confidenceExplanation).length) errors.push('confidenceExplanation is required.');
   if (HIGH_RISK_PATTERN.test(`${context.systemType || ''} ${context.component || ''} ${context.issue || ''}`)) {
     const safetyText = `${normalized.safetyWarnings.join(' ')} ${normalized.stopAndEscalateIf.join(' ')}`;
     if (!/stop|escalate|lockout|tagout|licensed|supervisor|gas|refrigerant|electrical/i.test(safetyText)) {
@@ -280,15 +412,17 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
   validationRules: [
     'Return strict JSON only.',
     'Classify job and trade.',
-    'Return confidenceScores with overall, labor, materials, pricing, scope, information_completeness, and research on a 0..1 scale plus confidenceReasons and recommendedAction.',
+    'Return confidenceScores with overall, trade_certainty, scope, photo_quality, equipment_identification, pricing, measurements, materials, regional_data, code_requirements, customer_description_quality, labor, information_completeness, and research on a 0..1 scale plus confidenceReasons and recommendedAction.',
     'Decide quoteReady and siteVisitRecommended.',
     'Provide labor phases, hours low/high, and labor rate.',
-    'Provide materials, tools, consumables, inventory hints, supplier recommendations, risks, exclusions, change orders, customer summary, admin checklist, and low/high/fixed cents.',
+    'Generate jobSummary, detailedScope, laborBreakdown, materialBreakdown with quantities/unit costs, equipmentBreakdown, permitBreakdown, recommendedUpsells, maintenanceOpportunities, safetyNotes, warrantyNotes, risks, exclusions, customer summary, admin checklist, and low/high/fixed cents.',
+    'Build pricingEngine from components: labor hours × rate, material quantities × unit costs, equipment costs, permit costs, markup, overhead, travel, disposal, rental equipment, low/recommended/premium ranges, and why. Never invent one unexplained flat number.',
+    'Include aiAnalysis with tradeDetection, scopeDetection, complexityScore, riskScore, confidenceScore and confidenceExplanation with label Very High/High/Medium/Low plus factor explanations.',
     'Prefer a confident fixed price whenever enough information exists; do not hide uncertainty behind a huge low/high range.',
     'Return a tight low/high range plus one recommended fixed price. High confidence range max 10-15%; medium confidence max 20-25%; low confidence must set quoteReady false unless admin overrides later.',
     'Use company history, inventory, labor knowledge, material knowledge, supplier pricing, and photos/context to tighten pricing.',
     'If uncertain, ask missing questions or recommend a site visit and explain exactly what information would tighten price.',
-    'Use photoContext when available: file URLs/paths, names, captions, notes, photo type, measurement/model plate/access/damage evidence should improve confidence and tighten range when strong.',
+    'Use photoContext when available: identify equipment, condition, access difficulty, visible damage, safety issues, likely materials, and missing information; strong clear photos increase confidence and unclear/missing photos decrease confidence.',
     'If visual evidence is missing for visual-dependent work, set photoNeeded/photoTypesNeeded/measurementNeeded/modelPlateNeeded and reduce pricingConfidenceLevel or mark needsSiteVisitToTightenPrice.',
     'High-risk trades require risk flags and stop/escalate guidance.',
     'Vague requests require missingInfoQuestions.',
@@ -305,8 +439,9 @@ export const buildTroubleshootingPrompt = ({ payload = {}, historicalContext = [
   promptVersion: AI_TROUBLESHOOTING_PROMPT_VERSION,
   task: 'Create a trade-specific diagnostic tree for the contractor. OpenAI is primary; fallback is emergency only.',
   requiredFields: REQUIRED_TROUBLESHOOTING_FIELDS,
-  supportedTrades: ['HVAC', 'mini splits', 'water source heat pumps', 'plumbing', 'drains', 'water heaters', 'electrical', 'outlets', 'switches', 'lights', 'ceiling fans', 'exhaust fans', 'appliances', 'doors', 'locks', 'drywall', 'irrigation', 'pumps', 'general handyman work'],
-  validationRules: ['Return strict JSON only.', 'Include safety warnings, expected readings, tools/meters, likely causes ranked by probability, stop/escalate conditions, customer explanation, work-order notes, and repair estimate recommendation.'],
+  supportedTrades: ['HVAC', 'mini splits', 'heat pumps', 'water source heat pumps', 'plumbing', 'drains', 'water heaters', 'electrical', 'outlets', 'switches', 'lights', 'ceiling fans', 'exhaust fans', 'appliances', 'roofing', 'drywall', 'painting', 'flooring', 'doors', 'windows', 'commercial maintenance', 'property maintenance', 'general handyman work'],
+  manufacturerSpecificInstruction: 'When make/manufacturer + model/serial exists, use it heavily. Tailor likely causes, expected readings, fault-code interpretation cautions, parts, and diagnostic sequence to the equipment family instead of returning generic advice.',
+  validationRules: ['Return strict JSON only.', 'Include safety warnings, expected readings, tools/meters, likely causes ranked by probability %, diagnosticTests with expected readings, quickFix/advancedDiagnosis/expertMode technicianMode, likely repair, replacement recommendation, likely parts, next steps, stop/escalate conditions, customer explanation, work-order notes, and confidence explanation.', 'For no-cooling HVAC examples, separate capacitor, contactor, low-voltage/control, airflow, refrigerant, and compressor probabilities when relevant.'],
   fieldInput: payload,
   historicalCompanyContext: historicalContext,
   companyRules,
@@ -443,9 +578,12 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
   const system = 'You are the AI-first estimating engine for the contractor. Use company history, inventory, supplier pricing, photos, and request details. Return strict JSON only with the required fields. Do not omit high-risk safety/stop guidance.';
   const result = await runOpenAiWithValidation({ kind: 'quote', apiKey, model, timeoutMs, system, user: prompt, validate: validateQuoteAiOutput, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description }, fetchImpl });
   if (result.ok) {
-    await saveAiRun({ db, kind: 'quote', entityId: jobRequest.id, model, promptVersion: AI_QUOTE_PROMPT_VERSION, inputSummary: prompt, output: result.output, validation: { ok: true, errors: [] }, retryCount: result.retryCount });
-    await saveKnowledgeFromQuote({ db, quote: result.output, jobRequest });
-    return { ...result.output, aiEnhanced: true, fallbackUsed: false, historicalMatchUsed: historicalContext.length > 0, model, promptVersion: AI_QUOTE_PROMPT_VERSION, retryCount: result.retryCount };
+    const pricingEngine = result.output.pricingEngine && Object.keys(result.output.pricingEngine).length ? result.output.pricingEngine : buildComponentPricingEngine({ quote: result.output, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description, city: jobRequest.city }, photoContext: resolvedPhotoContext });
+    const confidenceExplanation = result.output.confidenceExplanation && Object.keys(result.output.confidenceExplanation).length ? result.output.confidenceExplanation : buildQuoteConfidenceExplanation({ quote: result.output, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description, city: jobRequest.city }, photoContext: resolvedPhotoContext });
+    const enrichedOutput = { ...result.output, pricingEngine, confidenceExplanation, totalLowCents: result.output.totalLowCents || pricingEngine.lowRangeCents, totalHighCents: result.output.totalHighCents || pricingEngine.premiumRangeCents, fixedPriceRecommendationCents: result.output.fixedPriceRecommendationCents || pricingEngine.recommendedRangeCents };
+    await saveAiRun({ db, kind: 'quote', entityId: jobRequest.id, model, promptVersion: AI_QUOTE_PROMPT_VERSION, inputSummary: prompt, output: enrichedOutput, validation: { ok: true, errors: [] }, retryCount: result.retryCount });
+    await saveKnowledgeFromQuote({ db, quote: enrichedOutput, jobRequest });
+    return { ...enrichedOutput, aiEnhanced: true, fallbackUsed: false, historicalMatchUsed: historicalContext.length > 0, model, promptVersion: AI_QUOTE_PROMPT_VERSION, retryCount: result.retryCount };
   }
   const fallback = fallbackBuilder ? await fallbackBuilder({ reason: result.error, attempts: result.attempts, historicalContext }) : null;
   const fallbackPayload = {
