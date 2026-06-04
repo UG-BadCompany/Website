@@ -23,7 +23,7 @@ const validQuote = (overrides = {}) => ({
   laborHoursLow: 3,
   laborHoursHigh: 6,
   laborRateUsed: 125,
-  materialBreakdown: [{ name: 'Mini split condensate pump', quantity: 1, unit: 'each', notes: 'Verify model before purchase' }],
+  materialBreakdown: [{ name: 'Mini split condensate pump', quantity: 1, unit: 'each', unitCostCents: 13250, sourceName: 'Internal supplier database', sourceUrl: 'internal://supplier-prices/condensate-pump', dateChecked: '2026-06-04', pricingConfidence: 0.82, liveVerified: false, notes: 'Verify model before purchase' }],
   toolsNeeded: ['Multimeter', 'Manifold gauges if licensed HVAC scope requires them'],
   consumables: ['Wire nuts', 'Drain tubing'],
   inventoryMatchHints: ['condensate pump', 'mini split drain tubing'],
@@ -58,6 +58,8 @@ const validQuote = (overrides = {}) => ({
   warrantyNotes: 'Manufacturer warranty depends on confirmed model/serial and part eligibility.',
   aiAnalysis: { tradeDetection: 'HVAC', scopeDetection: 'Mini split diagnostic/repair', complexityScore: 5, riskScore: 6, confidenceScore: 0.82 },
   pricingEngine: { laborHours: 4.5, laborRate: 125, laborCents: 56250, materialCostCents: 13250, permitCents: 0, markupRate: 0.18, markupCents: 2385, lowRangeCents: 65000, recommendedRangeCents: 69500, premiumRangeCents: 72500, why: ['Labor hours × rate plus material allowance and markup.'] },
+  materialPricingSources: [{ sourceName: 'Internal supplier database', sourceUrl: 'internal://supplier-prices/condensate-pump', dateChecked: '2026-06-04', averagePriceCents: 13250, recommendedPriceCents: 13250, confidence: 0.82, liveVerified: false }],
+  livePricingVerification: { livePricingVerified: true, label: 'Supplier database verified', openAiLiveSearchAttempted: true, openAiLiveSearchAvailable: true, confidenceImpact: 'normal' },
   confidenceExplanation: { label: 'High', explanation: 'Trade, scope, labor, and standard material certainty are strong.', factors: { tradeCertainty: 0.9, scopeCertainty: 0.82, pricingCertainty: 0.78 } },
   photoAnalysis: { equipment: 'Mini split', condition: 'Not visible', accessDifficulty: 'Assumed standard', missingInformation: ['Model plate photo'] },
   ...overrides,
@@ -84,6 +86,10 @@ const validTroubleshooting = (overrides = {}) => ({
   confidenceExplanation: { label: 'High', explanation: 'Complaint and equipment type support a specific diagnostic tree.' },
   equipmentIdentification: { manufacturer: 'Unknown', model: 'Unknown', equipmentType: 'Mini split' },
   photoAnalysis: { quality: 'No photos supplied', confidenceImpact: 'Lower equipment/access certainty.' },
+  officialErrorMeaning: 'No exact manufacturer/model/error-code meaning supplied; verify current service literature before using model-specific guidance.',
+  detectedFault: 'Generic symptom-based fault, not a confirmed manufacturer error code.',
+  researchSourcesUsed: [{ title: 'Internal troubleshooting playbook', url: 'internal://troubleshooting/playbook', snippet: 'Generic safe diagnostic workflow' }],
+  confidenceBreakdown: { equipmentConfidence: 0.6, researchConfidence: 0.5, symptomMatch: 0.75, overallConfidence: 0.78 },
   ...overrides,
 });
 
@@ -245,6 +251,52 @@ test('AI quote prompt loads job photo metadata into photoContext', async () => {
   assert.match(prompt, /Shows access and damage/);
 });
 
+
+
+test('quote material research records OpenAI live search priority and live-pricing-not-verified fallback', async () => {
+  const { researchQuoteMaterials } = await import('../netlify/functions/ai-intelligence-engine.mjs');
+  let body = null;
+  const researched = await researchQuoteMaterials({
+    apiKey: 'test-key',
+    jobRequest: { id: 'req-research', service_type: 'Plumbing', work_category: 'Fixture', description: 'Replace kitchen faucet and supply lines.' },
+    inventory: [],
+    supplierPricing: [],
+    historicalContext: [],
+    openAiSearchEnabled: true,
+    fetchImpl: async (_url, options) => {
+      body = JSON.parse(options.body);
+      return openAiResponse({ results: [{ title: 'Faucet supply line', sourceName: 'Supplier Example', sourceUrl: 'https://supplier.example/supply-line', recommendedPrice: 18.5, dateChecked: '2026-06-04', confidence: 0.77 }] });
+    },
+  });
+
+  assert.equal(body.tools[0].type, 'web_search_preview');
+  assert.equal(researched.openAiLiveSearchAttempted, true);
+  assert.equal(researched.openAiLiveSearchAvailable, true);
+  assert.equal(researched.livePricingVerified, true);
+  assert.equal(researched.sources[0].sourcePriority, 'openai_live_search');
+});
+
+test('troubleshooting research uses OpenAI live search before generic search fallback', async () => {
+  const { researchEquipmentFault } = await import('../netlify/functions/ai-intelligence-engine.mjs');
+  const db = makeDb();
+  let body = null;
+  const research = await researchEquipmentFault({
+    db,
+    apiKey: 'test-key',
+    payload: { manufacturer: 'Daikin', model: 'RXC24AXVJU', errorCode: 'E3', component: 'mini split' },
+    openAiSearchEnabled: true,
+    fetchImpl: async (_url, options) => {
+      body = JSON.parse(options.body);
+      return openAiResponse({ results: [{ title: 'Daikin service manual', sourceName: 'Daikin', sourceUrl: 'https://example.com/daikin-manual', snippet: 'Fault table source', dateChecked: '2026-06-04', confidence: 0.8 }] });
+    },
+  });
+
+  assert.equal(body.tools[0].type, 'web_search_preview');
+  assert.equal(research.openAiLiveSearchAttempted, true);
+  assert.equal(research.searchProvidersUsed.includes('openai_live_search'), true);
+  assert.ok(research.sources.some((source) => source.url === 'https://example.com/daikin-manual'));
+});
+
 test('quote UI exposes recommended fixed price, tight range, confidence, and override controls', async () => {
   const draftFunction = await readFile('netlify/functions/admin-quote-draft.mjs', 'utf8');
   const quoteUi = await readFile('public/dashboard/modules/admin/quotes/module.js', 'utf8');
@@ -252,10 +304,10 @@ test('quote UI exposes recommended fixed price, tight range, confidence, and ove
   assert.match(draftFunction, /fixed_price_recommendation_cents/);
   assert.match(draftFunction, /pricing_engine/);
   assert.match(draftFunction, /confidence_explanation/);
-  assert.match(quoteUi, /AI Quote Studio 2\.0/);
-  assert.match(quoteUi, /SECTION 5 · Pricing Engine/);
-  assert.match(quoteUi, /Accept AI Quote/);
-  assert.match(quoteUi, /Save Final Version/);
+  assert.match(quoteUi, /Estimate & Quote Center|AI Quote Studio 2\.0/);
+  assert.match(quoteUi, /7\. Pricing/);
+  assert.match(quoteUi, /Generate AI Draft/);
+  assert.match(quoteUi, /Save Draft/);
 });
 
 test('admin quote edits are stored as AI corrections for future learning', async () => {

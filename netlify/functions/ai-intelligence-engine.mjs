@@ -1,7 +1,7 @@
 import { clean } from './auth-utils.mjs';
 
-export const AI_QUOTE_PROMPT_VERSION = 'phase59-ai-quote-2-component-pricing-v1';
-export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase60-ai-troubleshooting-research-cache-v1';
+export const AI_QUOTE_PROMPT_VERSION = 'phase61-openai-research-pricing-v1';
+export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase61-openai-research-troubleshooting-v1';
 
 export const REQUIRED_QUOTE_FIELDS = [
   'jobClassification',
@@ -52,6 +52,8 @@ export const REQUIRED_QUOTE_FIELDS = [
   'warrantyNotes',
   'aiAnalysis',
   'pricingEngine',
+  'materialPricingSources',
+  'livePricingVerification',
   'confidenceExplanation',
   'photoAnalysis',
 ];
@@ -91,6 +93,10 @@ const toNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Numbe
 
 const normalizeLookupText = (value = '') => clean(String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(), 240);
 const normalizeErrorCode = (value = '') => clean(String(value || '').toUpperCase().replace(/[^A-Z0-9-]+/g, ''), 80);
+const centsFromDollars = (value) => Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value) * 100)) : 0;
+const todayIsoDate = () => new Date().toISOString().slice(0, 10);
+const isLiveUrl = (url = '') => /^https?:\/\//i.test(String(url || ''));
+const sourcePriorityLabel = (priority) => ({ 1: 'internal_company_data', 2: 'cached_verified_research', 3: 'openai_live_search', 4: 'serpapi_or_supplier_fallback', 5: 'manual_admin_fallback' }[priority] || 'manual_admin_fallback');
 
 const SEEDED_ERROR_DATABASE = [
   {
@@ -143,6 +149,65 @@ const lookupSeededError = (payload = {}) => {
 };
 
 const stripHtml = (value = '') => clean(String(value).replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/\s+/g, ' ').trim(), 500);
+
+
+const parseOpenAiWebSearchResults = (parsed = {}, { fallbackQuery = '', source = 'openai_live_search' } = {}) => {
+  const rawItems = [
+    ...(Array.isArray(parsed?.results) ? parsed.results : []),
+    ...(Array.isArray(parsed?.sources) ? parsed.sources : []),
+    ...(Array.isArray(parsed?.pricingSources) ? parsed.pricingSources : []),
+    ...(Array.isArray(parsed?.lineItems) ? parsed.lineItems.flatMap((item) => item.sources || item.pricingSources || []) : []),
+  ];
+  const seen = new Set();
+  return rawItems.map((item) => {
+    const url = clean(item.url || item.sourceUrl || item.link || '', 800);
+    const title = clean(item.title || item.sourceName || item.name || '', 240);
+    const key = `${url}|${title}`.toLowerCase();
+    if (!url || seen.has(key)) return null;
+    seen.add(key);
+    return {
+      title: title || source,
+      url,
+      snippet: clean(item.snippet || item.notes || item.description || '', 600),
+      query: clean(item.query || fallbackQuery, 240),
+      source,
+      dateChecked: clean(item.dateChecked || todayIsoDate(), 40),
+      confidence: Math.max(0, Math.min(1, toNumber(item.confidence, isLiveUrl(url) ? 0.72 : 0.35))),
+    };
+  }).filter(Boolean).slice(0, 12);
+};
+
+const callOpenAiWebSearch = async ({ apiKey, model, task, query, context = {}, fetchImpl = fetch, timeoutMs = 9000 }) => {
+  if (!apiKey) return { ok: false, unavailable: true, reason: 'OPENAI_API_KEY is not configured.' };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        tools: [{ type: 'web_search_preview' }],
+        input: [
+          { role: 'system', content: 'Use live web search when available. Return strict JSON only with cited source names, URLs, dateChecked, and confidence. Do not rely on memory for current prices or model-specific error codes.' },
+          { role: 'user', content: JSON.stringify({ task, query, context, outputSchema: { results: [{ title: 'string', url: 'string', snippet: 'string', sourceName: 'string', dateChecked: 'YYYY-MM-DD', confidence: 'number 0..1' }] } }) },
+        ],
+        text: { format: { type: 'json_object' } },
+        max_output_tokens: 1600,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return { ok: false, unavailable: true, reason: data?.error?.message || `OpenAI live search failed with ${response.status}` };
+    const parsed = parseOpenAiJson(data);
+    if (!parsed) return { ok: false, unavailable: true, reason: 'OpenAI live search returned invalid JSON.' };
+    return { ok: true, parsed, results: parseOpenAiWebSearchResults(parsed, { fallbackQuery: query }) };
+  } catch (error) {
+    return { ok: false, unavailable: true, reason: error?.message || 'OpenAI live search failed.' };
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 const fetchSearchResults = async ({ query, fetchImpl = fetch, timeoutMs = 7000 }) => {
   const controller = new AbortController();
@@ -271,7 +336,7 @@ export const saveCachedErrorDefinition = async ({ db, payload, definition }) => 
   `);
 };
 
-export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fetch }) => {
+export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fetch, apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', openAiSearchEnabled = fetchImpl === fetch }) => {
   const queries = buildResearchQueries(payload);
   const seeded = lookupSeededError(payload);
   const cached = await loadCachedErrorDefinition({ db, payload });
@@ -282,8 +347,27 @@ export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fet
   ];
   const onlineResults = [];
   for (const item of queries) {
-    const results = await fetchSearchResults({ query: item.query, fetchImpl });
-    onlineResults.push({ ...item, results });
+    let results = [];
+    let searchProvider = 'manual_admin_fallback';
+    if (openAiSearchEnabled && apiKey) {
+      const openAiSearch = await callOpenAiWebSearch({
+        apiKey,
+        model,
+        fetchImpl,
+        task: 'Search current manufacturer/service-manual/error-code information. Return only source-backed manufacturer/model/error-code evidence; never infer an official error meaning from memory.',
+        query: item.query,
+        context: { payload, priority: 'OpenAI live search before general web fallback' },
+      });
+      if (openAiSearch.ok) {
+        results = openAiSearch.results;
+        searchProvider = 'openai_live_search';
+      }
+    }
+    if (!results.length) {
+      results = await fetchSearchResults({ query: item.query, fetchImpl });
+      searchProvider = results.length ? 'serpapi_or_supplier_fallback' : searchProvider;
+    }
+    onlineResults.push({ ...item, searchProvider, results });
   }
   const definition = cached || seeded;
   if (seeded && !cached) await saveCachedErrorDefinition({ db, payload, definition: seeded });
@@ -300,12 +384,76 @@ export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fet
     queries,
     onlineResults,
     sources,
+    openAiLiveSearchAttempted: Boolean(openAiSearchEnabled && apiKey),
+    searchProvidersUsed: [...new Set(onlineResults.map((item) => item.searchProvider).filter(Boolean))],
     status: [
       ...status.map((item) => ({ ...item, state: item.state === 'queued' ? 'complete' : item.state })),
       { label: 'Analyzing Results...', state: 'complete' },
       { label: 'Building Diagnostic Workflow...', state: 'complete' },
     ],
     confidence: definition?.confidence || (sources.length ? 0.58 : 0.25),
+  };
+};
+
+
+const normalizePricingSource = (source = {}, fallback = {}) => ({
+  sourceName: clean(source.sourceName || source.name || source.title || fallback.sourceName || 'Unverified estimate', 180),
+  sourceUrl: clean(source.sourceUrl || source.url || source.link || fallback.sourceUrl || '', 800),
+  dateChecked: clean(source.dateChecked || fallback.dateChecked || todayIsoDate(), 40),
+  lowPriceCents: Math.max(0, Math.round(toNumber(source.lowPriceCents, centsFromDollars(source.lowPrice)))) || null,
+  averagePriceCents: Math.max(0, Math.round(toNumber(source.averagePriceCents, centsFromDollars(source.averagePrice ?? source.price)))) || null,
+  highPriceCents: Math.max(0, Math.round(toNumber(source.highPriceCents, centsFromDollars(source.highPrice)))) || null,
+  recommendedPriceCents: Math.max(0, Math.round(toNumber(source.recommendedPriceCents, centsFromDollars(source.recommendedPrice ?? source.averagePrice ?? source.price)))) || null,
+  confidence: Math.max(0, Math.min(1, toNumber(source.confidence, isLiveUrl(source.sourceUrl || source.url || source.link) ? 0.72 : 0.35))),
+  sourcePriority: sourcePriorityLabel(source.priority || fallback.priority || 5),
+  liveVerified: Boolean(source.liveVerified ?? isLiveUrl(source.sourceUrl || source.url || source.link)),
+  notes: clean(source.notes || source.snippet || '', 700),
+});
+
+export const researchQuoteMaterials = async ({ jobRequest = {}, inventory = [], supplierPricing = [], historicalContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', fetchImpl = fetch, openAiSearchEnabled = fetchImpl === fetch }) => {
+  const requestText = clean(`${jobRequest.service_type || ''} ${jobRequest.work_category || ''} ${jobRequest.description || ''}`, 2600);
+  const inventorySources = toArray(inventory).slice(0, 20).map((item) => normalizePricingSource({
+    sourceName: item.supplier || 'Internal catalog / inventory',
+    sourceUrl: item.source_url || item.sourceUrl || `internal://inventory/${clean(item.id || item.sku || item.name, 120)}`,
+    recommendedPriceCents: toNumber(item.charge_price ?? item.unit_cost ?? item.unitCostCents, 0),
+    confidence: 0.86,
+    priority: 1,
+    liveVerified: false,
+    notes: `${clean(item.name, 180)} ${item.quantity_on_hand !== undefined ? `on hand: ${item.quantity_on_hand}` : ''}`,
+  })).filter((item) => item.recommendedPriceCents || item.notes.trim());
+  const supplierSources = toArray(supplierPricing).slice(0, 30).map((item) => normalizePricingSource({
+    sourceName: item.supplier_name || item.supplier || 'Supplier price database',
+    sourceUrl: item.source_url || item.sourceUrl || `internal://supplier-prices/${clean(item.item_key || item.name, 120)}`,
+    recommendedPriceCents: toNumber(item.unit_cost_cents ?? item.unitCostCents, 0),
+    confidence: 0.82,
+    priority: 1,
+    liveVerified: false,
+    dateChecked: item.fetched_at || item.updated_at || todayIsoDate(),
+    notes: clean(item.item_key || item.name || '', 180),
+  })).filter((item) => item.recommendedPriceCents || item.notes);
+  const cachedSources = toArray(historicalContext).slice(0, 6).map((item) => normalizePricingSource({ sourceName: 'Historical company quote', sourceUrl: 'internal://historical-quotes', recommendedPriceCents: item.output?.fixedPriceRecommendationCents || item.output?.totalLowCents || 0, confidence: 0.7, priority: 2, liveVerified: false, notes: clean(item.output?.jobSummary || item.output?.customerReadySummary || item.type || '', 400), dateChecked: item.createdAt || todayIsoDate() }));
+  const internalSources = [...supplierSources, ...inventorySources, ...cachedSources].filter(Boolean);
+  const openAiResearch = openAiSearchEnabled ? await callOpenAiWebSearch({
+    apiKey, model, fetchImpl,
+    task: 'Identify exact contractor materials/parts needed for this request, search current product/material prices, and return low/average/high/recommended prices where available. Do not use model memory alone for live pricing.',
+    query: `${requestText} contractor materials current price supplier`,
+    context: { jobRequest, internalSourceCount: internalSources.length, priorityOrder: ['internal catalog / quote database', 'historical company jobs', 'supplier price database', 'OpenAI live search', 'SERPAPI fallback', 'manual admin fallback'] },
+  }) : { ok: false, unavailable: true, reason: 'OpenAI live search disabled for injected fetch; production default fetch enables it.' };
+  const liveSources = openAiResearch.ok ? parseOpenAiWebSearchResults(openAiResearch.parsed, { fallbackQuery: requestText }).map((item) => normalizePricingSource({ ...item, sourceName: item.title, sourceUrl: item.url, priority: 3, liveVerified: true, notes: item.snippet })) : [];
+  const allSources = [...internalSources, ...liveSources].slice(0, 30);
+  const liveVerified = liveSources.some((item) => item.liveVerified && item.sourceUrl);
+  return {
+    priorityOrder: ['internal_company_data', 'cached_verified_research', 'openai_live_search', 'serpapi_or_supplier_fallback', 'manual_admin_fallback'],
+    internalSourcesChecked: true,
+    historicalQuotesChecked: true,
+    supplierDatabaseChecked: true,
+    openAiLiveSearchAttempted: Boolean(openAiSearchEnabled && apiKey),
+    openAiLiveSearchAvailable: Boolean(openAiResearch.ok),
+    openAiLiveSearchReason: openAiResearch.ok ? 'OpenAI live search returned source candidates.' : clean(openAiResearch.reason || 'OpenAI live search not available.', 500),
+    livePricingVerified: liveVerified,
+    livePricingLabel: liveVerified ? 'Live pricing researched' : 'Live pricing not verified',
+    pricingConfidenceImpact: liveVerified || internalSources.length ? 'normal' : 'lower_confidence_no_live_source',
+    sources: allSources,
   };
 };
 
@@ -345,7 +493,7 @@ const buildComponentPricingEngine = ({ quote = {}, context = {}, photoContext = 
   const materials = toArray(quote.materialBreakdown).map((item, index) => {
     const quantity = Math.max(1, toNumber(item.quantity ?? item.estimatedQuantity ?? item.neededQty, 1));
     const unitCostCents = Math.max(0, Math.round(toNumber(item.unitCostCents ?? item.estimatedUnitCostCents ?? item.unit_cost_cents, index === 0 ? 12500 : 3500)));
-    return { name: clean(item.name || item.label || rule.materials[index] || 'Material allowance', 180), quantity, unit: clean(item.unit || 'each', 40), unitCostCents, totalCostCents: Math.round(quantity * unitCostCents), pricingSource: clean(item.pricingSource || item.source || 'ai_allowance', 80), notes: clean(item.notes || 'Verify exact SKU/quantity before purchasing.', 500) };
+    return { name: clean(item.name || item.label || rule.materials[index] || 'Material allowance', 180), quantity, unit: clean(item.unit || 'each', 40), unitCostCents, totalCostCents: Math.round(quantity * unitCostCents), pricingSource: clean(item.pricingSource || item.source || item.sourceName || 'ai_allowance', 80), sourceName: clean(item.sourceName || item.pricingSource || item.source || '', 180), sourceUrl: clean(item.sourceUrl || item.url || '', 800), dateChecked: clean(item.dateChecked || todayIsoDate(), 40), pricingConfidence: Math.max(0, Math.min(1, toNumber(item.pricingConfidence ?? item.confidence, item.liveVerified ? 0.72 : 0.35))), liveVerified: Boolean(item.liveVerified || isLiveUrl(item.sourceUrl || item.url || '')), pricingSources: toArray(item.pricingSources || item.sources).map((source) => normalizePricingSource(source)), notes: clean(item.notes || 'Verify exact SKU/quantity before purchasing.', 500) };
   });
   const materialCostCents = materials.reduce((sum, item) => sum + item.totalCostCents, 0);
   const laborCents = currencyCents(recommendedHours * rate);
@@ -428,7 +576,15 @@ export const normalizeQuoteAiOutput = (quote = {}) => {
     laborHoursLow: toNumber(quote.laborHoursLow, 0),
     laborHoursHigh: toNumber(quote.laborHoursHigh, 0),
     laborRateUsed: toNumber(quote.laborRateUsed, 0),
-    materialBreakdown,
+    materialBreakdown: materialBreakdown.map((item) => ({
+      ...item,
+      pricingSources: toArray(item.pricingSources || item.sources).map((source) => normalizePricingSource(source)),
+      sourceName: clean(item.sourceName || item.pricingSource || item.source || '', 180),
+      sourceUrl: clean(item.sourceUrl || item.url || '', 800),
+      dateChecked: clean(item.dateChecked || '', 40),
+      pricingConfidence: Math.max(0, Math.min(1, toNumber(item.pricingConfidence ?? item.confidence, 0))),
+      liveVerified: Boolean(item.liveVerified || isLiveUrl(item.sourceUrl || item.url || '')),
+    })),
     toolsNeeded: toArray(quote.toolsNeeded),
     consumables: toArray(quote.consumables),
     inventoryMatchHints: toArray(quote.inventoryMatchHints),
@@ -463,6 +619,8 @@ export const normalizeQuoteAiOutput = (quote = {}) => {
     warrantyNotes: clean(quote.warrantyNotes, 1600),
     aiAnalysis: quote.aiAnalysis && typeof quote.aiAnalysis === 'object' ? quote.aiAnalysis : {},
     pricingEngine: quote.pricingEngine && typeof quote.pricingEngine === 'object' ? quote.pricingEngine : {},
+    materialPricingSources: toArray(quote.materialPricingSources || quote.pricingSources).map((source) => normalizePricingSource(source)),
+    livePricingVerification: quote.livePricingVerification && typeof quote.livePricingVerification === 'object' ? quote.livePricingVerification : {},
     confidenceExplanation: quote.confidenceExplanation && typeof quote.confidenceExplanation === 'object' ? quote.confidenceExplanation : {},
     photoAnalysis: quote.photoAnalysis && typeof quote.photoAnalysis === 'object' ? quote.photoAnalysis : {},
   };
@@ -497,6 +655,11 @@ export const validateQuoteAiOutput = (quote = {}, context = {}) => {
   if (!normalized.confidenceExplanation || !Object.keys(normalized.confidenceExplanation).length) errors.push('confidenceExplanation is required.');
   if (!normalized.pricingConfidenceLevel) errors.push('pricingConfidenceLevel must be high, medium, or low.');
   if (!normalized.pricingConfidenceReason) errors.push('pricingConfidenceReason is required.');
+  const hasLivePricingVerification = normalized.livePricingVerification && Object.keys(normalized.livePricingVerification).length;
+  if (!hasLivePricingVerification) errors.push('livePricingVerification is required and must state whether live pricing was verified.');
+  const sourceBackedMaterials = normalized.materialBreakdown.filter((item) => item.liveVerified || item.sourceUrl || item.sourceName || toArray(item.pricingSources).length);
+  if (normalized.materialBreakdown.length && !sourceBackedMaterials.length && !normalized.materialPricingSources.length) errors.push('Material line items must include source/confidence metadata or a materialPricingSources list.');
+  if (hasLivePricingVerification && normalized.livePricingVerification.livePricingVerified === false && normalized.pricingConfidenceLevel !== 'low') errors.push('When live pricing is not verified, pricingConfidenceLevel must be low.');
   if (!normalized.assumptionsUsedForTightPrice.length) errors.push('assumptionsUsedForTightPrice is required to support tight pricing.');
   if (normalized.photoNeeded && !normalized.photoTypesNeeded.length) errors.push('photoTypesNeeded is required when photoNeeded is true.');
   if ((normalized.photoNeeded || normalized.measurementNeeded || normalized.modelPlateNeeded) && !normalized.photoConfidenceImpact) errors.push('photoConfidenceImpact is required when photos, measurements, or model plate evidence are needed.');
@@ -635,7 +798,7 @@ export const runOpenAiWithValidation = async ({ kind, apiKey, model, timeoutMs, 
   return { ok: false, attempts, retryCount: Math.max(0, attempts.length - 1), model, error: attempts.at(-1)?.error || 'OpenAI output failed validation after retry.' };
 };
 
-export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPricing = [], historicalContext = [], companyRules = [], photoContext = [] }) => ({
+export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPricing = [], historicalContext = [], companyRules = [], photoContext = [], materialResearchContext = {} }) => ({
   promptVersion: AI_QUOTE_PROMPT_VERSION,
   task: 'Create a contractor-grade AI-first estimate. OpenAI is the decision maker; company playbooks/history are context only.',
   requiredFields: REQUIRED_QUOTE_FIELDS,
@@ -651,6 +814,9 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
     'Prefer a confident fixed price whenever enough information exists; do not hide uncertainty behind a huge low/high range.',
     'Return a tight low/high range plus one recommended fixed price. High confidence range max 10-15%; medium confidence max 20-25%; low confidence must set quoteReady false unless admin overrides later.',
     'Use company history, inventory, labor knowledge, material knowledge, supplier pricing, and photos/context to tighten pricing.',
+    'For material/part pricing: use internal catalog/history/supplier data first, then OpenAI live search results when available; never rely on AI memory alone for current pricing.',
+    'Every material line item must include sourceName/sourceUrl/dateChecked when researched, low/average/high/recommended price when available, confidence, and liveVerified.',
+    'If no live pricing source is found, still estimate, label Live pricing not verified, lower pricing confidence, and list admin override assumptions.',
     'If uncertain, ask missing questions or recommend a site visit and explain exactly what information would tighten price.',
     'Use photoContext when available: identify equipment, condition, access difficulty, visible damage, safety issues, likely materials, and missing information; strong clear photos increase confidence and unclear/missing photos decrease confidence.',
     'If visual evidence is missing for visual-dependent work, set photoNeeded/photoTypesNeeded/measurementNeeded/modelPlateNeeded and reduce pricingConfidenceLevel or mark needsSiteVisitToTightenPrice.',
@@ -808,13 +974,30 @@ export const loadPhotoContext = async ({ db, jobRequestId = '', workOrderId = ''
 export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplierPricing = [], companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_QUOTE_TIMEOUT_MS || 14000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, city: jobRequest.city });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: jobRequest.id });
-  const prompt = buildQuotePrompt({ jobRequest, inventory, supplierPricing, historicalContext, companyRules, photoContext: resolvedPhotoContext });
-  const system = 'You are the AI-first estimating engine for the contractor. Use company history, inventory, supplier pricing, photos, and request details. Return strict JSON only with the required fields. Do not omit high-risk safety/stop guidance.';
+  const materialResearchContext = await researchQuoteMaterials({ jobRequest, inventory, supplierPricing, historicalContext, apiKey, model, fetchImpl });
+  const prompt = buildQuotePrompt({ jobRequest, inventory, supplierPricing, historicalContext, companyRules, photoContext: resolvedPhotoContext, materialResearchContext });
+  const system = 'You are the OpenAI-first estimating and research engine for the contractor. Use internal company data first, then OpenAI live search/research evidence for current material prices when available. Never rely on model memory alone for current pricing. Return strict JSON only with the required fields, material source/confidence metadata, live pricing verification status, assumptions, missing information, and admin-review guidance. Do not omit high-risk safety/stop guidance.';
   const result = await runOpenAiWithValidation({ kind: 'quote', apiKey, model, timeoutMs, system, user: prompt, validate: validateQuoteAiOutput, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description }, fetchImpl });
   if (result.ok) {
     const pricingEngine = result.output.pricingEngine && Object.keys(result.output.pricingEngine).length ? result.output.pricingEngine : buildComponentPricingEngine({ quote: result.output, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description, city: jobRequest.city }, photoContext: resolvedPhotoContext });
     const confidenceExplanation = result.output.confidenceExplanation && Object.keys(result.output.confidenceExplanation).length ? result.output.confidenceExplanation : buildQuoteConfidenceExplanation({ quote: result.output, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description, city: jobRequest.city }, photoContext: resolvedPhotoContext });
-    const enrichedOutput = { ...result.output, pricingEngine, confidenceExplanation, totalLowCents: result.output.totalLowCents || pricingEngine.lowRangeCents, totalHighCents: result.output.totalHighCents || pricingEngine.premiumRangeCents, fixedPriceRecommendationCents: result.output.fixedPriceRecommendationCents || pricingEngine.recommendedRangeCents };
+    const enrichedOutput = {
+      ...result.output,
+      materialResearchContext,
+      materialPricingSources: result.output.materialPricingSources?.length ? result.output.materialPricingSources : materialResearchContext.sources,
+      livePricingVerification: result.output.livePricingVerification && Object.keys(result.output.livePricingVerification).length ? result.output.livePricingVerification : {
+        livePricingVerified: materialResearchContext.livePricingVerified,
+        label: materialResearchContext.livePricingLabel,
+        openAiLiveSearchAttempted: materialResearchContext.openAiLiveSearchAttempted,
+        openAiLiveSearchAvailable: materialResearchContext.openAiLiveSearchAvailable,
+        confidenceImpact: materialResearchContext.pricingConfidenceImpact,
+      },
+      pricingEngine,
+      confidenceExplanation,
+      totalLowCents: result.output.totalLowCents || pricingEngine.lowRangeCents,
+      totalHighCents: result.output.totalHighCents || pricingEngine.premiumRangeCents,
+      fixedPriceRecommendationCents: result.output.fixedPriceRecommendationCents || pricingEngine.recommendedRangeCents,
+    };
     await saveAiRun({ db, kind: 'quote', entityId: jobRequest.id, model, promptVersion: AI_QUOTE_PROMPT_VERSION, inputSummary: prompt, output: enrichedOutput, validation: { ok: true, errors: [] }, retryCount: result.retryCount });
     await saveKnowledgeFromQuote({ db, quote: enrichedOutput, jobRequest });
     return { ...enrichedOutput, aiEnhanced: true, fallbackUsed: false, historicalMatchUsed: historicalContext.length > 0, model, promptVersion: AI_QUOTE_PROMPT_VERSION, retryCount: result.retryCount };
@@ -836,7 +1019,7 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
 export const runAiFirstTroubleshooting = async ({ db, payload, companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 12000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: payload.systemType, workCategory: payload.component, city: '', limit: 6 });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: payload.workOrderId, workOrderId: payload.workOrderId });
-  const researchContext = await researchEquipmentFault({ db, payload, fetchImpl });
+  const researchContext = await researchEquipmentFault({ db, payload, fetchImpl, apiKey, model });
   const prompt = buildTroubleshootingPrompt({ payload, historicalContext, companyRules, photoContext: resolvedPhotoContext, researchContext });
   const system = 'You are the AI-first field troubleshooting engine for the contractor. Return strict JSON only. Be safety-first, trade-specific, and model-specific. Use researchContext as factual evidence. Never invent manufacturer error-code meanings; if exact evidence is missing, explicitly state that the exact model/error combination could not be positively identified.';
   const result = await runOpenAiWithValidation({ kind: 'troubleshooting', apiKey, model, timeoutMs, system, user: prompt, validate: validateTroubleshootingAiOutput, context: payload, fetchImpl });
