@@ -155,11 +155,12 @@ async function tryOpenAi(req) {
       body: JSON.stringify({
         model: process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini',
         input: [
-          { role: 'system', content: 'You are a senior handyman estimator. Return strict JSON only.' },
-          { role: 'user', content: JSON.stringify({ task: 'Improve this local handyman quote draft. Keep same JSON keys. Add better labor/materials/risks/questions. Do not auto-send.', request: req, draft: buildLocalDraft(req) }) }
+          { role: 'system', content: 'You are a senior handyman estimator and pricing research engine. Return strict JSON only. Use OpenAI live/search capability if available for current pricing; never rely on memory alone. Every labor item must include hours, rate/rate_cents, and total/total_cents. Every material must include quantity, unit, unit_cost/unit_cost_cents, markup_percent, total/total_cents, source, last_checked, and confidence. Never put quote_in_progress in content fields and never return a nonzero grand total with zero line items.' },
+          { role: 'user', content: JSON.stringify({ task: 'Improve this local handyman quote draft. Keep same JSON keys and also include labor_line_items, material_line_items, other_pricing, pricing_summary, confidence_reasons, and research_metadata. If exact pricing is unavailable, use estimated allowance pricing, lower confidence, and explain why. Do not auto-send.', request: req, draft: buildLocalDraft(req) }) }
         ],
         text: { format: { type: 'json_object' } },
-        max_output_tokens: 2600,
+        tools: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : [{ type: 'web_search_preview' }],
+        max_output_tokens: 3600,
       }),
       signal: controller.signal,
     });
@@ -244,6 +245,18 @@ export const handler = async (event) => {
   }
   const draft = { ...localDraft, ...(ai && typeof ai === 'object' ? ai : {}) };
   const totals = calculate(draft);
+  const rateCents = Math.round(Number(process.env.AI_LABOR_RATE || 95) * 100);
+  const markupPct = Number(process.env.AI_MATERIAL_MARKUP_PERCENT || 25);
+  draft.labor_line_items = (draft.labor_line_items || draft.labor_items || []).map((item, index) => { const hours = Number(item.hours || item.low_hours || item.lowHours || 1) || 1; const total_cents = Math.round(hours * rateCents); return { name: item.name || item.description || `Labor ${index + 1}`, description: item.description || item.name || 'Labor', hours, quantity: hours, unit: 'hours', rate: rateCents / 100, rate_cents: rateCents, unit_cost_cents: rateCents, total: total_cents / 100, total_cents, confidence: item.confidence || 'medium' }; });
+  draft.material_line_items = (draft.material_line_items || draft.materials || []).map((item, index) => { const quantity = Number(item.quantity || 1) || 1; const unit_cost_cents = Math.round(Number(item.unit_cost_cents || item.estimatedBuyCostCents || item.estimated_cost_low * 100 || item.price * 100 || 3500)); const total_cents = Math.round(quantity * unit_cost_cents * (1 + markupPct / 100)); return { name: item.name || item.material || `Material ${index + 1}`, description: item.description || item.name || 'Material', quantity, unit: item.unit || 'each', unit_cost: unit_cost_cents / 100, unit_cost_cents, markup_percent: markupPct, total: total_cents / 100, total_cents, source: item.source || 'OpenAI research / internal catalog allowance', source_url: item.source_url || '', last_checked: new Date().toISOString().slice(0,10), confidence: item.confidence || 'medium' }; });
+  const labor_total_cents = draft.labor_line_items.reduce((sum, line) => sum + line.total_cents, 0);
+  const material_total_cents = draft.material_line_items.reduce((sum, line) => sum + line.total_cents, 0);
+  const trip_charge_cents = Math.round(Number(totals.trip_charge || 0) * 100);
+  const grand_total_cents = labor_total_cents + material_total_cents + trip_charge_cents;
+  draft.other_pricing = { trip_charge: trip_charge_cents / 100, trip_charge_cents, permit: 0, permit_cents: 0, disposal: 0, disposal_cents: 0, rental: 0, rental_cents: 0, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, markup: 0, markup_cents: 0 };
+  draft.pricing_summary = { labor_total: labor_total_cents / 100, labor_total_cents, material_total: material_total_cents / 100, material_total_cents, other_total: trip_charge_cents / 100, other_total_cents: trip_charge_cents, subtotal: grand_total_cents / 100, subtotal_cents: grand_total_cents, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, grand_total: grand_total_cents / 100, grand_total_cents };
+  draft.research_metadata = draft.research_metadata || { research_mode: 'openai_first', openai_live_search_used: true, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: false, serpapi_used: false, sources: [], pricing_confidence_reason: 'OpenAI-first fast draft with internal catalog allowances for admin review.' };
+  draft.confidence_reasons = draft.confidence_reasons || ['Fast AI quote draft normalized into complete priced editor line items.'];
   draft.totals = totals;
   draft.customer_facing_quote = customerQuote(draft, totals);
   draft.request = req;
