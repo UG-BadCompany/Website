@@ -1,0 +1,1 @@
+window.TAAuth={me:()=>TAApi.get('/api/me?optional=1'),login:(email)=>TAApi.post('/api/auth/magic-link',{email}),logout:()=>TAApi.post('/api/auth/logout',{})};

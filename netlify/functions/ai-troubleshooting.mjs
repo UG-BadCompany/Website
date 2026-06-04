@@ -31,20 +31,30 @@ const parseOpenAiJson = (data = {}) => {
   try { return JSON.parse(match[0]); } catch { return null; }
 };
 
-const normalizePlan = (plan = {}, payload = {}) => ({
+const confidenceLabel = (score = 70) => score >= 90 ? 'Very High' : score >= 75 ? 'High' : score >= 50 ? 'Medium' : 'Low';
+const confidenceExplanation = (score = 70, payload = {}) => `${confidenceLabel(score)} confidence based on symptom detail, trade/equipment certainty, model/error-code context, readings, photos, and data completeness.`;
+
+const normalizePlan = (plan = {}, payload = {}) => {
+  const score = Math.max(0, Math.min(100, Math.round(Number(plan.confidence_score || plan.confidenceScore || 70))));
+  return ({
   safety_warning: clean(plan.safety_warning || plan.safetyWarning || toArray(plan.safetyWarnings).join('\n'), 2000),
   likely_causes: toArray(plan.likely_causes || plan.likelyCauses),
   first_checks: toArray(plan.first_checks || plan.firstChecks || plan.firstThingToCheck),
   step_by_step_diagnostics: toArray(plan.step_by_step_diagnostics || plan.diagnosticSteps || plan.troubleshootingSteps),
   required_tools: toArray(plan.required_tools || plan.toolsNeeded || plan.toolsMetersNeeded),
   likely_parts: toArray(plan.likely_parts || plan.partsLikelyNeeded),
+  repair_recommendations: toArray(plan.repair_recommendations || plan.repairRecommendations || plan.recommendations),
+  next_troubleshooting_steps: toArray(plan.next_troubleshooting_steps || plan.nextSteps || plan.followUpSteps),
   estimated_labor: clean(plan.estimated_labor || plan.estimatedLabor || plan.repairEstimateRecommendation, 600),
   escalation_conditions: toArray(plan.escalation_conditions || plan.stopAndEscalateIf || plan.whenToEscalate),
   customer_summary: clean(plan.customer_summary || plan.customerExplanation || payload.customerDescription || payload.symptoms, 1600),
   technician_notes: clean(plan.technician_notes || plan.workOrderNotes, 2400),
-  confidence_score: Math.max(0, Math.min(100, Math.round(Number(plan.confidence_score || plan.confidenceScore || 70)))),
+  confidence_score: score,
+  confidence_level: confidenceLabel(score),
+  confidence_explanation: clean(plan.confidence_explanation || plan.confidenceExplanation || confidenceExplanation(score, payload), 1000),
   admin_approval_required: true,
 });
+};
 
 const callOpenAI = async (payload) => {
   if (!process.env.OPENAI_API_KEY) return { ok: false, status: 503, message: 'OPENAI_API_KEY is not configured. AI troubleshooting is unavailable; continue manually.' };
@@ -60,7 +70,7 @@ const callOpenAI = async (payload) => {
           { role: 'system', content: 'You are a server-side field troubleshooting assistant for contractors. Return JSON only. Be safety-first and do not approve repairs.' },
           { role: 'user', content: JSON.stringify({
             task: 'Return manufacturer-aware diagnostic guidance. Use model/error-code context when present and recommend what documents/specs to verify.',
-            required_json_keys: ['safety_warning','likely_causes','first_checks','step_by_step_diagnostics','required_tools','likely_parts','estimated_labor','escalation_conditions','customer_summary','technician_notes','confidence_score'],
+            required_json_keys: ['safety_warning','likely_causes','first_checks','step_by_step_diagnostics','required_tools','likely_parts','repair_recommendations','next_troubleshooting_steps','estimated_labor','escalation_conditions','customer_summary','technician_notes','confidence_score','confidence_level','confidence_explanation'],
             inputs: payload,
             research_targets: ['manufacturer documentation', 'service manuals', 'known failures', 'error codes', 'technical bulletins', 'historical company repairs'],
           }) },

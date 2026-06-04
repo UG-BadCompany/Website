@@ -1,0 +1,210 @@
+/* Dashboard shell: layout-only rules with theme-safe colors. */
+body {
+  background: var(--color-background, var(--bg));
+  color: var(--color-text, var(--ink));
+}
+
+#dashboard-app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 76px auto 1fr;
+  grid-template-areas: 'side top' 'side head' 'side main';
+  background: var(--color-background, var(--bg));
+  color: var(--color-text, var(--ink));
+}
+
+#dashboard-sidebar {
+  grid-area: side;
+  background: color-mix(in srgb, var(--color-surface, var(--panel)) 32%, #020617);
+  color: color-mix(in srgb, var(--color-text, var(--ink)) 82%, #cbd5e1);
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+}
+
+#dashboard-topbar {
+  grid-area: top;
+  background: var(--color-surface, var(--panel));
+  border-bottom: 1px solid var(--color-border, var(--line));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.2rem;
+}
+
+#workspace-header {
+  grid-area: head;
+  padding: 1.2rem 1.5rem;
+}
+
+#module-root {
+  grid-area: main;
+  padding: 0 1.5rem 6rem;
+}
+
+.side-nav {
+  display: grid;
+  gap: .35rem;
+  margin-top: 1rem;
+}
+
+.side-nav button,
+.mobile-nav button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  border-radius: 14px;
+  padding: .8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.side-nav button.active {
+  background: color-mix(in srgb, var(--color-primary, var(--primary)) 18%, transparent);
+  color: var(--color-text, var(--ink));
+}
+
+.module-toolbar {
+  display: flex;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--color-text, var(--ink));
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border, var(--line));
+  padding: .8rem;
+  text-align: left;
+}
+
+.quote-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  background: color-mix(in srgb, var(--color-surface, var(--panel)) 35%, #020617);
+  color: var(--color-text, var(--ink));
+  border: 1px solid var(--color-border, var(--line));
+  padding: .8rem 1rem;
+  border-radius: 14px;
+  z-index: 100;
+}
+
+#dashboard-app .card,
+#dashboard-app .brand-logo,
+#dashboard-app .pill {
+  background: var(--color-surface, var(--panel));
+  color: var(--color-text, var(--ink));
+  border-color: var(--color-border, var(--line));
+}
+
+#dashboard-app input,
+#dashboard-app select,
+#dashboard-app textarea {
+  background: var(--field-bg, color-mix(in srgb, var(--color-surface, var(--panel)) 92%, var(--color-background, var(--bg))));
+  color: var(--field-text, var(--color-text, var(--ink)));
+  border-color: var(--color-border, var(--line));
+}
+
+#dashboard-app input::placeholder,
+#dashboard-app textarea::placeholder {
+  color: var(--field-placeholder, var(--color-muted, var(--muted)));
+  opacity: 1;
+}
+
+#dashboard-app .btn.secondary {
+  background: color-mix(in srgb, var(--color-surface, var(--panel)) 88%, var(--color-background, var(--bg)));
+  color: var(--color-text, var(--ink));
+  border-color: var(--color-border, var(--line));
+}
+
+#dashboard-app .btn:disabled,
+#dashboard-app button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-text, var(--ink)) 75%, var(--color-muted, var(--muted)));
+  background: color-mix(in srgb, var(--color-surface, var(--panel)) 90%, var(--color-border, var(--line)));
+  border-color: var(--color-border, var(--line));
+}
+
+#dashboard-app input[type="color"] {
+  width: 48px;
+  min-width: 48px;
+  height: 44px;
+  min-height: 44px;
+  padding: 4px;
+  background: var(--field-bg, var(--color-surface, var(--panel)));
+}
+
+@media (max-width: 900px) {
+  #dashboard-app {
+    display: block;
+    padding-bottom: 78px;
+  }
+
+  #dashboard-sidebar {
+    display: none;
+  }
+
+  #dashboard-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  #workspace-header,
+  #module-root {
+    padding: 1rem;
+  }
+
+  .quote-editor {
+    grid-template-columns: 1fr;
+  }
+
+  #mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-surface, var(--panel));
+    color: var(--color-text, var(--ink));
+    border-top: 1px solid var(--color-border, var(--line));
+    display: flex;
+    gap: .2rem;
+    overflow: auto;
+    padding: .45rem;
+    z-index: 30;
+  }
+
+  .mobile-nav button {
+    min-width: 96px;
+    text-align: center;
+    color: var(--color-text, var(--ink));
+  }
+
+  .mobile-nav button.active {
+    background: color-mix(in srgb, var(--color-primary, var(--primary)) 14%, var(--color-surface, var(--panel)));
+    color: var(--color-primary, var(--primary));
+  }
+}
+
+@media (min-width: 901px) {
+  #mobile-bottom-nav {
+    display: none;
+  }
+}

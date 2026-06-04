@@ -42,10 +42,10 @@
   };
 
   window.TAModules.register({
-    id:'admin.quotes', role:'admin', title:'Estimate & Request Center', icon:'💰', permissions:['quotes.manage'],
+    id:'admin.quotes', role:'admin', title:'Estimate Management Center', icon:'💰', permissions:['quotes.manage'],
     async mount({ root, api }) {
       let records = [];
-      let active = 'inbox';
+      let active = 'pending';
       let selected = null;
       let query = '';
       const detailSections = ['Customer information','Job intake','AI analysis','AI quote output','Pricing engine','Admin review workflow','Confidence explanation','Activity'];
@@ -65,7 +65,7 @@
         }
       };
       const filtered = () => records.filter((record) => {
-        const statusMatch = active === 'all' || statuses[active].includes(String(record.status || '').toLowerCase());
+        const statusMatch = active === 'history' || (statuses[active] || []).includes(String(record.status || '').toLowerCase());
         const c = confidence(record);
         const text = `${record.customerName} ${record.address} ${record.serviceType} ${record.status} ${record.description} ${c.label} ${c.pct}`.toLowerCase();
         return statusMatch && (!query || text.includes(query.toLowerCase()));
