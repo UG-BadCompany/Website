@@ -48,6 +48,32 @@ const normalizePayload = (body = {}) => {
 };
 
 
+
+const stripInternalClientText = (value = '') => clean(String(value || '')
+  .replace(/ADMIN REVIEW DRAFT[\s\S]*/ig, '')
+  .replace(/Quote readiness[\s\S]*/ig, '')
+  .replace(/Do not send without review\.?/ig, '')
+  .replace(/quote_in_progress/ig, '')
+  .replace(/Internal admin notes?:[\s\S]*/ig, '')
+  .trim(), 8000);
+const sanitizeClientQuotePayload = (payload = {}, fallbackQuote = {}) => {
+  const metadata = payload.aiMetadata || {};
+  const structured = metadata.aiStructuredQuote || {};
+  const customer = structured.customer_quote || structured.customerQuote || metadata.clientQuotePayload || {};
+  const scope = stripInternalClientText(customer.scope_of_work || structured.scope_of_work || structured.scopeOfWork || payload.summary || fallbackQuote.summary || '');
+  const clientQuotePayload = {
+    title: stripInternalClientText(payload.title || fallbackQuote.title || 'Service quote'),
+    scopeOfWork: scope,
+    customerNotes: stripInternalClientText(customer.customer_notes || structured.customer_notes || structured.customerNotes || ''),
+    assumptions: Array.isArray(customer.assumptions || structured.assumptions) ? (customer.assumptions || structured.assumptions) : [],
+    exclusions: Array.isArray(customer.exclusions || structured.exclusions) ? (customer.exclusions || structured.exclusions) : [],
+    warrantyNotes: stripInternalClientText(customer.warranty_notes || structured.warranty_notes || structured.warrantyNotes || ''),
+    detailMode: metadata.clientQuoteDetailMode || structured.client_quote_detail_mode || 'summary',
+    totalCents: payload.amountCents || fallbackQuote.amount_cents || 0,
+  };
+  return { summary: scope, metadata: { ...metadata, clientQuotePayload, clientQuoteDetailMode: clientQuotePayload.detailMode } };
+};
+
 const centsFromLine = (line = {}) => Number(line.totalCents ?? line.total_cents ?? line.totalCostCents ?? 0) || 0;
 const validateQuoteReady = (payload = {}, request = {}) => {
   const structured = payload.aiMetadata?.aiStructuredQuote || payload.aiMetadata?.quoteEditor || {};
@@ -58,14 +84,14 @@ const validateQuoteReady = (payload = {}, request = {}) => {
   const other = { ...structured.other_pricing, ...structured.pricingEngine, ...editor };
   const otherTotal = Number(other.tripChargeCents || other.trip_charge_cents || 0) + Number(other.permitCents || other.permit_cents || 0) + Number(other.disposalCents || other.disposal_cents || 0) + Number(other.rentalCents || other.rental_cents || 0) + Number(other.markupCents || other.markup_cents || 0) + Number(other.taxCents || other.tax_cents || 0) - Number(other.discountCents || other.discount_cents || 0);
   const lineGrand = allLines.reduce((sum, line) => sum + centsFromLine(line), 0) + otherTotal;
-  const visibleText = [payload.title, payload.summary, structured.scopeOfWork, structured.scope_of_work, structured.customerNotes, structured.customer_notes, structured.internalAdminNotes, structured.internal_admin_notes, ...allLines.map((line) => line.description || line.name || line.label || '')].join(' ');
+  const visibleText = [payload.title, payload.summary, structured.scopeOfWork, structured.scope_of_work, structured.customerNotes, structured.customer_notes, ...allLines.map((line) => line.description || line.name || line.label || '')].join(' ');
   if (!clean(request.requester_email || request.client_email, 200)) return 'Customer email is required before sending a quote.';
   if (!payload.summary) return 'Scope of work is required before sending.';
   if (!allLines.length) return 'At least one labor or material line is required before sending.';
   if (!payload.amountCents || payload.amountCents <= 0) return 'Grand total must be greater than zero before sending.';
   if (Math.abs(lineGrand - payload.amountCents) > 1) return 'Editable line item totals must match the grand total before sending.';
   if (allLines.some((line) => !centsFromLine(line) || !(Number(line.unitCostCents ?? line.unit_cost_cents ?? line.rateCents ?? line.rate_cents ?? 0) > 0))) return 'Every labor/material line must include a unit price/rate and total before sending.';
-  if (/quote_in_progress/i.test(visibleText)) return 'Remove quote_in_progress status text from visible quote content before sending.';
+  if (/quote_in_progress|ADMIN REVIEW DRAFT|Do not send without review/i.test(visibleText)) return 'Remove admin-only AI/status text from visible quote content before sending.';
   return null;
 };
 
@@ -376,7 +402,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       });
     }
 
-    const aiMetadataForStorage = buildAiMetadata(payload);
+    let aiMetadataForStorage = buildAiMetadata(payload);
     const pricingConfidenceLevel = payload.pricingConfidenceOverride || payload.aiMetadata?.pricingConfidenceLevel || payload.aiOriginal?.pricingConfidenceLevel || null;
 
     if (request.method === 'PATCH') {
@@ -455,7 +481,10 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
       const nextStatus = payload.action === 'send' ? 'sent' : (payload.status && ['draft', 'quote_in_progress', 'needs_review', 'pending_review'].includes(payload.status) ? payload.status : existingQuote.status);
       let quoteForEmail = null;
       if (payload.action === 'send') {
-        const readyError = validateQuoteReady(payload, existingQuote);
+        const sanitized = sanitizeClientQuotePayload({ ...payload, aiMetadata: aiMetadataForStorage }, existingQuote);
+        payload.summary = sanitized.summary;
+        aiMetadataForStorage = sanitized.metadata;
+        const readyError = validateQuoteReady({ ...payload, aiMetadata: aiMetadataForStorage }, existingQuote);
         if (readyError) return json(422, { ok: false, message: readyError });
       }
       if (payload.action === 'send') {
@@ -512,7 +541,10 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
     }
 
     if (payload.action === 'send') {
-      const readyError = validateQuoteReady(payload, jobRequest);
+      const sanitized = sanitizeClientQuotePayload({ ...payload, aiMetadata: aiMetadataForStorage }, jobRequest);
+      payload.summary = sanitized.summary;
+      aiMetadataForStorage = sanitized.metadata;
+      const readyError = validateQuoteReady({ ...payload, aiMetadata: aiMetadataForStorage }, jobRequest);
       if (readyError) return json(422, { ok: false, authenticated: true, authorized: true, message: readyError });
     }
 

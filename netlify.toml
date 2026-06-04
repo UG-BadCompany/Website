@@ -55,6 +55,12 @@
   to = "/.netlify/functions/admin-quote-draft"
   status = 200
 
+
+[[redirects]]
+  from = "/api/quote-draft"
+  to = "/.netlify/functions/admin-quote-draft"
+  status = 200
+
 [[redirects]]
   from = "/api/admin/ai-knowledge"
   to = "/.netlify/functions/admin-ai-knowledge"

@@ -1,6 +1,6 @@
 import { clean } from './auth-utils.mjs';
 
-export const AI_QUOTE_PROMPT_VERSION = 'phase61-openai-research-pricing-v1';
+export const AI_QUOTE_PROMPT_VERSION = 'phase62-structured-client-admin-pricing-v2';
 export const AI_TROUBLESHOOTING_PROMPT_VERSION = 'phase61-openai-research-troubleshooting-v1';
 
 export const REQUIRED_QUOTE_FIELDS = [
@@ -803,7 +803,14 @@ export const buildQuotePrompt = ({ jobRequest = {}, inventory = [], supplierPric
   task: 'Create a contractor-grade AI-first estimate. OpenAI is the decision maker; company playbooks/history are context only.',
   requiredFields: REQUIRED_QUOTE_FIELDS,
   validationRules: [
-    'Return strict JSON only.',
+    'Return strict JSON only. Do not wrap JSON in markdown.',
+    'Return a top-level customer_quote object, admin_review object, labor_line_items array, material_line_items array, other_pricing object, pricing_summary object, confidence_scores object, and research_metadata object in addition to legacy compatibility fields.',
+    'customer_quote may contain only customer-safe summary, scope_of_work, customer_notes, assumptions, exclusions, and warranty_notes. Never put ADMIN REVIEW DRAFT, quote readiness, risk flags, internal notes, confidence, research metadata, troubleshooting notes, or admin next steps in customer_quote.',
+    'admin_review must contain internal_admin_notes, accuracy_review, risk_flags, questions_needed, supplier_pricing_review, troubleshooting_review, and admin_next_steps.',
+    'Every labor_line_items entry must include name, description, hours, unit, rate, rate_cents, total, total_cents, and confidence.',
+    'Every material_line_items entry must include name, description, quantity, unit, unit_cost, unit_cost_cents, markup_percent, total, total_cents, source, source_url, last_checked, and confidence.',
+    'pricing_summary grand_total_cents must equal labor_total_cents + material_total_cents + other_total_cents + tax_cents - discount_cents. Never return a nonzero grand total with empty labor_line_items and material_line_items.',
+    'If pricing research fails, continue with estimated allowance line items, set lower confidence, and explain the limitation in admin_review and research_metadata only.',
     'Classify job and trade.',
     'Return confidenceScores with overall, trade_certainty, scope, photo_quality, equipment_identification, pricing, measurements, materials, regional_data, code_requirements, customer_description_quality, labor, information_completeness, and research on a 0..1 scale plus confidenceReasons and recommendedAction.',
     'Decide quoteReady and siteVisitRecommended.',
@@ -976,7 +983,7 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: jobRequest.id });
   const materialResearchContext = await researchQuoteMaterials({ jobRequest, inventory, supplierPricing, historicalContext, apiKey, model, fetchImpl });
   const prompt = buildQuotePrompt({ jobRequest, inventory, supplierPricing, historicalContext, companyRules, photoContext: resolvedPhotoContext, materialResearchContext });
-  const system = 'You are the OpenAI-first estimating and research engine for the contractor. Use internal company data first, then OpenAI live search/research evidence for current material prices when available. Never rely on model memory alone for current pricing. Return strict JSON only with the required fields, material source/confidence metadata, live pricing verification status, assumptions, missing information, and admin-review guidance. Do not omit high-risk safety/stop guidance.';
+  const system = 'You are the OpenAI-first estimating and research engine for the contractor. Return strict JSON only. Separate customer-safe quote content from admin-only review content. Use internal company data first, then OpenAI live search/research evidence for current material prices when available; if research fails, continue with estimated allowance line items and lower confidence. Never put ADMIN REVIEW DRAFT, quote readiness, risk flags, troubleshooting, admin next steps, confidence details, or research metadata into customer_quote. Never return a nonzero grand total without populated labor_line_items/material_line_items or an allowance backfill. Do not omit high-risk safety/stop guidance in admin_review.';
   const result = await runOpenAiWithValidation({ kind: 'quote', apiKey, model, timeoutMs, system, user: prompt, validate: validateQuoteAiOutput, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description }, fetchImpl });
   if (result.ok) {
     const pricingEngine = result.output.pricingEngine && Object.keys(result.output.pricingEngine).length ? result.output.pricingEngine : buildComponentPricingEngine({ quote: result.output, context: { serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, description: jobRequest.description, city: jobRequest.city }, photoContext: resolvedPhotoContext });

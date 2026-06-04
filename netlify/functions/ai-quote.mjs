@@ -323,6 +323,6 @@ export default async (request) => {
   const researchMode = normalizeText(body.researchMode || body.research_mode || 'internal_live').toLowerCase().includes('aggressive') ? 'aggressive' : normalizeText(body.researchMode || body.research_mode || 'internal_live');
   const research = { mode: researchMode, enabled: isLiveResearchEnabled(researchMode), productFindings: [], priceFindings: [], warning: null, research_metadata: baseResearchMetadata(researchMode) };
   const ai = await callOpenAI({ payload, research });
-  if (!ai.ok) return json(ai.status || 502, { ok: false, message: ai.message, manualDraft: buildManualDraft(payload, ai.message), manualOverride: true, aiEstimateGenerationFailed: true, research });
+  if (!ai.ok) return json(200, { ok: false, message: ai.message, manualDraft: buildManualDraft(payload, ai.message), manualOverride: true, aiEstimateGenerationFailed: true, research });
   return json(200, { ok: true, result: ai.estimate, research: ai.estimate.research_context || research, manualOverride: true, adminApprovalRequired: true });
 };

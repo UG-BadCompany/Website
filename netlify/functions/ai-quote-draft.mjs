@@ -230,7 +230,7 @@ export const handler = async (event) => {
   const localDraft = buildLocalDraft(req);
   const ai = await tryOpenAi(req);
   if (ai?.__aiError || !ai) {
-    return json(ai?.status || 502, {
+    return json(200, {
       ok: false,
       message: ai?.message || 'AI estimate generation failed. Continue manually?',
       manualOverride: true,
