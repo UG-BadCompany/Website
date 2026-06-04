@@ -305,8 +305,8 @@ export const createAdminJobRequestsHandler = ({ getDatabase = loadDatabase } = {
     `;
     const roleKeys = roles.map((role) => role.key);
 
-    if (!roleKeys.includes('admin')) {
-      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required to view job requests.' });
+    if (!roleKeys.some((role) => ['owner', 'admin', 'manager'].includes(role))) {
+      return json(403, { ok: false, authenticated: true, authorized: false, message: 'Owner, admin, or manager role required to view job requests.' });
     }
 
     if (request.method === 'PATCH') {

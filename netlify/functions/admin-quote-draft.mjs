@@ -871,7 +871,7 @@ export default async (request) => {
     if (!session) return json(401, { ok: false, authenticated: false, message: 'Session expired.' });
 
     const roles = await loadRoleKeys(db, session.user_id);
-    if (!roles.includes('admin')) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' });
+    if (!roles.some((role) => ['owner', 'admin', 'manager'].includes(role))) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Owner, admin, or manager role required.' });
 
     let [jobRequest] = asRows(await db.sql`
       select id, service_type, work_scope, work_category, description, city, created_at
