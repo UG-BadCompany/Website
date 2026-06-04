@@ -47,6 +47,28 @@ const normalizePayload = (body = {}) => {
   };
 };
 
+
+const centsFromLine = (line = {}) => Number(line.totalCents ?? line.total_cents ?? line.totalCostCents ?? 0) || 0;
+const validateQuoteReady = (payload = {}, request = {}) => {
+  const structured = payload.aiMetadata?.aiStructuredQuote || payload.aiMetadata?.quoteEditor || {};
+  const editor = payload.aiMetadata?.quoteEditor || structured || {};
+  const labor = Array.isArray(structured.laborLineItems) ? structured.laborLineItems : (Array.isArray(structured.labor_line_items) ? structured.labor_line_items : (Array.isArray(editor.laborLineItems) ? editor.laborLineItems : []));
+  const materials = Array.isArray(structured.materialLineItems) ? structured.materialLineItems : (Array.isArray(structured.material_line_items) ? structured.material_line_items : (Array.isArray(editor.materialLineItems) ? editor.materialLineItems : []));
+  const allLines = [...labor, ...materials];
+  const other = { ...structured.other_pricing, ...structured.pricingEngine, ...editor };
+  const otherTotal = Number(other.tripChargeCents || other.trip_charge_cents || 0) + Number(other.permitCents || other.permit_cents || 0) + Number(other.disposalCents || other.disposal_cents || 0) + Number(other.rentalCents || other.rental_cents || 0) + Number(other.markupCents || other.markup_cents || 0) + Number(other.taxCents || other.tax_cents || 0) - Number(other.discountCents || other.discount_cents || 0);
+  const lineGrand = allLines.reduce((sum, line) => sum + centsFromLine(line), 0) + otherTotal;
+  const visibleText = [payload.title, payload.summary, structured.scopeOfWork, structured.scope_of_work, structured.customerNotes, structured.customer_notes, structured.internalAdminNotes, structured.internal_admin_notes, ...allLines.map((line) => line.description || line.name || line.label || '')].join(' ');
+  if (!clean(request.requester_email || request.client_email, 200)) return 'Customer email is required before sending a quote.';
+  if (!payload.summary) return 'Scope of work is required before sending.';
+  if (!allLines.length) return 'At least one labor or material line is required before sending.';
+  if (!payload.amountCents || payload.amountCents <= 0) return 'Grand total must be greater than zero before sending.';
+  if (Math.abs(lineGrand - payload.amountCents) > 1) return 'Editable line item totals must match the grand total before sending.';
+  if (allLines.some((line) => !centsFromLine(line) || !(Number(line.unitCostCents ?? line.unit_cost_cents ?? line.rateCents ?? line.rate_cents ?? 0) > 0))) return 'Every labor/material line must include a unit price/rate and total before sending.';
+  if (/quote_in_progress/i.test(visibleText)) return 'Remove quote_in_progress status text from visible quote content before sending.';
+  return null;
+};
+
 const validatePayload = (payload, method = 'POST') => {
   if (method === 'PATCH' && !payload.quoteId) {
     return 'Quote is required.';
@@ -432,8 +454,9 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
 
       const nextStatus = payload.action === 'send' ? 'sent' : (payload.status && ['draft', 'quote_in_progress', 'needs_review', 'pending_review'].includes(payload.status) ? payload.status : existingQuote.status);
       let quoteForEmail = null;
-      if (payload.action === 'send' && (!payload.summary || !payload.amountCents)) {
-        return json(422, { ok: false, message: 'Scope and pricing are required before sending.' });
+      if (payload.action === 'send') {
+        const readyError = validateQuoteReady(payload, existingQuote);
+        if (readyError) return json(422, { ok: false, message: readyError });
       }
       if (payload.action === 'send') {
         quoteForEmail = { ...existingQuote, title: payload.title, summary: payload.summary, amount_cents: payload.amountCents };
@@ -486,6 +509,11 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
     const createPermission = payload.action === 'send' ? 'quotes.send' : 'quotes.create';
     if (!hasPermission(roleKeys, permissionKeys, createPermission)) {
       return json(403, { ok: false, authenticated: true, authorized: false, message: `${createPermission} permission is required.` });
+    }
+
+    if (payload.action === 'send') {
+      const readyError = validateQuoteReady(payload, jobRequest);
+      if (readyError) return json(422, { ok: false, authenticated: true, authorized: true, message: readyError });
     }
 
     const quoteStatus = 'draft';

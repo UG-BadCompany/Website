@@ -1052,6 +1052,11 @@ export default async (request) => {
 
     if (aiFirstQuote && aiFirstQuote.aiEnhanced && !aiFirstQuote.fallbackUsed) {
       const aiMaterials = Array.isArray(aiFirstQuote.materialBreakdown) ? aiFirstQuote.materialBreakdown : [];
+      const laborRateCents = Math.round(Number(aiFirstQuote.laborRateUsed || process.env.AI_LABOR_RATE || 125) * 100);
+      const normalizedLaborLines = (Array.isArray(aiFirstQuote.laborPhases) ? aiFirstQuote.laborPhases : []).map((item, index) => { const hours = Number(item.hours || item.high_hours || item.highHours || item.low_hours || item.lowHours || 1) || 1; const totalCents = Number(item.totalCents || item.total_cents || 0) || Math.round(hours * laborRateCents); return { name: item.name || item.phase || `Labor ${index + 1}`, description: item.description || item.name || item.phase || 'Labor', hours, quantity: hours, unit: 'hours', rate: laborRateCents / 100, rate_cents: laborRateCents, unitCostCents: laborRateCents, unit_cost_cents: laborRateCents, total: totalCents / 100, totalCents, total_cents: totalCents, confidence: item.confidence || 'medium' }; });
+      const normalizedMaterialLines = aiMaterials.map((item, index) => { const quantity = Number(item.quantity ?? item.estimatedQuantity ?? 1) || 1; const unitCostCents = Number(item.unitCostCents ?? item.estimatedUnitCostCents ?? item.estimatedBuyCostCents ?? 0) || Math.round((Number(item.estimatedUnitCost || item.price || 35) || 35) * 100); const markupPercent = Number(item.markupPercent ?? item.markup_percent ?? process.env.AI_MATERIAL_MARKUP_PERCENT ?? 25) || 25; const totalCents = Number(item.totalCostCents ?? item.totalCents ?? item.total_cents ?? 0) || Math.round(quantity * unitCostCents * (1 + markupPercent / 100)); return { name: item.name || item.item || `Material ${index + 1}`, description: item.description || item.name || item.item || 'Material', quantity, unit: item.unit || 'each', unit_cost: unitCostCents / 100, unitCostCents, unit_cost_cents: unitCostCents, markup_percent: markupPercent, markupPct: markupPercent, total: totalCents / 100, totalCents, total_cents: totalCents, source: item.source || item.pricingSource || 'openai_primary', source_url: item.sourceUrl || item.source_url || '', last_checked: item.lastChecked || item.last_checked || new Date().toISOString().slice(0,10), confidence: item.confidence || 'medium' }; });
+      const laborTotalCents = normalizedLaborLines.reduce((sum, item) => sum + item.total_cents, 0);
+      const materialTotalCents = normalizedMaterialLines.reduce((sum, item) => sum + item.total_cents, 0);
       return json(200, {
         ok: true,
         draft: {
@@ -1059,7 +1064,7 @@ export default async (request) => {
           summary: aiFirstQuote.customerReadySummary,
           amountCents: aiFirstQuote.fixedPriceRecommendationCents,
           laborHours: aiFirstQuote.laborHoursHigh,
-          laborRateCents: Math.round(Number(aiFirstQuote.laborRateUsed || 0) * 100),
+          laborRateCents,
           materials: aiMaterials.map((item) => ({
             name: item.name || item.item || 'Material',
             neededQty: Number(item.quantity ?? item.estimatedQuantity ?? 1) || 1,
@@ -1071,7 +1076,7 @@ export default async (request) => {
             source: 'openai_primary',
             inventoryMatchHint: item.inventoryMatchHint || item.name || '',
           })),
-          materialBreakdown: aiMaterials,
+          materialBreakdown: normalizedMaterialLines,
           adminSourcingNotes: [
             'AI PRIMARY ESTIMATE (OPENAI)',
             `Model: ${aiFirstQuote.model}`,
@@ -1108,8 +1113,8 @@ export default async (request) => {
             job_summary: aiFirstQuote.jobSummary || aiFirstQuote.customerReadySummary || jobRequest.description || '',
             scope_of_work: aiFirstQuote.customerReadySummary || jobRequest.description || '',
             detailed_scope: aiFirstQuote.detailedScope || [],
-            labor_line_items: aiFirstQuote.laborPhases || [],
-            material_line_items: aiMaterials,
+            labor_line_items: normalizedLaborLines,
+            material_line_items: normalizedMaterialLines,
             equipment_breakdown: aiFirstQuote.equipmentBreakdown || [],
             permit_breakdown: aiFirstQuote.permitBreakdown || [],
             recommended_upsells: aiFirstQuote.recommendedUpsells || [],
@@ -1120,7 +1125,8 @@ export default async (request) => {
             pricing_engine: aiFirstQuote.pricingEngine || {},
             confidence_explanation: aiFirstQuote.confidenceExplanation || {},
             photo_analysis: aiFirstQuote.photoAnalysis || {},
-            pricing_summary: { total_low_cents: aiFirstQuote.totalLowCents, total_high_cents: aiFirstQuote.totalHighCents, fixed_price_recommendation_cents: aiFirstQuote.fixedPriceRecommendationCents, low_range_cents: aiFirstQuote.pricingEngine?.lowRangeCents, recommended_range_cents: aiFirstQuote.pricingEngine?.recommendedRangeCents, premium_range_cents: aiFirstQuote.pricingEngine?.premiumRangeCents, why: aiFirstQuote.pricingEngine?.why || [] },
+            other_pricing: { trip_charge: 0, trip_charge_cents: 0, permit: 0, permit_cents: 0, disposal: 0, disposal_cents: 0, rental: 0, rental_cents: 0, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, markup: 0, markup_cents: 0 },
+            pricing_summary: { labor_total: laborTotalCents / 100, labor_total_cents: laborTotalCents, material_total: materialTotalCents / 100, material_total_cents: materialTotalCents, other_total: 0, other_total_cents: 0, subtotal: (laborTotalCents + materialTotalCents) / 100, subtotal_cents: laborTotalCents + materialTotalCents, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, grand_total: (laborTotalCents + materialTotalCents) / 100, grand_total_cents: laborTotalCents + materialTotalCents, total_low_cents: aiFirstQuote.totalLowCents, total_high_cents: aiFirstQuote.totalHighCents, fixed_price_recommendation_cents: aiFirstQuote.fixedPriceRecommendationCents, low_range_cents: aiFirstQuote.pricingEngine?.lowRangeCents, recommended_range_cents: aiFirstQuote.pricingEngine?.recommendedRangeCents, premium_range_cents: aiFirstQuote.pricingEngine?.premiumRangeCents, why: aiFirstQuote.pricingEngine?.why || [] },
             assumptions: aiFirstQuote.assumptionsUsedForTightPrice || [],
             exclusions: aiFirstQuote.exclusions || [],
             warranty_notes: aiFirstQuote.warrantyNotes || '',
@@ -1128,7 +1134,8 @@ export default async (request) => {
             internal_admin_notes: (aiFirstQuote.adminReviewChecklist || []).join('\n'),
             recommended_questions: aiFirstQuote.missingInfoQuestions || [],
             confidence_scores: { overall: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScore || 0))), ...(aiFirstQuote.confidenceScores || {}), labor: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.labor ?? aiFirstQuote.confidenceScore ?? 0))), materials: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.materials ?? (aiMaterials.length ? 0.74 : 0.35)))), pricing: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.pricing ?? (aiFirstQuote.pricingConfidenceLevel === 'high' ? 0.85 : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 0.67 : 0.45)))), scope: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.scope ?? (aiFirstQuote.quoteReady ? 0.82 : 0.58)))), information_completeness: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.information_completeness ?? ((aiFirstQuote.missingInfoQuestions || []).length ? 0.58 : 0.78)))), research: aiFirstQuote.historicalMatchUsed ? 0.76 : 0.52 },
-            confidence_reasons: [aiFirstQuote.pricingConfidenceReason || 'Pricing confidence is based on AI review, material evidence, and available request details.', ...(aiFirstQuote.missingInfoQuestions || []).slice(0, 2)],
+            confidence_reasons: [aiFirstQuote.pricingConfidenceReason || 'Pricing confidence is based on OpenAI-first AI review, material evidence, and available request details.', ...(aiFirstQuote.missingInfoQuestions || []).slice(0, 2)],
+            research_metadata: { research_mode: 'openai_first', openai_live_search_used: true, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: Boolean(aiFirstQuote.historicalMatchUsed), serpapi_used: false, sources: normalizedMaterialLines.map((item) => ({ title: item.name, source: item.source, url: item.source_url })), pricing_confidence_reason: aiFirstQuote.pricingConfidenceReason || 'OpenAI-first pricing with internal catalog/admin review fallback.' },
             recommended_action: aiFirstQuote.pricingConfidenceLevel === 'high' ? 'Ready for admin review.' : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 'Review assumptions before sending.' : 'Request more information or continue manually.',
           },
           pricingConfidenceLevel: aiFirstQuote.pricingConfidenceLevel,
