@@ -268,3 +268,13 @@
   from = "/api/admin/user-role"
   to = "/.netlify/functions/admin-user-role"
   status = 200
+
+[[redirects]]
+  from = "/api/homepage-settings"
+  to = "/.netlify/functions/homepage-settings"
+  status = 200
+
+[[redirects]]
+  from = "/api/homepage-gallery"
+  to = "/.netlify/functions/homepage-gallery"
+  status = 200

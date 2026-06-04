@@ -1,1 +1,23 @@
-(async()=>{if(!await TACompany.requireInstalled())return;await TACompany.load();document.getElementById('service-list')?.replaceChildren(...['HVAC','Water Heaters','Plumbing','Electrical','Drywall','Painting','Doors','Windows','Appliances','Handyman','Facilities Maintenance','Property Maintenance','Commercial Maintenance','General Contracting','Tenant Improvements','Other / Not Sure'].map(s=>{const c=document.createElement('article');c.className='card';c.innerHTML='<h3>'+s+'</h3><p>Request estimate support for this type of work.</p>';return c}));document.getElementById('request-form')?.addEventListener('submit',async e=>{e.preventDefault();const status=document.getElementById('request-status');status.textContent='Submitting request...';try{const data=await TAApi.post('/api/job-requests',TAForms.values(e.currentTarget));const id=data.requestId||data.id||data.jobRequest?.id||'';location.href='/thank-you/'+(id?'?request='+encodeURIComponent(id):'')}catch(err){status.textContent=err.message||'Could not submit. Please call us.'}});})();
+(async()=>{
+  if(!await TACompany.requireInstalled())return;
+  await TACompany.load();
+  const bind=()=>{
+    const form=document.getElementById('request-form');
+    if(!form||form.dataset.bound==='1')return;
+    form.dataset.bound='1';
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const status=document.getElementById('request-status');
+      if(status) status.textContent='Submitting request...';
+      try{
+        const data=await TAApi.post('/api/job-requests',TAForms.values(e.currentTarget));
+        const id=data.requestId||data.id||data.jobRequest?.id||'';
+        location.href='/thank-you/'+(id?'?request='+encodeURIComponent(id):'')
+      }catch(err){
+        if(status) status.textContent=err.message||'Could not submit. Please call us.';
+      }
+    });
+  };
+  bind();
+  document.addEventListener('ta:homepage-rendered',bind);
+})();
