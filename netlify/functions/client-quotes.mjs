@@ -7,8 +7,24 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
+
+const stripInternalClientText = (value = '') => clean(String(value || '')
+  .replace(/ADMIN REVIEW DRAFT[\s\S]*/ig, '')
+  .replace(/Quote readiness[\s\S]*/ig, '')
+  .replace(/Do not send without review\.?/ig, '')
+  .replace(/quote_in_progress/ig, '')
+  .replace(/Internal admin notes?:[\s\S]*/ig, '')
+  .trim(), 8000);
+const clientFacingSummary = (quote = {}) => {
+  const metadata = quote.ai_metadata || {};
+  const payload = metadata.clientQuotePayload || {};
+  const structured = metadata.aiStructuredQuote || {};
+  const customer = structured.customer_quote || structured.customerQuote || {};
+  return stripInternalClientText(payload.scopeOfWork || customer.scope_of_work || structured.scope_of_work || quote.summary || '');
+};
+
 const WAITING_QUOTE_STATUSES = new Set(['sent', 'viewed']);
-const DECISION_ACTIONS = new Set(['accept', 'decline']);
+const DECISION_ACTIONS = new Set(['accept', 'decline', 'request_changes']);
 
 const deriveClientQuoteStatus = (quote = {}) => {
   const quoteStatus = String(quote.status || '').toLowerCase();
@@ -23,8 +39,9 @@ const mapQuote = (quote) => ({
   id: quote.id,
   status: deriveClientQuoteStatus(quote),
   title: quote.title,
-  summary: quote.summary,
+  summary: clientFacingSummary(quote),
   amountCents: quote.amount_cents,
+  clientQuote: (quote.ai_metadata || {}).clientQuotePayload || null,
   sentAt: quote.sent_at,
   viewedAt: quote.viewed_at,
   acceptedAt: quote.accepted_at,
@@ -81,7 +98,7 @@ const validateDecisionPayload = (payload) => {
   }
 
   if (!DECISION_ACTIONS.has(payload.action)) {
-    return 'Quote action must be accept or decline.';
+    return 'Quote action must be accept, decline, or request_changes.';
   }
 
   return null;
@@ -116,6 +133,7 @@ const listClientQuotes = async (db, userId) => {
       quotes.title,
       quotes.summary,
       quotes.amount_cents,
+      quotes.ai_metadata,
       quotes.sent_at,
       quotes.viewed_at,
       quotes.accepted_at,
@@ -187,10 +205,11 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
   }
 
   const accepted = payload.action === 'accept';
+  const requestedChanges = payload.action === 'request_changes';
   const [updatedQuote] = await db.sql`
     update quotes
     set
-      status = ${accepted ? 'accepted' : 'declined'},
+      status = ${accepted ? 'accepted' : (requestedChanges ? 'needs_review' : 'declined')},
       accepted_at = case when ${accepted} then now() else accepted_at end,
       declined_at = case when ${!accepted} then now() else declined_at end,
       updated_at = now()
@@ -212,7 +231,7 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
     values (
       ${session.user_id},
-      ${accepted ? 'quote.accepted' : 'quote.declined'},
+      ${accepted ? 'quote.accepted' : (requestedChanges ? 'quote.changes_requested' : 'quote.declined')},
       ${'quote'},
       ${quote.id},
       ${JSON.stringify({ source: 'client_dashboard', jobRequestId: quote.job_request_id })}::jsonb
@@ -225,7 +244,7 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
     authorized: true,
     user: buildUser(session, roleKeys),
     quote: mapQuote(updatedQuote),
-    message: accepted ? 'Quote accepted.' : 'Quote declined.',
+    message: accepted ? 'Quote accepted.' : (requestedChanges ? 'Change request sent.' : 'Quote declined.'),
   });
 };
 

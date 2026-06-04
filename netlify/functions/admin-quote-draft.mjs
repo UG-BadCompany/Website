@@ -951,6 +951,53 @@ const buildInternetFallbackMaterials = async ({ descriptionText, inventory, loca
   return unique;
 };
 
+
+const cents = (value, assumeCents = false) => {
+  if (value === null || value === undefined || value === '') return 0;
+  if (typeof value === 'number' && Number.isFinite(value)) return assumeCents || (Number.isInteger(value) && Math.abs(value) >= 10000) ? Math.round(value) : Math.round(value * 100);
+  const match = String(value).replace(/[$,]/g, '').match(/-?\d+(?:\.\d+)?/);
+  if (!match) return 0;
+  const amount = Number(match[0]);
+  return Number.isFinite(amount) ? (assumeCents ? Math.round(amount) : Math.round(amount * 100)) : 0;
+};
+const dollars = (centsValue) => Math.round(Number(centsValue || 0)) / 100;
+const lineTotal = (line = {}) => Number(line.total_cents ?? line.totalCents ?? 0) || Math.round((Number(line.quantity ?? line.hours ?? 1) || 1) * (Number(line.unit_cost_cents ?? line.unitCostCents ?? line.rate_cents ?? line.rateCents ?? 0) || 0) * (1 + (Number(line.markup_percent ?? line.markupPct ?? 0) || 0) / 100));
+const sumLines = (lines = []) => lines.reduce((sum, line) => sum + lineTotal(line), 0);
+const structuredPricingSummary = ({ laborLineItems = [], materialLineItems = [], otherPricing = {} }) => {
+  const laborTotalCents = sumLines(laborLineItems);
+  const materialTotalCents = sumLines(materialLineItems);
+  const otherTotalCents = Number(otherPricing.trip_charge_cents || 0) + Number(otherPricing.permit_cents || 0) + Number(otherPricing.disposal_cents || 0) + Number(otherPricing.rental_cents || 0) + Number(otherPricing.markup_cents || 0);
+  const subtotalCents = laborTotalCents + materialTotalCents + otherTotalCents;
+  const taxCents = Number(otherPricing.tax_cents || 0);
+  const discountCents = Number(otherPricing.discount_cents || 0);
+  const grandTotalCents = subtotalCents + taxCents - discountCents;
+  return { labor_total: dollars(laborTotalCents), labor_total_cents: laborTotalCents, material_total: dollars(materialTotalCents), material_total_cents: materialTotalCents, other_total: dollars(otherTotalCents), other_total_cents: otherTotalCents, subtotal: dollars(subtotalCents), subtotal_cents: subtotalCents, tax: dollars(taxCents), tax_cents: taxCents, discount: dollars(discountCents), discount_cents: discountCents, grand_total: dollars(grandTotalCents), grand_total_cents: grandTotalCents };
+};
+const ensureStructuredQuoteLines = ({ quote = {}, laborLineItems = [], materialLineItems = [], otherPricing = {}, targetGrandCents = 0 }) => {
+  const warnings = [];
+  let labor = laborLineItems.filter((line) => lineTotal(line) > 0);
+  let materials = materialLineItems.filter((line) => lineTotal(line) > 0);
+  const other = { trip_charge: 0, trip_charge_cents: 0, permit: 0, permit_cents: 0, disposal: 0, disposal_cents: 0, rental: 0, rental_cents: 0, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, markup: 0, markup_cents: 0, ...otherPricing };
+  const desiredGrand = Number(targetGrandCents || quote.fixedPriceRecommendationCents || quote.fixed_price_recommendation_cents || quote.totalHighCents || quote.total_high_cents || 0) || 0;
+  let summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
+  if (desiredGrand > 0 && !labor.length && !materials.length) {
+    const allocatable = Math.max(0, desiredGrand - Number(other.trip_charge_cents || 0) - Number(other.tax_cents || 0) + Number(other.discount_cents || 0));
+    const laborCents = Math.round(allocatable * 0.6);
+    const materialCents = allocatable - laborCents;
+    labor = [{ name: 'Labor allowance', description: 'AI returned total pricing but incomplete labor line-item pricing. Allowance line created for review.', hours: 1, quantity: 1, unit: 'allowance', rate: dollars(laborCents), rate_cents: laborCents, unitCostCents: laborCents, unit_cost_cents: laborCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low' }];
+    materials = [{ name: 'Materials allowance', description: 'AI returned total pricing but incomplete material line-item pricing. Allowance line created for review.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'estimated allowance', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' }];
+    warnings.push('AI returned total pricing but incomplete line-item pricing. Allowance lines were created for review.');
+  }
+  summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
+  if (desiredGrand > 0 && Math.abs(summary.grand_total_cents - desiredGrand) > 1 && desiredGrand > summary.grand_total_cents) {
+    const delta = desiredGrand - summary.grand_total_cents;
+    materials.push({ name: 'Pricing allowance adjustment', description: 'Backfilled allowance so editable line-item pricing matches the AI grand total.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'AI total backfill', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
+    warnings.push('AI total did not match editable line totals. A pricing allowance adjustment was created for review.');
+  }
+  summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
+  return { laborLineItems: labor, materialLineItems: materials, otherPricing: other, pricingSummary: summary, warnings };
+};
+
 const choosePlaybook = (descriptionText) => {
   const text = slug(descriptionText);
   return JOB_PLAYBOOKS.find((playbook) => playbook.match.every((token) => text.includes(token))) || null;
@@ -997,7 +1044,7 @@ export default async (request) => {
     if (!jobRequest) return json(404, { ok: false, message: 'Job request not found.' });
 
     if (!process.env.OPENAI_API_KEY) {
-      return json(503, {
+      return json(200, {
         ok: false,
         message: 'OPENAI_API_KEY is not configured. AI estimate generation failed. Continue manually?',
         manualOverride: true,
@@ -1034,20 +1081,7 @@ export default async (request) => {
       companyRules: ['Admin approval required before sending.', 'Fallback is allowed only after OpenAI failure or invalid JSON after retry.'],
     });
     if (aiFirstQuote && aiFirstQuote.fallbackUsed) {
-      return json(502, {
-        ok: false,
-        message: 'AI estimate generation failed. Continue manually?',
-        manualOverride: true,
-        fallbackReason: aiFirstQuote.fallbackReason || 'OpenAI quote generation failed.',
-        manualDraft: {
-          title: `${jobRequest.service_type || 'Service'} manual draft`,
-          customer_summary: clean(requestContext?.customerSummary || requestContext?.name || requestContext?.email || '', 1000),
-          property_summary: [clean(requestContext?.streetAddress || requestContext?.address || '', 240), clean(jobRequest.city, 120)].filter(Boolean).join(', ') || 'Property details from original request',
-          description: clean(jobRequest.description, 4000),
-          service_category: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (clean(jobRequest.service_type || jobRequest.work_category, 160) || 'General Contracting'),
-          trade: /mini[-\s]?split|ductless/i.test(`${jobRequest.service_type || ''} ${jobRequest.description || ''}`) ? 'HVAC' : (clean(jobRequest.work_category || jobRequest.service_type, 160) || 'General Contracting'),
-        },
-      });
+      console.warn('OpenAI primary quote unavailable; continuing with resilient local quote draft fallback.', aiFirstQuote.fallbackReason || aiFirstQuote.warning || 'fallback used');
     }
 
     if (aiFirstQuote && aiFirstQuote.aiEnhanced && !aiFirstQuote.fallbackUsed) {
@@ -1055,14 +1089,36 @@ export default async (request) => {
       const laborRateCents = Math.round(Number(aiFirstQuote.laborRateUsed || process.env.AI_LABOR_RATE || 125) * 100);
       const normalizedLaborLines = (Array.isArray(aiFirstQuote.laborPhases) ? aiFirstQuote.laborPhases : []).map((item, index) => { const hours = Number(item.hours || item.high_hours || item.highHours || item.low_hours || item.lowHours || 1) || 1; const totalCents = Number(item.totalCents || item.total_cents || 0) || Math.round(hours * laborRateCents); return { name: item.name || item.phase || `Labor ${index + 1}`, description: item.description || item.name || item.phase || 'Labor', hours, quantity: hours, unit: 'hours', rate: laborRateCents / 100, rate_cents: laborRateCents, unitCostCents: laborRateCents, unit_cost_cents: laborRateCents, total: totalCents / 100, totalCents, total_cents: totalCents, confidence: item.confidence || 'medium' }; });
       const normalizedMaterialLines = aiMaterials.map((item, index) => { const quantity = Number(item.quantity ?? item.estimatedQuantity ?? 1) || 1; const unitCostCents = Number(item.unitCostCents ?? item.estimatedUnitCostCents ?? item.estimatedBuyCostCents ?? 0) || Math.round((Number(item.estimatedUnitCost || item.price || 35) || 35) * 100); const markupPercent = Number(item.markupPercent ?? item.markup_percent ?? process.env.AI_MATERIAL_MARKUP_PERCENT ?? 25) || 25; const totalCents = Number(item.totalCostCents ?? item.totalCents ?? item.total_cents ?? 0) || Math.round(quantity * unitCostCents * (1 + markupPercent / 100)); return { name: item.name || item.item || `Material ${index + 1}`, description: item.description || item.name || item.item || 'Material', quantity, unit: item.unit || 'each', unit_cost: unitCostCents / 100, unitCostCents, unit_cost_cents: unitCostCents, markup_percent: markupPercent, markupPct: markupPercent, total: totalCents / 100, totalCents, total_cents: totalCents, source: item.source || item.pricingSource || 'openai_primary', source_url: item.sourceUrl || item.source_url || '', last_checked: item.lastChecked || item.last_checked || new Date().toISOString().slice(0,10), confidence: item.confidence || 'medium' }; });
-      const laborTotalCents = normalizedLaborLines.reduce((sum, item) => sum + item.total_cents, 0);
-      const materialTotalCents = normalizedMaterialLines.reduce((sum, item) => sum + item.total_cents, 0);
+      const lineBackfill = ensureStructuredQuoteLines({ quote: aiFirstQuote, laborLineItems: normalizedLaborLines, materialLineItems: normalizedMaterialLines, otherPricing: { trip_charge: 0, trip_charge_cents: 0, permit: 0, permit_cents: 0, disposal: 0, disposal_cents: 0, rental: 0, rental_cents: 0, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, markup: 0, markup_cents: 0 }, targetGrandCents: aiFirstQuote.fixedPriceRecommendationCents });
+      normalizedLaborLines.splice(0, normalizedLaborLines.length, ...lineBackfill.laborLineItems);
+      normalizedMaterialLines.splice(0, normalizedMaterialLines.length, ...lineBackfill.materialLineItems);
+      const otherPricing = lineBackfill.otherPricing;
+      const pricingSummary = lineBackfill.pricingSummary;
+      const laborTotalCents = pricingSummary.labor_total_cents;
+      const materialTotalCents = pricingSummary.material_total_cents;
+      const customerQuote = {
+        summary: clean(aiFirstQuote.jobSummary || aiFirstQuote.customerReadySummary || jobRequest.description || 'Customer quote draft', 800),
+        scope_of_work: clean(aiFirstQuote.customerReadySummary || aiFirstQuote.jobSummary || jobRequest.description || 'Complete the requested service scope after admin review.', 4000),
+        customer_notes: clean(aiFirstQuote.customerReadySummary || '', 1600),
+        assumptions: aiFirstQuote.assumptionsUsedForTightPrice || [],
+        exclusions: aiFirstQuote.exclusions || [],
+        warranty_notes: aiFirstQuote.warrantyNotes || '',
+      };
+      const adminReview = {
+        internal_admin_notes: (aiFirstQuote.adminReviewChecklist || []).join('\n'),
+        accuracy_review: aiFirstQuote.adminReviewChecklist || [],
+        risk_flags: aiFirstQuote.riskFlags || aiFirstQuote.safetyNotes || [],
+        questions_needed: aiFirstQuote.missingInfoQuestions || [],
+        supplier_pricing_review: aiFirstQuote.supplierPricingRecommendations || [],
+        troubleshooting_review: aiFirstQuote.safetyNotes || [],
+        admin_next_steps: [aiFirstQuote.recommendedAction || 'Review editable line items before sending.', ...lineBackfill.warnings],
+      };
       return json(200, {
         ok: true,
         draft: {
           title: `${aiFirstQuote.jobClassification || jobRequest.service_type || 'Service'} quote draft`,
           summary: aiFirstQuote.customerReadySummary,
-          amountCents: aiFirstQuote.fixedPriceRecommendationCents,
+          amountCents: pricingSummary.grand_total_cents,
           laborHours: aiFirstQuote.laborHoursHigh,
           laborRateCents,
           materials: aiMaterials.map((item) => ({
@@ -1111,7 +1167,7 @@ export default async (request) => {
             customer_summary: clean(requestContext?.customerSummary || requestContext?.name || requestContext?.email || 'Original customer request', 1000),
             property_summary: [clean(requestContext?.streetAddress || requestContext?.address || '', 240), clean(jobRequest.city, 120)].filter(Boolean).join(', ') || 'Original property request',
             job_summary: aiFirstQuote.jobSummary || aiFirstQuote.customerReadySummary || jobRequest.description || '',
-            scope_of_work: aiFirstQuote.customerReadySummary || jobRequest.description || '',
+            scope_of_work: customerQuote.scope_of_work,
             detailed_scope: aiFirstQuote.detailedScope || [],
             labor_line_items: normalizedLaborLines,
             material_line_items: normalizedMaterialLines,
@@ -1125,16 +1181,20 @@ export default async (request) => {
             pricing_engine: aiFirstQuote.pricingEngine || {},
             confidence_explanation: aiFirstQuote.confidenceExplanation || {},
             photo_analysis: aiFirstQuote.photoAnalysis || {},
-            other_pricing: { trip_charge: 0, trip_charge_cents: 0, permit: 0, permit_cents: 0, disposal: 0, disposal_cents: 0, rental: 0, rental_cents: 0, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, markup: 0, markup_cents: 0 },
-            pricing_summary: { labor_total: laborTotalCents / 100, labor_total_cents: laborTotalCents, material_total: materialTotalCents / 100, material_total_cents: materialTotalCents, other_total: 0, other_total_cents: 0, subtotal: (laborTotalCents + materialTotalCents) / 100, subtotal_cents: laborTotalCents + materialTotalCents, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, grand_total: (laborTotalCents + materialTotalCents) / 100, grand_total_cents: laborTotalCents + materialTotalCents, total_low_cents: aiFirstQuote.totalLowCents, total_high_cents: aiFirstQuote.totalHighCents, fixed_price_recommendation_cents: aiFirstQuote.fixedPriceRecommendationCents, low_range_cents: aiFirstQuote.pricingEngine?.lowRangeCents, recommended_range_cents: aiFirstQuote.pricingEngine?.recommendedRangeCents, premium_range_cents: aiFirstQuote.pricingEngine?.premiumRangeCents, why: aiFirstQuote.pricingEngine?.why || [] },
+            other_pricing: otherPricing,
+            pricing_summary: { ...pricingSummary, total_low_cents: aiFirstQuote.totalLowCents, total_high_cents: aiFirstQuote.totalHighCents, fixed_price_recommendation_cents: pricingSummary.grand_total_cents, low_range_cents: aiFirstQuote.pricingEngine?.lowRangeCents, recommended_range_cents: aiFirstQuote.pricingEngine?.recommendedRangeCents, premium_range_cents: aiFirstQuote.pricingEngine?.premiumRangeCents, why: aiFirstQuote.pricingEngine?.why || [] },
             assumptions: aiFirstQuote.assumptionsUsedForTightPrice || [],
             exclusions: aiFirstQuote.exclusions || [],
             warranty_notes: aiFirstQuote.warrantyNotes || '',
-            customer_notes: aiFirstQuote.customerReadySummary || '',
-            internal_admin_notes: (aiFirstQuote.adminReviewChecklist || []).join('\n'),
-            recommended_questions: aiFirstQuote.missingInfoQuestions || [],
+            customer_notes: customerQuote.customer_notes,
+            internal_admin_notes: adminReview.internal_admin_notes,
+            recommended_questions: adminReview.questions_needed,
             confidence_scores: { overall: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScore || 0))), ...(aiFirstQuote.confidenceScores || {}), labor: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.labor ?? aiFirstQuote.confidenceScore ?? 0))), materials: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.materials ?? (aiMaterials.length ? 0.74 : 0.35)))), pricing: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.pricing ?? (aiFirstQuote.pricingConfidenceLevel === 'high' ? 0.85 : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 0.67 : 0.45)))), scope: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.scope ?? (aiFirstQuote.quoteReady ? 0.82 : 0.58)))), information_completeness: Math.max(0, Math.min(1, Number(aiFirstQuote.confidenceScores?.information_completeness ?? ((aiFirstQuote.missingInfoQuestions || []).length ? 0.58 : 0.78)))), research: aiFirstQuote.historicalMatchUsed ? 0.76 : 0.52 },
             confidence_reasons: [aiFirstQuote.pricingConfidenceReason || 'Pricing confidence is based on OpenAI-first AI review, material evidence, and available request details.', ...(aiFirstQuote.missingInfoQuestions || []).slice(0, 2)],
+            admin_review: adminReview,
+            customer_quote: customerQuote,
+            pricing_warnings: lineBackfill.warnings,
+            client_quote_detail_mode: 'summary',
             research_metadata: { research_mode: 'openai_first', openai_live_search_used: true, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: Boolean(aiFirstQuote.historicalMatchUsed), serpapi_used: false, sources: normalizedMaterialLines.map((item) => ({ title: item.name, source: item.source, url: item.source_url })), pricing_confidence_reason: aiFirstQuote.pricingConfidenceReason || 'OpenAI-first pricing with internal catalog/admin review fallback.' },
             recommended_action: aiFirstQuote.pricingConfidenceLevel === 'high' ? 'Ready for admin review.' : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 'Review assumptions before sending.' : 'Request more information or continue manually.',
           },
@@ -1147,7 +1207,7 @@ export default async (request) => {
           assumptionsUsedForTightPrice: aiFirstQuote.assumptionsUsedForTightPrice || [],
           totalLowCents: aiFirstQuote.totalLowCents,
           totalHighCents: aiFirstQuote.totalHighCents,
-          fixedPriceRecommendationCents: aiFirstQuote.fixedPriceRecommendationCents,
+          fixedPriceRecommendationCents: pricingSummary.grand_total_cents,
           aiEnhanced: true,
           fallbackUsed: false,
           meta: {
@@ -1206,10 +1266,7 @@ export default async (request) => {
     const baseMaterials = aiPrimaryMaterials.length ? aiPrimaryMaterials : aiRecoveryMaterials;
     const strictRecoveryUsed = Boolean(!aiPrimaryMaterials.length && aiRecoveryMaterials.length);
     if (!baseMaterials.length) {
-      return json(503, {
-        ok: false,
-        message: 'OpenAI could not produce a usable materials list for this request. Add more project details/specs/photos and retry.',
-      });
+      baseMaterials.push({ name: `${jobRequest.service_type || jobRequest.work_category || 'Service'} materials allowance`, estimatedUnitCostCents: 25000, neededQty: 1, inStockQty: 0, buyQty: 1, estimatedBuyCostCents: 25000, source: 'estimated_allowance', pricingSource: 'fallback_allowance' });
     }
 
     const materials = [];
@@ -1406,7 +1463,7 @@ export default async (request) => {
       '',
       `System note: live AI draft generation failed (${error?.message || 'unknown error'}).`,
     ].join('\n');
-    return json(502, {
+    return json(200, {
       ok: false,
       degraded: true,
       message: 'AI estimate generation failed. Continue manually?',
