@@ -35,12 +35,43 @@
     return `<article class="module-stat stat-card"><span>${escapeHtml(metric.icon || '📌')}</span><strong>${escapeHtml(formatted)}</strong><small>${escapeHtml(metric.label)}</small></article>`;
   }).join('')}</div>`;
   const renderRecordActions = (actions = []) => actions.map((action) => button(action.label || action, action.action || action, action.primary ? '' : 'secondary')).join('');
-  const openDetail = (root, config, record = {}) => {
+  const primaryEndpoint = (config) => asArray(config.endpoint || config.endpoints)[0] || '';
+  const runGenericAction = async (control, action, context = {}) => {
+    const { root, api, config, record = {}, data, records } = context;
+    const previous = control?.textContent || '';
+    if (control) { control.disabled = true; control.textContent = 'Working...'; }
+    try {
+      if (/refresh|reload/i.test(action)) {
+        await mount(context, config);
+        TAUi?.toast('Data refreshed.', 'success');
+        return;
+      }
+      if (/open|view|detail|history|download|map|route/i.test(action)) {
+        openDetail(root, config, record.id ? record : (records?.[0] || record), { api, data, records });
+        return;
+      }
+      const endpoint = primaryEndpoint(config);
+      if (!endpoint || !api) throw new Error('No backend endpoint is configured for this action.');
+      const payload = { action, recordId: record.id || record.requestId || record.quoteId || record.invoiceId || '', record, values: {} };
+      const method = payload.recordId && !/create|add|submit|request/i.test(action) ? 'patch' : 'post';
+      const result = await api[method](endpoint, payload);
+      TAUi?.toast(result.message || `${titleize(action)} completed.`, 'success');
+      await mount(context, config);
+    } catch (error) {
+      TAUi?.toast(error.message || `${titleize(action)} failed.`, 'error');
+    } finally {
+      if (control) { control.disabled = false; control.textContent = previous; }
+    }
+  };
+  const openDetail = (root, config, record = {}, context = {}) => {
     const modal = document.getElementById('modal-root') || root;
     const sections = config.detailSections || ['Customer information','Request summary','Scope of work','Notes','Status history','Files/photos'];
-    modal.innerHTML = `<div class="module-drawer"><form class="module-editor card stack"><div class="module-editor-head"><div><p class="eyebrow">${escapeHtml(config.title)}</p><h2>${escapeHtml(defaultRecordTitle(record, config.title))}</h2></div><button class="btn secondary" type="button" data-close-module-drawer>Close</button></div><div class="module-editor-grid">${sections.map((section) => `<label class="field"><span>${escapeHtml(section)}</span><textarea name="${escapeHtml(section)}">${escapeHtml(sectionValue(section, record))}</textarea></label>`).join('')}</div><div class="module-toolbar">${button('Save Draft','save-draft','')} ${button('Request Information','request-info')} ${button('Continue Manually','manual')}</div></form></div>`;
+    modal.innerHTML = `<div class="module-drawer"><form class="module-editor card stack"><div class="module-editor-head"><div><p class="eyebrow">${escapeHtml(config.title)}</p><h2>${escapeHtml(defaultRecordTitle(record, config.title))}</h2></div><button class="btn secondary" type="button" data-close-module-drawer>Close</button></div><div class="module-editor-grid">${sections.map((section) => `<label class="field"><span>${escapeHtml(section)}</span><textarea name="${escapeHtml(section)}">${escapeHtml(sectionValue(section, record))}</textarea></label>`).join('')}</div><p class="notice" data-module-action-status>Review details, then save or request more information through the configured endpoint.</p><div class="module-toolbar">${button('Save Draft','save-draft','')} ${button('Request Information','request-info')} ${button('Continue Manually','manual')}</div></form></div>`;
     modal.querySelector('[data-close-module-drawer]').onclick = () => { modal.innerHTML = ''; };
-    modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => TAUi.toast(`${control.textContent} is ready. Connected endpoint actions will run when the backend supports this record type.`));
+    modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = async () => {
+      const values = Object.fromEntries(new FormData(modal.querySelector('form')).entries());
+      await runGenericAction(control, control.dataset.moduleAction, { ...context, root, config, record: { ...record, values }, records: context.records || [] });
+    });
   };
   const stringify = (value) => Array.isArray(value) || (value && typeof value === 'object') ? JSON.stringify(value, null, 2) : (value || '');
   const sectionValue = (section, record) => {
@@ -74,7 +105,7 @@
       return;
     }
     list.innerHTML = records.map((record, index) => `<article class="module-record-card" data-record-index="${index}"><div><p class="eyebrow">${escapeHtml(statusText(record.status || record.reviewStatus || config.title))}</p><h3>${escapeHtml(defaultRecordTitle(record, config.title))}</h3><p>${escapeHtml(record.description || record.summary || record.address || record.notes || config.recordDescription || 'Open this record to review details, notes, timeline, and next actions.')}</p><small>${escapeHtml(defaultRecordMeta(record) || config.title)}</small></div><div class="module-record-actions">${renderRecordActions(config.recordActions || ['View Detail','Add Note'])}</div></article>`).join('');
-    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data }) : openDetail(root, config, records[index])));
+    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
   };
   const endpointFetch = async (api, endpoint) => {
     if (!endpoint) return { ok:false, missing:true, message:'No endpoint configured yet.' };
@@ -94,10 +125,10 @@
     const records = effective.records ? effective.records(data) : defaultRecords(effective, data);
     const tabs = effective.tabs || [];
     root.innerHTML = `<section class="module-shell module-page stack"><div class="module-hero module-header card"><div><p class="eyebrow">${escapeHtml(effective.workspaceLabel || titleize(workspace || effective.role))}</p><h2 class="module-title">${escapeHtml(effective.icon || '📌')} ${escapeHtml(effective.title)}</h2><p class="module-description">${escapeHtml(effective.description || 'Operational tools for this workspace.')}</p></div><div class="module-toolbar module-actions action-row">${(effective.actions || []).map((action) => button(action.label || action, action.action || action, action.primary ? '' : 'secondary')).join('')}</div></div>${errors.length ? stateCard('error', 'Limited live data', `${errors.map((error) => error.endpoint).filter(Boolean).join(', ') || 'Endpoint'} is unavailable, so this module is showing usable controls and empty states.`) : ''}${renderMetrics(effective.metrics || [{ label:'Records', icon:'📌' }], data, records)}<div class="module-panel module-section card"><div class="module-panel-head"><div><h3>${escapeHtml(effective.mainTitle || 'Workspace queue')}</h3><p>${escapeHtml(effective.mainDescription || 'Search, filter, review details, and take the next action.')}</p></div><label class="field module-search"><span>Search</span><input data-module-search placeholder="Search records"></label></div>${tabs.length ? `<div class="module-tabs">${tabs.map((tab, index) => `<button class="btn secondary ${index === 0 ? 'active' : ''}" type="button" data-module-tab="${escapeHtml(tab.key || tab.toLowerCase())}">${escapeHtml(tab.label || tab)}</button>`).join('')}</div>` : ''}<div data-module-records class="module-record-list"></div></div>${effective.secondary ? `<div class="grid grid-2">${effective.secondary.map((item) => `<article class="card module-card"><h3>${escapeHtml(item.icon || '✅')} ${escapeHtml(item.title)}</h3><p>${escapeHtml(item.text)}</p></article>`).join('')}</div>` : ''}</section>`;
-    root.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => effective.onAction ? effective.onAction(control.dataset.moduleAction, { root, api, user, company, data, records, config:effective }) : openDetail(root, effective, records[0] || {}));
+    root.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => effective.onAction ? effective.onAction(control.dataset.moduleAction, { root, api, user, company, data, records, config:effective }) : runGenericAction(control, control.dataset.moduleAction, { root, api, user, company, data, records, config:effective, router, workspace }));
     root.querySelectorAll('[data-module-tab]').forEach((tab) => tab.onclick = () => { root.querySelectorAll('[data-module-tab]').forEach((item) => item.classList.remove('active')); tab.classList.add('active'); renderRecords(root, effective, data, records); });
     root.querySelector('[data-module-search]')?.addEventListener('input', () => renderRecords(root, effective, data, records));
     renderRecords(root, effective, data, records);
   };
-  window.TAModuleKit = { mount, escapeHtml, titleize, currency, dateText, stateCard, openDetail };
+  window.TAModuleKit = { mount, escapeHtml, titleize, currency, dateText, stateCard, openDetail, runGenericAction };
 })();

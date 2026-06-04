@@ -32,7 +32,7 @@
     const labels = { general:'General', quotes:'Quotes', requests:'Requests', workorders:'Work Orders', ai:'AI', notifications:'Notifications' };
     let active = 'general';
     let company = {};
-    let saved = JSON.parse(localStorage.getItem('taAdminSettings') || '{}');
+    let saved = {};
     const defaults = { timezone:'America/Phoenix', currency:'USD', researchMode:'internal_live', confidenceThreshold:'55', requireAdminReview:'true', defaultRequestStatus:'new' };
     const valueFor = (key) => saved[key] ?? defaults[key] ?? '';
     const fieldName = (label) => label.toLowerCase().replace(/[^a-z0-9]+(.)/g, (_, chr) => chr.toUpperCase()).replace(/[^a-z0-9]/g, '');
@@ -46,23 +46,55 @@
       root.innerHTML = `<section class="module-page stack admin-settings-page"><div class="module-hero module-header card"><div><p class="eyebrow">Admin Workspace</p><h2 class="module-title">⚙️ Settings</h2><p class="module-description">Business/admin settings only. Owner-only installer reset, destructive database actions, secret environment variables, and Owner role controls are not shown here.</p></div></div><article class="card module-section stack"><div class="module-tabs">${Object.entries(labels).map(([key,label]) => `<button class="btn secondary ${active===key?'active':''}" type="button" data-settings-tab="${key}">${label}</button>`).join('')}</div><form data-admin-settings class="stack"><div class="form-grid">${renderFields()}</div><p class="notice" data-settings-status>Loaded ${escapeHtml(labels[active])} settings. Changes are not saved yet.</p><div class="action-row"><button class="btn" type="submit">Save ${escapeHtml(labels[active])} Settings</button><button class="btn secondary" type="button" data-reset-section>Reset Section</button></div></form></article><div class="module-grid"><article class="module-card card"><h3>Safe Admin Scope</h3><p>General, quote, request, work order, AI, and notification settings are available without duplicating Owner-only platform controls.</p></article><article class="module-card card"><h3>AI Review Controls</h3><p>Research mode and confidence warning threshold are admin-visible while API keys remain server-side only.</p></article></div></section>`;
       root.querySelectorAll('[data-settings-tab]').forEach((button) => button.addEventListener('click', () => { active = button.dataset.settingsTab; render(); }));
       root.querySelector('[data-admin-settings]').addEventListener('input', () => { const status = root.querySelector('[data-settings-status]'); if (status) status.textContent = 'Unsaved changes — save this section before leaving.'; });
-      root.querySelector('[data-reset-section]').addEventListener('click', () => { tabs[active].forEach((label) => delete saved[fieldName(label)]); if (active === 'ai') delete saved.researchMode; localStorage.setItem('taAdminSettings', JSON.stringify(saved)); TAUi.toast('Section reset.', 'success'); render(); });
+      root.querySelector('[data-reset-section]').addEventListener('click', async () => {
+        tabs[active].forEach((label) => delete saved[fieldName(label)]);
+        if (active === 'ai') delete saved.researchMode;
+        const resetButton = root.querySelector('[data-reset-section]');
+        resetButton.disabled = true;
+        resetButton.textContent = 'Resetting...';
+        try {
+          const response = await api.patch('/.netlify/functions/company-settings', { ...company, adminSettings: saved });
+          company = response.company || company;
+          TAUi.toast('Section reset and saved.', 'success');
+          render();
+        } catch (error) {
+          TAUi.toast(error.message || 'Reset failed.', 'error');
+          resetButton.disabled = false;
+          resetButton.textContent = 'Reset Section';
+        }
+      });
       root.querySelector('[data-admin-settings]').addEventListener('submit', async (event) => {
         event.preventDefault();
         const form = event.currentTarget;
         const values = Object.fromEntries(new FormData(form).entries());
         form.querySelectorAll('input[type="checkbox"]').forEach((input) => { values[input.name] = input.checked ? 'true' : 'false'; });
         saved = { ...saved, ...values };
-        localStorage.setItem('taAdminSettings', JSON.stringify(saved));
-        if (active === 'general') {
-          try { await api.patch('/.netlify/functions/company-settings', { ...company, serviceArea: values.serviceArea || company.serviceArea, timezone: values.defaultTimezone || values.timezone || company.timezone, currency: values.defaultCurrency || values.currency || company.currency }); } catch {}
+        const submit = form.querySelector('[type="submit"]');
+        submit.disabled = true;
+        submit.textContent = 'Saving...';
+        root.querySelector('[data-settings-status]').textContent = 'Saving through company settings backend...';
+        try {
+          const response = await api.patch('/.netlify/functions/company-settings', {
+            ...company,
+            serviceArea: values.serviceArea || company.serviceArea,
+            timezone: values.defaultTimezone || values.timezone || company.timezone,
+            currency: values.defaultCurrency || values.currency || company.currency,
+            adminSettings: saved,
+          });
+          company = response.company || company;
+          saved = company.adminSettings || saved;
+          TAUi.toast(`${labels[active]} settings saved.`, 'success');
+          render();
+        } catch (error) {
+          root.querySelector('[data-settings-status]').textContent = error.message || 'Settings save failed.';
+          TAUi.toast(error.message || 'Settings save failed.', 'error');
+          submit.disabled = false;
+          submit.textContent = `Save ${labels[active]} Settings`;
         }
-        TAUi.toast(`${labels[active]} settings saved.`, 'success');
-        render();
       });
     };
     root.innerHTML = '<article class="card module-loading"><h3>Loading Admin Settings</h3><p>Preparing allowed business settings.</p></article>';
-    try { const response = await api.get('/.netlify/functions/company-settings'); company = response.company || {}; saved = { serviceArea: company.serviceArea || '', defaultTimezone: company.timezone || defaults.timezone, defaultCurrency: company.currency || defaults.currency, ...saved }; }
+    try { const response = await api.get('/.netlify/functions/company-settings'); company = response.company || {}; saved = { serviceArea: company.serviceArea || '', defaultTimezone: company.timezone || defaults.timezone, defaultCurrency: company.currency || defaults.currency, ...(company.adminSettings || {}) }; }
     catch (error) { root.innerHTML = `<article class="card module-error"><h3>Settings loaded with limited data</h3><p>${escapeHtml(error.message || 'Company settings unavailable.')}</p></article>`; }
     render();
   }

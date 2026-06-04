@@ -100,17 +100,26 @@
             <div class="action-row">
               <button class="btn secondary" type="button" data-edit="${escapeHtml(user.id)}">Edit User</button>
               <button class="btn secondary" type="button" data-magic="${escapeHtml(user.email || '')}" ${user.email ? '' : 'disabled'}>Reset / Send Magic Link</button>
-              <button class="btn danger" type="button" data-delete="${escapeHtml(user.id)}" ${roles.includes('owner') && stats().owners < 2 ? 'disabled title="Last owner is protected"' : ''}>Deactivate</button>
+              ${active ? `<button class="btn danger" type="button" data-delete="${escapeHtml(user.id)}" ${roles.includes('owner') && stats().owners < 2 ? 'disabled title="Last owner is protected"' : ''}>Deactivate</button>` : `<button class="btn secondary" type="button" data-reactivate="${escapeHtml(user.id)}">Reactivate</button>`}
             </div>
           </article>`;
         }).join('') || '<article class="card module-empty"><h3>No users found</h3><p>Adjust filters or create a new user to get started.</p></article>';
         root.querySelectorAll('[data-edit]').forEach((button) => button.addEventListener('click', () => editor(data.users.find((user) => String(user.id) === button.dataset.edit))));
-        root.querySelectorAll('[data-delete]').forEach((button) => button.addEventListener('click', () => deactivate(button.dataset.delete)));
+        root.querySelectorAll('[data-delete]').forEach((button) => button.addEventListener('click', () => deactivate(button.dataset.delete, button)));
+        root.querySelectorAll('[data-reactivate]').forEach((button) => button.addEventListener('click', () => reactivate(button.dataset.reactivate, button)));
         root.querySelectorAll('[data-magic]').forEach((button) => button.addEventListener('click', async () => {
           button.disabled = true;
-          await api.post('/api/auth/magic-link', { email: button.dataset.magic });
-          window.TAUi?.toast('Magic link requested.', 'success');
-          button.disabled = false;
+          const previous = button.textContent;
+          button.textContent = 'Sending...';
+          try {
+            await api.post('/api/auth/magic-link', { email: button.dataset.magic });
+            window.TAUi?.toast('Magic link requested.', 'success');
+          } catch (error) {
+            window.TAUi?.toast(error.message || 'Magic link failed.', 'error');
+          } finally {
+            button.textContent = previous;
+            button.disabled = false;
+          }
         }));
       };
 
@@ -142,19 +151,53 @@
           event.preventDefault();
           const payload = window.TAForms.values(root.querySelector('[data-user-editor]'));
           payload.roles = window.TAForms.checkedValues(root, 'roles');
-          if (user.id) payload.userId = user.id;
-          root.querySelector('#user-save-status').textContent = 'Saving...';
-          await api[user.id ? 'patch' : 'post']('/api/admin/users', payload);
-          window.TAUi?.toast('User saved.', 'success');
-          await load();
+          if (user.id) { payload.userId = user.id; payload.currentRoles = asArray(user.roles); }
+          const form = event.currentTarget;
+          const saveButton = root.querySelector('#save-user');
+          root.querySelector('#user-save-status').textContent = 'Saving user, role/rank, and workspace access...';
+          saveButton.disabled = true;
+          saveButton.textContent = 'Saving...';
+          try {
+            await api[user.id ? 'patch' : 'post']('/api/admin/users', payload);
+            window.TAUi?.toast('User saved.', 'success');
+            await load();
+          } catch (error) {
+            root.querySelector('#user-save-status').textContent = error.message || 'User save failed.';
+            window.TAUi?.toast(error.message || 'User save failed.', 'error');
+            saveButton.disabled = false;
+            saveButton.textContent = 'Save User';
+          }
         });
       };
 
-      const deactivate = async (id) => {
+      const deactivate = async (id, button) => {
         if (!confirm('Deactivate this user?')) return;
-        await api.delete('/api/admin/users', { userId: id, confirmation: 'DELETE' });
-        window.TAUi?.toast('User deactivated.', 'success');
-        await load();
+        button.disabled = true;
+        button.textContent = 'Deactivating...';
+        try {
+          await api.delete('/api/admin/users', { userId: id, confirmation: 'DELETE', currentRoles: asArray(data.users.find((user) => String(user.id) === String(id))?.roles) });
+          window.TAUi?.toast('User deactivated.', 'success');
+          await load();
+        } catch (error) {
+          window.TAUi?.toast(error.message || 'User deactivation failed.', 'error');
+          button.disabled = false;
+          button.textContent = 'Deactivate';
+        }
+      };
+
+      const reactivate = async (id, button) => {
+        button.disabled = true;
+        button.textContent = 'Reactivating...';
+        try {
+          const user = data.users.find((item) => String(item.id) === String(id));
+          await api.patch('/api/admin/users', { userId: id, fullName: user?.fullName || '', phone: user?.phone || '', secondaryPhone: user?.secondaryPhone || '', companyName: user?.companyName || '', mailingAddress: user?.mailingAddress || '', internalNotes: user?.internalNotes || '', roles: asArray(user?.roles).length ? asArray(user.roles) : ['client'], isActive: true });
+          window.TAUi?.toast('User reactivated.', 'success');
+          await load();
+        } catch (error) {
+          window.TAUi?.toast(error.message || 'User reactivation failed.', 'error');
+          button.disabled = false;
+          button.textContent = 'Reactivate';
+        }
       };
 
       await load();

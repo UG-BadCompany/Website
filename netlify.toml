@@ -147,6 +147,11 @@
   to = "/.netlify/functions/client-invoices"
   status = 200
 
+[[redirects]]
+  from = "/api/client/profile"
+  to = "/.netlify/functions/client-profile"
+  status = 200
+
 
 [[redirects]]
   from = "/api/job-files"

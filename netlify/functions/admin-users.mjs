@@ -31,6 +31,9 @@ const normalizeUserPayload = (payload = {}) => ({
   mailingAddress: clean(payload.mailingAddress, 500),
   internalNotes: clean(payload.internalNotes, 2000),
   confirmation: clean(payload.confirmation, 80),
+  isActive: payload.isActive === undefined ? null : Boolean(payload.isActive),
+  workspaceAccess: Array.isArray(payload.workspaceAccess) ? payload.workspaceAccess.map((item) => clean(item, 120)).filter(Boolean) : [],
+  currentRoles: normalizeRoles(payload.currentRoles || []),
   roles: normalizeRoles(payload.roles?.length ? payload.roles : ['client']),
 });
 
@@ -282,9 +285,11 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         });
       }
 
-      const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
-      if (ownerRoles.some((owner) => String(owner.id) === String(payload.userId)) && !adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
-      if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot be deactivated.' });
+      if (payload.currentRoles.includes('owner')) {
+        const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
+        if (!adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
+        if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot be deactivated.' });
+      }
 
       const [deletedUser] = await db.sql`
         update app_users
@@ -354,9 +359,10 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       });
     }
 
-    if (request.method === 'PATCH' && payload.userId) {
+    if (request.method === 'PATCH' && payload.userId && payload.currentRoles.includes('owner') && !payload.roles.includes('owner')) {
       const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
-      if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId) && !payload.roles.includes('owner')) return safeJson(409, { ok: false, message: 'The final Owner account cannot lose the Owner role.' });
+      if (!adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
+      if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot lose the Owner role.' });
     }
 
     if (payload.roles.length === 0) {
@@ -370,9 +376,8 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       return safeJson(403, { ok: false, message: 'Users cannot escalate themselves.' });
     }
 
-    const requestedRoleRows = await db.sql`select key from roles where key = any(${payload.roles})`;
-    const requestedRoleKeys = requestedRoleRows.map((role) => role.key);
-    const blockedRoles = requestedRoleKeys.filter((roleKey) => !canManageRoleKey(adminSession.roleKeys, roleKey));
+    const requestedRoleKeys = payload.roles;
+    const blockedRoles = requestedRoleKeys.filter((roleKey) => !adminSession.roleKeys.includes(roleKey) && !canManageRoleKey(adminSession.roleKeys, roleKey));
     if (blockedRoles.length) {
       return safeJson(403, { ok: false, message: blockedRoles.includes('owner') ? 'Only Owner can modify this role.' : 'You can only assign roles below your authority level.', blockedRoles });
     }
@@ -395,6 +400,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       : await db.sql`
           update app_users
           set full_name = ${payload.fullName || null},
+              is_active = coalesce(${payload.isActive}, app_users.is_active),
               phone = ${payload.phone || null},
               secondary_phone = ${payload.secondaryPhone || null},
               company_name = ${payload.companyName || null},
@@ -425,6 +431,8 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
           roles: payload.roles,
           email: user.email,
           updatedProfile: true,
+          isActive: payload.isActive,
+          workspaceAccess: payload.workspaceAccess,
         })}::jsonb
       )
     `;
