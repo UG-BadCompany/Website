@@ -16,15 +16,22 @@ const OPENAI_TIMEOUT_MS = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 90
 const toArray = (value) => Array.isArray(value) ? value.map((item) => clean(String(item), 180)).filter(Boolean) : [];
 const normalizePayload = (body = {}) => ({
   action: clean(body.action, 40),
-  systemType: clean(body.systemType, 80),
-  component: clean(body.component, 120),
-  make: clean(body.make, 120),
+  systemType: clean(body.systemType || body.trade, 80),
+  component: clean(body.component || body.equipmentType, 120),
+  manufacturer: clean(body.manufacturer || body.make, 120),
+  make: clean(body.make || body.manufacturer, 120),
   model: clean(body.model, 120),
-  serial: clean(body.serial, 120),
-  issue: clean(body.issue, 4000),
-  errorCode: clean(body.errorCode, 120),
+  serial: clean(body.serial || body.serialNumber, 120),
+  age: clean(body.age, 80),
+  customerComplaint: clean(body.customerComplaint || body.issue, 4000),
+  issue: clean(body.issue || body.customerComplaint || body.symptoms, 4000),
+  symptoms: clean(body.symptoms || body.issue, 3000),
+  errorCode: clean(body.errorCode || body.errorCodes, 120),
   readings: clean(body.readings, 3000),
   checkedAlready: clean(body.checkedAlready, 3000),
+  photos: toArray(body.photos),
+  videoUpload: clean(body.videoUpload || body.videoUrl, 500),
+  technicianModeRequested: clean(body.technicianModeRequested || body.technicianMode || 'expert', 40),
   safetyFlags: toArray(body.safetyFlags),
   urgency: clean(body.urgency, 80) || 'normal',
   workOrderId: clean(body.workOrderId, 100),
@@ -68,9 +75,10 @@ const fallbackPlan = (payload) => {
   return {
     summary: `${system} / ${component}: field troubleshooting plan for ${issue}${payload.errorCode ? ` (code ${payload.errorCode})` : ''}.`,
     likelyCauses: [
-      `Incorrect power, control signal, setting, or safety/interlock condition affecting the ${component}.`,
-      `Component wear/failure, blocked flow/airflow, loose connection, or sensor fault related to the reported symptoms.`,
-      payload.errorCode ? `Manufacturer-specific fault code ${payload.errorCode}; verify against the service manual before replacing parts.` : 'No fault code supplied; start with observable symptoms and baseline readings.',
+      { cause: `Incorrect power, control signal, setting, or safety/interlock condition affecting the ${component}.`, probability: 35, probabilityPercent: 35 },
+      { cause: `Component wear/failure, blocked flow/airflow, loose connection, or sensor fault related to the reported symptoms.`, probability: 30, probabilityPercent: 30 },
+      { cause: payload.errorCode ? `Manufacturer-specific fault code ${payload.errorCode}; verify against the service manual before replacing parts.` : 'No fault code supplied; start with observable symptoms and baseline readings.', probability: 20, probabilityPercent: 20 },
+      { cause: 'Control board, compressor/motor, sealed-system, or concealed wiring fault after simpler checks are eliminated.', probability: 15, probabilityPercent: 15 },
     ],
     safetyWarnings: [
       'Stop immediately if there is smoke, burning smell, gas smell, active water damage near electrical equipment, exposed live wiring, or unsafe access.',
@@ -101,6 +109,23 @@ const fallbackPlan = (payload) => {
     customerExplanation: `We are diagnosing the ${system.toLowerCase()} issue in a safe order: confirm the symptom, check simple causes, take readings, and only recommend parts or repairs once the measurements support it.`,
     workOrderNotes: `AI troubleshooting notes: ${system} / ${component}. Issue: ${issue}. Code: ${payload.errorCode || 'none'}. Readings: ${payload.readings || 'not supplied'}. Checked: ${payload.checkedAlready || 'not supplied'}. Safety flags: ${payload.safetyFlags.join(', ') || 'none selected'}.`,
     estimateRecommendation: 'If diagnostics confirm a failed part or unsafe condition, create a repair estimate with documented readings, photos, part model compatibility, labor scope, and any supervisor/licensed-trade requirements.',
+    technicianMode: {
+      quickFix: ['Confirm customer complaint, settings, power/reset state, filters/screens, water/gas shutoffs, and obvious blockage without opening unsafe compartments.'],
+      advancedDiagnosis: ['Use meter/gauges/tools appropriate to the trade, record readings, and test suspected components in probability order.'],
+      expertMode: ['Use manufacturer service data for model-specific fault trees, expected readings, parts supersession, and final repair/replace decision.'],
+    },
+    diagnosticTests: [
+      { test: 'Verify supply/control voltage or operating input', expectedReading: 'Matches nameplate/control specification within normal tolerance', tool: 'Multimeter' },
+      { test: 'Check load/amp draw or flow/temperature/pressure as applicable', expectedReading: 'Within manufacturer operating range for site conditions', tool: 'Clamp meter/gauge/thermometer' },
+      { test: 'Inspect visible condition/access/photos', expectedReading: 'No unsafe access, overheating, leak, corrosion, blockage, or damaged conductor before continuing', tool: 'Camera/PPE' },
+    ],
+    requiredTools: ['Multimeter with appropriate CAT rating', 'Clamp meter if motor/load amperage is needed', 'Manufacturer service manual or fault-code chart', 'Basic hand tools', 'PPE and lockout/tagout kit'],
+    replacementRecommendation: 'Repair confirmed isolated failures when parts are available and equipment age/condition support repair; recommend replacement for unsafe, obsolete, repeated major, sealed-system, or high-cost failures.',
+    nextDiagnosticSteps: ['Capture manufacturer/model/serial plate and clear photos.', 'Run diagnostic tests in probability order.', 'Document readings before replacing parts.', 'Escalate if licensing/code/safety conditions apply.'],
+    confidenceScore: payload.make || payload.model ? 0.72 : 0.58,
+    confidenceExplanation: { label: payload.make || payload.model ? 'High' : 'Medium', explanation: payload.make || payload.model ? 'Manufacturer/model data improves equipment-specific guidance; verify against service manual.' : 'No model plate supplied, so guidance is trade-specific but less equipment-specific.' },
+    equipmentIdentification: { manufacturer: payload.make || payload.manufacturer || 'Unknown', model: payload.model || 'Unknown', serial: payload.serial || 'Unknown', equipmentType: component, age: payload.age || 'Unknown' },
+    photoAnalysis: { quality: payload.photos?.length ? 'Photos referenced' : 'No photos supplied', confidenceImpact: payload.photos?.length ? 'Photo context can improve access/condition confidence if clear.' : 'Missing photos reduce access, damage, and equipment identification certainty.' },
   };
 };
 
@@ -141,10 +166,10 @@ const generateAiPlan = async (payload) => {
 
 const normalizePlan = (plan, fallback) => {
   const source = plan && typeof plan === 'object' ? plan : fallback;
-  const arr = (value, fallbackValue = []) => Array.isArray(value) ? value.map((item) => clean(String(item), 600)).filter(Boolean).slice(0, 12) : fallbackValue;
+  const arr = (value, fallbackValue = []) => Array.isArray(value) ? value.map((item) => typeof item === 'string' ? clean(item, 900) : item).filter(Boolean).slice(0, 12) : fallbackValue;
   return {
     summary: clean(source.summary || source.firstThingToCheck, 1200) || fallback.summary,
-    likelyCauses: arr(source.likelyCauses, fallback.likelyCauses),
+    likelyCauses: arr(source.likelyCauses, fallback.likelyCauses).map((item) => typeof item === 'string' ? { cause: item, probability: 'unknown' } : item),
     safetyWarnings: arr(source.safetyWarnings, fallback.safetyWarnings),
     diagnosticSteps: arr(source.diagnosticSteps, fallback.diagnosticSteps),
     expectedReadings: arr(source.expectedReadings, fallback.expectedReadings),
@@ -154,6 +179,15 @@ const normalizePlan = (plan, fallback) => {
     customerExplanation: clean(source.customerExplanation, 1600) || fallback.customerExplanation,
     workOrderNotes: clean(source.workOrderNotes, 2400) || fallback.workOrderNotes,
     estimateRecommendation: clean(source.estimateRecommendation || source.repairEstimateRecommendation, 1600) || fallback.estimateRecommendation,
+    technicianMode: source.technicianMode || fallback.technicianMode || {},
+    diagnosticTests: arr(source.diagnosticTests, fallback.diagnosticTests),
+    requiredTools: arr(source.requiredTools || source.toolsMetersNeeded, fallback.requiredTools || fallback.toolsMetersNeeded),
+    replacementRecommendation: clean(source.replacementRecommendation, 1600) || fallback.replacementRecommendation || '',
+    nextDiagnosticSteps: arr(source.nextDiagnosticSteps, fallback.nextDiagnosticSteps),
+    confidenceScore: Number(source.confidenceScore || fallback.confidenceScore || 0),
+    confidenceExplanation: source.confidenceExplanation || fallback.confidenceExplanation || {},
+    equipmentIdentification: source.equipmentIdentification || fallback.equipmentIdentification || {},
+    photoAnalysis: source.photoAnalysis || fallback.photoAnalysis || {},
   };
 };
 

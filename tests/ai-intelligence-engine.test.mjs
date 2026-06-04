@@ -13,6 +13,9 @@ const validQuote = (overrides = {}) => ({
   jobClassification: 'Mini split diagnostic and repair',
   tradeCategory: 'HVAC',
   confidenceScore: 0.82,
+  confidenceScores: { overall: 0.82, trade_certainty: 0.9, scope: 0.82, photo_quality: 0.6, equipment_identification: 0.72, pricing: 0.78, measurements: 0.7, materials: 0.76, regional_data: 0.66, code_requirements: 0.7, customer_description_quality: 0.78, labor: 0.8, information_completeness: 0.76, research: 0.68 },
+  confidenceReasons: ['Specific trade, standard diagnostic phases, and known material allowance.'],
+  recommendedAction: 'Ready for admin review.',
   quoteReady: true,
   siteVisitRecommended: false,
   missingInfoQuestions: [],
@@ -45,6 +48,18 @@ const validQuote = (overrides = {}) => ({
   measurementNeeded: false,
   modelPlateNeeded: false,
   photoConfidenceImpact: 'Existing photo metadata is not required for this standard repair; model/access assumptions are stated.',
+  jobSummary: 'Mini split diagnostic and repair with model verification and safe operational testing.',
+  detailedScope: ['Verify equipment nameplate and complaint.', 'Diagnose condensate/no-cooling issue.', 'Replace confirmed failed component and test operation.'],
+  equipmentBreakdown: [{ name: 'No rental equipment anticipated', quantity: 0, costCents: 0 }],
+  permitBreakdown: [{ name: 'No permit expected for diagnostic/minor repair', costCents: 0 }],
+  recommendedUpsells: ['Add seasonal HVAC maintenance after repair.'],
+  maintenanceOpportunities: ['Clean filters, coils, and condensate path.'],
+  safetyNotes: ['Use lockout/tagout and escalate refrigerant or high-voltage work.'],
+  warrantyNotes: 'Manufacturer warranty depends on confirmed model/serial and part eligibility.',
+  aiAnalysis: { tradeDetection: 'HVAC', scopeDetection: 'Mini split diagnostic/repair', complexityScore: 5, riskScore: 6, confidenceScore: 0.82 },
+  pricingEngine: { laborHours: 4.5, laborRate: 125, laborCents: 56250, materialCostCents: 13250, permitCents: 0, markupRate: 0.18, markupCents: 2385, lowRangeCents: 65000, recommendedRangeCents: 69500, premiumRangeCents: 72500, why: ['Labor hours × rate plus material allowance and markup.'] },
+  confidenceExplanation: { label: 'High', explanation: 'Trade, scope, labor, and standard material certainty are strong.', factors: { tradeCertainty: 0.9, scopeCertainty: 0.82, pricingCertainty: 0.78 } },
+  photoAnalysis: { equipment: 'Mini split', condition: 'Not visible', accessDifficulty: 'Assumed standard', missingInformation: ['Model plate photo'] },
   ...overrides,
 });
 
@@ -60,6 +75,15 @@ const validTroubleshooting = (overrides = {}) => ({
   customerExplanation: 'We will start with safe checks and readings before recommending parts.',
   workOrderNotes: 'Document readings, photos, model/serial, and exact error code.',
   repairEstimateRecommendation: 'Quote diagnostic first, then fixed repair after confirmed part and access.',
+  technicianMode: { quickFix: ['Confirm thermostat call and filters.'], advancedDiagnosis: ['Measure condensate pump output and controls.'], expertMode: ['Compare readings to manufacturer service data before replacing parts.'] },
+  diagnosticTests: [{ test: 'Measure voltage at equipment', expectedReading: 'Nameplate/control voltage within tolerance' }, { test: 'Measure condensate pump operation', expectedReading: 'Pump energizes and removes water' }],
+  requiredTools: ['Multimeter', 'Clamp meter', 'Manufacturer service manual'],
+  replacementRecommendation: 'Repair if confirmed part failure is isolated; consider replacement for major sealed-system or board failures on older units.',
+  nextDiagnosticSteps: ['Capture model/serial plate.', 'Run tests in probability order.', 'Document readings and photos.'],
+  confidenceScore: 0.78,
+  confidenceExplanation: { label: 'High', explanation: 'Complaint and equipment type support a specific diagnostic tree.' },
+  equipmentIdentification: { manufacturer: 'Unknown', model: 'Unknown', equipmentType: 'Mini split' },
+  photoAnalysis: { quality: 'No photos supplied', confidenceImpact: 'Lower equipment/access certainty.' },
   ...overrides,
 });
 
@@ -223,17 +247,15 @@ test('AI quote prompt loads job photo metadata into photoContext', async () => {
 
 test('quote UI exposes recommended fixed price, tight range, confidence, and override controls', async () => {
   const draftFunction = await readFile('netlify/functions/admin-quote-draft.mjs', 'utf8');
-  const dashboard = await readFile('public/dashboard/modules/dashboard/bootstrap.js', 'utf8');
-  const html = await readFile('public/dashboard/index.html', 'utf8');
+  const quoteUi = await readFile('public/dashboard/modules/admin/quotes/module.js', 'utf8');
 
-  assert.match(draftFunction, /Recommended fixed price/);
-  assert.match(draftFunction, /Tight range/);
-  assert.match(draftFunction, /Confidence:/);
-  assert.match(dashboard, /HIGH confidence|pricingConfidenceLevel|confidenceText/);
-  assert.match(dashboard, /Recommended fixed price shown first/);
-  assert.match(html, /data-admin-quote-confidence-override/);
-  assert.match(html, /data-admin-quote-range-low/);
-  assert.match(html, /data-admin-quote-range-high/);
+  assert.match(draftFunction, /fixed_price_recommendation_cents/);
+  assert.match(draftFunction, /pricing_engine/);
+  assert.match(draftFunction, /confidence_explanation/);
+  assert.match(quoteUi, /AI Quote Studio 2\.0/);
+  assert.match(quoteUi, /SECTION 5 · Pricing Engine/);
+  assert.match(quoteUi, /Accept AI Quote/);
+  assert.match(quoteUi, /Save Final Version/);
 });
 
 test('admin quote edits are stored as AI corrections for future learning', async () => {
