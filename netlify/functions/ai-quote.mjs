@@ -1,6 +1,6 @@
 import { clean, json, parseJsonBody } from './auth-utils.mjs';
 
-const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
+const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_QUOTE_TIMEOUT_MS || 18000);
 const SERP_TIMEOUT_MS = Number(process.env.AI_LIVE_RESEARCH_TIMEOUT_MS || 3500);
 const DEFAULT_LABOR_RATE_CENTS = moneyToCents(process.env.AI_LABOR_RATE || process.env.DEFAULT_LABOR_RATE || 125);
@@ -128,7 +128,15 @@ const normalizeOtherPricing = (source = {}) => {
   return { trip_charge: centsToMoney(out.trip_charge_cents), ...out, permit: centsToMoney(out.permit_cents), disposal: centsToMoney(out.disposal_cents), rental: centsToMoney(out.rental_cents), tax: centsToMoney(out.tax_cents), discount: centsToMoney(out.discount_cents), markup: centsToMoney(out.markup_cents) };
 };
 
-const normalizeLaborLine = (item = {}, index = 0, pricingSummary = {}, assumptions = []) => {
+
+const laborSanityProfile = (text = '') => {
+  const t = String(text || '').toLowerCase();
+  if (/ceiling\s+fan/.test(t) && /replace|replacement|swap/.test(t) && !/new\s+(circuit|wire|box)|home\s*run|attic|high\s+ceiling|scaffold/.test(t)) return { maxHours: 2, reason: 'Ceiling fan replacement sanity check capped labor at 1–2 hours unless new wiring/access complexity is documented.' };
+  if (/ceiling\s+fan/.test(t)) return { maxHours: 4, reason: 'Ceiling fan install sanity check capped labor unless new circuit/access complexity is documented.' };
+  return null;
+};
+
+const normalizeLaborLine = (item = {}, index = 0, pricingSummary = {}, assumptions = [], contextText = '') => {
   const obj = typeof item === 'string' ? { name: item } : item;
   const name = normalizeText(firstValue(obj, ['name', 'description', 'label', 'phase'], `Labor allowance ${index + 1}`));
   let hours = Number(firstValue(obj, ['hours', 'quantity', 'low_hours', 'lowHours', 'hours_low'], 0));
@@ -137,6 +145,8 @@ const normalizeLaborLine = (item = {}, index = 0, pricingSummary = {}, assumptio
   if (!rateCents) { rateCents = DEFAULT_LABOR_RATE_CENTS; assumptions.push(`Labor rate was missing for "${name}"; default rate ${centsToMoney(rateCents).toFixed(2)}/hr was applied.`); }
   if (!hours && totalCents) hours = Math.round((totalCents / rateCents) * 100) / 100;
   if (!hours) hours = 1;
+  const sanity = laborSanityProfile(`${contextText} ${name} ${obj.description || ''}`);
+  if (sanity && hours > sanity.maxHours) { assumptions.push(sanity.reason); hours = sanity.maxHours; totalCents = Math.round(hours * rateCents); }
   if (!totalCents) totalCents = Math.round(hours * rateCents);
   return { name, description: normalizeText(obj.description || name), hours, quantity: hours, unit: obj.unit || 'hours', rate: centsToMoney(rateCents), rate_cents: rateCents, unit_cost: centsToMoney(rateCents), unit_cost_cents: rateCents, total: centsToMoney(totalCents), total_cents: totalCents, confidence: obj.confidence || 'medium', notes: obj.notes || '' };
 };
@@ -151,6 +161,11 @@ const normalizeMaterialLine = (item = {}, index = 0, trade = 'General', assumpti
   let totalCents = firstMoney(obj, ['total', 'total_cost', 'line_total']) || firstMoney(obj, ['total_cents', 'totalCents', 'totalCostCents'], { assumeCents: true });
   if (!unitCostCents && totalCents) unitCostCents = Math.round(totalCents / quantity / (1 + markup / 100));
   if (!unitCostCents) { unitCostCents = allowanceFor(name, trade); assumptions.push(`Material price was missing for "${name}"; estimated allowance pricing was applied for admin review.`); }
+  if (/ceiling\s+fan|fan fixture/i.test(`${trade} ${name}`) && !/wire nut|hardware|box|consumable|connector/i.test(name) && unitCostCents > 0 && unitCostCents < 6500) {
+    assumptions.push(`Material sanity check raised "${name}" from an impossible low price to a reviewable ceiling-fan allowance.`);
+    unitCostCents = 12900;
+    totalCents = 0;
+  }
   if (!totalCents) totalCents = Math.round(quantity * unitCostCents * (1 + markup / 100));
   return { name, description: normalizeText(obj.description || name), quantity, unit, unit_cost: centsToMoney(unitCostCents), unit_cost_cents: unitCostCents, markup_percent: Number.isFinite(markup) ? markup : DEFAULT_MARKUP_PERCENT, total: centsToMoney(totalCents), total_cents: totalCents, source: normalizeText(obj.source || obj.pricing_source || obj.pricingSource || (unitCostCents ? 'OpenAI research / internal catalog' : 'estimated allowance')), source_url: normalizeText(obj.source_url || obj.url || obj.link || ''), last_checked: normalizeText(obj.last_checked || obj.lastChecked || today()), confidence: obj.confidence || (obj.source || obj.source_url ? 'medium' : 'low'), notes: obj.notes || '' };
 };
@@ -222,6 +237,10 @@ const computeConfidence = ({ estimate = {}, payload = {}, research = {} }) => {
   return { scores, reasons, positive_reasons: positive, negative_reasons: negative, recommended_action, level: scores.level, explanation: reasons[0] };
 };
 
+
+const openAiWebSearchUsed = (data = {}) => asArray(data.output).some((item) => item?.type === 'web_search_call');
+const openAiWebSources = (data = {}) => asArray(data.output).flatMap((item) => asArray(item?.action?.sources).map((source) => ({ title: source.title || source.url || 'OpenAI web source', url: source.url || '', source: source.source || 'OpenAI web search' }))).filter((source) => source.url);
+
 const parseOpenAiJson = (data = {}) => {
   const raw = data.output_text || data.output?.flatMap((item) => item.content || []).map((content) => content.text).filter(Boolean).join('\n') || data.choices?.[0]?.message?.content || '';
   if (!raw) return null;
@@ -235,13 +254,13 @@ const normalizeEstimate = (estimate = {}, payload = {}, research = {}) => {
   const assumptions = toArray(estimate.assumptions).map((item) => normalizeText(typeof item === 'string' ? item : item.description || item.name || JSON.stringify(item)));
   const warnings = [];
   const trade = normalizeText(estimate.trade || estimate.service_category || detectTrade(payload));
-  let laborLines = toArray(estimate.labor_line_items || estimate.laborLineItems || estimate.labor_items || estimate.laborItems).map((item, i) => normalizeLaborLine(item, i, estimate.pricing_summary, assumptions));
+  let laborLines = toArray(estimate.labor_line_items || estimate.laborLineItems || estimate.labor_items || estimate.laborItems).map((item, i) => normalizeLaborLine(item, i, estimate.pricing_summary, assumptions, `${payload.service || ''} ${payload.workScope || ''} ${payload.description || ''}`));
   let materialSource = toArray(estimate.material_line_items || estimate.materialLineItems || estimate.materials || estimate.materialBreakdown || estimate.material_breakdown);
   if (!materialSource.length) materialSource = internalMaterials(payload);
   let materialLines = materialSource.map((item, i) => normalizeMaterialLine(item, i, trade, assumptions));
   const otherPricing = normalizeOtherPricing(estimate.other_pricing || estimate.otherPricing || estimate.pricing_summary || estimate.pricingSummary || {});
   backfillIncompletePricing({ estimate, payload, laborLines, materialLines, otherPricing, assumptions, warnings });
-  if (!laborLines.length) laborLines = [normalizeLaborLine({ name: 'Diagnostic / setup / verification', description: 'Inspect issue, verify scope, test operation.', hours: 1.5, rate_cents: DEFAULT_LABOR_RATE_CENTS, confidence: 'medium' }, 0, estimate.pricing_summary, assumptions)];
+  if (!laborLines.length) laborLines = [normalizeLaborLine({ name: 'Diagnostic / setup / verification', description: 'Inspect issue, verify scope, test operation.', hours: 1.5, rate_cents: DEFAULT_LABOR_RATE_CENTS, confidence: 'medium' }, 0, estimate.pricing_summary, assumptions, `${payload.service || ''} ${payload.workScope || ''} ${payload.description || ''}`)];
   if (!materialLines.length) materialLines = [normalizeMaterialLine({ name: 'Fasteners, anchors, caulk, sealant', description: 'Consumable installation materials.', quantity: 1, unit: 'allowance', source: 'estimated allowance', confidence: 'medium' }, 0, trade, assumptions)];
   const pricingSummary = normalizePricingSummary({ laborLines, materialLines, otherPricing, estimate });
   if (pricingSummary.ai_reported_grand_total_cents && Math.abs(pricingSummary.ai_reported_grand_total_cents - pricingSummary.grand_total_cents) > 100) warnings.push('AI reported total differed from editable line-item totals; grand total was recalculated from editable lines.');
@@ -289,7 +308,7 @@ const openAiRequestBody = ({ payload, research, useSearchTools = true }) => {
     text: { format: { type: 'json_object' } },
     max_output_tokens: 5000,
   };
-  if (useSearchTools) body.tools = [{ type: 'web_search_preview' }];
+  if (useSearchTools) body.tools = [{ type: 'web_search', external_web_access: true }];
   return body;
 };
 
@@ -315,7 +334,23 @@ const callOpenAI = async ({ payload, research }) => {
     }
     const parsed = parseOpenAiJson(data);
     if (!parsed) return { ok: false, status: 502, message: 'AI returned invalid JSON. Continue manually?' };
-    parsed.research_metadata = { ...(parsed.research_metadata || {}), research_mode: 'openai_first', openai_live_search_used: Boolean(parsed.research_metadata?.openai_live_search_used || usedSearchTools), fallback_search_used: Boolean(fallbackResearch.research_metadata?.fallback_search_used), serpapi_used: Boolean(fallbackResearch.research_metadata?.serpapi_used), internal_catalog_used: true };
+    const actualWebSearchUsed = openAiWebSearchUsed(data);
+    const sourcesFromTool = openAiWebSources(data);
+    const priorSources = asArray(parsed.research_metadata?.sources);
+    parsed.research_metadata = {
+      ...(parsed.research_metadata || {}),
+      research_mode: 'openai_first',
+      openai_live_search_used: actualWebSearchUsed,
+      openai_live_search_requested: usedSearchTools,
+      openai_live_search_unavailable: usedSearchTools && !actualWebSearchUsed,
+      fallback_search_used: Boolean(fallbackResearch.research_metadata?.fallback_search_used) || (usedSearchTools && !actualWebSearchUsed),
+      serpapi_used: Boolean(fallbackResearch.research_metadata?.serpapi_used),
+      internal_catalog_used: true,
+      sources: [...priorSources, ...sourcesFromTool],
+      pricing_confidence_reason: actualWebSearchUsed
+        ? (parsed.research_metadata?.pricing_confidence_reason || 'OpenAI Responses API web_search was used for live pricing support.')
+        : 'OpenAI live web_search did not execute; confidence was reduced and internal catalog/fallback pricing must be reviewed.',
+    };
     return { ok: true, estimate: normalizeEstimate(parsed, payload, fallbackResearch) };
   } catch (error) {
     return { ok: false, status: 502, message: `AI estimate generation failed. Continue manually? ${error.message}` };

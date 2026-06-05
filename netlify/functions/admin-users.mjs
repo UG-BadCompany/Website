@@ -141,6 +141,18 @@ const loadAdminSession = async (db, request) => {
   return { session, roleKeys, permissionKeys };
 };
 
+const loadUserRoleKeys = async (db, userId) => {
+  const rows = await db.sql`
+    select roles.key
+    from user_roles
+    join roles on roles.id = user_roles.role_id
+    where user_roles.user_id = ${userId}
+  `;
+  return rows.map((role) => normalizeRoleKey(role.key)).filter(Boolean);
+};
+
+const canManageUserRoles = (actorRoleKeys = [], targetRoleKeys = []) => actorRoleKeys.includes('owner') || targetRoleKeys.every((roleKey) => canManageRoleKey(actorRoleKeys, roleKey));
+
 const assignRoles = async (db, userId, roles) => {
   await db.sql`
     delete from user_roles
@@ -270,6 +282,9 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
 
     const payload = normalizeUserPayload(body);
 
+    const persistedCurrentRoles = payload.userId && payload.currentRoles.length ? await loadUserRoleKeys(db, payload.userId) : [];
+    const effectiveCurrentRoles = persistedCurrentRoles.length ? persistedCurrentRoles : payload.currentRoles;
+
     if (request.method === 'DELETE') {
       if (!payload.userId) {
         return safeJson(422, {
@@ -285,7 +300,9 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         });
       }
 
-      if (payload.currentRoles.includes('owner')) {
+      if (!canManageUserRoles(adminSession.roleKeys, effectiveCurrentRoles)) return safeJson(403, { ok: false, message: 'You can only deactivate users below your authority level.' });
+
+      if (effectiveCurrentRoles.includes('owner')) {
         const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
         if (!adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
         if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot be deactivated.' });
@@ -359,7 +376,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       });
     }
 
-    if (request.method === 'PATCH' && payload.userId && payload.currentRoles.includes('owner') && !payload.roles.includes('owner')) {
+    if (request.method === 'PATCH' && payload.userId && effectiveCurrentRoles.includes('owner') && !payload.roles.includes('owner')) {
       const ownerRoles = await db.sql`select app_users.id from app_users join user_roles on user_roles.user_id=app_users.id join roles on roles.id=user_roles.role_id where roles.key='owner' and app_users.is_active=true`;
       if (!adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
       if (ownerRoles.length === 1 && String(ownerRoles[0].id) === String(payload.userId)) return safeJson(409, { ok: false, message: 'The final Owner account cannot lose the Owner role.' });
@@ -374,6 +391,10 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
 
     if (request.method === 'PATCH' && String(payload.userId) === String(adminSession.session.user_id) && !adminSession.roleKeys.includes('owner')) {
       return safeJson(403, { ok: false, message: 'Users cannot escalate themselves.' });
+    }
+
+    if (request.method === 'PATCH' && !canManageUserRoles(adminSession.roleKeys, effectiveCurrentRoles)) {
+      return safeJson(403, { ok: false, message: 'You can only modify users below your authority level.' });
     }
 
     const requestedRoleKeys = payload.roles;

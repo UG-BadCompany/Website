@@ -10,7 +10,7 @@ import {
 } from './auth-utils.mjs';
 import { runAiFirstTroubleshooting } from './ai-intelligence-engine.mjs';
 
-const OPENAI_MODEL = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
+const OPENAI_MODEL = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
 const OPENAI_TIMEOUT_MS = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 9000);
 
 const toArray = (value) => Array.isArray(value) ? value.map((item) => clean(String(item), 180)).filter(Boolean) : [];

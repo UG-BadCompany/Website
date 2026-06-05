@@ -153,13 +153,13 @@ async function tryOpenAi(req) {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini',
+        model: process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5',
         input: [
           { role: 'system', content: 'You are a senior handyman estimator and pricing research engine. Return strict JSON only. Use OpenAI live/search capability if available for current pricing; never rely on memory alone. Every labor item must include hours, rate/rate_cents, and total/total_cents. Every material must include quantity, unit, unit_cost/unit_cost_cents, markup_percent, total/total_cents, source, last_checked, and confidence. Never put quote_in_progress in content fields and never return a nonzero grand total with zero line items.' },
           { role: 'user', content: JSON.stringify({ task: 'Improve this local handyman quote draft. Keep same JSON keys and also include labor_line_items, material_line_items, other_pricing, pricing_summary, confidence_reasons, and research_metadata. If exact pricing is unavailable, use estimated allowance pricing, lower confidence, and explain why. Do not auto-send.', request: req, draft: buildLocalDraft(req) }) }
         ],
         text: { format: { type: 'json_object' } },
-        tools: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : [{ type: 'web_search_preview' }],
+        tools: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : [{ type: 'web_search', external_web_access: true }],
         max_output_tokens: 3600,
       }),
       signal: controller.signal,

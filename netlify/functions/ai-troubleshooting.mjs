@@ -1,6 +1,6 @@
 import { clean, json, parseJsonBody } from './auth-utils.mjs';
 
-const OPENAI_MODEL = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
+const OPENAI_MODEL = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
 const OPENAI_TIMEOUT_MS = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 12000);
 
 const toArray = (value) => Array.isArray(value) ? value.filter(Boolean) : value ? [value] : [];
