@@ -86,7 +86,7 @@ const queryCurrentUserSession = async (db, sessionToken, { profileFieldSet = 'fu
   if (profileFieldSet === 'minimal') {
     const [session] = await db.sql`
       select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
-        app_users.email, app_users.full_name, app_users.is_active
+        app_users.email, app_users.full_name, app_users.account_setup_complete, app_users.is_active
       from auth_sessions
       left join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
@@ -99,7 +99,7 @@ const queryCurrentUserSession = async (db, sessionToken, { profileFieldSet = 'fu
   if (profileFieldSet === 'base') {
     const [session] = await db.sql`
       select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
-        app_users.email, app_users.full_name, app_users.phone, app_users.is_active
+        app_users.email, app_users.full_name, app_users.phone, app_users.account_setup_complete, app_users.is_active
       from auth_sessions
       left join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
@@ -113,7 +113,7 @@ const queryCurrentUserSession = async (db, sessionToken, { profileFieldSet = 'fu
       select auth_sessions.id, auth_sessions.user_id, auth_sessions.expires_at, auth_sessions.revoked_at,
         app_users.email, app_users.full_name, app_users.phone,
         app_users.secondary_phone, app_users.company_name, app_users.mailing_address,
-        app_users.is_active
+        app_users.account_setup_complete, app_users.is_active
       from auth_sessions
       left join app_users on app_users.id = auth_sessions.user_id
       where auth_sessions.session_hash = ${hashToken(sessionToken)}
@@ -222,6 +222,7 @@ const mapUser = (session, roleKeys, permissionKeys = null, workspaceAccess = [])
   secondaryPhone: session.secondary_phone,
   companyName: session.company_name,
   mailingAddress: session.mailing_address,
+  accountSetupComplete: session.account_setup_complete !== false,
   roles: roleKeys,
   workspaceAccess,
   permissions: buildPermissions(roleKeys, permissionKeys, workspaceAccess),

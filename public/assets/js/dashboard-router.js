@@ -263,6 +263,7 @@
     state.company = await TACompany.load();
     const me = await TAAuth.me().catch(() => ({ authenticated:false }));
     if (!me.authenticated) { location.href = '/login/'; return; }
+    if (me.user?.accountSetupComplete === false) { location.href = '/account-setup/'; return; }
     state.user = me.user;
     await refreshModuleRegistry();
     state.currentWorkspace = userRoles().includes('owner') ? 'owner' : userRoles().includes('manager') ? 'manager' : (state.user?.permissions?.defaultView && allowedWorkspaces().includes(state.user.permissions.defaultView) ? state.user.permissions.defaultView : allowedWorkspaces()[0] || 'client');

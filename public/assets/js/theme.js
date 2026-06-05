@@ -1,7 +1,7 @@
 (() => {
   const storageKey = 'TAThemeSettings';
   const defaults = {
-    primaryColor: '#2563eb', accentColor: '#22c55e', backgroundColor: '#f8fafc', surfaceColor: '#ffffff', textColor: '#0f172a', buttonColor: '#2563eb', successColor: '#16a34a', warningColor: '#f59e0b', dangerColor: '#dc2626', themeMode: 'system', defaultTheme: 'system', enableThemeToggle: true,
+    primaryColor: '#2563eb', accentColor: '#22c55e', backgroundColor: '#f8fafc', surfaceColor: '#ffffff', textColor: '#0f172a', buttonColor: '#2563eb', successColor: '#16a34a', warningColor: '#f59e0b', dangerColor: '#dc2626', sidebarBackgroundColor: '#0f172a', sidebarTextColor: '#e5edf7', sidebarActiveColor: '#2563eb', sidebarBorderColor: '#1e293b', sidebarHoverColor: '#1e293b', mobileNavBackgroundColor: '#0f172a', mobileNavActiveColor: '#2563eb', themeMode: 'system', defaultTheme: 'system', enableThemeToggle: true,
   };
   const darkDefaults = { backgroundColor: '#06111f', surfaceColor: '#0f1c2e', textColor: '#e5edf7' };
   let systemUnsubscribe = null;
@@ -51,6 +51,13 @@
     set('--color-success', source.successColor || defaults.successColor);
     set('--color-warning', source.warningColor || defaults.warningColor);
     set('--color-danger', source.dangerColor || defaults.dangerColor);
+    set('--sidebar-bg', source.sidebarBackgroundColor || defaults.sidebarBackgroundColor);
+    set('--sidebar-text', source.sidebarTextColor || defaults.sidebarTextColor);
+    set('--sidebar-active', source.sidebarActiveColor || primary || defaults.sidebarActiveColor);
+    set('--sidebar-border', source.sidebarBorderColor || defaults.sidebarBorderColor);
+    set('--sidebar-hover', source.sidebarHoverColor || defaults.sidebarHoverColor);
+    set('--mobile-nav-bg', source.mobileNavBackgroundColor || source.sidebarBackgroundColor || defaults.mobileNavBackgroundColor);
+    set('--mobile-nav-active', source.mobileNavActiveColor || source.sidebarActiveColor || primary || defaults.mobileNavActiveColor);
     set('--primary', primary);
     set('--accent', accent);
     set('--bg', background);

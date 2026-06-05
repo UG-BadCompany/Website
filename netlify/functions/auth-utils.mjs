@@ -148,7 +148,7 @@ export const normalizeAuthEmailPayload = (body) => ({
 });
 
 export const normalizeClientAccountPayload = (body) => ({
-  name: clean(body?.name, 140),
+  name: clean(body?.name || body?.fullName || body?.full_name, 140),
   email: clean(body?.email).toLowerCase(),
   phone: clean(body?.phone, 60),
   botField: clean(body?.['bot-field']),
@@ -371,11 +371,91 @@ export const getSessionTokens = (request) => [...new Set(parseCookiePairs(reques
 
 export const getSessionToken = (request) => getSessionTokens(request)[0] || '';
 
-export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null, source = 'magic_link' }) => {
+export const findUserByEmail = async (db, email) => {
+  const normalizedEmail = clean(email).toLowerCase();
+  const [user] = await db.sql`
+    select id, email, full_name, phone, account_setup_complete
+    from app_users
+    where lower(email) = lower(${normalizedEmail})
+    order by created_at asc
+    limit 1
+  `;
+  return user || null;
+};
+
+export const linkEmailOwnedRecords = async (db, user) => {
+  if (!user?.id || !user?.email) return;
+  const normalizedEmail = clean(user.email).toLowerCase();
+  await db.sql`
+    update job_requests
+    set client_id = ${user.id}, updated_at = now()
+    where client_id is null and lower(coalesce(requester_email, '')) = lower(${normalizedEmail})
+  `;
+  await db.sql`
+    update quotes
+    set client_id = ${user.id}, updated_at = now()
+    where client_id is null
+      and job_request_id in (select id from job_requests where client_id = ${user.id})
+  `;
+  await db.sql`
+    update invoices
+    set client_id = ${user.id}, updated_at = now()
+    where client_id is null
+      and job_request_id in (select id from job_requests where client_id = ${user.id})
+  `;
+  await db.sql`
+    update photo_estimates
+    set customer_id = ${user.id}, updated_at = now()
+    where customer_id is null
+      and (request_id in (select id from job_requests where client_id = ${user.id})
+        or created_by = ${user.id})
+  `;
+  await db.sql`
+    update files
+    set customer_id = ${user.id}, updated_at = now()
+    where customer_id is null
+      and (owner_id = ${user.id}
+        or request_id in (select id from job_requests where client_id = ${user.id})
+        or job_request_id in (select id from job_requests where client_id = ${user.id}))
+  `;
+};
+
+export const ensureClientRoleAndWorkspace = async (db, userId) => {
+  await db.sql`
+    insert into roles (key, name, description)
+    values ('client', 'Client', 'Can manage their own properties, requests, quotes, invoices, files, and messages.')
+    on conflict (key) do nothing
+  `;
+
+  await db.sql`
+    insert into user_roles (user_id, role_id)
+    select ${userId}, roles.id
+    from roles
+    where roles.key = 'client'
+      and not exists (
+        select 1 from user_roles
+        join roles existing_roles on existing_roles.id = user_roles.role_id
+        where user_roles.user_id = ${userId} and existing_roles.key = 'client'
+      )
+    on conflict do nothing
+  `;
+
+  try {
+    await db.sql`
+      insert into user_workspace_access (user_id, workspace_key)
+      values (${userId}, 'client')
+      on conflict (user_id, workspace_key) do update set updated_at = now()
+    `;
+  } catch (error) {
+    console.error('Failed to assign default client workspace access', error);
+  }
+};
+
+export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null, source = 'magic_link', accountSetupComplete = true }) => {
   const normalizedEmail = clean(email).toLowerCase();
   const normalizedSource = clean(source, 60) || 'magic_link';
   const [existingUser] = await db.sql`
-    select id, email, full_name, phone
+    select id, email, full_name, phone, account_setup_complete
     from app_users
     where lower(email) = lower(${normalizedEmail})
     order by created_at asc
@@ -387,26 +467,28 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     set full_name = coalesce(nullif(full_name, ''), ${name || null}),
         phone = coalesce(nullif(phone, ''), ${phone || null}),
         is_active = true,
+        account_setup_complete = coalesce(account_setup_complete, false) or ${Boolean(accountSetupComplete)},
         source = coalesce(nullif(source, ''), ${normalizedSource}),
         last_login_at = now(),
         last_seen_at = now(),
         login_count = coalesce(login_count, 0) + 1,
         updated_at = now()
     where id = ${existingUser.id}
-    returning id, email, full_name, phone
+    returning id, email, full_name, phone, account_setup_complete
   ` : await db.sql`
-    insert into app_users (auth_provider, auth_subject, email, full_name, phone, source, last_login_at, last_seen_at, login_count)
-    values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null}, ${normalizedSource}, now(), now(), 1)
+    insert into app_users (auth_provider, auth_subject, email, full_name, phone, source, account_setup_complete, last_login_at, last_seen_at, login_count)
+    values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null}, ${normalizedSource}, ${Boolean(accountSetupComplete)}, now(), now(), 1)
     on conflict (email) do update set
       full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
       phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
       is_active = true,
+      account_setup_complete = coalesce(app_users.account_setup_complete, false) or excluded.account_setup_complete,
       source = coalesce(nullif(app_users.source, ''), excluded.source),
       last_login_at = now(),
       last_seen_at = now(),
       login_count = coalesce(app_users.login_count, 0) + 1,
       updated_at = now()
-    returning id, email, full_name, phone
+    returning id, email, full_name, phone, account_setup_complete
   `;
 
   if (!savedUser) {
@@ -414,44 +496,15 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
   }
 
   try {
-    await db.sql`
-      insert into roles (key, name, description)
-      values ('client', 'Client', 'Can manage their own properties, requests, quotes, invoices, files, and messages.')
-      on conflict (key) do nothing
-    `;
-
-    await db.sql`
-      insert into user_roles (user_id, role_id)
-      select ${savedUser.id}, roles.id
-      from roles
-      where roles.key = 'client'
-        and not exists (select 1 from user_roles where user_roles.user_id = ${savedUser.id})
-      on conflict do nothing
-    `;
+    await ensureClientRoleAndWorkspace(db, savedUser.id);
   } catch (error) {
-    console.error('Failed to assign default client role during magic-link sign-in', error);
+    console.error('Failed to assign default client role/workspace during magic-link sign-in', error);
   }
 
 
 
   try {
-    await db.sql`
-      update job_requests
-      set client_id = ${savedUser.id}, updated_at = now()
-      where client_id is null and lower(coalesce(requester_email, '')) = lower(${savedUser.email})
-    `;
-    await db.sql`
-      update quotes
-      set client_id = ${savedUser.id}, updated_at = now()
-      where client_id is null
-        and job_request_id in (select id from job_requests where client_id = ${savedUser.id})
-    `;
-    await db.sql`
-      update invoices
-      set client_id = ${savedUser.id}, updated_at = now()
-      where client_id is null
-        and job_request_id in (select id from job_requests where client_id = ${savedUser.id})
-    `;
+    await linkEmailOwnedRecords(db, savedUser);
     await db.sql`
       insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
       values (${savedUser.id}, ${existingUser ? 'user.login' : 'user.created'}, ${'app_user'}, ${savedUser.id}, ${JSON.stringify({ source: normalizedSource, linkedByEmail: savedUser.email })}::jsonb)

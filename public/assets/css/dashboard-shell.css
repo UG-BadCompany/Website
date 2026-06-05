@@ -16,8 +16,9 @@ body {
 
 #dashboard-sidebar {
   grid-area: side;
-  background: color-mix(in srgb, var(--color-surface, var(--panel)) 32%, #020617);
-  color: color-mix(in srgb, var(--color-text, var(--ink)) 82%, #cbd5e1);
+  background: var(--sidebar-bg, color-mix(in srgb, var(--color-surface, var(--panel)) 32%, #020617));
+  color: var(--sidebar-text, color-mix(in srgb, var(--color-text, var(--ink)) 82%, #cbd5e1));
+  border-right: 1px solid var(--sidebar-border, var(--color-border, var(--line)));
   padding: 1rem;
   position: sticky;
   top: 0;
@@ -63,9 +64,13 @@ body {
   cursor: pointer;
 }
 
+.side-nav button:hover {
+  background: var(--sidebar-hover, color-mix(in srgb, var(--color-primary, var(--primary)) 10%, transparent));
+}
+
 .side-nav button.active {
-  background: color-mix(in srgb, var(--color-primary, var(--primary)) 18%, transparent);
-  color: var(--color-text, var(--ink));
+  background: var(--sidebar-active, color-mix(in srgb, var(--color-primary, var(--primary)) 18%, transparent));
+  color: var(--sidebar-text, var(--color-text, var(--ink)));
 }
 
 .module-toolbar {
@@ -181,9 +186,9 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--color-surface, var(--panel));
-    color: var(--color-text, var(--ink));
-    border-top: 1px solid var(--color-border, var(--line));
+    background: var(--mobile-nav-bg, var(--color-surface, var(--panel)));
+    color: var(--sidebar-text, var(--color-text, var(--ink)));
+    border-top: 1px solid var(--sidebar-border, var(--color-border, var(--line)));
     display: flex;
     gap: .2rem;
     overflow: auto;
@@ -198,8 +203,8 @@ body {
   }
 
   .mobile-nav button.active {
-    background: color-mix(in srgb, var(--color-primary, var(--primary)) 14%, var(--color-surface, var(--panel)));
-    color: var(--color-primary, var(--primary));
+    background: color-mix(in srgb, var(--mobile-nav-active, var(--color-primary, var(--primary))) 20%, transparent);
+    color: var(--mobile-nav-active, var(--color-primary, var(--primary)));
   }
 }
 
