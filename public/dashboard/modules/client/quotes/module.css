@@ -103,3 +103,5 @@
 .client-quote-card,.client-quote-expanded{max-width:100%;overflow-x:hidden;}
 .client-quote-card *{writing-mode:horizontal-tb!important;text-orientation:mixed!important;}
 .client-quotes-page{padding-bottom:calc(6rem + env(safe-area-inset-bottom));}
+.completed-quote-card{opacity:.9;background:color-mix(in srgb,var(--color-surface) 92%,var(--color-success));border-style:solid;}
+.completed-quote-card .client-quote-card-head{border-bottom:1px solid var(--color-border);padding-bottom:.75rem;}

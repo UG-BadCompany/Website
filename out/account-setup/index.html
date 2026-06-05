@@ -1,0 +1,51 @@
+<!doctype html>
+<html data-theme="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Account Setup · Contractor Portal</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="/" data-brand></a>
+      <nav class="nav-links">
+        <a href="/login/">Login</a>
+        <a class="btn" href="/dashboard/">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+  <main class="hero">
+    <div class="container" style="max-width:760px">
+      <form class="card stack" id="account-setup-form">
+        <div class="brand" data-brand></div>
+        <p class="eyebrow">First-time portal access</p>
+        <h1>Finish setting up your client account</h1>
+        <p>Confirm your profile so we can connect your requests, quotes, invoices, work orders, and uploaded photos to one secure Client Workspace.</p>
+        <div class="form-grid">
+          <label class="field"><span>Full name</span><input name="fullName" autocomplete="name" required></label>
+          <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" readonly required></label>
+          <label class="field"><span>Phone</span><input name="phone" autocomplete="tel" required></label>
+          <label class="field"><span>Company <small>(optional)</small></span><input name="companyName" autocomplete="organization"></label>
+          <label class="field"><span>Property address <small>(optional)</small></span><input name="propertyAddress" autocomplete="street-address"></label>
+          <label class="field"><span>City</span><input name="city" autocomplete="address-level2"></label>
+          <label class="field"><span>State</span><input name="state" autocomplete="address-level1"></label>
+          <label class="field"><span>ZIP</span><input name="zip" autocomplete="postal-code"></label>
+        </div>
+        <label class="pill"><input type="checkbox" name="acceptedTerms" required> I consent to create a client portal account for this email.</label>
+        <div class="action-row">
+          <button class="btn" type="submit">Create Client Account</button>
+          <a class="btn secondary" href="/login/">Use another email</a>
+        </div>
+        <p id="account-setup-status" class="notice">Loading your verified email…</p>
+      </form>
+    </div>
+  </main>
+  <script src="/assets/js/api-client.js"></script>
+  <script src="/assets/js/theme.js"></script>
+  <script src="/assets/js/company-settings.js"></script>
+  <script src="/assets/js/auth-client.js"></script>
+  <script src="/account-setup/setup.js"></script>
+</body>
+</html>

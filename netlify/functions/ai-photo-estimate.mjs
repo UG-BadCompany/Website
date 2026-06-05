@@ -4,7 +4,7 @@ const configuredPhotoModel = clean(process.env.OPENAI_PHOTO_ESTIMATE_MODEL, 80);
 const configuredFallbackModel = clean(process.env.OPENAI_MODEL, 80) || clean(process.env.OPENAI_RESPONSES_MODEL, 80);
 const legacyQuoteModel = clean(process.env.OPENAI_QUOTE_MODEL, 80);
 const OPENAI_MODEL = configuredPhotoModel || configuredFallbackModel || (/mini/i.test(legacyQuoteModel) ? '' : legacyQuoteModel) || 'gpt-5.5';
-const OPENAI_TIMEOUT_MS = Number(process.env.AI_PHOTO_ESTIMATE_TIMEOUT_MS || 22000);
+const OPENAI_TIMEOUT_MS = Math.min(Number(process.env.AI_PHOTO_ESTIMATE_TIMEOUT_MS || 18000), 23000);
 const STAFF_ROLES = new Set(['owner', 'admin', 'manager', 'worker']);
 const IMAGE_RE = /^data:image\/(jpeg|png|webp|heic|heif);base64,[a-z0-9+/=\r\n]+$/i;
 const HOSTED_IMAGE_RE = /^https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp|gif)(?:[?#][^\s]*)?$/i;
@@ -122,7 +122,7 @@ export default async (request) => {
     const ai = await callOpenAI(payload, photos);
     if (!ai.ok) {
       console.warn('AI photo estimate analysis unavailable', { status: ai.status, message: ai.message, recordId: clean(body.id, 80) || null });
-      return json(ai.status || 502, { ok: false, message: ai.message || 'AI image analysis is unavailable right now.', endpointStatus: 'AI image analysis unavailable. Photos were saved for manual review; no fake analysis was generated.', retryable: true });
+      return json(200, { ok: false, code: ai.status === 504 ? 'AI_PHOTO_TIMEOUT' : 'AI_PHOTO_FAILED', message: 'Unable to analyze image. Please try again.', detail: ai.message || 'AI image analysis is unavailable right now.', endpointStatus: 'AI image analysis unavailable. Photos were saved for manual review; no fake analysis was generated.', retryable: true });
     }
     const row = await saveAnalysis(db, context, clean(body.id, 80), payload, photos, ai.analysis);
     await db.sql`insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata) values (${context.session.user_id}, 'photo.analyzed', 'photo_estimate', ${clean(body.id, 80) || null}, ${JSON.stringify({ photoCount: photos.length })}::jsonb)`;
@@ -130,7 +130,7 @@ export default async (request) => {
     return json(200, { ok: true, analysis: ai.analysis, photoEstimate: mapRow(row, context), endpointStatus: `server-side OpenAI photo analysis complete (${OPENAI_MODEL})`, model: OPENAI_MODEL });
   } catch (error) {
     console.error('AI photo estimate endpoint failed', error);
-    return json(500, { ok: false, message: 'Could not analyze photo estimate right now.' });
+    return json(200, { ok: false, code: 'AI_PHOTO_ERROR', message: 'Unable to analyze image. Please try again.', retryable: true });
   }
 };
 export const config = { path: '/api/ai-photo-estimate' };

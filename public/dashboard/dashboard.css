@@ -995,3 +995,56 @@ body,
   .module-tabs .btn{white-space:normal;}
   .dashboard-main,.module-page{padding-bottom:calc(6.5rem + env(safe-area-inset-bottom));}
 }
+
+/* Final theme normalization: module styles may be loaded later, but all dashboard surfaces inherit global tokens. */
+#dashboard-app,
+#module-root,
+.module-page,
+.module-panel,
+.module-section,
+.module-card,
+.module-record-card,
+.module-empty,
+.table-wrap,
+.modal,
+.mobile-more-panel,
+.estimate-detail-panel,
+.client-quote-expanded section {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+#dashboard-app .card,
+#dashboard-app .module-card,
+#dashboard-app .module-section,
+#dashboard-app .module-record-card,
+#dashboard-app .stat-card,
+#dashboard-app .modal,
+#dashboard-app .mobile-more-panel .card,
+#dashboard-app .client-quote-expanded section {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+#dashboard-app p,
+#dashboard-app small,
+#dashboard-app .module-description,
+#dashboard-app .eyebrow,
+#dashboard-app .muted { color: var(--color-muted); }
+#dashboard-app h1,
+#dashboard-app h2,
+#dashboard-app h3,
+#dashboard-app h4,
+#dashboard-app strong,
+#dashboard-app label,
+#dashboard-app legend { color: var(--color-text); }
+#dashboard-app input,
+#dashboard-app select,
+#dashboard-app textarea {
+  background: var(--field-bg);
+  color: var(--field-text);
+  border-color: var(--color-border);
+}
+#dashboard-app table,
+#dashboard-app th,
+#dashboard-app td { color: var(--color-text); border-color: var(--color-border); }
+#dashboard-app th { background: color-mix(in srgb, var(--color-surface) 85%, var(--color-background)); color: var(--color-muted); }

@@ -16,7 +16,16 @@
     return [];
   };
   const button = (label, action = 'toast', style = 'secondary') => `<button class="btn ${style}" type="button" data-module-action="${escapeHtml(action)}">${escapeHtml(label)}</button>`;
+  const toast = (message, type = 'info') => window.TAUi?.toast ? TAUi.toast(message, type) : console.warn(message);
+  const actionConfig = (action) => typeof action === 'object' && action ? action : { label: action, action };
+  const actionName = (action) => cleanAction(actionConfig(action).action || actionConfig(action).label || action);
+  const cleanAction = (value = '') => String(value || '').trim();
+  const actionRequiresRecordId = (action) => /view|open|detail|history|download|send|mark|payment|pay|void|cancel|status|assign|approve|decline|complete|update/i.test(action);
+  const actionRequiresStatus = (action) => /status|mark|move|change-status/i.test(action);
+  const mutatingAction = (action) => /create|new|post|save|send|mark|payment|pay|void|cancel|status|assign|approve|decline|complete|update|upload|photo|information/i.test(action);
+
   const stateCard = (type, title, body) => `<article class="module-state module-state-${type} module-${type}"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>`;
+  const normalizeRoot = (root) => root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root');
   const defaultRecordTitle = (record, fallback = 'Record') => record.title || record.name || record.fullName || record.full_name || record.customerName || record.customer_name || record.email || record.serviceType || record.service_type || fallback;
   const defaultRecordMeta = (record) => [record.status && statusText(record.status), record.amountCents && currency(record.amountCents), record.createdAt && dateText(record.createdAt), record.updatedAt && dateText(record.updatedAt)].filter(Boolean).join(' • ');
   const defaultRecords = (config, data) => findRecords(data, config.recordPaths || ['items','requests','quotes','invoices','jobs','workOrders','workOrders.items','inventory','users','roles','properties','updates']);
@@ -39,26 +48,58 @@
   const runGenericAction = async (control, action, context = {}) => {
     const { root, api, config, record = {}, data, records } = context;
     const previous = control?.textContent || '';
+    const normalizedAction = cleanAction(action);
+    const actionKey = normalizedAction.toLowerCase();
+    const recordId = record.id || record.requestId || record.quoteId || record.invoiceId || record.jobRequestId || '';
+    const configuredActions = [...asArray(config?.actions), ...asArray(config?.recordActions)].map(actionConfig);
+    const configured = configuredActions.find((item) => cleanAction(item.action || item.label).toLowerCase() === actionKey) || {};
     if (control) { control.disabled = true; control.textContent = 'Working...'; }
     try {
-      if (/refresh|reload/i.test(action)) {
+      if (/refresh|reload/i.test(normalizedAction)) {
         await mount(context, config);
-        TAUi?.toast('Data refreshed.', 'success');
+        toast('Data refreshed.', 'success');
         return;
       }
-      if (/open|view|detail|history|download|map|route/i.test(action)) {
-        openDetail(root, config, record.id ? record : (records?.[0] || record), { api, data, records });
+      if (/open|view|detail|history|download|map|route/i.test(normalizedAction)) {
+        openDetail(root, config, recordId ? record : (records?.[0] || record), { api, data, records });
         return;
       }
-      const endpoint = primaryEndpoint(config);
-      if (!endpoint || !api) throw new Error('No backend endpoint is configured for this action.');
-      const payload = { action, recordId: record.id || record.requestId || record.quoteId || record.invoiceId || '', record, values: {} };
-      const method = payload.recordId && !/create|add|submit|request/i.test(action) ? 'patch' : 'post';
-      const result = await api[method](endpoint, payload);
-      TAUi?.toast(result.message || `${titleize(action)} completed.`, 'success');
+
+      const method = cleanAction(configured.method || configured.httpMethod).toUpperCase();
+      const endpoint = configured.endpoint || primaryEndpoint(config);
+      const requiresId = configured.requiresId ?? actionRequiresRecordId(normalizedAction);
+      const requiresAction = configured.requiresAction ?? Boolean(method);
+      const requiresStatus = configured.requiresStatus ?? actionRequiresStatus(normalizedAction);
+      const status = configured.status || record.status || '';
+      const allowedMethods = asArray(config.allowedMethods || ['GET', 'POST', 'PATCH', 'DELETE']).map((item) => String(item).toUpperCase());
+      const genericAllowed = configured.generic === true || configured.allowGeneric === true || config.allowGenericActions === true;
+
+      if (!method || !endpoint || !api || !allowedMethods.includes(method) || config.disableGenericActions || config.allowGenericActions === false || (mutatingAction(normalizedAction) && !genericAllowed)) {
+        openDetail(root, { ...config, detailMode:'readonly', readOnlyDetail:true }, recordId ? record : (records?.[0] || record), { api, data, records });
+        toast('This action needs a module-specific handler. No API request was sent.', 'info');
+        return;
+      }
+      if (requiresId && !recordId) {
+        toast('Select a record before running this action. No API request was sent.', 'error');
+        return;
+      }
+      if (requiresAction && !normalizedAction) {
+        toast('This action is missing an action name. No API request was sent.', 'error');
+        return;
+      }
+      if (requiresStatus && !status) {
+        toast('This action is missing a target status. No API request was sent.', 'error');
+        return;
+      }
+
+      const payload = { action: normalizedAction, recordId, id: recordId, status: configured.status, record, values: {} };
+      const result = method === 'PATCH' ? await api.patch(endpoint, payload) : method === 'DELETE' ? await api.delete(endpoint, payload) : await api.post(endpoint, payload);
+      toast(result.message || `${titleize(normalizedAction)} completed.`, 'success');
+      const eventName = configured.event || (/quote/i.test(endpoint) && /accept|convert/i.test(normalizedAction) ? 'quote:accepted' : /work.?order|job/i.test(endpoint) && /assign|schedule/i.test(normalizedAction) ? 'workorder:assigned' : /work.?order|job/i.test(endpoint) && /complete/i.test(normalizedAction) ? 'workorder:completed' : /invoice/i.test(endpoint) && /payment|paid/i.test(normalizedAction) ? 'invoice:paid' : /payment.*verif|verified/i.test(normalizedAction) ? 'payment:verified' : null);
+      if (eventName) window.TAWorkflow?.emit?.(eventName, { action: normalizedAction, endpoint, recordId, result });
       await mount(context, config);
     } catch (error) {
-      TAUi?.toast(error.message || `${titleize(action)} failed.`, 'error');
+      toast(error.message || `${titleize(normalizedAction)} failed.`, 'error');
     } finally {
       if (control) { control.disabled = false; control.textContent = previous; }
     }
@@ -66,6 +107,26 @@
   const openDetail = (root, config, record = {}, context = {}) => {
     const modal = document.getElementById('modal-root') || root;
     const sections = config.detailSections || ['Customer information','Request summary','Scope of work','Notes','Status history','Files/photos'];
+    const readonly = config.detailMode === 'readonly' || config.readOnlyDetail;
+    const openLabel = config.openFullLabel || 'Open Full Work Order';
+    const editLabel = config.editLabel || 'Edit Work Order';
+    if (readonly) {
+      modal.innerHTML = `<div class="module-drawer"><article class="module-editor module-readonly-detail card stack"><div class="module-editor-head"><div><p class="eyebrow">${escapeHtml(config.title)} · View only</p><h2>${escapeHtml(defaultRecordTitle(record, config.title))}</h2><p>Read-only details are shown first. Use Edit only when you explicitly need editable work order controls.</p></div><button class="btn secondary" type="button" data-close-module-drawer>Close</button></div><div class="module-editor-grid module-readonly-grid">${sections.map((section) => `<section class="module-readonly-field"><span>${escapeHtml(section)}</span><p>${escapeHtml(sectionValue(section, record) || 'Not available')}</p></section>`).join('')}</div><div class="module-toolbar">${button(openLabel,'open-full-work-order','')} ${config.canEdit !== false ? button(editLabel,'edit-work-order','secondary') : ''}</div></article></div>`;
+      modal.querySelector('[data-close-module-drawer]').onclick = () => { modal.innerHTML = ''; };
+      modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => {
+        if (control.dataset.moduleAction === 'edit-work-order') {
+          openDetail(root, { ...config, detailMode: 'edit', readOnlyDetail: false }, record, context);
+          return;
+        }
+        if (control.dataset.moduleAction === 'open-full-work-order') {
+          window.TADashboardRouter?.go?.('admin.work-orders');
+          modal.innerHTML = '';
+          return;
+        }
+        runGenericAction(control, control.dataset.moduleAction, { ...context, root, config, record, records: context.records || [] });
+      });
+      return;
+    }
     modal.innerHTML = `<div class="module-drawer"><form class="module-editor card stack"><div class="module-editor-head"><div><p class="eyebrow">${escapeHtml(config.title)}</p><h2>${escapeHtml(defaultRecordTitle(record, config.title))}</h2></div><button class="btn secondary" type="button" data-close-module-drawer>Close</button></div><div class="module-editor-grid">${sections.map((section) => `<label class="field"><span>${escapeHtml(section)}</span><textarea name="${escapeHtml(section)}">${escapeHtml(sectionValue(section, record))}</textarea></label>`).join('')}</div><p class="notice" data-module-action-status>Review details, then save or request more information through the configured endpoint.</p><div class="module-toolbar">${button('Save Draft','save-draft','')} ${button('Request Information','request-info')} ${button('Continue Manually','manual')}</div></form></div>`;
     modal.querySelector('[data-close-module-drawer]').onclick = () => { modal.innerHTML = ''; };
     modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = async () => {
@@ -105,13 +166,15 @@
       return;
     }
     list.innerHTML = records.map((record, index) => `<article class="module-record-card" data-record-index="${index}"><div><p class="eyebrow">${escapeHtml(statusText(record.status || record.reviewStatus || config.title))}</p><h3>${escapeHtml(defaultRecordTitle(record, config.title))}</h3><p>${escapeHtml(record.description || record.summary || record.address || record.notes || config.recordDescription || 'Open this record to review details, notes, timeline, and next actions.')}</p><small>${escapeHtml(defaultRecordMeta(record) || config.title)}</small></div><div class="module-record-actions">${renderRecordActions(config.recordActions || ['View Detail','Add Note'])}</div></article>`).join('');
-    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
+    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data, router: window.TADashboardRouter }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
   };
   const endpointFetch = async (api, endpoint) => {
     if (!endpoint) return { ok:false, missing:true, message:'No endpoint configured yet.' };
     try { return await api.get(endpoint); } catch (error) { return { ok:false, error:true, message:error.message || 'Endpoint unavailable.', endpoint }; }
   };
   const mount = async ({ root, api, user, company, router, workspace }, config) => {
+    root = normalizeRoot(root);
+    if (!root?.querySelector) throw new TypeError('Module root element was not found.');
     const effective = { ...config, ...(config.aliases?.[router?.state?.currentModule] || {}) };
     if (effective.permissions?.length && !TAPermissions.has(user, effective.permissions)) {
       root.innerHTML = stateCard('error', 'Permission required', 'Your current role cannot open this module.');

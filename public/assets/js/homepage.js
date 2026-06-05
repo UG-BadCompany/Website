@@ -34,8 +34,9 @@
     const image = item.imageUrl || item.image_url || item.afterImageUrl || item.after_image_url || item.beforeImageUrl || item.before_image_url;
     const before = item.beforeImageUrl || item.before_image_url;
     const after = item.afterImageUrl || item.after_image_url;
+    const slides = [image, before, after].filter(Boolean).filter((url, i, all) => all.indexOf(url) === i);
     return `<article class="card job-photo-card homepage-gallery-card" data-gallery-open="${index}">
-      <img src="${esc(image)}" alt="${esc(item.title || 'Previous job photo')}" loading="lazy" onerror="this.closest('.job-photo-card')?.remove()">
+      <div class="homepage-slideshow" data-homepage-slideshow>${slides.map((url, slideIndex) => `<img class="${slideIndex === 0 ? 'active' : ''}" src="${esc(url)}" alt="${esc(item.title || 'Previous job photo')}" loading="lazy" onerror="this.remove()">`).join('')}</div>
       ${before && after ? `<div class="before-after-strip"><img src="${esc(before)}" alt="Before ${esc(item.title || 'job photo')}" loading="lazy" onerror="this.remove()"><img src="${esc(after)}" alt="After ${esc(item.title || 'job photo')}" loading="lazy" onerror="this.remove()"></div>` : ''}
       <span>${esc(item.category || 'Previous Work')}${item.location ? ` • ${esc(item.location)}` : ''}</span><h3>${esc(item.title || 'Previous Work')}</h3><p>${esc(item.description || '')}</p>
     </article>`;
@@ -61,8 +62,9 @@
       ${visible.serviceArea !== false ? `<section class="section service-area-section" id="service-area"><div class="container grid grid-2"><div><span class="pill">Service area</span><h2>${esc(settings.serviceAreaTitle)}</h2><p>${esc(settings.serviceAreaText)}</p>${settings.travelNotes ? `<p>${esc(settings.travelNotes)}</p>` : ''}</div><div class="card area-card">${settings.citiesServed.map((city) => `<strong>${esc(city)}</strong>`).join('')}</div></div></section>` : ''}
       <section class="section" id="estimate">${document.getElementById('estimate-template')?.innerHTML || ''}</section>
       ${visible.cta !== false ? `<section class="section contact-cta-section"><div class="container card final-customer-cta"><h2>${esc(settings.ctaHeadline)}</h2><p>${esc(settings.ctaSubheadline)}</p><p class="hero-actions">${button(settings.ctaButtonText, settings.ctaButtonLink)}</p></div></section>` : ''}`;
+    document.querySelectorAll('[data-homepage-slideshow]').forEach((show) => { const slides = [...show.querySelectorAll('img')]; if (slides.length > 1) { let i = 0; setInterval(() => { slides[i]?.classList.remove('active'); i = (i + 1) % slides.length; slides[i]?.classList.add('active'); }, 3500); } });
     document.querySelectorAll('[data-gallery-open]').forEach((card) => card.addEventListener('click', () => {
-      const img = card.querySelector('img'); if (!img) return;
+      const img = card.querySelector('.homepage-slideshow img.active') || card.querySelector('img'); if (!img) return;
       const overlay = document.createElement('div'); overlay.className = 'homepage-lightbox'; overlay.innerHTML = `<button type="button" aria-label="Close preview">×</button><img src="${esc(img.src)}" alt="${esc(img.alt)}">`; overlay.onclick = () => overlay.remove(); document.body.appendChild(overlay);
     }));
     const footer = document.querySelector('[data-dynamic-footer]');

@@ -27,10 +27,24 @@
   const statusSet = (group) => WORKFLOW[group] || WORKFLOW.tabs[group] || [];
   const isStatusIn = (status, group) => statusSet(group).includes(normalizeStatus(status)) || statusSet(group).includes(String(status || '').toLowerCase());
   const filter = (items = [], group, selector = (item) => item?.status) => items.filter((item) => isStatusIn(selector(item), group));
+
+  const STATUS_TABS = Object.freeze({ active: 'Active', completed: 'Completed', inactive: 'Inactive', cancelled: 'Cancelled', all: 'All' });
+  const statusDetails = (status = '') => {
+    const normalized = normalizeStatus(status);
+    const labels = { request_new:'🟢 Active', request_info_needed:'🟡 Waiting Approval', quote_draft:'🟡 Waiting Approval', quote_sent:'🟡 Waiting Approval', quote_changes_requested:'🟡 Waiting Approval', quote_accepted:'🟢 Active', quote_converted:'🟢 Active', waiting_assignment:'🟢 Active', assigned:'🟢 Active', scheduled:'🔵 Scheduled', in_progress:'🟢 Active', worker_completed:'🟡 Waiting Approval', admin_review:'🟡 Waiting Approval', client_review:'🟡 Waiting Approval', invoice_ready:'🟡 Waiting Approval', invoice_sent:'🟡 Waiting Approval', invoiced:'🟡 Waiting Approval', payment_pending:'🟡 Waiting Approval', paid:'✅ Completed', payment_verified:'✅ Completed', closed:'✅ Completed', archived:'⚪ Inactive', inactive:'⚪ Inactive', cancelled:'🔴 Cancelled', completed:'✅ Completed', quote_declined:'🔴 Cancelled', declined:'🔴 Cancelled', expired:'⚪ Inactive' };
+    const tab = ['cancelled','quote_declined','declined'].includes(normalized) ? 'cancelled' : ['paid','payment_verified','closed','completed'].includes(normalized) ? 'completed' : ['archived','inactive','expired'].includes(normalized) ? 'inactive' : 'active';
+    const tone = tab === 'cancelled' ? 'cancelled' : tab === 'completed' ? 'completed' : tab === 'inactive' ? 'inactive' : normalized === 'scheduled' ? 'scheduled' : ['quote_sent','quote_draft','request_info_needed','worker_completed','admin_review','client_review','invoice_ready','invoice_sent','payment_pending'].includes(normalized) ? 'waiting' : 'active';
+    const fallback = normalized ? normalized.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()) : 'Active';
+    return { normalized, label: labels[normalized] || `🟢 ${fallback}`, tab, tone };
+  };
+  const statusTabFor = (status) => statusDetails(status).tab;
+  const statusBadge = (status) => { const details = statusDetails(status); return `<span class="status-badge ${details.tone}">${details.label}</span>`; };
+  const filterByStatusTab = (items = [], tab = 'active', selector = (item) => item?.status) => tab === 'all' ? items : items.filter((item) => statusTabFor(selector(item)) === tab);
+
   const listeners = new Map();
   const on = (event, handler) => { if (!listeners.has(event)) listeners.set(event, new Set()); listeners.get(event).add(handler); return () => listeners.get(event)?.delete(handler); };
   const emit = (event, detail = {}) => { window.dispatchEvent(new CustomEvent(`ta:${event}`, { detail })); window.dispatchEvent(new CustomEvent('ta:workflow-refresh', { detail: { event, ...detail } })); (listeners.get(event) || []).forEach((handler) => { try { handler(detail); } catch (error) { console.warn('Workflow event handler failed', event, error); } }); (listeners.get('*') || []).forEach((handler) => { try { handler(event, detail); } catch (error) { console.warn('Workflow wildcard handler failed', event, error); } }); };
   const refreshEvents = ['request:created','quote:sent','quote:accepted','quote:converted','workorder:created','workorder:assigned','workorder:completed','workorder:closed','invoice:created','invoice:paid','payment:verified','photo:uploaded','photo:analyzed','user:created','user:linked'];
   refreshEvents.forEach((event) => window.addEventListener(`ta:${event}`, () => window.TADashboardRouter?.refresh?.()));
-  window.TAWorkflow = { WORKFLOW, normalizeStatus, statusSet, isStatusIn, filter, on, emit, refreshEvents };
+  window.TAWorkflow = { WORKFLOW, STATUS_TABS, normalizeStatus, statusDetails, statusTabFor, statusBadge, filterByStatusTab, statusSet, isStatusIn, filter, on, emit, refreshEvents };
 })();
