@@ -66,6 +66,12 @@ function materials(req) {
     add('Condensate tubing', 1, 20, 90),
     add('Sealants and miscellaneous consumables', 1, 45, 180),
   ];
+  if (/ceiling fan/.test(text)) return [
+    add(/customer supplied|customer supply|has fan/.test(text) ? 'Customer-supplied ceiling fan verification allowance' : 'Ceiling fan allowance', 1, /customer supplied|customer supply|has fan/.test(text) ? 10 : 89, /customer supplied|customer supply|has fan/.test(text) ? 30 : 500, 'Ask whether customer or company supplies the fan, whether it has a light kit/remote, and verify the box is fan-rated.'),
+    add('Wire nuts / electrical connectors', 1, 3, 8),
+    add('Mounting hardware allowance', 1, 5, 15),
+    add('Electrical consumables', 1, 10, 25),
+  ];
   if (/faucet/.test(text)) return [add('Faucet', 1, 45, 280), add('Supply lines', 1, 15, 45), add('Putty/silicone', 1, 6, 18), add('Drain/shutoff allowance', 1, 25, 120)];
   if (/toilet/.test(text)) return [add('Toilet', 1, 120, 450), add('Wax ring and bolts', 1, 9, 27), add('Supply line/shutoff allowance', 1, 17, 60), add('Caulk', 1, 5, 18)];
   if (/electrical|outlet|switch|gfci|light|fan/.test(text)) return [add('Device/fixture allowance', 1, 8, 200), add('Cover plate/connectors/fasteners', 1, 12, 60), add('Box extender/repair allowance', 1, 4, 25)];
@@ -75,6 +81,9 @@ function materials(req) {
 
 function labor(req) {
   const text = slug(`${req.workScope} ${req.service} ${req.subcategory} ${req.description}`);
+  if (/ceiling fan/.test(text)) return [
+    { name: 'Ceiling fan replacement', description: 'Remove existing fan, assemble/install replacement fan, connect existing wiring/control, test, and cleanup.', low_hours: /high ceiling|vaulted|new box|wiring|remote wiring/.test(text) ? 2 : 1, high_hours: /high ceiling|vaulted|new box|wiring|remote wiring/.test(text) ? 4 : 2, skill_level: 'electrical handyman', notes: 'Verify fan-rated ceiling box and customer/company supplied fan decision.' },
+  ];
   if (/mini split|mini-split|ductless/.test(text)) return [
     { name: 'Layout and site prep', description: 'Confirm locations, paths, and access.', low_hours: 0.75, high_hours: 1.5, skill_level: 'advanced', notes: 'Site verification required.' },
     { name: 'Mount and wall penetration', description: 'Mount indoor head and sleeve/seal wall opening.', low_hours: 1.25, high_hours: 2.5, skill_level: 'advanced', notes: '' },
@@ -159,7 +168,9 @@ async function tryOpenAi(req) {
           { role: 'user', content: JSON.stringify({ task: 'Improve this local handyman quote draft. Keep same JSON keys and also include labor_line_items, material_line_items, other_pricing, pricing_summary, confidence_reasons, and research_metadata. If exact pricing is unavailable, use estimated allowance pricing, lower confidence, and explain why. Do not auto-send.', request: req, draft: buildLocalDraft(req) }) }
         ],
         text: { format: { type: 'json_object' } },
-        tools: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : [{ type: 'web_search', external_web_access: true }],
+        tools: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : [{ type: 'web_search', external_web_access: true, user_location: { type: 'approximate', country: 'US', city: 'Phoenix', region: 'Arizona', timezone: 'America/Phoenix' } }],
+        tool_choice: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : 'auto',
+        include: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH === '1' ? undefined : ['web_search_call.action.sources'],
         max_output_tokens: 3600,
       }),
       signal: controller.signal,
@@ -167,8 +178,13 @@ async function tryOpenAi(req) {
     clearTimeout(timer);
     if (!response.ok) return null;
     const data = await response.json();
-    const raw = data?.output_text || data?.output?.[0]?.content?.[0]?.text || '';
-    return raw ? JSON.parse(raw) : null;
+    const raw = data?.output_text || data?.output?.flatMap((item) => item.content || []).map((content) => content.text).filter(Boolean).join('\n') || '';
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const webSearchUsed = Array.isArray(data.output) && data.output.some((item) => item?.type === 'web_search_call');
+    const webSources = Array.isArray(data.output) ? data.output.flatMap((item) => Array.isArray(item?.action?.sources) ? item.action.sources : []).map((source) => ({ title: source.title || source.url || 'OpenAI web source', url: source.url || '', source: 'OpenAI web_search' })) : [];
+    parsed.research_metadata = { ...(parsed.research_metadata || {}), research_mode: webSearchUsed ? 'openai_v3_researched' : 'openai_v3_structured', openai_model: process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', responses_api_used: true, openai_live_search_requested: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH !== '1', openai_live_search_used: webSearchUsed, openai_live_search_unavailable: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH !== '1' && !webSearchUsed, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: false, serpapi_used: false, sources: [...(parsed.research_metadata?.sources || []), ...webSources], pricing_confidence_reason: webSearchUsed ? 'OpenAI Responses API web_search was used for quote research.' : 'OpenAI web_search was requested but did not execute; review internal allowance pricing.' };
+    return parsed;
   } catch {
     clearTimeout(timer);
     return null;
@@ -255,7 +271,7 @@ export const handler = async (event) => {
   const grand_total_cents = labor_total_cents + material_total_cents + trip_charge_cents;
   draft.other_pricing = { trip_charge: trip_charge_cents / 100, trip_charge_cents, permit: 0, permit_cents: 0, disposal: 0, disposal_cents: 0, rental: 0, rental_cents: 0, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, markup: 0, markup_cents: 0 };
   draft.pricing_summary = { labor_total: labor_total_cents / 100, labor_total_cents, material_total: material_total_cents / 100, material_total_cents, other_total: trip_charge_cents / 100, other_total_cents: trip_charge_cents, subtotal: grand_total_cents / 100, subtotal_cents: grand_total_cents, tax: 0, tax_cents: 0, discount: 0, discount_cents: 0, grand_total: grand_total_cents / 100, grand_total_cents };
-  draft.research_metadata = draft.research_metadata || { research_mode: 'openai_first', openai_live_search_used: true, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: false, serpapi_used: false, sources: [], pricing_confidence_reason: 'OpenAI-first fast draft with internal catalog allowances for admin review.' };
+  draft.research_metadata = { research_mode: draft.research_metadata?.openai_live_search_used ? 'openai_v3_researched' : 'openai_v3_structured', openai_model: process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', responses_api_used: true, openai_live_search_requested: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH !== '1', openai_live_search_used: Boolean(draft.research_metadata?.openai_live_search_used), openai_live_search_unavailable: process.env.OPENAI_QUOTE_DISABLE_WEB_SEARCH !== '1' && !draft.research_metadata?.openai_live_search_used, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: false, serpapi_used: false, sources: draft.research_metadata?.sources || [], pricing_confidence_reason: draft.research_metadata?.pricing_confidence_reason || 'OpenAI Responses API fast draft normalized into complete priced editor line items.' };
   draft.confidence_reasons = draft.confidence_reasons || ['Fast AI quote draft normalized into complete priced editor line items.'];
   draft.totals = totals;
   draft.customer_facing_quote = customerQuote(draft, totals);

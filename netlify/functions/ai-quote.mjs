@@ -88,13 +88,14 @@ const miniSplitMaterials = (description = '') => {
 const internalMaterials = (payload = {}) => {
   const text = `${payload.service || ''} ${payload.workScope || ''} ${payload.description || ''}`;
   if (/mini\s*-?split|ductless/i.test(text)) return miniSplitMaterials(text);
+  if (/ceiling\s+fan/i.test(text)) return [pricedMaterial(/customer\s+suppl/i.test(text) ? 'Customer-supplied ceiling fan verification allowance' : 'Ceiling fan allowance (company supplied if selected)', 1, 'allowance', /customer\s+suppl/i.test(text) ? 1500 : 18900, /customer\s+suppl/i.test(text) ? 'Customer supplied fan assumed; verify box, controls, light kit, and remote.' : 'Allowance until customer chooses fan; ask whether customer or company supplies fan.'), pricedMaterial('Wire nuts / electrical connectors', 1, 'allowance', 600), pricedMaterial('Fan mounting hardware allowance', 1, 'allowance', 1200), pricedMaterial('Electrical consumables and cleanup supplies', 1, 'allowance', 1800)];
   if (/faucet/i.test(text)) return [pricedMaterial('Faucet', 1, 'each', 15000), pricedMaterial('Supply lines', 1, 'pair', 3500), pricedMaterial('Plumber putty or silicone', 1, 'allowance', 1200), pricedMaterial('Drain fittings and shutoff allowance', 1, 'allowance', 6500)];
   if (/toilet/i.test(text)) return [pricedMaterial('Toilet fixture', 1, 'each', 25000), pricedMaterial('Wax ring and closet bolts', 1, 'kit', 2500), pricedMaterial('Supply line and shutoff allowance', 1, 'allowance', 6000), pricedMaterial('Caulk', 1, 'tube', 1200)];
   return [pricedMaterial('Primary materials allowance', 1, 'allowance', 7500), pricedMaterial('Fasteners, anchors, caulk, sealant', 1, 'allowance', 3500), pricedMaterial('Protection and cleanup supplies', 1, 'allowance', 2500)];
 };
 
 const isLiveResearchEnabled = (mode = 'internal_live') => !['off', 'internal', 'internal_only', 'internal knowledge only'].includes(String(mode).toLowerCase().replace(/[+\s-]+/g, '_'));
-const baseResearchMetadata = (mode = 'internal_live') => ({ research_mode: 'openai_first', requested_mode: mode, openai_live_search_used: false, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: false, serpapi_used: false, sources: [], pricing_confidence_reason: 'OpenAI is asked to use live search first when supported; internal catalog allowances are supplied for fallback and admin review.' });
+const baseResearchMetadata = (mode = 'internal_live') => ({ research_mode: 'openai_v3_structured', requested_mode: mode, openai_live_search_used: false, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: false, serpapi_used: false, sources: [], pricing_confidence_reason: 'OpenAI is asked to use live search first when supported; internal catalog allowances are supplied for fallback and admin review.' });
 
 const performFallbackResearch = async ({ payload, materials, mode }) => {
   const metadata = baseResearchMetadata(mode);
@@ -147,7 +148,9 @@ const normalizeLaborLine = (item = {}, index = 0, pricingSummary = {}, assumptio
   if (!hours) hours = 1;
   const sanity = laborSanityProfile(`${contextText} ${name} ${obj.description || ''}`);
   if (sanity && hours > sanity.maxHours) { assumptions.push(sanity.reason); hours = sanity.maxHours; totalCents = Math.round(hours * rateCents); }
-  if (!totalCents) totalCents = Math.round(hours * rateCents);
+  const calculatedTotalCents = Math.round(hours * rateCents);
+  if (totalCents && Math.abs(totalCents - calculatedTotalCents) > 1) assumptions.push(`Labor total for "${name}" was corrected to hours × rate.`);
+  totalCents = calculatedTotalCents;
   return { name, description: normalizeText(obj.description || name), hours, quantity: hours, unit: obj.unit || 'hours', rate: centsToMoney(rateCents), rate_cents: rateCents, unit_cost: centsToMoney(rateCents), unit_cost_cents: rateCents, total: centsToMoney(totalCents), total_cents: totalCents, confidence: obj.confidence || 'medium', notes: obj.notes || '' };
 };
 
@@ -166,8 +169,11 @@ const normalizeMaterialLine = (item = {}, index = 0, trade = 'General', assumpti
     unitCostCents = 12900;
     totalCents = 0;
   }
-  if (!totalCents) totalCents = Math.round(quantity * unitCostCents * (1 + markup / 100));
-  return { name, description: normalizeText(obj.description || name), quantity, unit, unit_cost: centsToMoney(unitCostCents), unit_cost_cents: unitCostCents, markup_percent: Number.isFinite(markup) ? markup : DEFAULT_MARKUP_PERCENT, total: centsToMoney(totalCents), total_cents: totalCents, source: normalizeText(obj.source || obj.pricing_source || obj.pricingSource || (unitCostCents ? 'OpenAI research / internal catalog' : 'estimated allowance')), source_url: normalizeText(obj.source_url || obj.url || obj.link || ''), last_checked: normalizeText(obj.last_checked || obj.lastChecked || today()), confidence: obj.confidence || (obj.source || obj.source_url ? 'medium' : 'low'), notes: obj.notes || '' };
+  const safeMarkup = Number.isFinite(markup) ? markup : DEFAULT_MARKUP_PERCENT;
+  const calculatedTotalCents = Math.round(quantity * unitCostCents * (1 + safeMarkup / 100));
+  if (totalCents && Math.abs(totalCents - calculatedTotalCents) > 1) assumptions.push(`Material total for "${name}" was corrected to quantity × unit cost × markup.`);
+  totalCents = calculatedTotalCents;
+  return { name, description: normalizeText(obj.description || name), quantity, unit, unit_cost: centsToMoney(unitCostCents), unit_cost_cents: unitCostCents, markup_percent: safeMarkup, total: centsToMoney(totalCents), total_cents: totalCents, source: normalizeText(obj.source || obj.pricing_source || obj.pricingSource || (unitCostCents ? 'OpenAI research / internal catalog' : 'estimated allowance')), source_url: normalizeText(obj.source_url || obj.url || obj.link || ''), last_checked: normalizeText(obj.last_checked || obj.lastChecked || today()), confidence: obj.confidence || (obj.source || obj.source_url ? 'medium' : 'low'), notes: obj.notes || '' };
 };
 
 const normalizePricingSummary = ({ laborLines, materialLines, otherPricing, estimate = {} }) => {
@@ -268,7 +274,7 @@ const normalizeEstimate = (estimate = {}, payload = {}, research = {}) => {
   const sources = toArray(researchMetadata.sources).concat(toArray(research.priceFindings).map((item) => ({ title: item.title, source: item.source, url: item.link, price: item.price }))).filter(Boolean);
   researchMetadata.sources = sources;
   researchMetadata.internal_catalog_used = true;
-  researchMetadata.research_mode = 'openai_first';
+  researchMetadata.research_mode = researchMetadata.openai_live_search_used ? 'openai_v3_researched' : 'openai_v3_structured';
   const base = {
     service_category: normalizeText(estimate.service_category || trade), trade,
     customer_summary: normalizeText(estimate.customer_summary || payload.customerSummary || payload.name || payload.email || 'Original customer request'),
@@ -293,7 +299,7 @@ const openAiRequestBody = ({ payload, research, useSearchTools = true }) => {
     input: [
       { role: 'system', content: 'You are a server-side contractor quoting and pricing research engine. Use OpenAI live/search tools first when available for current material pricing; never rely on memory alone for current prices. Return JSON only. Admin must review before sending. Never put status text such as quote_in_progress into customer/property/scope/labor/material/content fields.' },
       { role: 'user', content: JSON.stringify({
-        task: 'Generate a complete priced quote editor draft. Determine trade, labor, materials, live pricing needs, research queries, analyze research/fallback data, and return fully priced editable line items. If exact pricing is unavailable, use estimated allowance pricing, set source="estimated allowance", lower pricing confidence, and explain why. Never return a nonzero grand_total with zero/missing labor or material line pricing.',
+        task: 'Generate a complete priced quote editor draft using AI Quoting V3 estimator steps: understand request, identify trade/work type, decisions needed, likely materials, labor phases, internal catalog, historical jobs if supplied, supplier/catalog pricing, OpenAI web search when available, trade guardrails, admin quote, client quote, and final sanity check. Determine trade, labor, materials, live pricing needs, research queries, analyze research/fallback data, and return fully priced editable line items. If exact pricing is unavailable, use estimated allowance pricing, set source="estimated allowance", lower pricing confidence, and explain why. Never return a nonzero grand_total with zero/missing labor or material line pricing.',
         required_top_level_json_keys: schemaKeys,
         strict_labor_line_shape: { name: 'Diagnostic / setup / verification', description: 'Inspect issue, verify scope, test operation.', hours: 1.5, unit: 'hours', rate: 125, rate_cents: 12500, total: 187.5, total_cents: 18750, confidence: 'medium' },
         strict_material_line_shape: { name: 'Fasteners, anchors, caulk, sealant', description: 'Consumable installation materials.', quantity: 1, unit: 'allowance', unit_cost: 35, unit_cost_cents: 3500, markup_percent: 25, total: 43.75, total_cents: 4375, source: 'OpenAI research / internal catalog / supplier', source_url: '', last_checked: today(), confidence: 'medium' },
@@ -308,7 +314,11 @@ const openAiRequestBody = ({ payload, research, useSearchTools = true }) => {
     text: { format: { type: 'json_object' } },
     max_output_tokens: 5000,
   };
-  if (useSearchTools) body.tools = [{ type: 'web_search', external_web_access: true }];
+  if (useSearchTools) {
+    body.tools = [{ type: 'web_search', external_web_access: true, user_location: { type: 'approximate', country: 'US', city: 'Phoenix', region: 'Arizona', timezone: 'America/Phoenix' } }];
+    body.tool_choice = 'auto';
+    body.include = ['web_search_call.action.sources'];
+  }
   return body;
 };
 
@@ -339,7 +349,7 @@ const callOpenAI = async ({ payload, research }) => {
     const priorSources = asArray(parsed.research_metadata?.sources);
     parsed.research_metadata = {
       ...(parsed.research_metadata || {}),
-      research_mode: 'openai_first',
+      research_mode: actualWebSearchUsed ? 'openai_v3_researched' : 'openai_v3_structured',
       openai_live_search_used: actualWebSearchUsed,
       openai_live_search_requested: usedSearchTools,
       openai_live_search_unavailable: usedSearchTools && !actualWebSearchUsed,
@@ -349,7 +359,9 @@ const callOpenAI = async ({ payload, research }) => {
       sources: [...priorSources, ...sourcesFromTool],
       pricing_confidence_reason: actualWebSearchUsed
         ? (parsed.research_metadata?.pricing_confidence_reason || 'OpenAI Responses API web_search was used for live pricing support.')
-        : 'OpenAI live web_search did not execute; confidence was reduced and internal catalog/fallback pricing must be reviewed.',
+        : `OpenAI web_search was ${usedSearchTools ? 'requested but did not execute' : 'disabled'}; confidence was reduced and internal catalog/fallback pricing must be reviewed.`,
+      openai_model: OPENAI_MODEL,
+      responses_api_used: true,
     };
     return { ok: true, estimate: normalizeEstimate(parsed, payload, fallbackResearch) };
   } catch (error) {
