@@ -8,6 +8,8 @@ import {
 } from './auth-utils.mjs';
 
 const WORK_ORDER_STATUSES = new Set(['new', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'closed', 'cancelled', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'blocked', 'completed_by_worker', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'paid']);
+const PRIORITIES = new Set(['low', 'normal', 'high', 'emergency', 'critical']);
+const ARRIVAL_WINDOWS = new Set(['8-10', '10-12', '12-2', 'Custom', 'custom']);
 
 const WORK_ORDER_AUTOMATION_VERSION = 'phase21-work-order-automation-v1';
 
@@ -151,6 +153,8 @@ const mapWorkOrder = (row) => ({
   quoteTitle: row.quote_title,
   quoteAmountCents: row.quote_amount_cents,
   priority: row.priority || row.automation_priority || buildAutomationPlan(row).priority.level,
+  arrivalWindow: row.arrival_window || '',
+  estimatedDuration: row.estimated_duration || row.estimated_labor_hours || null,
   estimatedLaborHours: row.estimated_labor_hours || null,
   requiredMaterials: row.required_materials || [],
   requiredPhotos: row.required_photos || [],
@@ -239,10 +243,15 @@ const normalizePatchPayload = (body = {}) => ({
   endTime: clean(body.endTime, 40),
   priority: clean(body.priority, 40),
   estimatedLaborHours: clean(body.estimatedLaborHours, 40),
+  estimatedDuration: clean(body.estimatedDuration, 80),
+  arrivalWindow: clean(body.arrivalWindow, 40),
+  notificationAction: clean(body.notificationAction, 40),
   requiredMaterials: clean(body.requiredMaterials, 1200),
   requiredPhotos: clean(body.requiredPhotos, 1200),
   notes: clean(body.notes, 1200),
 });
+
+const linesToJson = (value = '') => JSON.stringify(String(value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean));
 
 const toStoredWorkOrderStatus = (status = '') => ({
   quoted: 'quote_sent',
@@ -308,7 +317,7 @@ const handleCompletionReview = async ({ request, db, session }) => {
 
 const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => {
   const statuses = status === 'all'
-    ? ['accepted', 'scheduled', 'in_progress', 'pending_review', 'completed', 'cancelled']
+    ? ['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'pending_review', 'completed', 'closed', 'cancelled']
     : status === 'completed'
       ? ['closed', 'completed']
       : status === 'pending_review'
@@ -338,10 +347,12 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
       q.title as quote_title,
       q.amount_cents as quote_amount_cents,
       jr.admin_notes,
-      'normal'::text as priority,
+      coalesce(wa.priority, 'normal')::text as priority,
+      wa.estimated_duration as estimated_duration,
+      wa.arrival_window as arrival_window,
       null::numeric as estimated_labor_hours,
-      '[]'::jsonb as required_materials,
-      '[]'::jsonb as required_photos,
+      coalesce(wa.required_materials, '[]'::jsonb) as required_materials,
+      coalesce(wa.required_photos, '[]'::jsonb) as required_photos,
       wa.id as assignment_id,
       wa.status as assignment_status,
       wa.worker_id,
@@ -448,7 +459,7 @@ export default async (request) => {
         stats,
         workOrders,
         workers: workers.map((worker) => ({ id: worker.id, fullName: worker.full_name, email: worker.email })),
-        workflow: ['new','waiting_assignment','assigned','scheduled','in_progress','worker_completed','admin_review','client_review','invoice_ready','invoiced','payment_pending','payment_verified','closed','cancelled'],
+        workflow: ['client_request','ai_draft','admin_review','quote_sent','client_accepted','waiting_assignment','assigned','scheduled','in_progress','worker_completed','inventory_updated','client_review','invoice_ready','payment_received','payment_verified','closed'],
       });
     }
 
@@ -458,6 +469,8 @@ export default async (request) => {
     const payload = normalizePatchPayload(body);
     if (!payload.jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
     if (payload.status && !WORK_ORDER_STATUSES.has(payload.status)) return json(422, { ok: false, message: 'Invalid work order status.' });
+    if (payload.priority && !PRIORITIES.has(payload.priority)) return json(422, { ok: false, message: 'Invalid priority.' });
+    if (payload.arrivalWindow && !ARRIVAL_WINDOWS.has(payload.arrivalWindow)) return json(422, { ok: false, message: 'Invalid arrival window.' });
 
     const [jobRequest] = await db.sql`
       select id, status
@@ -468,12 +481,20 @@ export default async (request) => {
 
     if (!jobRequest) return json(404, { ok: false, message: 'Work order not found.' });
 
+    if (payload.notificationAction) {
+      await db.sql`
+        insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+        values (${session.user_id}, ${payload.notificationAction === 'client' ? 'work_order.client_notified' : 'work_order.worker_notified'}, ${'job_request'}, ${jobRequest.id}, ${JSON.stringify({ source: 'admin_work_orders' })}::jsonb)
+      `;
+      return json(200, { ok: true, authenticated: true, authorized: true, message: payload.notificationAction === 'client' ? 'Client notification recorded.' : 'Worker notification recorded.' });
+    }
+
     const assigningWorker = Boolean(payload.workerId);
     const nextStatus = toStoredWorkOrderStatus(payload.status || (assigningWorker ? 'assigned' : jobRequest.status));
 
     const [updatedJob] = await db.sql`
       update job_requests
-      set status = case when ${assigningWorker} then 'assigned' else ${nextStatus} end,
+      set status = ${nextStatus},
           estimated_start_date = case when ${payload.estimatedStartDate} = '' then estimated_start_date else ${payload.estimatedStartDate || payload.scheduledDate || null}::date end,
           completion_date = case when ${payload.completionDate} = '' then completion_date else ${payload.completionDate || null}::date end,
           updated_at = now()
@@ -482,6 +503,15 @@ export default async (request) => {
     `;
 
     let assignment = null;
+
+    if (!payload.workerId) {
+      await db.sql`
+        update worker_assignments
+        set status = 'cancelled', updated_at = now()
+        where job_request_id = ${jobRequest.id}
+          and status not in ('completed', 'worker_completed', 'cancelled')
+      `;
+    }
 
     if (payload.workerId) {
       const [createdAssignment] = await db.sql`
@@ -493,7 +523,12 @@ export default async (request) => {
           scheduled_date,
           start_time,
           end_time,
-          notes
+          notes,
+          priority,
+          arrival_window,
+          estimated_duration,
+          required_materials,
+          required_photos
         ) values (
           ${jobRequest.id},
           ${payload.workerId},
@@ -502,16 +537,26 @@ export default async (request) => {
           ${payload.scheduledDate || null}::date,
           ${payload.startTime || null},
           ${payload.endTime || null},
-          ${payload.notes || null}
+          ${payload.notes || null},
+          ${payload.priority === 'emergency' ? 'emergency' : (payload.priority || 'normal')},
+          ${payload.arrivalWindow || null},
+          ${payload.estimatedDuration || payload.estimatedLaborHours || null},
+          ${linesToJson(payload.requiredMaterials)}::jsonb,
+          ${linesToJson(payload.requiredPhotos)}::jsonb
         )
         on conflict (job_request_id, worker_id) do update set
           scheduled_date = excluded.scheduled_date,
           start_time = excluded.start_time,
           end_time = excluded.end_time,
           notes = excluded.notes,
+          priority = excluded.priority,
+          arrival_window = excluded.arrival_window,
+          estimated_duration = excluded.estimated_duration,
+          required_materials = excluded.required_materials,
+          required_photos = excluded.required_photos,
           status = excluded.status,
           updated_at = now()
-        returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes
+        returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, priority, arrival_window, estimated_duration, required_materials, required_photos
       `;
       assignment = createdAssignment;
     }
