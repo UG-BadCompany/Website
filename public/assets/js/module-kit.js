@@ -52,9 +52,13 @@
       }
       const endpoint = primaryEndpoint(config);
       if (!endpoint || !api) throw new Error('No backend endpoint is configured for this action.');
+      if (config.disableGenericActions || config.allowGenericActions === false || /approve|status|assign|save|update|complete|completion|upload|photo|information/i.test(action)) {
+        openDetail(root, { ...config, detailMode:'readonly', readOnlyDetail:true }, record.id ? record : (records?.[0] || record), { api, data, records });
+        TAUi?.toast('Open the record and use its specific form or handler for this action.', 'info');
+        return;
+      }
       const payload = { action, recordId: record.id || record.requestId || record.quoteId || record.invoiceId || '', record, values: {} };
-      const method = payload.recordId && !/create|add|submit|request/i.test(action) ? 'patch' : 'post';
-      const result = await api[method](endpoint, payload);
+      const result = await api.post(endpoint, payload);
       TAUi?.toast(result.message || `${titleize(action)} completed.`, 'success');
       await mount(context, config);
     } catch (error) {

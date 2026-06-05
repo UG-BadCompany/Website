@@ -256,15 +256,19 @@ const handlePatch = async ({ request, db, context }) => {
   const payload = normalizeWorkerUpdatePayload(body);
 
   if (!payload.assignmentId) {
-    return json(422, { ok: false, message: 'Assignment is required.' });
+    return json(422, { ok: false, field: 'assignmentId', missing: ['assignmentId'], message: 'Missing required field: assignmentId.' });
+  }
+
+  if (!payload.status) {
+    return json(422, { ok: false, field: 'status', missing: ['status'], message: 'Missing required field: status.' });
   }
 
   if (!WORKER_ASSIGNMENT_STATUSES.has(payload.status)) {
-    return json(422, { ok: false, message: 'Choose a valid assignment status.' });
+    return json(422, { ok: false, field: 'status', message: `Invalid status: ${payload.status}.` });
   }
 
   if (payload.status === 'blocked' && !payload.blockedReason) {
-    return json(422, { ok: false, message: 'Blocked reason is required when a job is marked blocked.' });
+    return json(422, { ok: false, field: 'blockedReason', missing: ['blockedReason'], message: 'Missing required field: blockedReason is required when a job is marked blocked.' });
   }
 
   const isAdmin = context.roleKeys.includes('admin');

@@ -467,10 +467,11 @@ export default async (request) => {
     if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
 
     const payload = normalizePatchPayload(body);
-    if (!payload.jobRequestId) return json(422, { ok: false, message: 'Job request is required.' });
-    if (payload.status && !WORK_ORDER_STATUSES.has(payload.status)) return json(422, { ok: false, message: 'Invalid work order status.' });
-    if (payload.priority && !PRIORITIES.has(payload.priority)) return json(422, { ok: false, message: 'Invalid priority.' });
-    if (payload.arrivalWindow && !ARRIVAL_WINDOWS.has(payload.arrivalWindow)) return json(422, { ok: false, message: 'Invalid arrival window.' });
+    if (!payload.jobRequestId) return json(422, { ok: false, field: 'jobRequestId', missing: ['jobRequestId'], message: 'Missing required field: jobRequestId.' });
+    if (payload.status && !WORK_ORDER_STATUSES.has(payload.status)) return json(422, { ok: false, field: 'status', message: `Invalid status: ${payload.status}.` });
+    if (payload.priority && !PRIORITIES.has(payload.priority)) return json(422, { ok: false, field: 'priority', message: `Invalid priority: ${payload.priority}.` });
+    if (payload.arrivalWindow && !ARRIVAL_WINDOWS.has(payload.arrivalWindow)) return json(422, { ok: false, field: 'arrivalWindow', message: `Invalid arrivalWindow: ${payload.arrivalWindow}.` });
+    if (['assigned', 'scheduled', 'in_progress'].includes(payload.status) && !payload.workerId) return json(422, { ok: false, field: 'workerId', missing: ['workerId'], message: 'Missing required field: workerId is required when assigning or scheduling a work order.' });
 
     const [jobRequest] = await db.sql`
       select id, status
@@ -514,6 +515,14 @@ export default async (request) => {
     }
 
     if (payload.workerId) {
+      await db.sql`
+        update worker_assignments
+        set status = 'cancelled', updated_at = now()
+        where job_request_id = ${jobRequest.id}
+          and worker_id <> ${payload.workerId}
+          and status not in ('completed', 'worker_completed', 'cancelled')
+      `;
+
       const [createdAssignment] = await db.sql`
         insert into worker_assignments (
           job_request_id,
