@@ -1,4 +1,5 @@
 (() => {
+  const escapeHtml = (value = '') => String(value ?? '').replace(/[&<>"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[char]));
   const categoryFor = (workspace, slug) => {
     if (['company-management','customers','users','roles','permissions-workspaces','workers'].includes(slug)) return 'People';
     if (['estimate-management-center','estimate-request-center','photo-estimate','work-orders','schedule','inventory','materials','finance','invoices','requests','quotes','jobs','project-updates','properties','maintenance-plans'].includes(slug)) return 'Operations';
@@ -190,13 +191,21 @@
     history.replaceState(null, '', `#${def.id}`);
     markActive();
     document.getElementById('workspace-header').innerHTML = `<div class="workspace-title-card"><span class="pill">${workspaceLabels[state.currentWorkspace]} Workspace · ${def.category || 'Business'}</span><h1>${def.title}</h1><p>Premium command center for ${def.title.toLowerCase()} workflows, mobile actions, and role-safe access.</p></div>`;
-    const root = document.getElementById('module-root');
-    root.innerHTML = `<div class="card">Loading ${def.title}...</div>`;
+    const moduleRootElement = document.getElementById('module-root');
+    const root = moduleRootElement?.querySelector ? moduleRootElement : document.querySelector('[data-module-root]');
+    if (!root?.querySelector) throw new TypeError('Dashboard module root element was not found.');
+    root.innerHTML = `<div class="card">Loading ${escapeHtml(def.title)}...</div>`;
+    if (!window.TAForms) {
+      root.innerHTML = '<section class="module-page stack"><article class="card module-error"><h2>Dashboard forms unavailable</h2><p>Required form utility failed to load. Refresh the page or contact admin.</p></article></section>';
+      window.TAUi?.toast?.('Required form utility failed to load. Refresh the page or contact admin.', 'error');
+      return;
+    }
     state.currentController = new AbortController();
     const mod = await TAModules.load(def);
     state.currentModuleInstance = mod;
     root.replaceChildren();
-    if (mod?.mount) await mod.mount({ root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace });
+    const mountContext = { root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
+    if (mod?.mount) await mod.mount(mountContext);
     renderNav();
     window.scrollTo({ top:0, behavior:'smooth' });
   }
