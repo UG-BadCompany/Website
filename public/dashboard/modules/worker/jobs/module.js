@@ -5,7 +5,7 @@
   const date = (v) => v ? new Date(v).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' }) : 'Not scheduled';
   const jobTitle = (a) => a.jobRequest?.serviceType || 'Assigned job';
   const jobAddress = (a) => a.jobRequest?.property ? [a.jobRequest.property.street, a.jobRequest.property.city, a.jobRequest.property.state].filter(Boolean).join(', ') : [a.jobRequest?.streetAddress, a.jobRequest?.city].filter(Boolean).join(', ');
-  window.TAModules.register({id:'worker.jobs',role:'worker',title:'Jobs',icon:'🔧',permissions:[],async mount({root,api}){
+  window.TAModules.register({id:'worker.jobs',role:'worker',title:'Jobs',icon:'🔧',permissions:[],async mount({root,api}){root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.'); 
     let data = { jobs: [], assignments: [] }; let selected = '';
     const assignments = () => arr(data.assignments || data.jobs);
     const load = async () => { data = await api.get('/api/worker/jobs'); if (!selected && assignments()[0]) selected = assignments()[0].id; };

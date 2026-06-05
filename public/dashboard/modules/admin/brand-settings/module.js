@@ -21,7 +21,7 @@
     title: 'Brand Settings',
     icon: '🎨',
     permissions: ['branding.manage', 'company.manage'],
-    async mount({ root, api }) {
+    async mount({ root, api }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
       let company = window.TACompany?.current || window.TACompany?.fallback || {};
 
       const readState = () => {

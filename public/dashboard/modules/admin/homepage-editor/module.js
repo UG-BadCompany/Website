@@ -18,7 +18,7 @@
 
   window.TAModules.register({
     id: 'admin.homepage-editor', role: 'admin', title: 'Homepage Editor', icon: '🏠', permissions: ['homepage.manage'],
-    async mount({ root, api, user }) {
+    async mount({ root, api, user }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
       const roles = user?.roles || [];
       const permissions = user?.permissions?.permissionKeys || user?.permissionKeys || [];
       if (!roles.includes('owner') && !permissions.includes('homepage.manage')) {

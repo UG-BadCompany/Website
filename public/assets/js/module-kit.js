@@ -17,6 +17,7 @@
   };
   const button = (label, action = 'toast', style = 'secondary') => `<button class="btn ${style}" type="button" data-module-action="${escapeHtml(action)}">${escapeHtml(label)}</button>`;
   const stateCard = (type, title, body) => `<article class="module-state module-state-${type} module-${type}"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>`;
+  const normalizeRoot = (root) => root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root');
   const defaultRecordTitle = (record, fallback = 'Record') => record.title || record.name || record.fullName || record.full_name || record.customerName || record.customer_name || record.email || record.serviceType || record.service_type || fallback;
   const defaultRecordMeta = (record) => [record.status && statusText(record.status), record.amountCents && currency(record.amountCents), record.createdAt && dateText(record.createdAt), record.updatedAt && dateText(record.updatedAt)].filter(Boolean).join(' • ');
   const defaultRecords = (config, data) => findRecords(data, config.recordPaths || ['items','requests','quotes','invoices','jobs','workOrders','workOrders.items','inventory','users','roles','properties','updates']);
@@ -136,6 +137,8 @@
     try { return await api.get(endpoint); } catch (error) { return { ok:false, error:true, message:error.message || 'Endpoint unavailable.', endpoint }; }
   };
   const mount = async ({ root, api, user, company, router, workspace }, config) => {
+    root = normalizeRoot(root);
+    if (!root?.querySelector) throw new TypeError('Module root element was not found.');
     const effective = { ...config, ...(config.aliases?.[router?.state?.currentModule] || {}) };
     if (effective.permissions?.length && !TAPermissions.has(user, effective.permissions)) {
       root.innerHTML = stateCard('error', 'Permission required', 'Your current role cannot open this module.');

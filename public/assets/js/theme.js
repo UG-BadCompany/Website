@@ -56,10 +56,13 @@
     set('--bg', background);
     set('--panel', surface);
     set('--surface', surface);
+    set('--surface-alt', mode === 'dark' ? 'color-mix(in srgb, ' + surface + ' 86%, ' + background + ')' : 'color-mix(in srgb, ' + surface + ' 88%, ' + background + ')');
     set('--ink', text);
     set('--text', text);
     set('--muted', muted);
+    set('--text-muted', muted);
     set('--line', border);
+    set('--border', border);
     set('--danger', source.dangerColor || defaults.dangerColor);
     set('--button-color', source.buttonColor || primary || defaults.buttonColor);
     set('--primary-color', primary);

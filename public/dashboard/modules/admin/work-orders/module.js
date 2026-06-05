@@ -37,7 +37,7 @@
       </div>
     </article>`;
   };
-  window.TAModules.register({id:'admin.work-orders',role:'admin',title:'Work Orders',icon:'🔧',permissions:['requests.manage'],async mount({root,api}){
+  window.TAModules.register({id:'admin.work-orders',role:'admin',title:'Work Orders',icon:'🔧',permissions:['requests.manage'],async mount({root,api}){root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.'); 
     let data = { workOrders: [], workers: [] }; let selected = '';
     const load = async () => { data = await api.get('/api/admin/work-orders', { status:'all' }); if (!selected && data.workOrders?.[0]) selected = data.workOrders[0].jobRequestId; };
     const saveAssignment = async (workOrderId, values) => api.patch('/api/admin/work-orders', { ...values, jobRequestId: workOrderId, action:'assignWorker', status: values.workerId ? (values.scheduledDate ? 'scheduled' : 'assigned') : 'waiting_assignment' });
