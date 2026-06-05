@@ -148,19 +148,19 @@ const loadRoleKeys = async (db, userId) => {
   return roleKeys.length ? roleKeys : ['client'];
 };
 
-const requireClientAccess = (roleKeys) => roleKeys.includes('client') || roleKeys.includes('admin');
+const requireClientAccess = (roleKeys) => roleKeys.includes('client') || roleKeys.includes('admin') || roleKeys.includes('owner');
 
 const validateClientRequestUpdatePayload = (payload) => {
   if (!payload.jobRequestId) {
-    return 'Job request is required.';
+    return 'Missing required field: jobRequestId.';
   }
 
-  if (!payload.service) {
-    return 'Service is required.';
+  if (!payload.service && !payload.additionalInfo && !payload.requestedDate && payload.completionAction !== 'approve_completed') {
+    return 'Missing update content: provide service, additionalInfo, requestedDate, or completionAction.';
   }
 
-  if (!payload.description && !payload.additionalInfo && !payload.requestedDate) {
-    return 'Add project details, a requested date change, or additional information.';
+  if (payload.service && !payload.description && !payload.additionalInfo && !payload.requestedDate) {
+    return 'Missing required field: description (or provide additionalInfo/requestedDate for a partial update).';
   }
 
   return null;
@@ -368,7 +368,7 @@ const handlePost = async ({ request, db, session, roleKeys }) => {
   const validationError = validateJobRequestPayload(payload, session);
 
   if (validationError) {
-    return json(422, { ok: false, message: validationError });
+    return json(422, { ok: false, field: validationError.match(/field: ([a-zA-Z0-9]+)/)?.[1] || null, message: validationError });
   }
 
   const property = await findOrCreateClientProperty(db, session.user_id, payload);
@@ -525,7 +525,8 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
     const validationError = validateClientRequestUpdatePayload(payload);
 
     if (validationError) {
-      return json(422, { ok: false, message: validationError });
+      const field = validationError.match(/field: ([a-zA-Z0-9]+)/)?.[1] || (validationError.includes('update content') ? 'service' : null);
+      return json(422, { ok: false, field, message: validationError });
     }
 
     const jobRequest = await updateClientJobRequest(db, session.user_id, payload);
@@ -566,10 +567,14 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
     });
   }
 
+  if (!payload.propertyId) {
+    return json(422, { ok: false, field: 'jobRequestId', missing: ['jobRequestId', 'propertyId'], message: 'Missing required field: jobRequestId for request updates or propertyId for property updates.' });
+  }
+
   const validationError = validatePropertyPayload(payload);
 
   if (validationError) {
-    return json(422, { ok: false, message: validationError });
+    return json(422, { ok: false, field: validationError.includes('Property') ? 'propertyId' : null, message: validationError });
   }
 
   const property = await updateClientProperty(db, session.user_id, payload);
