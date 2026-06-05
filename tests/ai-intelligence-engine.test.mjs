@@ -104,7 +104,7 @@ const makeDb = ({ history = [] } = {}) => {
   return { sql, queries };
 };
 
-const openAiResponse = (payload) => ({ ok: true, json: async () => ({ output_text: JSON.stringify(payload) }) });
+const openAiResponse = (payload) => ({ ok: true, json: async () => ({ output_text: JSON.stringify(payload), output: [{ type: 'web_search_call', action: { sources: [{ title: 'Test source', url: payload?.results?.[0]?.sourceUrl || 'https://example.com/source' }] } }] }) });
 
 test('quote generation calls OpenAI first and does not invoke fallback when validated output succeeds', async () => {
   const db = makeDb();
@@ -269,7 +269,7 @@ test('quote material research records OpenAI live search priority and live-prici
     },
   });
 
-  assert.equal(body.tools[0].type, 'web_search_preview');
+  assert.equal(body.tools[0].type, 'web_search');
   assert.equal(researched.openAiLiveSearchAttempted, true);
   assert.equal(researched.openAiLiveSearchAvailable, true);
   assert.equal(researched.livePricingVerified, true);
@@ -291,7 +291,7 @@ test('troubleshooting research uses OpenAI live search before generic search fal
     },
   });
 
-  assert.equal(body.tools[0].type, 'web_search_preview');
+  assert.equal(body.tools[0].type, 'web_search');
   assert.equal(research.openAiLiveSearchAttempted, true);
   assert.equal(research.searchProvidersUsed.includes('openai_live_search'), true);
   assert.ok(research.sources.some((source) => source.url === 'https://example.com/daikin-manual'));

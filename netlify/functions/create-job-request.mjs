@@ -32,7 +32,7 @@ const MAX_FIELD_LENGTHS = {
   additionalNotes: 1000,
 };
 
-const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini';
+const OPENAI_MODEL = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
 const OPENAI_TIMEOUT_MS = Number(process.env.AI_REQUEST_ESTIMATE_TIMEOUT_MS || 11000);
 const DEFAULT_LABOR_RATE_CENTS = Number(process.env.AI_LABOR_RATE_CENTS || (Number(process.env.AI_LABOR_RATE || 95) * 100));
 const TRIP_CHARGE_CENTS = Number(process.env.AI_TRIP_CHARGE_CENTS || (Number(process.env.AI_TRIP_CHARGE || 75) * 100));

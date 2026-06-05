@@ -4,8 +4,8 @@
 create table if not exists ai_model_settings (
   id boolean primary key default true,
   ai_enabled boolean not null default true,
-  quote_model text not null default 'gpt-5-mini',
-  troubleshooting_model text not null default 'gpt-5-mini',
+  quote_model text not null default 'gpt-5.5',
+  troubleshooting_model text not null default 'gpt-5.5',
   timeout_ms integer not null default 14000,
   max_retries integer not null default 1,
   fallback_only_on_ai_failure boolean not null default true,

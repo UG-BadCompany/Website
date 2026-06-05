@@ -242,7 +242,7 @@ const SERP_TIMEOUT_MS = Number(process.env.QUOTE_DRAFT_SERP_TIMEOUT_MS || 1500);
 const MAX_WEB_PRICE_LOOKUPS = Number(process.env.QUOTE_DRAFT_MAX_WEB_LOOKUPS || 3);
 const QUOTE_DRAFT_SOFT_TIMEOUT_MS = Number(process.env.QUOTE_DRAFT_SOFT_TIMEOUT_MS || 8500);
 
-const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', 80);
+const OPENAI_MODEL = clean(process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', 80);
 const OPENAI_TIMEOUT_MS = Number(process.env.QUOTE_DRAFT_OPENAI_TIMEOUT_MS || 3500);
 const OPENAI_STRICT_ONLY = true;
 const withTimeout = (promise, ms, fallback) => Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
@@ -318,7 +318,7 @@ const maybeGenerateAiMaterials = async ({ jobRequest, descriptionText, inventory
   if (!apiKey) return [];
   try {
     const payload = {
-      model: OPENAI_MODEL || 'gpt-5-mini',
+      model: OPENAI_MODEL || 'gpt-5.5',
       input: [
         { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
         { role: 'user', content: JSON.stringify({
@@ -414,7 +414,7 @@ const maybeGenerateAiFallbackMaterials = async ({ jobRequest, descriptionText, i
   if (!apiKey) return [];
   try {
     const payload = {
-      model: OPENAI_MODEL || 'gpt-5-mini',
+      model: OPENAI_MODEL || 'gpt-5.5',
       input: [
         { role: 'system', content: 'Return strict JSON only.' },
         { role: 'user', content: JSON.stringify({
@@ -475,7 +475,7 @@ const maybeApplyAiLearningAdjustments = async ({ jobRequest, descriptionText, ma
   if (!apiKey || !Array.isArray(materials) || !materials.length) return null;
   try {
     const payload = {
-      model: OPENAI_MODEL || 'gpt-5-mini',
+      model: OPENAI_MODEL || 'gpt-5.5',
       input: [
         { role: 'system', content: 'You are a construction estimator assistant. Return strict JSON only.' },
         { role: 'user', content: JSON.stringify({
@@ -634,8 +634,8 @@ const fetchOpenAiLivePrices = async ({ partLabel, location = 'Phoenix, Arizona' 
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
       body: JSON.stringify({
-        model: OPENAI_MODEL || 'gpt-5-mini',
-        tools: [{ type: 'web_search_preview' }],
+        model: OPENAI_MODEL || 'gpt-5.5',
+        tools: [{ type: 'web_search', external_web_access: true }],
         input: [
           { role: 'system', content: 'Use live web/product research for current contractor material pricing. Return strict JSON only. Do not use memory alone for prices.' },
           { role: 'user', content: JSON.stringify({ task: 'Find current product/material prices for this quote line item. Prefer supplier/retail product pages and include source URL, source name, date checked, low/average/high price when available, recommended price, and confidence.', partLabel, location, outputSchema: { results: [{ title: 'string', sourceName: 'string', sourceUrl: 'https://...', recommendedPrice: 'number dollars', lowPrice: 'number dollars', averagePrice: 'number dollars', highPrice: 'number dollars', dateChecked: 'YYYY-MM-DD', confidence: 'number 0..1' }] } }) },
@@ -798,7 +798,7 @@ const generateStructuredAiQuote = async ({ jobRequest, descriptionText, pricedMa
   const laborHighHours = Math.max(laborLowHours, Math.round(laborHours * 1.25 * 10) / 10);
   try {
     const payload = {
-      model: OPENAI_MODEL || 'gpt-5-mini',
+      model: OPENAI_MODEL || 'gpt-5.5',
       input: [
         { role: 'system', content: 'You are a senior handyman estimator. Return strict JSON only and follow output schema exactly.' },
         { role: 'user', content: JSON.stringify({
@@ -988,15 +988,15 @@ const ensureStructuredQuoteLines = ({ quote = {}, laborLineItems = [], materialL
     const materialCents = allocatable - laborCents;
     const backfillRateCents = phoenixLaborRateByTime(new Date());
     const laborHours = Math.max(1, Math.round((laborCents / backfillRateCents) * 100) / 100);
-    labor = [{ name: 'Service labor / site prep / installation', description: 'Created from legacy AI pricing. Review before sending.', hours: laborHours, quantity: laborHours, unit: 'hours', rate: dollars(backfillRateCents), rate_cents: backfillRateCents, unitCostCents: backfillRateCents, unit_cost_cents: backfillRateCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low', source: 'legacy AI pricing backfill', backfilled: true }];
-    materials = [{ name: 'Materials, fasteners, and consumables allowance', description: 'Created from legacy AI pricing. Review quantities and supplier costs before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'legacy AI pricing backfill', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low', backfilled: true }];
-    warnings.push('Line items were backfilled from legacy AI total. Review before sending.');
+    labor = [{ name: 'Service labor / site prep / installation', description: 'Created from compatibility pricing. Review before sending.', hours: laborHours, quantity: laborHours, unit: 'hours', rate: dollars(backfillRateCents), rate_cents: backfillRateCents, unitCostCents: backfillRateCents, unit_cost_cents: backfillRateCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low', source: 'compatibility pricing backfill', backfilled: true }];
+    materials = [{ name: 'Materials, fasteners, and consumables allowance', description: 'Created from compatibility pricing. Review quantities and supplier costs before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'compatibility pricing backfill', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low', backfilled: true }];
+    warnings.push('Line items were backfilled from a compatibility total. Review before sending.');
   }
   summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
   if (desiredGrand > 0 && Math.abs(summary.grand_total_cents - desiredGrand) > 1 && desiredGrand > summary.grand_total_cents) {
     const delta = desiredGrand - summary.grand_total_cents;
-    materials.push({ name: 'Pricing allowance adjustment', description: 'Created from legacy AI pricing. Review before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'legacy AI pricing backfill', backfilled: true, source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
-    warnings.push('AI total did not match editable line totals. A pricing allowance adjustment was created for review.');
+    materials.push({ name: 'Pricing allowance adjustment', description: 'Created from compatibility pricing. Review before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'compatibility pricing backfill', backfilled: true, source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
+    warnings.push('AI total did not match editable line totals. A reviewable pricing allowance adjustment was created.');
   }
   summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
   return { laborLineItems: labor, materialLineItems: materials, otherPricing: other, pricingSummary: summary, warnings };
@@ -1200,7 +1200,7 @@ export default async (request) => {
             customer_quote: customerQuote,
             pricing_warnings: lineBackfill.warnings,
             client_quote_detail_mode: 'summary',
-            research_metadata: { research_mode: 'openai_first', openai_live_search_used: true, fallback_search_used: false, internal_catalog_used: true, historical_quotes_used: Boolean(aiFirstQuote.historicalMatchUsed), serpapi_used: false, sources: normalizedMaterialLines.map((item) => ({ title: item.name, source: item.source, url: item.source_url })), pricing_confidence_reason: aiFirstQuote.pricingConfidenceReason || 'OpenAI-first pricing with internal catalog/admin review fallback.' },
+            research_metadata: { research_mode: 'openai_first', openai_live_search_used: Boolean(aiFirstQuote.materialResearchContext?.openAiLiveSearchAvailable || aiFirstQuote.livePricingVerification?.openAiLiveSearchAvailable), openai_live_search_requested: Boolean(aiFirstQuote.materialResearchContext?.openAiLiveSearchAttempted || aiFirstQuote.livePricingVerification?.openAiLiveSearchAttempted), openai_live_search_unavailable: Boolean((aiFirstQuote.materialResearchContext?.openAiLiveSearchAttempted || aiFirstQuote.livePricingVerification?.openAiLiveSearchAttempted) && !(aiFirstQuote.materialResearchContext?.openAiLiveSearchAvailable || aiFirstQuote.livePricingVerification?.openAiLiveSearchAvailable)), fallback_search_used: Boolean((aiFirstQuote.materialResearchContext?.openAiLiveSearchAttempted || aiFirstQuote.livePricingVerification?.openAiLiveSearchAttempted) && !(aiFirstQuote.materialResearchContext?.openAiLiveSearchAvailable || aiFirstQuote.livePricingVerification?.openAiLiveSearchAvailable)), internal_catalog_used: true, historical_quotes_used: Boolean(aiFirstQuote.historicalMatchUsed), serpapi_used: false, sources: normalizedMaterialLines.map((item) => ({ title: item.name, source: item.source, url: item.source_url })), pricing_confidence_reason: aiFirstQuote.pricingConfidenceReason || 'OpenAI-first pricing with internal catalog/admin review fallback.' },
             recommended_action: aiFirstQuote.pricingConfidenceLevel === 'high' ? 'Ready for admin review.' : aiFirstQuote.pricingConfidenceLevel === 'medium' ? 'Review assumptions before sending.' : 'Request more information or continue manually.',
           },
           pricingConfidenceLevel: aiFirstQuote.pricingConfidenceLevel,

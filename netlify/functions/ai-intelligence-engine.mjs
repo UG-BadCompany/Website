@@ -177,6 +177,10 @@ const parseOpenAiWebSearchResults = (parsed = {}, { fallbackQuery = '', source =
   }).filter(Boolean).slice(0, 12);
 };
 
+
+const openAiWebSearchUsed = (data = {}) => toArray(data.output).some((item) => item?.type === 'web_search_call');
+const openAiWebSources = (data = {}) => toArray(data.output).flatMap((item) => toArray(item?.action?.sources).map((source) => ({ title: clean(source.title || source.url || 'OpenAI web source', 240), url: clean(source.url || '', 800), sourceName: clean(source.source || 'OpenAI web search', 120), dateChecked: todayIsoDate(), confidence: 0.78 }))).filter((source) => source.url);
+
 const callOpenAiWebSearch = async ({ apiKey, model, task, query, context = {}, fetchImpl = fetch, timeoutMs = 9000 }) => {
   if (!apiKey) return { ok: false, unavailable: true, reason: 'OPENAI_API_KEY is not configured.' };
   const controller = new AbortController();
@@ -188,7 +192,7 @@ const callOpenAiWebSearch = async ({ apiKey, model, task, query, context = {}, f
       signal: controller.signal,
       body: JSON.stringify({
         model,
-        tools: [{ type: 'web_search_preview' }],
+        tools: [{ type: 'web_search', external_web_access: true }],
         input: [
           { role: 'system', content: 'Use live web search when available. Return strict JSON only with cited source names, URLs, dateChecked, and confidence. Do not rely on memory for current prices or model-specific error codes.' },
           { role: 'user', content: JSON.stringify({ task, query, context, outputSchema: { results: [{ title: 'string', url: 'string', snippet: 'string', sourceName: 'string', dateChecked: 'YYYY-MM-DD', confidence: 'number 0..1' }] } }) },
@@ -201,7 +205,11 @@ const callOpenAiWebSearch = async ({ apiKey, model, task, query, context = {}, f
     if (!response.ok) return { ok: false, unavailable: true, reason: data?.error?.message || `OpenAI live search failed with ${response.status}` };
     const parsed = parseOpenAiJson(data);
     if (!parsed) return { ok: false, unavailable: true, reason: 'OpenAI live search returned invalid JSON.' };
-    return { ok: true, parsed, results: parseOpenAiWebSearchResults(parsed, { fallbackQuery: query }) };
+    const usedWebSearch = openAiWebSearchUsed(data);
+    const toolSources = openAiWebSources(data);
+    const parsedResults = parseOpenAiWebSearchResults(parsed, { fallbackQuery: query });
+    const results = usedWebSearch ? [...parsedResults, ...toolSources] : parsedResults;
+    return { ok: true, parsed, results, webSearchUsed: usedWebSearch, webSearchRequested: true, reason: usedWebSearch ? '' : 'OpenAI web_search was requested but no web_search_call was returned.' };
   } catch (error) {
     return { ok: false, unavailable: true, reason: error?.message || 'OpenAI live search failed.' };
   } finally {
@@ -336,7 +344,7 @@ export const saveCachedErrorDefinition = async ({ db, payload, definition }) => 
   `);
 };
 
-export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fetch, apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', openAiSearchEnabled = fetchImpl === fetch }) => {
+export const researchEquipmentFault = async ({ db, payload = {}, fetchImpl = fetch, apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', openAiSearchEnabled = fetchImpl === fetch }) => {
   const queries = buildResearchQueries(payload);
   const seeded = lookupSeededError(payload);
   const cached = await loadCachedErrorDefinition({ db, payload });
@@ -410,7 +418,7 @@ const normalizePricingSource = (source = {}, fallback = {}) => ({
   notes: clean(source.notes || source.snippet || '', 700),
 });
 
-export const researchQuoteMaterials = async ({ jobRequest = {}, inventory = [], supplierPricing = [], historicalContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', fetchImpl = fetch, openAiSearchEnabled = fetchImpl === fetch }) => {
+export const researchQuoteMaterials = async ({ jobRequest = {}, inventory = [], supplierPricing = [], historicalContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', fetchImpl = fetch, openAiSearchEnabled = fetchImpl === fetch }) => {
   const requestText = clean(`${jobRequest.service_type || ''} ${jobRequest.work_category || ''} ${jobRequest.description || ''}`, 2600);
   const inventorySources = toArray(inventory).slice(0, 20).map((item) => normalizePricingSource({
     sourceName: item.supplier || 'Internal catalog / inventory',
@@ -439,7 +447,7 @@ export const researchQuoteMaterials = async ({ jobRequest = {}, inventory = [], 
     query: `${requestText} contractor materials current price supplier`,
     context: { jobRequest, internalSourceCount: internalSources.length, priorityOrder: ['internal catalog / quote database', 'historical company jobs', 'supplier price database', 'OpenAI live search', 'SERPAPI fallback', 'manual admin fallback'] },
   }) : { ok: false, unavailable: true, reason: 'OpenAI live search disabled for injected fetch; production default fetch enables it.' };
-  const liveSources = openAiResearch.ok ? parseOpenAiWebSearchResults(openAiResearch.parsed, { fallbackQuery: requestText }).map((item) => normalizePricingSource({ ...item, sourceName: item.title, sourceUrl: item.url, priority: 3, liveVerified: true, notes: item.snippet })) : [];
+  const liveSources = openAiResearch.ok ? toArray(openAiResearch.results).map((item) => normalizePricingSource({ ...item, sourceName: item.sourceName || item.title, sourceUrl: item.url, priority: 3, liveVerified: Boolean(openAiResearch.webSearchUsed), notes: item.snippet })) : [];
   const allSources = [...internalSources, ...liveSources].slice(0, 30);
   const liveVerified = liveSources.some((item) => item.liveVerified && item.sourceUrl);
   return {
@@ -448,8 +456,8 @@ export const researchQuoteMaterials = async ({ jobRequest = {}, inventory = [], 
     historicalQuotesChecked: true,
     supplierDatabaseChecked: true,
     openAiLiveSearchAttempted: Boolean(openAiSearchEnabled && apiKey),
-    openAiLiveSearchAvailable: Boolean(openAiResearch.ok),
-    openAiLiveSearchReason: openAiResearch.ok ? 'OpenAI live search returned source candidates.' : clean(openAiResearch.reason || 'OpenAI live search not available.', 500),
+    openAiLiveSearchAvailable: Boolean(openAiResearch.webSearchUsed),
+    openAiLiveSearchReason: openAiResearch.ok && openAiResearch.webSearchUsed ? 'OpenAI Responses API web_search returned source candidates.' : clean(openAiResearch.reason || 'OpenAI live search not available.', 500),
     livePricingVerified: liveVerified,
     livePricingLabel: liveVerified ? 'Live pricing researched' : 'Live pricing not verified',
     pricingConfidenceImpact: liveVerified || internalSources.length ? 'normal' : 'lower_confidence_no_live_source',
@@ -486,8 +494,12 @@ const buildComponentPricingEngine = ({ quote = {}, context = {}, photoContext = 
   const text = `${context.serviceType || ''} ${context.workCategory || ''} ${context.description || ''} ${quote.tradeCategory || ''} ${quote.jobClassification || ''}`;
   const tradeKey = detectTradeKey(text);
   const rule = TRADE_ESTIMATING_RULES[tradeKey] || TRADE_ESTIMATING_RULES.handyman;
-  const lowHours = Math.max(1, toNumber(quote.laborHoursLow, estimateComplexity(text, photoContext)));
-  const highHours = Math.max(lowHours, toNumber(quote.laborHoursHigh, lowHours + 2));
+  let lowHours = Math.max(1, toNumber(quote.laborHoursLow, estimateComplexity(text, photoContext)));
+  let highHours = Math.max(lowHours, toNumber(quote.laborHoursHigh, lowHours + 2));
+  if (/ceiling\s+fan/i.test(text) && /replace|replacement|swap/i.test(text) && !/new\s+(circuit|wire|box)|home\s*run|attic|scaffold|high\s+ceiling/i.test(text)) {
+    lowHours = Math.min(lowHours, 1.5);
+    highHours = Math.min(Math.max(lowHours, highHours), 2);
+  }
   const recommendedHours = Math.round(((lowHours + highHours) / 2) * 2) / 2;
   const rate = toNumber(quote.laborRateUsed, rule.rate);
   const materials = toArray(quote.materialBreakdown).map((item, index) => {
@@ -978,7 +990,7 @@ export const loadPhotoContext = async ({ db, jobRequestId = '', workOrderId = ''
   })) : [];
 };
 
-export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplierPricing = [], companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_QUOTE_TIMEOUT_MS || 14000), fetchImpl = fetch, fallbackBuilder = null }) => {
+export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplierPricing = [], companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', timeoutMs = Number(process.env.AI_QUOTE_TIMEOUT_MS || 14000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: jobRequest.service_type, workCategory: jobRequest.work_category, city: jobRequest.city });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: jobRequest.id });
   const materialResearchContext = await researchQuoteMaterials({ jobRequest, inventory, supplierPricing, historicalContext, apiKey, model, fetchImpl });
@@ -1023,7 +1035,7 @@ export const runAiFirstQuote = async ({ db, jobRequest, inventory = [], supplier
   return fallbackPayload;
 };
 
-export const runAiFirstTroubleshooting = async ({ db, payload, companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini', timeoutMs = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 12000), fetchImpl = fetch, fallbackBuilder = null }) => {
+export const runAiFirstTroubleshooting = async ({ db, payload, companyRules = [], photoContext = [], apiKey = process.env.OPENAI_API_KEY, model = process.env.OPENAI_TROUBLESHOOTING_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5', timeoutMs = Number(process.env.AI_TROUBLESHOOTING_TIMEOUT_MS || 12000), fetchImpl = fetch, fallbackBuilder = null }) => {
   const historicalContext = await loadHistoricalAiContext({ db, serviceType: payload.systemType, workCategory: payload.component, city: '', limit: 6 });
   const resolvedPhotoContext = photoContext.length ? photoContext : await loadPhotoContext({ db, jobRequestId: payload.workOrderId, workOrderId: payload.workOrderId });
   const researchContext = await researchEquipmentFault({ db, payload, fetchImpl, apiKey, model });
