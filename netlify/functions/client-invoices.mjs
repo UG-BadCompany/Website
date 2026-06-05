@@ -100,8 +100,7 @@ const resolveClientUserId = (request, session, roleKeys) => {
   const requested = clean(new URL(request.url).searchParams.get('clientId'), 80);
   return requested && isStaffRole(roleKeys) ? requested : session.user_id;
 };
-const listClientInvoices = async (db, userId) => {
-  const invoices = await db.sql`
+const loadClientInvoiceRows = async (db, userId) => db.sql`
     select
       invoices.id,
       invoices.job_request_id,
@@ -127,23 +126,19 @@ const listClientInvoices = async (db, userId) => {
       and job_requests.client_id = ${userId}
     where invoices.client_id = ${userId}
       and invoices.status <> 'void'
-      and invoices.status <> 'paid'
     order by invoices.created_at desc
     limit 50
   `;
 
-  const mappedInvoices = invoices.map(mapInvoice);
-
-  return {
-    invoices: mappedInvoices,
-    summary: {
-      total: mappedInvoices.length,
-      open: mappedInvoices.filter((invoice) => invoice.status === 'open').length,
-      paid: mappedInvoices.filter((invoice) => invoice.status === 'paid').length,
-      amountDueCents: mappedInvoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
-    },
-  };
-};
+const summarizeClientInvoices = (invoices = []) => ({
+  invoices,
+  summary: {
+    total: invoices.length,
+    open: invoices.filter((invoice) => invoice.status === 'open').length,
+    paid: invoices.filter((invoice) => invoice.status === 'paid').length,
+    amountDueCents: invoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
+  },
+});
 
 const createSquareLinkForInvoice = async ({ invoice, request }) => {
   if (!invoice || Number(invoice.amount_cents || 0) <= 0) return null;
@@ -183,7 +178,7 @@ const ensureClientInvoiceLinks = async (db, request, invoices = []) => {
 export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
   if (request.method === 'OPTIONS') return json(204, { ok: true });
   if (request.method === 'HEAD') return json(200, { ok: true });
-  if (request.method !== 'GET') {
+  if (!['GET', 'POST'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -208,14 +203,28 @@ export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {})
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Client workspace access is required to view invoices.' });
     }
 
-    const invoiceData = await listClientInvoices(db, resolveClientUserId(request, session, roleKeys));
-    await ensureClientInvoiceLinks(db, request, invoiceData.invoices.map((invoice) => ({
-      id: invoice.id,
-      title: invoice.title,
-      status: invoice.status,
-      amount_cents: invoice.amountCents,
-      provider_checkout_url: invoice.provider?.checkoutUrl,
-    })));
+    const clientUserId = resolveClientUserId(request, session, roleKeys);
+    const rows = await loadClientInvoiceRows(db, clientUserId);
+
+    if (request.method === 'POST') {
+      const body = await parseJsonBody(request);
+      if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+      const invoiceId = clean(body.invoiceId || body.id, 80);
+      const action = clean(body.action, 40).toLowerCase();
+      if (!invoiceId || !['payment_link', 'pay', 'square_payment_link'].includes(action)) {
+        return json(422, { ok: false, missing: ['invoiceId', 'action'], message: 'Invoice and payment_link action are required.' });
+      }
+      const invoice = rows.find((row) => String(row.id) === invoiceId && row.status === 'open');
+      if (!invoice) return json(404, { ok: false, message: 'Open invoice not found.' });
+      if (!invoice.provider_checkout_url) await ensureClientInvoiceLinks(db, request, [invoice]);
+      const [updated] = await db.sql`select id, provider_checkout_url, provider_checkout_id, provider_status from invoices where id = ${invoiceId} limit 1`;
+      if (!updated?.provider_checkout_url) return json(503, { ok: false, message: 'Square payment link is not available. Please contact support.' });
+      return json(200, { ok: true, invoiceId, provider: { name: 'square', checkoutUrl: updated.provider_checkout_url, checkoutId: updated.provider_checkout_id, status: updated.provider_status || 'created' } });
+    }
+
+    await ensureClientInvoiceLinks(db, request, rows);
+    const refreshedRows = await loadClientInvoiceRows(db, clientUserId);
+    const invoiceData = summarizeClientInvoices(refreshedRows.map(mapInvoice));
     return json(200, {
       ok: true,
       authenticated: true,

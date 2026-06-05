@@ -226,6 +226,11 @@
 
 
 [[redirects]]
+  from = "/api/payments/square/webhook"
+  to = "/.netlify/functions/square-webhook"
+  status = 200
+
+[[redirects]]
   from = "/api/admin/executive-overview"
   to = "/.netlify/functions/admin-executive-overview"
   status = 200

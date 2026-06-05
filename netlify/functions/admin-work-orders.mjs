@@ -7,7 +7,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const WORK_ORDER_STATUSES = new Set(['new', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'closed', 'cancelled', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'blocked', 'completed_by_worker', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'paid']);
+const WORK_ORDER_STATUSES = new Set(['new', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'admin_review_complete', 'client_review', 'client_approved_completion', 'invoice_ready', 'invoice_sent', 'invoiced', 'payment_pending', 'paid', 'payment_verified', 'closed', 'cancelled', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'blocked', 'completed_by_worker', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'paid']);
 const PRIORITIES = new Set(['low', 'normal', 'high', 'emergency', 'critical']);
 const ARRIVAL_WINDOWS = new Set(['8-10', '10-12', '12-2', 'Custom', 'custom']);
 
@@ -317,12 +317,12 @@ const handleCompletionReview = async ({ request, db, session }) => {
 
 const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => {
   const statuses = status === 'all'
-    ? ['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'pending_review', 'completed', 'closed', 'cancelled']
+    ? ['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'quote_accepted', 'work_order_created', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'admin_review_complete', 'client_review', 'client_approved_completion', 'invoice_ready', 'invoice_sent', 'invoiced', 'payment_pending', 'paid', 'payment_verified', 'pending_review', 'completed', 'closed', 'cancelled']
     : status === 'completed'
       ? ['closed', 'completed']
       : status === 'pending_review'
         ? ['worker_completed', 'admin_review', 'pending_review']
-        : ['waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'accepted', 'scheduled', 'pending_review'];
+        : ['waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'admin_review_complete', 'client_review', 'client_approved_completion', 'invoice_ready', 'invoice_sent', 'invoiced', 'payment_pending', 'paid', 'payment_verified', 'accepted', 'quote_accepted', 'work_order_created', 'scheduled', 'pending_review'];
 
   return db.sql`
     select
@@ -459,7 +459,7 @@ export default async (request) => {
         stats,
         workOrders,
         workers: workers.map((worker) => ({ id: worker.id, fullName: worker.full_name, email: worker.email })),
-        workflow: ['client_request','ai_draft','admin_review','quote_sent','client_accepted','waiting_assignment','assigned','scheduled','in_progress','worker_completed','inventory_updated','client_review','invoice_ready','payment_received','payment_verified','closed'],
+        workflow: ['client_request','ai_draft','admin_review','quote_sent','client_accepted','quote_accepted','work_order_created','waiting_assignment','assigned','scheduled','in_progress','worker_completed','inventory_updated','client_review','invoice_ready','payment_received','payment_verified','closed'],
       });
     }
 

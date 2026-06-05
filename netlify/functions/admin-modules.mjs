@@ -1,59 +1,22 @@
 import { clean, getPermissionKeysForRoles, getSessionToken, hashToken, json, loadDatabase, loadRolePermissionKeys, parseJsonBody } from './auth-utils.mjs';
 
 const DEFAULT_MODULES = [
-  ['owner.overview','admin.overview','owner','Overview','Owner command-center overview.',true,[],[],'Overview','🏠','/dashboard/modules/admin/overview',10],
-  ['owner.company-management','admin.users','owner','Company Management','Manage users, roles, and team access.',true,['users.manage'],[],'Company Management','👥','/dashboard/modules/admin/users',20],
-  ['owner.workspace-permissions-center','admin.roles','owner','Workspace & Permissions Center','Workspace visibility and permission controls.',true,['roles.manage'],[],'Workspace & Permissions Center','🛡','/dashboard/modules/admin/roles',30],
-  ['owner.system-center','admin.settings','owner','System Center','System settings and operational controls.',true,['settings.manage'],[],'System Center','📊','/dashboard/modules/admin/settings',40],
-  ['owner.module-manager','admin.module-manager','owner','Module Manager','Enable, disable, and review dashboard modules.',true,['settings.manage'],[],'Module Manager','🧩','/dashboard/modules/admin/module-manager',50],
-  ['owner.theme-manager','admin.brand-settings','owner','Theme Manager','Brand and theme controls for dashboard surfaces.',true,['branding.manage'],[],'Theme Manager','🎨','/dashboard/modules/admin/brand-settings',60],
-  ['owner.homepage-editor','admin.homepage-editor','owner','Homepage Editor','Public homepage content management.',true,['homepage.manage'],[],'Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor',70],
-  ['owner.audit-logs','admin.settings','owner','Audit Logs','Operational audit and settings review.',true,['reports.view'],[],'Audit Logs','📋','/dashboard/modules/admin/settings',80],
-  ['owner.estimate-management-center','admin.quotes','owner','Estimate & Quote Center','Quote review, approval, and customer quote workflow.',true,['quotes.manage'],[],'Estimate & Quote Center','💰','/dashboard/modules/admin/quotes',90],
-  ['owner.photo-estimate','admin.photo-estimate','owner','AI Photo Estimate','AI-assisted image intake and estimating.',true,['ai.photo-estimate.use'],[],'AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate',100],
-  ['admin.overview','admin.overview','admin','Overview','Admin workspace overview.',true,[],[],'Overview','🏠','/dashboard/modules/admin/overview',10],
-  ['admin.estimate-management-center','admin.quotes','admin','Estimate & Quote Center','Quote review, approval, and customer quote workflow.',true,['quotes.manage'],[],'Estimate & Quote Center','💰','/dashboard/modules/admin/quotes',20],
-  ['admin.photo-estimate','admin.photo-estimate','admin','AI Photo Estimate','AI-assisted image intake and estimating.',true,['ai.photo-estimate.use'],[],'AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate',30],
-  ['admin.work-orders','admin.work-orders','admin','Work Orders','Assignment, production, completion review, and closeout.',true,['requests.manage'],['admin.quotes'],'Work Orders','🔧','/dashboard/modules/admin/work-orders',40],
-  ['admin.schedule','admin.schedule','admin','Schedule','Calendar and dispatch scheduling.',true,['scheduling.manage'],['admin.work-orders'],'Schedule','📅','/dashboard/modules/admin/schedule',50],
+  ['admin.estimate-management-center','admin.quotes','admin','Estimate & Quote Center','Request intake, draft quotes, sent quotes awaiting client response, declined/cancelled quote history.',true,['quotes.manage'],[],'Estimate & Quote Center','💰','/dashboard/modules/admin/quotes',10],
+  ['admin.photo-estimate','admin.photo-estimate','admin','AI Photo Estimate','AI-assisted image intake and estimating.',true,['ai.photo-estimate.use'],[],'AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate',20],
+  ['worker.troubleshooting','worker.troubleshooting','worker','AI Troubleshooting','Diagnostic assistant for field troubleshooting.',true,[],[],'AI Troubleshooting','🤖','/dashboard/modules/worker/troubleshooting',30],
+  ['admin.work-orders','admin.work-orders','admin','Work Orders','Accepted quotes converted into assignment, scheduling, progress, and completion review.',true,['requests.manage'],['admin.quotes'],'Work Orders','🔧','/dashboard/modules/admin/work-orders',40],
+  ['admin.schedule','admin.schedule','admin','Schedule','Calendar and dispatch scheduling for work orders.',true,['scheduling.manage'],['admin.work-orders'],'Schedule','📅','/dashboard/modules/admin/schedule',50],
   ['admin.customers','admin.customers','admin','Customers','Customer/property records and request history.',true,['customers.manage'],[],'Customers','👥','/dashboard/modules/admin/customers',60],
-  ['admin.invoices','admin.invoices','admin','Invoices','Invoice creation, payment tracking, and closeout.',true,['invoices.manage'],['admin.work-orders'],'Invoices','🧾','/dashboard/modules/admin/invoices',70],
-  ['admin.finance','admin.finance','admin','Finance','Financial overview and payment status.',true,[],['admin.invoices'],'Finance','📊','/dashboard/modules/admin/finance',80],
-  ['admin.inventory','admin.inventory','admin','Inventory','Inventory items, reservations, and usage reconciliation.',true,['inventory.manage'],[],'Inventory','📦','/dashboard/modules/admin/inventory',90],
-  ['admin.users','admin.users','admin','Users','Team account administration.',true,['users.manage'],[],'Users','👤','/dashboard/modules/admin/users',100],
-  ['admin.roles','admin.roles','admin','Roles & Permissions','Role and permission administration.',true,['roles.manage'],[],'Roles & Permissions','🛡','/dashboard/modules/admin/roles',110],
-  ['admin.ai-knowledge','admin.ai-knowledge','admin','AI Knowledge','AI knowledge base management.',true,['ai.knowledge.manage'],[],'AI Knowledge','🤖','/dashboard/modules/admin/ai-knowledge',120],
-  ['admin.reports','admin.reports','admin','Reports','Operational reporting and business metrics.',true,['reports.view'],[],'Reports','📈','/dashboard/modules/admin/reports',130],
-  ['admin.brand-settings','admin.brand-settings','admin','Branding','Branding and theme controls.',true,['branding.manage'],[],'Branding','🎨','/dashboard/modules/admin/brand-settings',140],
-  ['admin.homepage-editor','admin.homepage-editor','admin','Homepage Editor','Public homepage content management.',true,['homepage.manage'],[],'Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor',150],
-  ['admin.settings','admin.settings','admin','Settings','Admin settings and system controls.',true,['settings.manage'],[],'Settings','⚙️','/dashboard/modules/admin/settings',160],
-  ['admin.module-manager','admin.module-manager','admin','Module Manager','Enable, disable, and review dashboard modules.',true,['settings.manage'],[],'Module Manager','🧩','/dashboard/modules/admin/module-manager',170],
-  ['manager.overview','admin.overview','manager','Overview','Manager workspace overview.',true,[],[],'Overview','🏠','/dashboard/modules/admin/overview',10],
-  ['manager.estimate-management-center','admin.quotes','manager','Estimate & Quote Center','Quote review and approval workflow.',true,['quotes.manage'],[],'Estimate & Quote Center','💰','/dashboard/modules/admin/quotes',20],
-  ['manager.photo-estimate','admin.photo-estimate','manager','AI Photo Estimate','AI-assisted image intake and estimating.',true,['ai.photo-estimate.use'],[],'AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate',30],
-  ['manager.work-orders','admin.work-orders','manager','Work Orders','Assignment, production, and closeout.',true,['requests.manage'],['admin.quotes'],'Work Orders','🔧','/dashboard/modules/admin/work-orders',40],
-  ['manager.schedule','admin.schedule','manager','Schedule','Calendar and dispatch scheduling.',true,['scheduling.manage'],['manager.work-orders'],'Schedule','📅','/dashboard/modules/admin/schedule',50],
-  ['manager.customers','admin.customers','manager','Customers','Customer/property records and request history.',true,['customers.manage'],[],'Customers','👥','/dashboard/modules/admin/customers',60],
-  ['manager.workers','admin.users','manager','Workers','Worker team management.',true,['workers.manage'],[],'Workers','👷','/dashboard/modules/admin/users',70],
-  ['manager.materials','admin.inventory','manager','Materials','Inventory and material tracking.',true,['inventory.manage'],[],'Materials','📦','/dashboard/modules/admin/inventory',80],
-  ['manager.ai-tools','admin.ai-knowledge','manager','AI Tools','Manager AI tools and knowledge support.',true,['ai.quote.use'],[],'AI Tools','🤖','/dashboard/modules/admin/ai-knowledge',90],
-  ['manager.reports','admin.reports','manager','Reports','Operational reporting and business metrics.',true,['reports.view'],[],'Reports','📈','/dashboard/modules/admin/reports',100],
-  ['worker.overview','worker.overview','worker','Overview','Worker overview and daily summary.',true,[],[],'Overview','🏠','/dashboard/modules/worker/overview',10],
-  ['worker.jobs','worker.jobs','worker','Jobs','Assigned work orders and completion updates.',true,[],['admin.work-orders'],'Jobs','🔧','/dashboard/modules/worker/jobs',20],
-  ['worker.schedule','worker.schedule','worker','Schedule','Worker schedule and dispatch details.',true,[],['worker.jobs'],'Schedule','📅','/dashboard/modules/worker/schedule',30],
-  ['worker.materials','worker.materials','worker','Materials','Material usage and inventory notes.',true,[],['worker.jobs'],'Materials','📦','/dashboard/modules/worker/materials',40],
-  ['worker.photos','worker.photos','worker','Photos','Job photo capture and upload workflow.',true,[],['worker.jobs'],'Photos','📸','/dashboard/modules/worker/photos',50],
-  ['worker.photo-estimate','admin.photo-estimate','worker','AI Photo Estimate','AI-assisted image intake and estimating.',true,['ai.photo-estimate.use'],[],'AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate',60],
-  ['worker.notes','worker.notes','worker','Notes','Worker notes and job observations.',true,[],['worker.jobs'],'Notes','📝','/dashboard/modules/worker/notes',70],
-  ['worker.troubleshooting','worker.troubleshooting','worker','Troubleshooting','Worker troubleshooting assistant and diagnostic tools.',true,[],[],'Troubleshooting','🤖','/dashboard/modules/worker/troubleshooting',80],
-  ['client.overview','client.overview','client','Overview','Client overview and request summary.',true,[],[],'Overview','🏠','/dashboard/modules/client/overview',10],
-  ['client.requests','client.requests','client','My Requests','Client request intake and tracking.',true,[],[],'My Requests','📋','/dashboard/modules/client/requests',20],
-  ['client.photo-estimate','admin.photo-estimate','client','AI Photo Estimate','Client photo estimate intake.',true,[],[],'AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate',30],
-  ['client.quotes','client.quotes','client','My Quotes','Client quote review and approval.',true,[],['client.requests'],'My Quotes','💰','/dashboard/modules/client/quotes',40],
-  ['client.invoices','client.invoices','client','My Invoices','Client invoice and payment tracking.',true,[],['client.quotes'],'My Invoices','🧾','/dashboard/modules/client/invoices',50],
-  ['client.project-updates','client.project-updates','client','Project Updates','Timeline of job updates, photos, notes, and milestones.',true,[],['worker.jobs'],'Project Updates','📈','/dashboard/modules/client/project-updates',60],
-  ['client.properties','client.properties','client','Properties','Client property records.',true,[],[],'Properties','🏡','/dashboard/modules/client/properties',70],
-  ['client.profile','client.profile','client','Profile','Client profile and contact preferences.',true,[],[],'Profile','👤','/dashboard/modules/client/profile',80]
+  ['admin.invoices','admin.invoices','admin','Invoices','Invoice-ready work, sent invoices, Square payment links, payment verification, and voided/cancelled invoices.',true,['invoices.manage'],['admin.work-orders'],'Invoices','🧾','/dashboard/modules/admin/invoices',70],
+  ['admin.inventory','admin.inventory','admin','Inventory','Inventory items, reservations, and usage reconciliation.',true,['inventory.manage'],[],'Inventory','📦','/dashboard/modules/admin/inventory',80],
+  ['admin.finance','admin.finance','admin','Finance','Financial overview and payment status.',true,[],['admin.invoices'],'Finance','📊','/dashboard/modules/admin/finance',90],
+  ['admin.reports','admin.reports','admin','Reports','Operational reporting and business metrics.',true,['reports.view'],[],'Reports','📈','/dashboard/modules/admin/reports',100],
+  ['admin.users','admin.users','admin','Users / Company Management','Company users, roles, workers, and team access.',true,['users.manage'],[],'Users / Company Management','👥','/dashboard/modules/admin/users',110],
+  ['admin.roles','admin.roles','admin','Workspace & Permissions','Workspace visibility and permission controls.',true,['roles.manage'],[],'Workspace & Permissions','🛡','/dashboard/modules/admin/roles',120],
+  ['admin.brand-settings','admin.brand-settings','admin','Theme Manager','Brand and theme controls for dashboard surfaces.',true,['branding.manage'],[],'Theme Manager','🎨','/dashboard/modules/admin/brand-settings',130],
+  ['admin.homepage-editor','admin.homepage-editor','admin','Homepage Editor','Public homepage content management.',true,['homepage.manage'],[],'Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor',140],
+  ['admin.module-manager','admin.module-manager','admin','Module Manager','Enable, disable, and review major drop-in dashboard modules only.',true,['settings.manage'],[],'Module Manager','🧩','/dashboard/modules/admin/module-manager',150],
+  ['admin.maintenance-plans','admin.maintenance-plans','admin','Maintenance Plans','Recurring maintenance plan setup and customer plan tracking.',true,['maintenance.manage'],[],'Maintenance Plans','🛠️','/dashboard/modules/admin/maintenance-plans',160]
 ];
 
 const parseJsonArray = (value) => {
@@ -64,6 +27,9 @@ const parseJsonArray = (value) => {
   }
   return [];
 };
+const defaultModuleToObject = ([id, moduleKey, workspace, title, description, enabled, requiredPermissions, dependencies, navLabel, navIcon, modulePath, sortOrder]) => ({
+  id, moduleKey, workspace, title, description, enabled, requiredPermissions, dependencies, navLabel, navIcon, modulePath, sortOrder, lastLoadedStatus: 'default', updatedAt: null,
+});
 
 const loadSession = async (db, token) => {
   const [session] = await db.sql`
@@ -135,8 +101,10 @@ export default async (request) => {
       if (!updated) return json(404, { ok:false, message:'Module not found.' });
       return json(200, { ok:true, module: mapModule(updated), message: `${updated.title} settings saved.` });
     }
-    const rows = await db.sql`select * from module_registry order by workspace, sort_order, title`;
-    return json(200, { ok:true, modules: rows.map(mapModule), user:{ roles: roleKeys } });
+    const allowedIds = DEFAULT_MODULES.map(([id]) => id);
+    const rows = await db.sql`select * from module_registry where id = any(${allowedIds}) order by sort_order, title`;
+    const modules = rows.length ? rows.map(mapModule) : DEFAULT_MODULES.map(defaultModuleToObject);
+    return json(200, { ok:true, modules, defaulted: rows.length === 0, user:{ roles: roleKeys } });
   } catch (error) {
     console.error('Failed to manage modules', error);
     const details = error?.message || 'Unknown module registry error';

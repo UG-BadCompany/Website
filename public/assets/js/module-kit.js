@@ -16,6 +16,14 @@
     return [];
   };
   const button = (label, action = 'toast', style = 'secondary') => `<button class="btn ${style}" type="button" data-module-action="${escapeHtml(action)}">${escapeHtml(label)}</button>`;
+  const toast = (message, type = 'info') => window.TAUi?.toast ? TAUi.toast(message, type) : console.warn(message);
+  const actionConfig = (action) => typeof action === 'object' && action ? action : { label: action, action };
+  const actionName = (action) => cleanAction(actionConfig(action).action || actionConfig(action).label || action);
+  const cleanAction = (value = '') => String(value || '').trim();
+  const actionRequiresRecordId = (action) => /view|open|detail|history|download|send|mark|payment|pay|void|cancel|status|assign|approve|decline|complete|update/i.test(action);
+  const actionRequiresStatus = (action) => /status|mark|move|change-status/i.test(action);
+  const mutatingAction = (action) => /create|new|post|save|send|mark|payment|pay|void|cancel|status|assign|approve|decline|complete|update|upload|photo|information/i.test(action);
+
   const stateCard = (type, title, body) => `<article class="module-state module-state-${type} module-${type}"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></article>`;
   const normalizeRoot = (root) => root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root');
   const defaultRecordTitle = (record, fallback = 'Record') => record.title || record.name || record.fullName || record.full_name || record.customerName || record.customer_name || record.email || record.serviceType || record.service_type || fallback;
@@ -40,30 +48,56 @@
   const runGenericAction = async (control, action, context = {}) => {
     const { root, api, config, record = {}, data, records } = context;
     const previous = control?.textContent || '';
+    const normalizedAction = cleanAction(action);
+    const actionKey = normalizedAction.toLowerCase();
+    const recordId = record.id || record.requestId || record.quoteId || record.invoiceId || record.jobRequestId || '';
+    const configuredActions = [...asArray(config?.actions), ...asArray(config?.recordActions)].map(actionConfig);
+    const configured = configuredActions.find((item) => cleanAction(item.action || item.label).toLowerCase() === actionKey) || {};
     if (control) { control.disabled = true; control.textContent = 'Working...'; }
     try {
-      if (/refresh|reload/i.test(action)) {
+      if (/refresh|reload/i.test(normalizedAction)) {
         await mount(context, config);
-        TAUi?.toast('Data refreshed.', 'success');
+        toast('Data refreshed.', 'success');
         return;
       }
-      if (/open|view|detail|history|download|map|route/i.test(action)) {
-        openDetail(root, config, record.id ? record : (records?.[0] || record), { api, data, records });
+      if (/open|view|detail|history|download|map|route/i.test(normalizedAction)) {
+        openDetail(root, config, recordId ? record : (records?.[0] || record), { api, data, records });
         return;
       }
-      const endpoint = primaryEndpoint(config);
-      if (!endpoint || !api) throw new Error('No backend endpoint is configured for this action.');
-      if (config.disableGenericActions || config.allowGenericActions === false || /approve|status|assign|save|update|complete|completion|upload|photo|information/i.test(action)) {
-        openDetail(root, { ...config, detailMode:'readonly', readOnlyDetail:true }, record.id ? record : (records?.[0] || record), { api, data, records });
-        TAUi?.toast('Open the record and use its specific form or handler for this action.', 'info');
+
+      const method = cleanAction(configured.method || configured.httpMethod).toUpperCase();
+      const endpoint = configured.endpoint || primaryEndpoint(config);
+      const requiresId = configured.requiresId ?? actionRequiresRecordId(normalizedAction);
+      const requiresAction = configured.requiresAction ?? Boolean(method);
+      const requiresStatus = configured.requiresStatus ?? actionRequiresStatus(normalizedAction);
+      const status = configured.status || record.status || '';
+      const allowedMethods = asArray(config.allowedMethods || ['GET', 'POST', 'PATCH', 'DELETE']).map((item) => String(item).toUpperCase());
+      const genericAllowed = configured.generic === true || configured.allowGeneric === true || config.allowGenericActions === true;
+
+      if (!method || !endpoint || !api || !allowedMethods.includes(method) || config.disableGenericActions || config.allowGenericActions === false || (mutatingAction(normalizedAction) && !genericAllowed)) {
+        openDetail(root, { ...config, detailMode:'readonly', readOnlyDetail:true }, recordId ? record : (records?.[0] || record), { api, data, records });
+        toast('This action needs a module-specific handler. No API request was sent.', 'info');
         return;
       }
-      const payload = { action, recordId: record.id || record.requestId || record.quoteId || record.invoiceId || '', record, values: {} };
-      const result = await api.post(endpoint, payload);
-      TAUi?.toast(result.message || `${titleize(action)} completed.`, 'success');
+      if (requiresId && !recordId) {
+        toast('Select a record before running this action. No API request was sent.', 'error');
+        return;
+      }
+      if (requiresAction && !normalizedAction) {
+        toast('This action is missing an action name. No API request was sent.', 'error');
+        return;
+      }
+      if (requiresStatus && !status) {
+        toast('This action is missing a target status. No API request was sent.', 'error');
+        return;
+      }
+
+      const payload = { action: normalizedAction, recordId, id: recordId, status: configured.status, record, values: {} };
+      const result = method === 'PATCH' ? await api.patch(endpoint, payload) : method === 'DELETE' ? await api.delete(endpoint, payload) : await api.post(endpoint, payload);
+      toast(result.message || `${titleize(normalizedAction)} completed.`, 'success');
       await mount(context, config);
     } catch (error) {
-      TAUi?.toast(error.message || `${titleize(action)} failed.`, 'error');
+      toast(error.message || `${titleize(normalizedAction)} failed.`, 'error');
     } finally {
       if (control) { control.disabled = false; control.textContent = previous; }
     }
@@ -130,7 +164,7 @@
       return;
     }
     list.innerHTML = records.map((record, index) => `<article class="module-record-card" data-record-index="${index}"><div><p class="eyebrow">${escapeHtml(statusText(record.status || record.reviewStatus || config.title))}</p><h3>${escapeHtml(defaultRecordTitle(record, config.title))}</h3><p>${escapeHtml(record.description || record.summary || record.address || record.notes || config.recordDescription || 'Open this record to review details, notes, timeline, and next actions.')}</p><small>${escapeHtml(defaultRecordMeta(record) || config.title)}</small></div><div class="module-record-actions">${renderRecordActions(config.recordActions || ['View Detail','Add Note'])}</div></article>`).join('');
-    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data, router: window.TADashboardRouter }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
+    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data, router: window.TADashboardRouter }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
   };
   const endpointFetch = async (api, endpoint) => {
     if (!endpoint) return { ok:false, missing:true, message:'No endpoint configured yet.' };

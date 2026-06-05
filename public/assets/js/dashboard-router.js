@@ -60,7 +60,6 @@
     as('client','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',[],'Operations'),
     as('client','quotes','My Quotes','💰','/dashboard/modules/client/quotes','client.quotes'),
     as('client','invoices','My Invoices','🧾','/dashboard/modules/client/invoices','client.invoices'),
-    as('client','project-updates','Project Updates','📈','/dashboard/modules/client/project-updates','client.project-updates'),
     as('client','properties','Properties','🏡','/dashboard/modules/client/properties','client.properties'),
     as('client','profile','Profile','👤','/dashboard/modules/client/profile','client.profile'),
   ];
