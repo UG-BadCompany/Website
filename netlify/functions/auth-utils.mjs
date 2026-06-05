@@ -9,7 +9,9 @@ export const STAFF_SESSION_TTL_MINUTES = Number(process.env.STAFF_SESSION_TTL_MI
 
 
 export const PORTAL_PERMISSIONS = [
+  { key: 'dashboard.view.owner', label: 'dashboard.view.owner', description: 'Allows dashboard view owner.' },
   { key: 'dashboard.view.admin', label: 'dashboard.view.admin', description: 'Allows dashboard view admin.' },
+  { key: 'dashboard.view.manager', label: 'dashboard.view.manager', description: 'Allows dashboard view manager.' },
   { key: 'dashboard.view.client', label: 'dashboard.view.client', description: 'Allows dashboard view client.' },
   { key: 'dashboard.view.worker', label: 'dashboard.view.worker', description: 'Allows dashboard view worker.' },
   { key: 'users.manage', label: 'users.manage', description: 'Allows users manage.' },
@@ -67,12 +69,12 @@ export const ROLE_HIERARCHY = { owner: 100, admin: 80, manager: 60, worker: 40, 
 export const roleRank = (roleKey = '') => ROLE_HIERARCHY[normalizeRoleKey(roleKey)] || ROLE_HIERARCHY.guest;
 export const highestRoleRank = (roleKeys = []) => Math.max(0, ...(Array.isArray(roleKeys) ? roleKeys : []).map((roleKey) => roleRank(roleKey)));
 export const canManageRoleKey = (actorRoleKeys = [], targetRoleKey = '') => actorRoleKeys.includes('owner') || roleRank(targetRoleKey) < highestRoleRank(actorRoleKeys);
-export const grantablePermissionKeys = (roleKeys = [], assignedPermissionKeys = []) => roleKeys.includes('owner') ? ALL_PERMISSION_KEYS : [...new Set(assignedPermissionKeys)].sort();
+export const grantablePermissionKeys = (roleKeys = [], assignedPermissionKeys = []) => roleKeys.includes('owner') ? ALL_PERMISSION_KEYS : (Array.isArray(assignedPermissionKeys) ? [...new Set(assignedPermissionKeys)].sort() : []);
 
 export const DEFAULT_ROLE_PERMISSIONS = {
   owner: ALL_PERMISSION_KEYS,
-  admin: ALL_PERMISSION_KEYS.filter((permission) => !['ranks.delete', 'homepage.manage'].includes(permission)),
-  manager: ['dashboard.view.admin', 'requests.manage', 'quotes.manage', 'quotes.create', 'quotes.edit', 'workorders.create', 'invoices.create', 'scheduling.manage', 'customers.manage', 'workers.manage', 'invoices.manage', 'ai.quote.use', 'ai.photo-estimate.use'],
+  admin: ALL_PERMISSION_KEYS.filter((permission) => !['dashboard.view.owner', 'ranks.delete', 'homepage.manage'].includes(permission)),
+  manager: ['dashboard.view.manager', 'dashboard.view.admin', 'requests.manage', 'quotes.manage', 'quotes.create', 'quotes.edit', 'workorders.create', 'invoices.create', 'scheduling.manage', 'customers.manage', 'workers.manage', 'invoices.manage', 'ai.quote.use', 'ai.photo-estimate.use'],
   worker: ['dashboard.view.worker', 'worker.tools', 'ai.troubleshooting.use', 'ai.photo-estimate.use'],
   client: ['dashboard.view.client', 'client.tools'],
   guest: [],
@@ -91,9 +93,9 @@ export const normalizePermissionKeys = (permissions) => {
     .filter((permission) => allowed.has(permission)))];
 };
 
-export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = []) => {
+export const getPermissionKeysForRoles = (roleKeys, assignedPermissionKeys = null) => {
   if (roleKeys.includes('owner')) return [...ALL_PERMISSION_KEYS].sort();
-  if (Array.isArray(assignedPermissionKeys) && assignedPermissionKeys.length) return [...new Set(assignedPermissionKeys)].sort();
+  if (Array.isArray(assignedPermissionKeys)) return [...new Set(assignedPermissionKeys)].sort();
   const permissionKeys = new Set();
   roleKeys.forEach((roleKey) => {
     (DEFAULT_ROLE_PERMISSIONS[roleKey] || []).forEach((permission) => permissionKeys.add(permission));
@@ -116,7 +118,7 @@ export const loadRolePermissionKeys = async (db, userId, { logPrefix = 'Failed t
     return rolePermissions.map((permission) => permission.permission_key);
   } catch (error) {
     console.error(logPrefix, error);
-    return [];
+    return null;
   }
 };
 

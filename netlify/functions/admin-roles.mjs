@@ -31,6 +31,8 @@ const normalizeRolePayload = (body = {}) => {
     name: clean(body.name, 120),
     description: clean(body.description, 500),
     permissions: normalizePermissionKeys(body.permissions),
+    hasPermissions: Object.prototype.hasOwnProperty.call(body, 'permissions'),
+    workspaceAccess: Array.isArray(body.workspaceAccess) ? body.workspaceAccess.map((workspace) => normalizeRoleKey(workspace)).filter(Boolean) : [],
   };
 };
 
@@ -43,6 +45,7 @@ const mapRole = (role, permissions = []) => ({
   permissions: role.key === 'owner' ? ALL_PERMISSION_KEYS : [...new Set(permissions)].sort(),
   createdAt: role.created_at ? String(role.created_at) : null,
   updatedAt: role.updated_at ? String(role.updated_at) : null,
+  userCount: Number(role.user_count || 0),
 });
 
 const loadAdminSession = async (db, request) => {
@@ -131,20 +134,24 @@ const savePermissions = async (db, roleId, permissions) => {
     await db.sql`
       insert into role_permissions (role_id, permission_key, enabled)
       select ${roleId}, unnest(${permissions}::text[]), true
-      on conflict (role_id, permission_key) do update set enabled = excluded.enabled
+      on conflict (role_id, permission_key) do update set enabled = excluded.enabled, updated_at = now()
     `;
   }
 };
 
 const loadRolesSafely = async (db) => {
   const roles = await db.sql`
-    select id, key, name, description, coalesce(is_system, false) as is_system, created_at, updated_at
+    select roles.id, roles.key, roles.name, roles.description, coalesce(roles.is_system, false) as is_system, roles.created_at, roles.updated_at, count(distinct user_roles.user_id) as user_count
     from roles
+    left join user_roles on user_roles.role_id = roles.id
+    group by roles.id
     order by case
-      when key = 'admin' then 0
-      when key = 'worker' then 1
-      when key = 'client' then 2
-      else 3
+      when key = 'owner' then 0
+      when key = 'admin' then 1
+      when key = 'manager' then 2
+      when key = 'worker' then 3
+      when key = 'client' then 4
+      else 5
     end, name
   `;
 
@@ -264,7 +271,7 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
     const targetKey = targetRole?.key || payload.key;
     if (targetKey === 'owner' && !adminSession.roleKeys.includes('owner')) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
     if (!canManageRoleKey(adminSession.roleKeys, targetKey)) return safeJson(403, { ok: false, message: 'Only Owner can modify this role.' });
-    const requestedPermissions = payload.permissions.length ? payload.permissions : (DEFAULT_ROLE_PERMISSIONS[targetKey] || []).filter((permission) => adminSession.roleKeys.includes('owner') || adminSession.grantablePermissions.includes(permission));
+    const requestedPermissions = payload.hasPermissions ? payload.permissions : (DEFAULT_ROLE_PERMISSIONS[targetKey] || []).filter((permission) => adminSession.roleKeys.includes('owner') || adminSession.grantablePermissions.includes(permission));
     const cannotGrant = requestedPermissions.filter((permission) => !adminSession.roleKeys.includes('owner') && !adminSession.grantablePermissions.includes(permission));
     if (cannotGrant.length) return safeJson(403, { ok: false, message: 'You cannot grant permissions you do not currently have.', blockedPermissions: cannotGrant });
 
@@ -310,6 +317,7 @@ export const createAdminRolesHandler = ({ getDatabase = loadDatabase } = {}) => 
         ${JSON.stringify({
           key: role.key,
           permissions: effectivePermissions,
+          workspaceAccess: payload.workspaceAccess,
         })}::jsonb
       )
     `;
