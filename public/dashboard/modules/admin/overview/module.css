@@ -2,3 +2,4 @@
 .module-stat { position: relative; overflow: hidden; min-height: 132px; }
 .module-stat::after { content:""; position:absolute; inset:auto -20px -35px auto; width:86px; height:86px; border-radius:50%; background: color-mix(in srgb, var(--primary) 12%, transparent); }
 .module-toolbar{margin:1rem 0}.card h3{margin-bottom:.25rem}
+.module-readonly-detail textarea{display:none}.module-readonly-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem}.module-readonly-field{border:1px solid var(--color-border);border-radius:14px;background:var(--color-surface);padding:.85rem;display:grid;gap:.3rem}.module-readonly-field span{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--color-muted);font-weight:800}.module-readonly-field p{margin:0;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;color:var(--color-text)}

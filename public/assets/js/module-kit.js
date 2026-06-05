@@ -66,6 +66,26 @@
   const openDetail = (root, config, record = {}, context = {}) => {
     const modal = document.getElementById('modal-root') || root;
     const sections = config.detailSections || ['Customer information','Request summary','Scope of work','Notes','Status history','Files/photos'];
+    const readonly = config.detailMode === 'readonly' || config.readOnlyDetail;
+    const openLabel = config.openFullLabel || 'Open Full Work Order';
+    const editLabel = config.editLabel || 'Edit Work Order';
+    if (readonly) {
+      modal.innerHTML = `<div class="module-drawer"><article class="module-editor module-readonly-detail card stack"><div class="module-editor-head"><div><p class="eyebrow">${escapeHtml(config.title)} · View only</p><h2>${escapeHtml(defaultRecordTitle(record, config.title))}</h2><p>Read-only details are shown first. Use Edit only when you explicitly need editable work order controls.</p></div><button class="btn secondary" type="button" data-close-module-drawer>Close</button></div><div class="module-editor-grid module-readonly-grid">${sections.map((section) => `<section class="module-readonly-field"><span>${escapeHtml(section)}</span><p>${escapeHtml(sectionValue(section, record) || 'Not available')}</p></section>`).join('')}</div><div class="module-toolbar">${button(openLabel,'open-full-work-order','')} ${config.canEdit !== false ? button(editLabel,'edit-work-order','secondary') : ''}</div></article></div>`;
+      modal.querySelector('[data-close-module-drawer]').onclick = () => { modal.innerHTML = ''; };
+      modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => {
+        if (control.dataset.moduleAction === 'edit-work-order') {
+          openDetail(root, { ...config, detailMode: 'edit', readOnlyDetail: false }, record, context);
+          return;
+        }
+        if (control.dataset.moduleAction === 'open-full-work-order') {
+          window.TADashboardRouter?.go?.('admin.work-orders');
+          modal.innerHTML = '';
+          return;
+        }
+        runGenericAction(control, control.dataset.moduleAction, { ...context, root, config, record, records: context.records || [] });
+      });
+      return;
+    }
     modal.innerHTML = `<div class="module-drawer"><form class="module-editor card stack"><div class="module-editor-head"><div><p class="eyebrow">${escapeHtml(config.title)}</p><h2>${escapeHtml(defaultRecordTitle(record, config.title))}</h2></div><button class="btn secondary" type="button" data-close-module-drawer>Close</button></div><div class="module-editor-grid">${sections.map((section) => `<label class="field"><span>${escapeHtml(section)}</span><textarea name="${escapeHtml(section)}">${escapeHtml(sectionValue(section, record))}</textarea></label>`).join('')}</div><p class="notice" data-module-action-status>Review details, then save or request more information through the configured endpoint.</p><div class="module-toolbar">${button('Save Draft','save-draft','')} ${button('Request Information','request-info')} ${button('Continue Manually','manual')}</div></form></div>`;
     modal.querySelector('[data-close-module-drawer]').onclick = () => { modal.innerHTML = ''; };
     modal.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = async () => {
@@ -105,7 +125,7 @@
       return;
     }
     list.innerHTML = records.map((record, index) => `<article class="module-record-card" data-record-index="${index}"><div><p class="eyebrow">${escapeHtml(statusText(record.status || record.reviewStatus || config.title))}</p><h3>${escapeHtml(defaultRecordTitle(record, config.title))}</h3><p>${escapeHtml(record.description || record.summary || record.address || record.notes || config.recordDescription || 'Open this record to review details, notes, timeline, and next actions.')}</p><small>${escapeHtml(defaultRecordMeta(record) || config.title)}</small></div><div class="module-record-actions">${renderRecordActions(config.recordActions || ['View Detail','Add Note'])}</div></article>`).join('');
-    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
+    list.querySelectorAll('.module-record-card').forEach((card, index) => card.querySelectorAll('[data-module-action]').forEach((control) => control.onclick = () => config.onRecordAction ? config.onRecordAction(control.dataset.moduleAction, { root, config, record: records[index], records, data, router: window.TADashboardRouter }) : runGenericAction(control, control.dataset.moduleAction, { root, api: window.TAApi, config, record: records[index], records, data })));
   };
   const endpointFetch = async (api, endpoint) => {
     if (!endpoint) return { ok:false, missing:true, message:'No endpoint configured yet.' };

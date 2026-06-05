@@ -9,7 +9,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const WORKER_ASSIGNMENT_STATUSES = new Set(['assigned', 'accepted', 'in_progress', 'blocked', 'completed', 'cancelled']);
+const WORKER_ASSIGNMENT_STATUSES = new Set(['assigned', 'in_progress', 'worker_completed', 'completed', 'blocked']);
 
 const normalizeWorkerUpdatePayload = (body = {}) => ({
   assignmentId: clean(body.assignmentId, 80),
@@ -18,6 +18,10 @@ const normalizeWorkerUpdatePayload = (body = {}) => ({
   inventoryItemId: clean(body.inventoryItemId, 80),
   inventoryQuantityUsed: Number(body.inventoryQuantityUsed || 0),
   inventoryNote: clean(body.inventoryNote, 500),
+  customMaterialName: clean(body.customMaterialName, 160),
+  customMaterialQuantity: Number(body.customMaterialQuantity || 0),
+  customMaterialUnitCostCents: Number(body.customMaterialUnitCostCents || 0),
+  customMaterialBillable: body.customMaterialBillable !== false,
   blockedReason: clean(body.blockedReason, 500),
   blockedNeedsAdminHelp: Boolean(body.blockedNeedsAdminHelp),
   completionChecklist: Array.isArray(body.completionChecklist) ? body.completionChecklist.map((item) => clean(item, 140)).filter(Boolean).slice(0, 20) : [],
@@ -267,10 +271,14 @@ const handlePatch = async ({ request, db, context }) => {
   const completionFiles = JSON.stringify(payload.completionEvidenceFiles || []);
   let updatedRows = [];
 
-  if (payload.status === 'completed') {
+  if (!isAdmin && !['assigned', 'in_progress', 'worker_completed', 'blocked'].includes(payload.status)) {
+    return json(403, { ok: false, authenticated: true, authorized: false, message: 'Workers can only move assigned jobs into progress or submit completion for review.' });
+  }
+
+  if (payload.status === 'worker_completed' || payload.status === 'completed') {
     updatedRows = isAdmin ? await db.sql`
       update worker_assignments
-      set status = ${payload.status},
+      set status = ${payload.status === 'completed' ? 'completed' : 'worker_completed'},
           worker_notes = ${payload.workerNotes || null},
           completion_notes = nullif(${payload.workerNotes || ''}, ''),
           completion_photo_names = ${completionFiles}::jsonb,
@@ -280,7 +288,7 @@ const handlePatch = async ({ request, db, context }) => {
       returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes, worker_notes, created_at, updated_at
     ` : await db.sql`
       update worker_assignments
-      set status = ${payload.status},
+      set status = ${payload.status === 'completed' ? 'completed' : 'worker_completed'},
           worker_notes = ${payload.workerNotes || null},
           completion_notes = nullif(${payload.workerNotes || ''}, ''),
           completion_photo_names = ${completionFiles}::jsonb,
@@ -315,13 +323,17 @@ const handlePatch = async ({ request, db, context }) => {
     return json(404, { ok: false, authenticated: true, authorized: false, message: 'Assigned job not found for this account.' });
   }
 
-  if (payload.status === 'completed') {
+  if (!isAdmin && !['assigned', 'in_progress', 'worker_completed', 'blocked'].includes(payload.status)) {
+    return json(403, { ok: false, authenticated: true, authorized: false, message: 'Workers can only move assigned jobs into progress or submit completion for review.' });
+  }
+
+  if (payload.status === 'worker_completed' || payload.status === 'completed') {
     await db.sql`
       update job_requests
-      set status = ${'pending_review'},
+      set status = ${'worker_completed'},
           updated_at = now()
       where id = ${updatedAssignment.job_request_id}
-        and status in ('scheduled', 'in_progress', 'accepted')
+        and status in ('assigned', 'scheduled', 'in_progress', 'accepted', 'waiting_assignment')
     `;
   }
 
@@ -343,6 +355,19 @@ const handlePatch = async ({ request, db, context }) => {
         ${'worker_assignment'},
         ${updatedAssignment.id},
         ${JSON.stringify({ jobRequestId: updatedAssignment.job_request_id, blockedReason: payload.blockedReason, needsAdminHelp: payload.blockedNeedsAdminHelp })}::jsonb
+      )
+    `;
+  }
+
+  if (payload.customMaterialName && Number(payload.customMaterialQuantity) > 0) {
+    await db.sql`
+      insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+      values (
+        ${context.session.user_id},
+        ${'worker_material.custom_used'},
+        ${'worker_assignment'},
+        ${updatedAssignment.id},
+        ${JSON.stringify({ jobRequestId: updatedAssignment.job_request_id, name: payload.customMaterialName, quantity: payload.customMaterialQuantity, unitCostCents: payload.customMaterialUnitCostCents, billable: payload.customMaterialBillable, note: payload.inventoryNote })}::jsonb
       )
     `;
   }
