@@ -9,12 +9,29 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const INVOICE_FILTERS = new Set(['open', 'paid', 'all']);
+const INVOICE_FILTERS = new Set(['open', 'paid', 'all', 'void']);
+const INVOICE_STATUSES = new Set(['open', 'paid', 'void']);
 
 const normalizeInvoiceFilter = (value) => {
   const filter = clean(value, 20) || 'open';
   return INVOICE_FILTERS.has(filter) ? filter : 'open';
 };
+
+
+const normalizeCreatePayload = (body = {}) => ({
+  jobRequestId: clean(body.jobRequestId || body.requestId, 80),
+  quoteId: clean(body.quoteId, 80),
+  clientId: clean(body.clientId, 80),
+  title: clean(body.title, 180),
+  amountCents: Number(body.amountCents),
+  dueAt: clean(body.dueAt || body.dueDate, 80),
+});
+
+const normalizeStatusPayload = (body = {}) => ({
+  invoiceId: clean(body.invoiceId || body.id, 80),
+  status: clean(body.status, 20).toLowerCase(),
+  action: clean(body.action, 40).toLowerCase(),
+});
 
 const normalizePaymentPayload = (body = {}) => ({
   invoiceId: clean(body.invoiceId, 80),
@@ -123,6 +140,23 @@ const loadAccess = async (db, userId) => {
 };
 
 const selectAdminInvoiceRows = async (db, filter) => {
+  if (filter === 'void') {
+    return await db.sql`
+      select
+        invoices.id, invoices.job_request_id, invoices.client_id, invoices.status, invoices.title, invoices.amount_cents, invoices.due_at, invoices.paid_at, invoices.created_at, invoices.updated_at,
+        invoices.payment_provider, invoices.provider_invoice_id, invoices.provider_checkout_id, invoices.provider_checkout_url, invoices.provider_status, invoices.provider_metadata,
+        clients.full_name as client_full_name, clients.email as client_email, clients.phone as client_phone,
+        job_requests.status as job_request_status, job_requests.service_type, job_requests.city, job_requests.street_address,
+        null::integer as payment_amount_cents, null::text as payment_method, null::text as payment_reference, null::timestamptz as payment_confirmed_at,
+        null::text as payment_payment_provider, null::text as payment_provider_payment_id, null::text as payment_provider_status, null::text as payment_provider_receipt_url, '{}'::jsonb as payment_provider_metadata
+      from invoices
+      left join app_users clients on clients.id = invoices.client_id
+      left join job_requests on job_requests.id = invoices.job_request_id
+      where invoices.status = 'void'
+      order by invoices.updated_at desc
+      limit 75
+    `;
+  }
   if (filter === 'paid') {
     return await db.sql`
       select
@@ -132,6 +166,7 @@ const selectAdminInvoiceRows = async (db, filter) => {
         invoices.status,
         invoices.title,
         invoices.amount_cents,
+        invoices.due_at,
         invoices.paid_at,
         invoices.created_at,
         invoices.updated_at,
@@ -182,6 +217,7 @@ const selectAdminInvoiceRows = async (db, filter) => {
         invoices.status,
         invoices.title,
         invoices.amount_cents,
+        invoices.due_at,
         invoices.paid_at,
         invoices.created_at,
         invoices.updated_at,
@@ -290,11 +326,95 @@ const listAdminInvoices = async (db, filter = 'open') => {
   };
 };
 
+
+const handlePost = async ({ request, db, session }) => {
+  const body = await parseJsonBody(request);
+  if (!body) return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  const payload = normalizeCreatePayload(body);
+
+  if (!payload.jobRequestId && !payload.quoteId) {
+    return json(422, { ok: false, missing: ['jobRequestId or quoteId'], message: 'A job request or accepted quote is required to create an invoice.' });
+  }
+  if (!Number.isInteger(payload.amountCents) || payload.amountCents <= 0) {
+    return json(422, { ok: false, missing: ['amountCents'], message: 'Invoice amount must be a positive amount in cents.' });
+  }
+
+  const [source] = payload.quoteId ? await db.sql`
+    select quotes.id as quote_id, quotes.job_request_id, quotes.client_id, quotes.title, quotes.amount_cents, job_requests.service_type, clients.full_name as client_full_name, clients.email as client_email
+    from quotes
+    left join job_requests on job_requests.id = quotes.job_request_id
+    left join app_users clients on clients.id = quotes.client_id
+    where quotes.id = ${payload.quoteId}
+      and quotes.status = 'accepted'
+    limit 1
+  ` : await db.sql`
+    select null::uuid as quote_id, job_requests.id as job_request_id, coalesce(job_requests.client_id, ${payload.clientId || null}::uuid) as client_id, job_requests.service_type as title, null::integer as amount_cents, job_requests.service_type, clients.full_name as client_full_name, clients.email as client_email
+    from job_requests
+    left join app_users clients on clients.id = job_requests.client_id
+    where job_requests.id = ${payload.jobRequestId}
+    limit 1
+  `;
+
+  if (!source?.job_request_id) {
+    return json(404, { ok: false, message: payload.quoteId ? 'Accepted quote not found.' : 'Job request not found.' });
+  }
+
+  const title = payload.title || getInvoiceTitle(source);
+  const dueAt = payload.dueAt || null;
+  const [invoice] = await db.sql`
+    insert into invoices (job_request_id, client_id, quote_id, status, title, amount_cents, due_at, created_by)
+    values (${source.job_request_id}, ${source.client_id || payload.clientId || null}, ${source.quote_id || null}, 'open', ${title}, ${payload.amountCents}, coalesce(nullif(${dueAt}, '')::timestamptz, now() + interval '14 days'), ${session.user_id})
+    on conflict (job_request_id) do update set
+      client_id = coalesce(excluded.client_id, invoices.client_id),
+      quote_id = coalesce(excluded.quote_id, invoices.quote_id),
+      status = case when invoices.status = 'void' then 'open' else invoices.status end,
+      title = excluded.title,
+      amount_cents = excluded.amount_cents,
+      due_at = excluded.due_at,
+      updated_at = now()
+    returning id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
+  `;
+
+  await db.sql`update job_requests set status = 'waiting_payment', updated_at = now() where id = ${invoice.job_request_id}`;
+  await db.sql`
+    insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+    values (${session.user_id}, 'invoice.created', 'invoice', ${invoice.id}, ${JSON.stringify({ source: 'admin_dashboard', quoteId: source.quote_id, jobRequestId: invoice.job_request_id })}::jsonb)
+  `;
+
+  return json(201, { ok: true, authenticated: true, authorized: true, message: 'Invoice created.', invoice: mapInvoice(invoice) });
+};
+
+const handleDelete = async ({ request, db, session }) => {
+  const url = new URL(request.url);
+  const body = await parseJsonBody(request).catch(() => ({}));
+  const invoiceId = clean(body?.invoiceId || body?.id || url.searchParams.get('invoiceId') || url.searchParams.get('id'), 80);
+  if (!invoiceId) return json(422, { ok: false, missing: ['invoiceId'], message: 'Invoice is required.' });
+  const [invoice] = await db.sql`
+    update invoices
+    set status = 'void', provider_status = coalesce(provider_status, 'void'), updated_at = now()
+    where id = ${invoiceId} and status <> 'paid'
+    returning id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
+  `;
+  if (!invoice) return json(404, { ok: false, message: 'Cancelable invoice not found.' });
+  await db.sql`insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata) values (${session.user_id}, 'invoice.voided', 'invoice', ${invoice.id}, ${JSON.stringify({ source: 'admin_dashboard' })}::jsonb)`;
+  return json(200, { ok: true, authenticated: true, authorized: true, message: 'Invoice voided.', invoice: mapInvoice(invoice) });
+};
+
 const handlePatch = async ({ request, db, session }) => {
   const body = await parseJsonBody(request);
 
   if (!body) {
     return json(400, { ok: false, message: 'Request body must be valid JSON.' });
+  }
+
+  const statusPayload = normalizeStatusPayload(body);
+  if (statusPayload.action === 'void' || statusPayload.action === 'cancel' || statusPayload.status === 'void') {
+    return handleDelete({ request, db, session });
+  }
+  if (statusPayload.invoiceId && statusPayload.status && INVOICE_STATUSES.has(statusPayload.status) && statusPayload.status !== 'paid') {
+    const [invoice] = await db.sql`update invoices set status = ${statusPayload.status}, updated_at = now() where id = ${statusPayload.invoiceId} returning id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at`;
+    if (!invoice) return json(404, { ok: false, message: 'Invoice not found.' });
+    return json(200, { ok: true, authenticated: true, authorized: true, message: 'Invoice status updated.', invoice: mapInvoice(invoice) });
   }
 
   const payload = normalizePaymentPayload(body);
@@ -377,7 +497,7 @@ const handlePatch = async ({ request, db, session }) => {
 };
 
 export const createAdminInvoicesHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
-  if (!['GET', 'PATCH'].includes(request.method)) {
+  if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method)) {
     return json(405, { ok: false, message: 'Method not allowed.' });
   }
 
@@ -397,12 +517,18 @@ export const createAdminInvoicesHandler = ({ getDatabase = loadDatabase } = {}) 
 
     const { roleKeys, permissionKeys } = await loadAccess(db, session.user_id);
 
-    if (!permissionKeys.includes('admin.invoices.manage')) {
+    if (!permissionKeys.includes('admin.invoices.manage') && !permissionKeys.includes('invoices.manage')) {
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin invoice management permission is required.' });
     }
 
+    if (request.method === 'POST') {
+      return await handlePost({ request, db, session });
+    }
     if (request.method === 'PATCH') {
       return await handlePatch({ request, db, session });
+    }
+    if (request.method === 'DELETE') {
+      return await handleDelete({ request, db, session });
     }
 
     const invoiceFilter = normalizeInvoiceFilter(new URL(request.url).searchParams.get('status'));

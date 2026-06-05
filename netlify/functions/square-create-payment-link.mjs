@@ -74,7 +74,7 @@ export default async (request) => {
     if (!session) return json(401, { ok: false, authenticated: false, message: 'Session expired.' });
 
     const permissionKeys = await loadAccess(db, session.user_id);
-    if (!permissionKeys.includes('admin.invoices.manage')) {
+    if (!permissionKeys.includes('admin.invoices.manage') && !permissionKeys.includes('invoices.manage')) {
       return json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin invoice permission is required.' });
     }
 
