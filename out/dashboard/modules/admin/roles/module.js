@@ -17,6 +17,14 @@
       const isOwnerConsolidated = router?.state?.currentModule === 'owner.permissions-workspaces';
       let data = { roles: [], permissions: [] };
       let activeTab = 'roles';
+      const requireForms = () => {
+        if (window.TAForms?.values && window.TAForms?.checkedValues) return true;
+        const message = 'Required form utility failed to load. Refresh the page or contact admin.';
+        const status = root.querySelector('#role-status');
+        if (status) status.textContent = message;
+        window.TAUi?.toast?.(message, 'error');
+        return false;
+      };
       const groups = ['Dashboard', 'Workspaces', 'Users', 'Roles/Ranks', 'Company', 'Branding', 'Requests', 'Quotes', 'Invoices', 'Customers', 'Workers', 'Scheduling', 'Inventory', 'AI Quoting', 'AI Troubleshooting', 'Reports', 'Settings'];
       const groupFor = (key = '') => key.startsWith('dashboard') ? 'Dashboard' : key.startsWith('workspace') ? 'Workspaces' : key.startsWith('users') ? 'Users' : key.startsWith('roles') || key.startsWith('ranks') || key.startsWith('permissions') ? 'Roles/Ranks' : key.startsWith('company') ? 'Company' : key.startsWith('branding') ? 'Branding' : key.startsWith('requests') ? 'Requests' : key.startsWith('quotes') ? 'Quotes' : key.startsWith('invoices') ? 'Invoices' : key.startsWith('customers') ? 'Customers' : key.startsWith('workers') ? 'Workers' : key.startsWith('scheduling') || key.startsWith('schedule') ? 'Scheduling' : key.startsWith('inventory') ? 'Inventory' : key.startsWith('ai.quote') ? 'AI Quoting' : key.startsWith('ai.troubleshooting') ? 'AI Troubleshooting' : key.startsWith('reports') ? 'Reports' : 'Settings';
       const workspaceAccess = (role) => workspaceDefs.filter(([workspace]) => asArray(role.permissions).includes(workspacePermission(workspace)) || role.key === workspace || role.key === 'owner').map(([workspace]) => workspace);
@@ -130,7 +138,7 @@
         root.querySelectorAll('[data-clear-group]').forEach((button) => button.addEventListener('click', () => { setGroup(button.dataset.clearGroup, false); markUnsaved(); }));
         root.querySelector('#copy-permissions').addEventListener('change', (event) => { const source = data.roles.find((item) => String(item.id) === event.target.value); if (!source) return; const sourcePermissions = new Set(asArray(source.permissions)); root.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = sourcePermissions.has(input.value); }); markUnsaved(); });
         root.querySelector('#cancel-role').addEventListener('click', () => { if (!unsaved || confirm('Discard unsaved changes?')) render(); });
-        root.querySelector('[data-role-editor]').addEventListener('submit', async (event) => { event.preventDefault(); const payload = window.TAForms.values(root.querySelector('[data-role-editor]')); payload.permissions = window.TAForms.checkedValues(root, 'permissions'); if (role.id) payload.roleId = role.id; root.querySelector('#role-status').textContent = 'Saving permission and workspace changes...'; await api[role.id ? 'patch' : 'post']('/api/admin/roles', payload); window.TAUi?.toast('Role permissions saved.', 'success'); await load(); });
+        root.querySelector('[data-role-editor]').addEventListener('submit', async (event) => { event.preventDefault(); if (!requireForms()) return; const payload = window.TAForms.values(root.querySelector('[data-role-editor]')); payload.permissions = window.TAForms.checkedValues(root, 'permissions'); payload.workspaceAccess = workspaceDefs.filter(([workspace]) => payload.permissions.includes(workspacePermission(workspace))).map(([workspace]) => workspace); if (role.id) payload.roleId = role.id; const saveButton = root.querySelector('#save-role'); root.querySelector('#role-status').textContent = 'Saving role, workspace access, and permission assignments...'; saveButton.disabled = true; saveButton.textContent = 'Saving...'; try { await api[role.id ? 'patch' : 'post']('/api/admin/roles', payload); window.TAUi?.toast('Role permissions and workspace access saved.', 'success'); unsaved = false; await load(); } catch (error) { root.querySelector('#role-status').textContent = error.message || 'Role save failed.'; window.TAUi?.toast(error.message || 'Role save failed.', 'error'); saveButton.disabled = false; saveButton.textContent = 'Save Changes'; } });
       };
       await load();
     },

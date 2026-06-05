@@ -13,6 +13,14 @@
     permissions: ['users.manage', 'admin.users.manage'],
     async mount({ root, api }) {
       let data = { users: [], roles: [] };
+      const requireForms = () => {
+        if (window.TAForms?.values && window.TAForms?.checkedValues) return true;
+        const message = 'Required form utility failed to load. Refresh the page or contact admin.';
+        const status = root.querySelector('#user-save-status');
+        if (status) status.textContent = message;
+        window.TAUi?.toast?.(message, 'error');
+        return false;
+      };
       const roleName = (key) => data.roles.find((role) => role.key === key)?.name || key;
       const roleByKey = (key) => data.roles.find((role) => role.key === key) || {};
       const userWorkspaces = (user) => {
@@ -95,6 +103,7 @@
         root.querySelector('#reset-user-magic')?.addEventListener('click', (event) => sendMagic(user.email, event.currentTarget));
         root.querySelector('[data-user-editor]').addEventListener('submit', async (event) => {
           event.preventDefault();
+          if (!requireForms()) return;
           const payload = window.TAForms.values(event.currentTarget);
           payload.roles = window.TAForms.checkedValues(root, 'roles');
           payload.isActive = payload.isActive === 'true';
