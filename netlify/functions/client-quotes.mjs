@@ -230,7 +230,9 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
   if (accepted && quote.job_request_id) {
     await db.sql`
       update job_requests
-      set status = 'waiting_assignment', updated_at = now()
+      set status = 'waiting_assignment',
+          admin_notes = concat_ws(E'\n\n', nullif(admin_notes, ''), ${`Approved quote ${quote.id} accepted by client. Total: ${quote.amount_cents || 0} cents. Quote reference transferred to work order.`}),
+          updated_at = now()
       where id = ${quote.job_request_id}
         and client_id = ${session.user_id}
     `;

@@ -972,3 +972,21 @@ body,
     grid-template-columns: 1fr;
   }
 }
+
+/* Final responsive polish: avoid ugly horizontal browser scrollbars while preserving intentional mobile swipes. */
+.module-tabs,
+.action-row,
+.module-actions,
+.module-toolbar{flex-wrap:wrap;max-width:100%;}
+.module-tabs{scrollbar-width:none;-ms-overflow-style:none;overflow-x:visible;}
+.module-tabs::-webkit-scrollbar{display:none;}
+.table-wrap{scrollbar-width:none;-ms-overflow-style:none;}
+.table-wrap::-webkit-scrollbar{display:none;}
+#module-root,.module-page,.module-shell{max-width:100%;overflow-x:clip;}
+.module-record-card,.card,.module-card{min-width:0;}
+@media(max-width:767px){
+  body{overflow-x:hidden;}
+  .module-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .module-tabs .btn{white-space:normal;}
+  .dashboard-main,.module-page{padding-bottom:calc(6.5rem + env(safe-area-inset-bottom));}
+}

@@ -9,6 +9,7 @@
   const service = (q) => clean(quotePayload(q).serviceType || q.jobRequest?.serviceType || title(q));
   const property = (q) => clean(quotePayload(q).propertySummary || [q.property?.street, q.property?.city, q.property?.state].filter(Boolean).join(', ') || 'Property address on file');
   const status = (q) => String(q.status || '').replace(/_/g, ' ');
+  const photos = (items = []) => arr(items).length ? `<div class="client-quote-photos">${arr(items).map((photo) => photo.url || photo.src ? `<figure><img src="${esc(photo.url || photo.src)}" alt="${esc(clean(photo.caption || photo.fileName || 'Job photo'))}"><figcaption>${esc(clean(photo.caption || photo.fileName || 'Job photo'))}</figcaption></figure>` : `<span>${esc(clean(photo.caption || photo.fileName || 'Job photo'))}</span>`).join('')}</div>` : '<p>No photos included with this quote.</p>';
   const lines = (items = []) => arr(items).map((line) => `<tr><td>${esc(clean(line.category || 'Item'))}</td><td><strong>${esc(clean(line.name || line.description || 'Line item'))}</strong><br><small>${esc(clean(line.description || ''))}</small></td><td>${esc(line.quantity || 1)} ${esc(line.unit || '')}</td><td><strong>${money(line.totalCents || line.total_cents || 0)}</strong></td></tr>`).join('');
   const list = (items, empty) => `<ul class="quote-clean-list">${arr(items).length ? arr(items).map((item) => `<li>${esc(clean(typeof item === 'string' ? item : item.description || item.name || item.label || ''))}</li>`).join('') : `<li>${esc(empty)}</li>`}</ul>`;
   const expanded = (q) => {
@@ -18,7 +19,10 @@
     return `<div class="client-quote-expanded" data-quote-id="${esc(q.id)}">
       <section><h3>Job summary</h3><p>${esc(clean(p.jobSummary || q.summary || q.jobRequest?.description || 'Review the scope below for quoted work.'))}</p></section>
       <section><h3>Scope</h3><p>${esc(clean(p.scopeOfWork || q.summary || 'Scope details will be confirmed before work begins.'))}</p></section>
-      <div class="grid grid-2"><section><h3>Included labor summary</h3><p>${esc(clean(p.laborSummary || 'Service labor is included in the quote total.'))}</p></section><section><h3>Included materials summary</h3><p>${esc(clean(p.materialsSummary || 'Materials and allowances are included in the quote total.'))}</p></section></div>
+      <div class="grid grid-2"><section><h3>Labor</h3><p>${esc(clean(p.laborSummary || 'Service labor is included in the quote total.'))}</p>${list(p.laborItems || p.laborLineItems, 'Labor is summarized in the quote total.')}</section><section><h3>Materials</h3><p>${esc(clean(p.materialsSummary || 'Materials and allowances are included in the quote total.'))}</p>${list(p.materialItems || p.materialLineItems, 'Materials are summarized in the quote total.')}</section></div>
+      <section><h3>Pricing</h3><div class="quote-total-grid"><span>Subtotal<strong>${money(p.subtotalCents || p.groupedPricing?.subtotalCents || p.totalCents || q.amountCents)}</strong></span><span>Tax / fees<strong>${money(p.taxCents || 0)}</strong></span><span>Total<strong>${money(p.totalCents || q.amountCents)}</strong></span></div></section>
+      <section><h3>Photos</h3>${photos(p.photos || q.photos || q.attachments)}</section>
+      <section><h3>Terms</h3><p>${esc(clean(p.terms || p.termsAndConditions || 'Approval authorizes scheduling. Final invoice may reflect approved change orders or actual material usage.'))}</p></section>
       <section><h3>Assumptions</h3>${list(p.assumptions, 'No special assumptions listed.')}</section>
       <section><h3>Exclusions</h3>${list(p.exclusions, 'No exclusions listed.')}</section>
       <section><h3>Warranty</h3><p>${esc(clean(p.warrantyNotes || p.customerNotes || 'Warranty and notes will be confirmed in writing.'))}</p></section>
