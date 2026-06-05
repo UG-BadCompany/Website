@@ -371,8 +371,9 @@ export const getSessionTokens = (request) => [...new Set(parseCookiePairs(reques
 
 export const getSessionToken = (request) => getSessionTokens(request)[0] || '';
 
-export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null }) => {
+export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phone = null, source = 'magic_link' }) => {
   const normalizedEmail = clean(email).toLowerCase();
+  const normalizedSource = clean(source, 60) || 'magic_link';
   const [existingUser] = await db.sql`
     select id, email, full_name, phone
     from app_users
@@ -386,16 +387,24 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     set full_name = coalesce(nullif(full_name, ''), ${name || null}),
         phone = coalesce(nullif(phone, ''), ${phone || null}),
         is_active = true,
+        source = coalesce(nullif(source, ''), ${normalizedSource}),
+        last_login_at = now(),
+        last_seen_at = now(),
+        login_count = coalesce(login_count, 0) + 1,
         updated_at = now()
     where id = ${existingUser.id}
     returning id, email, full_name, phone
   ` : await db.sql`
-    insert into app_users (auth_provider, auth_subject, email, full_name, phone)
-    values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null})
+    insert into app_users (auth_provider, auth_subject, email, full_name, phone, source, last_login_at, last_seen_at, login_count)
+    values ('magic_link', ${normalizedEmail}, ${normalizedEmail}, ${name || null}, ${phone || null}, ${normalizedSource}, now(), now(), 1)
     on conflict (email) do update set
       full_name = coalesce(nullif(app_users.full_name, ''), excluded.full_name),
       phone = coalesce(nullif(app_users.phone, ''), excluded.phone),
       is_active = true,
+      source = coalesce(nullif(app_users.source, ''), excluded.source),
+      last_login_at = now(),
+      last_seen_at = now(),
+      login_count = coalesce(app_users.login_count, 0) + 1,
       updated_at = now()
     returning id, email, full_name, phone
   `;
@@ -421,6 +430,34 @@ export const createOrUpdateMagicLinkUser = async (db, { email, name = null, phon
     `;
   } catch (error) {
     console.error('Failed to assign default client role during magic-link sign-in', error);
+  }
+
+
+
+  try {
+    await db.sql`
+      update job_requests
+      set client_id = ${savedUser.id}, updated_at = now()
+      where client_id is null and lower(coalesce(requester_email, '')) = lower(${savedUser.email})
+    `;
+    await db.sql`
+      update quotes
+      set client_id = ${savedUser.id}, updated_at = now()
+      where client_id is null
+        and job_request_id in (select id from job_requests where client_id = ${savedUser.id})
+    `;
+    await db.sql`
+      update invoices
+      set client_id = ${savedUser.id}, updated_at = now()
+      where client_id is null
+        and job_request_id in (select id from job_requests where client_id = ${savedUser.id})
+    `;
+    await db.sql`
+      insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
+      values (${savedUser.id}, ${existingUser ? 'user.login' : 'user.created'}, ${'app_user'}, ${savedUser.id}, ${JSON.stringify({ source: normalizedSource, linkedByEmail: savedUser.email })}::jsonb)
+    `;
+  } catch (error) {
+    console.error('Failed to link email-owned customer records during magic-link sign-in', error);
   }
 
   return savedUser;

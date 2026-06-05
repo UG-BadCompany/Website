@@ -26,7 +26,7 @@ const normalizeWorkerUpdatePayload = (body = {}) => ({
   blockedReason: clean(body.blockedReason, 500),
   blockedNeedsAdminHelp: Boolean(body.blockedNeedsAdminHelp),
   completionChecklist: Array.isArray(body.completionChecklist) ? body.completionChecklist.map((item) => clean(item, 140)).filter(Boolean).slice(0, 20) : [],
-  completionEvidenceFiles: Array.isArray(body.completionEvidenceFiles) ? body.completionEvidenceFiles.map((item) => clean(item, 240)).filter(Boolean).slice(0, 20) : [],
+  completionEvidenceFiles: Array.isArray(body.completionEvidenceFiles) ? body.completionEvidenceFiles.map((item) => clean(item, 1000)).filter(Boolean).slice(0, 20) : [],
 });
 
 const buildWorkerCreatePayload = (body = {}) => ({
@@ -366,6 +366,18 @@ const handlePatch = async ({ request, db, context }) => {
         ${JSON.stringify({ jobRequestId: updatedAssignment.job_request_id, blockedReason: payload.blockedReason, needsAdminHelp: payload.blockedNeedsAdminHelp })}::jsonb
       )
     `;
+  }
+
+
+
+  if ((payload.status === 'worker_completed' || payload.status === 'completed') && payload.completionEvidenceFiles.length) {
+    for (const fileUrl of payload.completionEvidenceFiles) {
+      const fileName = fileUrl.split('/').pop()?.split('?')[0] || 'worker-completion-photo';
+      await db.sql`
+        insert into files (owner_id, job_request_id, request_id, path, file_path, file_url, file_name, mime_type, file_type, photo_type, file_category, visibility, source_context, work_order_id, metadata)
+        values (${context.session.user_id}, ${updatedAssignment.job_request_id}, ${updatedAssignment.job_request_id}, ${fileUrl}, ${fileUrl}, ${fileUrl}, ${fileName}, ${'image/url'}, ${'image/url'}, ${'completion_evidence'}, ${'completion_evidence'}, ${'worker_visible'}, ${'worker_completion'}, ${updatedAssignment.id}, ${JSON.stringify({ source: 'worker_jobs_completion', assignmentId: updatedAssignment.id })}::jsonb)
+      `;
+    }
   }
 
   if (payload.customMaterialName && Number(payload.customMaterialQuantity) > 0) {

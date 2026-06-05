@@ -8,7 +8,7 @@ import {
 } from './auth-utils.mjs';
 import { WORKFLOW, normalizeWorkflowStatus } from './workflow-state.mjs';
 
-const WORK_ORDER_STATUSES = new Set(['new', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'admin_review_complete', 'client_review', 'client_approved_completion', 'invoice_ready', 'invoice_sent', 'invoiced', 'payment_pending', 'paid', 'payment_verified', 'closed', 'cancelled', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'blocked', 'completed_by_worker', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'paid']);
+const WORK_ORDER_STATUSES = new Set([...WORKFLOW.statuses, 'new', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'admin_review_complete', 'client_review', 'client_approved_completion', 'invoice_ready', 'invoice_sent', 'invoiced', 'payment_pending', 'paid', 'payment_verified', 'closed', 'archived', 'cancelled', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'blocked', 'completed_by_worker', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment']);
 const PRIORITIES = new Set(['low', 'normal', 'high', 'emergency', 'critical']);
 const ARRIVAL_WINDOWS = new Set(['8-10', '10-12', '12-2', 'Custom', 'custom']);
 
@@ -262,9 +262,6 @@ const toStoredWorkOrderStatus = (status = '') => ({
   pending_review: 'admin_review',
   ready_to_invoice: 'invoice_ready',
   waiting_payment: 'payment_pending',
-  paid: 'payment_verified',
-  payment_verified: 'closed',
-  completed: 'closed',
 }[status] || normalizeWorkflowStatus(status));
 
 const appendReviewNote = (existing = '', note = '') => [existing, note].filter(Boolean).join('\n\n');
@@ -319,13 +316,20 @@ const handleCompletionReview = async ({ request, db, session }) => {
 };
 
 const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => {
-  const statuses = status === 'all'
+  const normalizedFilter = clean(status, 40).toLowerCase().replace(/[-\s]+/g, '_') || 'active';
+  const statuses = normalizedFilter === 'all'
     ? [...WORKFLOW.workOrderActive, ...WORKFLOW.workOrderHistory, 'accepted', 'quote_accepted', 'work_order_created', 'pending_review']
-    : ['completed', 'history', 'closed'].includes(status)
+    : ['completed', 'history', 'closed', 'archive', 'archived'].includes(normalizedFilter)
       ? WORKFLOW.workOrderHistory
-      : status === 'pending_review'
-        ? ['worker_completed', 'admin_review', 'pending_review']
-        : WORKFLOW.workOrderActive;
+      : normalizedFilter === 'needs_assignment'
+        ? WORKFLOW.tabs.needs_assignment
+        : normalizedFilter === 'in_progress'
+          ? WORKFLOW.tabs.in_progress
+          : ['review', 'pending_review'].includes(normalizedFilter)
+            ? ['worker_completed', 'admin_review', 'pending_review', 'client_review']
+            : ['invoice_payment', 'invoice', 'payment'].includes(normalizedFilter)
+              ? WORKFLOW.tabs.invoice_payment
+              : WORKFLOW.workOrderActive;
 
   return db.sql`
     select
@@ -388,7 +392,7 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
     ) wa on true
     left join app_users worker on worker.id = wa.worker_id
     left join lateral (select jsonb_agg(jsonb_build_object('id', inventory_reservations.id, 'itemId', inventory_items.id, 'name', inventory_items.name, 'reservedQuantity', inventory_reservations.reserved_quantity, 'usedQuantity', inventory_reservations.used_quantity, 'status', inventory_reservations.status, 'notes', inventory_reservations.notes)) as materials from inventory_reservations left join inventory_items on inventory_items.id = inventory_reservations.inventory_item_id where inventory_reservations.job_request_id = jr.id) mat on true
-    left join lateral (select jsonb_agg(jsonb_build_object('id', files.id, 'fileName', files.file_name, 'photoType', files.photo_type, 'caption', files.caption, 'createdAt', files.created_at)) as photos from files where files.job_request_id = jr.id or files.work_order_id = jr.id::text) photo on true
+    left join lateral (select jsonb_agg(jsonb_build_object('id', files.id, 'fileName', files.file_name, 'fileUrl', files.file_url, 'filePath', coalesce(files.file_path, files.path), 'photoType', coalesce(files.photo_type, files.file_category), 'visibility', files.visibility, 'caption', files.caption, 'createdAt', files.created_at)) as photos from files where files.job_request_id = jr.id or files.work_order_id = jr.id::text) photo on true
     left join lateral (select jsonb_agg(jsonb_build_object('eventType', audit_events.event_type, 'createdAt', audit_events.created_at, 'metadata', audit_events.metadata) order by audit_events.created_at desc) as events from audit_events where audit_events.entity_id = jr.id) timeline on true
     where jr.status = any(${statuses})
     order by
@@ -400,7 +404,8 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
         when 'waiting_assignment' then 5
         when 'accepted' then 6
         when 'closed' then 7
-        when 'completed' then 8
+        when 'archived' then 8
+        when 'completed' then 9
         else 6
       end,
       coalesce(wa.scheduled_date, jr.estimated_start_date, jr.created_at::date) asc,

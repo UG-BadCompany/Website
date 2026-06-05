@@ -90,7 +90,7 @@ export const createVerifyMagicLinkHandler = ({
     const db = await getDatabase();
     const tokenHash = hashToken(token);
     const [magicLink] = await db.sql`
-      select id, email, expires_at, consumed_at,
+      select id, email, client_name, client_phone, purpose, expires_at, consumed_at,
         case when token_hash = ${tokenHash} then 'token' else 'id' end as matched_by
       from auth_magic_links
       where token_hash = ${tokenHash}
@@ -114,6 +114,9 @@ export const createVerifyMagicLinkHandler = ({
 
     const user = await createOrUpdateMagicLinkUser(db, {
       email: magicLink.email,
+      name: magicLink.client_name,
+      phone: magicLink.client_phone,
+      source: magicLink.purpose === 'client_account' ? 'portal_signup' : 'magic_link',
     });
 
     const sessionToken = makeSessionToken();
