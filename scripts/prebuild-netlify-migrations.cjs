@@ -1,51 +1,8 @@
-const { spawnSync } = require('node:child_process');
-const { existsSync, readdirSync, unlinkSync } = require('node:fs');
+const { readdirSync } = require('node:fs');
 const { join } = require('node:path');
-
-
-if (process.env.NETLIFY === 'true') {
-  const restoreFunctions = spawnSync('git', ['checkout', '--', 'netlify/functions'], {
-    cwd: join(__dirname, '..'),
-    encoding: 'utf8',
-  });
-
-  if (restoreFunctions.status === 0) {
-    console.warn('Warning: Restored netlify/functions from HEAD to discard stale Netlify cache contents before syntax checks.');
-  } else {
-    const detail = `${restoreFunctions.stderr || restoreFunctions.stdout || ''}`.trim();
-    console.warn(`Warning: Could not restore netlify/functions from HEAD before syntax checks.${detail ? ` ${detail}` : ''}`);
-  }
-}
 
 const migrationsDir = join(__dirname, '..', 'netlify', 'database', 'migrations');
 const compatibilityMigrations = new Set(['0004_custom_roles_permissions.sql', '0009_completion_review_status.sql', '0009_quote_payment_completion_controls.sql', '0009_worker_completion_evidence.sql', '0010_invoices_payments.sql', '0010_worker_job_details.sql', '0011_admin_activity_permission.sql', '0011_completion_review_status.sql', '0012_quote_payment_completion_controls.sql', '0013_invoices_payments.sql', '0014_worker_completion_evidence.sql']);
-const removableCachedFiles = [
-  {
-    file: '0011_admin_activity_permission.sql',
-    replacement: '0015_admin_activity_permission.sql',
-    reason: 'admin activity permission now lives in 0015_admin_activity_permission.sql',
-  },
-];
-
-const isTrackedByGit = (filePath) => {
-  const result = spawnSync('git', ['ls-files', '--error-unmatch', filePath], {
-    cwd: join(__dirname, '..'),
-    encoding: 'utf8',
-  });
-
-  return result.status === 0;
-};
-
-for (const stale of removableCachedFiles) {
-  const stalePath = join(migrationsDir, stale.file);
-  const replacementPath = join(migrationsDir, stale.replacement);
-  const repoRelativePath = `netlify/database/migrations/${stale.file}`;
-
-  if (existsSync(stalePath) && existsSync(replacementPath) && !isTrackedByGit(repoRelativePath)) {
-    unlinkSync(stalePath);
-    console.warn(`Warning: Removed stale cached ${stale.file}; ${stale.reason}.`);
-  }
-}
 
 const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
 const prefixes = new Map();
