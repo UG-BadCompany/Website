@@ -1,107 +1,94 @@
 (() => {
   const storageKey = 'TAThemeSettings';
   const defaults = {
-    primaryColor: '#2563eb', accentColor: '#22c55e', backgroundColor: '#f8fafc', surfaceColor: '#ffffff', textColor: '#0f172a', buttonColor: '#2563eb', successColor: '#16a34a', warningColor: '#f59e0b', dangerColor: '#dc2626', themeMode: 'system', defaultTheme: 'system', enableThemeToggle: true,
+    primaryColor: '#2563eb', accentColor: '#22c55e', backgroundColor: '#f8fafc', surfaceColor: '#ffffff', cardColor: '#ffffff', textColor: '#0f172a', mutedColor: '#64748b', borderColor: '#d9e2ef', buttonColor: '#2563eb', successColor: '#16a34a', warningColor: '#f59e0b', dangerColor: '#dc2626', themeMode: 'system', defaultTheme: 'system', enableThemeToggle: true,
+    sidebarBackgroundColor: '', sidebarTextColor: '', sidebarActiveColor: '', sidebarBorderColor: '', sidebarHoverColor: '', mobileNavBackgroundColor: '', mobileNavTextColor: '', mobileNavActiveColor: '', mobileNavBorderColor: '', hasCustomSidebarColors: false,
   };
-  const darkDefaults = { backgroundColor: '#06111f', surfaceColor: '#0f1c2e', textColor: '#e5edf7' };
+  const palettes = {
+    light: { backgroundColor: '#f8fafc', surfaceColor: '#ffffff', cardColor: '#ffffff', textColor: '#0f172a', mutedColor: '#64748b', borderColor: '#d9e2ef', sidebarBackgroundColor: '#ffffff', sidebarTextColor: '#0f172a', sidebarActiveColor: '#dbeafe', sidebarBorderColor: '#d9e2ef', sidebarHoverColor: '#eff6ff', mobileNavBackgroundColor: '#ffffff', mobileNavTextColor: '#0f172a', mobileNavActiveColor: '#dbeafe', mobileNavBorderColor: '#d9e2ef' },
+    dark: { backgroundColor: '#06111f', surfaceColor: '#0f1c2e', cardColor: '#101f34', textColor: '#e5edf7', mutedColor: '#a5b4c8', borderColor: '#2f4360', sidebarBackgroundColor: '#0f172a', sidebarTextColor: '#e5edf7', sidebarActiveColor: '#2563eb', sidebarBorderColor: '#1e293b', sidebarHoverColor: '#1e293b', mobileNavBackgroundColor: '#0f172a', mobileNavTextColor: '#e5edf7', mobileNavActiveColor: '#2563eb', mobileNavBorderColor: '#1e293b' },
+  };
   let systemUnsubscribe = null;
+  let bootPromise = null;
   const media = () => window.matchMedia?.('(prefers-color-scheme: dark)');
   const set = (name, value) => document.documentElement.style.setProperty(name, value);
-  const readStored = () => {
-    try { return JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; }
-    catch { return {}; }
-  };
-  const persist = (settings = {}) => {
-    try { localStorage.setItem(storageKey, JSON.stringify({ ...readStored(), ...settings })); }
-    catch {}
-  };
+  const safeJson = (value) => { try { return JSON.parse(value || '{}') || {}; } catch { return {}; } };
+  const readStored = () => safeJson(localStorage.getItem(storageKey));
+  const persist = (settings = {}) => { try { localStorage.setItem(storageKey, JSON.stringify({ ...readStored(), ...settings })); } catch {} };
   const normalizeMode = (mode = 'system') => ['light', 'dark', 'system'].includes(String(mode)) ? String(mode) : 'system';
-  const resolveThemeMode = (themeMode = 'system') => {
-    const requested = normalizeMode(themeMode);
-    if (requested !== 'system') return requested;
-    return media()?.matches ? 'dark' : 'light';
-  };
-  const pickThemeColor = (mode, source, key) => {
-    const value = source[key];
-    if (mode === 'dark' && (!value || value === defaults[key]) && darkDefaults[key]) return darkDefaults[key];
-    return value || defaults[key];
-  };
-  const readableBorder = (mode) => mode === 'dark' ? '#2f4360' : '#d9e2ef';
-  const readableMuted = (mode) => mode === 'dark' ? '#a5b4c8' : '#64748b';
+  const resolveThemeMode = (themeMode = 'system') => normalizeMode(themeMode) === 'system' ? (media()?.matches ? 'dark' : 'light') : normalizeMode(themeMode);
+  const first = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
+  const isCustomSidebar = (source = {}) => Boolean(source.hasCustomSidebarColors || source.sidebarColorsCustomized || ['sidebarBackgroundColor','sidebarTextColor','sidebarActiveColor','sidebarBorderColor','sidebarHoverColor','mobileNavBackgroundColor','mobileNavTextColor','mobileNavActiveColor','mobileNavBorderColor'].some((key) => source[key] && source[key] !== defaults[key]));
   const applyCssVariables = (settings = {}) => {
-    const requestedMode = normalizeMode(settings.themeMode || settings.defaultTheme || defaults.themeMode);
+    const requestedMode = normalizeMode(first(settings.themeMode, settings.defaultTheme, settings.selectedTheme, defaults.themeMode));
     const mode = resolveThemeMode(requestedMode);
-    const source = { ...defaults, ...settings, themeMode: requestedMode, defaultTheme: normalizeMode(settings.defaultTheme || requestedMode) };
-    const background = pickThemeColor(mode, source, 'backgroundColor');
-    const surface = pickThemeColor(mode, source, 'surfaceColor');
-    const text = pickThemeColor(mode, source, 'textColor');
-    const primary = source.primaryColor || defaults.primaryColor;
-    const accent = source.accentColor || defaults.accentColor;
-    const border = source.borderColor || readableBorder(mode);
-    const muted = source.mutedColor || readableMuted(mode);
+    const palette = palettes[mode];
+    const source = { ...defaults, ...settings, themeMode: requestedMode, defaultTheme: normalizeMode(first(settings.defaultTheme, requestedMode)) };
+    const background = first(source.backgroundColor, palette.backgroundColor);
+    const surface = first(source.surfaceColor, palette.surfaceColor);
+    const card = first(source.cardColor, source.card, palette.cardColor, surface);
+    const text = first(source.textColor, palette.textColor);
+    const muted = first(source.mutedColor, source.textMutedColor, palette.mutedColor);
+    const border = first(source.borderColor, palette.borderColor);
+    const primary = first(source.primaryColor, defaults.primaryColor);
+    const accent = first(source.accentColor, defaults.accentColor);
+    const button = first(source.buttonColor, primary, defaults.buttonColor);
+    const customSidebar = isCustomSidebar(source);
+    const sidebar = customSidebar ? {
+      backgroundColor: first(source.sidebarBackgroundColor, palette.sidebarBackgroundColor), textColor: first(source.sidebarTextColor, palette.sidebarTextColor), activeColor: first(source.sidebarActiveColor, primary, palette.sidebarActiveColor), borderColor: first(source.sidebarBorderColor, palette.sidebarBorderColor), hoverColor: first(source.sidebarHoverColor, palette.sidebarHoverColor), mobileBg: first(source.mobileNavBackgroundColor, source.sidebarBackgroundColor, palette.mobileNavBackgroundColor), mobileText: first(source.mobileNavTextColor, source.sidebarTextColor, palette.mobileNavTextColor), mobileActive: first(source.mobileNavActiveColor, source.sidebarActiveColor, primary, palette.mobileNavActiveColor), mobileBorder: first(source.mobileNavBorderColor, source.sidebarBorderColor, palette.mobileNavBorderColor),
+    } : {
+      backgroundColor: palette.sidebarBackgroundColor, textColor: palette.sidebarTextColor, activeColor: palette.sidebarActiveColor, borderColor: palette.sidebarBorderColor, hoverColor: palette.sidebarHoverColor, mobileBg: palette.mobileNavBackgroundColor, mobileText: palette.mobileNavTextColor, mobileActive: palette.mobileNavActiveColor, mobileBorder: palette.mobileNavBorderColor,
+    };
 
-    set('--color-primary', primary);
-    set('--color-accent', accent);
-    set('--color-background', background);
-    set('--color-surface', surface);
-    set('--color-text', text);
-    set('--color-muted', muted);
-    set('--color-border', border);
-    set('--color-button', source.buttonColor || primary || defaults.buttonColor);
-    set('--color-success', source.successColor || defaults.successColor);
-    set('--color-warning', source.warningColor || defaults.warningColor);
-    set('--color-danger', source.dangerColor || defaults.dangerColor);
-    set('--primary', primary);
-    set('--accent', accent);
-    set('--bg', background);
-    set('--panel', surface);
-    set('--surface', surface);
-    set('--ink', text);
-    set('--text', text);
-    set('--muted', muted);
-    set('--line', border);
-    set('--danger', source.dangerColor || defaults.dangerColor);
-    set('--button-color', source.buttonColor || primary || defaults.buttonColor);
-    set('--primary-color', primary);
-    set('--accent-color', accent);
-    set('--surface-color', surface);
-    set('--text-color', text);
-    set('--muted-text', muted);
-    set('--border-color', border);
-    return { source, mode, requestedMode };
+    const pairs = {
+      '--background': background, '--surface': surface, '--card': card, '--text': text, '--text-muted': muted, '--border': border, '--primary': primary, '--accent': accent, '--success': first(source.successColor, defaults.successColor), '--warning': first(source.warningColor, defaults.warningColor), '--danger': first(source.dangerColor, defaults.dangerColor), '--button': button,
+      '--color-background': background, '--color-surface': surface, '--color-card': card, '--color-text': text, '--color-muted': muted, '--color-border': border, '--color-primary': primary, '--color-accent': accent, '--color-success': first(source.successColor, defaults.successColor), '--color-warning': first(source.warningColor, defaults.warningColor), '--color-danger': first(source.dangerColor, defaults.dangerColor), '--color-button': button,
+      '--sidebar-background': sidebar.backgroundColor, '--sidebar-bg': sidebar.backgroundColor, '--sidebar-text': sidebar.textColor, '--sidebar-active': sidebar.activeColor, '--sidebar-border': sidebar.borderColor, '--sidebar-hover': sidebar.hoverColor,
+      '--mobile-nav-bg': sidebar.mobileBg, '--mobile-nav-background': sidebar.mobileBg, '--mobile-nav-text': sidebar.mobileText, '--mobile-nav-active': sidebar.mobileActive, '--mobile-nav-border': sidebar.mobileBorder,
+      '--bg': background, '--panel': surface, '--surface-alt': mode === 'dark' ? `color-mix(in srgb, ${surface} 86%, ${background})` : `color-mix(in srgb, ${surface} 88%, ${background})`, '--ink': text, '--muted': muted, '--line': border, '--button-color': button, '--primary-color': primary, '--accent-color': accent, '--surface-color': surface, '--text-color': text, '--muted-text': muted, '--border-color': border,
+      '--field-bg': mode === 'dark' ? `color-mix(in srgb, ${surface} 86%, #000000)` : `color-mix(in srgb, ${surface} 94%, ${background})`, '--field-text': text, '--field-placeholder': `color-mix(in srgb, ${muted} 78%, ${text})`, '--button-text': '#ffffff',
+    };
+    Object.entries(pairs).forEach(([key, value]) => set(key, value));
+    document.documentElement.style.colorScheme = mode;
+    return { source: { ...source, hasCustomSidebarColors: customSidebar }, mode, requestedMode };
   };
   const bindSystemTheme = (settings = {}) => {
     if (systemUnsubscribe) { systemUnsubscribe(); systemUnsubscribe = null; }
-    const requestedMode = normalizeMode(settings.themeMode || settings.defaultTheme || defaults.themeMode);
-    if (requestedMode !== 'system') return;
-    const query = media();
-    if (!query) return;
-    const listener = () => apply(window.TATheme?.current || settings);
-    if (query.addEventListener) {
-      query.addEventListener('change', listener);
-      systemUnsubscribe = () => query.removeEventListener('change', listener);
-    } else if (query.addListener) {
-      query.addListener(listener);
-      systemUnsubscribe = () => query.removeListener(listener);
-    }
+    if (normalizeMode(first(settings.themeMode, settings.defaultTheme, defaults.themeMode)) !== 'system') return;
+    const query = media(); if (!query) return;
+    const listener = () => apply(window.TATheme?.current || settings, { persist: false });
+    if (query.addEventListener) { query.addEventListener('change', listener); systemUnsubscribe = () => query.removeEventListener('change', listener); }
+    else if (query.addListener) { query.addListener(listener); systemUnsubscribe = () => query.removeListener(listener); }
   };
   const apply = (settings = {}, options = {}) => {
     const result = applyCssVariables(settings);
-    const source = result.source;
     window.TATheme = window.TATheme || {};
-    window.TATheme.current = source;
+    window.TATheme.current = result.source;
     document.documentElement.dataset.theme = result.mode;
     document.documentElement.dataset.themeMode = result.requestedMode;
-    bindSystemTheme(source);
-    if (options.persist) persist(source);
-    document.dispatchEvent(new CustomEvent('ta:theme-applied', { detail: { settings: source, theme: result.mode, themeMode: result.requestedMode } }));
+    document.documentElement.dataset.themeReady = 'true';
+    bindSystemTheme(result.source);
+    if (options.persist) persist(result.source);
+    document.dispatchEvent(new CustomEvent('ta:theme-applied', { detail: { settings: result.source, theme: result.mode, themeMode: result.requestedMode } }));
     return result.mode;
   };
+  const loadGlobal = async () => {
+    if (bootPromise) return bootPromise;
+    bootPromise = (async () => {
+      let settings = { ...defaults, ...readStored() };
+      if (window.TAApi?.get) {
+        try {
+          const data = await window.TAApi.get('/.netlify/functions/company-settings');
+          settings = window.TACompany?.norm ? window.TACompany.norm(data.company || data.settings || {}) : { ...settings, ...(data.company || data.settings || {}) };
+        } catch {}
+      }
+      apply(settings, { persist: true });
+      return settings;
+    })();
+    return bootPromise;
+  };
   const stored = readStored();
-  window.TATheme = { defaults, darkDefaults, apply, resolveThemeMode, resolveMode: resolveThemeMode, applyCssVariables, bindSystemTheme, persist, readStored, current: { ...defaults, ...stored } };
-  if (Object.keys(stored).length) apply(stored);
-  window.addEventListener?.('storage', (event) => {
-    if (event.key !== storageKey) return;
-    apply(readStored());
-  });
+  window.TATheme = { defaults, darkDefaults: palettes.dark, lightDefaults: palettes.light, palettes, apply, resolveThemeMode, resolveMode: resolveThemeMode, applyCssVariables, bindSystemTheme, persist, readStored, loadGlobal, current: { ...defaults, ...stored } };
+  apply({ ...defaults, ...stored });
+  window.addEventListener?.('storage', (event) => { if (event.key === storageKey) apply({ ...defaults, ...readStored() }); });
 })();

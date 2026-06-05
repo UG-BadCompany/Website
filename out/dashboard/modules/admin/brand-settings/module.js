@@ -2,7 +2,8 @@
   const escapeHtml = (value = '') => String(value ?? '').replace(/[&<>"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[char]));
   const defaults = () => ({ ...window.TACompany?.fallback, ...window.TATheme?.defaults });
   const hexOk = (value) => /^#[0-9a-f]{6}$/i.test(String(value || '').trim());
-  const normalizeHex = (value, fallback) => hexOk(value) ? String(value).trim().toUpperCase() : fallback;
+  const paletteFallback = (key) => ({ sidebarBackgroundColor:'#0f172a', sidebarTextColor:'#e5edf7', sidebarActiveColor:'#2563eb', sidebarBorderColor:'#1e293b', sidebarHoverColor:'#1e293b', mobileNavBackgroundColor:'#0f172a', mobileNavTextColor:'#e5edf7', mobileNavActiveColor:'#2563eb', mobileNavBorderColor:'#1e293b' }[key] || defaults()[key] || '#2563EB');
+  const normalizeHex = (value, fallback) => hexOk(value) ? String(value).trim().toUpperCase() : (hexOk(fallback) ? String(fallback).trim().toUpperCase() : '#2563EB');
   const colors = [
     ['primaryColor', 'Primary Color'],
     ['accentColor', 'Accent Color'],
@@ -14,6 +15,18 @@
     ['warningColor', 'Warning Color'],
     ['dangerColor', 'Danger Color'],
   ];
+  const sidebarColors = [
+    ['sidebarBackgroundColor', 'Sidebar Background Color'],
+    ['sidebarTextColor', 'Sidebar Text Color'],
+    ['sidebarActiveColor', 'Sidebar Active Item Color'],
+    ['sidebarBorderColor', 'Sidebar Border Color'],
+    ['sidebarHoverColor', 'Sidebar Hover Color'],
+    ['mobileNavBackgroundColor', 'Mobile Bottom Nav Background Color'],
+    ['mobileNavTextColor', 'Mobile Bottom Nav Text Color'],
+    ['mobileNavActiveColor', 'Mobile Bottom Nav Active Color'],
+    ['mobileNavBorderColor', 'Mobile Bottom Nav Border Color'],
+  ];
+  const allColors = [...colors, ...sidebarColors];
 
   window.TAModules.register({
     id: 'admin.brand-settings',
@@ -21,7 +34,7 @@
     title: 'Brand Settings',
     icon: '🎨',
     permissions: ['branding.manage', 'company.manage'],
-    async mount({ root, api }) {
+    async mount({ root, api }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
       let company = window.TACompany?.current || window.TACompany?.fallback || {};
 
       const readState = () => {
@@ -29,9 +42,9 @@
         values.enableThemeToggle = Boolean(root.querySelector('[name="enableThemeToggle"]')?.checked);
         values.showCompanyNameInHeader = Boolean(root.querySelector('[name="showCompanyNameInHeader"]')?.checked);
         values.defaultTheme = values.themeMode || values.defaultTheme || 'system';
-        for (const [key] of colors) {
+        for (const [key] of allColors) {
           const hex = root.querySelector(`[data-color-hex="${key}"]`)?.value;
-          values[key] = normalizeHex(hex, defaults()[key]);
+          values[key] = normalizeHex(hex, paletteFallback(key));
         }
         return { ...company, ...values };
       };
@@ -43,7 +56,7 @@
       };
 
       const renderColorControl = ([key, label]) => {
-        const value = normalizeHex(company[key], defaults()[key]);
+        const value = normalizeHex(company[key], paletteFallback(key));
         return `<label class="color-control" data-color-control="${key}">
           <span>${label}</span>
           <span class="color-control-row">
@@ -63,6 +76,9 @@
         preview.style.setProperty('--preview-text', state.textColor || defaults().textColor);
         preview.style.setProperty('--preview-primary', state.primaryColor || defaults().primaryColor);
         preview.style.setProperty('--preview-button', state.buttonColor || state.primaryColor || defaults().buttonColor);
+        preview.style.setProperty('--preview-sidebar-bg', state.sidebarBackgroundColor || defaults().sidebarBackgroundColor);
+        preview.style.setProperty('--preview-sidebar-text', state.sidebarTextColor || defaults().sidebarTextColor);
+        preview.style.setProperty('--preview-sidebar-active', state.sidebarActiveColor || defaults().sidebarActiveColor);
         preview.innerHTML = `<div class="brand-preview-shell">
           <header class="brand-preview-header">
             <div class="brand-preview-brand">
@@ -71,7 +87,7 @@
             </div>
             <nav class="brand-preview-nav" aria-label="Preview navigation"><span>Overview</span><span>Requests</span><span>Invoices</span></nav>
           </header>
-          <article class="brand-preview-card">
+          <aside class="brand-preview-sidebar"><strong>Sidebar</strong><span class="active">Active item</span><span>Hover preview</span></aside><article class="brand-preview-card">
             <span class="status-badge success">Live preview badge</span>
             <h3>${escapeHtml(state.displayName || state.companyName || 'Contractor Portal')}</h3>
             <p>Sample dashboard card using your saved theme colors.</p>
@@ -85,7 +101,7 @@
       };
 
       const syncColor = (key, value, source) => {
-        const fallback = defaults()[key];
+        const fallback = paletteFallback(key);
         const normalized = normalizeHex(value, fallback);
         const swatch = root.querySelector(`[data-color-swatch="${key}"]`);
         const hex = root.querySelector(`[data-color-hex="${key}"]`);
@@ -142,6 +158,18 @@
           successColor: payload.successColor,
           warningColor: payload.warningColor,
           dangerColor: payload.dangerColor,
+          selectedTheme: payload.themeMode,
+          colorScheme: payload.themeMode,
+          sidebarBackgroundColor: payload.sidebarBackgroundColor,
+          sidebarTextColor: payload.sidebarTextColor,
+          sidebarActiveColor: payload.sidebarActiveColor,
+          sidebarBorderColor: payload.sidebarBorderColor,
+          sidebarHoverColor: payload.sidebarHoverColor,
+          mobileNavBackgroundColor: payload.mobileNavBackgroundColor,
+          mobileNavTextColor: payload.mobileNavTextColor,
+          mobileNavActiveColor: payload.mobileNavActiveColor,
+          mobileNavBorderColor: payload.mobileNavBorderColor,
+          hasCustomSidebarColors: true,
         };
         button.disabled = true;
         status.textContent = 'Saving brand settings...';
@@ -189,8 +217,13 @@
               </div>
             </div>
 
+            <h3>Core Theme Colors</h3>
             <div class="module-grid color-settings-grid">
               ${colors.map(renderColorControl).join('')}
+            </div>
+            <h3>Sidebar & Mobile Navigation Colors</h3>
+            <div class="module-grid color-settings-grid">
+              ${sidebarColors.map(renderColorControl).join('')}
             </div>
 
             <div class="grid grid-2 brand-preview-grid">

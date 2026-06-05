@@ -25,7 +25,7 @@
   --field-bg: color-mix(in srgb, var(--color-surface) 92%, var(--color-background));
   --field-text: var(--color-text);
   --field-placeholder: color-mix(in srgb, var(--color-muted) 74%, var(--color-text));
-  --button-text: #ffffff;
+  --button-text: var(--surface);
 }
 
 [data-theme="dark"] {
@@ -136,7 +136,7 @@ img { max-width: 100%; }
   border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
   box-shadow: none;
 }
-.btn.danger { background: var(--color-danger); color:var(--button-text,#fff); }
+.btn.danger { background: var(--color-danger); color:var(--button-text,var(--surface)); }
 .btn:disabled, button:disabled, .btn.disabled, [aria-disabled="true"] {
   opacity: .65;
   cursor: not-allowed;
@@ -261,4 +261,37 @@ footer { padding: 2rem 0; border-top: 1px solid var(--color-border); color: var(
   .action-row, .module-actions { display: grid; grid-template-columns: 1fr; }
   .color-control-row { grid-template-columns: 48px minmax(0, 1fr); }
   .color-control-row .btn { grid-column: 1 / -1; }
+}
+
+
+/* Global status system shared across admin, manager, worker, and client modules. */
+.status-tabs { display:flex; flex-wrap:wrap; gap:.5rem; }
+.status-tab { border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; padding:.6rem .9rem; font-weight:850; cursor:pointer; }
+.status-tab.active { background:var(--color-primary); border-color:var(--color-primary); color:#fff; }
+.status-badge.active, .status-badge.scheduled { color:var(--color-success); border-color:color-mix(in srgb, var(--color-success) 45%, var(--color-border)); }
+.status-badge.waiting, .status-badge.review { color:var(--color-warning); border-color:color-mix(in srgb, var(--color-warning) 45%, var(--color-border)); }
+.status-badge.inactive { color:var(--color-muted); border-color:var(--color-border); }
+.status-badge.cancelled { color:var(--color-danger); border-color:color-mix(in srgb, var(--color-danger) 45%, var(--color-border)); }
+.status-badge.completed { color:var(--color-success); border-color:color-mix(in srgb, var(--color-success) 55%, var(--color-border)); background:color-mix(in srgb, var(--color-success) 10%, var(--color-surface)); }
+.status-meta-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.55rem; }
+.status-meta-grid span { border:1px solid var(--color-border); background:color-mix(in srgb, var(--color-surface) 88%, var(--color-background)); border-radius:14px; padding:.55rem .7rem; color:var(--color-muted); }
+.status-meta-grid strong { display:block; color:var(--color-text); }
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --color-background:#06111f;
+    --color-surface:#0f1c2e;
+    --color-card:#101f34;
+    --color-text:#e5edf7;
+    --color-muted:#a5b4c8;
+    --color-border:#2f4360;
+    --bg:var(--color-background);
+    --panel:var(--color-surface);
+    --surface:var(--color-surface);
+    --ink:var(--color-text);
+    --text:var(--color-text);
+    --muted:var(--color-muted);
+    --line:var(--color-border);
+    --field-bg:color-mix(in srgb,var(--color-surface) 86%,#000000);
+    --field-text:var(--color-text);
+  }
 }

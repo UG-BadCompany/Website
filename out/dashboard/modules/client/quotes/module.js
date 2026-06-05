@@ -1,1 +1,56 @@
-window.TAModules.register({id:'client.quotes',role:'client',title:'My Quotes',icon:'💰',permissions:[],async mount(ctx){return TAModuleKit.mount(ctx,{title:'My Quotes',icon:'💰',description:'Review estimates, approve, decline, or request changes.',endpoint:'/api/client/quotes',recordPaths:['quotes'],tabs:[{label:'All',key:'all'},{label:'Sent',key:'sent'},{label:'Accepted',key:'accepted'},{label:'Declined',key:'declined'}],metrics:[{label:'Quotes',icon:'💰'},{label:'Waiting Approval',icon:'📝',status:'sent'},{label:'Accepted',icon:'✅',status:'accepted'},{label:'Declined',icon:'⛔',status:'declined'}],actions:['Request Quote','Request Changes'],recordActions:['View Quote','Approve Quote','Decline Quote','Request Changes'],detailSections:['Customer-facing scope','Pricing','Assumptions','Exclusions','Warranty/notes','Approval decision']});},async destroy(){},async refresh(){}});
+(() => {
+  const esc = (v = '') => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const money = (cents = 0) => window.TAUi?.money ? TAUi.money(Number(cents || 0) / 100) : `$${(Number(cents || 0) / 100).toFixed(2)}`;
+  const date = (v) => v ? new Date(v).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' }) : 'Not set';
+  const arr = (v) => Array.isArray(v) ? v : v ? [v] : [];
+  const clean = (v = '') => String(v ?? '').replace(/ADMIN REVIEW DRAFT[\s\S]*/ig, '').replace(/Do not send without review\.?/ig, '').replace(/Internal AI confidence|Accuracy review|Internal risk flags|Supplier\/pricing review|Troubleshooting review|Admin next steps|Raw AI output|Research metadata/ig, '').trim();
+  const quotePayload = (q = {}) => q.clientQuote || q.client_quote || {};
+  const title = (q) => clean(quotePayload(q).title || q.title || 'Service quote');
+  const service = (q) => clean(quotePayload(q).serviceType || q.jobRequest?.serviceType || title(q));
+  const property = (q) => clean(quotePayload(q).propertySummary || [q.property?.street, q.property?.city, q.property?.state].filter(Boolean).join(', ') || 'Property address on file');
+  const status = (q) => String(q.status || '').replace(/_/g, ' ');
+  const statusBadge = (q) => window.TAWorkflow?.statusBadge?.(q.status) || `<span class="status-badge">${esc(status(q))}</span>`;
+  const workerName = (q) => q.assignedWorker?.fullName || q.assignedWorkerName || q.workerName || q.jobRequest?.assignedWorkerName || 'Not assigned';
+  const completionDate = (q) => q.completedAt || q.completionDate || q.closedAt || q.paidAt || q.updatedAt;
+  const photos = (items = []) => arr(items).length ? `<div class="client-quote-photos">${arr(items).map((photo) => photo.url || photo.src ? `<figure><img src="${esc(photo.url || photo.src)}" alt="${esc(clean(photo.caption || photo.fileName || 'Job photo'))}"><figcaption>${esc(clean(photo.caption || photo.fileName || 'Job photo'))}</figcaption></figure>` : `<span>${esc(clean(photo.caption || photo.fileName || 'Job photo'))}</span>`).join('')}</div>` : '<p>No photos included with this quote.</p>';
+  const lines = (items = []) => arr(items).map((line) => `<tr><td>${esc(clean(line.category || 'Item'))}</td><td><strong>${esc(clean(line.name || line.description || 'Line item'))}</strong><br><small>${esc(clean(line.description || ''))}</small></td><td>${esc(line.quantity || 1)} ${esc(line.unit || '')}</td><td><strong>${money(line.totalCents || line.total_cents || 0)}</strong></td></tr>`).join('');
+  const list = (items, empty) => `<ul class="quote-clean-list">${arr(items).length ? arr(items).map((item) => `<li>${esc(clean(typeof item === 'string' ? item : item.description || item.name || item.label || ''))}</li>`).join('') : `<li>${esc(empty)}</li>`}</ul>`;
+  const expanded = (q) => {
+    const p = quotePayload(q);
+    const grouped = p.groupedPricing;
+    const canDecide = ['sent', 'viewed'].includes(String(q.status || '').toLowerCase());
+    return `<div class="client-quote-expanded" data-quote-id="${esc(q.id)}">
+      <section><h3>Job summary</h3><p>${esc(clean(p.jobSummary || q.summary || q.jobRequest?.description || 'Review the scope below for quoted work.'))}</p></section>
+      <section><h3>Scope</h3><p>${esc(clean(p.scopeOfWork || q.summary || 'Scope details will be confirmed before work begins.'))}</p></section>
+      <div class="grid grid-2"><section><h3>Labor</h3><p>${esc(clean(p.laborSummary || 'Service labor is included in the quote total.'))}</p>${list(p.laborItems || p.laborLineItems, 'Labor is summarized in the quote total.')}</section><section><h3>Materials</h3><p>${esc(clean(p.materialsSummary || 'Materials and allowances are included in the quote total.'))}</p>${list(p.materialItems || p.materialLineItems, 'Materials are summarized in the quote total.')}</section></div>
+      <section><h3>Pricing</h3><div class="quote-total-grid"><span>Subtotal<strong>${money(p.subtotalCents || p.groupedPricing?.subtotalCents || p.totalCents || q.amountCents)}</strong></span><span>Tax / fees<strong>${money(p.taxCents || 0)}</strong></span><span>Total<strong>${money(p.totalCents || q.amountCents)}</strong></span></div></section>
+      <section><h3>Photos</h3>${photos(p.photos || q.photos || q.attachments)}</section>
+      <section><h3>Terms</h3><p>${esc(clean(p.terms || p.termsAndConditions || 'Approval authorizes scheduling. Final invoice may reflect approved change orders or actual material usage.'))}</p></section>
+      <section><h3>Assumptions</h3>${list(p.assumptions, 'No special assumptions listed.')}</section>
+      <section><h3>Exclusions</h3>${list(p.exclusions, 'No exclusions listed.')}</section>
+      <section><h3>Warranty</h3><p>${esc(clean(p.warrantyNotes || p.customerNotes || 'Warranty and notes will be confirmed in writing.'))}</p></section>
+      ${grouped ? `<section><h3>Grouped pricing</h3><div class="quote-total-grid"><span>Labor<strong>${money(grouped.laborTotalCents)}</strong></span><span>Materials<strong>${money(grouped.materialTotalCents)}</strong></span><span>Other<strong>${money(grouped.otherTotalCents)}</strong></span></div></section>` : ''}
+      ${arr(p.lineItems).length ? `<section><h3>Detailed line items</h3><table class="quote-editor-table"><tbody>${lines(p.lineItems)}</tbody></table></section>` : ''}
+      <section class="client-quote-total"><span>Total</span><strong>${money(p.totalCents || q.amountCents)}</strong></section>
+      <div class="quote-client-actions"><button class="btn" data-decision="accept" ${canDecide ? '' : 'disabled'}>Approve</button><button class="btn secondary" data-decision="decline" ${canDecide ? '' : 'disabled'}>Decline</button><button class="btn secondary" data-decision="request_changes" ${canDecide ? '' : 'disabled'}>Request Changes</button></div>
+    </div>`;
+  };
+  const card = (q, open) => {
+    const p = quotePayload(q);
+    return `<article class="module-record-card client-quote-card ${open ? 'active' : ''} ${window.TAWorkflow?.statusTabFor?.(q.status) === 'completed' ? 'completed-quote-card' : ''}" data-quote-card="${esc(q.id)}" aria-expanded="${open}"><div class="client-quote-card-head"><div><p class="eyebrow">${statusBadge(q)}</p><h3>${esc(service(q))}</h3><p>${esc(property(q))}</p></div><strong>${money(p.totalCents || q.amountCents)}</strong></div><div class="client-quote-card-meta status-meta-grid"><span>Status <strong>${statusBadge(q)}</strong></span><span>Completion Date <strong>${esc(date(completionDate(q)))}</strong></span><span>Last Updated <strong>${esc(date(q.updatedAt || q.sentAt || q.createdAt))}</strong></span><span>Assigned Worker <strong>${esc(workerName(q))}</strong></span></div><button class="btn secondary client-quote-toggle" type="button" data-toggle-quote="${esc(q.id)}">${open ? 'Collapse' : 'Expand'}</button>${open ? expanded(q) : ''}</article>`;
+  };
+  window.TAModules.register({id:'client.quotes',role:'client',title:'My Quotes',icon:'💰',permissions:[],async mount({root,api}){root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.'); 
+    let data = { quotes: [] }; const openIds = new Set(); let activeTab = 'active';
+    const render = () => {
+      const quotes = arr(data.quotes);
+      const filtered = window.TAWorkflow?.filterByStatusTab ? TAWorkflow.filterByStatusTab(quotes, activeTab) : quotes;
+      const tabs = Object.entries(window.TAWorkflow?.STATUS_TABS || { active:'Active', completed:'Completed', inactive:'Inactive', cancelled:'Cancelled', all:'All' }).map(([key,label]) => `<button type="button" class="status-tab ${activeTab === key ? 'active' : ''}" data-status-tab="${key}">${label}</button>`).join('');
+      root.innerHTML = `<section class="module-page stack client-quotes-page"><div class="module-hero module-header card"><div><p class="eyebrow">Client workspace</p><h2 class="module-title">💰 My Quotes</h2><p class="module-description">Use status tabs to separate active quotes from completed, inactive, and cancelled work.</p></div></div><div class="status-tabs">${tabs}</div><div class="client-quote-list">${filtered.length ? filtered.map((item) => card(item, openIds.has(String(item.id)))).join('') : '<article class="module-empty"><h3>No quotes in this status</h3><p>Try another tab or check back after your request is updated.</p></article>'}</div></section>`;
+      root.querySelectorAll('[data-status-tab]').forEach((btn) => btn.addEventListener('click', () => { activeTab = btn.dataset.statusTab || 'active'; render(); }));
+      root.querySelectorAll('[data-toggle-quote]').forEach((btn) => btn.addEventListener('click', () => { const id = String(btn.dataset.toggleQuote || ''); if (openIds.has(id)) openIds.delete(id); else openIds.add(id); render(); }));
+      root.querySelectorAll('[data-decision]').forEach((btn) => btn.addEventListener('click', async () => { const host = btn.closest('[data-quote-id]'); const quoteId = host?.dataset.quoteId; btn.disabled = true; const response = await api.patch('/api/client/quotes', { quoteId, action: btn.dataset.decision }); data.quotes = data.quotes.map((item) => item.id === quoteId ? response.quote : item); render(); }));
+    };
+    root.innerHTML = '<section class="stack"><div class="card"><h2>Quotes</h2><p>Loading...</p></div></section>';
+    data = await api.get('/api/client/quotes'); render();
+  },async destroy(){},async refresh(){}});
+})();

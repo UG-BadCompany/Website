@@ -2,7 +2,8 @@
   const escapeHtml = (value = '') => String(value ?? '').replace(/[&<>"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[char]));
   const defaults = () => ({ ...window.TACompany?.fallback, ...window.TATheme?.defaults });
   const hexOk = (value) => /^#[0-9a-f]{6}$/i.test(String(value || '').trim());
-  const normalizeHex = (value, fallback) => hexOk(value) ? String(value).trim().toUpperCase() : fallback;
+  const paletteFallback = (key) => ({ sidebarBackgroundColor:'#0f172a', sidebarTextColor:'#e5edf7', sidebarActiveColor:'#2563eb', sidebarBorderColor:'#1e293b', sidebarHoverColor:'#1e293b', mobileNavBackgroundColor:'#0f172a', mobileNavTextColor:'#e5edf7', mobileNavActiveColor:'#2563eb', mobileNavBorderColor:'#1e293b' }[key] || defaults()[key] || '#2563EB');
+  const normalizeHex = (value, fallback) => hexOk(value) ? String(value).trim().toUpperCase() : (hexOk(fallback) ? String(fallback).trim().toUpperCase() : '#2563EB');
   const colors = [
     ['primaryColor', 'Primary Color'],
     ['accentColor', 'Accent Color'],
@@ -21,7 +22,9 @@
     ['sidebarBorderColor', 'Sidebar Border Color'],
     ['sidebarHoverColor', 'Sidebar Hover Color'],
     ['mobileNavBackgroundColor', 'Mobile Bottom Nav Background Color'],
+    ['mobileNavTextColor', 'Mobile Bottom Nav Text Color'],
     ['mobileNavActiveColor', 'Mobile Bottom Nav Active Color'],
+    ['mobileNavBorderColor', 'Mobile Bottom Nav Border Color'],
   ];
   const allColors = [...colors, ...sidebarColors];
 
@@ -41,7 +44,7 @@
         values.defaultTheme = values.themeMode || values.defaultTheme || 'system';
         for (const [key] of allColors) {
           const hex = root.querySelector(`[data-color-hex="${key}"]`)?.value;
-          values[key] = normalizeHex(hex, defaults()[key]);
+          values[key] = normalizeHex(hex, paletteFallback(key));
         }
         return { ...company, ...values };
       };
@@ -53,7 +56,7 @@
       };
 
       const renderColorControl = ([key, label]) => {
-        const value = normalizeHex(company[key], defaults()[key]);
+        const value = normalizeHex(company[key], paletteFallback(key));
         return `<label class="color-control" data-color-control="${key}">
           <span>${label}</span>
           <span class="color-control-row">
@@ -98,7 +101,7 @@
       };
 
       const syncColor = (key, value, source) => {
-        const fallback = defaults()[key];
+        const fallback = paletteFallback(key);
         const normalized = normalizeHex(value, fallback);
         const swatch = root.querySelector(`[data-color-swatch="${key}"]`);
         const hex = root.querySelector(`[data-color-hex="${key}"]`);
@@ -163,7 +166,10 @@
           sidebarBorderColor: payload.sidebarBorderColor,
           sidebarHoverColor: payload.sidebarHoverColor,
           mobileNavBackgroundColor: payload.mobileNavBackgroundColor,
+          mobileNavTextColor: payload.mobileNavTextColor,
           mobileNavActiveColor: payload.mobileNavActiveColor,
+          mobileNavBorderColor: payload.mobileNavBorderColor,
+          hasCustomSidebarColors: true,
         };
         button.disabled = true;
         status.textContent = 'Saving brand settings...';

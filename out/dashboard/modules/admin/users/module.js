@@ -11,7 +11,7 @@
     title: 'Users',
     icon: '👥',
     permissions: ['users.manage', 'admin.users.manage'],
-    async mount({ root, api }) {
+    async mount({ root, api }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
       let data = { users: [], roles: [] };
       const requireForms = () => {
         if (window.TAForms?.values && window.TAForms?.checkedValues) return true;

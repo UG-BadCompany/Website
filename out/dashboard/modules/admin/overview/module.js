@@ -19,6 +19,12 @@ window.TAModules.register({
       description:'Premium operating dashboard for revenue, quotes, work orders, maintenance plans, inventory alerts, technician activity, AI activity, recent updates, and upcoming schedules.',
       endpoints:['/api/admin/executive-overview','/api/admin/job-requests','/api/admin/quotes','/api/admin/invoices','/api/admin/inventory','/api/admin/work-orders'],
       recordPaths:['activity','requests','quotes','workOrders.items','invoices','items'],
+      detailMode:'readonly',
+      openFullLabel:'Open Module',
+      editLabel:'Edit Disabled',
+      canEdit:false,
+      recordActions:['View Details','Open Module'],
+      detailSections:['Customer','Property','Status','Scope','Assigned worker','Schedule','Materials summary','Recent activity','Notes','Photos'],
       metrics:[
         {label:'Revenue',icon:'💵',path:'revenue.monthCents',format:'money'},
         {label:'Quotes',icon:'💰',path:'quotes.length'},
@@ -35,8 +41,21 @@ window.TAModules.register({
       ],
       actions:['Review Estimates','New Work Order','Inventory Alerts','Schedule Maintenance','Open AI Assistant'],
       onAction: routeAction,
+      onRecordAction(action, detailCtx) {
+        if (action === 'View Detail' || action === 'View Details') {
+          window.TAModuleKit?.openDetail?.(detailCtx.root, detailCtx.config, detailCtx.record, detailCtx);
+          return;
+        }
+        if (action === 'Open Full Work Order' || action === 'Open Module') {
+          detailCtx.router?.go?.('admin.work-orders');
+          return;
+        }
+        if (action === 'Edit Work Order') {
+          window.TAUi?.toast?.('Overview is view only. Open the actual module to edit.', 'warning');
+        }
+      },
       mainTitle:'Recent Activity & Upcoming Schedule',
-      mainDescription:'Scan customer requests, AI quote drafts, work orders, invoices, materials, technician updates, and schedule events without losing context.',
+      mainDescription:'View-only scan of customer requests, AI quote drafts, work orders, invoices, materials, technician updates, and schedule events. Editing happens inside the actual module.',
       secondary:[
         {icon:'📈',title:'Revenue visibility',text:'Month revenue, open invoices, conversion, and quote velocity stay visible at the top of the dashboard.'},
         {icon:'🤖',title:'AI operations',text:'AI activity and confidence alerts surface drafts that need review before they become customer-facing quotes.'},

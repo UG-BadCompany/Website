@@ -260,6 +260,7 @@
   }
   async function start() {
     if (!await TACompany.requireInstalled()) return;
+    await window.TATheme?.loadGlobal?.();
     state.company = await TACompany.load();
     const me = await TAAuth.me().catch(() => ({ authenticated:false }));
     if (!me.authenticated) { location.href = '/login/'; return; }

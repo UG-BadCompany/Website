@@ -28,6 +28,7 @@ const normalize = (body = {}) => {
   return { title: clean(body.title, 180), description: clean(body.description, 700), category, location: clean(body.location, 120), imageUrl: clean(body.imageUrl || body.image_url, 1000), beforeImageUrl: clean(body.beforeImageUrl || body.before_image_url, 1000), afterImageUrl: clean(body.afterImageUrl || body.after_image_url, 1000), featured: Boolean(body.featured), visible: body.visible !== false, sortOrder: Number(body.sortOrder ?? body.sort_order ?? 100) || 100, projectDate: clean(body.projectDate || body.project_date, 20) || null };
 };
 const idFromRequest = (request, body = {}) => clean(body.id || new URL(request.url).searchParams.get('id'), 80);
+const validImageUrl = (value = '') => !value || /^https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp|gif)(?:[?#][^\s]*)?$/i.test(value) || /^data:image\/(?:jpeg|png|webp|gif);base64,/i.test(value);
 
 export default async (request) => {
   if (!['GET','POST','PATCH','DELETE'].includes(request.method)) return json(405, { ok:false, message:'Method not allowed.' });
@@ -54,6 +55,7 @@ export default async (request) => {
   const item = normalize(body);
   if (!item.title) return json(400, { ok:false, message:'Title is required.' });
   if (!item.imageUrl && !item.beforeImageUrl && !item.afterImageUrl) return json(400, { ok:false, message:'At least one image URL is required.' });
+  if (![item.imageUrl, item.beforeImageUrl, item.afterImageUrl].every(validImageUrl)) return json(400, { ok:false, message:'Use a valid image URL ending in jpg, jpeg, png, webp, or gif.' });
   if (request.method === 'POST') {
     const [row] = await db.sql`insert into homepage_gallery (title, description, category, location, image_url, before_image_url, after_image_url, featured, visible, sort_order, project_date) values (${item.title},${item.description},${item.category},${item.location},${item.imageUrl},${item.beforeImageUrl},${item.afterImageUrl},${item.featured},${item.visible},${item.sortOrder},${item.projectDate}) returning *`;
     return json(200, { ok:true, item: camel(row) });

@@ -14,6 +14,7 @@
     as('owner','company-management','Company Management','👥','/dashboard/modules/admin/users','admin.users',['users.manage']),
     as('owner','workspace-permissions-center','Workspace & Permissions Center','🛡','/dashboard/modules/admin/roles','admin.roles',['roles.manage'],'Administration'),
     as('owner','system-center','System Center','📊','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('owner','module-manager','Module Manager','🧩','/dashboard/modules/admin/module-manager','admin.module-manager',['settings.manage'],'Administration'),
     as('owner','theme-manager','Theme Manager','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
     as('owner','homepage-editor','Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor','admin.homepage-editor',['homepage.manage']),
     as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
@@ -35,6 +36,7 @@
     as('admin','brand-settings','Branding','🎨','/dashboard/modules/admin/brand-settings','admin.brand-settings',['branding.manage']),
     as('admin','homepage-editor','Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor','admin.homepage-editor',['homepage.manage']),
     as('admin','settings','Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
+    as('admin','module-manager','Module Manager','🧩','/dashboard/modules/admin/module-manager','admin.module-manager',['settings.manage'],'Administration'),
     as('manager','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
     as('manager','estimate-management-center','Estimate & Quote Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage'],'Operations'),
     as('manager','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',['ai.photo-estimate.use'],'Operations'),
@@ -58,13 +60,12 @@
     as('client','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',[],'Operations'),
     as('client','quotes','My Quotes','💰','/dashboard/modules/client/quotes','client.quotes'),
     as('client','invoices','My Invoices','🧾','/dashboard/modules/client/invoices','client.invoices'),
-    as('client','project-updates','Project Updates','📈','/dashboard/modules/client/project-updates','client.project-updates'),
     as('client','properties','Properties','🏡','/dashboard/modules/client/properties','client.properties'),
     as('client','profile','Profile','👤','/dashboard/modules/client/profile','client.profile'),
   ];
   const workspaceLabels = { owner:'👑 Owner', admin:'🛠 Admin', manager:'📋 Manager', worker:'👷 Worker', client:'🏠 Client' };
   const workspaceOrder = ['owner','admin','manager','worker','client'];
-  const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null };
+  const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null, moduleRegistry:null, moduleFailures:new Set() };
   const permissionKeys = () => state.user?.permissions?.permissionKeys || state.user?.permissionKeys || [];
   const hasAllPermissions = (perms = []) => {
     if (!perms.length || state.user?.roles?.includes('owner')) return true;
@@ -82,7 +83,18 @@
     if (permissionKeys().includes('dashboard.view.client') || permissionKeys().includes('client.tools')) keys.add('client');
     return workspaceOrder.filter((workspace) => keys.has(workspace));
   };
-  const moduleAllowed = (def) => allowedWorkspaces().includes(def.role) && hasAllPermissions(def.permissions);
+  const registryKeysFor = (def) => [def.id, def.registerId, `${def.role}.${def.slug}`, def.slug].filter(Boolean);
+  const registryEntryFor = (def) => {
+    if (!state.moduleRegistry) return null;
+    return registryKeysFor(def).map((key) => state.moduleRegistry[key]).find(Boolean) || null;
+  };
+  const moduleEnabled = (def) => {
+    if (def.slug === 'module-manager') return true;
+    const entry = registryEntryFor(def);
+    if (!entry) return true;
+    return entry.enabled !== false && (!entry.workspace || entry.workspace === def.role);
+  };
+  const moduleAllowed = (def) => allowedWorkspaces().includes(def.role) && hasAllPermissions(def.permissions) && moduleEnabled(def);
   const moduleFor = (workspace, slug) => defs.find((def) => def.role === workspace && def.slug === slug && moduleAllowed(def));
   const modulesForWorkspace = (workspace) => defs.filter((def) => def.role === workspace && moduleAllowed(def));
   const defaultModuleFor = (workspace) => moduleFor(workspace, 'overview') || modulesForWorkspace(workspace)[0];
@@ -179,11 +191,23 @@
     renderNav();
     await go(defaultModuleFor(workspace)?.id);
   }
-  async function go(id) {
+  async function go(id, options = {}) {
     const requested = defs.find((def) => def.id === id);
+    if (requested && allowedWorkspaces().includes(requested.role) && hasAllPermissions(requested.permissions) && !moduleEnabled(requested)) {
+      await cleanupCurrentModule();
+      state.currentWorkspace = requested.role;
+      state.currentView = requested.role;
+      state.currentModule = requested.id;
+      history.replaceState(null, '', `#${requested.id}`);
+      markActive();
+      document.getElementById('workspace-header').innerHTML = `<div class="workspace-title-card"><span class="pill">${workspaceLabels[state.currentWorkspace]} Workspace · ${requested.category || 'Business'}</span><h1>${escapeHtml(requested.title)}</h1><p>This module is currently disabled.</p></div>`;
+      document.getElementById('module-root').innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>Module disabled</h2><p>${escapeHtml(requested.title)} has been disabled in Module Manager. Ask an owner/admin with settings permission to enable it.</p></article></section>`;
+      renderNav();
+      return;
+    }
     const def = requested && moduleAllowed(requested) ? requested : defaultModuleFor(currentWorkspace());
     if (!def) return;
-    if (state.currentModule === def.id && state.currentModuleInstance) return;
+    if (!options.force && state.currentModule === def.id && state.currentModuleInstance) return;
     await cleanupCurrentModule();
     state.currentWorkspace = def.role;
     state.currentView = def.role;
@@ -194,34 +218,66 @@
     const moduleRootElement = document.getElementById('module-root');
     const root = moduleRootElement?.querySelector ? moduleRootElement : document.querySelector('[data-module-root]');
     if (!root?.querySelector) throw new TypeError('Dashboard module root element was not found.');
+    const showModuleError = (error, stage = 'load') => {
+      const failureKey = `${def.id}:${stage}:${error?.message || 'error'}`;
+      if (!state.moduleFailures.has(failureKey)) {
+        state.moduleFailures.add(failureKey);
+        console.error(`Dashboard module ${stage} failed for ${def.id}`, error);
+      }
+      root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>${escapeHtml(def.title)} could not load</h2><p>${escapeHtml(error?.message || 'The module failed to load. The rest of the dashboard is still available.')}</p><div class="action-row"><button class="btn" type="button" data-retry-module="${escapeHtml(def.id)}">Retry</button><button class="btn secondary" type="button" data-module="${escapeHtml(defaultModuleFor(state.currentWorkspace)?.id || '')}">Go to overview</button></div></article></section>`;
+      root.querySelector('[data-retry-module]')?.addEventListener('click', async () => { state.moduleFailures.delete(`${def.id}:retry:${error?.message || 'error'}`); state.currentModuleInstance = null; await go(def.id, { force:true }).catch((retryError) => showModuleError(retryError, 'retry')); });
+    };
     root.innerHTML = `<div class="card">Loading ${escapeHtml(def.title)}...</div>`;
     if (!window.TAForms) {
-      root.innerHTML = '<section class="module-page stack"><article class="card module-error"><h2>Dashboard forms unavailable</h2><p>Required form utility failed to load. Refresh the page or contact admin.</p></article></section>';
+      showModuleError(new Error('Required form utility failed to load. Refresh the page or contact admin.'), 'dependency');
       window.TAUi?.toast?.('Required form utility failed to load. Refresh the page or contact admin.', 'error');
       return;
     }
     state.currentController = new AbortController();
-    const mod = await TAModules.load(def);
-    state.currentModuleInstance = mod;
-    root.replaceChildren();
-    const mountContext = { root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
-    if (mod?.mount) await mod.mount(mountContext);
-    renderNav();
-    window.scrollTo({ top:0, behavior:'smooth' });
+    try {
+      const mod = await TAModules.load(def);
+      state.currentModuleInstance = mod;
+      root.replaceChildren();
+      const mountContext = { root: moduleRootElement, element: moduleRootElement, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
+      if (mod?.mount) await mod.mount(mountContext);
+      state.moduleFailures.forEach((key) => { if (String(key).startsWith(`${def.id}:`)) state.moduleFailures.delete(key); });
+      renderNav();
+      window.scrollTo({ top:0, behavior:'smooth' });
+    } catch (error) {
+      state.currentModuleInstance = null;
+      showModuleError(error);
+      window.TAUi?.toast?.(`${def.title} failed to load.`, 'error');
+    }
+  }
+  async function refreshModuleRegistry() {
+    try {
+      const result = await TAApi.get('/api/admin/modules');
+      state.moduleRegistry = Object.fromEntries((result.modules || []).flatMap((module) => [[module.id, module], [module.moduleKey, module]].filter(([key]) => key)));
+      if (document.getElementById('dashboard-sidebar')) renderNav();
+    } catch (error) {
+      state.moduleRegistry = null;
+    }
   }
   async function start() {
     if (!await TACompany.requireInstalled()) return;
+    await window.TATheme?.loadGlobal?.();
     state.company = await TACompany.load();
     const me = await TAAuth.me().catch(() => ({ authenticated:false }));
     if (!me.authenticated) { location.href = '/login/'; return; }
+    if (me.user?.accountSetupComplete === false) { location.href = '/account-setup/'; return; }
     state.user = me.user;
+    await refreshModuleRegistry();
     state.currentWorkspace = userRoles().includes('owner') ? 'owner' : userRoles().includes('manager') ? 'manager' : (state.user?.permissions?.defaultView && allowedWorkspaces().includes(state.user.permissions.defaultView) ? state.user.permissions.defaultView : allowedWorkspaces()[0] || 'client');
     document.getElementById('dashboard-topbar').innerHTML = `<div><strong>${state.company.displayName || 'Contractor Portal'}</strong><br><small>${userRoles().join(', ') || 'user'}</small></div><button class="btn secondary" id="logout">Log out</button>`;
     document.getElementById('logout').onclick = async () => { await TAAuth.logout(); location.href = '/login/'; };
     renderNav();
     const requested = location.hash.slice(1);
-    const requestedDef = defs.find((def) => def.id === requested && moduleAllowed(def));
-    await go(requestedDef?.id || defaultModuleFor(state.currentWorkspace)?.id);
+    await go(requested || defaultModuleFor(state.currentWorkspace)?.id).catch((error) => { console.error('Initial dashboard module failed to load', error); const root = document.getElementById('module-root'); if (root) root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>Dashboard module could not load</h2><p>${escapeHtml(error?.message || 'Open another module or retry.')}</p><button class="btn" type="button" data-retry-start>Retry</button></article></section>`; root?.querySelector('[data-retry-start]')?.addEventListener('click', () => go(requested || defaultModuleFor(state.currentWorkspace)?.id)); });
   }
-  window.TADashboardRouter = { start, go, switchWorkspace, state, defs, allowedWorkspaces };
+  window.TAWorkflow?.on?.('*', (event) => {
+    if (/^(quote|workorder|invoice|payment):/.test(event) && state.currentModuleInstance?.refresh) {
+      Promise.resolve(state.currentModuleInstance.refresh()).catch((error) => console.warn('Module refresh after workflow event failed', event, error));
+    }
+  });
+  window.TADashboardRouter = { start, go, switchWorkspace, state, defs, allowedWorkspaces, refreshModuleRegistry, renderNav };
 })();

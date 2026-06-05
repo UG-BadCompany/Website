@@ -13,7 +13,7 @@
     title: 'Roles / Ranks',
     icon: '🛡️',
     permissions: ['roles.manage', 'admin.roles.manage'],
-    async mount({ root, api, router }) {
+    async mount({ root, api, router }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
       const isOwnerConsolidated = router?.state?.currentModule === 'owner.permissions-workspaces';
       let data = { roles: [], permissions: [] };
       let activeTab = 'roles';
