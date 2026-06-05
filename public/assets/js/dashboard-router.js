@@ -1,7 +1,7 @@
 (() => {
   const categoryFor = (workspace, slug) => {
     if (['company-management','customers','users','roles','permissions-workspaces','workers'].includes(slug)) return 'People';
-    if (['estimate-management-center','estimate-request-center','work-orders','schedule','inventory','materials','finance','invoices','requests','quotes','jobs','project-updates','properties','maintenance-plans'].includes(slug)) return 'Operations';
+    if (['estimate-management-center','estimate-request-center','photo-estimate','work-orders','schedule','inventory','materials','finance','invoices','requests','quotes','jobs','project-updates','properties','maintenance-plans'].includes(slug)) return 'Operations';
     if (['ai-knowledge','ai-tools','troubleshooting'].includes(slug)) return 'AI';
     if (['theme-manager','brand-settings','homepage-editor','settings','system-center','audit-logs','reports'].includes(slug)) return 'Administration';
     if (workspace === 'owner') return 'Business';
@@ -17,8 +17,10 @@
     as('owner','homepage-editor','Homepage Editor','🏠','/dashboard/modules/admin/homepage-editor','admin.homepage-editor',['homepage.manage']),
     as('owner','audit-logs','Audit Logs','📋','/dashboard/modules/admin/settings','admin.settings',['reports.view']),
     as('owner','estimate-management-center','Estimate & Quote Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage'],'Operations'),
+    as('owner','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',['ai.photo-estimate.use'],'Operations'),
     as('admin','overview','Overview','🏠','/dashboard/modules/admin/overview'),
     as('admin','estimate-management-center','Estimate & Quote Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage'],'Operations'),
+    as('admin','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',['ai.photo-estimate.use'],'Operations'),
     as('admin','work-orders','Work Orders','🔧','/dashboard/modules/admin/work-orders','admin.work-orders',['requests.manage']),
     as('admin','schedule','Schedule','📅','/dashboard/modules/admin/schedule','admin.schedule',['scheduling.manage']),
     as('admin','customers','Customers','👥','/dashboard/modules/admin/customers','admin.customers',['customers.manage']),
@@ -34,6 +36,7 @@
     as('admin','settings','Settings','⚙️','/dashboard/modules/admin/settings','admin.settings',['settings.manage']),
     as('manager','overview','Overview','🏠','/dashboard/modules/admin/overview','admin.overview'),
     as('manager','estimate-management-center','Estimate & Quote Center','💰','/dashboard/modules/admin/quotes','admin.quotes',['quotes.manage'],'Operations'),
+    as('manager','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',['ai.photo-estimate.use'],'Operations'),
     as('manager','work-orders','Work Orders','🔧','/dashboard/modules/admin/work-orders','admin.work-orders',['requests.manage']),
     as('manager','schedule','Schedule','📅','/dashboard/modules/admin/schedule','admin.schedule',['scheduling.manage']),
     as('manager','customers','Customers','👥','/dashboard/modules/admin/customers','admin.customers',['customers.manage']),
@@ -46,10 +49,12 @@
     as('worker','schedule','Schedule','📅','/dashboard/modules/worker/schedule','worker.schedule'),
     as('worker','materials','Materials','📦','/dashboard/modules/worker/materials','worker.materials'),
     as('worker','photos','Photos','📸','/dashboard/modules/worker/photos','worker.photos'),
+    as('worker','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',['ai.photo-estimate.use'],'Operations'),
     as('worker','notes','Notes','📝','/dashboard/modules/worker/notes','worker.notes'),
     as('worker','troubleshooting','Troubleshooting','🤖','/dashboard/modules/worker/troubleshooting','worker.troubleshooting'),
     as('client','overview','Overview','🏠','/dashboard/modules/client/overview','client.overview'),
     as('client','requests','My Requests','📋','/dashboard/modules/client/requests','client.requests'),
+    as('client','photo-estimate','AI Photo Estimate','📸','/dashboard/modules/admin/photo-estimate','admin.photo-estimate',[],'Operations'),
     as('client','quotes','My Quotes','💰','/dashboard/modules/client/quotes','client.quotes'),
     as('client','invoices','My Invoices','🧾','/dashboard/modules/client/invoices','client.invoices'),
     as('client','project-updates','Project Updates','📈','/dashboard/modules/client/project-updates','client.project-updates'),
@@ -87,32 +92,32 @@
     const navByWorkspace = {
       owner: [
         { label:'🏠 Home', module: pick('overview') },
-        { label:'💰 Estimates', module: pick('estimate-management-center') },
+        { label:'📸 Photo AI', module: pick('photo-estimate', 'estimate-management-center') },
         { label:'🔧 Jobs', module: pick('work-orders', 'system-center') },
         { label:'☰ More', more:true },
       ],
       admin: [
         { label:'🏠 Home', module: pick('overview') },
-        { label:'💰 Estimates', module: pick('estimate-management-center') },
+        { label:'📸 Photo AI', module: pick('photo-estimate', 'estimate-management-center') },
         { label:'🔧 Jobs', module: pick('work-orders') },
         { label:'☰ More', more:true },
       ],
       manager: [
         { label:'🏠 Home', module: pick('overview') },
-        { label:'💰 Estimates', module: pick('estimate-management-center') },
+        { label:'📸 Photo AI', module: pick('photo-estimate', 'estimate-management-center') },
         { label:'🔧 Jobs', module: pick('work-orders') },
         { label:'☰ More', more:true },
       ],
       client: [
         { label:'🏠 Home', module: pick('overview') },
-        { label:'📋 Requests', module: pick('requests') },
+        { label:'📸 Photo AI', module: pick('photo-estimate', 'requests') },
         { label:'💰 Quotes', module: pick('quotes') },
         { label:'☰ More', more:true },
       ],
       worker: [
         { label:'🏠 Home', module: pick('overview') },
         { label:'🔧 Jobs', module: pick('jobs') },
-        { label:'📅 Schedule', module: pick('schedule') },
+        { label:'📸 Photo AI', module: pick('photo-estimate', 'schedule') },
         { label:'☰ More', more:true },
       ],
     };

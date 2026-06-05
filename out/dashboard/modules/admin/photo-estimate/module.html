@@ -1,0 +1,27 @@
+<section class="photo-estimate-module" data-photo-estimate>
+  <div class="photo-estimate-shell">
+    <aside class="photo-estimate-upload card">
+      <div class="module-header compact"><div><p class="eyebrow">AI Photo Estimate</p><h2>Job photos + intake</h2><p>Upload safe image files, add scope details, then request server-side AI analysis.</p></div><span class="status-badge" data-pe-status>Draft</span></div>
+      <label class="photo-dropzone" for="pe-photo-input"><input id="pe-photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden><strong>📸 Upload Photos</strong><span>JPEG, PNG, WebP, HEIC/HEIF · max 8 MB each</span></label>
+      <div class="photo-preview-grid" data-pe-photo-grid></div>
+      <div class="photo-estimate-form grid grid-2">
+        <label>Service category<input data-pe-field="serviceCategory" placeholder="HVAC, plumbing, ceiling tile..."></label>
+        <label>Address / property<input data-pe-field="propertyAddress" placeholder="Property address or unit"></label>
+        <label class="wide">Job description<textarea data-pe-field="description" rows="4" placeholder="What should be repaired, replaced, installed, or diagnosed?"></textarea></label>
+        <label>Measurements if known<input data-pe-field="measurements" placeholder="Size, height, quantity, model #"></label>
+        <label>Preferred product/material<input data-pe-field="preferredMaterial" placeholder="Brand, finish, tile type..."></label>
+        <label>Preferred timeframe<input data-pe-field="preferredTimeframe" placeholder="ASAP, this week, flexible"></label>
+        <label>Optional budget<input data-pe-field="budget" placeholder="$"></label>
+        <label class="wide">Notes<textarea data-pe-field="notes" rows="3" placeholder="Access, pets, shutoffs, tenant notes..."></textarea></label>
+      </div>
+      <div class="button-row wrap"><button class="btn" data-pe-action="save">Save Draft</button><button class="btn secondary" data-pe-action="manual">Create Manual Quote</button><button class="btn" data-pe-action="analyze">Analyze Photos</button></div>
+    </aside>
+    <main class="photo-estimate-results">
+      <section class="card photo-step-card"><div class="module-header compact"><div><p class="eyebrow">Workflow</p><h2>Review → edit → quote</h2></div></div><div class="photo-workflow"><span>1 Upload</span><span>2 Describe</span><span>3 AI Analysis</span><span>4 Edit Draft</span><span>5 Convert</span><span>6 Send</span></div></section>
+      <section class="card" data-pe-client-card><h3>Client status</h3><p>Request received. AI may ask optional questions. Estimate is being reviewed by the team.</p></section>
+      <section class="card ai-findings-card"><div class="module-header compact"><div><p class="eyebrow">Admin / Manager review</p><h2>AI photo findings</h2></div><button class="btn secondary" data-pe-action="recalculate">Recalculate AI</button></div><div data-pe-findings class="photo-estimate-empty">No AI analysis yet. Upload photos and click Analyze Photos.</div></section>
+      <section class="card"><div class="module-header compact"><div><p class="eyebrow">Editable quote draft</p><h2>Labor & materials</h2></div><button class="btn secondary" data-pe-action="add-labor">Add Labor</button><button class="btn secondary" data-pe-action="add-material">Add Material</button></div><div class="line-editor" data-pe-lines></div><div class="pricing-panel" data-pe-pricing></div><div class="button-row wrap"><button class="btn secondary" data-pe-action="request-info">Request More Info</button><button class="btn" data-pe-action="convert">Convert to Quote</button><button class="btn secondary" data-pe-action="preview">Preview Client Quote</button><button class="btn" data-pe-action="send">Send Quote</button></div></section>
+      <section class="photo-future-grid"><article class="card disabled-feature"><h3>Before / After Visualization</h3><p>Coming soon or disabled until configured. Future hook for AI-generated rendering preview.</p></article><article class="card disabled-feature"><h3>3D Room Scan</h3><p>Coming soon / device support required. Future hook for phone LiDAR and room scanning.</p></article></section>
+    </main>
+  </div>
+</section>
