@@ -230,3 +230,25 @@
   box-shadow: none;
   background: transparent;
 }
+
+/* Theme-safe troubleshooting audit overrides. */
+.ai-troubleshooting-2 .technician-modes article,
+.ai-troubleshooting-2 .trouble-block,
+.ai-troubleshooting-2 .analysis-grid span,
+.ai-troubleshooting-2 .research-status,
+.ai-troubleshooting-2 .research-pill {
+  background: var(--color-surface) !important;
+  color: var(--color-text);
+  border-color: var(--color-border) !important;
+}
+
+.ai-troubleshooting-2 .analysis-grid span,
+.ai-troubleshooting-2 .research-status {
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-background)) !important;
+}
+
+.ai-troubleshooting-2 .analysis-grid strong,
+.ai-troubleshooting-2 .trouble-block h4,
+.ai-troubleshooting-2 .research-status h4 {
+  color: var(--color-text) !important;
+}
