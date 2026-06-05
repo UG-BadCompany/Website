@@ -353,13 +353,13 @@ const callOpenAI = async ({ payload, research }) => {
       openai_live_search_used: actualWebSearchUsed,
       openai_live_search_requested: usedSearchTools,
       openai_live_search_unavailable: usedSearchTools && !actualWebSearchUsed,
-      fallback_search_used: Boolean(fallbackResearch.research_metadata?.fallback_search_used) || (usedSearchTools && !actualWebSearchUsed),
+      fallback_search_used: Boolean(fallbackResearch.research_metadata?.fallback_search_used),
       serpapi_used: Boolean(fallbackResearch.research_metadata?.serpapi_used),
       internal_catalog_used: true,
       sources: [...priorSources, ...sourcesFromTool],
       pricing_confidence_reason: actualWebSearchUsed
         ? (parsed.research_metadata?.pricing_confidence_reason || 'OpenAI Responses API web_search was used for live pricing support.')
-        : `OpenAI web_search was ${usedSearchTools ? 'requested but did not execute' : 'disabled'}; confidence was reduced and internal catalog/fallback pricing must be reviewed.`,
+        : `OpenAI Responses API completed with ${usedSearchTools ? 'web_search requested but no tool call returned' : 'web_search disabled'}; internal catalog and historical context were used for pricing review.`,
       openai_model: OPENAI_MODEL,
       responses_api_used: true,
     };
