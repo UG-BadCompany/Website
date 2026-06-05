@@ -3,7 +3,7 @@
     <aside class="photo-estimate-upload card">
       <div class="module-header compact"><div><p class="eyebrow">AI Photo Estimate</p><h2>Job photos + intake</h2><p>Upload safe image files, add scope details, then request server-side AI analysis.</p></div><span class="status-badge" data-pe-status>Draft</span></div>
       <label class="photo-dropzone" for="pe-photo-input"><input id="pe-photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden><strong>📸 Upload Photos</strong><span>JPEG, PNG, WebP, HEIC/HEIF · max 8 MB each</span></label>
-      <div class="photo-preview-grid" data-pe-photo-grid></div>
+      <label class="field"><span>Hosted image URLs</span><textarea id="pe-photo-url-input" rows="3" placeholder="File upload storage is not configured. Paste hosted image URLs, one per line."></textarea></label><button class="btn secondary" type="button" id="pe-add-photo-urls">Add Hosted URLs</button><div class="photo-preview-grid" data-pe-photo-grid></div>
       <div class="photo-estimate-form grid grid-2">
         <label>Service category<input data-pe-field="serviceCategory" placeholder="HVAC, plumbing, ceiling tile..."></label>
         <label>Address / property<input data-pe-field="propertyAddress" placeholder="Property address or unit"></label>

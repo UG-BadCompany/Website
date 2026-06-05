@@ -5,6 +5,7 @@ const STAFF_ROLES = new Set(['owner', 'admin', 'manager', 'worker']);
 const MAX_PHOTOS = 10;
 const MAX_DATA_URL_CHARS = 11_500_000;
 const IMAGE_RE = /^data:image\/(jpeg|png|webp|heic|heif);base64,[a-z0-9+/=\r\n]+$/i;
+const HOSTED_IMAGE_RE = /^https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp|gif)(?:[?#][^\s]*)?$/i;
 
 const asArray = (value) => Array.isArray(value) ? value : value ? [value] : [];
 const toCents = (value) => Math.round(Math.max(0, Number(value || 0)) * 100);
@@ -13,7 +14,7 @@ const readCents = (line = {}, keys = []) => {
   return null;
 };
 const cleanArray = (items, limit = 80) => asArray(items).map((item) => typeof item === 'string' ? clean(item, 1000) : item).filter(Boolean).slice(0, limit);
-const normalizePhotos = (photos = []) => asArray(photos).slice(0, MAX_PHOTOS).map((photo) => ({ id: clean(photo.id, 80) || crypto.randomUUID(), name: clean(photo.name, 180), type: clean(photo.type, 80), size: Math.max(0, Number(photo.size || 0)), dataUrl: clean(photo.dataUrl || photo.url, MAX_DATA_URL_CHARS) })).filter((photo) => IMAGE_RE.test(photo.dataUrl) && photo.size <= 8 * 1024 * 1024);
+const normalizePhotos = (photos = []) => asArray(photos).slice(0, MAX_PHOTOS).map((photo) => ({ id: clean(photo.id, 80) || crypto.randomUUID(), name: clean(photo.name, 180), type: clean(photo.type, 80), size: Math.max(0, Number(photo.size || 0)), dataUrl: clean(photo.dataUrl || photo.url || photo.fileUrl, MAX_DATA_URL_CHARS), url: clean(photo.url || photo.fileUrl || photo.dataUrl, MAX_DATA_URL_CHARS) })).filter((photo) => (IMAGE_RE.test(photo.dataUrl) || HOSTED_IMAGE_RE.test(photo.url)) && photo.size <= 8 * 1024 * 1024);
 const normalizeLine = (line = {}, type = 'labor') => {
   const quantity = Number(line.quantity ?? line.hours ?? 1) || 1;
   const unitCostCents = readCents(line, ['unitCostCents','unit_cost_cents','rateCents','rate_cents']) ?? toCents(line.unitCost ?? line.unit_cost ?? line.rate ?? 0);
@@ -88,6 +89,15 @@ export default async (request) => {
     const payload = normalizePayload(body);
     let row = await upsertPhotoEstimate(db, context, payload);
     if (!row) return json(404, { ok: false, message: 'Photo estimate not found.' });
+    for (const photo of payload.photoUrls) {
+      const fileUrl = photo.url || photo.dataUrl;
+      if (!fileUrl) continue;
+      await db.sql`
+        insert into files (owner_id, job_request_id, request_id, customer_id, path, file_path, file_url, file_name, mime_type, file_type, size_bytes, file_size, photo_type, file_category, visibility, source_context, quote_id, work_order_id, photo_estimate_id, metadata)
+        values (${context.session.user_id}, ${payload.requestId || null}, ${payload.requestId || null}, ${payload.customerId || context.session.user_id}, ${fileUrl}, ${fileUrl}, ${fileUrl}, ${photo.name || 'photo-estimate-image'}, ${photo.type || 'image/url'}, ${photo.type || 'image/url'}, ${photo.size || null}, ${photo.size || null}, ${'photo_estimate'}, ${'photo_estimate'}, ${context.isStaff ? 'worker_visible' : 'client_visible'}, ${'photo_estimate'}, ${payload.quoteId || null}, ${payload.workOrderId || null}, ${row.id}, ${JSON.stringify({ source: 'photo_estimates', photoId: photo.id })}::jsonb)
+      `;
+    }
+    if (payload.photoUrls.length) await db.sql`insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata) values (${context.session.user_id}, 'photo.uploaded', 'photo_estimate', ${row.id}, ${JSON.stringify({ status: payload.status, photoCount: payload.photoUrls.length })}::jsonb)`;
     let quote = null;
     const action = clean(body.action, 80);
     if (request.method === 'PATCH' && action === 'request_more_info') [row] = await db.sql`update photo_estimates set status = 'needs_more_info', updated_at = now() where id = ${row.id} returning *`;
@@ -97,7 +107,7 @@ export default async (request) => {
       if (quoteId && context.isStaff) await db.sql`update quotes set status = 'sent', sent_at = coalesce(sent_at, now()), updated_at = now() where id = ${quoteId}`;
       [row] = await db.sql`update photo_estimates set status = 'sent_to_client', updated_at = now() where id = ${row.id} returning *`;
     }
-    return json(request.method === 'POST' ? 201 : 200, { ok: true, photoEstimate: mapRow(row, context), quote });
+    return json(request.method === 'POST' ? 201 : 200, { ok: true, storageConfigured: false, storageMessage: 'File upload storage is not configured. Paste a hosted image URL or configure storage.', photoEstimate: mapRow(row, context), quote });
   } catch (error) {
     console.error('Photo estimates endpoint failed', error);
     return json(500, { ok: false, message: error.message || 'Could not manage photo estimates.' });

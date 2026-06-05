@@ -46,12 +46,24 @@ export const ensureCompanyTables = async (db) => {
   await db.sql`alter table company_settings add column if not exists contractor_license_number text`;
   await db.sql`alter table company_settings add column if not exists tax_id text`;
   await db.sql`alter table company_settings add column if not exists admin_settings jsonb not null default '{}'::jsonb`;
+  await db.sql`alter table company_settings add column if not exists license_key text`;
+  await db.sql`alter table company_settings add column if not exists license_status text not null default 'verification_disabled'`;
+  await db.sql`alter table company_settings add column if not exists license_verified_at timestamptz`;
+  await db.sql`alter table company_settings add column if not exists license_verification_provider text`;
+  await db.sql`alter table company_settings add column if not exists license_validation_enabled boolean not null default false`;
+
   await db.sql`
     create table if not exists platform_install (
       id uuid primary key default gen_random_uuid(), installed boolean not null default false, installed_at timestamptz, installed_by_user_id uuid, version text, setup_summary jsonb not null default '{}'::jsonb, installer_locked boolean not null default false, locked_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
     )`;
   await db.sql`alter table platform_install add column if not exists installer_locked boolean not null default false`;
   await db.sql`alter table platform_install add column if not exists locked_at timestamptz`;
+  await db.sql`alter table platform_install add column if not exists license_key text`;
+  await db.sql`alter table platform_install add column if not exists license_status text not null default 'verification_disabled'`;
+  await db.sql`alter table platform_install add column if not exists license_verified_at timestamptz`;
+  await db.sql`alter table platform_install add column if not exists license_verification_provider text`;
+  await db.sql`alter table platform_install add column if not exists license_validation_enabled boolean not null default false`;
+
 };
 
 const loadCompany = async (db) => { await ensureCompanyTables(db); const [row] = await db.sql`select * from company_settings order by created_at asc limit 1`; return row ? camel(row) : FALLBACK_COMPANY; };
