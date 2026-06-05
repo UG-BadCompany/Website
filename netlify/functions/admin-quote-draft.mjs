@@ -963,7 +963,7 @@ const cents = (value, assumeCents = false) => {
   return Number.isFinite(amount) ? (assumeCents ? Math.round(amount) : Math.round(amount * 100)) : 0;
 };
 const dollars = (centsValue) => Math.round(Number(centsValue || 0)) / 100;
-const lineTotal = (line = {}) => Number(line.total_cents ?? line.totalCents ?? 0) || Math.round((Number(line.quantity ?? line.hours ?? 1) || 1) * (Number(line.unit_cost_cents ?? line.unitCostCents ?? line.rate_cents ?? line.rateCents ?? 0) || 0) * (1 + (Number(line.markup_percent ?? line.markupPct ?? 0) || 0) / 100));
+const lineTotal = (line = {}) => Math.round((Number(line.quantity ?? line.hours ?? 1) || 1) * (Number(line.unit_cost_cents ?? line.unitCostCents ?? line.rate_cents ?? line.rateCents ?? 0) || 0) * (1 + (Number(line.markup_percent ?? line.markupPct ?? 0) || 0) / 100));
 const sumLines = (lines = []) => lines.reduce((sum, line) => sum + lineTotal(line), 0);
 const structuredPricingSummary = ({ laborLineItems = [], materialLineItems = [], otherPricing = {} }) => {
   const laborTotalCents = sumLines(laborLineItems);
@@ -988,14 +988,14 @@ const ensureStructuredQuoteLines = ({ quote = {}, laborLineItems = [], materialL
     const materialCents = allocatable - laborCents;
     const backfillRateCents = phoenixLaborRateByTime(new Date());
     const laborHours = Math.max(1, Math.round((laborCents / backfillRateCents) * 100) / 100);
-    labor = [{ name: 'Service labor / site prep / installation', description: 'Created from compatibility pricing. Review before sending.', hours: laborHours, quantity: laborHours, unit: 'hours', rate: dollars(backfillRateCents), rate_cents: backfillRateCents, unitCostCents: backfillRateCents, unit_cost_cents: backfillRateCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low', source: 'compatibility pricing backfill', backfilled: true }];
-    materials = [{ name: 'Materials, fasteners, and consumables allowance', description: 'Created from compatibility pricing. Review quantities and supplier costs before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'compatibility pricing backfill', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low', backfilled: true }];
-    warnings.push('Line items were backfilled from a compatibility total. Review before sending.');
+    labor = [{ name: 'Service labor / site prep / installation', description: 'Created from legacy pricing. Review before sending.', hours: laborHours, quantity: laborHours, unit: 'hours', rate: dollars(backfillRateCents), rate_cents: backfillRateCents, unitCostCents: backfillRateCents, unit_cost_cents: backfillRateCents, total: dollars(laborCents), totalCents: laborCents, total_cents: laborCents, confidence: 'low', source: 'legacy normalized pricing', backfilled: true }];
+    materials = [{ name: 'Materials, fasteners, and consumables allowance', description: 'Created from legacy pricing. Review quantities and supplier costs before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(materialCents), unitCostCents: materialCents, unit_cost_cents: materialCents, markup_percent: 0, markupPct: 0, total: dollars(materialCents), totalCents: materialCents, total_cents: materialCents, source: 'legacy normalized pricing', source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low', backfilled: true }];
+    warnings.push('Line items were normalized from a legacy total. Review before sending.');
   }
   summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
   if (desiredGrand > 0 && Math.abs(summary.grand_total_cents - desiredGrand) > 1 && desiredGrand > summary.grand_total_cents) {
     const delta = desiredGrand - summary.grand_total_cents;
-    materials.push({ name: 'Pricing allowance adjustment', description: 'Created from compatibility pricing. Review before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'compatibility pricing backfill', backfilled: true, source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
+    materials.push({ name: 'Pricing allowance adjustment', description: 'Created from legacy pricing. Review before sending.', quantity: 1, unit: 'allowance', unit_cost: dollars(delta), unitCostCents: delta, unit_cost_cents: delta, markup_percent: 0, markupPct: 0, total: dollars(delta), totalCents: delta, total_cents: delta, source: 'legacy normalized pricing', backfilled: true, source_url: '', last_checked: new Date().toISOString().slice(0, 10), confidence: 'low' });
     warnings.push('AI total did not match editable line totals. A reviewable pricing allowance adjustment was created.');
   }
   summary = structuredPricingSummary({ laborLineItems: labor, materialLineItems: materials, otherPricing: other });
