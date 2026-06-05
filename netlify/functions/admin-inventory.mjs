@@ -76,6 +76,8 @@ const normalizeInventoryPayload = (body = {}) => ({
   workerAssignment: clean(body.workerAssignment || body.workerUserId, 80),
   barcodeValue: clean(body.barcodeValue, 160),
   qrValue: clean(body.qrValue, 220),
+  imageUrl: clean(body.imageUrl || body.image_url || body.photoUrl || body.photo_url, 1000),
+  locationBin: clean(body.locationBin || body.location_bin || body.binLocation || body.bin_location, 180),
   aiQuoteCatalogKey: clean(body.aiQuoteCatalogKey, 160),
   notes: clean(body.notes, 1000),
   adjustmentType: normalizeAdjustmentType(body.adjustmentType),
@@ -130,6 +132,8 @@ const mapInventoryItem = (item) => {
     barcodeValue: item.barcode_value,
     qrValue: item.qr_value,
     aiQuoteCatalogKey: item.ai_quote_catalog_key,
+    imageUrl: item.image_url || '',
+    locationBin: item.location_bin || '',
     reorderStatus: item.reorder_status || 'ok',
     notes: item.notes,
     isActive: item.is_active !== false,
@@ -188,14 +192,14 @@ const loadPermissions = async (db, userId) => {
   const assignedPermissionKeys = await loadRolePermissionKeys(db, userId, {
     logPrefix: 'Failed to load inventory permissions; using role defaults',
   });
-  return { roleKeys, permissionKeys: getPermissionKeysForRoles(roleKeys, assignedPermissionKeys) };
+  return { roleKeys, permissionKeys: getPermissionKeysForRoles(roleKeys, assignedPermissionKeys?.length ? assignedPermissionKeys : null) };
 };
 
 const inventorySelectSql = `
   id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved,
   reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier,
   supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment,
-  barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+  barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
 `;
 
 const listInventory = async (db, { jobRequestId = '' } = {}) => {
@@ -203,7 +207,7 @@ const listInventory = async (db, { jobRequestId = '' } = {}) => {
     select id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved,
            reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier,
            supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment,
-           barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+           barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
     from inventory_items
     where is_active = true
     order by category nulls last, name
@@ -339,11 +343,11 @@ const createInventoryItem = async ({ db, session, payload }) => {
   const [item] = await db.sql`
     insert into inventory_items (name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved,
       reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number,
-      storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, notes, created_by)
+      storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, notes, created_by)
     values (${payload.name}, ${payload.sku || null}, ${payload.category || null}, ${payload.tradeType || null}, ${payload.itemType}, ${payload.unit}, ${payload.quantityOnHand}, ${payload.quantityReserved},
       ${payload.reorderPoint}, ${payload.reorderQuantity}, ${payload.unitCost}, ${payload.markupPercent}, ${payload.chargePrice}, ${payload.supplier || null}, ${payload.supplierPartNumber || null},
-      ${payload.storageLocation || null}, ${payload.locationType}, ${payload.truckAssignment || null}, ${payload.workerAssignment || null}, ${payload.barcodeValue || null}, ${payload.qrValue || null}, ${payload.aiQuoteCatalogKey || null}, ${payload.notes || null}, ${session.user_id})
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+      ${payload.storageLocation || null}, ${payload.locationType}, ${payload.truckAssignment || null}, ${payload.workerAssignment || null}, ${payload.barcodeValue || null}, ${payload.qrValue || null}, ${payload.imageUrl || null}, ${payload.locationBin || null}, ${payload.aiQuoteCatalogKey || null}, ${payload.notes || null}, ${session.user_id})
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
@@ -365,9 +369,9 @@ const updateInventoryItem = async ({ db, session, payload }) => {
         unit_cost = ${payload.unitCost}, markup_percent = ${payload.markupPercent}, charge_price = ${payload.chargePrice}, supplier = ${payload.supplier || null},
         supplier_part_number = ${payload.supplierPartNumber || null}, storage_location = ${payload.storageLocation || null}, location_type = ${payload.locationType},
         truck_assignment = ${payload.truckAssignment || null}, worker_assignment = ${payload.workerAssignment || null}, barcode_value = ${payload.barcodeValue || null},
-        qr_value = ${payload.qrValue || null}, ai_quote_catalog_key = ${payload.aiQuoteCatalogKey || null}, notes = ${payload.notes || null}, updated_at = now()
+        qr_value = ${payload.qrValue || null}, image_url = ${payload.imageUrl || null}, location_bin = ${payload.locationBin || null}, ai_quote_catalog_key = ${payload.aiQuoteCatalogKey || null}, notes = ${payload.notes || null}, updated_at = now()
     where id = ${payload.itemId} and is_active = true
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
   await db.sql`
@@ -382,7 +386,7 @@ const archiveInventoryItem = async ({ db, session, payload }) => {
   const [item] = await db.sql`
     update inventory_items set is_active = false, location_type = 'archived', updated_at = now()
     where id = ${payload.itemId} and is_active = true
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
   await db.sql`
@@ -399,7 +403,7 @@ const deleteInventoryItem = async ({ db, session, payload }) => {
   const [item] = await db.sql`
     delete from inventory_items
     where id = ${payload.itemId} and is_active = true
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
   await db.sql`
@@ -426,7 +430,7 @@ const adjustInventoryItem = async ({ db, session, payload }) => {
     update inventory_items
     set quantity_on_hand = quantity_on_hand + ${payload.quantityDelta}, updated_at = now()
     where id = ${payload.itemId} and is_active = true and quantity_on_hand + ${payload.quantityDelta} >= 0
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(422, { ok: false, message: 'Inventory item not found or not enough stock for this adjustment.' });
 
@@ -475,7 +479,7 @@ const reserveInventoryForJob = async ({ db, session, payload }) => {
     update inventory_items
     set quantity_reserved = quantity_reserved + ${payload.quantity}, updated_at = now()
     where id = ${payload.itemId} and is_active = true and (quantity_on_hand - quantity_reserved) >= ${payload.quantity}
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(422, { ok: false, message: 'Not enough available stock to reserve for this job.' });
   const [reservation] = await db.sql`
@@ -514,7 +518,7 @@ const releaseInventoryReservation = async ({ db, session, payload }) => {
     update inventory_items
     set quantity_reserved = greatest(quantity_reserved - ${quantity}, 0), updated_at = now()
     where id = ${payload.itemId} and is_active = true
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   await insertMovement({ db, session, payload, itemId: payload.itemId, movementType: 'released_from_job', quantity, fromLocation: 'job_site', toLocation: item?.location_type || 'main_warehouse', notes: payload.adjustmentNote || 'Unused reserved material released' });
   await db.sql`
@@ -530,7 +534,7 @@ const transferInventory = async ({ db, session, payload }) => {
     update inventory_items
     set location_type = ${payload.toLocation}, storage_location = ${payload.toLocation}, truck_assignment = ${payload.truckAssignment || null}, worker_assignment = ${payload.workerUserId || null}, updated_at = now()
     where id = ${payload.itemId} and is_active = true
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
   const movementType = payload.workerUserId ? 'assigned_to_worker' : (/truck/i.test(payload.toLocation) ? 'assigned_to_truck' : 'stock_added');
@@ -560,7 +564,7 @@ const recordCycleCount = async ({ db, session, payload }) => {
   const [item] = await db.sql`
     update inventory_items set quantity_on_hand = ${payload.countedQuantity}, updated_at = now()
     where id = ${payload.itemId}
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   await insertMovement({ db, session, payload, itemId: item.id, movementType: 'adjusted_after_count', quantity: Math.abs(variance), fromLocation: payload.locationType, toLocation: payload.locationType, notes: payload.countReason });
   await db.sql`
@@ -577,7 +581,7 @@ const markReorderStatus = async ({ db, session, payload }) => {
     update inventory_items
     set reorder_status = ${status}, updated_at = now()
     where id = ${payload.itemId} and is_active = true
-    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
+    returning id, name, sku, category, trade_type, item_type, unit, quantity_on_hand, quantity_reserved, reorder_point, reorder_quantity, unit_cost, markup_percent, charge_price, supplier, supplier_part_number, storage_location, location_type, truck_assignment, worker_assignment, barcode_value, qr_value, image_url, location_bin, ai_quote_catalog_key, reorder_status, notes, is_active, created_at, updated_at
   `;
   if (!item) return json(404, { ok: false, message: 'Inventory item not found.' });
   await db.sql`
