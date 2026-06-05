@@ -65,7 +65,7 @@
   ];
   const workspaceLabels = { owner:'👑 Owner', admin:'🛠 Admin', manager:'📋 Manager', worker:'👷 Worker', client:'🏠 Client' };
   const workspaceOrder = ['owner','admin','manager','worker','client'];
-  const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null, moduleRegistry:null };
+  const state = { currentView:null, currentModule:null, currentWorkspace:null, user:null, company:null, currentController:null, currentModuleInstance:null, moduleRegistry:null, moduleFailures:new Set() };
   const permissionKeys = () => state.user?.permissions?.permissionKeys || state.user?.permissionKeys || [];
   const hasAllPermissions = (perms = []) => {
     if (!perms.length || state.user?.roles?.includes('owner')) return true;
@@ -191,7 +191,7 @@
     renderNav();
     await go(defaultModuleFor(workspace)?.id);
   }
-  async function go(id) {
+  async function go(id, options = {}) {
     const requested = defs.find((def) => def.id === id);
     if (requested && allowedWorkspaces().includes(requested.role) && hasAllPermissions(requested.permissions) && !moduleEnabled(requested)) {
       await cleanupCurrentModule();
@@ -207,7 +207,7 @@
     }
     const def = requested && moduleAllowed(requested) ? requested : defaultModuleFor(currentWorkspace());
     if (!def) return;
-    if (state.currentModule === def.id && state.currentModuleInstance) return;
+    if (!options.force && state.currentModule === def.id && state.currentModuleInstance) return;
     await cleanupCurrentModule();
     state.currentWorkspace = def.role;
     state.currentView = def.role;
@@ -219,9 +219,13 @@
     const root = moduleRootElement?.querySelector ? moduleRootElement : document.querySelector('[data-module-root]');
     if (!root?.querySelector) throw new TypeError('Dashboard module root element was not found.');
     const showModuleError = (error, stage = 'load') => {
-      console.error(`Dashboard module ${stage} failed for ${def.id}`, error);
+      const failureKey = `${def.id}:${stage}:${error?.message || 'error'}`;
+      if (!state.moduleFailures.has(failureKey)) {
+        state.moduleFailures.add(failureKey);
+        console.error(`Dashboard module ${stage} failed for ${def.id}`, error);
+      }
       root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>${escapeHtml(def.title)} could not load</h2><p>${escapeHtml(error?.message || 'The module failed to load. The rest of the dashboard is still available.')}</p><div class="action-row"><button class="btn" type="button" data-retry-module="${escapeHtml(def.id)}">Retry</button><button class="btn secondary" type="button" data-module="${escapeHtml(defaultModuleFor(state.currentWorkspace)?.id || '')}">Go to overview</button></div></article></section>`;
-      root.querySelector('[data-retry-module]')?.addEventListener('click', () => go(def.id).catch((retryError) => showModuleError(retryError, 'retry')));
+      root.querySelector('[data-retry-module]')?.addEventListener('click', async () => { state.moduleFailures.delete(`${def.id}:retry:${error?.message || 'error'}`); state.currentModuleInstance = null; await go(def.id, { force:true }).catch((retryError) => showModuleError(retryError, 'retry')); });
     };
     root.innerHTML = `<div class="card">Loading ${escapeHtml(def.title)}...</div>`;
     if (!window.TAForms) {
@@ -236,6 +240,7 @@
       root.replaceChildren();
       const mountContext = { root: moduleRootElement, element: moduleRootElement, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
       if (mod?.mount) await mod.mount(mountContext);
+      state.moduleFailures.forEach((key) => { if (String(key).startsWith(`${def.id}:`)) state.moduleFailures.delete(key); });
       renderNav();
       window.scrollTo({ top:0, behavior:'smooth' });
     } catch (error) {
@@ -267,5 +272,10 @@
     const requested = location.hash.slice(1);
     await go(requested || defaultModuleFor(state.currentWorkspace)?.id).catch((error) => { console.error('Initial dashboard module failed to load', error); const root = document.getElementById('module-root'); if (root) root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>Dashboard module could not load</h2><p>${escapeHtml(error?.message || 'Open another module or retry.')}</p><button class="btn" type="button" data-retry-start>Retry</button></article></section>`; root?.querySelector('[data-retry-start]')?.addEventListener('click', () => go(requested || defaultModuleFor(state.currentWorkspace)?.id)); });
   }
+  window.TAWorkflow?.on?.('*', (event) => {
+    if (/^(quote|workorder|invoice|payment):/.test(event) && state.currentModuleInstance?.refresh) {
+      Promise.resolve(state.currentModuleInstance.refresh()).catch((error) => console.warn('Module refresh after workflow event failed', event, error));
+    }
+  });
   window.TADashboardRouter = { start, go, switchWorkspace, state, defs, allowedWorkspaces, refreshModuleRegistry, renderNav };
 })();

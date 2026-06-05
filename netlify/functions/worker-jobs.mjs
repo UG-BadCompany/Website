@@ -8,8 +8,9 @@ import {
   loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
-const WORKER_ASSIGNMENT_STATUSES = new Set(['assigned', 'in_progress', 'worker_completed', 'completed', 'blocked']);
+const WORKER_ASSIGNMENT_STATUSES = new Set(['assigned', 'scheduled', 'in_progress', 'worker_completed', 'completed', 'blocked']);
 
 const normalizeWorkerUpdatePayload = (body = {}) => ({
   assignmentId: clean(body.assignmentId, 80),
@@ -197,6 +198,8 @@ const listAssignments = async (db, context) => {
     join app_users workers on workers.id = worker_assignments.worker_id
     join job_requests on job_requests.id = worker_assignments.job_request_id
     left join properties on properties.id = job_requests.property_id
+    where worker_assignments.status = any(${WORKFLOW.workerActive})
+      and job_requests.status = any(${WORKFLOW.workOrderActive})
     order by worker_assignments.scheduled_date nulls last, worker_assignments.created_at desc
     limit 75
   ` : await db.sql`
@@ -239,6 +242,8 @@ const listAssignments = async (db, context) => {
     join job_requests on job_requests.id = worker_assignments.job_request_id
     left join properties on properties.id = job_requests.property_id
     where worker_assignments.worker_id = ${context.session.user_id}
+      and worker_assignments.status = any(${WORKFLOW.workerActive})
+      and job_requests.status = any(${WORKFLOW.workOrderActive})
     order by worker_assignments.scheduled_date nulls last, worker_assignments.created_at desc
     limit 75
   `;
@@ -334,7 +339,7 @@ const handlePatch = async ({ request, db, context }) => {
   if (payload.status === 'worker_completed' || payload.status === 'completed') {
     await db.sql`
       update job_requests
-      set status = ${'worker_completed'},
+      set status = ${'admin_review'},
           updated_at = now()
       where id = ${updatedAssignment.job_request_id}
         and status in ('assigned', 'scheduled', 'in_progress', 'accepted', 'waiting_assignment')

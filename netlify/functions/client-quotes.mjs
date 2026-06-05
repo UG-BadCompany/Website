@@ -8,6 +8,7 @@ import {
   loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
 
 const stripInternalClientText = (value = '') => clean(String(value || '')
@@ -25,13 +26,13 @@ const clientFacingSummary = (quote = {}) => {
   return stripInternalClientText(payload.scopeOfWork || customer.scope_of_work || structured.scope_of_work || quote.summary || '');
 };
 
-const WAITING_QUOTE_STATUSES = new Set(['sent', 'viewed']);
+const WAITING_QUOTE_STATUSES = new Set(WORKFLOW.clientQuoteActive);
 const DECISION_ACTIONS = new Set(['accept', 'decline', 'request_changes']);
 
 const deriveClientQuoteStatus = (quote = {}) => {
   const quoteStatus = String(quote.status || '').toLowerCase();
   const requestStatus = String(quote.job_request_status || '').toLowerCase();
-  if (quoteStatus === 'accepted' && ['completed', 'pending_review', 'waiting_payment'].includes(requestStatus)) {
+  if (quoteStatus === 'accepted' && ['closed', 'completed', 'admin_review', 'payment_pending', 'waiting_payment'].includes(requestStatus)) {
     return 'completed';
   }
   return quoteStatus || 'draft';
@@ -163,7 +164,7 @@ const listClientQuotes = async (db, userId) => {
     left join properties on properties.id = job_requests.property_id
       and properties.client_id = ${userId}
     where quotes.client_id = ${userId}
-      and quotes.status <> 'draft'
+      and quotes.status = any(${[...WORKFLOW.clientQuoteActive, ...WORKFLOW.clientQuoteHistory]})
     order by coalesce(quotes.sent_at, quotes.created_at) desc
     limit 25
   `;

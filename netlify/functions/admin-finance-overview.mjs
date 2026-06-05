@@ -6,6 +6,7 @@ import {
   loadDatabase,
   loadRolePermissionKeys,
 } from './auth-utils.mjs';
+import { isStatusIn } from './workflow-state.mjs';
 
 const cents = (value) => Number(value || 0);
 
@@ -21,8 +22,8 @@ const daysUntil = (dateValue) => {
 const buildPaymentPlan = (invoice) => {
   const amount = cents(invoice.amount_cents);
   const dueInDays = daysUntil(invoice.due_at);
-  const isOpen = invoice.status === 'open';
-  const isPaid = invoice.status === 'paid';
+  const isOpen = isStatusIn(invoice.status, 'invoiceActive');
+  const isPaid = isStatusIn(invoice.status, 'invoiceHistory');
   const hasCheckout = Boolean(invoice.provider_checkout_url);
   const overdue = isOpen && dueInDays !== null && dueInDays < 0;
   const highValue = amount >= 100000;
@@ -195,17 +196,34 @@ export default async (request) => {
       left join app_users on app_users.id = invoices.client_id
       left join job_requests on job_requests.id = invoices.job_request_id
       order by
-        case invoices.status when 'open' then 1 when 'paid' then 2 else 3 end,
+        case invoices.status when 'open' then 1 when 'payment_pending' then 1 when 'paid' then 2 when 'payment_verified' then 2 else 3 end,
         invoices.created_at desc
       limit 150
     `;
 
     const now = Date.now();
     const mapped = invoices.map(mapInvoice);
-    const openInvoices = mapped.filter((invoice) => invoice.status === 'open');
-    const paidInvoices = mapped.filter((invoice) => invoice.status === 'paid');
+    const openInvoices = mapped.filter((invoice) => isStatusIn(invoice.status, 'invoiceActive'));
+    const paidInvoices = mapped.filter((invoice) => isStatusIn(invoice.status, 'invoiceHistory'));
     const overdueInvoices = openInvoices.filter((invoice) => invoice.dueAt && new Date(invoice.dueAt).getTime() < now);
     const missingCheckout = openInvoices.filter((invoice) => !invoice.provider.checkoutUrl);
+
+    const payments = await db.sql`
+      select amount_cents, confirmed_at, payment_provider, provider_payment_id, provider_status, provider_receipt_url
+      from payments
+      order by confirmed_at desc
+      limit 100
+    `;
+    const quotes = await db.sql`
+      select status, amount_cents, created_at, accepted_at
+      from quotes
+      where status <> 'cancelled'
+      order by created_at desc
+      limit 200
+    `;
+    const since = (days) => Date.now() - days * 24 * 60 * 60 * 1000;
+    const paymentCentsSince = (days) => payments.filter((payment) => payment.confirmed_at && new Date(payment.confirmed_at).getTime() >= since(days)).reduce((sum, payment) => sum + cents(payment.amount_cents), 0);
+    const acceptedQuotes = quotes.filter((quote) => quote.status === 'accepted');
 
     const stats = {
       openCount: openInvoices.length,
@@ -216,6 +234,13 @@ export default async (request) => {
       paidAmountCents: paidInvoices.reduce((sum, invoice) => sum + cents(invoice.amountCents), 0),
       overdueAmountCents: overdueInvoices.reduce((sum, invoice) => sum + cents(invoice.amountCents), 0),
       squareConfigured: Boolean(process.env.SQUARE_ACCESS_TOKEN && process.env.SQUARE_LOCATION_ID),
+      revenueTodayCents: paymentCentsSince(1),
+      revenueWeekCents: paymentCentsSince(7),
+      revenueMonthCents: paymentCentsSince(31),
+      averageQuoteValueCents: quotes.length ? Math.round(quotes.reduce((sum, quote) => sum + cents(quote.amount_cents), 0) / quotes.length) : 0,
+      acceptedQuoteValueCents: acceptedQuotes.reduce((sum, quote) => sum + cents(quote.amount_cents), 0),
+      collectedRevenueCents: payments.reduce((sum, payment) => sum + cents(payment.amount_cents), 0),
+      uncollectedRevenueCents: openInvoices.reduce((sum, invoice) => sum + cents(invoice.amountCents), 0),
     };
 
     return json(200, {
@@ -233,6 +258,8 @@ export default async (request) => {
       overdueInvoices: overdueInvoices.slice(0, 25),
       missingCheckout: missingCheckout.slice(0, 25),
       paidInvoices: paidInvoices.slice(0, 25),
+      recentPayments: payments.slice(0, 20).map((payment) => ({ amountCents: payment.amount_cents, confirmedAt: payment.confirmed_at, provider: payment.payment_provider || 'manual', providerPaymentId: payment.provider_payment_id, providerStatus: payment.provider_status, receiptUrl: payment.provider_receipt_url })),
+      quoteMetrics: { count: quotes.length, acceptedCount: acceptedQuotes.length, averageQuoteValueCents: stats.averageQuoteValueCents, acceptedQuoteValueCents: stats.acceptedQuoteValueCents },
     });
   } catch (error) {
     console.error('Failed to load finance overview', error);

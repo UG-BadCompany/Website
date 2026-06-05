@@ -9,6 +9,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 import { createSquarePaymentLink } from './square-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
 const dollarsToCents = (value) => {
   const amount = Number(value);
@@ -85,7 +86,7 @@ export default async (request) => {
       limit 1
     `;
 
-    if (!invoice || invoice.status !== 'open') {
+    if (!invoice || !WORKFLOW.invoiceActive.includes(invoice.status)) {
       return json(404, { ok: false, message: 'Open invoice not found.' });
     }
 

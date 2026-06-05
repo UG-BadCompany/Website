@@ -6,8 +6,9 @@ import {
   loadDatabase,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
-const ACTIVE_REQUEST_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment']);
+const ACTIVE_REQUEST_STATUSES = new Set(WORKFLOW.clientRequestActive);
 const MAX_FIELD_LENGTHS = {
   propertyId: 80,
   label: 120,
@@ -183,12 +184,12 @@ const validatePropertyPayload = (payload) => {
 const approveClientCompletedRequest = async (db, userId, payload) => {
   const [jobRequest] = await db.sql`
     update job_requests
-    set status = ${'completed'},
+    set status = ${'invoice_ready'},
         completion_date = coalesce(completion_date, now()::date),
         updated_at = now()
     where id = ${payload.jobRequestId}
       and client_id = ${userId}
-      and status = ${'pending_review'}
+      and status in ('client_review', 'admin_review', 'worker_completed', 'pending_review')
     returning id, status, service_type, preferred_timeframe, description, completion_date, updated_at
   `;
 
@@ -204,7 +205,7 @@ const updateClientJobRequest = async (db, userId, payload) => {
         updated_at = now()
     where id = ${payload.jobRequestId}
       and client_id = ${userId}
-      and status in ('new', 'needs_review', 'quote_in_progress', 'quote_sent', 'accepted', 'scheduled', 'in_progress', 'pending_review', 'waiting_payment')
+      and status = any(${WORKFLOW.clientRequestActive})
     returning id, status, service_type, preferred_timeframe, description, updated_at
   `;
 
@@ -301,7 +302,7 @@ const listClientData = async (db, userId) => {
     left join properties on properties.id = job_requests.property_id
       and properties.client_id = ${userId}
     where job_requests.client_id = ${userId}
-      and job_requests.status <> 'completed'
+      and job_requests.status = any(${[...WORKFLOW.clientRequestActive, ...WORKFLOW.clientRequestHistory]})
     order by job_requests.created_at desc
     limit 25
   `;

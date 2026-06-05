@@ -7,6 +7,7 @@ import {
   loadDatabase,
   loadRolePermissionKeys,
 } from './auth-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 import { createSquarePaymentLink } from './square-utils.mjs';
 
 const mapDate = (value) => {
@@ -134,9 +135,9 @@ const summarizeClientInvoices = (invoices = []) => ({
   invoices,
   summary: {
     total: invoices.length,
-    open: invoices.filter((invoice) => invoice.status === 'open').length,
-    paid: invoices.filter((invoice) => invoice.status === 'paid').length,
-    amountDueCents: invoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
+    open: invoices.filter((invoice) => WORKFLOW.invoiceActive.includes(invoice.status)).length,
+    paid: invoices.filter((invoice) => WORKFLOW.invoiceHistory.includes(invoice.status)).length,
+    amountDueCents: invoices.filter((invoice) => WORKFLOW.invoiceActive.includes(invoice.status)).reduce((sum, invoice) => sum + (invoice.amountCents || 0), 0),
   },
 });
 
@@ -152,7 +153,7 @@ const createSquareLinkForInvoice = async ({ invoice, request }) => {
 
 const ensureClientInvoiceLinks = async (db, request, invoices = []) => {
   for (const invoice of invoices) {
-    if (invoice.status !== 'open' || invoice.provider_checkout_url || invoice.amount_cents <= 0) continue;
+    if (!WORKFLOW.invoiceActive.includes(invoice.status) || invoice.provider_checkout_url || invoice.amount_cents <= 0) continue;
     try {
       const link = await createSquareLinkForInvoice({ invoice, request });
       if (!link?.checkoutUrl) continue;
@@ -214,7 +215,7 @@ export const createClientInvoicesHandler = ({ getDatabase = loadDatabase } = {})
       if (!invoiceId || !['payment_link', 'pay', 'square_payment_link'].includes(action)) {
         return json(422, { ok: false, missing: ['invoiceId', 'action'], message: 'Invoice and payment_link action are required.' });
       }
-      const invoice = rows.find((row) => String(row.id) === invoiceId && row.status === 'open');
+      const invoice = rows.find((row) => String(row.id) === invoiceId && WORKFLOW.invoiceActive.includes(row.status));
       if (!invoice) return json(404, { ok: false, message: 'Open invoice not found.' });
       if (!invoice.provider_checkout_url) await ensureClientInvoiceLinks(db, request, [invoice]);
       const [updated] = await db.sql`select id, provider_checkout_url, provider_checkout_id, provider_status from invoices where id = ${invoiceId} limit 1`;

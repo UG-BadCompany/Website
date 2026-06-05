@@ -8,13 +8,14 @@ import {
   loadRolePermissionKeys,
   parseJsonBody,
 } from './auth-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
-const INVOICE_FILTERS = new Set(['open', 'paid', 'all', 'void']);
-const INVOICE_STATUSES = new Set(['open', 'paid', 'void']);
+const INVOICE_FILTERS = new Set(['open', 'active', 'paid', 'payment_verified', 'all', 'void', 'history']);
+const INVOICE_STATUSES = new Set(['open', 'paid', 'payment_verified', 'void']);
 
 const normalizeInvoiceFilter = (value) => {
-  const filter = clean(value, 20) || 'open';
-  return INVOICE_FILTERS.has(filter) ? filter : 'open';
+  const filter = clean(value, 20) || 'active';
+  return INVOICE_FILTERS.has(filter) ? filter : 'active';
 };
 
 
@@ -157,7 +158,7 @@ const selectAdminInvoiceRows = async (db, filter) => {
       limit 75
     `;
   }
-  if (filter === 'paid') {
+  if (filter === 'paid' || filter === 'history' || filter === 'payment_verified') {
     return await db.sql`
       select
         invoices.id,
@@ -202,7 +203,7 @@ const selectAdminInvoiceRows = async (db, filter) => {
         order by payments.confirmed_at desc
         limit 1
       ) latest_payment on true
-      where invoices.status = ${'paid'}
+      where invoices.status = any(${WORKFLOW.invoiceHistory})
       order by coalesce(invoices.paid_at, latest_payment.confirmed_at, invoices.updated_at) desc
       limit 75
     `;
@@ -303,16 +304,16 @@ const selectAdminInvoiceRows = async (db, filter) => {
       order by payments.confirmed_at desc
       limit 1
     ) latest_payment on true
-    where invoices.status = ${'open'}
+    where invoices.status = any(${WORKFLOW.invoiceActive})
     order by invoices.created_at desc
     limit 75
   `;
 };
 
-const listAdminInvoices = async (db, filter = 'open') => {
+const listAdminInvoices = async (db, filter = 'active') => {
   const mappedInvoices = (await selectAdminInvoiceRows(db, filter)).map(mapInvoice);
-  const openInvoices = mappedInvoices.filter((invoice) => invoice.status === 'open');
-  const paidInvoices = mappedInvoices.filter((invoice) => invoice.status === 'paid');
+  const openInvoices = mappedInvoices.filter((invoice) => WORKFLOW.invoiceActive.includes(invoice.status));
+  const paidInvoices = mappedInvoices.filter((invoice) => WORKFLOW.invoiceHistory.includes(invoice.status));
 
   return {
     filter,
@@ -375,7 +376,7 @@ const handlePost = async ({ request, db, session }) => {
     returning id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
   `;
 
-  await db.sql`update job_requests set status = 'waiting_payment', updated_at = now() where id = ${invoice.job_request_id}`;
+  await db.sql`update job_requests set status = 'payment_pending', updated_at = now() where id = ${invoice.job_request_id}`;
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
     values (${session.user_id}, 'invoice.created', 'invoice', ${invoice.id}, ${JSON.stringify({ source: 'admin_dashboard', quoteId: source.quote_id, jobRequestId: invoice.job_request_id })}::jsonb)
@@ -431,7 +432,7 @@ const handlePatch = async ({ request, db, session }) => {
     select id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
     from invoices
     where id = ${payload.invoiceId}
-      and status = ${'open'}
+      and status = any(${WORKFLOW.invoiceActive})
     limit 1
   `;
 
@@ -447,11 +448,11 @@ const handlePatch = async ({ request, db, session }) => {
 
   const [invoice] = await db.sql`
     update invoices
-    set status = ${'paid'},
+    set status = ${'payment_verified'},
         paid_at = now(),
         updated_at = now()
     where id = ${openInvoice.id}
-      and status = ${'open'}
+      and status = any(${WORKFLOW.invoiceActive})
     returning id, job_request_id, client_id, status, title, amount_cents, due_at, paid_at, created_at, updated_at
   `;
 
@@ -463,7 +464,7 @@ const handlePatch = async ({ request, db, session }) => {
 
   await db.sql`
     update job_requests
-    set status = ${'completed'},
+    set status = ${'closed'},
         completion_date = coalesce(completion_date, now()::date),
         updated_at = now()
     where id = ${invoice.job_request_id}

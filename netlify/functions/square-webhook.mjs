@@ -99,7 +99,7 @@ export default async (request) => {
     if (mapped.status === 'completed') {
       await db.sql`
         update invoices
-        set status = 'paid',
+        set status = 'payment_verified',
             paid_at = coalesce(paid_at, now()),
             provider_status = ${mapped.status || 'completed'},
             updated_at = now()
@@ -108,7 +108,7 @@ export default async (request) => {
 
       await db.sql`
         update job_requests
-        set status = 'completed',
+        set status = 'closed',
             completion_date = coalesce(completion_date, now()::date),
             updated_at = now()
         where id = ${invoice.job_request_id}
@@ -116,7 +116,7 @@ export default async (request) => {
 
       await db.sql`
         insert into audit_events (event_type, entity_type, entity_id, metadata)
-        values ('square.payment.completed', 'invoice', ${invoice.id}, ${JSON.stringify({ paymentId: mapped.paymentId, orderId: mapped.orderId, amountCents: mapped.amountCents })}::jsonb)
+        values ('payment.verified', 'invoice', ${invoice.id}, ${JSON.stringify({ paymentId: mapped.paymentId, orderId: mapped.orderId, amountCents: mapped.amountCents })}::jsonb)
       `;
     }
 
