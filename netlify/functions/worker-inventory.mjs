@@ -44,7 +44,7 @@ const loadWorkerAccess = async (db, userId) => {
   const assignedPermissionKeys = await loadRolePermissionKeys(db, userId, {
     logPrefix: 'Failed to load worker inventory permissions; using role defaults',
   });
-  return { roleKeys, permissionKeys: getPermissionKeysForRoles(roleKeys, assignedPermissionKeys) };
+  return { roleKeys, permissionKeys: getPermissionKeysForRoles(roleKeys, assignedPermissionKeys?.length ? assignedPermissionKeys : null) };
 };
 
 const mapWorkerItem = (item) => ({
@@ -209,7 +209,7 @@ export const createWorkerInventoryHandler = ({ getDatabase = loadDatabase } = {}
     const session = await loadSession(db, request);
     if (!session) return json(401, { ok: false, authenticated: false, message: 'Sign in with a worker account to view inventory.' });
     const { roleKeys, permissionKeys } = await loadWorkerAccess(db, session.user_id);
-    const canUseWorkerInventory = permissionKeys.includes('worker.jobs.manage') || permissionKeys.includes('admin.inventory.manage');
+    const canUseWorkerInventory = permissionKeys.includes('worker.jobs.manage') || permissionKeys.includes('worker.tools') || permissionKeys.includes('dashboard.view.worker') || permissionKeys.includes('admin.inventory.manage');
     if (!canUseWorkerInventory) return json(403, { ok: false, authenticated: true, authorized: false, message: 'Worker inventory access required.' });
     if (request.method === 'GET') return json(200, { ok: true, authenticated: true, authorized: true, user: { id: session.user_id, email: session.email, fullName: session.full_name, roles: roleKeys }, ...(await listWorkerInventory(db, session)) });
 

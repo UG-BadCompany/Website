@@ -56,7 +56,7 @@ const normalizeAnalysis = (raw = {}, payload = {}) => {
     confidence: { overall: number(confidence.overall, 55), photo_quality: number(confidence.photo_quality, 50), scope: number(confidence.scope, 50), labor: number(confidence.labor, 45), materials: number(confidence.materials, 45), pricing: number(confidence.pricing, 35) },
     upsell_suggestions: asArray(raw.upsell_suggestions || raw.recommendations).slice(0, 20),
     research_sources: asArray(raw.research_sources || raw.research_metadata?.sources).slice(0, 20),
-    research_metadata: { ...(raw.research_metadata || {}), openai_model: OPENAI_MODEL, model_source: configuredPhotoModel ? 'OPENAI_PHOTO_ESTIMATE_MODEL' : (configuredFallbackModel ? 'OPENAI_MODEL' : 'default'), responses_api_used: true, openai_live_search_requested: process.env.OPENAI_PHOTO_ESTIMATE_DISABLE_WEB_SEARCH !== '1' },
+    research_metadata: { ...(raw.research_metadata || {}), openai_model: OPENAI_MODEL, model_source: configuredPhotoModel ? 'OPENAI_PHOTO_ESTIMATE_MODEL' : (configuredFallbackModel ? 'OPENAI_MODEL' : 'default'), responses_api_used: true, structured_output_used: true, web_search_disabled_for_json: true },
   };
 };
 const loadSessionContext = async (db, request) => {
@@ -70,22 +70,34 @@ const loadSessionContext = async (db, request) => {
   const permissionKeys = getPermissionKeysForRoles(roleKeys, assignedPermissionKeys);
   return { session, roleKeys, permissionKeys, isStaff: roleKeys.some((role) => STAFF_ROLES.has(role)) };
 };
-const buildPrompt = (payload, photos) => [{ role: 'system', content: [{ type: 'input_text', text: 'You are a premium contractor estimating assistant. Analyze job photos and intake details. Return structured JSON only. Never reveal internal chain-of-thought. Do not invent exact prices; mark uncertain prices as Estimated — verification recommended. Include optional upsells separately.' }] }, { role: 'user', content: [{ type: 'input_text', text: JSON.stringify({ required_schema: { detected_trade:'', detected_scope:'', photo_findings:[], visible_materials:[], visible_damage:[], safety_concerns:[], access_notes:[], missing_information:[], recommended_questions:[], labor_line_items:[], material_line_items:[], other_pricing:{}, pricing_summary:{}, assumptions:[], exclusions:[], customer_summary:'', admin_notes:'', confidence:{ overall:0, photo_quality:0, scope:0, labor:0, materials:0, pricing:0 } }, intake: payload, pricing_rules: ['Use internal catalog/historical/supplier/research when available.', 'Use fallback allowance pricing only when uncertain.', 'Every uncertain price must be marked Estimated — verification recommended.', 'Everything is a draft for admin review.'] }) }, ...photos.map((photo) => ({ type: 'input_image', image_url: photo.url || photo.dataUrl }))] }];
+const photoEstimateJsonSchema = {
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    detected_trade: { type: 'string' }, detected_scope: { type: 'string' },
+    photo_findings: { type: 'array', items: { type: 'string' } }, visible_materials: { type: 'array', items: { type: 'string' } }, visible_damage: { type: 'array', items: { type: 'string' } }, safety_concerns: { type: 'array', items: { type: 'string' } }, access_notes: { type: 'array', items: { type: 'string' } }, missing_information: { type: 'array', items: { type: 'string' } }, recommended_questions: { type: 'array', items: { type: 'string' } },
+    labor_line_items: { type: 'array', items: { type: 'object', additionalProperties: true } }, material_line_items: { type: 'array', items: { type: 'object', additionalProperties: true } }, other_pricing: { type: 'object', additionalProperties: true }, pricing_summary: { type: 'object', additionalProperties: true }, assumptions: { type: 'array', items: { type: 'string' } }, exclusions: { type: 'array', items: { type: 'string' } }, customer_summary: { type: 'string' }, admin_notes: { type: 'string' }, confidence: { type: 'object', additionalProperties: true }, upsell_suggestions: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['detected_trade', 'detected_scope', 'photo_findings', 'labor_line_items', 'material_line_items', 'pricing_summary', 'customer_summary', 'admin_notes', 'confidence'],
+};
+const buildPrompt = (payload, photos) => [{ role: 'system', content: [{ type: 'input_text', text: 'You are a premium contractor estimating assistant. Analyze job photos and intake details. Return JSON matching the provided schema only. Never reveal internal chain-of-thought. Do not browse the web. Use photo evidence and intake only. Do not invent exact prices; mark uncertain prices as Estimated — verification recommended. Include optional upsells separately.' }] }, { role: 'user', content: [{ type: 'input_text', text: JSON.stringify({ intake: payload, pricing_rules: ['Use internal catalog, historical pricing, supplier info supplied in intake, or fallback allowance pricing only.', 'Every uncertain price must be marked Estimated — verification recommended.', 'Everything is a draft for admin review.', 'Web search is intentionally disabled because this endpoint requires structured JSON output.'] }) }, ...photos.map((photo) => ({ type: 'input_image', image_url: photo.url || photo.dataUrl }))] }];
 const callOpenAI = async (payload, photos) => {
   const apiKey = clean(process.env.OPENAI_API_KEY, 240);
   if (!apiKey) return { ok: false, status: 503, message: 'AI image analysis unavailable. Photos saved for manual review.' };
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
   try {
-    const body = { model: OPENAI_MODEL, input: buildPrompt(payload, photos), text: { format: { type: 'json_object' } }, max_output_tokens: 4500 };
-    if (process.env.OPENAI_PHOTO_ESTIMATE_DISABLE_WEB_SEARCH !== '1') { body.tools = [{ type: 'web_search', external_web_access: true, user_location: { type: 'approximate', country: 'US' } }]; body.tool_choice = 'auto'; body.include = ['web_search_call.action.sources']; }
+    const body = { model: OPENAI_MODEL, input: buildPrompt(payload, photos), text: { format: { type: 'json_schema', name: 'photo_estimate_analysis', schema: photoEstimateJsonSchema, strict: false } }, max_output_tokens: 4500 };
+    console.info('AI photo estimate OpenAI request started', { model: OPENAI_MODEL, photoCount: photos.length, hasDescription: Boolean(payload.description), jsonSchema: true, webSearch: false });
     const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', signal: controller.signal, headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await response.json().catch(() => ({}));
+    console.info('AI photo estimate OpenAI response received', { ok: response.ok, status: response.status, responseId: data?.id || null, outputItems: Array.isArray(data?.output) ? data.output.length : 0 });
     if (!response.ok) return { ok: false, status: 502, message: data?.error?.message || `OpenAI failed with ${response.status}` };
     const parsed = parseOpenAiJson(data);
     if (!parsed) return { ok: false, status: 502, message: 'AI returned invalid JSON. No fake analysis was created.' };
     return { ok: true, analysis: normalizeAnalysis(parsed, payload), model: OPENAI_MODEL };
   } catch (error) {
-    return { ok: false, status: 502, message: `AI photo analysis failed: ${error.message}` };
+    console.error('AI photo estimate OpenAI request failed', { message: error?.message, name: error?.name });
+    return { ok: false, status: error?.name === 'AbortError' ? 504 : 502, message: error?.name === 'AbortError' ? 'AI photo analysis timed out. Photos were saved for manual review.' : `AI photo analysis failed: ${error.message}` };
   } finally { clearTimeout(timer); }
 };
 const saveAnalysis = async (db, context, id, payload, photos, analysis) => {
@@ -106,10 +118,15 @@ export default async (request) => {
     const photos = validatePhotos(body.photoUrls || body.photo_urls);
     if (!photos.length) return json(400, { ok: false, message: 'Upload at least one valid photo before analysis.' });
     const payload = { serviceCategory: clean(body.serviceCategory || body.service_category, 180), description: clean(body.description, 8000), propertyAddress: clean(body.propertyAddress || body.property_address, 1000), measurements: clean(body.measurements, 1000), preferredMaterial: clean(body.preferredMaterial || body.preferred_material, 1000), preferredTimeframe: clean(body.preferredTimeframe || body.preferred_timeframe, 500), budget: clean(body.budget, 120), notes: clean(body.notes, 4000) };
+    console.info('AI photo estimate endpoint analyze request', { userId: context.session.user_id, photoCount: photos.length, hasRecordId: Boolean(body.id), isStaff: context.isStaff });
     const ai = await callOpenAI(payload, photos);
-    if (!ai.ok) return json(ai.status || 502, { ok: false, message: ai.message, endpointStatus: 'AI image analysis unavailable. Photos saved for manual review; no fake analysis generated' });
+    if (!ai.ok) {
+      console.warn('AI photo estimate analysis unavailable', { status: ai.status, message: ai.message, recordId: clean(body.id, 80) || null });
+      return json(ai.status || 502, { ok: false, message: ai.message || 'AI image analysis is unavailable right now.', endpointStatus: 'AI image analysis unavailable. Photos were saved for manual review; no fake analysis was generated.', retryable: true });
+    }
     const row = await saveAnalysis(db, context, clean(body.id, 80), payload, photos, ai.analysis);
     await db.sql`insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata) values (${context.session.user_id}, 'photo.analyzed', 'photo_estimate', ${clean(body.id, 80) || null}, ${JSON.stringify({ photoCount: photos.length })}::jsonb)`;
+    console.info('AI photo estimate endpoint completed', { recordId: clean(body.id, 80) || null, model: OPENAI_MODEL, saved: Boolean(row) });
     return json(200, { ok: true, analysis: ai.analysis, photoEstimate: mapRow(row, context), endpointStatus: `server-side OpenAI photo analysis complete (${OPENAI_MODEL})`, model: OPENAI_MODEL });
   } catch (error) {
     console.error('AI photo estimate endpoint failed', error);

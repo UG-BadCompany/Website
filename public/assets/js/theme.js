@@ -4,6 +4,7 @@
     primaryColor: '#2563eb', accentColor: '#22c55e', backgroundColor: '#f8fafc', surfaceColor: '#ffffff', textColor: '#0f172a', buttonColor: '#2563eb', successColor: '#16a34a', warningColor: '#f59e0b', dangerColor: '#dc2626', sidebarBackgroundColor: '#0f172a', sidebarTextColor: '#e5edf7', sidebarActiveColor: '#2563eb', sidebarBorderColor: '#1e293b', sidebarHoverColor: '#1e293b', mobileNavBackgroundColor: '#0f172a', mobileNavActiveColor: '#2563eb', themeMode: 'system', defaultTheme: 'system', enableThemeToggle: true,
   };
   const darkDefaults = { backgroundColor: '#06111f', surfaceColor: '#0f1c2e', textColor: '#e5edf7' };
+  const lightDefaults = { backgroundColor: '#f8fafc', surfaceColor: '#ffffff', textColor: '#0f172a' };
   let systemUnsubscribe = null;
   const media = () => window.matchMedia?.('(prefers-color-scheme: dark)');
   const set = (name, value) => document.documentElement.style.setProperty(name, value);
@@ -23,7 +24,8 @@
   };
   const pickThemeColor = (mode, source, key) => {
     const value = source[key];
-    if (mode === 'dark' && (!value || value === defaults[key]) && darkDefaults[key]) return darkDefaults[key];
+    if (mode === 'dark' && (!value || value === defaults[key] || value === lightDefaults[key]) && darkDefaults[key]) return darkDefaults[key];
+    if (mode === 'light' && (!value || value === darkDefaults[key]) && lightDefaults[key]) return lightDefaults[key];
     return value || defaults[key];
   };
   const readableBorder = (mode) => mode === 'dark' ? '#2f4360' : '#d9e2ef';
@@ -58,6 +60,8 @@
     set('--sidebar-hover', source.sidebarHoverColor || defaults.sidebarHoverColor);
     set('--mobile-nav-bg', source.mobileNavBackgroundColor || source.sidebarBackgroundColor || defaults.mobileNavBackgroundColor);
     set('--mobile-nav-active', source.mobileNavActiveColor || source.sidebarActiveColor || primary || defaults.mobileNavActiveColor);
+    set('--mobile-nav-text', source.mobileNavTextColor || source.sidebarTextColor || defaults.sidebarTextColor);
+    set('--mobile-nav-border', source.mobileNavBorderColor || source.sidebarBorderColor || defaults.sidebarBorderColor);
     set('--primary', primary);
     set('--accent', accent);
     set('--bg', background);
@@ -108,8 +112,8 @@
     return result.mode;
   };
   const stored = readStored();
-  window.TATheme = { defaults, darkDefaults, apply, resolveThemeMode, resolveMode: resolveThemeMode, applyCssVariables, bindSystemTheme, persist, readStored, current: { ...defaults, ...stored } };
-  if (Object.keys(stored).length) apply(stored);
+  window.TATheme = { defaults, darkDefaults, lightDefaults, apply, resolveThemeMode, resolveMode: resolveThemeMode, applyCssVariables, bindSystemTheme, persist, readStored, current: { ...defaults, ...stored } };
+  apply({ ...defaults, ...stored });
   window.addEventListener?.('storage', (event) => {
     if (event.key !== storageKey) return;
     apply(readStored());

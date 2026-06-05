@@ -17,8 +17,8 @@ body {
 
 #dashboard-sidebar {
   grid-area: side;
-  background: #0f172a;
-  color: #cbd5e1;
+  background: var(--sidebar-bg, #0f172a);
+  color: var(--sidebar-text, #cbd5e1);
   padding: 1rem;
   position: sticky;
   top: 0;
@@ -34,7 +34,7 @@ body {
   gap: 0.75rem;
   align-items: center;
   padding: 0.35rem 0.25rem 1rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  border-bottom: 1px solid var(--sidebar-border, rgba(148, 163, 184, 0.22));
 }
 
 .sidebar-brand-row .brand {
@@ -47,9 +47,9 @@ body {
   max-width: 100%;
   align-items: center;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.16);
-  color: #dbeafe;
-  border: 1px solid rgba(147, 197, 253, 0.32);
+  background: color-mix(in srgb, var(--sidebar-active, #3b82f6) 22%, transparent);
+  color: var(--sidebar-text, #dbeafe);
+  border: 1px solid color-mix(in srgb, var(--sidebar-active, #93c5fd) 42%, var(--sidebar-border, rgba(147, 197, 253, 0.32)));
   padding: 0.42rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 900;
@@ -63,7 +63,7 @@ body {
 
 .sidebar-section h2 {
   margin: 0 0 0.55rem;
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--sidebar-text, #94a3b8) 72%, transparent);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.11em;
@@ -95,16 +95,16 @@ body {
 .workspace-switcher button:hover,
 .side-nav button:focus-visible,
 .workspace-switcher button:focus-visible {
-  background: rgba(30, 41, 59, 0.72);
-  color:var(--button-text);
+  background: var(--sidebar-hover, rgba(30, 41, 59, 0.72));
+  color: var(--sidebar-text, var(--button-text));
   outline: none;
 }
 
 .side-nav button.active,
 .workspace-switcher button.active {
-  background: #1e293b;
-  color:var(--button-text);
-  box-shadow: inset 3px 0 0 var(--primary, #38bdf8);
+  background: var(--sidebar-active, #1e293b);
+  color: var(--sidebar-text, var(--button-text));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--sidebar-text, #fff) 88%, var(--sidebar-active, #38bdf8));
 }
 
 #dashboard-topbar {
@@ -235,8 +235,9 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--panel);
-    border-top: 1px solid var(--line);
+    background: var(--mobile-nav-bg, var(--panel));
+    color: var(--mobile-nav-text, var(--sidebar-text, var(--ink)));
+    border-top: 1px solid var(--mobile-nav-border, var(--sidebar-border, var(--line)));
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.2rem;
@@ -247,14 +248,14 @@ body {
 
   .mobile-nav button {
     text-align: center;
-    color: var(--muted);
+    color: var(--mobile-nav-text, var(--muted));
     padding: 0.7rem 0.35rem;
     white-space: nowrap;
   }
 
   .mobile-nav button.active {
-    background: color-mix(in srgb, var(--primary) 12%, var(--panel));
-    color: var(--primary);
+    background: color-mix(in srgb, var(--mobile-nav-active, var(--primary)) 22%, var(--mobile-nav-bg, var(--panel)));
+    color: var(--mobile-nav-active, var(--primary));
   }
 
   body:has(.mobile-more-panel) {
@@ -665,10 +666,14 @@ body {
   color: var(--color-text);
 }
 
-#dashboard-topbar,
-#mobile-bottom-nav {
+#dashboard-topbar {
   background: var(--color-surface);
   border-color: var(--color-border);
+}
+#mobile-bottom-nav {
+  background: var(--mobile-nav-bg, var(--color-surface));
+  color: var(--mobile-nav-text, var(--color-text));
+  border-color: var(--mobile-nav-border, var(--color-border));
 }
 
 #dashboard-app .brand-logo,
@@ -821,16 +826,16 @@ body {
   background: radial-gradient(circle at top right, color-mix(in srgb, var(--primary) 12%, transparent), transparent 34%), var(--bg);
 }
 #dashboard-sidebar {
-  background: linear-gradient(180deg, #07111f, #101827 58%, #080d16);
+  background: var(--sidebar-bg, linear-gradient(180deg, #07111f, #101827 58%, #080d16));
   box-shadow: 16px 0 40px rgba(15,23,42,.16);
 }
 .sidebar-brand-row { padding: .55rem .35rem 1.15rem; }
 .sidebar-brand-row .brand-logo { height: 56px; width: auto; min-width: 56px; border-radius: 14px; }
 .side-nav button, .workspace-switcher button { min-height: 46px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: .7rem; align-items: center; width: 100%; }
 .workspace-switcher button { display:flex; }
-.sidebar-section h2 { color: #bfdbfe; opacity: .78; }
-.side-nav button:hover, .workspace-switcher button:hover { background: rgba(59,130,246,.16); color: var(--button-text); transform: translateX(2px); }
-.side-nav button.active, .workspace-switcher button.active { background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 36%, transparent), rgba(30,41,59,.72)); color: var(--button-text); box-shadow: inset 4px 0 0 var(--primary), 0 10px 24px rgba(0,0,0,.14); }
+.sidebar-section h2 { color: color-mix(in srgb, var(--sidebar-text, #bfdbfe) 78%, transparent); opacity: .9; }
+.side-nav button:hover, .workspace-switcher button:hover { background: var(--sidebar-hover, rgba(59,130,246,.16)); color: var(--sidebar-text, var(--button-text)); transform: translateX(2px); }
+.side-nav button.active, .workspace-switcher button.active { background: var(--sidebar-active, linear-gradient(90deg, color-mix(in srgb, var(--primary) 36%, transparent), rgba(30,41,59,.72))); color: var(--sidebar-text, var(--button-text)); box-shadow: inset 4px 0 0 color-mix(in srgb, var(--sidebar-text, #fff) 88%, var(--sidebar-active, var(--primary))), 0 10px 24px rgba(0,0,0,.14); }
 #dashboard-topbar { min-height: 76px; background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 5; }
 .workspace-title-card { border: 1px solid var(--line); border-radius: 24px; padding: 1.1rem; background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 94%, transparent), color-mix(in srgb, var(--primary) 7%, var(--panel))); box-shadow: 0 16px 48px rgba(15,23,42,.08); }
 .workspace-title-card h1 { letter-spacing: -.04em; font-size: clamp(1.8rem, 4vw, 3.1rem); }

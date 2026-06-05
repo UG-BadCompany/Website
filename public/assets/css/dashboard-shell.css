@@ -187,8 +187,8 @@ body {
     left: 0;
     right: 0;
     background: var(--mobile-nav-bg, var(--color-surface, var(--panel)));
-    color: var(--sidebar-text, var(--color-text, var(--ink)));
-    border-top: 1px solid var(--sidebar-border, var(--color-border, var(--line)));
+    color: var(--mobile-nav-text, var(--sidebar-text, var(--color-text, var(--ink))));
+    border-top: 1px solid var(--mobile-nav-border, var(--sidebar-border, var(--color-border, var(--line))));
     display: flex;
     gap: .2rem;
     overflow: auto;
@@ -199,11 +199,11 @@ body {
   .mobile-nav button {
     min-width: 96px;
     text-align: center;
-    color: var(--color-text, var(--ink));
+    color: var(--mobile-nav-text, var(--sidebar-text, var(--color-text, var(--ink))));
   }
 
   .mobile-nav button.active {
-    background: color-mix(in srgb, var(--mobile-nav-active, var(--color-primary, var(--primary))) 20%, transparent);
+    background: color-mix(in srgb, var(--mobile-nav-active, var(--color-primary, var(--primary))) 22%, transparent);
     color: var(--mobile-nav-active, var(--color-primary, var(--primary)));
   }
 }
