@@ -1,6 +1,9 @@
 import { clean, getPermissionKeysForRoles, getSessionToken, hashToken, json, loadDatabase, loadRolePermissionKeys, parseJsonBody } from './auth-utils.mjs';
 
-const OPENAI_MODEL = process.env.OPENAI_PHOTO_ESTIMATE_MODEL || process.env.OPENAI_QUOTE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
+const configuredPhotoModel = clean(process.env.OPENAI_PHOTO_ESTIMATE_MODEL, 80);
+const configuredFallbackModel = clean(process.env.OPENAI_MODEL, 80) || clean(process.env.OPENAI_RESPONSES_MODEL, 80);
+const legacyQuoteModel = clean(process.env.OPENAI_QUOTE_MODEL, 80);
+const OPENAI_MODEL = configuredPhotoModel || configuredFallbackModel || (/mini/i.test(legacyQuoteModel) ? '' : legacyQuoteModel) || 'gpt-5.5';
 const OPENAI_TIMEOUT_MS = Number(process.env.AI_PHOTO_ESTIMATE_TIMEOUT_MS || 22000);
 const STAFF_ROLES = new Set(['owner', 'admin', 'manager', 'worker']);
 const IMAGE_RE = /^data:image\/(jpeg|png|webp|heic|heif);base64,[a-z0-9+/=\r\n]+$/i;
@@ -53,7 +56,7 @@ const normalizeAnalysis = (raw = {}, payload = {}) => {
     confidence: { overall: number(confidence.overall, 55), photo_quality: number(confidence.photo_quality, 50), scope: number(confidence.scope, 50), labor: number(confidence.labor, 45), materials: number(confidence.materials, 45), pricing: number(confidence.pricing, 35) },
     upsell_suggestions: asArray(raw.upsell_suggestions || raw.recommendations).slice(0, 20),
     research_sources: asArray(raw.research_sources || raw.research_metadata?.sources).slice(0, 20),
-    research_metadata: { ...(raw.research_metadata || {}), openai_model: OPENAI_MODEL, responses_api_used: true, openai_live_search_requested: process.env.OPENAI_PHOTO_ESTIMATE_DISABLE_WEB_SEARCH !== '1' },
+    research_metadata: { ...(raw.research_metadata || {}), openai_model: OPENAI_MODEL, model_source: configuredPhotoModel ? 'OPENAI_PHOTO_ESTIMATE_MODEL' : (configuredFallbackModel ? 'OPENAI_MODEL' : 'default'), responses_api_used: true, openai_live_search_requested: process.env.OPENAI_PHOTO_ESTIMATE_DISABLE_WEB_SEARCH !== '1' },
   };
 };
 const loadSessionContext = async (db, request) => {
@@ -80,7 +83,7 @@ const callOpenAI = async (payload, photos) => {
     if (!response.ok) return { ok: false, status: 502, message: data?.error?.message || `OpenAI failed with ${response.status}` };
     const parsed = parseOpenAiJson(data);
     if (!parsed) return { ok: false, status: 502, message: 'AI returned invalid JSON. No fake analysis was created.' };
-    return { ok: true, analysis: normalizeAnalysis(parsed, payload) };
+    return { ok: true, analysis: normalizeAnalysis(parsed, payload), model: OPENAI_MODEL };
   } catch (error) {
     return { ok: false, status: 502, message: `AI photo analysis failed: ${error.message}` };
   } finally { clearTimeout(timer); }
@@ -107,7 +110,7 @@ export default async (request) => {
     if (!ai.ok) return json(ai.status || 502, { ok: false, message: ai.message, endpointStatus: 'AI image analysis unavailable. Photos saved for manual review; no fake analysis generated' });
     const row = await saveAnalysis(db, context, clean(body.id, 80), payload, photos, ai.analysis);
     await db.sql`insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata) values (${context.session.user_id}, 'photo.analyzed', 'photo_estimate', ${clean(body.id, 80) || null}, ${JSON.stringify({ photoCount: photos.length })}::jsonb)`;
-    return json(200, { ok: true, analysis: ai.analysis, photoEstimate: mapRow(row, context), endpointStatus: 'server-side OpenAI photo analysis complete' });
+    return json(200, { ok: true, analysis: ai.analysis, photoEstimate: mapRow(row, context), endpointStatus: `server-side OpenAI photo analysis complete (${OPENAI_MODEL})`, model: OPENAI_MODEL });
   } catch (error) {
     console.error('AI photo estimate endpoint failed', error);
     return json(500, { ok: false, message: 'Could not analyze photo estimate right now.' });

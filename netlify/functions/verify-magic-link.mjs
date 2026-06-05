@@ -1,6 +1,7 @@
 import {
   createOrUpdateMagicLinkUser,
   createSessionCookie,
+  findUserByEmail,
   createToken,
   getSessionTtlMinutesForRoles,
   hashToken,
@@ -112,11 +113,14 @@ export const createVerifyMagicLinkHandler = ({
       return getInactiveRedirect(magicLinkStatus, request);
     }
 
+    const existingUserBeforeVerify = await findUserByEmail(db, magicLink.email);
+    const needsAccountSetup = !existingUserBeforeVerify || existingUserBeforeVerify.account_setup_complete === false;
     const user = await createOrUpdateMagicLinkUser(db, {
       email: magicLink.email,
       name: magicLink.client_name,
       phone: magicLink.client_phone,
-      source: magicLink.purpose === 'client_account' ? 'portal_signup' : 'magic_link',
+      source: needsAccountSetup ? 'portal_magic_link_signup' : (magicLink.purpose === 'client_account' ? 'portal_signup' : 'magic_link'),
+      accountSetupComplete: !needsAccountSetup,
     });
 
     const sessionToken = makeSessionToken();
@@ -149,13 +153,13 @@ export const createVerifyMagicLinkHandler = ({
     const sessionCookie = createSessionCookie(sessionToken, request, verifySessionTtlMinutes);
 
     if (wantsJsonResponse(request)) {
-      return json(200, { ok: true, location: '/dashboard/' }, { 'set-cookie': sessionCookie });
+      return json(200, { ok: true, isNewUser: needsAccountSetup, location: needsAccountSetup ? '/account-setup/' : '/dashboard/' }, { 'set-cookie': sessionCookie });
     }
 
     return new Response(null, {
       status: request.method === 'POST' ? 303 : 302,
       headers: {
-        location: '/dashboard/',
+        location: needsAccountSetup ? '/account-setup/' : '/dashboard/',
         'set-cookie': sessionCookie,
       },
     });

@@ -14,6 +14,16 @@
     ['warningColor', 'Warning Color'],
     ['dangerColor', 'Danger Color'],
   ];
+  const sidebarColors = [
+    ['sidebarBackgroundColor', 'Sidebar Background Color'],
+    ['sidebarTextColor', 'Sidebar Text Color'],
+    ['sidebarActiveColor', 'Sidebar Active Item Color'],
+    ['sidebarBorderColor', 'Sidebar Border Color'],
+    ['sidebarHoverColor', 'Sidebar Hover Color'],
+    ['mobileNavBackgroundColor', 'Mobile Bottom Nav Background Color'],
+    ['mobileNavActiveColor', 'Mobile Bottom Nav Active Color'],
+  ];
+  const allColors = [...colors, ...sidebarColors];
 
   window.TAModules.register({
     id: 'admin.brand-settings',
@@ -29,7 +39,7 @@
         values.enableThemeToggle = Boolean(root.querySelector('[name="enableThemeToggle"]')?.checked);
         values.showCompanyNameInHeader = Boolean(root.querySelector('[name="showCompanyNameInHeader"]')?.checked);
         values.defaultTheme = values.themeMode || values.defaultTheme || 'system';
-        for (const [key] of colors) {
+        for (const [key] of allColors) {
           const hex = root.querySelector(`[data-color-hex="${key}"]`)?.value;
           values[key] = normalizeHex(hex, defaults()[key]);
         }
@@ -63,6 +73,9 @@
         preview.style.setProperty('--preview-text', state.textColor || defaults().textColor);
         preview.style.setProperty('--preview-primary', state.primaryColor || defaults().primaryColor);
         preview.style.setProperty('--preview-button', state.buttonColor || state.primaryColor || defaults().buttonColor);
+        preview.style.setProperty('--preview-sidebar-bg', state.sidebarBackgroundColor || defaults().sidebarBackgroundColor);
+        preview.style.setProperty('--preview-sidebar-text', state.sidebarTextColor || defaults().sidebarTextColor);
+        preview.style.setProperty('--preview-sidebar-active', state.sidebarActiveColor || defaults().sidebarActiveColor);
         preview.innerHTML = `<div class="brand-preview-shell">
           <header class="brand-preview-header">
             <div class="brand-preview-brand">
@@ -71,7 +84,7 @@
             </div>
             <nav class="brand-preview-nav" aria-label="Preview navigation"><span>Overview</span><span>Requests</span><span>Invoices</span></nav>
           </header>
-          <article class="brand-preview-card">
+          <aside class="brand-preview-sidebar"><strong>Sidebar</strong><span class="active">Active item</span><span>Hover preview</span></aside><article class="brand-preview-card">
             <span class="status-badge success">Live preview badge</span>
             <h3>${escapeHtml(state.displayName || state.companyName || 'Contractor Portal')}</h3>
             <p>Sample dashboard card using your saved theme colors.</p>
@@ -142,6 +155,15 @@
           successColor: payload.successColor,
           warningColor: payload.warningColor,
           dangerColor: payload.dangerColor,
+          selectedTheme: payload.themeMode,
+          colorScheme: payload.themeMode,
+          sidebarBackgroundColor: payload.sidebarBackgroundColor,
+          sidebarTextColor: payload.sidebarTextColor,
+          sidebarActiveColor: payload.sidebarActiveColor,
+          sidebarBorderColor: payload.sidebarBorderColor,
+          sidebarHoverColor: payload.sidebarHoverColor,
+          mobileNavBackgroundColor: payload.mobileNavBackgroundColor,
+          mobileNavActiveColor: payload.mobileNavActiveColor,
         };
         button.disabled = true;
         status.textContent = 'Saving brand settings...';
@@ -189,8 +211,13 @@
               </div>
             </div>
 
+            <h3>Core Theme Colors</h3>
             <div class="module-grid color-settings-grid">
               ${colors.map(renderColorControl).join('')}
+            </div>
+            <h3>Sidebar & Mobile Navigation Colors</h3>
+            <div class="module-grid color-settings-grid">
+              ${sidebarColors.map(renderColorControl).join('')}
             </div>
 
             <div class="grid grid-2 brand-preview-grid">
