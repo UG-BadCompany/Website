@@ -94,7 +94,7 @@
 
   window.TAModules.register({
     id:'admin.quotes', role:'admin', title:'Estimate & Quote Center', icon:'💰', permissions:['quotes.manage'],
-    async mount({ root, api, user }) {
+    async mount({ root, api, user }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
       let records = [];
       let active = 'inbox';
       let selectedId = '';

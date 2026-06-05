@@ -2,7 +2,7 @@
   --color-primary: #2563eb;
   --color-accent: #22c55e;
   --color-background: #f8fafc;
-  --color-surface: #ffffff;
+  --color-surface: var(--surface);
   --color-text: #0f172a;
   --color-muted: #64748b;
   --color-border: #d9e2ef;
@@ -25,7 +25,7 @@
   --field-bg: color-mix(in srgb, var(--color-surface) 92%, var(--color-background));
   --field-text: var(--color-text);
   --field-placeholder: color-mix(in srgb, var(--color-muted) 74%, var(--color-text));
-  --button-text: #ffffff;
+  --button-text: var(--surface);
 }
 
 [data-theme="dark"] {
@@ -41,7 +41,7 @@
 
 [data-theme="light"] {
   --color-background: #f8fafc;
-  --color-surface: #ffffff;
+  --color-surface: var(--surface);
   --color-text: #0f172a;
   --color-muted: #64748b;
   --color-border: #d9e2ef;
@@ -136,7 +136,7 @@ img { max-width: 100%; }
   border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
   box-shadow: none;
 }
-.btn.danger { background: var(--color-danger); color:var(--button-text,#fff); }
+.btn.danger { background: var(--color-danger); color:var(--button-text,var(--surface)); }
 .btn:disabled, button:disabled, .btn.disabled, [aria-disabled="true"] {
   opacity: .65;
   cursor: not-allowed;

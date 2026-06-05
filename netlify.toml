@@ -118,6 +118,12 @@
   status = 200
 
 
+
+[[redirects]]
+  from = "/api/admin/modules"
+  to = "/.netlify/functions/admin-modules"
+  status = 200
+
 [[redirects]]
   from = "/api/admin/maintenance-plans"
   to = "/.netlify/functions/admin-maintenance-plans"

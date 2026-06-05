@@ -89,7 +89,12 @@
     if (!state.moduleRegistry) return null;
     return registryKeysFor(def).map((key) => state.moduleRegistry[key]).find(Boolean) || null;
   };
-  const moduleEnabled = (def) => def.slug === 'module-manager' || registryEntryFor(def)?.enabled !== false;
+  const moduleEnabled = (def) => {
+    if (def.slug === 'module-manager') return true;
+    const entry = registryEntryFor(def);
+    if (!entry) return true;
+    return entry.enabled !== false && (!entry.workspace || entry.workspace === def.role);
+  };
   const moduleAllowed = (def) => allowedWorkspaces().includes(def.role) && hasAllPermissions(def.permissions) && moduleEnabled(def);
   const moduleFor = (workspace, slug) => defs.find((def) => def.role === workspace && def.slug === slug && moduleAllowed(def));
   const modulesForWorkspace = (workspace) => defs.filter((def) => def.role === workspace && moduleAllowed(def));
@@ -214,25 +219,37 @@
     const moduleRootElement = document.getElementById('module-root');
     const root = moduleRootElement?.querySelector ? moduleRootElement : document.querySelector('[data-module-root]');
     if (!root?.querySelector) throw new TypeError('Dashboard module root element was not found.');
+    const showModuleError = (error, stage = 'load') => {
+      console.error(`Dashboard module ${stage} failed for ${def.id}`, error);
+      root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>${escapeHtml(def.title)} could not load</h2><p>${escapeHtml(error?.message || 'The module failed to load. The rest of the dashboard is still available.')}</p><div class="action-row"><button class="btn" type="button" data-retry-module="${escapeHtml(def.id)}">Retry</button><button class="btn secondary" type="button" data-module="${escapeHtml(defaultModuleFor(state.currentWorkspace)?.id || '')}">Go to overview</button></div></article></section>`;
+      root.querySelector('[data-retry-module]')?.addEventListener('click', () => go(def.id).catch((retryError) => showModuleError(retryError, 'retry')));
+    };
     root.innerHTML = `<div class="card">Loading ${escapeHtml(def.title)}...</div>`;
     if (!window.TAForms) {
-      root.innerHTML = '<section class="module-page stack"><article class="card module-error"><h2>Dashboard forms unavailable</h2><p>Required form utility failed to load. Refresh the page or contact admin.</p></article></section>';
+      showModuleError(new Error('Required form utility failed to load. Refresh the page or contact admin.'), 'dependency');
       window.TAUi?.toast?.('Required form utility failed to load. Refresh the page or contact admin.', 'error');
       return;
     }
     state.currentController = new AbortController();
-    const mod = await TAModules.load(def);
-    state.currentModuleInstance = mod;
-    root.replaceChildren();
-    const mountContext = { root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
-    if (mod?.mount) await mod.mount(mountContext);
-    renderNav();
-    window.scrollTo({ top:0, behavior:'smooth' });
+    try {
+      const mod = await TAModules.load(def);
+      state.currentModuleInstance = mod;
+      root.replaceChildren();
+      const mountContext = { root: moduleRootElement, element: moduleRootElement, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
+      if (mod?.mount) await mod.mount(mountContext);
+      renderNav();
+      window.scrollTo({ top:0, behavior:'smooth' });
+    } catch (error) {
+      state.currentModuleInstance = null;
+      showModuleError(error);
+      window.TAUi?.toast?.(`${def.title} failed to load.`, 'error');
+    }
   }
   async function refreshModuleRegistry() {
     try {
       const result = await TAApi.get('/api/admin/modules');
       state.moduleRegistry = Object.fromEntries((result.modules || []).flatMap((module) => [[module.id, module], [module.moduleKey, module]].filter(([key]) => key)));
+      if (document.getElementById('dashboard-sidebar')) renderNav();
     } catch (error) {
       state.moduleRegistry = null;
     }
@@ -249,7 +266,7 @@
     document.getElementById('logout').onclick = async () => { await TAAuth.logout(); location.href = '/login/'; };
     renderNav();
     const requested = location.hash.slice(1);
-    await go(requested || defaultModuleFor(state.currentWorkspace)?.id);
+    await go(requested || defaultModuleFor(state.currentWorkspace)?.id).catch((error) => { console.error('Initial dashboard module failed to load', error); const root = document.getElementById('module-root'); if (root) root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>Dashboard module could not load</h2><p>${escapeHtml(error?.message || 'Open another module or retry.')}</p><button class="btn" type="button" data-retry-start>Retry</button></article></section>`; root?.querySelector('[data-retry-start]')?.addEventListener('click', () => go(requested || defaultModuleFor(state.currentWorkspace)?.id)); });
   }
-  window.TADashboardRouter = { start, go, switchWorkspace, state, defs, allowedWorkspaces, refreshModuleRegistry };
+  window.TADashboardRouter = { start, go, switchWorkspace, state, defs, allowedWorkspaces, refreshModuleRegistry, renderNav };
 })();

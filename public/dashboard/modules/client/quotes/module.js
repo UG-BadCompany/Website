@@ -36,7 +36,7 @@
     const p = quotePayload(q);
     return `<article class="module-record-card client-quote-card ${open ? 'active' : ''}" data-quote-card="${esc(q.id)}" aria-expanded="${open}"><div class="client-quote-card-head"><div><p class="eyebrow">${esc(status(q))}</p><h3>${esc(service(q))}</h3><p>${esc(property(q))}</p></div><strong>${money(p.totalCents || q.amountCents)}</strong></div><div class="client-quote-card-meta"><span>Status <strong>${esc(status(q))}</strong></span><span>Updated <strong>${esc(date(q.updatedAt || q.sentAt || q.createdAt))}</strong></span></div><button class="btn secondary client-quote-toggle" type="button" data-toggle-quote="${esc(q.id)}">${open ? 'Collapse' : 'Expand'}</button>${open ? expanded(q) : ''}</article>`;
   };
-  window.TAModules.register({id:'client.quotes',role:'client',title:'My Quotes',icon:'💰',permissions:[],async mount({root,api}){
+  window.TAModules.register({id:'client.quotes',role:'client',title:'My Quotes',icon:'💰',permissions:[],async mount({root,api}){root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.'); 
     let data = { quotes: [] }; const openIds = new Set();
     const render = () => {
       const quotes = arr(data.quotes);

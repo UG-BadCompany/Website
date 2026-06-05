@@ -20,7 +20,7 @@
   });
 
 
-  async function mountAdminSettings({ root, api, router }) {
+  async function mountAdminSettings({ root, api, router }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
     const tabs = {
       company: ['Legal name','Business phone','Business address','Service area','Default timezone','Default currency'],
       branding: ['Logo URL','Favicon URL','Company display name','Theme mode','Primary color','Accent color'],
@@ -126,7 +126,7 @@
     return `<div class="module-tabs">${['Overview', 'Modules', 'Platform', 'Installer', 'Health'].map((label) => `<button class="btn secondary ${active === label.toLowerCase() ? 'active' : ''}" type="button" data-system-tab="${label.toLowerCase()}">${label}</button>`).join('')}</div>`;
   }
 
-  async function mountSystemCenter({ root, api }) {
+  async function mountSystemCenter({ root, api }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
     let active = 'overview';
     root.innerHTML = '<article class="card module-loading"><h3>Loading System Center</h3><p>Checking install, module, platform, installer, and health status.</p></article>';
     const { data, errors } = await fetchAll(api);
@@ -152,7 +152,7 @@
     render();
   }
 
-  async function mountAuditLogs({ root, api }) {
+  async function mountAuditLogs({ root, api }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
     root.innerHTML = '<article class="card module-loading"><h3>Loading Audit Logs</h3><p>Checking recent user, quote, permission, company, login, and admin activity.</p></article>';
     const { data, errors } = await fetchAll(api);
     const events = asArray(data.events || data.auditLogs || data.activity || data.items);
