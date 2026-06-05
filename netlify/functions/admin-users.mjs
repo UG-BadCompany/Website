@@ -17,9 +17,17 @@ const safeJson = (status, body) => json(status, body, {
   'cache-control': 'no-store, max-age=0',
 });
 
+const WORKSPACE_KEYS = ['owner', 'admin', 'manager', 'worker', 'client'];
+
 const normalizeRoles = (roles) => [...new Set((Array.isArray(roles) ? roles : [])
   .map((role) => normalizeRoleKey(role))
   .filter(Boolean))];
+
+const normalizeWorkspaceAccess = (workspaces) => [...new Set((Array.isArray(workspaces) ? workspaces : [])
+  .map((workspace) => normalizeRoleKey(workspace))
+  .filter((workspace) => WORKSPACE_KEYS.includes(workspace)))];
+
+const workspacePermission = (workspace) => `dashboard.view.${workspace}`;
 
 const normalizeUserPayload = (payload = {}) => ({
   userId: clean(payload.userId),
@@ -32,7 +40,8 @@ const normalizeUserPayload = (payload = {}) => ({
   internalNotes: clean(payload.internalNotes, 2000),
   confirmation: clean(payload.confirmation, 80),
   isActive: payload.isActive === undefined ? null : Boolean(payload.isActive),
-  workspaceAccess: Array.isArray(payload.workspaceAccess) ? payload.workspaceAccess.map((item) => clean(item, 120)).filter(Boolean) : [],
+  workspaceAccess: normalizeWorkspaceAccess(payload.workspaceAccess),
+  hasWorkspaceAccess: Object.prototype.hasOwnProperty.call(payload, 'workspaceAccess'),
   currentRoles: normalizeRoles(payload.currentRoles || []),
   roles: normalizeRoles(payload.roles?.length ? payload.roles : ['client']),
 });
@@ -48,6 +57,7 @@ const mapUser = (user) => ({
   internalNotes: clean(user.internal_notes || '', 2000),
   isActive: user.is_active !== false,
   roles: Array.isArray(user.roles) ? user.roles.map((role) => clean(role, 80)).filter(Boolean) : [],
+  workspaceAccess: Array.isArray(user.workspace_access) ? user.workspace_access.map((workspace) => clean(workspace, 80)).filter(Boolean) : [],
   properties: Array.isArray(user.properties) ? user.properties.map((property) => ({
     id: String(property.id || ''),
     label: clean(property.label || '', 160),
@@ -153,6 +163,39 @@ const loadUserRoleKeys = async (db, userId) => {
 
 const canManageUserRoles = (actorRoleKeys = [], targetRoleKeys = []) => actorRoleKeys.includes('owner') || targetRoleKeys.every((roleKey) => canManageRoleKey(actorRoleKeys, roleKey));
 
+const loadUserWorkspaceAccess = async (db, userId) => {
+  try {
+    const rows = await db.sql`
+      select workspace_key
+      from user_workspace_access
+      where user_id = ${userId}
+      order by workspace_key
+    `;
+    return rows.map((row) => normalizeRoleKey(row.workspace_key)).filter(Boolean);
+  } catch (error) {
+    console.error('Failed to load user workspace access; continuing without direct overrides', error);
+    return [];
+  }
+};
+
+const assignWorkspaceAccess = async (db, userId, workspaceAccess) => {
+  await db.sql`
+    delete from user_workspace_access
+    where user_id = ${userId}
+  `;
+
+  if (workspaceAccess.length) {
+    await db.sql`
+      insert into user_workspace_access (user_id, workspace_key)
+      select ${userId}, unnest(${workspaceAccess}::text[])
+      on conflict (user_id, workspace_key) do nothing
+    `;
+  }
+};
+
+const canAssignWorkspaceAccess = (adminSession, workspaceAccess = []) => adminSession.roleKeys.includes('owner') || workspaceAccess.every((workspace) => adminSession.roleKeys.includes(workspace) || adminSession.permissionKeys.includes(workspacePermission(workspace)));
+
+
 const assignRoles = async (db, userId, roles) => {
   await db.sql`
     delete from user_roles
@@ -181,6 +224,7 @@ const loadUsersSafely = async (db) => {
            app_users.is_active,
            app_users.created_at,
            coalesce(array_agg(distinct roles.key order by roles.key) filter (where roles.key is not null), '{}') as roles,
+           coalesce(array_agg(distinct user_workspace_access.workspace_key order by user_workspace_access.workspace_key) filter (where user_workspace_access.workspace_key is not null), '{}') as workspace_access,
            coalesce(jsonb_agg(distinct jsonb_build_object(
              'id', properties.id,
              'label', properties.label,
@@ -193,6 +237,7 @@ const loadUsersSafely = async (db) => {
     from app_users
     left join user_roles on user_roles.user_id = app_users.id
     left join roles on roles.id = user_roles.role_id
+    left join user_workspace_access on user_workspace_access.user_id = app_users.id
     left join properties on properties.client_id = app_users.id
     group by app_users.id
     order by app_users.created_at desc
@@ -358,7 +403,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       });
     }
 
-    if (request.method === 'POST') {
+    if (request.method === 'POST' || (request.method === 'PATCH' && payload.email)) {
       const emailError = validateEmail(payload.email);
 
       if (emailError) {
@@ -397,6 +442,10 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
       return safeJson(403, { ok: false, message: 'You can only modify users below your authority level.' });
     }
 
+    if (payload.hasWorkspaceAccess && !canAssignWorkspaceAccess(adminSession, payload.workspaceAccess)) {
+      return safeJson(403, { ok: false, message: 'You can only assign workspace access you currently have.', blockedWorkspaces: payload.workspaceAccess.filter((workspace) => !adminSession.roleKeys.includes(workspace) && !adminSession.permissionKeys.includes(workspacePermission(workspace))) });
+    }
+
     const requestedRoleKeys = payload.roles;
     const blockedRoles = requestedRoleKeys.filter((roleKey) => !adminSession.roleKeys.includes(roleKey) && !canManageRoleKey(adminSession.roleKeys, roleKey));
     if (blockedRoles.length) {
@@ -420,7 +469,9 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         `
       : await db.sql`
           update app_users
-          set full_name = ${payload.fullName || null},
+          set email = coalesce(nullif(${payload.email}, ''), app_users.email),
+              auth_subject = case when app_users.auth_provider = 'magic_link' and nullif(${payload.email}, '') is not null then ${payload.email} else app_users.auth_subject end,
+              full_name = ${payload.fullName || null},
               is_active = coalesce(${payload.isActive}, app_users.is_active),
               phone = ${payload.phone || null},
               secondary_phone = ${payload.secondaryPhone || null},
@@ -440,6 +491,8 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
     }
 
     await assignRoles(db, user.id, payload.roles);
+    const savedWorkspaceAccess = payload.hasWorkspaceAccess ? payload.workspaceAccess : await loadUserWorkspaceAccess(db, user.id);
+    if (payload.hasWorkspaceAccess) await assignWorkspaceAccess(db, user.id, savedWorkspaceAccess);
 
     await db.sql`
       insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
@@ -453,7 +506,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
           email: user.email,
           updatedProfile: true,
           isActive: payload.isActive,
-          workspaceAccess: payload.workspaceAccess,
+          workspaceAccess: savedWorkspaceAccess,
         })}::jsonb
       )
     `;
@@ -471,6 +524,7 @@ export const createAdminUsersHandler = ({ getDatabase = loadDatabase } = {}) => 
         internalNotes: user.internal_notes,
         isActive: user.is_active,
         roles: payload.roles,
+        workspaceAccess: savedWorkspaceAccess,
       },
     });
   } catch (error) {

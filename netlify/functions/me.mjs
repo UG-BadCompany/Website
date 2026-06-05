@@ -13,16 +13,23 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const buildPermissions = (roles, assignedPermissionKeys = []) => {
-  const permissionKeys = getPermissionKeysForRoles(roles, assignedPermissionKeys);
+const buildPermissions = (roles, assignedPermissionKeys = null, workspaceAccess = []) => {
+  const permissionKeys = [...new Set([
+    ...getPermissionKeysForRoles(roles, assignedPermissionKeys),
+    ...workspaceAccess.map((workspace) => `dashboard.view.${workspace}`),
+  ])].sort();
   const permissionSet = new Set(permissionKeys);
   const canViewAdminTools = permissionSet.has('admin.tools');
   const canViewWorkerTools = permissionSet.has('worker.tools');
   const canViewClientTools = permissionSet.has('client.tools');
+  const canViewOwnerWorkspace = roles.includes('owner') || permissionSet.has('dashboard.view.owner');
+  const canViewManagerWorkspace = roles.includes('manager') || permissionSet.has('dashboard.view.manager');
   const availableViews = [
-    ...(canViewAdminTools ? ['admin'] : []),
-    ...(canViewClientTools ? ['client'] : []),
-    ...(canViewWorkerTools ? ['worker'] : []),
+    ...(canViewOwnerWorkspace ? ['owner'] : []),
+    ...(canViewAdminTools || permissionSet.has('dashboard.view.admin') ? ['admin'] : []),
+    ...(canViewManagerWorkspace ? ['manager'] : []),
+    ...(canViewClientTools || permissionSet.has('dashboard.view.client') ? ['client'] : []),
+    ...(canViewWorkerTools || permissionSet.has('dashboard.view.worker') ? ['worker'] : []),
   ];
 
   return {
@@ -38,7 +45,7 @@ const buildPermissions = (roles, assignedPermissionKeys = []) => {
     canManageInvoices: permissionSet.has('admin.invoices.manage'),
     canViewAdminActivity: permissionSet.has('admin.activity.view'),
     canManageInventory: permissionSet.has('admin.inventory.manage'),
-    defaultView: canViewAdminTools ? 'admin' : (canViewWorkerTools ? 'worker' : 'client'),
+    defaultView: canViewOwnerWorkspace ? 'owner' : (canViewAdminTools ? 'admin' : (canViewManagerWorkspace ? 'manager' : (canViewWorkerTools ? 'worker' : 'client'))),
     availableViews: availableViews.length ? availableViews : roles,
     permissionKeys,
   };
@@ -178,6 +185,21 @@ const loadCurrentUserRoles = async (db, userId, { logPrefix = 'Failed to load cu
   }
 };
 
+const loadUserWorkspaceAccess = async (db, userId) => {
+  try {
+    const rows = await db.sql`
+      select workspace_key
+      from user_workspace_access
+      where user_id = ${userId}
+      order by workspace_key
+    `;
+    return rows.map((row) => clean(row.workspace_key, 80)).filter(Boolean);
+  } catch (error) {
+    console.error('Failed to load user workspace access; using role permissions only', error);
+    return [];
+  }
+};
+
 const loadCurrentUserFallback = async (db, sessionTokens) => {
   const { session, sessionToken } = await loadCurrentUserSession(db, sessionTokens);
 
@@ -192,7 +214,7 @@ const loadCurrentUserFallback = async (db, sessionTokens) => {
   };
 };
 
-const mapUser = (session, roleKeys, permissionKeys) => ({
+const mapUser = (session, roleKeys, permissionKeys = null, workspaceAccess = []) => ({
   id: session.user_id,
   email: session.email,
   fullName: session.full_name,
@@ -201,7 +223,8 @@ const mapUser = (session, roleKeys, permissionKeys) => ({
   companyName: session.company_name,
   mailingAddress: session.mailing_address,
   roles: roleKeys,
-  permissions: buildPermissions(roleKeys, permissionKeys),
+  workspaceAccess,
+  permissions: buildPermissions(roleKeys, permissionKeys, workspaceAccess),
 });
 
 export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (request) => {
@@ -239,6 +262,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
     const permissionKeys = await loadRolePermissionKeys(db, session.user_id, {
       logPrefix: 'Failed to load role permissions for current user; using role defaults',
     });
+    const workspaceAccess = await loadUserWorkspaceAccess(db, session.user_id);
 
     if (request.method === 'PATCH') {
       const sessionTtlMinutes = getSessionTtlMinutesForRoles(roleKeys);
@@ -288,14 +312,14 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
       return json(200, {
         ok: true,
         authenticated: true,
-        user: mapUser(updatedUser, roleKeys, permissionKeys),
+        user: mapUser(updatedUser, roleKeys, permissionKeys, workspaceAccess),
       }, { 'set-cookie': sessionCookie });
     }
 
     return json(200, {
       ok: true,
       authenticated: true,
-      user: mapUser(session, roleKeys, permissionKeys),
+      user: mapUser(session, roleKeys, permissionKeys, workspaceAccess),
     });
   } catch (error) {
     console.error('Failed to load current user', error);
@@ -309,7 +333,7 @@ export const createMeHandler = ({ getDatabase = loadDatabase } = {}) => async (r
             ok: true,
             authenticated: true,
             recovered: true,
-            user: mapUser(fallback.session, fallback.roleKeys, []),
+            user: mapUser(fallback.session, fallback.roleKeys),
           });
         }
       } catch (fallbackError) {
