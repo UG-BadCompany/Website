@@ -7,7 +7,7 @@ import {
   parseJsonBody,
 } from './auth-utils.mjs';
 
-const WORK_ORDER_STATUSES = new Set(['new', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'scheduled', 'assigned', 'in_progress', 'blocked', 'completed_by_worker', 'admin_review', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'invoiced', 'paid', 'closed', 'cancelled']);
+const WORK_ORDER_STATUSES = new Set(['new', 'waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'closed', 'cancelled', 'needs_review', 'quote_in_progress', 'quote_sent', 'quoted', 'accepted', 'blocked', 'completed_by_worker', 'pending_review', 'completed', 'ready_to_invoice', 'waiting_payment', 'paid']);
 
 const WORK_ORDER_AUTOMATION_VERSION = 'phase21-work-order-automation-v1';
 
@@ -86,8 +86,8 @@ const buildAutomationPlan = (row) => {
     actions.push('Assign a worker before scheduling is considered complete.');
   }
 
-  if (row.job_status === 'accepted') {
-    actions.push('Move accepted work into scheduled status once date/time is confirmed.');
+  if (['accepted', 'waiting_assignment'].includes(row.job_status)) {
+    actions.push('Assign a worker, set schedule/priority, and send the job to production.');
   }
 
   if (row.job_status === 'scheduled' && !row.scheduled_date) {
@@ -98,8 +98,8 @@ const buildAutomationPlan = (row) => {
     actions.push('Ask worker for completion photos, materials used, and closeout notes.');
   }
 
-  if (row.job_status === 'pending_review') {
-    actions.push('Admin should review completion notes and decide invoice/closeout.');
+  if (['pending_review', 'worker_completed', 'admin_review'].includes(row.job_status)) {
+    actions.push('Admin should review worker completion notes, photos, materials, and invoice readiness.');
   }
 
   if (/leak|water|electrical|sparking|gas|no cooling|no heat/.test(text)) {
@@ -150,6 +150,13 @@ const mapWorkOrder = (row) => ({
   quoteStatus: row.quote_status,
   quoteTitle: row.quote_title,
   quoteAmountCents: row.quote_amount_cents,
+  priority: row.priority || row.automation_priority || buildAutomationPlan(row).priority.level,
+  estimatedLaborHours: row.estimated_labor_hours || null,
+  requiredMaterials: row.required_materials || [],
+  requiredPhotos: row.required_photos || [],
+  materials: row.materials || [],
+  photos: row.photos || [],
+  timeline: row.timeline || [],
   assignmentId: row.assignment_id,
   assignmentStatus: row.assignment_status,
   workerId: row.worker_id,
@@ -214,8 +221,8 @@ const requireAdmin = async (request) => {
 
   const roleKeys = await loadRoleKeys(db, session.user_id);
 
-  if (!roleKeys.includes('admin')) {
-    return { error: json(403, { ok: false, authenticated: true, authorized: false, message: 'Admin role required.' }) };
+  if (!roleKeys.some((role) => ['owner', 'admin', 'manager'].includes(role))) {
+    return { error: json(403, { ok: false, authenticated: true, authorized: false, message: 'Owner, admin, or manager role required.' }) };
   }
 
   return { db, session, roleKeys };
@@ -230,19 +237,22 @@ const normalizePatchPayload = (body = {}) => ({
   scheduledDate: clean(body.scheduledDate, 40),
   startTime: clean(body.startTime, 40),
   endTime: clean(body.endTime, 40),
+  priority: clean(body.priority, 40),
+  estimatedLaborHours: clean(body.estimatedLaborHours, 40),
+  requiredMaterials: clean(body.requiredMaterials, 1200),
+  requiredPhotos: clean(body.requiredPhotos, 1200),
   notes: clean(body.notes, 1200),
 });
 
 const toStoredWorkOrderStatus = (status = '') => ({
   quoted: 'quote_sent',
-  assigned: 'scheduled',
-  blocked: 'needs_review',
-  completed_by_worker: 'pending_review',
-  admin_review: 'pending_review',
-  ready_to_invoice: 'waiting_payment',
-  invoiced: 'waiting_payment',
-  paid: 'completed',
-  closed: 'completed',
+  accepted: 'waiting_assignment',
+  blocked: 'admin_review',
+  completed_by_worker: 'worker_completed',
+  pending_review: 'admin_review',
+  ready_to_invoice: 'invoice_ready',
+  waiting_payment: 'payment_pending',
+  paid: 'payment_verified',
 }[status] || status);
 
 const appendReviewNote = (existing = '', note = '') => [existing, note].filter(Boolean).join('\n\n');
@@ -259,7 +269,7 @@ const handleCompletionReview = async ({ request, db, session }) => {
   const [job] = await db.sql`select id, status, admin_notes from job_requests where id = ${jobRequestId} limit 1`;
   if (!job) return json(404, { ok: false, message: 'Work order not found.' });
 
-  const nextStatus = decision === 'approve' ? 'waiting_payment' : 'in_progress';
+  const nextStatus = decision === 'approve' ? 'invoice_ready' : 'assigned';
   const notePrefix = decision === 'approve' ? 'Completion approved for invoice readiness' : 'Completion rejected/requested changes';
   const adminNotes = appendReviewNote(job.admin_notes || '', `${notePrefix}${reviewNote ? `: ${reviewNote}` : ''}`);
 
@@ -276,7 +286,7 @@ const handleCompletionReview = async ({ request, db, session }) => {
   if (decision === 'reject') {
     await db.sql`
       update worker_assignments
-      set status = 'in_progress', updated_at = now()
+      set status = 'assigned', updated_at = now()
       where job_request_id = ${jobRequestId}
         and status = 'completed'
     `;
@@ -300,10 +310,10 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
   const statuses = status === 'all'
     ? ['accepted', 'scheduled', 'in_progress', 'pending_review', 'completed', 'cancelled']
     : status === 'completed'
-      ? ['completed']
+      ? ['closed', 'completed']
       : status === 'pending_review'
-        ? ['pending_review']
-        : ['accepted', 'scheduled', 'in_progress', 'pending_review'];
+        ? ['worker_completed', 'admin_review', 'pending_review']
+        : ['waiting_assignment', 'assigned', 'scheduled', 'in_progress', 'worker_completed', 'admin_review', 'client_review', 'invoice_ready', 'invoiced', 'payment_pending', 'payment_verified', 'accepted', 'scheduled', 'pending_review'];
 
   return db.sql`
     select
@@ -327,6 +337,11 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
       q.status as quote_status,
       q.title as quote_title,
       q.amount_cents as quote_amount_cents,
+      jr.admin_notes,
+      'normal'::text as priority,
+      null::numeric as estimated_labor_hours,
+      '[]'::jsonb as required_materials,
+      '[]'::jsonb as required_photos,
       wa.id as assignment_id,
       wa.status as assignment_status,
       wa.worker_id,
@@ -338,7 +353,10 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
       wa.notes as assignment_notes,
       wa.worker_notes,
       wa.completion_notes,
-      wa.completion_submitted_at
+      wa.completion_submitted_at,
+      coalesce(mat.materials, '[]'::jsonb) as materials,
+      coalesce(photo.photos, '[]'::jsonb) as photos,
+      coalesce(timeline.events, '[]'::jsonb) as timeline
     from job_requests jr
     left join lateral (
       select id, status, title, amount_cents
@@ -355,14 +373,20 @@ const loadWorkOrderRows = async (db, { status = 'active', limit = 75 } = {}) => 
       limit 1
     ) wa on true
     left join app_users worker on worker.id = wa.worker_id
+    left join lateral (select jsonb_agg(jsonb_build_object('id', inventory_reservations.id, 'itemId', inventory_items.id, 'name', inventory_items.name, 'reservedQuantity', inventory_reservations.reserved_quantity, 'usedQuantity', inventory_reservations.used_quantity, 'status', inventory_reservations.status, 'notes', inventory_reservations.notes)) as materials from inventory_reservations left join inventory_items on inventory_items.id = inventory_reservations.inventory_item_id where inventory_reservations.job_request_id = jr.id) mat on true
+    left join lateral (select jsonb_agg(jsonb_build_object('id', files.id, 'fileName', files.file_name, 'photoType', files.photo_type, 'caption', files.caption, 'createdAt', files.created_at)) as photos from files where files.job_request_id = jr.id or files.work_order_id = jr.id::text) photo on true
+    left join lateral (select jsonb_agg(jsonb_build_object('eventType', audit_events.event_type, 'createdAt', audit_events.created_at, 'metadata', audit_events.metadata) order by audit_events.created_at desc) as events from audit_events where audit_events.entity_id = jr.id) timeline on true
     where jr.status = any(${statuses})
     order by
       case jr.status
-        when 'pending_review' then 1
-        when 'in_progress' then 2
-        when 'scheduled' then 3
-        when 'accepted' then 4
-        when 'completed' then 5
+        when 'worker_completed' then 1
+        when 'admin_review' then 2
+        when 'in_progress' then 3
+        when 'assigned' then 4
+        when 'waiting_assignment' then 5
+        when 'accepted' then 6
+        when 'closed' then 7
+        when 'completed' then 8
         else 6
       end,
       coalesce(wa.scheduled_date, jr.estimated_start_date, jr.created_at::date) asc,
@@ -393,6 +417,15 @@ export default async (request) => {
         limit: Number(url.searchParams.get('limit') || 75),
       });
       const workOrders = rows.map(mapWorkOrder);
+      const workers = await db.sql`
+        select app_users.id, app_users.full_name, app_users.email
+        from app_users
+        join user_roles on user_roles.user_id = app_users.id
+        join roles on roles.id = user_roles.role_id
+        where roles.key = 'worker' and app_users.is_active = true
+        order by app_users.full_name nulls last, app_users.email
+        limit 150
+      `;
 
       const stats = workOrders.reduce((acc, item) => {
         acc.total += 1;
@@ -414,6 +447,8 @@ export default async (request) => {
         },
         stats,
         workOrders,
+        workers: workers.map((worker) => ({ id: worker.id, fullName: worker.full_name, email: worker.email })),
+        workflow: ['new','waiting_assignment','assigned','scheduled','in_progress','worker_completed','admin_review','client_review','invoice_ready','invoiced','payment_pending','payment_verified','closed','cancelled'],
       });
     }
 
@@ -433,12 +468,13 @@ export default async (request) => {
 
     if (!jobRequest) return json(404, { ok: false, message: 'Work order not found.' });
 
-    const nextStatus = toStoredWorkOrderStatus(payload.status || jobRequest.status);
+    const assigningWorker = Boolean(payload.workerId);
+    const nextStatus = toStoredWorkOrderStatus(payload.status || (assigningWorker ? 'assigned' : jobRequest.status));
 
     const [updatedJob] = await db.sql`
       update job_requests
-      set status = ${nextStatus},
-          estimated_start_date = case when ${payload.estimatedStartDate} = '' then estimated_start_date else ${payload.estimatedStartDate || null}::date end,
+      set status = case when ${assigningWorker} then 'assigned' else ${nextStatus} end,
+          estimated_start_date = case when ${payload.estimatedStartDate} = '' then estimated_start_date else ${payload.estimatedStartDate || payload.scheduledDate || null}::date end,
           completion_date = case when ${payload.completionDate} = '' then completion_date else ${payload.completionDate || null}::date end,
           updated_at = now()
       where id = ${jobRequest.id}
@@ -473,6 +509,7 @@ export default async (request) => {
           start_time = excluded.start_time,
           end_time = excluded.end_time,
           notes = excluded.notes,
+          status = excluded.status,
           updated_at = now()
         returning id, job_request_id, worker_id, status, scheduled_date, start_time, end_time, notes
       `;

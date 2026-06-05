@@ -49,6 +49,7 @@ const mapQuote = (quote) => ({
   acceptedAt: quote.accepted_at,
   declinedAt: quote.declined_at,
   createdAt: quote.created_at,
+  updatedAt: quote.updated_at,
   jobRequest: quote.job_request_id ? {
     id: quote.job_request_id,
     status: quote.job_request_status,
@@ -146,6 +147,7 @@ const listClientQuotes = async (db, userId) => {
       quotes.accepted_at,
       quotes.declined_at,
       quotes.created_at,
+      quotes.updated_at,
       job_requests.id as job_request_id,
       job_requests.status as job_request_status,
       job_requests.service_type as job_request_service_type,
@@ -199,7 +201,7 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
   }
 
   const [quote] = await db.sql`
-    select id, job_request_id, client_id, status
+    select id, job_request_id, client_id, status, title, summary, amount_cents, ai_metadata
     from quotes
     where id = ${payload.quoteId}
       and client_id = ${session.user_id}
@@ -222,13 +224,13 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
       updated_at = now()
     where id = ${quote.id}
       and client_id = ${session.user_id}
-    returning id, job_request_id, client_id, status, title, summary, amount_cents, sent_at, viewed_at, accepted_at, declined_at, created_at
+    returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_metadata, sent_at, viewed_at, accepted_at, declined_at, created_at, updated_at
   `;
 
   if (accepted && quote.job_request_id) {
     await db.sql`
       update job_requests
-      set status = 'accepted', updated_at = now()
+      set status = 'waiting_assignment', updated_at = now()
       where id = ${quote.job_request_id}
         and client_id = ${session.user_id}
     `;
@@ -241,7 +243,7 @@ const handlePatch = async ({ request, db, session, roleKeys }) => {
       ${accepted ? 'quote.accepted' : (requestedChanges ? 'quote.changes_requested' : 'quote.declined')},
       ${'quote'},
       ${quote.id},
-      ${JSON.stringify({ source: 'client_dashboard', jobRequestId: quote.job_request_id })}::jsonb
+      ${JSON.stringify({ source: 'client_dashboard', jobRequestId: quote.job_request_id, workOrderStatus: accepted ? 'waiting_assignment' : null, approvedQuoteTotalCents: quote.amount_cents || null })}::jsonb
     )
   `;
 

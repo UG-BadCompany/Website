@@ -471,16 +471,16 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
             updated_at = now()
           where id = ${existingQuote.id}
           returning id, job_request_id, client_id, status, title, summary, amount_cents, ai_enhanced, fallback_used, fallback_reason, pricing_confidence_level, range_low_cents, range_high_cents, fixed_price_recommendation_cents, ai_metadata, sourcing_notes, created_at, updated_at`;
-        if (quote.job_request_id) await db.sql`update job_requests set status = ${nextStatus === 'information_needed' ? 'information_needed' : nextStatus === 'draft' ? 'quote_in_progress' : nextStatus}, updated_at = now() where id = ${quote.job_request_id}`;
+        if (quote.job_request_id) await db.sql`update job_requests set status = ${nextStatus === 'information_needed' ? 'information_needed' : nextStatus === 'draft' ? 'quote_in_progress' : nextStatus === 'accepted' ? 'waiting_assignment' : nextStatus}, updated_at = now() where id = ${quote.job_request_id}`;
         await audit(db, session, `quote.${payload.action}`, quote.id, { source: 'estimate_quote_center' });
         return json(200, { ok: true, authenticated: true, authorized: true, message: 'Quote status updated.', quote: mapQuote(quote) });
       }
 
       if (payload.action === 'convert_work_order') {
         if (existingQuote.status !== 'accepted') return json(409, { ok: false, message: 'Only accepted quotes can be converted to work orders.' });
-        await db.sql`update job_requests set status = 'scheduled', updated_at = now() where id = ${existingQuote.job_request_id}`;
+        await db.sql`update job_requests set status = 'waiting_assignment', updated_at = now() where id = ${existingQuote.job_request_id}`;
         await audit(db, session, 'quote.converted_work_order', existingQuote.id, { source: 'estimate_quote_center', jobRequestId: existingQuote.job_request_id });
-        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Accepted quote converted to a work order.' });
+        return json(200, { ok: true, authenticated: true, authorized: true, message: 'Accepted quote is now a work order waiting for assignment.' });
       }
 
       if (payload.action === 'create_invoice') {
