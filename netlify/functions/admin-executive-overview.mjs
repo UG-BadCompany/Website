@@ -6,6 +6,7 @@ import {
   loadDatabase,
   loadRolePermissionKeys,
 } from './auth-utils.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
 const n = (value) => Number(value || 0);
 
@@ -75,8 +76,8 @@ export default async (request) => {
           count(*) filter (where status in ('needs_review','quote_in_progress'))::int as estimate_count,
           count(*) filter (where status = 'quote_sent')::int as quote_sent_count,
           count(*) filter (where status = 'accepted')::int as accepted_count,
-          count(*) filter (where status in ('scheduled','in_progress','pending_review'))::int as active_count,
-          count(*) filter (where status = 'completed')::int as completed_count
+          count(*) filter (where status = any(${WORKFLOW.workOrderActive}))::int as active_count,
+          count(*) filter (where status = any(${WORKFLOW.workOrderHistory}))::int as completed_count
         from job_requests
       `,
       db.sql`
@@ -84,25 +85,26 @@ export default async (request) => {
           count(*) filter (where status = 'draft')::int as draft_count,
           count(*) filter (where status = 'sent')::int as sent_count,
           count(*) filter (where status = 'accepted')::int as accepted_count,
-          coalesce(sum(amount_cents) filter (where status in ('sent','accepted')), 0)::bigint as quoted_amount_cents
+          count(*) filter (where status = any(${WORKFLOW.quoteActive}))::int as open_count,
+          coalesce(sum(amount_cents) filter (where status = any(${WORKFLOW.quoteActive})), 0)::bigint as quoted_amount_cents
         from quotes
       `,
       db.sql`
         select
           count(*) filter (where status = 'assigned')::int as assigned_count,
-          count(*) filter (where status = 'accepted')::int as worker_accepted_count,
+          count(*) filter (where status = 'scheduled')::int as scheduled_count,
           count(*) filter (where status = 'in_progress')::int as in_progress_count,
           count(*) filter (where status = 'blocked')::int as blocked_count,
-          count(*) filter (where status = 'completed')::int as completed_count
+          count(*) filter (where status = any(${WORKFLOW.workerHistory}))::int as completed_count
         from worker_assignments
       `,
       db.sql`
         select
-          count(*) filter (where status = 'open')::int as open_count,
-          count(*) filter (where status = 'paid')::int as paid_count,
-          coalesce(sum(amount_cents) filter (where status = 'open'), 0)::bigint as open_amount_cents,
-          coalesce(sum(amount_cents) filter (where status = 'paid'), 0)::bigint as paid_amount_cents,
-          count(*) filter (where status = 'open' and due_at is not null and due_at < now())::int as overdue_count
+          count(*) filter (where status = any(${WORKFLOW.invoiceActive}))::int as open_count,
+          count(*) filter (where status = any(${WORKFLOW.invoiceHistory}))::int as paid_count,
+          coalesce(sum(amount_cents) filter (where status = any(${WORKFLOW.invoiceActive})), 0)::bigint as open_amount_cents,
+          coalesce(sum(amount_cents) filter (where status = any(${WORKFLOW.invoiceHistory})), 0)::bigint as paid_amount_cents,
+          count(*) filter (where status = any(${WORKFLOW.invoiceActive}) and due_at is not null and due_at < now())::int as overdue_count
         from invoices
       `,
       db.sql`

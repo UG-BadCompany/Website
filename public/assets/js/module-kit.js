@@ -95,6 +95,8 @@
       const payload = { action: normalizedAction, recordId, id: recordId, status: configured.status, record, values: {} };
       const result = method === 'PATCH' ? await api.patch(endpoint, payload) : method === 'DELETE' ? await api.delete(endpoint, payload) : await api.post(endpoint, payload);
       toast(result.message || `${titleize(normalizedAction)} completed.`, 'success');
+      const eventName = configured.event || (/quote/i.test(endpoint) && /accept|convert/i.test(normalizedAction) ? 'quote:accepted' : /work.?order|job/i.test(endpoint) && /assign|schedule/i.test(normalizedAction) ? 'workorder:assigned' : /work.?order|job/i.test(endpoint) && /complete/i.test(normalizedAction) ? 'workorder:completed' : /invoice/i.test(endpoint) && /payment|paid/i.test(normalizedAction) ? 'invoice:paid' : /payment.*verif|verified/i.test(normalizedAction) ? 'payment:verified' : null);
+      if (eventName) window.TAWorkflow?.emit?.(eventName, { action: normalizedAction, endpoint, recordId, result });
       await mount(context, config);
     } catch (error) {
       toast(error.message || `${titleize(normalizedAction)} failed.`, 'error');

@@ -12,9 +12,10 @@ import {
 } from './auth-utils.mjs';
 import { saveAdminAiCorrection } from './ai-intelligence-engine.mjs';
 import { analyzeEstimateIntake } from './estimate-intake-intelligence.mjs';
+import { WORKFLOW } from './workflow-state.mjs';
 
 const QUOTE_STATUSES = new Set(['draft', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'pending_review', 'needs_review', 'quote_in_progress', 'information_needed', 'cancelled']);
-const QUOTE_LIST_STATUSES = new Set(['all', 'needs_review', 'information_needed', ...QUOTE_STATUSES]);
+const QUOTE_LIST_STATUSES = new Set(['active', 'history', 'all', 'needs_review', 'information_needed', ...QUOTE_STATUSES]);
 const NEEDS_REVIEW_QUOTE_STATUSES = ['draft', 'pending_review', 'needs_review'];
 const REQUEST_ONLY_STATUSES = ['new', 'needs_review', 'quote_in_progress', 'information_needed'];
 
@@ -303,6 +304,8 @@ const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
       where (${quoteId || ''} = '' or quotes.id::text = ${quoteId || ''})
         and (
           ${status} = 'all'
+          or (${status} = 'active' and quotes.status = any(${WORKFLOW.quoteActive}))
+          or (${status} = 'history' and quotes.status = any(${WORKFLOW.quoteHistory}))
           or (${status} = 'needs_review' and quotes.status = any(${NEEDS_REVIEW_QUOTE_STATUSES}))
           or (${status} = 'information_needed' and quotes.status = 'information_needed')
           or quotes.status = ${status}
@@ -330,7 +333,7 @@ const selectAdminQuotes = async ({ db, status, search, quoteId }) => {
       where not exists (select 1 from quotes where quotes.job_request_id = job_requests.id)
         and job_requests.status = any(${REQUEST_ONLY_STATUSES})
         and (${quoteId || ''} = '' or job_requests.id::text = ${quoteId || ''})
-        and (${status} = 'all' or (${status} = 'needs_review' and job_requests.status = any(${REQUEST_ONLY_STATUSES})) or ${status} = job_requests.status)
+        and (${status} in ('all', 'active') or (${status} = 'needs_review' and job_requests.status = any(${REQUEST_ONLY_STATUSES})) or ${status} = job_requests.status)
         and (${search || ''} = '' or lower(concat_ws(' ', job_requests.status, job_requests.requester_name, job_requests.requester_email, job_requests.city, job_requests.street_address, job_requests.service_type, job_requests.description, job_requests.id::text)) like ${likeSearch})
     )
     select * from quote_rows
@@ -404,7 +407,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
 
     if (request.method === 'GET') {
       const url = new URL(request.url);
-      const status = QUOTE_LIST_STATUSES.has(clean(url.searchParams.get('status'), 20)) ? clean(url.searchParams.get('status'), 20) : 'all';
+      const status = QUOTE_LIST_STATUSES.has(clean(url.searchParams.get('status'), 20)) ? clean(url.searchParams.get('status'), 20) : 'active';
       const search = clean(url.searchParams.get('search'), 160);
       const quoteId = clean(url.searchParams.get('quoteId'), 80);
       const quotes = await selectAdminQuotes({ db, status, search, quoteId });
@@ -490,7 +493,7 @@ export const createAdminQuotesHandler = ({ getDatabase = loadDatabase } = {}) =>
           values (${existingQuote.job_request_id}, ${existingQuote.client_id}, ${existingQuote.id}, 'open', ${existingQuote.title || 'Accepted quote invoice'}, ${existingQuote.amount_cents || 0}, now() + interval '14 days', ${session.user_id})
           on conflict (job_request_id) do update set quote_id = excluded.quote_id, amount_cents = excluded.amount_cents, updated_at = now()
           returning id`;
-        await db.sql`update job_requests set status = 'waiting_payment', updated_at = now() where id = ${existingQuote.job_request_id}`;
+        await db.sql`update job_requests set status = 'payment_pending', updated_at = now() where id = ${existingQuote.job_request_id}`;
         await audit(db, session, 'quote.invoice_created', existingQuote.id, { source: 'estimate_quote_center', invoiceId: invoice.id });
         return json(200, { ok: true, authenticated: true, authorized: true, message: 'Invoice created from accepted quote.', invoice });
       }
