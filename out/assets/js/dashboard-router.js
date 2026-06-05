@@ -83,14 +83,40 @@
   const currentWorkspace = () => state.currentWorkspace || allowedWorkspaces()[0] || state.user?.permissions?.defaultView || 'client';
   const mobileTargets = () => {
     const workspace = currentWorkspace();
-    const jobSlug = workspace === 'worker' ? 'jobs' : workspace === 'admin' || workspace === 'manager' ? 'work-orders' : workspace === 'client' ? 'project-updates' : 'system-center';
-    return [
-      { label:'🏠 Home', module: moduleFor(workspace, 'overview')?.id },
-      { label:'💰 Estimates', module: moduleFor(workspace, 'estimate-management-center')?.id || moduleFor(workspace, 'requests')?.id || moduleFor(workspace, 'audit-logs')?.id },
-      { label:'💰 Quotes', module: moduleFor(workspace, 'quotes')?.id || moduleFor(workspace, 'system-center')?.id },
-      { label:'🔧 Jobs', module: moduleFor(workspace, jobSlug)?.id },
-      { label:'☰ More', more:true },
-    ].filter((item) => item.more || item.module);
+    const pick = (...slugs) => slugs.map((slug) => moduleFor(workspace, slug)?.id).find(Boolean);
+    const navByWorkspace = {
+      owner: [
+        { label:'🏠 Home', module: pick('overview') },
+        { label:'💰 Estimates', module: pick('estimate-management-center') },
+        { label:'🔧 Jobs', module: pick('work-orders', 'system-center') },
+        { label:'☰ More', more:true },
+      ],
+      admin: [
+        { label:'🏠 Home', module: pick('overview') },
+        { label:'💰 Estimates', module: pick('estimate-management-center') },
+        { label:'🔧 Jobs', module: pick('work-orders') },
+        { label:'☰ More', more:true },
+      ],
+      manager: [
+        { label:'🏠 Home', module: pick('overview') },
+        { label:'💰 Estimates', module: pick('estimate-management-center') },
+        { label:'🔧 Jobs', module: pick('work-orders') },
+        { label:'☰ More', more:true },
+      ],
+      client: [
+        { label:'🏠 Home', module: pick('overview') },
+        { label:'📋 Requests', module: pick('requests') },
+        { label:'💰 Quotes', module: pick('quotes') },
+        { label:'☰ More', more:true },
+      ],
+      worker: [
+        { label:'🏠 Home', module: pick('overview') },
+        { label:'🔧 Jobs', module: pick('jobs') },
+        { label:'📅 Schedule', module: pick('schedule') },
+        { label:'☰ More', more:true },
+      ],
+    };
+    return (navByWorkspace[workspace] || navByWorkspace.client).filter((item) => item.more || item.module);
   };
   const moreModules = () => {
     const primary = new Set(mobileTargets().map((item) => item.module).filter(Boolean));
