@@ -53,7 +53,7 @@
       mountRoot.querySelectorAll('[data-notify]').forEach((btn) => btn.addEventListener('click', async () => { btn.disabled = true; try { await notify(current.jobRequestId, btn.dataset.notify); window.TAUi?.toast?.(`${btn.dataset.notify === 'worker' ? 'Worker' : 'Client'} notified.`, 'success'); } finally { btn.disabled = false; } }));
       mountRoot.querySelectorAll('[data-status-move]').forEach((btn) => btn.addEventListener('click', async () => { await updateStatus(current.jobRequestId, btn.dataset.statusMove); if (btn.dataset.statusMove === 'closed') window.TAWorkflow?.emit?.('workorder:closed', { jobRequestId: current.jobRequestId }); if (btn.dataset.statusMove === 'payment_verified') window.TAWorkflow?.emit?.('payment:verified', { jobRequestId: current.jobRequestId }); window.TAUi?.toast?.('Work order status updated.', 'success'); await load(); render(); }));
     };
-    mountRoot.innerHTML = '<section class="stack"><div class="card"><h2>Work Orders</h2><p>Loading...</p></div></section>';
+    mountRoot.innerHTML = '<section class="stack"><div class="card module-loading"><h2>Work Orders</h2><p>Preparing workspace.</p></div></section>';
     await load(); render();
   },async destroy(){},async refresh(){}});
 })();

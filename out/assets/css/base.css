@@ -555,3 +555,46 @@ textarea:hover {
     border-radius: var(--radius-md);
   }
 }
+
+/* Premium global design-system refinements */
+:root {
+  --shadow-sm: 0 8px 24px color-mix(in srgb, var(--color-text) 7%, transparent);
+  --shadow-md: 0 18px 54px color-mix(in srgb, var(--color-text) 11%, transparent);
+  --shadow-lg: 0 28px 82px color-mix(in srgb, var(--color-text) 15%, transparent);
+}
+
+::selection { background: color-mix(in srgb, var(--color-primary) 26%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border)) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 34%, var(--color-border)); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+
+.card, .module-card, .module-section, .stat-card, .modal-content, dialog, .table-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, transparent), color-mix(in srgb, var(--color-surface-alt) 94%, transparent));
+  border-color: color-mix(in srgb, var(--color-border) 86%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+.card:hover, .module-card:hover, .module-section:hover { box-shadow: var(--shadow-md); }
+
+input, select, textarea,
+.field input, .field select, .field textarea {
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+input:focus, select:focus, textarea:focus,
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: color-mix(in srgb, var(--color-primary) 58%, var(--color-border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.notice, .module-empty, .empty-state, .module-loading {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+  color: var(--color-text);
+  border-radius: 18px;
+}
+
+@media (max-width: 520px) {
+  .grid, .grid-2, .grid-3, .form-grid, .action-row { grid-template-columns: 1fr !important; }
+  .action-row, .hero-actions { display: grid; gap: .7rem; }
+  .action-row .btn, .hero-actions .btn, button.btn, a.btn { width: 100%; min-height: 48px; }
+}

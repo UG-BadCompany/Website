@@ -12,6 +12,7 @@
   <header class="site-header premium-public-header customer-public-header">
     <div class="container nav">
       <a class="brand" href="/" data-brand aria-label="Company home"></a>
+      <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-label="Open menu">☰</button>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#services">Services</a>
         <a href="#estimate">Request Estimate</a>
@@ -22,31 +23,31 @@
   </header>
 
   <main id="homepage-dynamic-sections" aria-live="polite">
-    <section class="hero premium-landing-hero customer-landing-hero">
+    <section class="hero premium-landing-hero customer-landing-hero homepage-hero">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <span class="pill">Loading company services</span>
-          <h1>Reliable maintenance, repairs, and improvements for your property.</h1>
-          <p>Loading company service information...</p>
-          <p class="hero-actions"><a class="btn" href="#estimate">Request Estimate</a> <a class="btn secondary" href="#services">View Services</a></p>
+          <span class="pill">Trusted local property services</span>
+          <h1>Reliable repairs, maintenance, and improvements for Arizona properties.</h1>
+          <p>Submit a request, share photo details, review your quote, and track your job from one clean portal.</p>
+          <p class="hero-actions"><a class="btn" href="#estimate">Request Estimate</a> <a class="btn secondary" href="/login/" data-portal-link>Client Portal</a></p>
         </div>
       </div>
     </section>
 
     <section class="section" id="services">
-      <div class="container"><div class="section-heading centered"><span class="pill">Services</span><h2>Repair, maintenance, installation, and property work made easier to request.</h2><p>Loading editable service cards...</p></div></div>
+      <div class="container"><div class="section-heading centered"><span class="pill">Services</span><h2>Professional repair and maintenance services.</h2><p>HVAC, plumbing, electrical, drywall, painting, doors, windows, appliances, handyman work, property maintenance, and tenant improvements.</p></div></div>
     </section>
-    <section class="section" id="estimate" aria-label="Request estimate form loading">
-      <div class="container"><p>Loading request estimate form...</p></div>
+    <section class="section" id="estimate" aria-label="Request estimate form">
+      <div class="container"><p>Use the estimate form below to send your request securely.</p></div>
     </section>
   </main>
 
   <template id="estimate-template">
     <div class="container grid grid-2 estimate-section-grid">
-      <div>
+      <div class="estimate-intro-card">
         <span class="pill">Request Estimate</span>
-        <h2>Tell us what you need.</h2>
-        <p>Send the basics and our team will review your repair, maintenance, installation, or property work request. Photos and technical details are helpful, but not required to get started.</p>
+        <h2>Tell us what your property needs.</h2>
+        <p>Send your contact details, work type, address, timeframe, and a short description. Photo links are welcome and help us prepare a more accurate quote.</p>
         <div class="estimate-type-list" aria-label="Available type of work categories">
           <span>HVAC</span><span>Water Heaters</span><span>Plumbing</span><span>Electrical</span><span>Drywall</span><span>Painting</span><span>Doors</span><span>Windows</span><span>Appliances</span><span>Handyman</span><span>Facilities Maintenance</span><span>Property Maintenance</span><span>Commercial Maintenance</span><span>General Contracting</span><span>Tenant Improvements</span><span>Other / Not Sure</span>
         </div>
@@ -61,13 +62,14 @@
           <div class="field"><label>Type of work</label><select name="service"><option>HVAC</option><option>Water Heaters</option><option>Plumbing</option><option>Electrical</option><option>Drywall</option><option>Painting</option><option>Doors</option><option>Windows</option><option>Appliances</option><option>Handyman</option><option>Facilities Maintenance</option><option>Property Maintenance</option><option>Commercial Maintenance</option><option>General Contracting</option><option>Tenant Improvements</option><option>Other / Not Sure</option></select></div>
           <div class="field"><label>Work scope</label><select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Property punch list</option><option>Tenant improvement</option></select></div>
           <div class="field"><label>Preferred timeframe</label><input name="timeframe" placeholder="Flexible, this week, urgent..."></div>
-          <div class="field"><label>Photo or file link (optional)</label><input name="photoUrl" type="url" placeholder="https://..."></div>
+          <div class="field wide photo-upload-field"><label>Photos or file link (optional)</label><div class="premium-upload-drop"><strong>Add a photo link</strong><span>Paste a shared image, folder, or file URL. You can also add photos later in the portal.</span><input name="photoUrl" type="url" placeholder="https://..."></div></div>
         </div>
-        <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the issue or work needed in your own words." required></textarea></div>
+        <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the issue, repair, or improvement needed in your own words." required></textarea></div>
         <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
         <label class="checkbox-line"><input type="checkbox" name="permissionToContact" required> I authorize contact about this request.</label>
-        <button class="btn" type="submit">Submit Request</button>
-        <p id="request-status" class="request-status"></p>
+        <button class="btn request-submit" type="submit">Submit Estimate Request</button>
+        <p class="privacy-note">We use your details only to review this request and contact you about the estimate.</p>
+        <p id="request-status" class="request-status" role="status"></p>
       </form>
     </div>
   </template>
