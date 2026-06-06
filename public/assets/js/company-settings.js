@@ -42,3 +42,17 @@
   async function requireInstalled() { const status = await installStatus(); if (!status.installed) { location.replace('/install/'); return false; } return true; }
   window.TACompany = { fallback, norm, apply, load, installStatus, requireInstalled, initials, current: fallback };
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.mobile-menu-toggle').forEach((button) => {
+    if (button.dataset.bound === '1') return;
+    button.dataset.bound = '1';
+    button.addEventListener('click', () => {
+      const header = button.closest('.customer-public-header, .site-header');
+      const open = !header?.classList.contains('menu-open');
+      header?.classList.toggle('menu-open', open);
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+  });
+});

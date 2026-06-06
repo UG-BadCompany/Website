@@ -15,7 +15,7 @@
       mountRoot.querySelectorAll('[data-job]').forEach((card) => card.addEventListener('click', () => { selected = card.dataset.job; render(); }));
       mountRoot.querySelector('.worker-completion-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget).entries()); const completionEvidenceFiles = String(values.completionEvidenceFileUrls || '').split(/\r?\n/).map((url) => url.trim()).filter(Boolean); await api.patch('/api/worker/jobs', { ...values, assignmentId: current.id, completionChecklist: [values.laborTime].filter(Boolean), completionEvidenceFiles }); if (values.status === 'worker_completed') window.TAWorkflow?.emit?.('workorder:completed', { assignmentId: current.id, jobRequestId: current.jobRequest?.id }); window.TAUi?.toast?.('Worker update saved for admin review.', 'success'); await load(); render(); });
     };
-    mountRoot.innerHTML = '<section class="stack"><div class="card"><h2>Jobs</h2><p>Loading...</p></div></section>';
+    mountRoot.innerHTML = '<section class="stack"><div class="card module-loading"><h2>Jobs</h2><p>Preparing workspace.</p></div></section>';
     await load(); render();
   },async destroy(){},async refresh(){}});
 })();

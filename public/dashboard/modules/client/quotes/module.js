@@ -50,7 +50,7 @@
       mountRoot.querySelectorAll('[data-toggle-quote]').forEach((btn) => btn.addEventListener('click', () => { const id = String(btn.dataset.toggleQuote || ''); if (openIds.has(id)) openIds.delete(id); else openIds.add(id); render(); }));
       mountRoot.querySelectorAll('[data-decision]').forEach((btn) => btn.addEventListener('click', async () => { const host = btn.closest('[data-quote-id]'); const quoteId = host?.dataset.quoteId; btn.disabled = true; const response = await api.patch('/api/client/quotes', { quoteId, action: btn.dataset.decision }); data.quotes = data.quotes.map((item) => item.id === quoteId ? response.quote : item); render(); }));
     };
-    mountRoot.innerHTML = '<section class="stack"><div class="card"><h2>Quotes</h2><p>Loading...</p></div></section>';
+    mountRoot.innerHTML = '<section class="stack"><div class="card module-loading"><h2>Quotes</h2><p>Preparing quotes.</p></div></section>';
     data = await api.get('/api/client/quotes'); render();
   },async destroy(){},async refresh(){}});
 })();
