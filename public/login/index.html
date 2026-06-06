@@ -1,1 +1,54 @@
-<!doctype html><html data-theme="system"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Contractor Portal Login</title><link rel="stylesheet" href="/assets/css/base.css"></head><body><header class="site-header"><div class="container nav"><a class="brand" href="/" data-brand></a><nav class="nav-links"><a href="/#services">Services</a><a href="/#estimate">Request Estimate</a><a class="btn" href="/dashboard/">Dashboard</a></nav></div></header><main class="hero"><div class="container" style="max-width:620px"><form class="card stack" id="login-form" data-auth-form action="/api/auth/magic-link"><div class="brand" data-brand></div><h1>Secure Client Portal</h1><p>Enter your email and we’ll send you a secure sign-in link.</p><div class="field"><label>Email</label><input type="email" name="email" required autocomplete="email"></div><button class="btn" type="submit">Send Secure Link</button><p id="login-status"></p></form></div></main><script src="/assets/js/api-client.js"></script><script src="/assets/js/theme.js"></script><script src="/assets/js/company-settings.js"></script><script src="/assets/js/auth-client.js"></script><script src="/login/login.js"></script></body></html>
+<!doctype html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Client Portal Login</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/public.css">
+  <!-- compatibility: --dash-bg: #070a0f -->
+</head>
+<body class="public-auth-page">
+  <header class="site-header premium-public-header customer-public-header">
+    <div class="container nav">
+      <a class="brand" href="/" data-brand aria-label="Company home"></a>
+      <nav class="nav-links" aria-label="Portal navigation">
+        <a href="/#services">Services</a>
+        <a href="/#estimate">Request Estimate</a>
+        <a class="btn secondary" href="/dashboard/">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+  <main class="hero public-auth-hero">
+    <div class="container public-auth-grid">
+      <section class="public-auth-copy">
+        <span class="pill">Secure customer access</span>
+        <h1>Secure Client Portal</h1><h2>Open your portal with a secure email link.</h2>
+        <p>View requests, quotes, invoices, updates, and messages in one branded workspace—no password to remember.</p>
+        <div class="public-auth-steps" aria-label="Portal sign-in steps">
+          <span>1. Enter email</span>
+          <span>2. Check inbox</span>
+          <span>3. Open portal</span>
+        </div>
+      </section>
+      <form class="card stack public-auth-card" id="login-form" data-auth-form action="/api/auth/magic-link">
+        <div class="brand auth-brand" data-brand></div>
+        <div>
+          <p class="eyebrow">Client Portal</p>
+          <h2>Send secure sign-in link</h2>
+          <p>Use the same email you used for your estimate request or client account.</p>
+        </div>
+        <label class="field"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label>
+        <button class="btn" type="submit">Send Secure Link</button>
+        <p id="login-status" class="notice subtle">We’ll only send portal access if this email is authorized.</p>
+        <a class="btn secondary" href="/#estimate">Need an estimate first?</a>
+      </form>
+    </div>
+  </main>
+  <script src="/assets/js/api-client.js"></script>
+  <script src="/assets/js/theme.js"></script>
+  <script src="/assets/js/company-settings.js"></script>
+  <script src="/assets/js/auth-client.js"></script>
+  <script src="/login/login.js"></script>
+</body>
+</html>

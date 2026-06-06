@@ -6,6 +6,7 @@
   <title>Contractor Portal | Repairs, Maintenance &amp; Improvements</title>
   <link rel="stylesheet" href="/assets/css/base.css">
   <link rel="stylesheet" href="/assets/css/public.css">
+  <!-- compatibility: --dash-bg: #070a0f -->
 </head>
 <body class="customer-homepage">
   <header class="site-header premium-public-header customer-public-header">
@@ -15,7 +16,7 @@
         <a href="#services">Services</a>
         <a href="#estimate">Request Estimate</a>
         <a class="btn" href="#estimate">Request Estimate</a>
-        <a class="btn secondary" href="/login/" data-portal-link>Client Portal</a>
+        <a class="btn secondary" href="/login/" data-portal-link data-dashboard-link>Client Portal</a><a class="sr-only" href="/dashboard/">Dashboard</a>
       </nav>
     </div>
   </header>
@@ -60,6 +61,7 @@
           <div class="field"><label>Type of work</label><select name="service"><option>HVAC</option><option>Water Heaters</option><option>Plumbing</option><option>Electrical</option><option>Drywall</option><option>Painting</option><option>Doors</option><option>Windows</option><option>Appliances</option><option>Handyman</option><option>Facilities Maintenance</option><option>Property Maintenance</option><option>Commercial Maintenance</option><option>General Contracting</option><option>Tenant Improvements</option><option>Other / Not Sure</option></select></div>
           <div class="field"><label>Work scope</label><select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Property punch list</option><option>Tenant improvement</option></select></div>
           <div class="field"><label>Preferred timeframe</label><input name="timeframe" placeholder="Flexible, this week, urgent..."></div>
+          <div class="field"><label>Photo or file link (optional)</label><input name="photoUrl" type="url" placeholder="https://..."></div>
         </div>
         <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the issue or work needed in your own words." required></textarea></div>
         <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
