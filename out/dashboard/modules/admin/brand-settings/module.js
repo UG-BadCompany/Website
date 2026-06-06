@@ -34,16 +34,18 @@
     title: 'Brand Settings',
     icon: '🎨',
     permissions: ['branding.manage', 'company.manage'],
-    async mount({ root, api }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
+    async mount(context = {}) { const { api } = context; const mountRoot = window.TAModuleRoot.resolve(context); if (!mountRoot?.querySelector) throw new TypeError('Module root element was not found.'); const root = mountRoot;
       let company = window.TACompany?.current || window.TACompany?.fallback || {};
 
       const readState = () => {
-        const values = window.TAForms.values(root.querySelector('[data-brand-form]'));
-        values.enableThemeToggle = Boolean(root.querySelector('[name="enableThemeToggle"]')?.checked);
-        values.showCompanyNameInHeader = Boolean(root.querySelector('[name="showCompanyNameInHeader"]')?.checked);
+        const values = window.TAForms.values(mountRoot.querySelector('[data-brand-form]'));
+        values.enableThemeToggle = Boolean(mountRoot.querySelector('[name="enableThemeToggle"]')?.checked);
+        values.showCompanyNameInHeader = Boolean(mountRoot.querySelector('[name="showCompanyNameInHeader"]')?.checked);
+        values.customSidebarColorsEnabled = Boolean(mountRoot.querySelector('[name="customSidebarColorsEnabled"]')?.checked);
+        values.customMobileNavColorsEnabled = Boolean(mountRoot.querySelector('[name="customMobileNavColorsEnabled"]')?.checked);
         values.defaultTheme = values.themeMode || values.defaultTheme || 'system';
         for (const [key] of allColors) {
-          const hex = root.querySelector(`[data-color-hex="${key}"]`)?.value;
+          const hex = mountRoot.querySelector(`[data-color-hex="${key}"]`)?.value;
           values[key] = normalizeHex(hex, paletteFallback(key));
         }
         return { ...company, ...values };
@@ -68,7 +70,7 @@
       };
 
       const renderPreview = (state) => {
-        const preview = root.querySelector('[data-brand-preview]');
+        const preview = mountRoot.querySelector('[data-brand-preview]');
         if (!preview) return;
         const initials = window.TACompany?.initials?.(state.displayName || state.companyName) || 'YC';
         preview.style.setProperty('--preview-bg', state.backgroundColor || defaults().backgroundColor);
@@ -76,9 +78,11 @@
         preview.style.setProperty('--preview-text', state.textColor || defaults().textColor);
         preview.style.setProperty('--preview-primary', state.primaryColor || defaults().primaryColor);
         preview.style.setProperty('--preview-button', state.buttonColor || state.primaryColor || defaults().buttonColor);
-        preview.style.setProperty('--preview-sidebar-bg', state.sidebarBackgroundColor || defaults().sidebarBackgroundColor);
-        preview.style.setProperty('--preview-sidebar-text', state.sidebarTextColor || defaults().sidebarTextColor);
-        preview.style.setProperty('--preview-sidebar-active', state.sidebarActiveColor || defaults().sidebarActiveColor);
+        const resolvedMode = window.TATheme?.resolveThemeMode?.(state.themeMode || state.defaultTheme || 'system') || 'light';
+        const palette = window.TATheme?.palettes?.[resolvedMode] || {};
+        preview.style.setProperty('--preview-sidebar-bg', state.customSidebarColorsEnabled ? (state.sidebarBackgroundColor || palette.sidebarBackgroundColor) : palette.sidebarBackgroundColor);
+        preview.style.setProperty('--preview-sidebar-text', state.customSidebarColorsEnabled ? (state.sidebarTextColor || palette.sidebarTextColor) : palette.sidebarTextColor);
+        preview.style.setProperty('--preview-sidebar-active', state.customSidebarColorsEnabled ? (state.sidebarActiveColor || palette.sidebarActiveColor) : palette.sidebarActiveColor);
         preview.innerHTML = `<div class="brand-preview-shell">
           <header class="brand-preview-header">
             <div class="brand-preview-brand">
@@ -103,42 +107,42 @@
       const syncColor = (key, value, source) => {
         const fallback = paletteFallback(key);
         const normalized = normalizeHex(value, fallback);
-        const swatch = root.querySelector(`[data-color-swatch="${key}"]`);
-        const hex = root.querySelector(`[data-color-hex="${key}"]`);
+        const swatch = mountRoot.querySelector(`[data-color-swatch="${key}"]`);
+        const hex = mountRoot.querySelector(`[data-color-hex="${key}"]`);
         if (swatch && source !== 'swatch') swatch.value = normalized;
         if (hex && source !== 'hex') hex.value = normalized;
         applyPreview();
       };
 
       const bind = () => {
-        root.querySelectorAll('[data-color-swatch]').forEach((input) => {
+        mountRoot.querySelectorAll('[data-color-swatch]').forEach((input) => {
           input.addEventListener('input', () => syncColor(input.dataset.colorSwatch, input.value, 'swatch'));
           input.addEventListener('change', () => syncColor(input.dataset.colorSwatch, input.value, 'swatch'));
         });
-        root.querySelectorAll('[data-color-hex]').forEach((input) => {
+        mountRoot.querySelectorAll('[data-color-hex]').forEach((input) => {
           input.addEventListener('input', () => {
             if (hexOk(input.value)) syncColor(input.dataset.colorHex, input.value, 'hex');
           });
           input.addEventListener('blur', () => syncColor(input.dataset.colorHex, input.value, 'hex'));
         });
-        root.querySelectorAll('[data-reset-color]').forEach((button) => {
+        mountRoot.querySelectorAll('[data-reset-color]').forEach((button) => {
           button.addEventListener('click', () => syncColor(button.dataset.resetColor, defaults()[button.dataset.resetColor], 'reset'));
         });
-        root.querySelector('[data-reset-theme]')?.addEventListener('click', () => {
+        mountRoot.querySelector('[data-reset-theme]')?.addEventListener('click', () => {
           company = { ...company, ...defaults(), themeMode: 'system', defaultTheme: 'system' };
           render();
         });
-        root.querySelectorAll('input:not([type="color"]), select').forEach((input) => {
+        mountRoot.querySelectorAll('input:not([type="color"]), select').forEach((input) => {
           input.addEventListener('input', applyPreview);
           input.addEventListener('change', applyPreview);
         });
-        root.querySelector('[data-brand-form]')?.addEventListener('submit', save);
+        mountRoot.querySelector('[data-brand-form]')?.addEventListener('submit', save);
       };
 
       const save = async (event) => {
         event.preventDefault();
-        const button = root.querySelector('[data-save-brand]');
-        const status = root.querySelector('[data-brand-status]');
+        const button = mountRoot.querySelector('[data-save-brand]');
+        const status = mountRoot.querySelector('[data-brand-status]');
         const payload = readState();
         const requiredPayload = {
           companyName: payload.companyName,
@@ -169,7 +173,9 @@
           mobileNavTextColor: payload.mobileNavTextColor,
           mobileNavActiveColor: payload.mobileNavActiveColor,
           mobileNavBorderColor: payload.mobileNavBorderColor,
-          hasCustomSidebarColors: true,
+          customSidebarColorsEnabled: payload.customSidebarColorsEnabled,
+          customMobileNavColorsEnabled: payload.customMobileNavColorsEnabled,
+          hasCustomSidebarColors: payload.customSidebarColorsEnabled,
         };
         button.disabled = true;
         status.textContent = 'Saving brand settings...';
@@ -189,7 +195,7 @@
 
       const render = () => {
         const mode = company.themeMode || company.defaultTheme || 'system';
-        root.innerHTML = `<section class="module-page stack brand-settings-page">
+        mountRoot.innerHTML = `<section class="module-page stack brand-settings-page">
           <form class="card module-section stack" data-brand-form>
             <div class="module-header brand-settings-head">
               <div>
@@ -221,9 +227,17 @@
             <div class="module-grid color-settings-grid">
               ${colors.map(renderColorControl).join('')}
             </div>
-            <h3>Sidebar & Mobile Navigation Colors</h3>
-            <div class="module-grid color-settings-grid">
-              ${sidebarColors.map(renderColorControl).join('')}
+            <h3>Sidebar Colors</h3>
+            <label class="pill"><input type="checkbox" name="customSidebarColorsEnabled" ${company.customSidebarColorsEnabled ? 'checked' : ''}> Use custom sidebar colors</label>
+            <p class="notice">Leave unchecked to use the selected Light/Dark/System theme's default sidebar colors.</p>
+            <div class="module-grid color-settings-grid" data-sidebar-color-controls>
+              ${sidebarColors.slice(0, 5).map(renderColorControl).join('')}
+            </div>
+            <h3>Mobile Nav Colors</h3>
+            <label class="pill"><input type="checkbox" name="customMobileNavColorsEnabled" ${company.customMobileNavColorsEnabled ? 'checked' : ''}> Use custom mobile nav colors</label>
+            <p class="notice">Leave unchecked to use the selected Light/Dark/System theme's default mobile bottom nav colors.</p>
+            <div class="module-grid color-settings-grid" data-mobile-nav-color-controls>
+              ${sidebarColors.slice(5).map(renderColorControl).join('')}
             </div>
 
             <div class="grid grid-2 brand-preview-grid">
@@ -247,7 +261,7 @@
         applyPreview();
       };
 
-      root.innerHTML = '<article class="card module-loading"><h3>Loading Brand Settings</h3><p>Preparing company theme controls...</p></article>';
+      mountRoot.innerHTML = '<article class="card module-loading"><h3>Loading Brand Settings</h3><p>Preparing company theme controls...</p></article>';
       try {
         company = await window.TACompany?.load?.() || company;
       } finally {

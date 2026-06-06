@@ -13,14 +13,14 @@
     title: 'Roles / Ranks',
     icon: '🛡️',
     permissions: ['roles.manage', 'admin.roles.manage'],
-    async mount({ root, api, router }) { root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root'); if (!root?.querySelector) throw new TypeError('Module root element was not found.');
+    async mount(context = {}) { const { api, router } = context; const mountRoot = window.TAModuleRoot.resolve(context); if (!mountRoot?.querySelector) throw new TypeError('Module root element was not found.'); const root = mountRoot;
       const isOwnerConsolidated = router?.state?.currentModule === 'owner.permissions-workspaces';
       let data = { roles: [], permissions: [] };
       let activeTab = 'roles';
       const requireForms = () => {
         if (window.TAForms?.values && window.TAForms?.checkedValues) return true;
         const message = 'Required form utility failed to load. Refresh the page or contact admin.';
-        const status = root.querySelector('#role-status');
+        const status = mountRoot.querySelector('#role-status');
         if (status) status.textContent = message;
         window.TAUi?.toast?.(message, 'error');
         return false;
@@ -35,15 +35,15 @@
         : 'Create, clone, edit, delete unused custom roles, and manage grouped permissions.';
 
       const load = async () => {
-        root.innerHTML = '<article class="card module-loading"><h3>Loading permissions</h3><p>Preparing roles, permission keys, and workspace access matrix.</p></article>';
+        mountRoot.innerHTML = '<article class="card module-loading"><h3>Loading permissions</h3><p>Preparing roles, permission keys, and workspace access matrix.</p></article>';
         try {
           data = await api.get('/api/admin/roles');
           data.roles = asArray(data.roles);
           data.permissions = asArray(data.permissions);
           render();
         } catch (error) {
-          root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(error.message || 'Unable to load roles')}</p><button class="btn secondary" type="button" id="retry-roles">Retry</button></article></section>`;
-          root.querySelector('#retry-roles')?.addEventListener('click', load);
+          mountRoot.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(error.message || 'Unable to load roles')}</p><button class="btn secondary" type="button" id="retry-roles">Retry</button></article></section>`;
+          mountRoot.querySelector('#retry-roles')?.addEventListener('click', load);
         }
       };
 
@@ -93,23 +93,23 @@
 
       const render = () => {
         const systemRoles = data.roles.filter((role) => role.isSystem || protectedKeys.has(role.key)).length;
-        root.innerHTML = `<section class="module-page stack permissions-workspaces-page">
+        mountRoot.innerHTML = `<section class="module-page stack permissions-workspaces-page">
           <div class="card module-header"><div><p class="eyebrow">${isOwnerConsolidated ? 'Owner Workspace' : 'Admin Workspace'}</p><h2 class="module-title">🛡️ ${escapeHtml(title)}</h2><p class="module-description">${escapeHtml(description)}</p></div></div>
           <div class="module-stat-grid"><article class="module-stat stat-card"><span>🛡️</span><strong>${data.roles.length}</strong><small>Total Roles</small></article><article class="module-stat stat-card"><span>🔒</span><strong>${systemRoles}</strong><small>Protected/System</small></article><article class="module-stat stat-card"><span>✅</span><strong>${data.permissions.length}</strong><small>Permission Keys</small></article><article class="module-stat stat-card"><span>🧩</span><strong>${workspaceDefs.length}</strong><small>Workspaces</small></article></div>
           <div class="card module-section stack">${tabsHtml()}<div data-permission-panel>${renderActiveTab()}</div></div>
         </section>`;
         bindListActions();
-        root.querySelectorAll('[data-permission-tab]').forEach((button) => button.addEventListener('click', () => { activeTab = button.dataset.permissionTab; render(); }));
+        mountRoot.querySelectorAll('[data-permission-tab]').forEach((button) => button.addEventListener('click', () => { activeTab = button.dataset.permissionTab; render(); }));
       };
 
       const bindListActions = () => {
-        root.querySelector('#new-role')?.addEventListener('click', () => editor());
-        root.querySelectorAll('[data-edit-role]').forEach((button) => button.addEventListener('click', () => editor(data.roles.find((role) => String(role.id) === button.dataset.editRole))));
-        root.querySelectorAll('[data-clone-role]').forEach((button) => button.addEventListener('click', () => {
+        mountRoot.querySelector('#new-role')?.addEventListener('click', () => editor());
+        mountRoot.querySelectorAll('[data-edit-role]').forEach((button) => button.addEventListener('click', () => editor(data.roles.find((role) => String(role.id) === button.dataset.editRole))));
+        mountRoot.querySelectorAll('[data-clone-role]').forEach((button) => button.addEventListener('click', () => {
           const role = data.roles.find((item) => String(item.id) === button.dataset.cloneRole);
           editor({ ...role, id: null, key: `${role.key}-copy`, name: `${role.name} Copy`, isSystem: false });
         }));
-        root.querySelectorAll('[data-delete-role]').forEach((button) => button.addEventListener('click', async () => {
+        mountRoot.querySelectorAll('[data-delete-role]').forEach((button) => button.addEventListener('click', async () => {
           if (confirm('Delete unused custom role?')) {
             await api.delete('/api/admin/roles', { roleId: button.dataset.deleteRole });
             window.TAUi?.toast('Role deleted.', 'success');
@@ -118,7 +118,7 @@
         }));
       };
 
-      const setGroup = (group, checked) => root.querySelectorAll('[data-group]:not(:disabled)').forEach((input) => { if (input.dataset.group === group) input.checked = checked; });
+      const setGroup = (group, checked) => mountRoot.querySelectorAll('[data-group]:not(:disabled)').forEach((input) => { if (input.dataset.group === group) input.checked = checked; });
       const editor = (role = { permissions: [] }) => {
         let unsaved = false;
         const currentPermissions = new Set(asArray(role.permissions));
@@ -129,16 +129,16 @@
           return `<fieldset class="card module-card stack"><legend>${escapeHtml(group)}</legend><div class="action-row"><button class="btn secondary" type="button" data-select-group="${escapeHtml(group)}">Select Group</button><button class="btn secondary" type="button" data-clear-group="${escapeHtml(group)}">Clear Group</button></div><div class="module-grid">${groupPermissions.map((permission) => { const locked = permission.canGrant === false; return `<label class="pill" title="${locked ? 'You do not currently have this permission.' : 'Permission can be granted.'}"><input type="checkbox" name="permissions" data-group="${escapeHtml(group)}" value="${escapeHtml(permission.key)}" ${currentPermissions.has(permission.key) ? 'checked' : ''} ${locked ? 'disabled' : ''}> ${escapeHtml(permission.key)}${locked ? ' 🔒' : ''}</label>`; }).join('')}</div></fieldset>`;
         }).join('');
         const workspaceControls = workspaceDefs.map(([workspace, label]) => { const key = workspacePermission(workspace); const permission = data.permissions.find((item) => item.key === key); const locked = permission?.canGrant === false; return `<label class="pill" title="${locked ? 'Only Owner can grant this permission or you do not currently have it.' : 'Workspace access permission'}"><input type="checkbox" name="permissions" data-workspace-access="${workspace}" value="${key}" ${currentPermissions.has(key) || role.key === workspace || role.key === 'owner' ? 'checked' : ''} ${locked ? 'disabled' : ''}> ${escapeHtml(label)}${locked ? ' 🔒' : ''}</label>`; }).join('');
-        root.innerHTML = `<section class="module-page stack"><form class="card module-section stack" data-role-editor><div class="module-header"><div><p class="eyebrow">${escapeHtml(title)}</p><h2 class="module-title">${role.id ? 'Edit' : 'Create'} Role</h2><p class="module-description">Assign permissions and workspace access from one consolidated owner workspace.</p></div></div><div class="form-grid"><label class="field"><span>Name</span><input name="name" value="${escapeHtml(role.name || '')}" placeholder="Role name"></label><label class="field"><span>Key</span><input name="key" value="${escapeHtml(role.key || '')}" placeholder="role-key" ${role.id ? 'readonly' : ''}></label><label class="field"><span>Description</span><input name="description" value="${escapeHtml(role.description || '')}" placeholder="Role description"></label><label class="field"><span>Copy Permissions From Existing Role</span><select id="copy-permissions"><option value="">Choose role...</option>${roleOptions}</select></label></div><section class="card module-card stack"><h3>Workspace Access</h3><p>These controls map to dashboard view permissions. Roles cannot be granted permissions above the editor's current access level.</p><div class="module-grid">${workspaceControls}</div></section><div class="action-row"><button class="btn secondary" type="button" id="select-all-permissions">Select All Permissions</button><button class="btn secondary" type="button" id="clear-all-permissions">Clear Permissions</button></div><h3>Permissions</h3>${permissionFieldsets || '<article class="module-empty"><h3>No permissions available</h3><p>The backend did not return permission keys for editing.</p></article>'}<p class="notice" id="role-status">Ready to save grouped permission and workspace changes.</p><div class="action-row"><button class="btn" type="submit" id="save-role">Save Changes</button><button class="btn secondary" type="button" id="cancel-role">Cancel</button></div></form></section>`;
+        mountRoot.innerHTML = `<section class="module-page stack"><form class="card module-section stack" data-role-editor><div class="module-header"><div><p class="eyebrow">${escapeHtml(title)}</p><h2 class="module-title">${role.id ? 'Edit' : 'Create'} Role</h2><p class="module-description">Assign permissions and workspace access from one consolidated owner workspace.</p></div></div><div class="form-grid"><label class="field"><span>Name</span><input name="name" value="${escapeHtml(role.name || '')}" placeholder="Role name"></label><label class="field"><span>Key</span><input name="key" value="${escapeHtml(role.key || '')}" placeholder="role-key" ${role.id ? 'readonly' : ''}></label><label class="field"><span>Description</span><input name="description" value="${escapeHtml(role.description || '')}" placeholder="Role description"></label><label class="field"><span>Copy Permissions From Existing Role</span><select id="copy-permissions"><option value="">Choose role...</option>${roleOptions}</select></label></div><section class="card module-card stack"><h3>Workspace Access</h3><p>These controls map to dashboard view permissions. Roles cannot be granted permissions above the editor's current access level.</p><div class="module-grid">${workspaceControls}</div></section><div class="action-row"><button class="btn secondary" type="button" id="select-all-permissions">Select All Permissions</button><button class="btn secondary" type="button" id="clear-all-permissions">Clear Permissions</button></div><h3>Permissions</h3>${permissionFieldsets || '<article class="module-empty"><h3>No permissions available</h3><p>The backend did not return permission keys for editing.</p></article>'}<p class="notice" id="role-status">Ready to save grouped permission and workspace changes.</p><div class="action-row"><button class="btn" type="submit" id="save-role">Save Changes</button><button class="btn secondary" type="button" id="cancel-role">Cancel</button></div></form></section>`;
         const markUnsaved = () => { unsaved = true; };
-        root.querySelectorAll('input, select').forEach((element) => element.addEventListener('change', markUnsaved));
-        root.querySelector('#select-all-permissions').addEventListener('click', () => { root.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = true; }); markUnsaved(); });
-        root.querySelector('#clear-all-permissions').addEventListener('click', () => { root.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = false; }); markUnsaved(); });
-        root.querySelectorAll('[data-select-group]').forEach((button) => button.addEventListener('click', () => { setGroup(button.dataset.selectGroup, true); markUnsaved(); }));
-        root.querySelectorAll('[data-clear-group]').forEach((button) => button.addEventListener('click', () => { setGroup(button.dataset.clearGroup, false); markUnsaved(); }));
-        root.querySelector('#copy-permissions').addEventListener('change', (event) => { const source = data.roles.find((item) => String(item.id) === event.target.value); if (!source) return; const sourcePermissions = new Set(asArray(source.permissions)); root.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = sourcePermissions.has(input.value); }); markUnsaved(); });
-        root.querySelector('#cancel-role').addEventListener('click', () => { if (!unsaved || confirm('Discard unsaved changes?')) render(); });
-        root.querySelector('[data-role-editor]').addEventListener('submit', async (event) => { event.preventDefault(); if (!requireForms()) return; const payload = window.TAForms.values(root.querySelector('[data-role-editor]')); payload.permissions = window.TAForms.checkedValues(root, 'permissions'); payload.workspaceAccess = workspaceDefs.filter(([workspace]) => payload.permissions.includes(workspacePermission(workspace))).map(([workspace]) => workspace); if (role.id) payload.roleId = role.id; const saveButton = root.querySelector('#save-role'); root.querySelector('#role-status').textContent = 'Saving role, workspace access, and permission assignments...'; saveButton.disabled = true; saveButton.textContent = 'Saving...'; try { await api[role.id ? 'patch' : 'post']('/api/admin/roles', payload); window.TAUi?.toast('Role permissions and workspace access saved.', 'success'); unsaved = false; await load(); } catch (error) { root.querySelector('#role-status').textContent = error.message || 'Role save failed.'; window.TAUi?.toast(error.message || 'Role save failed.', 'error'); saveButton.disabled = false; saveButton.textContent = 'Save Changes'; } });
+        mountRoot.querySelectorAll('input, select').forEach((element) => element.addEventListener('change', markUnsaved));
+        mountRoot.querySelector('#select-all-permissions').addEventListener('click', () => { mountRoot.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = true; }); markUnsaved(); });
+        mountRoot.querySelector('#clear-all-permissions').addEventListener('click', () => { mountRoot.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = false; }); markUnsaved(); });
+        mountRoot.querySelectorAll('[data-select-group]').forEach((button) => button.addEventListener('click', () => { setGroup(button.dataset.selectGroup, true); markUnsaved(); }));
+        mountRoot.querySelectorAll('[data-clear-group]').forEach((button) => button.addEventListener('click', () => { setGroup(button.dataset.clearGroup, false); markUnsaved(); }));
+        mountRoot.querySelector('#copy-permissions').addEventListener('change', (event) => { const source = data.roles.find((item) => String(item.id) === event.target.value); if (!source) return; const sourcePermissions = new Set(asArray(source.permissions)); mountRoot.querySelectorAll('[name="permissions"]:not(:disabled)').forEach((input) => { input.checked = sourcePermissions.has(input.value); }); markUnsaved(); });
+        mountRoot.querySelector('#cancel-role').addEventListener('click', () => { if (!unsaved || confirm('Discard unsaved changes?')) render(); });
+        mountRoot.querySelector('[data-role-editor]').addEventListener('submit', async (event) => { event.preventDefault(); if (!requireForms()) return; const payload = window.TAForms.values(mountRoot.querySelector('[data-role-editor]')); payload.permissions = window.TAForms.checkedValues(root, 'permissions'); payload.workspaceAccess = workspaceDefs.filter(([workspace]) => payload.permissions.includes(workspacePermission(workspace))).map(([workspace]) => workspace); if (role.id) payload.roleId = role.id; const saveButton = mountRoot.querySelector('#save-role'); mountRoot.querySelector('#role-status').textContent = 'Saving role, workspace access, and permission assignments...'; saveButton.disabled = true; saveButton.textContent = 'Saving...'; try { await api[role.id ? 'patch' : 'post']('/api/admin/roles', payload); window.TAUi?.toast('Role permissions and workspace access saved.', 'success'); unsaved = false; await load(); } catch (error) { mountRoot.querySelector('#role-status').textContent = error.message || 'Role save failed.'; window.TAUi?.toast(error.message || 'Role save failed.', 'error'); saveButton.disabled = false; saveButton.textContent = 'Save Changes'; } });
       };
       await load();
     },
