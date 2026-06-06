@@ -1,3 +1,35 @@
+(() => {
+  const bindWizard = () => {
+    document.querySelectorAll('.estimate-wizard').forEach((form) => {
+      if (form.dataset.wizardBound === '1') return;
+      form.dataset.wizardBound = '1';
+      const stages = [...form.querySelectorAll('[data-wizard-stage]')];
+      const jumps = [...form.querySelectorAll('[data-wizard-jump]')];
+      const prev = form.querySelector('[data-wizard-prev]');
+      const next = form.querySelector('[data-wizard-next]');
+      let current = 0;
+      const show = (index) => {
+        current = Math.max(0, Math.min(index, stages.length - 1));
+        stages.forEach((stage, stageIndex) => { stage.hidden = stageIndex !== current; });
+        jumps.forEach((jump, jumpIndex) => {
+          jump.classList.toggle('active', jumpIndex === current);
+          jump.classList.toggle('complete', jumpIndex < current);
+        });
+        if (prev) prev.hidden = current === 0;
+        if (next) next.hidden = current === stages.length - 1;
+        form.style.setProperty('--wizard-progress', `${((current + 1) / stages.length) * 100}%`);
+      };
+      jumps.forEach((jump) => jump.addEventListener('click', () => show(Number(jump.dataset.wizardJump) || 0)));
+      prev?.addEventListener('click', () => show(current - 1));
+      next?.addEventListener('click', () => show(current + 1));
+      show(0);
+    });
+  };
+  window.TAEstimateWizard = { bind: bindWizard };
+  document.addEventListener('DOMContentLoaded', bindWizard);
+  document.addEventListener('ta:homepage-rendered', bindWizard);
+})();
+
 (async()=>{
   if(!await TACompany.requireInstalled())return;
   await TACompany.load();
