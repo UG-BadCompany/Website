@@ -1048,3 +1048,333 @@ body,
 #dashboard-app th,
 #dashboard-app td { color: var(--color-text); border-color: var(--color-border); }
 #dashboard-app th { background: color-mix(in srgb, var(--color-surface) 85%, var(--color-background)); color: var(--color-muted); }
+
+/* Full-dashboard premium UX pass: owner/admin/manager/worker/client shell and modules. */
+#dashboard-app {
+  background:
+    radial-gradient(circle at 18% 0, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 26rem),
+    radial-gradient(circle at 92% 4%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 22rem),
+    var(--color-background);
+}
+
+#dashboard-sidebar {
+  background: linear-gradient(180deg, var(--sidebar-bg, var(--color-surface)), color-mix(in srgb, var(--sidebar-bg, var(--color-surface)) 88%, var(--color-background)));
+  color: var(--sidebar-text, var(--color-text));
+  border-right: 1px solid var(--sidebar-border, var(--color-border));
+  box-shadow: 18px 0 50px color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.sidebar-brand-row {
+  border-color: var(--sidebar-border, var(--color-border));
+}
+
+#dashboard-sidebar .brand-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--sidebar-text, var(--color-text)) 8%, transparent);
+  border-color: var(--sidebar-border, var(--color-border));
+}
+
+.side-nav button,
+.workspace-switcher button {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+
+.side-nav button.active,
+.workspace-switcher button.active {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sidebar-active, var(--color-primary)) 92%, transparent), color-mix(in srgb, var(--sidebar-active, var(--color-primary)) 64%, transparent));
+  color: var(--sidebar-text, var(--button-text));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--sidebar-text, var(--button-text)) 86%, transparent), 0 12px 26px color-mix(in srgb, var(--sidebar-active, var(--color-primary)) 20%, transparent);
+}
+
+#dashboard-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+#workspace-header {
+  padding-top: 1.35rem;
+}
+
+#workspace-header > * {
+  max-width: 1320px;
+}
+
+#module-root {
+  max-width: 1480px;
+  width: 100%;
+}
+
+.module-page {
+  gap: 1.1rem;
+}
+
+.module-hero,
+.module-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.45rem);
+}
+
+.module-stat-grid,
+.stats-grid,
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.module-stat,
+.stat-card {
+  min-height: 128px;
+  display: grid;
+  align-content: space-between;
+}
+
+.module-stat span,
+.stat-card > span:first-child {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 16%, var(--color-surface)), color-mix(in srgb, var(--color-accent) 12%, var(--color-surface)));
+  border: 1px solid var(--color-border);
+}
+
+.module-stat strong,
+.stat-card strong {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  letter-spacing: -.04em;
+}
+
+.module-tabs,
+.status-tabs {
+  display: flex;
+  gap: .55rem;
+  overflow-x: auto;
+  padding: .15rem 0 .35rem;
+  scrollbar-width: thin;
+}
+
+.module-tabs .btn,
+.status-tab {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.module-section,
+.module-panel {
+  padding: clamp(1rem, 2vw, 1.35rem);
+}
+
+.module-record-card {
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-background));
+  border: 1px solid var(--color-border);
+}
+
+.module-record-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
+  box-shadow: var(--shadow-md, 0 20px 60px color-mix(in srgb, var(--color-text) 12%, transparent));
+}
+
+.wo-progress,
+.workflow-steps,
+.progress-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: .55rem;
+  padding: 0;
+  margin: 1rem 0;
+  list-style: none;
+}
+
+.wo-progress li,
+.workflow-step,
+.progress-step {
+  display: grid;
+  gap: .35rem;
+  justify-items: center;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: .75rem .55rem;
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
+  color: var(--color-muted);
+  font-weight: 850;
+}
+
+.wo-progress li span,
+.workflow-step span,
+.progress-step span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.wo-progress li.done,
+.wo-progress li.active,
+.workflow-step.done,
+.workflow-step.active,
+.progress-step.done,
+.progress-step.active {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+  color: var(--color-text);
+}
+
+.wo-progress li.done span,
+.workflow-step.done span,
+.progress-step.done span {
+  background: var(--color-success);
+  color: var(--button-text);
+}
+
+.wo-progress li.active span,
+.workflow-step.active span,
+.progress-step.active span {
+  background: var(--color-primary);
+  color: var(--button-text);
+}
+
+.photo-estimate-module .module-header,
+.photo-estimate-module .photo-estimate-shell > .card,
+.photo-estimate-upload .card,
+.photo-estimate-results .card {
+  border-radius: 24px;
+}
+
+.photo-dropzone {
+  min-height: 190px !important;
+  border-radius: 24px !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)), color-mix(in srgb, var(--color-accent) 8%, var(--color-surface))) !important;
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border)) !important;
+}
+
+.photo-ai-grid article,
+.confidence-meter,
+.pricing-panel span,
+.line-row {
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-background)) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text);
+}
+
+.client-quote-detail,
+.client-quote-card,
+.client-invoice-card,
+.module-readonly-detail {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 96%, var(--color-background)), var(--color-surface));
+  border-color: var(--color-border);
+}
+
+.quote-client-actions,
+.client-quote-total {
+  border-color: var(--color-border) !important;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent) !important;
+  backdrop-filter: blur(14px);
+}
+
+#mobile-bottom-nav {
+  box-shadow: 0 -14px 34px color-mix(in srgb, var(--color-text) 12%, transparent);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+#mobile-bottom-nav button {
+  min-height: 54px;
+  border-radius: 16px;
+}
+
+.toast {
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-background));
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg, 0 30px 90px color-mix(in srgb, var(--color-text) 16%, transparent));
+}
+
+@media (max-width: 900px) {
+  #dashboard-app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "top"
+      "head"
+      "main"
+      "mobile";
+    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+
+  #dashboard-sidebar {
+    display: none;
+  }
+
+  #dashboard-topbar {
+    min-height: 64px;
+    padding: .65rem .85rem;
+  }
+
+  #workspace-header,
+  #module-root {
+    padding-left: .85rem;
+    padding-right: .85rem;
+  }
+
+  .module-hero,
+  .module-header,
+  .module-record-card {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .module-tabs,
+  .status-tabs {
+    margin-left: -.85rem;
+    margin-right: -.85rem;
+    padding-left: .85rem;
+    padding-right: .85rem;
+  }
+
+  .module-stat-grid,
+  .stats-grid,
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .wo-progress,
+  .workflow-steps,
+  .progress-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .module-stat-grid,
+  .stats-grid,
+  .kpi-grid,
+  .wo-progress,
+  .workflow-steps,
+  .progress-steps {
+    grid-template-columns: 1fr;
+  }
+
+  #module-root {
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  }
+}

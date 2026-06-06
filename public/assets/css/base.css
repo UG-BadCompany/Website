@@ -316,3 +316,242 @@ footer { padding: 2rem 0; border-top: 1px solid var(--color-border); color: var(
     --field-text:var(--color-text);
   }
 }
+
+/* Premium SaaS-grade design system normalization across public, installer, portal, and module UIs. */
+:root {
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
+  --shadow-xs: 0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent);
+  --shadow-sm: 0 12px 32px color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-md: 0 22px 60px color-mix(in srgb, var(--color-text) 12%, transparent);
+  --shadow-lg: 0 30px 90px color-mix(in srgb, var(--color-text) 16%, transparent);
+  --premium-ring: 0 0 0 4px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.card,
+.module-card,
+.module-section,
+.stat-card,
+.module-record-card,
+.module-panel,
+.module-drawer .card,
+.public-auth-card,
+.request-estimate-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 96%, var(--color-background)), var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+}
+
+.module-header,
+.module-hero,
+.page-header,
+.workspace-card,
+.public-auth-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.module-header::before,
+.module-hero::before,
+.public-auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  opacity: .85;
+}
+
+.module-title,
+.module-header h2,
+.page-header h1,
+.public-auth-card h1,
+.public-auth-card h2 {
+  letter-spacing: -.035em;
+  color: var(--color-text);
+}
+
+.module-description,
+.module-header p,
+.module-empty p,
+.module-error p,
+.module-loading p,
+.public-auth-card p {
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.module-empty,
+.empty-state,
+.module-loading,
+.module-error {
+  display: grid;
+  gap: .55rem;
+  min-height: 150px;
+  align-content: center;
+  justify-items: start;
+  border-style: dashed;
+}
+
+.module-empty::before,
+.empty-state::before {
+  content: "";
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 18%, var(--color-surface)), color-mix(in srgb, var(--color-accent) 14%, var(--color-surface)));
+  border: 1px solid var(--color-border);
+}
+
+.btn,
+button.btn,
+a.btn,
+.status-tab,
+.side-nav button,
+.workspace-switcher button,
+.mobile-nav button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.btn.active,
+.status-tab.active,
+.module-tabs .btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--button-text);
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+input,
+select,
+textarea,
+.field input,
+.field select,
+.field textarea {
+  background: var(--field-bg);
+  color: var(--field-text);
+  border-color: var(--color-border);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+}
+
+.table-wrap,
+.module-table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.badge,
+.pill,
+.status-badge,
+.role-badge,
+.workflow-chip {
+  background: color-mix(in srgb, var(--color-surface) 86%, var(--color-background));
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.module-record-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.module-record-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  min-width: 0;
+}
+
+.module-record-card > *,
+.module-record-card h3,
+.module-record-card p,
+.module-record-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.module-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  justify-content: flex-end;
+}
+
+.module-drawer,
+.side-panel {
+  background: color-mix(in srgb, var(--color-background) 35%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.skeleton,
+.loading-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-surface) 78%, var(--color-border));
+  border-radius: var(--radius-md);
+}
+
+.skeleton::after,
+.loading-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-text) 8%, transparent), transparent);
+  animation: premium-shimmer 1.4s infinite;
+}
+
+@keyframes premium-shimmer { to { transform: translateX(100%); } }
+
+@media (max-width: 820px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: min(100% - 24px, 1160px);
+  }
+
+  .module-record-card,
+  .module-record-actions,
+  .hero-actions,
+  .action-row,
+  .module-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .module-record-actions .btn,
+  .hero-actions .btn,
+  .action-row .btn,
+  .module-actions .btn {
+    width: 100%;
+  }
+
+  .card,
+  .module-card,
+  .module-section,
+  .stat-card,
+  .module-record-card,
+  .public-auth-card,
+  .request-estimate-card {
+    border-radius: var(--radius-md);
+  }
+}

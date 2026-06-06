@@ -139,3 +139,347 @@ body,.customer-homepage{background:var(--color-background);color:var(--color-tex
 .customer-landing-hero .pill,.section-heading .pill,.portal-explainer .pill,.service-area-section .pill,#estimate .pill{background:color-mix(in srgb,var(--color-surface) 84%,var(--color-background));border-color:var(--color-border);color:var(--color-text);}
 .customer-service-grid .card{box-shadow:0 18px 50px color-mix(in srgb,var(--color-text) 8%,transparent);}
 .homepage-lightbox button{background:var(--color-surface);color:var(--color-text);}
+
+/* Customer-facing 10/10 polish pass: homepage, auth, thank-you, installer, quote/invoice-safe surfaces. */
+.customer-homepage,
+.public-auth-page,
+.installer-page {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 15% 5%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 28%),
+    radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 24%),
+    var(--color-background);
+  color: var(--color-text);
+}
+
+.customer-public-header .brand-logo,
+.public-auth-page .brand-logo {
+  width: auto;
+  min-width: 52px;
+  max-width: 164px;
+  height: 52px;
+  max-height: 52px;
+  object-fit: contain;
+  padding: .15rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.customer-public-header .brand-name,
+.public-auth-page .brand-name {
+  font-size: 1.02rem;
+  letter-spacing: -.02em;
+}
+
+.customer-public-header .nav-links a[href="#estimate"].btn,
+.customer-public-header .nav-links a[href="/#estimate"].btn {
+  background: var(--color-primary);
+  color: var(--button-text);
+}
+
+.homepage-hero {
+  min-height: min(760px, calc(100dvh - 74px));
+  display: grid;
+  align-items: center;
+  padding: clamp(4rem, 8vw, 7rem) 0;
+  isolation: isolate;
+}
+
+.homepage-hero::before {
+  content: "";
+  position: absolute;
+  inset: 1rem;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--color-border) 64%, transparent);
+  border-radius: 36px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 56%, transparent), transparent 58%);
+  pointer-events: none;
+}
+
+.hero-brand-lockup {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: .7rem .95rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  box-shadow: var(--shadow-sm, 0 14px 34px color-mix(in srgb, var(--color-text) 8%, transparent));
+  width: fit-content;
+  max-width: 100%;
+}
+
+.hero-logo-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)), var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  color: var(--color-primary);
+  font-weight: 950;
+  font-size: 1.35rem;
+  overflow: hidden;
+}
+
+.hero-logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: .25rem;
+}
+
+.hero-logo-compact .hero-logo-mark { width: 56px; height: 56px; border-radius: 18px; }
+.hero-logo-xl .hero-logo-mark { width: 96px; height: 96px; border-radius: 28px; }
+.hero-brand-lockup span { display:block; color: var(--color-muted); font-size: .78rem; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
+.hero-brand-lockup strong { display:block; color: var(--color-text); font-size: clamp(1.05rem, 2vw, 1.35rem); overflow-wrap:anywhere; }
+
+.homepage-hero .hero-copy {
+  max-width: 820px;
+}
+
+.homepage-hero h1 {
+  color: var(--color-text);
+  text-wrap: balance;
+}
+
+.customer-help-card {
+  padding: clamp(1.1rem, 3vw, 1.7rem);
+}
+
+.clean-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: .7rem;
+}
+
+.clean-list li {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: .8rem .9rem;
+}
+
+.customer-service-grid,
+.job-photo-grid {
+  margin-top: 1.5rem;
+}
+
+.service-card,
+.job-photo-card,
+.why-card {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.service-card:hover,
+.job-photo-card:hover,
+.why-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
+  box-shadow: var(--shadow-md, 0 20px 60px color-mix(in srgb, var(--color-text) 12%, transparent));
+}
+
+.service-card::before,
+.why-card::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 42px;
+  margin-bottom: .75rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 20%, var(--color-surface)), color-mix(in srgb, var(--color-accent) 16%, var(--color-surface)));
+  border: 1px solid var(--color-border);
+}
+
+.job-photo-card img,
+.homepage-slideshow {
+  border-radius: 18px;
+}
+
+.request-estimate-card {
+  padding: clamp(1rem, 3vw, 1.6rem);
+}
+
+.estimate-section-grid > div:first-child {
+  align-self: center;
+}
+
+.estimate-type-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-top: 1rem;
+}
+
+.estimate-type-list span,
+.public-auth-steps span {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: .52rem .72rem;
+  background: color-mix(in srgb, var(--color-surface) 86%, var(--color-background));
+  color: var(--color-text);
+  font-weight: 800;
+  font-size: .88rem;
+}
+
+.public-auth-hero {
+  min-height: calc(100dvh - 74px);
+  display: grid;
+  align-items: center;
+}
+
+.public-auth-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 500px);
+  gap: clamp(1.2rem, 4vw, 3rem);
+  align-items: center;
+}
+
+.public-onboarding-wrap {
+  width: min(900px, calc(100% - 32px));
+}
+
+.public-auth-copy h1,
+.success-card h1,
+.onboarding-card h1 {
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: .94;
+  letter-spacing: -.06em;
+  margin: .8rem 0;
+  text-wrap: balance;
+}
+
+.public-auth-copy p {
+  color: var(--color-muted);
+  font-size: 1.12rem;
+  line-height: 1.75;
+  max-width: 620px;
+}
+
+.public-auth-card {
+  padding: clamp(1.2rem, 3vw, 2rem);
+}
+
+.auth-brand {
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.public-auth-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  margin-top: 1.2rem;
+}
+
+.notice.subtle,
+#login-status,
+#thanks-status,
+#install-status {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+}
+
+#account-setup-status[data-tone="success"],
+#login-status[data-tone="success"] {
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-success) 36%, var(--color-border));
+}
+
+#account-setup-status[data-tone="error"],
+#login-status[data-tone="error"] {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 36%, var(--color-border));
+}
+
+.premium-checkbox {
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: .85rem;
+  background: color-mix(in srgb, var(--color-surface) 84%, var(--color-background));
+}
+
+.field.wide {
+  grid-column: 1 / -1;
+}
+
+.customer-footer {
+  padding: 2.5rem 0;
+}
+
+.footer-grid-customer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, .7fr) minmax(180px, .8fr);
+  gap: 1.2rem;
+}
+
+@media (max-width: 900px) {
+  .public-auth-grid,
+  .public-thank-you-grid,
+  .footer-grid-customer {
+    grid-template-columns: 1fr;
+  }
+
+  .public-auth-copy {
+    text-align: left;
+  }
+}
+
+@media (max-width: 820px) {
+  .customer-public-header .nav {
+    min-height: 66px;
+  }
+
+  .customer-public-header .brand-name {
+    max-width: 48vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .homepage-hero {
+    min-height: auto;
+    padding: 2.4rem 0 2rem;
+  }
+
+  .homepage-hero::before {
+    inset: .5rem;
+    border-radius: 24px;
+  }
+
+  .hero-brand-lockup {
+    grid-template-columns: 1fr;
+    border-radius: 24px;
+    width: 100%;
+  }
+
+  .hero-logo-mark,
+  .hero-logo-xl .hero-logo-mark {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+  }
+
+  .public-auth-hero {
+    min-height: auto;
+    padding: 2rem 0 2.5rem;
+  }
+
+  .public-auth-copy h1,
+  .success-card h1,
+  .onboarding-card h1 {
+    font-size: clamp(2.1rem, 12vw, 3.25rem);
+  }
+
+  .public-auth-steps,
+  .estimate-type-list {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
