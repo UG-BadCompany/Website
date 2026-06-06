@@ -216,8 +216,8 @@
     markActive();
     document.getElementById('workspace-header').innerHTML = `<div class="workspace-title-card"><span class="pill">${workspaceLabels[state.currentWorkspace]} Workspace · ${def.category || 'Business'}</span><h1>${def.title}</h1><p>Premium command center for ${def.title.toLowerCase()} workflows, mobile actions, and role-safe access.</p></div>`;
     const moduleRootElement = document.getElementById('module-root');
-    const root = moduleRootElement?.querySelector ? moduleRootElement : document.querySelector('[data-module-root]');
-    if (!root?.querySelector) throw new TypeError('Dashboard module root element was not found.');
+    const root = window.TAModuleRoot?.resolve?.({ root: moduleRootElement }) || document.querySelector('[data-module-root]');
+    if (!root?.querySelector) { console.error('Dashboard module root element was not found.'); return; }
     const showModuleError = (error, stage = 'load') => {
       const failureKey = `${def.id}:${stage}:${error?.message || 'error'}`;
       if (!state.moduleFailures.has(failureKey)) {
@@ -236,10 +236,11 @@
     state.currentController = new AbortController();
     try {
       const mod = await TAModules.load(def);
+      if (typeof mod?.mount !== 'function') throw new TypeError(`${def.title} does not export mount(context).`);
       state.currentModuleInstance = mod;
       root.replaceChildren();
-      const mountContext = { root: moduleRootElement, element: moduleRootElement, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace };
-      if (mod?.mount) await mod.mount(mountContext);
+      const mountContext = { root, element: root, api:TAApi, user:state.user, company:state.company, router:window.TADashboardRouter, signal:state.currentController.signal, workspace:state.currentWorkspace, module:def };
+      await mod.mount(mountContext);
       state.moduleFailures.forEach((key) => { if (String(key).startsWith(`${def.id}:`)) state.moduleFailures.delete(key); });
       renderNav();
       window.scrollTo({ top:0, behavior:'smooth' });
