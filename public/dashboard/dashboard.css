@@ -104,7 +104,7 @@ body {
 .workspace-switcher button.active {
   background: var(--sidebar-active, #1e293b);
   color: var(--sidebar-text, var(--button-text));
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--sidebar-text, #fff) 88%, var(--sidebar-active, #38bdf8));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--sidebar-text, var(--button-text)) 88%, var(--sidebar-active, #38bdf8));
 }
 
 #dashboard-topbar {
@@ -835,7 +835,7 @@ body {
 .workspace-switcher button { display:flex; }
 .sidebar-section h2 { color: color-mix(in srgb, var(--sidebar-text, #bfdbfe) 78%, transparent); opacity: .9; }
 .side-nav button:hover, .workspace-switcher button:hover { background: var(--sidebar-hover, rgba(59,130,246,.16)); color: var(--sidebar-text, var(--button-text)); transform: translateX(2px); }
-.side-nav button.active, .workspace-switcher button.active { background: var(--sidebar-active, linear-gradient(90deg, color-mix(in srgb, var(--primary) 36%, transparent), rgba(30,41,59,.72))); color: var(--sidebar-text, var(--button-text)); box-shadow: inset 4px 0 0 color-mix(in srgb, var(--sidebar-text, #fff) 88%, var(--sidebar-active, var(--primary))), 0 10px 24px rgba(0,0,0,.14); }
+.side-nav button.active, .workspace-switcher button.active { background: var(--sidebar-active, linear-gradient(90deg, color-mix(in srgb, var(--primary) 36%, transparent), rgba(30,41,59,.72))); color: var(--sidebar-text, var(--button-text)); box-shadow: inset 4px 0 0 color-mix(in srgb, var(--sidebar-text, var(--button-text)) 88%, var(--sidebar-active, var(--primary))), 0 10px 24px rgba(0,0,0,.14); }
 #dashboard-topbar { min-height: 76px; background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 5; }
 .workspace-title-card { border: 1px solid var(--line); border-radius: 24px; padding: 1.1rem; background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 94%, transparent), color-mix(in srgb, var(--primary) 7%, var(--panel))); box-shadow: 0 16px 48px rgba(15,23,42,.08); }
 .workspace-title-card h1 { letter-spacing: -.04em; font-size: clamp(1.8rem, 4vw, 3.1rem); }
