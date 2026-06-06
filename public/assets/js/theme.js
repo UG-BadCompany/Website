@@ -19,8 +19,8 @@
   const resolveThemeMode = (themeMode = 'system') => normalizeMode(themeMode) === 'system' ? (media()?.matches ? 'dark' : 'light') : normalizeMode(themeMode);
   const first = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
   const bool = (value) => value === true || value === 'true' || value === 1 || value === '1';
-  const isCustomSidebar = (source = {}) => bool(source.customSidebarColorsEnabled ?? source.custom_sidebar_colors_enabled ?? source.hasCustomSidebarColors ?? source.has_custom_sidebar_colors ?? source.sidebarColorsCustomized ?? source.sidebar_colors_customized);
-  const isCustomMobileNav = (source = {}) => bool(source.customMobileNavColorsEnabled ?? source.custom_mobile_nav_colors_enabled ?? source.hasCustomMobileNavColors ?? source.has_custom_mobile_nav_colors ?? source.mobileNavColorsCustomized ?? source.mobile_nav_colors_customized);
+  const isCustomSidebar = (source = {}) => bool(source.customSidebarColorsEnabled ?? source.custom_sidebar_colors_enabled); // Sidebar follows the resolved theme unless explicit custom colors are enabled.
+  const isCustomMobileNav = (source = {}) => bool(source.customMobileNavColorsEnabled ?? source.custom_mobile_nav_colors_enabled); // Mobile nav follows the resolved theme unless explicit custom colors are enabled.
   const themedValue = (source, mode, key) => first(source[`${mode}${key[0].toUpperCase()}${key.slice(1)}`], source[`${mode}_${key}`]);
   const applyCssVariables = (settings = {}) => {
     const requestedMode = normalizeMode(first(settings.themeMode, settings.defaultTheme, settings.selectedTheme, defaults.themeMode));
