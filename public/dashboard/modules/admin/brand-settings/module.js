@@ -41,6 +41,8 @@
         const values = window.TAForms.values(root.querySelector('[data-brand-form]'));
         values.enableThemeToggle = Boolean(root.querySelector('[name="enableThemeToggle"]')?.checked);
         values.showCompanyNameInHeader = Boolean(root.querySelector('[name="showCompanyNameInHeader"]')?.checked);
+        values.customSidebarColorsEnabled = Boolean(root.querySelector('[name="customSidebarColorsEnabled"]')?.checked);
+        values.customMobileNavColorsEnabled = Boolean(root.querySelector('[name="customMobileNavColorsEnabled"]')?.checked);
         values.defaultTheme = values.themeMode || values.defaultTheme || 'system';
         for (const [key] of allColors) {
           const hex = root.querySelector(`[data-color-hex="${key}"]`)?.value;
@@ -76,9 +78,11 @@
         preview.style.setProperty('--preview-text', state.textColor || defaults().textColor);
         preview.style.setProperty('--preview-primary', state.primaryColor || defaults().primaryColor);
         preview.style.setProperty('--preview-button', state.buttonColor || state.primaryColor || defaults().buttonColor);
-        preview.style.setProperty('--preview-sidebar-bg', state.sidebarBackgroundColor || defaults().sidebarBackgroundColor);
-        preview.style.setProperty('--preview-sidebar-text', state.sidebarTextColor || defaults().sidebarTextColor);
-        preview.style.setProperty('--preview-sidebar-active', state.sidebarActiveColor || defaults().sidebarActiveColor);
+        const resolvedMode = window.TATheme?.resolveThemeMode?.(state.themeMode || state.defaultTheme || 'system') || 'light';
+        const palette = window.TATheme?.palettes?.[resolvedMode] || {};
+        preview.style.setProperty('--preview-sidebar-bg', state.customSidebarColorsEnabled ? (state.sidebarBackgroundColor || palette.sidebarBackgroundColor) : palette.sidebarBackgroundColor);
+        preview.style.setProperty('--preview-sidebar-text', state.customSidebarColorsEnabled ? (state.sidebarTextColor || palette.sidebarTextColor) : palette.sidebarTextColor);
+        preview.style.setProperty('--preview-sidebar-active', state.customSidebarColorsEnabled ? (state.sidebarActiveColor || palette.sidebarActiveColor) : palette.sidebarActiveColor);
         preview.innerHTML = `<div class="brand-preview-shell">
           <header class="brand-preview-header">
             <div class="brand-preview-brand">
@@ -169,7 +173,9 @@
           mobileNavTextColor: payload.mobileNavTextColor,
           mobileNavActiveColor: payload.mobileNavActiveColor,
           mobileNavBorderColor: payload.mobileNavBorderColor,
-          hasCustomSidebarColors: true,
+          customSidebarColorsEnabled: payload.customSidebarColorsEnabled,
+          customMobileNavColorsEnabled: payload.customMobileNavColorsEnabled,
+          hasCustomSidebarColors: payload.customSidebarColorsEnabled,
         };
         button.disabled = true;
         status.textContent = 'Saving brand settings...';
@@ -221,9 +227,17 @@
             <div class="module-grid color-settings-grid">
               ${colors.map(renderColorControl).join('')}
             </div>
-            <h3>Sidebar & Mobile Navigation Colors</h3>
-            <div class="module-grid color-settings-grid">
-              ${sidebarColors.map(renderColorControl).join('')}
+            <h3>Sidebar Colors</h3>
+            <label class="pill"><input type="checkbox" name="customSidebarColorsEnabled" ${company.customSidebarColorsEnabled ? 'checked' : ''}> Use custom sidebar colors</label>
+            <p class="notice">Leave unchecked to use the selected Light/Dark/System theme's default sidebar colors.</p>
+            <div class="module-grid color-settings-grid" data-sidebar-color-controls>
+              ${sidebarColors.slice(0, 5).map(renderColorControl).join('')}
+            </div>
+            <h3>Mobile Nav Colors</h3>
+            <label class="pill"><input type="checkbox" name="customMobileNavColorsEnabled" ${company.customMobileNavColorsEnabled ? 'checked' : ''}> Use custom mobile nav colors</label>
+            <p class="notice">Leave unchecked to use the selected Light/Dark/System theme's default mobile bottom nav colors.</p>
+            <div class="module-grid color-settings-grid" data-mobile-nav-color-controls>
+              ${sidebarColors.slice(5).map(renderColorControl).join('')}
             </div>
 
             <div class="grid grid-2 brand-preview-grid">

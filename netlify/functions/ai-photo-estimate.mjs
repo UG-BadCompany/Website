@@ -7,7 +7,7 @@ const OPENAI_MODEL = configuredPhotoModel || configuredFallbackModel || (/mini/i
 const OPENAI_TIMEOUT_MS = Math.min(Number(process.env.AI_PHOTO_ESTIMATE_TIMEOUT_MS || 18000), 23000);
 const STAFF_ROLES = new Set(['owner', 'admin', 'manager', 'worker']);
 const IMAGE_RE = /^data:image\/(jpeg|png|webp|heic|heif);base64,[a-z0-9+/=\r\n]+$/i;
-const HOSTED_IMAGE_RE = /^https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp|gif)(?:[?#][^\s]*)?$/i;
+const HOSTED_IMAGE_RE = /^https?:\/\/[^\s]+$/i;
 const MAX_PHOTOS = 10;
 const MAX_DATA_URL_CHARS = 11_500_000;
 
@@ -83,7 +83,7 @@ const photoEstimateJsonSchema = {
 const buildPrompt = (payload, photos) => [{ role: 'system', content: [{ type: 'input_text', text: 'You are a premium contractor estimating assistant. Analyze job photos and intake details. Return JSON matching the provided schema only. Never reveal internal chain-of-thought. Do not browse the web. Use photo evidence and intake only. Do not invent exact prices; mark uncertain prices as Estimated — verification recommended. Include optional upsells separately.' }] }, { role: 'user', content: [{ type: 'input_text', text: JSON.stringify({ intake: payload, pricing_rules: ['Use internal catalog, historical pricing, supplier info supplied in intake, or fallback allowance pricing only.', 'Every uncertain price must be marked Estimated — verification recommended.', 'Everything is a draft for admin review.', 'Web search is intentionally disabled because this endpoint requires structured JSON output.'] }) }, ...photos.map((photo) => ({ type: 'input_image', image_url: photo.url || photo.dataUrl }))] }];
 const callOpenAI = async (payload, photos) => {
   const apiKey = clean(process.env.OPENAI_API_KEY, 240);
-  if (!apiKey) return { ok: false, status: 503, message: 'AI image analysis unavailable. Photos saved for manual review.' };
+  if (!apiKey) return { ok: false, status: 503, message: 'AI image analysis unavailable. Photos saved for manual review.', fallbackReason: 'OPENAI_API_KEY is not configured', imageAnalysisUsed: false, model: OPENAI_MODEL };
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
   try {
     const body = { model: OPENAI_MODEL, input: buildPrompt(payload, photos), text: { format: { type: 'json_schema', name: 'photo_estimate_analysis', schema: photoEstimateJsonSchema, strict: false } }, max_output_tokens: 4500 };
@@ -91,14 +91,32 @@ const callOpenAI = async (payload, photos) => {
     const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', signal: controller.signal, headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await response.json().catch(() => ({}));
     console.info('AI photo estimate OpenAI response received', { ok: response.ok, status: response.status, responseId: data?.id || null, outputItems: Array.isArray(data?.output) ? data.output.length : 0 });
-    if (!response.ok) return { ok: false, status: 502, message: data?.error?.message || `OpenAI failed with ${response.status}` };
+    if (!response.ok) return { ok: false, status: 502, message: data?.error?.message || `OpenAI failed with ${response.status}`, fallbackReason: data?.error?.message || `OpenAI failed with ${response.status}`, imageAnalysisUsed: false, model: OPENAI_MODEL, usage: data?.usage || null };
     const parsed = parseOpenAiJson(data);
-    if (!parsed) return { ok: false, status: 502, message: 'AI returned invalid JSON. No fake analysis was created.' };
-    return { ok: true, analysis: normalizeAnalysis(parsed, payload), model: OPENAI_MODEL };
+    if (!parsed) return { ok: false, status: 502, message: 'AI returned invalid JSON. No fake analysis was created.', fallbackReason: 'AI returned invalid JSON', imageAnalysisUsed: false, model: OPENAI_MODEL, usage: data?.usage || null };
+    const analysis = normalizeAnalysis(parsed, payload);
+    analysis.research_metadata = { ...(analysis.research_metadata || {}), image_analysis_used: true, token_usage: data?.usage || null };
+    return { ok: true, analysis, model: OPENAI_MODEL, imageAnalysisUsed: true, usage: data?.usage || null };
   } catch (error) {
     console.error('AI photo estimate OpenAI request failed', { message: error?.message, name: error?.name });
-    return { ok: false, status: error?.name === 'AbortError' ? 504 : 502, message: error?.name === 'AbortError' ? 'AI photo analysis timed out. Photos were saved for manual review.' : `AI photo analysis failed: ${error.message}` };
+    return { ok: false, status: error?.name === 'AbortError' ? 504 : 502, message: error?.name === 'AbortError' ? 'AI photo analysis timed out. Photos were saved for manual review.' : `AI photo analysis failed: ${error.message}`, fallbackReason: error?.name === 'AbortError' ? 'OpenAI request timed out' : error.message, imageAnalysisUsed: false, model: OPENAI_MODEL };
   } finally { clearTimeout(timer); }
+};
+const ensureDraftRecord = async (db, context, id, payload, photos) => {
+  if (id) {
+    const [row] = await db.sql`update photo_estimates set status = 'analyzing', service_category = ${clean(payload.serviceCategory, 180)}, description = ${clean(payload.description, 8000)}, property_address = ${clean(payload.propertyAddress, 1000)}, photo_urls = ${JSON.stringify(photos)}::jsonb, updated_at = now() where id = ${id} and (${context.isStaff} or customer_id = ${context.session.user_id} or created_by = ${context.session.user_id}) returning *`;
+    return row;
+  }
+  const [row] = await db.sql`insert into photo_estimates (customer_id, created_by, status, service_category, description, property_address, photo_urls, customer_summary) values (${context.isStaff ? null : context.session.user_id}, ${context.session.user_id}, 'analyzing', ${clean(payload.serviceCategory, 180)}, ${clean(payload.description, 8000)}, ${clean(payload.propertyAddress, 1000)}, ${JSON.stringify(photos)}::jsonb, 'Photo estimate is being analyzed.') returning *`;
+  return row;
+};
+const savePhotoFiles = async (db, context, row, photos, analysis = {}) => {
+  if (!row?.id) return;
+  for (const photo of photos) {
+    const fileUrl = photo.url || photo.dataUrl;
+    if (!fileUrl) continue;
+    await db.sql`insert into files (owner_id, uploaded_by_user_id, customer_id, path, file_path, file_url, file_name, mime_type, file_type, size_bytes, file_size, photo_type, file_category, visibility, source_context, photo_estimate_id, metadata, ai_analysis) values (${context.session.user_id}, ${context.session.user_id}, ${row.customer_id || context.session.user_id}, ${fileUrl}, ${fileUrl}, ${fileUrl}, ${photo.name || 'photo-estimate-image'}, ${photo.type || 'image/url'}, ${photo.type || 'image/url'}, ${photo.size || null}, ${photo.size || null}, ${'photo_estimate'}, ${'photo_estimate'}, ${context.isStaff ? 'worker_visible' : 'client_visible'}, ${'ai_photo_estimate'}, ${row.id}, ${JSON.stringify({ source: 'ai-photo-estimate', photoId: photo.id, imageAnalysisUsed: Boolean(analysis?.research_metadata?.image_analysis_used) })}::jsonb, ${JSON.stringify(analysis || {})}::jsonb)`;
+  }
 };
 const saveAnalysis = async (db, context, id, payload, photos, analysis) => {
   if (!id) return null;
@@ -119,15 +137,19 @@ export default async (request) => {
     if (!photos.length) return json(400, { ok: false, message: 'Upload at least one valid photo before analysis.' });
     const payload = { serviceCategory: clean(body.serviceCategory || body.service_category, 180), description: clean(body.description, 8000), propertyAddress: clean(body.propertyAddress || body.property_address, 1000), measurements: clean(body.measurements, 1000), preferredMaterial: clean(body.preferredMaterial || body.preferred_material, 1000), preferredTimeframe: clean(body.preferredTimeframe || body.preferred_timeframe, 500), budget: clean(body.budget, 120), notes: clean(body.notes, 4000) };
     console.info('AI photo estimate endpoint analyze request', { userId: context.session.user_id, photoCount: photos.length, hasRecordId: Boolean(body.id), isStaff: context.isStaff });
+    let row = await ensureDraftRecord(db, context, clean(body.id, 80), payload, photos);
+    if (!row) return json(404, { ok: false, message: 'Photo estimate not found.' });
+    await savePhotoFiles(db, context, row, photos);
     const ai = await callOpenAI(payload, photos);
     if (!ai.ok) {
       console.warn('AI photo estimate analysis unavailable', { status: ai.status, message: ai.message, recordId: clean(body.id, 80) || null });
-      return json(200, { ok: false, code: ai.status === 504 ? 'AI_PHOTO_TIMEOUT' : 'AI_PHOTO_FAILED', message: 'Unable to analyze image. Please try again.', detail: ai.message || 'AI image analysis is unavailable right now.', endpointStatus: 'AI image analysis unavailable. Photos were saved for manual review; no fake analysis was generated.', retryable: true });
+      return json(200, { ok: false, code: ai.status === 504 ? 'AI_PHOTO_TIMEOUT' : 'AI_PHOTO_FAILED', message: 'Unable to analyze image. Please try again.', detail: ai.message || 'AI image analysis is unavailable right now.', endpointStatus: 'AI image analysis unavailable. Photos were saved for manual review; no fake analysis was generated.', retryable: true, debug: context.isStaff ? { model: ai.model || OPENAI_MODEL, imageAnalysisUsed: false, fallbackReason: ai.fallbackReason || ai.message, tokenUsage: ai.usage || null } : undefined });
     }
-    const row = await saveAnalysis(db, context, clean(body.id, 80), payload, photos, ai.analysis);
+    row = await saveAnalysis(db, context, row.id, payload, photos, ai.analysis);
+    await db.sql`update files set ai_analysis = ${JSON.stringify(ai.analysis)}::jsonb, metadata = coalesce(metadata, '{}'::jsonb) || ${JSON.stringify({ imageAnalysisUsed: true, openaiModel: OPENAI_MODEL })}::jsonb where photo_estimate_id = ${row.id} and source_context in ('ai_photo_estimate', 'photo_estimate')`; 
     await db.sql`insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata) values (${context.session.user_id}, 'photo.analyzed', 'photo_estimate', ${clean(body.id, 80) || null}, ${JSON.stringify({ photoCount: photos.length })}::jsonb)`;
     console.info('AI photo estimate endpoint completed', { recordId: clean(body.id, 80) || null, model: OPENAI_MODEL, saved: Boolean(row) });
-    return json(200, { ok: true, analysis: ai.analysis, photoEstimate: mapRow(row, context), endpointStatus: `server-side OpenAI photo analysis complete (${OPENAI_MODEL})`, model: OPENAI_MODEL });
+    return json(200, { ok: true, analysis: ai.analysis, photoEstimate: mapRow(row, context), endpointStatus: `server-side OpenAI photo analysis complete (${OPENAI_MODEL})`, model: OPENAI_MODEL, debug: context.isStaff ? { model: OPENAI_MODEL, imageAnalysisUsed: true, fallbackReason: '', tokenUsage: ai.usage || null } : undefined });
   } catch (error) {
     console.error('AI photo estimate endpoint failed', error);
     return json(200, { ok: false, code: 'AI_PHOTO_ERROR', message: 'Unable to analyze image. Please try again.', retryable: true });
