@@ -22,9 +22,11 @@
     const printWindow = window.open('', '_blank');
     if (printWindow) { printWindow.document.write(printableInvoice(invoice)); printWindow.document.close(); }
   };
-  window.TAModules.register({ id:'client.invoices', role:'client', title:'My Invoices', icon:'🧾', permissions:[], async mount({ root, api }) {
-    root = root?.querySelector ? root : root?.root || root?.element || document.querySelector('[data-module-root], #module-root');
-    if (!root?.querySelector) throw new TypeError('Module root element was not found.');
+  window.TAModules.register({ id:'client.invoices', role:'client', title:'My Invoices', icon:'🧾', permissions:[], async mount(context = {}) {
+    const { api } = context;
+    const mountRoot = window.TAModuleRoot.resolve(context);
+    if (!mountRoot?.querySelector) throw new TypeError('Module root element was not found.');
+    const root = mountRoot;
     let data = { invoices: [], summary: {} };
     const load = async () => { data = await api.get('/api/client/invoices'); };
     const pay = async (invoice, button) => {
@@ -41,13 +43,13 @@
     };
     const render = () => {
       const invoices = data.invoices || [];
-      root.innerHTML = `<section class="module-page stack"><div class="module-hero module-header card"><div><p class="eyebrow">Client workflow</p><h2 class="module-title">🧾 My Invoices</h2><p class="module-description">View invoices, download a print-friendly copy, pay securely through Square, and track paid/unpaid status.</p></div><button class="btn secondary" type="button" data-refresh>Refresh</button></div><div class="module-stat-grid"><article class="module-stat stat-card"><span>🧾</span><strong>${esc(invoices.length)}</strong><small>Invoices</small></article><article class="module-stat stat-card"><span>📬</span><strong>${esc(data.summary?.open || 0)}</strong><small>Unpaid</small></article><article class="module-stat stat-card"><span>✅</span><strong>${esc(data.summary?.paid || 0)}</strong><small>Paid</small></article><article class="module-stat stat-card"><span>💳</span><strong>${esc(money(data.summary?.amountDueCents || 0))}</strong><small>Amount due</small></article></div><div class="module-panel module-section card"><h3>Invoice list</h3><div class="module-record-list">${invoices.length ? invoices.map((invoice) => `<article class="module-record-card"><div><p class="eyebrow">${esc(status(invoice.status))}</p><h3>${esc(invoice.title || 'Invoice')}</h3><p>${esc(serviceSummary(invoice))}</p><small>Invoice #${esc(invoice.id)} · Due ${esc(date(invoice.dueAt))} · ${esc(money(isPaid(invoice) ? 0 : invoice.amountCents))}</small></div><div class="module-record-actions"><button class="btn secondary" type="button" data-view="${esc(invoice.id)}">View Invoice</button><button class="btn secondary" type="button" data-download="${esc(invoice.id)}">Download Invoice</button>${isPaid(invoice) ? '<span class="status-badge">Paid</span>' : `<button class="btn" type="button" data-pay="${esc(invoice.id)}">Pay Invoice</button>`}</div></article>`).join('') : '<article class="module-empty"><h3>No invoices</h3><p>Approved and completed work will appear here when an invoice is ready.</p></article>'}</div></div></section>`;
-      root.querySelector('[data-refresh]')?.addEventListener('click', async () => { await load(); render(); });
-      root.querySelectorAll('[data-view]').forEach((btn) => btn.addEventListener('click', () => openInvoice(invoices.find((i) => String(i.id) === btn.dataset.view))));
-      root.querySelectorAll('[data-download]').forEach((btn) => btn.addEventListener('click', () => downloadInvoice(invoices.find((i) => String(i.id) === btn.dataset.download))));
-      root.querySelectorAll('[data-pay]').forEach((btn) => btn.addEventListener('click', () => pay(invoices.find((i) => String(i.id) === btn.dataset.pay), btn)));
+      mountRoot.innerHTML = `<section class="module-page stack"><div class="module-hero module-header card"><div><p class="eyebrow">Client workflow</p><h2 class="module-title">🧾 My Invoices</h2><p class="module-description">View invoices, download a print-friendly copy, pay securely through Square, and track paid/unpaid status.</p></div><button class="btn secondary" type="button" data-refresh>Refresh</button></div><div class="module-stat-grid"><article class="module-stat stat-card"><span>🧾</span><strong>${esc(invoices.length)}</strong><small>Invoices</small></article><article class="module-stat stat-card"><span>📬</span><strong>${esc(data.summary?.open || 0)}</strong><small>Unpaid</small></article><article class="module-stat stat-card"><span>✅</span><strong>${esc(data.summary?.paid || 0)}</strong><small>Paid</small></article><article class="module-stat stat-card"><span>💳</span><strong>${esc(money(data.summary?.amountDueCents || 0))}</strong><small>Amount due</small></article></div><div class="module-panel module-section card"><h3>Invoice list</h3><div class="module-record-list">${invoices.length ? invoices.map((invoice) => `<article class="module-record-card"><div><p class="eyebrow">${esc(status(invoice.status))}</p><h3>${esc(invoice.title || 'Invoice')}</h3><p>${esc(serviceSummary(invoice))}</p><small>Invoice #${esc(invoice.id)} · Due ${esc(date(invoice.dueAt))} · ${esc(money(isPaid(invoice) ? 0 : invoice.amountCents))}</small></div><div class="module-record-actions"><button class="btn secondary" type="button" data-view="${esc(invoice.id)}">View Invoice</button><button class="btn secondary" type="button" data-download="${esc(invoice.id)}">Download Invoice</button>${isPaid(invoice) ? '<span class="status-badge">Paid</span>' : `<button class="btn" type="button" data-pay="${esc(invoice.id)}">Pay Invoice</button>`}</div></article>`).join('') : '<article class="module-empty"><h3>No invoices</h3><p>Approved and completed work will appear here when an invoice is ready.</p></article>'}</div></div></section>`;
+      mountRoot.querySelector('[data-refresh]')?.addEventListener('click', async () => { await load(); render(); });
+      mountRoot.querySelectorAll('[data-view]').forEach((btn) => btn.addEventListener('click', () => openInvoice(invoices.find((i) => String(i.id) === btn.dataset.view))));
+      mountRoot.querySelectorAll('[data-download]').forEach((btn) => btn.addEventListener('click', () => downloadInvoice(invoices.find((i) => String(i.id) === btn.dataset.download))));
+      mountRoot.querySelectorAll('[data-pay]').forEach((btn) => btn.addEventListener('click', () => pay(invoices.find((i) => String(i.id) === btn.dataset.pay), btn)));
     };
-    root.innerHTML = '<section class="stack"><article class="card"><h2>My Invoices</h2><p>Loading invoices...</p></article></section>';
+    mountRoot.innerHTML = '<section class="stack"><article class="card"><h2>My Invoices</h2><p>Loading invoices...</p></article></section>';
     await load(); render();
   }, async destroy(){}, async refresh(){} });
 })();
