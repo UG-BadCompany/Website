@@ -1,13 +1,13 @@
 :root {
-  --color-primary: #2563eb;
-  --color-accent: #22c55e;
-  --color-background: #f8fafc;
-  --color-surface: #ffffff;
+  --color-primary: #b9853b;
+  --color-accent: #d9b86f;
+  --color-background: #f6f0e8;
+  --color-surface: #fbf7ef;
   --color-surface-alt: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #d9e2ef;
-  --color-button: #2563eb;
+  --color-text: #1e252c;
+  --color-muted: #6f756f;
+  --color-border: #e3d6c2;
+  --color-button: #b9853b;
   --color-success: #16a34a;
   --color-warning: #f59e0b;
   --color-danger: #dc2626;
@@ -34,24 +34,24 @@
 }
 
 [data-theme="dark"] {
-  --color-background: #06111f;
-  --color-surface: #0f1c2e;
-  --color-surface-alt: #101f34;
-  --color-text: #e5edf7;
-  --color-muted: #a5b4c8;
-  --color-border: #2f4360;
-  --field-bg: color-mix(in srgb, var(--color-surface) 86%, black);
+  --color-background: #121416;
+  --color-surface: #1b1f23;
+  --color-surface-alt: #24282d;
+  --color-text: #f3eadb;
+  --color-muted: #b9b0a1;
+  --color-border: #3b3730;
+  --field-bg: color-mix(in srgb, var(--color-surface) 86%, #121416);
   --field-text: var(--color-text);
   --field-placeholder: color-mix(in srgb, var(--color-muted) 78%, var(--color-text));
 }
 
 [data-theme="light"] {
-  --color-background: #f8fafc;
-  --color-surface: #ffffff;
+  --color-background: #f6f0e8;
+  --color-surface: #fbf7ef;
   --color-surface-alt: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #d9e2ef;
+  --color-text: #1e252c;
+  --color-muted: #6f756f;
+  --color-border: #e3d6c2;
   --field-bg: color-mix(in srgb, var(--color-surface) 94%, var(--color-background));
 }
 
@@ -312,7 +312,7 @@ footer { padding: 2rem 0; border-top: 1px solid var(--color-border); color: var(
     --text:var(--color-text);
     --muted:var(--color-muted);
     --line:var(--color-border);
-    --field-bg:color-mix(in srgb,var(--color-surface) 86%,#000000);
+    --field-bg:color-mix(in srgb,var(--color-surface) 86%,#121416);
     --field-text:var(--color-text);
   }
 }

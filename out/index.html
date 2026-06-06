@@ -43,33 +43,70 @@
   </main>
 
   <template id="estimate-template">
-    <div class="container grid grid-2 estimate-section-grid">
-      <div class="estimate-intro-card">
+    <div class="container estimate-wizard-shell">
+      <div class="estimate-intro-card premium-reveal">
         <span class="pill">Request Estimate</span>
-        <h2>Tell us what your property needs.</h2>
-        <p>Send your contact details, work type, address, timeframe, and a short description. Photo links are welcome and help us prepare a more accurate quote.</p>
+        <h2>A premium intake, not a basic form.</h2>
+        <p>Walk through the essentials in five short steps. Add photos, describe the work, and submit a clean request our team can quote faster.</p>
         <div class="estimate-type-list" aria-label="Available type of work categories">
-          <span>HVAC</span><span>Water Heaters</span><span>Plumbing</span><span>Electrical</span><span>Drywall</span><span>Painting</span><span>Doors</span><span>Windows</span><span>Appliances</span><span>Handyman</span><span>Facilities Maintenance</span><span>Property Maintenance</span><span>Commercial Maintenance</span><span>General Contracting</span><span>Tenant Improvements</span><span>Other / Not Sure</span>
+          <span>HVAC</span><span>Electrical</span><span>Plumbing</span><span>Handyman</span><span>Drywall</span><span>Painting</span><span>Windows</span><span>Doors</span><span>Tenant Improvements</span><span>Property Maintenance</span>
         </div>
       </div>
-      <form class="card stack request-estimate-card" id="request-form">
-        <div class="grid grid-2 form-grid">
-          <div class="field"><label>Name</label><input name="name" autocomplete="name" required></div>
-          <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" required></div>
-          <div class="field"><label>Phone</label><input name="phone" type="tel" autocomplete="tel" required></div>
-          <div class="field"><label>Property address</label><input name="streetAddress" autocomplete="street-address"></div>
-          <div class="field"><label>City</label><input name="city" autocomplete="address-level2"></div>
-          <div class="field"><label>Type of work</label><select name="service"><option>HVAC</option><option>Water Heaters</option><option>Plumbing</option><option>Electrical</option><option>Drywall</option><option>Painting</option><option>Doors</option><option>Windows</option><option>Appliances</option><option>Handyman</option><option>Facilities Maintenance</option><option>Property Maintenance</option><option>Commercial Maintenance</option><option>General Contracting</option><option>Tenant Improvements</option><option>Other / Not Sure</option></select></div>
-          <div class="field"><label>Work scope</label><select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Property punch list</option><option>Tenant improvement</option></select></div>
-          <div class="field"><label>Preferred timeframe</label><input name="timeframe" placeholder="Flexible, this week, urgent..."></div>
-          <div class="field wide photo-upload-field"><label>Photos or file link (optional)</label><div class="premium-upload-drop"><strong>Add a photo link</strong><span>Paste a shared image, folder, or file URL. You can also add photos later in the portal.</span><input name="photoUrl" type="url" placeholder="https://..."></div></div>
+      <form class="request-estimate-card estimate-wizard premium-reveal" id="request-form">
+        <div class="wizard-progress" aria-label="Estimate request progress">
+          <button type="button" class="active" data-wizard-jump="0"><span>1</span>Need</button>
+          <button type="button" data-wizard-jump="1"><span>2</span>Details</button>
+          <button type="button" data-wizard-jump="2"><span>3</span>Photos</button>
+          <button type="button" data-wizard-jump="3"><span>4</span>Contact</button>
+          <button type="button" data-wizard-jump="4"><span>5</span>Review</button>
         </div>
-        <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the issue, repair, or improvement needed in your own words." required></textarea></div>
-        <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
-        <label class="checkbox-line"><input type="checkbox" name="permissionToContact" required> I authorize contact about this request.</label>
-        <button class="btn request-submit" type="submit">Submit Estimate Request</button>
-        <p class="privacy-note">We use your details only to review this request and contact you about the estimate.</p>
-        <p id="request-status" class="request-status" role="status"></p>
+        <div class="wizard-stage" data-wizard-stage="0">
+          <span class="eyebrow">Step 1</span>
+          <h3>What do you need?</h3>
+          <div class="choice-grid">
+            <label><input type="radio" name="service" value="HVAC"><span>❄️ HVAC</span></label>
+            <label><input type="radio" name="service" value="Electrical"><span>⚡ Electrical</span></label>
+            <label><input type="radio" name="service" value="Plumbing"><span>🚿 Plumbing</span></label>
+            <label><input type="radio" name="service" value="Handyman"><span>🛠️ Handyman</span></label>
+            <label><input type="radio" name="service" value="Drywall"><span>▧ Drywall</span></label>
+            <label><input type="radio" name="service" value="Other / Not Sure" checked><span>✨ Not sure yet</span></label>
+          </div>
+          <label class="field"><span>Work scope</span><select name="workScope"><option>Not sure</option><option>Repair / troubleshoot</option><option>Replace existing</option><option>New installation</option><option>Maintenance</option><option>Property punch list</option><option>Tenant improvement</option></select></label>
+        </div>
+        <div class="wizard-stage" data-wizard-stage="1" hidden>
+          <span class="eyebrow">Step 2</span>
+          <h3>Tell us about it.</h3>
+          <label class="field"><span>Property address</span><input name="streetAddress" autocomplete="street-address" placeholder="Street address"></label>
+          <div class="grid grid-2 form-grid"><label class="field"><span>City</span><input name="city" autocomplete="address-level2" placeholder="City"></label><label class="field"><span>Preferred timeframe</span><input name="timeframe" placeholder="Flexible, this week, urgent..."></label></div>
+          <label class="field"><span>Description</span><textarea name="description" placeholder="Describe the issue, access notes, measurements, visible damage, or the goal for the finished work." required></textarea></label>
+        </div>
+        <div class="wizard-stage" data-wizard-stage="2" hidden>
+          <span class="eyebrow">Step 3</span>
+          <h3>Upload or link photos.</h3>
+          <div class="premium-upload-drop"><strong>Drop-zone ready photo intake</strong><span>Paste a shared image, folder, or file URL. You can also add photos later in the portal.</span><input name="photoUrl" type="url" placeholder="https://..."></div>
+          <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
+          <div class="skeleton-strip" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
+        <div class="wizard-stage" data-wizard-stage="3" hidden>
+          <span class="eyebrow">Step 4</span>
+          <h3>How should we reach you?</h3>
+          <div class="grid grid-2 form-grid">
+            <label class="field"><span>Name</span><input name="name" autocomplete="name" required></label>
+            <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
+            <label class="field"><span>Phone</span><input name="phone" type="tel" autocomplete="tel" required></label>
+            <label class="field"><span>Best contact window</span><input name="contactWindow" placeholder="Morning, afternoon, anytime"></label>
+          </div>
+          <label class="checkbox-line"><input type="checkbox" name="permissionToContact" required> I authorize contact about this request.</label>
+        </div>
+        <div class="wizard-stage" data-wizard-stage="4" hidden>
+          <span class="eyebrow">Step 5</span>
+          <h3>Review and submit.</h3>
+          <div class="review-card"><strong>Your request will create a client-ready job pipeline:</strong><div class="mini-pipeline"><span>Request</span><span>Quote</span><span>Accepted</span><span>Scheduled</span><span>Completed</span></div><p>We’ll review your details, ask for anything missing, and move the work through the portal.</p></div>
+          <button class="btn request-submit" type="submit">Submit Estimate Request</button>
+          <p class="privacy-note">We use your details only to review this request and contact you about the estimate.</p>
+          <p id="request-status" class="request-status" role="status"></p>
+        </div>
+        <div class="wizard-controls"><button class="btn secondary" type="button" data-wizard-prev>Back</button><button class="btn" type="button" data-wizard-next>Continue</button></div>
       </form>
     </div>
   </template>
