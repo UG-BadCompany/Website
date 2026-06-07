@@ -1,0 +1,19 @@
+{
+  "name": "white-label-contractor-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "node scripts/prebuild-netlify-migrations.cjs && node scripts/discover-modules.mjs",
+    "build": "node scripts/build-static-site.mjs",
+    "postbuild": "node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs",
+    "test": "node scripts/prebuild-netlify-migrations.cjs && node scripts/discover-modules.mjs && node scripts/check-netlify-functions.mjs"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "pg": "^8.16.3"
+  }
+}
