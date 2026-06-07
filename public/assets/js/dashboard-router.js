@@ -227,7 +227,7 @@
       root.innerHTML = `<section class="module-page stack"><article class="card module-error"><h2>${escapeHtml(def.title)} could not load</h2><p>${escapeHtml(error?.message || 'The module failed to load. The rest of the dashboard is still available.')}</p><div class="action-row"><button class="btn" type="button" data-retry-module="${escapeHtml(def.id)}">Retry</button><button class="btn secondary" type="button" data-module="${escapeHtml(defaultModuleFor(state.currentWorkspace)?.id || '')}">Go to overview</button></div></article></section>`;
       root.querySelector('[data-retry-module]')?.addEventListener('click', async () => { state.moduleFailures.delete(`${def.id}:retry:${error?.message || 'error'}`); state.currentModuleInstance = null; await go(def.id, { force:true }).catch((retryError) => showModuleError(retryError, 'retry')); });
     };
-    root.innerHTML = `<div class="card">Loading ${escapeHtml(def.title)}...</div>`;
+    root.innerHTML = `<div class="card module-state-loading" aria-busy="true"><div class="skeleton-line wide"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>`;
     if (!window.TAForms) {
       showModuleError(new Error('Required form utility failed to load. Refresh the page or contact admin.'), 'dependency');
       window.TAUi?.toast?.('Required form utility failed to load. Refresh the page or contact admin.', 'error');
@@ -260,14 +260,24 @@
     }
   }
   async function start() {
-    if (!await TACompany.requireInstalled()) return;
-    await window.TATheme?.loadGlobal?.();
-    state.company = await TACompany.load();
-    const me = await TAAuth.me().catch(() => ({ authenticated:false }));
+    const cachedConfig = TACompany.readPublicCache?.();
+    if (cachedConfig) {
+      state.company = TACompany.norm(cachedConfig.company || cachedConfig);
+      TACompany.apply(state.company);
+    }
+    const installPromise = TACompany.installStatus();
+    const configPromise = TACompany.loadPublicConfig?.().catch(() => cachedConfig);
+    const mePromise = TAAuth.me().catch(() => ({ authenticated:false }));
+    const modulesPromise = refreshModuleRegistry();
+    const status = await installPromise;
+    if (!status.installed) { location.replace('/install/'); return; }
+    const [config, me] = await Promise.all([configPromise, mePromise]);
+    state.company = TACompany.norm(config?.company || config || state.company || {});
+    TACompany.apply(state.company);
     if (!me.authenticated) { location.href = '/login/'; return; }
     if (me.user?.accountSetupComplete === false) { location.href = '/account-setup/'; return; }
     state.user = me.user;
-    await refreshModuleRegistry();
+    await modulesPromise;
     state.currentWorkspace = userRoles().includes('owner') ? 'owner' : userRoles().includes('manager') ? 'manager' : (state.user?.permissions?.defaultView && allowedWorkspaces().includes(state.user.permissions.defaultView) ? state.user.permissions.defaultView : allowedWorkspaces()[0] || 'client');
     document.getElementById('dashboard-topbar').innerHTML = `<div><strong>${state.company.displayName || 'Contractor Portal'}</strong><br><small>${userRoles().join(', ') || 'user'}</small></div><button class="btn secondary" id="logout">Log out</button>`;
     document.getElementById('logout').onclick = async () => { await TAAuth.logout(); location.href = '/login/'; };

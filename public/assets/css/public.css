@@ -1872,3 +1872,12 @@ body.is-scrolled.public-shell .site-header.premium-public-header {
   .public-shell .onboarding-card h1 { font-size: clamp(2.35rem, 13vw, 4.1rem); }
   .public-shell .hero-actions { position: static; box-shadow: none; }
 }
+
+/* Fast branding bootstrap: reserve logo/name space before JS or remote images finish. */
+.brand[data-brand], .customer-public-header .brand[data-brand], .site-header .brand[data-brand] { min-height: 58px; min-width: 58px; display: inline-flex; align-items: center; gap: .75rem; }
+.brand[data-brand]:empty::before { content: ''; width: 58px; height: 58px; border-radius: 18px; display: inline-block; background: linear-gradient(110deg, color-mix(in srgb, var(--color-surface) 70%, var(--color-border)) 8%, color-mix(in srgb, var(--color-surface) 92%, white) 18%, color-mix(in srgb, var(--color-surface) 70%, var(--color-border)) 33%); background-size: 200% 100%; animation: ta-brand-shimmer 1.2s linear infinite; border: 1px solid var(--color-border); }
+.brand-logo { flex: 0 0 auto; width: 58px; height: 58px; min-width: 58px; min-height: 58px; object-fit: contain; }
+.brand-logo:is(span) { display: inline-grid; place-items: center; }
+.hero-logo-mark { width: 72px; height: 72px; min-width: 72px; min-height: 72px; overflow: hidden; }
+.hero-logo-mark img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes ta-brand-shimmer { to { background-position-x: -200%; } }

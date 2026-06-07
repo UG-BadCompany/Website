@@ -35,12 +35,64 @@
     document.querySelectorAll('[data-company-phone]').forEach((el) => { el.textContent = company.supportPhone || company.businessPhone || ''; });
     document.querySelectorAll('[data-company-email]').forEach((el) => { el.textContent = company.supportEmail || ''; });
     document.querySelectorAll('[data-company-service-area]').forEach((el) => { el.textContent = company.serviceArea || 'your service area'; });
-    document.querySelectorAll('[data-brand]').forEach((el) => { el.innerHTML = ''; const logo = document.createElement(company.logoUrl ? 'img' : 'span'); logo.className = 'brand-logo'; if (company.logoUrl) { logo.src = company.logoUrl; logo.alt = 'Company logo'; } else { logo.textContent = initials(company.displayName || company.companyName); } el.appendChild(logo); if (company.showCompanyNameInHeader) { const n = document.createElement('strong'); n.className = 'brand-name'; n.textContent = company.displayName || company.companyName; el.appendChild(n); } });
+    document.querySelectorAll('[data-brand]').forEach((el) => { el.innerHTML = ''; const logo = document.createElement(company.logoUrl ? 'img' : 'span'); logo.className = 'brand-logo'; if (company.logoUrl) { logo.src = company.logoUrl; logo.alt = 'Company logo'; logo.loading = 'eager'; logo.decoding = 'async'; logo.onerror = () => { const fallbackLogo = document.createElement('span'); fallbackLogo.className = 'brand-logo'; fallbackLogo.textContent = initials(company.displayName || company.companyName); logo.replaceWith(fallbackLogo); }; } else { logo.textContent = initials(company.displayName || company.companyName); } el.appendChild(logo); if (company.showCompanyNameInHeader) { const n = document.createElement('strong'); n.className = 'brand-name'; n.textContent = company.displayName || company.companyName; el.appendChild(n); } });
   }
-  async function load() { try { const data = await window.TAApi.get('/.netlify/functions/company-settings'); const company = norm(data.company || data.settings || {}); apply(company); return company; } catch (e) { const stored = window.TATheme?.readStored?.() || {}; const company = norm({ ...fallback, ...stored }); apply(company); return company; } }
+  const publicConfigKey = 'ta_public_config_v1';
+  let publicConfigPromise = null;
+  const readPublicCache = () => { try { const cached = JSON.parse(localStorage.getItem(publicConfigKey) || 'null'); return cached?.config || null; } catch { return null; } };
+  const writePublicCache = (config = {}) => { try { localStorage.setItem(publicConfigKey, JSON.stringify({ config, updatedAt: config.updatedAt || null, cacheVersion: config.cacheVersion || null, fetchedAt: new Date().toISOString() })); } catch {} };
+  const publicCompany = (config = {}) => norm(config.company || config);
+  const newer = (next = {}, previous = {}) => String(next.cacheVersion || next.updatedAt || '') !== String(previous.cacheVersion || previous.updatedAt || '');
+  async function loadPublicConfig(options = {}) {
+    const cached = readPublicCache();
+    if (cached && !options.refreshOnly) {
+      const company = publicCompany(cached);
+      apply(company);
+    }
+    if (publicConfigPromise && !options.force) return publicConfigPromise;
+    publicConfigPromise = (async () => {
+      let bootstrap = null;
+      try {
+        const staticResponse = await fetch('/config/bootstrap.json', { credentials: 'same-origin', cache: 'force-cache' });
+        if (staticResponse.ok) bootstrap = await staticResponse.json();
+      } catch {}
+      if (bootstrap && !cached) {
+        writePublicCache(bootstrap);
+        apply(publicCompany(bootstrap));
+      }
+      try {
+        const fresh = await window.TAApi.get('/api/public-config');
+        if (!cached || newer(fresh, cached)) {
+          writePublicCache(fresh);
+          apply(publicCompany(fresh));
+          document.dispatchEvent(new CustomEvent('ta:public-config-updated', { detail: { config: fresh, company: publicCompany(fresh) } }));
+        }
+        return fresh;
+      } catch (error) {
+        if (bootstrap) return bootstrap;
+        if (cached) return cached;
+        throw error;
+      } finally {
+        publicConfigPromise = null;
+      }
+    })();
+    return publicConfigPromise;
+  }
+  function invalidatePublicConfig(config) {
+    if (config) writePublicCache(config); else { try { localStorage.removeItem(publicConfigKey); } catch {} }
+    publicConfigPromise = null;
+    document.dispatchEvent(new CustomEvent('ta:public-config-invalidated', { detail: { config } }));
+  }
+  async function load() {
+    const cached = readPublicCache();
+    if (cached) apply(publicCompany(cached));
+    try { const config = await loadPublicConfig(); return publicCompany(config); }
+    catch (e) { const stored = window.TATheme?.readStored?.() || {}; const company = norm({ ...fallback, ...stored }); apply(company); return company; }
+  }
   async function installStatus() { try { return await window.TAApi.get('/.netlify/functions/install-status'); } catch (e) { return { installed: false }; } }
   async function requireInstalled() { const status = await installStatus(); if (!status.installed) { location.replace('/install/'); return false; } return true; }
-  window.TACompany = { fallback, norm, apply, load, installStatus, requireInstalled, initials, current: fallback };
+  window.TACompany = { fallback, norm, apply, load, loadPublicConfig, readPublicCache, writePublicCache, invalidatePublicConfig, installStatus, requireInstalled, initials, current: publicCompany(readPublicCache() || fallback) };
+  if (readPublicCache()) apply(publicCompany(readPublicCache()));
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!portalLinks.length && !dashboardLinks.length) return;
     let authenticated = false;
     try {
-      const me = await window.TAApi?.get?.('/.netlify/functions/me');
+      const me = await window.TAAuth?.me?.() || await window.TAApi?.get?.('/api/me?optional=1');
       authenticated = Boolean(me?.user || me?.session || me?.authenticated || me?.ok);
     } catch {
       authenticated = false;

@@ -1,5 +1,6 @@
 (() => {
   const storageKey = 'TAThemeSettings';
+  const publicConfigKey = 'ta_public_config_v1';
   const defaults = {
     primaryColor: '#2563eb', accentColor: '#22c55e', backgroundColor: '#f8fafc', surfaceColor: '#ffffff', cardColor: '#ffffff', textColor: '#0f172a', mutedColor: '#64748b', borderColor: '#d9e2ef', buttonColor: '#2563eb', successColor: '#16a34a', warningColor: '#f59e0b', dangerColor: '#dc2626', themeMode: 'system', defaultTheme: 'system', enableThemeToggle: true,
     sidebarBackgroundColor: '', sidebarTextColor: '', sidebarActiveColor: '', sidebarBorderColor: '', sidebarHoverColor: '', mobileNavBackgroundColor: '', mobileNavTextColor: '', mobileNavActiveColor: '', mobileNavBorderColor: '', customSidebarColorsEnabled: false, customMobileNavColorsEnabled: false, hasCustomSidebarColors: false,
@@ -13,7 +14,7 @@
   const media = () => window.matchMedia?.('(prefers-color-scheme: dark)');
   const set = (name, value) => document.documentElement.style.setProperty(name, value);
   const safeJson = (value) => { try { return JSON.parse(value || '{}') || {}; } catch { return {}; } };
-  const readStored = () => safeJson(localStorage.getItem(storageKey));
+  const readStored = () => ({ ...safeJson(localStorage.getItem(publicConfigKey))?.config?.company, ...safeJson(localStorage.getItem(publicConfigKey))?.config, ...safeJson(localStorage.getItem(storageKey)) });
   const persist = (settings = {}) => { try { localStorage.setItem(storageKey, JSON.stringify({ ...readStored(), ...settings })); } catch {} };
   const normalizeMode = (mode = 'system') => ['light', 'dark', 'system'].includes(String(mode)) ? String(mode) : 'system';
   const resolveThemeMode = (themeMode = 'system') => normalizeMode(themeMode) === 'system' ? (media()?.matches ? 'dark' : 'light') : normalizeMode(themeMode);
@@ -89,8 +90,8 @@
       let settings = { ...defaults, ...readStored() };
       if (window.TAApi?.get) {
         try {
-          const data = await window.TAApi.get('/.netlify/functions/company-settings');
-          settings = window.TACompany?.norm ? window.TACompany.norm(data.company || data.settings || {}) : { ...settings, ...(data.company || data.settings || {}) };
+          const config = await window.TACompany?.loadPublicConfig?.() || await window.TAApi.get('/api/public-config');
+          settings = window.TACompany?.norm ? window.TACompany.norm(config.company || config) : { ...settings, ...(config.company || config) };
         } catch {}
       }
       apply(settings, { persist: true });
