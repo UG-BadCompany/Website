@@ -34,7 +34,24 @@ function originFromEvent(event) {
   return String(host).startsWith('http') ? host : `${proto}://${host}`;
 }
 
+function normalizePhotos(body = {}) {
+  const uploads = Array.isArray(body.photoUploads) ? body.photoUploads : Array.isArray(body.files) ? body.files : Array.isArray(body.photos) ? body.photos : [];
+  return uploads.slice(0, 10).map((file, index) => ({
+    id: clean(file.id || makeId('photo'), 80),
+    sortOrder: Number(file.sortOrder || index + 1),
+    fileName: clean(file.fileName || file.name, 180),
+    mimeType: clean(file.mimeType || file.type, 120),
+    sizeBytes: Math.max(0, Number(file.sizeBytes || file.size || 0)),
+    photoType: clean(file.photoType || 'issue', 80),
+    category: clean(file.category || 'ai_photo_estimate', 80),
+    sourceContext: clean(file.sourceContext || 'public_estimate_request', 80),
+    visibility: clean(file.visibility || 'client_visible', 80),
+    dataUrl: String(file.dataUrl || '').startsWith('data:') ? String(file.dataUrl) : '',
+  })).filter((file) => file.fileName);
+}
+
 function normalizeRequest(body = {}) {
+  const photoUploads = normalizePhotos(body);
   return {
     id: makeId('req'),
     createdAt: new Date().toISOString(),
@@ -49,8 +66,9 @@ function normalizeRequest(body = {}) {
     subcategory: clean(body.subcategory, 160),
     timeframe: clean(body.timeframe, 120),
     description: clean(body.description, 6000),
-    photosProvided: Boolean(body.photosProvided || body.hasUpload),
-    photoNames: Array.isArray(body.photoNames) ? body.photoNames.map((x) => clean(x, 180)) : [],
+    photosProvided: Boolean(body.photosProvided || body.hasUpload || photoUploads.length),
+    photoNames: Array.isArray(body.photoNames) ? body.photoNames.map((x) => clean(x, 180)) : photoUploads.map((file) => file.fileName),
+    photoUploads,
     preferredBrand: clean(body.preferredBrand, 120),
     preferredManufacturer: clean(body.preferredManufacturer, 120),
     preferredModel: clean(body.preferredModel, 160),
@@ -60,6 +78,24 @@ function normalizeRequest(body = {}) {
     upgradePreferences: clean(body.upgradePreferences, 800),
     additionalNotes: clean(body.additionalNotes, 1000),
   };
+}
+
+async function persistPhotoUploads(request) {
+  if (!request.photoUploads?.length) return [];
+  const store = await getStore('job-request-uploads');
+  if (!store) return request.photoUploads.map(({ dataUrl, ...file }) => ({ ...file, storageConfigured: false }));
+  const saved = [];
+  for (const file of request.photoUploads) {
+    const extension = (file.fileName.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const key = `${request.id}/${String(file.sortOrder).padStart(2, '0')}-${file.id}.${extension}`;
+    const payload = { ...file, requestId: request.id, customerName: request.name, customerEmail: request.email, storedAt: new Date().toISOString() };
+    await store.setJSON(key, payload);
+    const { dataUrl, ...metadata } = file;
+    saved.push({ ...metadata, storageProvider: 'netlify-blobs', bucket: 'job-request-uploads', path: key, fileUrl: `/.netlify/functions/job-request-photo?key=${encodeURIComponent(key)}` });
+  }
+  request.photoUploads = saved;
+  request.photoStorage = { provider: 'netlify-blobs', bucket: 'job-request-uploads', fileCount: saved.length };
+  return saved;
 }
 
 async function createEstimateDraft(event, request) {
@@ -126,6 +162,8 @@ export const handler = async (event) => {
     }
 
     const request = normalizeRequest(body);
+
+    await persistPhotoUploads(request);
 
     const intakeAnalysis = analyzeEstimateIntake(request);
     request.intakeAnalysis = intakeAnalysis;
