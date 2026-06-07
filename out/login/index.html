@@ -8,16 +8,17 @@
   <link rel="stylesheet" href="/assets/css/public.css">
   <!-- compatibility: --dash-bg: #070a0f -->
 </head>
-<body class="public-auth-page premium-portal-page">
-  <header class="site-header premium-public-header customer-public-header portal-public-header">
+<body class="public-shell public-shell--portal public-auth-page premium-portal-page">
+  <header class="site-header premium-public-header customer-public-header">
     <div class="container nav">
       <a class="brand" href="/" data-brand aria-label="Company home"></a>
       <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-label="Open menu">☰</button>
       <nav class="nav-links" aria-label="Portal navigation">
         <a href="/#services">Services</a>
-        <a href="/#estimate">Request Estimate</a>
+        <a href="/#projects">Projects</a>
+        <a class="btn" href="/#estimate">Request Estimate</a>
         <a href="/login/" data-portal-link data-label="Client Portal">Client Portal</a>
-        <a class="btn secondary" href="/dashboard/" data-dashboard-link data-label="Dashboard" hidden>Dashboard</a>
+        <a href="/dashboard/" data-dashboard-link data-label="Dashboard" hidden>Dashboard</a>
       </nav>
     </div>
   </header>
@@ -66,6 +67,27 @@
       </form>
     </div>
   </main>
+
+  <footer class="customer-footer public-shell-footer">
+    <div class="container footer-premium footer-grid-customer">
+      <div>
+        <div class="hero-brand-lockup" data-brand></div>
+        <p>Premium property service requests, approvals, project updates, invoices, and secure client access in one connected experience.</p>
+      </div>
+      <div>
+        <h3>Explore</h3>
+        <a href="/#services">Services</a>
+        <a href="/#projects">Projects</a>
+        <a href="/#estimate">Request Estimate</a>
+      </div>
+      <div>
+        <h3>Client Access</h3>
+        <a href="/login/" data-portal-link data-label="Client Portal">Client Portal</a>
+        <a href="/dashboard/" data-dashboard-link data-label="Dashboard" hidden>Dashboard</a>
+        <p>© <span data-current-year></span> <span data-company-name>Contractor Portal</span>. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
   <script src="/assets/js/api-client.js" defer></script>
   <script src="/assets/js/theme.js" defer></script>
   <script src="/assets/js/company-settings.js" defer></script>

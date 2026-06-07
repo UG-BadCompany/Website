@@ -44,6 +44,32 @@
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-current-year]').forEach((el) => { el.textContent = String(new Date().getFullYear()); });
+  const syncPublicAuthNav = async () => {
+    const portalLinks = document.querySelectorAll('[data-portal-link]');
+    const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');
+    if (!portalLinks.length && !dashboardLinks.length) return;
+    let authenticated = false;
+    try {
+      const me = await window.TAApi?.get?.('/.netlify/functions/me');
+      authenticated = Boolean(me?.user || me?.session || me?.authenticated || me?.ok);
+    } catch {
+      authenticated = false;
+    }
+    portalLinks.forEach((link) => {
+      link.hidden = authenticated;
+      link.href = '/login/';
+      link.textContent = link.dataset.label || 'Client Portal';
+    });
+    dashboardLinks.forEach((link) => {
+      link.hidden = !authenticated;
+      link.href = '/dashboard/';
+      link.textContent = link.dataset.label || 'Dashboard';
+    });
+    document.body.classList.toggle('is-authenticated', authenticated);
+  };
+  syncPublicAuthNav();
+  document.addEventListener('ta:homepage-rendered', syncPublicAuthNav);
   document.querySelectorAll('.mobile-menu-toggle').forEach((button) => {
     if (button.dataset.bound === '1') return;
     button.dataset.bound = '1';
