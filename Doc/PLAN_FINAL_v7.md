@@ -1175,6 +1175,546 @@ No page should flash white in dark/system mode.
 
 ---
 
+
+---
+
+## 2.0E Simple Guided Installer UX and Finish Install Reliability
+
+The First-Run Installer must be simple enough for a non-technical business owner to complete.
+
+The installer must not feel like a developer tool, database form, or raw configuration screen.
+
+The installer should guide the user step-by-step and explain what is needed in plain English.
+
+### Installer UX Goal
+
+A user with no technical background should understand:
+
+- what this step is for,
+- why the information is needed,
+- where to get the value,
+- whether the step is required,
+- whether the step can be skipped,
+- what happens after clicking Save & Continue,
+- what is left before installation is complete.
+
+### Simple Installer Layout
+
+Use a clean wizard layout:
+
+```txt
+Left side:
+Step list / progress
+
+Main area:
+Current step only
+
+Right side:
+Help panel / explanation / preview
+```
+
+Do not show too many fields at once.
+
+Do not show raw environment variable names as the main user-facing label unless needed.
+
+Use friendly labels first and technical names second.
+
+Example:
+
+```txt
+Email Sending Key
+RESEND_API_KEY
+```
+
+Not just:
+
+```txt
+RESEND_API_KEY
+```
+
+### Progress Bar
+
+Show:
+
+```txt
+Step 4 of 14
+```
+
+and:
+
+```txt
+Setup is 35% complete
+```
+
+Each step should show one of:
+
+- Not Started
+- Needs Attention
+- Optional
+- Complete
+- Skipped
+- Error
+
+### Plain-English Step Help
+
+Every installer step must include:
+
+- What this step does
+- Why it matters
+- What happens if skipped
+- What values are needed
+- Where to get those values
+- Whether it can be configured later
+
+Example:
+
+```txt
+Email Setup
+
+This lets the system send secure login links, quotes, invoices, and client notifications.
+
+Required:
+Resend API Key
+Magic Link Sender Email
+
+You can find these in your Resend dashboard.
+```
+
+### Guided Environment Variables
+
+The Environment Variables / Integrations step should not appear as a huge grid of technical cards.
+
+Use grouped friendly setup cards:
+
+```txt
+Required Setup
+Email Sending
+AI Features
+Payments
+Security
+Future Licensing
+Advanced
+```
+
+Default view should show only:
+
+```txt
+Required Setup
+```
+
+The installer should say:
+
+```txt
+You only need the required setup to finish installation.
+AI, payments, and advanced integrations can be configured later.
+```
+
+### Required Setup Should Be Minimal
+
+The minimum required setup to finish install should be:
+
+```txt
+SITE_URL
+MAGIC_LINK_FROM_EMAIL
+RESEND_API_KEY
+```
+
+If OpenAI is missing:
+
+- AI modules remain installed but disabled or manual-review-only.
+- Installer shows "AI can be configured later."
+
+If Square is missing:
+
+- payment links disabled.
+- manual invoice/payment tracking remains available.
+
+If license validation is disabled:
+
+- license step can be skipped.
+
+### Setup Guides
+
+Each integration should include:
+
+- Open dashboard button
+- Copy generated callback/webhook URL
+- Short step-by-step instructions
+- Test connection button when supported
+
+Example buttons:
+
+```txt
+Open Resend Dashboard
+Copy Sender Email Instructions
+Test Email
+```
+
+### Skip / Configure Later
+
+Optional steps must have:
+
+```txt
+Skip for now
+```
+
+or:
+
+```txt
+Configure later
+```
+
+Skipping optional steps should save a clear status:
+
+```txt
+ai_status = skipped
+square_status = skipped
+license_status = verification_disabled
+```
+
+### Save Draft on Every Step
+
+Every step must save automatically or when clicking Save & Continue.
+
+If the browser refreshes, closes, or the user returns later:
+
+- installer resumes at last incomplete step,
+- saved values remain,
+- completed steps stay complete,
+- skipped optional steps stay skipped.
+
+### Finish Install Must Actually Complete
+
+Clicking Finish Install must perform a real finalization transaction.
+
+It must not only change the UI.
+
+Finish Install must:
+
+1. validate all required steps,
+2. validate owner account exists,
+3. validate company profile exists,
+4. validate theme exists,
+5. validate homepage config exists,
+6. validate module registry generated,
+7. validate required environment variables are configured or accepted with safe fallback,
+8. save all pending installer data,
+9. seed default roles and permissions,
+10. enable selected modules,
+11. generate `/config/bootstrap.json`,
+12. create/update `platform_installation`,
+13. set `installation_complete = true`,
+14. set `installed_at`,
+15. set `installed_by_user_id`,
+16. record installed version,
+17. clear installer draft errors,
+18. redirect to `/dashboard/`.
+
+If any part fails, show a clear error and do not mark installation complete.
+
+### Finish Install Endpoint
+
+Create or fix:
+
+```txt
+POST /api/install/finish
+```
+
+Request:
+
+```json
+{
+  "confirm": true
+}
+```
+
+Response success:
+
+```json
+{
+  "ok": true,
+  "installationComplete": true,
+  "redirectTo": "/dashboard/"
+}
+```
+
+Response failure:
+
+```json
+{
+  "ok": false,
+  "code": "INSTALL_VALIDATION_FAILED",
+  "message": "Company profile is missing.",
+  "missing": ["company_profile"]
+}
+```
+
+### Install Finalization Should Be Atomic
+
+If possible, final install should use a database transaction.
+
+Do not partially mark installation complete if:
+
+- bootstrap generation fails,
+- owner creation fails,
+- role seeding fails,
+- module registry fails,
+- required settings fail.
+
+### After Finish Install
+
+After successful finish:
+
+- `/api/install-status` returns installed true.
+- `/` shows homepage.
+- `/dashboard/` loads owner dashboard.
+- `/install/` shows "Installation already complete."
+- installer no longer appears for public visitors.
+
+### Already Installed Screen
+
+If installation is already complete and user visits `/install/`, show:
+
+```txt
+Installation is already complete.
+```
+
+Buttons:
+
+```txt
+Go to Dashboard
+Go to Homepage
+System Center
+```
+
+Only Owner can reopen installer settings.
+
+### Installer Error Handling
+
+Use helpful messages, not raw errors.
+
+Bad:
+
+```txt
+500
+```
+
+Good:
+
+```txt
+We could not save your company profile. Please check the required fields and try again.
+```
+
+Bad:
+
+```txt
+Install failed.
+```
+
+Good:
+
+```txt
+Installation could not finish because the owner account was not created yet.
+Go back to Owner Account and complete that step.
+```
+
+### Installer Completion Checklist
+
+Before showing Finish Install, show a review checklist:
+
+```txt
+Required:
+✓ Company profile
+✓ Owner account
+✓ Email sending
+✓ Theme
+✓ Modules selected
+
+Optional:
+○ AI not configured — can configure later
+○ Square not configured — payments disabled for now
+○ License validation disabled
+```
+
+The Finish Install button should be disabled until required items are complete.
+
+### Installer Acceptance Tests
+
+- Installer is simple and step-by-step.
+- Only one main step is shown at a time.
+- Every step explains what is needed.
+- Every required value explains where to get it.
+- Optional steps can be skipped.
+- Installer resumes after refresh.
+- Finish Install calls `/api/install/finish`.
+- Finish Install validates required setup.
+- Finish Install writes `installation_complete = true`.
+- Finish Install generates bootstrap config.
+- Finish Install redirects to dashboard.
+- Install status changes from incomplete to complete.
+- Homepage is blocked before finish and visible after finish.
+- Clear errors are shown if finish fails.
+- The Finish Install button never silently fails.
+
+---
+
+
+
+---
+
+# 2.0F Automatic Environment Discovery and Import
+
+The First-Run Installer should intelligently discover existing configuration before asking the owner to manually enter values.
+
+The installer should always prefer:
+
+Auto Detect
+→ Suggest
+→ Verify
+→ Save
+
+instead of forcing the owner to manually type everything.
+
+## Discovery Order
+
+1. Check platform_installation
+2. Check existing Environment Variables
+3. Check encrypted settings storage
+4. Check bootstrap cache
+5. Check branding assets
+6. Check homepage configuration
+7. Check theme configuration
+8. Check module registry
+9. Build installer state
+
+## Hosting Environment Detection
+
+Before displaying the Environment Variables step, the installer should attempt to detect variables already configured by the hosting provider.
+
+Supported now:
+
+- Netlify Environment Variables
+
+Future-ready architecture:
+
+- Vercel
+- Docker .env
+- Self-hosted .env
+- External secret managers
+
+If values already exist, automatically populate installer state.
+
+Example:
+
+✓ SITE_URL detected
+✓ RESEND_API_KEY detected
+✓ OPENAI_API_KEY detected
+○ SQUARE_ACCESS_TOKEN missing
+
+The owner should only enter values that cannot be discovered.
+
+## Secret Display Rules
+
+Detected secrets must never be shown in full.
+
+Display only:
+
+Configured
+Last Four: abcd
+
+Buttons:
+
+- Replace
+- Test
+- Leave Existing
+
+Never expose full values.
+
+## Automatic SITE_URL Detection
+
+If SITE_URL is missing, attempt detection using the current deployment origin.
+
+Suggest:
+
+https://current-domain.com
+
+The owner may override before saving.
+
+## Automatic Callback URL Generation
+
+Generate deployment-specific URLs automatically.
+
+Examples:
+
+Square Webhook:
+
+https://CURRENT_DOMAIN/api/payments/square/webhook
+
+Magic Link Base:
+
+https://CURRENT_DOMAIN/
+
+Client Portal:
+
+https://CURRENT_DOMAIN/login/
+
+Provide Copy URL buttons.
+
+Do not require manual typing.
+
+## Branding Discovery
+
+If existing branding is found:
+
+- Company Name
+- Logo
+- Theme
+- Homepage Layout
+
+Display:
+
+Existing configuration found.
+
+[Keep Existing]
+[Replace]
+
+## Module Discovery
+
+Scan installed module folders.
+
+Automatically discover:
+
+- enabled modules
+- disabled modules
+- hidden modules
+- beta modules
+- experimental modules
+
+Build module registry automatically.
+
+## Resume Previous Installation
+
+If installation was interrupted:
+
+Show completed and remaining steps.
+
+Allow:
+
+[Resume Installation]
+
+## Acceptance Tests
+
+- Existing Netlify Environment Variables are discovered.
+- Existing SITE_URL is suggested automatically.
+- Existing branding is detected.
+- Existing homepage configuration is detected.
+- Existing theme configuration is detected.
+- Existing modules are detected.
+- Existing installer progress is detected.
+- Secrets are never shown in full.
+- Installer minimizes manual setup whenever possible.
+
+
 ## 2A. Full First-Run Installer and Setup Process
 
 The rebuilt platform must include a complete first-run installer. The installer is not optional. A new deployment should not require manual DB edits, hardcoded company branding, hardcoded owner accounts, or hidden setup steps.
@@ -3526,6 +4066,12 @@ The final architecture must allow a new module to be dropped into the repo and a
 - Login/client portal cannot render before install completes.
 - Public quote/invoice pages cannot render before install completes.
 - Installer resumes after interruption.
+- Installer uses a simple guided wizard instead of technical configuration dumps.
+- Installer explains each step in plain English.
+- Optional integrations can be skipped and configured later.
+- Finish Install uses a real `/api/install/finish` finalization endpoint.
+- Finish Install writes `installation_complete = true` only after all required validations pass.
+- Finish Install shows clear errors and never silently fails.
 - Installer creates owner account.
 - Installer creates company settings.
 - Installer seeds homepage editor.
@@ -3596,3 +4142,277 @@ The final architecture must allow a new module to be dropped into the repo and a
 - No @netlify/plugin-nextjs.
 - Migrations are unique and immutable.
 - Tests and audits pass.
+
+
+---
+
+# 29. Platform Design Rules (NON-NEGOTIABLE)
+
+These rules override implementation preferences.
+
+1. Installer First.
+2. Everything is database-driven.
+3. Nothing business-specific is hardcoded.
+4. Modules are true drop-ins.
+5. One workflow object powers the entire platform.
+6. Owner has access to every workspace for testing.
+7. Homepage is fully editor-driven.
+8. Theme system controls the entire site.
+9. Optional integrations never block operation.
+10. Every setting can be changed later without code.
+11. Platform survives partial failures gracefully.
+12. New features should require zero core file modifications whenever possible.
+
+---
+
+# 30. Platform Health Center
+
+Owner → System Center → Platform Health
+
+Monitor:
+
+- Database
+- Netlify Functions
+- Homepage Cache
+- Dashboard Cache
+- Bootstrap Cache
+- Module Registry
+- OpenAI
+- Resend
+- Square
+- Storage
+- License Server
+- Magic Links
+
+Status:
+🟢 Healthy
+🟡 Warning
+🔴 Offline
+
+Include Run Diagnostics button.
+
+---
+
+# 31. Backup & Restore
+
+System must support:
+
+- Daily Backup
+- Weekly Backup
+- Manual Backup
+- Restore Point
+
+Before updates:
+
+Create Restore Point?
+
+---
+
+# 32. Safe Update System
+
+Upload Update Package
+
+Validate
+→ Backup
+→ Run Migrations
+→ Rebuild Module Registry
+→ Clear Cache
+→ Restart
+
+Never overwrite blindly.
+
+---
+
+# 33. Module Dependency & Versioning
+
+Each module manifest contains:
+
+- name
+- version
+- minimumPlatform
+- dependencies
+
+System blocks incompatible installs.
+
+---
+
+# 34. File Manager
+
+Owner → System Center → File Manager
+
+Manage:
+
+- Logos
+- Homepage images
+- Gallery
+- AI uploads
+- Worker uploads
+- Invoice PDFs
+- Attachments
+
+Support cleanup and orphan detection.
+
+---
+
+# 35. AI Usage Monitor
+
+Display:
+
+- AI Photo Estimates
+- AI Quotes
+- AI Troubleshooting
+- Token usage
+- Estimated daily/monthly cost
+
+---
+
+# 36. Homepage Builder
+
+Homepage Editor becomes a true page builder.
+
+Editable:
+
+- Hero
+- Project Cards
+- Estimate Card
+- Gallery
+- Services
+- Stats
+- CTA
+- Footer
+- Header
+- Background Effects
+- Section Order
+- Visibility Rules
+
+Drag-and-drop ordering.
+
+No code changes required.
+
+---
+
+# 37. Cache Manager
+
+Owner → System Center → Cache Manager
+
+Actions:
+
+- Clear Homepage Cache
+- Clear Dashboard Cache
+- Clear Theme Cache
+- Rebuild Bootstrap
+- Rebuild Module Registry
+- Clear Image Cache
+
+---
+
+# 38. Audit Log
+
+Track:
+
+- Installer completed
+- Environment variable changed
+- Homepage edited
+- Theme changed
+- Module installed
+- User impersonated
+- Quote approved
+- Invoice paid
+
+---
+
+# 39. Unified Photo Pipeline
+
+One uploaded photo can automatically connect to:
+
+- User profile
+- Work order
+- AI estimate
+- Invoice
+- Gallery
+- Worker history
+
+No duplicate uploads.
+
+---
+
+# 40. Single Workflow Engine
+
+One master record exists.
+
+Request
+→ Quote
+→ Work Order
+→ Schedule
+→ Worker
+→ Completion
+→ Invoice
+→ Payment
+→ Verification
+→ Archive
+
+Modules reference this object.
+
+Never duplicate workflow data.
+
+---
+
+# 41. White-Label Sales Ready
+
+Installer collects:
+
+- Company Name
+- Logo
+- Domain
+- Colors
+- Business Type
+- License Key
+
+No TA Contracting references remain in source code.
+
+---
+
+# 42. Installation Recovery
+
+Create:
+
+/install/recovery
+
+Show completed/incomplete steps and Resume Setup.
+
+---
+
+# 43. Platform Self-Test
+
+Owner → Run Platform Diagnostics
+
+Verify:
+
+- Database
+- Functions
+- Bootstrap
+- Module Registry
+- Homepage
+- Theme
+- Permissions
+- AI
+- Email
+- Square
+- Storage
+- Installer Lock
+
+Generate downloadable report.
+
+---
+
+# Additional Acceptance Tests
+
+- Installer recovery works.
+- Platform diagnostics pass.
+- Module dependencies enforced.
+- Restore points created before updates.
+- Homepage builder edits persist.
+- Cache manager rebuilds system correctly.
+- Audit log records sensitive actions.
+- One workflow object drives all modules.
+- White-label install contains no hardcoded branding.
