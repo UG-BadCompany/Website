@@ -1,0 +1,2 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
+test('generated registry contains drop-in modules and nav', async()=>{await import('../scripts/generate-module-registry.mjs'); const r=JSON.parse(fs.readFileSync('generated/module-registry.json','utf8')); assert.ok(r.modules.length>=20); assert.equal(r.modules.length,r.managerList.length); assert.ok(r.sidebar.some(n=>n.moduleId==='ai-photo-estimate')); assert.ok(r.permissions['work-orders'].includes('work-orders:write'));});

@@ -1,0 +1,54 @@
+{
+  "id": "workflow-engine",
+  "title": "Workflow Engine",
+  "description": "Single-source job state machine",
+  "version": "1.0.0",
+  "icon": "🔁",
+  "workspace": "admin",
+  "category": "platform",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "workflow-engine:read",
+    "workflow-engine:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/workflow-engine",
+      "title": "Workflow Engine",
+      "view": "workflow-engine-view",
+      "workspace": "admin"
+    }
+  ],
+  "nav": {
+    "label": "Workflow Engine",
+    "path": "/dashboard/workflow-engine",
+    "icon": "🔁",
+    "workspace": "admin",
+    "order": 12
+  },
+  "mobileNav": {
+    "label": "Workflow Engine",
+    "path": "/dashboard/workflow-engine",
+    "icon": "🔁"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "workflow-engine/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "client-portal",
+  "title": "Client Portal",
+  "description": "Client quote, job, and invoice access",
+  "version": "1.0.0",
+  "icon": "🔐",
+  "workspace": "client",
+  "category": "portal",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "client-portal:read",
+    "client-portal:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/client-portal",
+      "title": "Client Portal",
+      "view": "client-portal-view",
+      "workspace": "client"
+    }
+  ],
+  "nav": {
+    "label": "Client Portal",
+    "path": "/dashboard/client-portal",
+    "icon": "🔐",
+    "workspace": "client",
+    "order": 14
+  },
+  "mobileNav": {
+    "label": "Client Portal",
+    "path": "/dashboard/client-portal",
+    "icon": "🔐"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "client-portal/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}
