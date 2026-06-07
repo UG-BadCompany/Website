@@ -1,0 +1,62 @@
+{
+  "id": "homepage-editor",
+  "version": "1.0.0",
+  "name": "Homepage Editor",
+  "description": "Drop-in module for Homepage Editor.",
+  "category": "System",
+  "minimumPlatform": "1.0.0",
+  "status": "stable",
+  "enabledByDefault": true,
+  "hidden": false,
+  "beta": false,
+  "experimental": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "label": "Homepage",
+    "icon": "◼",
+    "order": 13
+  },
+  "permissions": [
+    {
+      "key": "homepage.edit",
+      "label": "Use Homepage Editor",
+      "group": "Homepage Editor",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "frontend": {
+    "entry": "/modules/homepage-editor/frontend/module.js",
+    "style": "/modules/homepage-editor/frontend/module.css"
+  },
+  "api": {
+    "handler": "modules/homepage-editor/backend/api.mjs",
+    "routes": [
+      {
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "path": "/records",
+        "permission": "homepage.edit"
+      }
+    ]
+  },
+  "homepageSections": [
+    {
+      "key": "homepage-builder",
+      "title": "Homepage Builder"
+    }
+  ],
+  "workflows": []
+}

@@ -1,0 +1,18 @@
+{
+  "generatedAt": null,
+  "installationComplete": false,
+  "company": {
+    "displayName": "Setup Required"
+  },
+  "theme": {
+    "mode": "system",
+    "primary": "#2563eb"
+  },
+  "homepage": {
+    "hero": {
+      "headline": "Setup required",
+      "subheadline": "Complete installation to publish the homepage."
+    }
+  },
+  "modules": []
+}

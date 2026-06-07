@@ -1,0 +1,1 @@
+import { promises as fs } from 'fs'; const files=(await fs.readdir('netlify/database/migrations')).filter(f=>f.endsWith('.sql')); const nums=new Set(); for(const f of files){const n=f.split('_')[0]; if(nums.has(n)) throw new Error('duplicate migration '+n); nums.add(n);} await fs.access('netlify/database/migration-lock.json'); console.log('Migration audit passed.');

@@ -1,0 +1,1 @@
+import { promises as fs } from 'fs'; const r=JSON.parse(await fs.readFile('public/generated/module-registry.json','utf8')); if(r.modules.length<16) throw new Error('Expected core modules'); console.log(`Module audit passed (${r.modules.length} modules).`);
