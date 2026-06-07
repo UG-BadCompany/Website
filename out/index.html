@@ -14,19 +14,20 @@
       <a class="brand" href="/" data-brand aria-label="Company home"></a>
       <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-label="Open menu">☰</button>
       <nav class="nav-links" aria-label="Main navigation">
-        <a href="/">Home</a>
+        <a href="#home">Home</a>
         <a href="#services">Services</a>
-        <a href="#recent-work">Gallery</a>
+        <a href="#projects">Projects</a>
         <a href="#about">About</a>
         <a href="#contact">Contact</a>
-        <a href="/login/" data-portal-link data-dashboard-link>Client Portal</a>
-        <a class="btn" href="#estimate">Request Estimate</a><a class="sr-only" href="/dashboard/">Dashboard</a>
+        <a href="/login/" data-portal-link data-label="Client Portal">Client Portal</a>
+        <a href="/dashboard/" data-dashboard-link data-label="Dashboard" hidden>Dashboard</a>
+        <a class="btn" href="#estimate">Request Estimate</a>
       </nav>
     </div>
   </header>
 
   <main id="homepage-dynamic-sections" aria-live="polite">
-    <section class="hero premium-landing-hero customer-landing-hero homepage-hero">
+    <section class="hero premium-landing-hero customer-landing-hero homepage-hero" id="home">
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="pill">Trusted local property services</span>
@@ -40,7 +41,7 @@
     <section class="section" id="services">
       <div class="container"><div class="section-heading centered"><span class="pill">Services</span><h2>Professional repair and maintenance services.</h2><p>HVAC, plumbing, electrical, drywall, painting, doors, windows, appliances, handyman work, property maintenance, and tenant improvements.</p></div></div>
     </section>
-    <section class="section" id="recent-work" hidden></section>
+    <section class="section" id="projects" hidden></section>
     <section class="section" id="about" hidden></section>
     <section class="section" id="estimate" aria-label="Request estimate form">
       <div class="container"><p>Use the estimate form below to send your request securely.</p></div>
@@ -93,15 +94,15 @@
             <input class="sr-only" id="estimate-photo-files" name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple data-photo-input>
             <span class="upload-camera">📷</span>
             <strong>Upload Photos</strong>
-            <span>Drag &amp; Drop or Tap to Browse</span>
-            <small>Supports JPG, PNG, WEBP, HEIC · up to 10 photos</small>
+            <span>Drag photos here or tap to browse</span>
+            <small>Supported: JPG, PNG, WEBP, HEIC · up to 10 photos</small>
           </div>
           <input type="hidden" name="photosProvided" value="false" data-photos-provided>
           <input type="hidden" name="photoNames" value="[]" data-photo-names>
           <input type="hidden" name="photoUploads" value="[]" data-photo-uploads>
           <div class="uploaded-photo-strip" data-photo-preview aria-live="polite"></div>
           <aside class="ai-analysis-card" data-ai-preview hidden>
-            <div class="ai-analysis-header"><span>🤖 AI Analysis</span><i data-ai-state>Ready after upload</i></div>
+            <div class="ai-analysis-header"><span>Photos received</span><i data-ai-state>Ready after upload</i></div>
             <div class="skeleton-strip ai-loading" aria-hidden="true"><i></i><i></i><i></i></div>
             <div class="ai-analysis-body" data-ai-body></div>
           </aside>

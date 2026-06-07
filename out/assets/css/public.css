@@ -1038,3 +1038,189 @@ html[data-theme="dark"] body.customer-homepage {
 [data-theme="dark"] .pipeline-step,
 [data-theme="dark"] .request-estimate-card,
 [data-theme="dark"] .estimate-intro-card { background: color-mix(in srgb, #161b24 80%, transparent); border-color: rgba(255,255,255,.1); }
+
+/* Focused premium one-page redesign pass: unified hero/header, Projects, compact services. */
+body.customer-homepage {
+  --hero-glass: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  background:
+    radial-gradient(circle at 8% -8%, color-mix(in srgb, var(--color-primary) 20%, transparent), transparent 34rem),
+    radial-gradient(circle at 84% 6%, color-mix(in srgb, var(--premium-copper) 24%, transparent), transparent 32rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 92%, var(--color-surface)), var(--color-background) 46%, color-mix(in srgb, var(--color-background) 86%, var(--color-surface)));
+}
+.site-header.customer-public-header,
+.site-header.premium-public-header {
+  position: fixed;
+  top: max(.9rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1180px, calc(100% - 28px));
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 58%, transparent);
+  box-shadow: 0 18px 58px color-mix(in srgb, var(--color-text) 10%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.45);
+  backdrop-filter: blur(20px) saturate(1.45);
+  transition: transform .24s ease, background .24s ease, box-shadow .24s ease, border-color .24s ease;
+}
+.site-header.customer-public-header.is-scrolled,
+body.is-scrolled .site-header.customer-public-header,
+body.is-scrolled .site-header.premium-public-header {
+  transform: translateX(-50%) translateY(-.2rem) scale(.985);
+  background: color-mix(in srgb, var(--color-surface) 86%, transparent);
+  box-shadow: 0 14px 46px color-mix(in srgb, var(--color-text) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-border) 88%, transparent);
+}
+.customer-public-header .container.nav,
+.site-header.premium-public-header .container.nav {
+  height: 84px;
+  min-height: 0;
+  padding: .48rem .58rem .48rem 1rem;
+  transition: height .24s ease;
+}
+body.is-scrolled .customer-public-header .container.nav { height: 68px; }
+.customer-public-header .brand-logo,
+.site-header.premium-public-header .brand-logo,
+.site-header.premium-public-header [data-brand] img {
+  width: 62px;
+  height: 62px;
+  min-width: 62px;
+  border-radius: 20px;
+  transition: width .24s ease, height .24s ease, min-width .24s ease, border-radius .24s ease;
+}
+body.is-scrolled .customer-public-header .brand-logo,
+body.is-scrolled .site-header.premium-public-header [data-brand] img {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 16px;
+}
+.customer-public-header .nav-links a[hidden],
+.footer-grid-customer a[hidden],
+.final-customer-cta a[hidden] { display: none !important; }
+.customer-public-header .nav-links a:not(.btn) { color: color-mix(in srgb, var(--color-text) 74%, transparent); }
+.homepage-hero {
+  margin-top: 0;
+  padding: clamp(8rem, 13vw, 11rem) 0 clamp(4rem, 8vw, 7rem);
+  min-height: 820px;
+  background:
+    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--premium-copper) 22%, transparent), transparent 30rem),
+    radial-gradient(circle at 14% 16%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 32rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 56%, transparent), transparent 72%);
+}
+.homepage-hero::before {
+  content: "";
+  position: absolute;
+  inset: 1rem max(1rem, calc((100vw - 1180px) / 2)) auto;
+  height: min(720px, 92%);
+  border-radius: clamp(30px, 6vw, 64px);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 42%, transparent), color-mix(in srgb, var(--premium-copper) 6%, transparent));
+  border: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+  z-index: -2;
+}
+.hero-backdrop { position:absolute; inset:0; z-index:-3; }
+.hero-copy h1 {
+  font-size: clamp(2.85rem, 6.9vw, 6.25rem);
+  line-height: .96;
+  letter-spacing: -.07em;
+  max-width: 820px;
+}
+.hero-copy > p { max-width: 670px; }
+.hero-brand-lockup { max-width: min(100%, 440px); border-radius: 24px; }
+.hero-brand-lockup small { display:block; margin-top:.12rem; color: var(--color-muted); font-weight: 800; }
+.hero-logo-sm .hero-logo-mark { width: 48px; height: 48px; border-radius: 16px; }
+.hero-logo-md .hero-logo-mark { width: 58px; height: 58px; border-radius: 18px; }
+.hero-logo-lg .hero-logo-mark { width: 68px; height: 68px; border-radius: 22px; }
+.hero-logo-xl .hero-logo-mark { width: 78px; height: 78px; border-radius: 24px; }
+.trust-badges { display:flex; grid-template-columns: none; }
+.trust-badges span { width: auto; }
+.product-mockup { background: linear-gradient(145deg, color-mix(in srgb, var(--color-surface) 70%, transparent), color-mix(in srgb, var(--color-background) 44%, transparent)); }
+.premium-estimate-card { outline: 7px solid color-mix(in srgb, #22c55e 18%, transparent); }
+.estimate-thumb { width: 74px; height: 74px; object-fit: cover; border-radius: 18px; float: right; margin: 0 0 .7rem .8rem; }
+.grouped-services { display:grid; gap:1rem; grid-template-columns: 1fr; }
+.service-group-card {
+  display: grid;
+  grid-template-columns: minmax(150px, .22fr) 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  box-shadow: 0 18px 58px color-mix(in srgb, var(--color-text) 7%, transparent);
+  backdrop-filter: blur(16px);
+}
+.service-mini-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:.75rem; }
+.service-tile.compact-service { min-height: 0; padding: 1rem; border-radius: 20px; }
+.service-tile.compact-service .service-orb { width: 42px; height: 42px; border-radius: 14px; font-size: 1.15rem; }
+.service-tile.compact-service h3 { font-size: 1rem; margin: .55rem 0 .25rem; }
+.service-tile.compact-service p { font-size: .88rem; line-height: 1.45; margin: 0; }
+.projects-section { background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--premium-copper) 6%, transparent), transparent); }
+.project-grid.masonry-grid { columns: 2 320px; column-gap: 1rem; }
+.project-card.job-photo-card { cursor: default; border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent); }
+.project-gradient-card {
+  min-height: 260px;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 72% 20%, color-mix(in srgb, var(--premium-copper) 34%, transparent), transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-text) 84%, #1b1f23), color-mix(in srgb, var(--premium-copper) 36%, #1b1f23));
+  color: #fff;
+  font-weight: 950;
+}
+.project-card span p { margin:.45rem 0; color: #efe7db; font-size:.93rem; line-height:1.45; }
+.project-card span small { display:block; color:#d9d0c0; font-weight:800; }
+.contact-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:.75rem; margin: 1.25rem 0; text-align:left; }
+.contact-grid span { padding: .95rem; border:1px solid var(--color-border); border-radius:18px; background: color-mix(in srgb, var(--color-surface) 64%, transparent); }
+.contact-grid b { display:block; color: var(--premium-copper); font-size:.75rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.25rem; }
+.real-upload-drop small, .real-upload-drop span { color: var(--color-muted); }
+.ai-analysis-card .ai-analysis-body::before { content: "Photos received. We’ll review them with your request."; display:block; margin-top:.75rem; color: var(--color-muted); font-weight: 800; }
+@media (max-width: 980px) {
+  .service-group-card { grid-template-columns: 1fr; }
+  .service-mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .customer-public-header .nav-links .btn:first-of-type { display:inline-flex; }
+}
+@media (max-width: 900px) {
+  .site-header.customer-public-header,
+  .site-header.premium-public-header { border-radius: 28px; width: calc(100% - 1rem); }
+  .customer-public-header .container.nav { height: auto; min-height: 68px; display:grid; grid-template-columns: 1fr auto auto; gap:.5rem; }
+  .customer-public-header .brand { min-width:0; }
+  .customer-public-header .nav-links { grid-column: 1 / -1; }
+  .homepage-hero { padding-top: 7rem; min-height: auto; }
+  .hero-copy { text-align: left; }
+  .product-mockup { min-height: 500px; }
+}
+@media (max-width: 560px) {
+  body.customer-homepage { padding-bottom: 0; }
+  body.customer-homepage::after { content:none; }
+  .homepage-hero { padding-top: 6.25rem; }
+  .hero-brand-lockup { justify-content: flex-start; }
+  .hero-actions { position: static; box-shadow: none; }
+  .service-mini-grid { grid-template-columns: 1fr; }
+  .project-grid.masonry-grid { display:flex; overflow-x:auto; columns:auto; scroll-snap-type:x mandatory; padding-bottom:.75rem; }
+  .project-card.job-photo-card { min-width: min(86vw, 360px); scroll-snap-align:start; }
+}
+[data-theme="dark"] body.customer-homepage,
+html[data-theme="dark"] body.customer-homepage {
+  background:
+    radial-gradient(circle at 12% -8%, color-mix(in srgb, var(--premium-copper) 20%, transparent), transparent 32rem),
+    radial-gradient(circle at 86% 8%, rgba(93,110,255,.16), transparent 30rem),
+    linear-gradient(180deg, #070a0f, #0c111a 48%, #080b10);
+}
+[data-theme="dark"] .site-header.customer-public-header,
+[data-theme="dark"] .service-group-card,
+[data-theme="dark"] .project-card.job-photo-card,
+[data-theme="dark"] .contact-grid span,
+[data-theme="dark"] .final-customer-cta,
+[data-theme="dark"] .premium-proof-card,
+[data-theme="dark"] .premium-estimate-card,
+html[data-theme="dark"] .site-header.customer-public-header,
+html[data-theme="dark"] .service-group-card,
+html[data-theme="dark"] .project-card.job-photo-card,
+html[data-theme="dark"] .contact-grid span,
+html[data-theme="dark"] .final-customer-cta,
+html[data-theme="dark"] .premium-proof-card,
+html[data-theme="dark"] .premium-estimate-card {
+  background: color-mix(in srgb, #151b26 82%, transparent);
+  border-color: rgba(255,255,255,.11);
+}
