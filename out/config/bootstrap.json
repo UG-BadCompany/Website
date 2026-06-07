@@ -1,0 +1,94 @@
+{
+  "generatedAt": "2026-06-07T20:01:08.605Z",
+  "company": {
+    "name": "Contractor CMMS"
+  },
+  "theme": {
+    "mode": "system",
+    "primary": "#2563eb",
+    "accent": "#14b8a6"
+  },
+  "homepage": {
+    "heroTitle": "Reliable contractor service, ready when you are."
+  },
+  "modules": [
+    {
+      "id": "ai-photo-estimate",
+      "title": "AI Photo Estimate",
+      "icon": "📸",
+      "publicVisible": true
+    },
+    {
+      "id": "ai-troubleshooting",
+      "title": "AI Troubleshooting",
+      "icon": "🤖",
+      "publicVisible": true
+    },
+    {
+      "id": "customers",
+      "title": "Customers",
+      "icon": "👥",
+      "publicVisible": true
+    },
+    {
+      "id": "estimate-quote-center",
+      "title": "Estimate & Quote Center",
+      "icon": "🧾",
+      "publicVisible": true
+    },
+    {
+      "id": "finance",
+      "title": "Finance",
+      "icon": "📈",
+      "publicVisible": true
+    },
+    {
+      "id": "homepage-editor",
+      "title": "Homepage Editor",
+      "icon": "🏠",
+      "publicVisible": true
+    },
+    {
+      "id": "inventory",
+      "title": "Inventory",
+      "icon": "📦",
+      "publicVisible": true
+    },
+    {
+      "id": "invoices",
+      "title": "Invoices & Payments",
+      "icon": "💳",
+      "publicVisible": true
+    },
+    {
+      "id": "module-manager",
+      "title": "Module Manager",
+      "icon": "🧩",
+      "publicVisible": true
+    },
+    {
+      "id": "schedule",
+      "title": "Schedule",
+      "icon": "📅",
+      "publicVisible": true
+    },
+    {
+      "id": "theme-manager",
+      "title": "Theme Manager",
+      "icon": "🎨",
+      "publicVisible": true
+    },
+    {
+      "id": "users-permissions",
+      "title": "Users & Permissions",
+      "icon": "🔐",
+      "publicVisible": true
+    },
+    {
+      "id": "work-orders",
+      "title": "Work Orders",
+      "icon": "🛠️",
+      "publicVisible": true
+    }
+  ]
+}

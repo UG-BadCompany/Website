@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-troubleshooting",
+  "title": "AI Troubleshooting",
+  "description": "Troubleshooting assistant using shared AI service with fallback.",
+  "version": "1.0.0",
+  "category": "AI",
+  "icon": "🤖",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "AI Troubleshooting",
+    "mobileLabel": "AI",
+    "sortOrder": 50
+  },
+  "frontend": {
+    "basePath": "/modules/ai-troubleshooting/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "ai-troubleshooting"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "ai-troubleshooting",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/ai-troubleshooting/records",
+        "file": "backend/functions/ai-troubleshooting.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "ai-troubleshooting.view",
+      "label": "View AI Troubleshooting",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "ai-troubleshooting.manage",
+      "label": "Manage AI Troubleshooting",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "dropIn": true
+  }
+}

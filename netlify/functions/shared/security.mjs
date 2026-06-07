@@ -1,0 +1,11 @@
+import crypto from 'node:crypto';
+export const REQUIRED=['SITE_URL','RESEND_API_KEY','MAGIC_LINK_FROM_EMAIL','QUOTE_FROM_EMAIL','OPENAI_API_KEY'];
+export const OPTIONAL=['RECAPTCHA_SITE_KEY','RECAPTCHA_SECRET_KEY','SERPAPI_API_KEY','SQUARE_ACCESS_TOKEN','SQUARE_API_VERSION','SQUARE_ENVIRONMENT','SQUARE_LOCATION_ID','SQUARE_WEBHOOK_SIGNATURE_KEY','OPENAI_MODEL','OPENAI_RESPONSES_MODEL','OPENAI_PHOTO_ESTIMATE_MODEL','OPENAI_QUOTE_MODEL','OPENAI_TROUBLESHOOTING_MODEL','LICENSE_VERIFY_URL','LICENSE_VERIFY_TOKEN','LICENSE_PRODUCT_ID','LICENSE_GRACE_DAYS','LICENSE_VALIDATION_ENABLED','SMTP_HOST','SMTP_USER','SMTP_PASSWORD','GOOGLE_MAPS_API_KEY','SUPPLIER_API_KEY','CDN_URL','FILE_STORAGE_PROVIDER','IMAGE_MAX_UPLOAD_MB','MODULE_AUTO_DISCOVERY','PUBLIC_BOOTSTRAP_CACHE_TTL','DASHBOARD_BOOTSTRAP_CACHE_TTL','INSTALLATION_LOCK_ENABLED','INSTALLATION_ROUTE'];
+export const ALLOWLIST=[...REQUIRED,...OPTIONAL];
+export const SECRET_KEYS=new Set(['OPENAI_API_KEY','RESEND_API_KEY','SQUARE_ACCESS_TOKEN','SQUARE_WEBHOOK_SIGNATURE_KEY','SERPAPI_API_KEY','LICENSE_VERIFY_TOKEN','RECAPTCHA_SECRET_KEY','SMTP_PASSWORD']);
+const key=crypto.createHash('sha256').update(process.env.SECRET_ENCRYPTION_KEY||process.env.DATABASE_URL||'local-dev-encryption-key').digest();
+export function encrypt(value){const iv=crypto.randomBytes(12); const c=crypto.createCipheriv('aes-256-gcm',key,iv); const enc=Buffer.concat([c.update(String(value),'utf8'),c.final()]); const tag=c.getAuthTag(); return Buffer.concat([iv,tag,enc]).toString('base64')}
+export function decrypt(payload){const b=Buffer.from(payload,'base64'); const iv=b.subarray(0,12), tag=b.subarray(12,28), enc=b.subarray(28); const d=crypto.createDecipheriv('aes-256-gcm',key,iv); d.setAuthTag(tag); return d.update(enc)+d.final('utf8')}
+export function lastFour(v){const s=String(v||''); return s ? s.slice(-4) : null}
+export function envStatus(k,state){const env=process.env[k]; const db=state.secrets?.[k]; const configured=!!(env||db); return {key:k,required:REQUIRED.includes(k),configured,source:env?'netlify_env':db?'encrypted_db':null,lastFour:env?lastFour(env):db?.lastFour||null,valid:configured,lastCheckedAt:db?.lastCheckedAt||null}}
+export function redact(o){return JSON.parse(JSON.stringify(o||{},(k,v)=>SECRET_KEYS.has(k)||/token|secret|password|key/i.test(k)?'[redacted]':v))}

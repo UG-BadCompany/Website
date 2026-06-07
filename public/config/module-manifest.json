@@ -1,0 +1,823 @@
+{
+  "generatedAt": "2026-06-07T20:01:08.485Z",
+  "modules": [
+    {
+      "schemaVersion": 1,
+      "id": "ai-photo-estimate",
+      "title": "AI Photo Estimate",
+      "description": "Photo-based estimating workflow using shared AI service with honest fallback.",
+      "version": "1.0.0",
+      "category": "AI",
+      "icon": "📸",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "AI Photo Estimate",
+        "mobileLabel": "AI",
+        "sortOrder": 40
+      },
+      "frontend": {
+        "basePath": "/modules/ai-photo-estimate/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "ai-photo-estimate"
+      },
+      "backend": {
+        "functions": [
+          {
+            "name": "ai-photo-estimate",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "route": "/api/modules/ai-photo-estimate/records",
+            "file": "backend/functions/ai-photo-estimate.mjs"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "ai-photo-estimate.view",
+          "label": "View AI Photo Estimate",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "ai-photo-estimate.manage",
+          "label": "Manage AI Photo Estimate",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai-troubleshooting",
+      "title": "AI Troubleshooting",
+      "description": "Troubleshooting assistant using shared AI service with fallback.",
+      "version": "1.0.0",
+      "category": "AI",
+      "icon": "🤖",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "AI Troubleshooting",
+        "mobileLabel": "AI",
+        "sortOrder": 50
+      },
+      "frontend": {
+        "basePath": "/modules/ai-troubleshooting/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "ai-troubleshooting"
+      },
+      "backend": {
+        "functions": [
+          {
+            "name": "ai-troubleshooting",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "route": "/api/modules/ai-troubleshooting/records",
+            "file": "backend/functions/ai-troubleshooting.mjs"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "ai-troubleshooting.view",
+          "label": "View AI Troubleshooting",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "ai-troubleshooting.manage",
+          "label": "Manage AI Troubleshooting",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "customers",
+      "title": "Customers",
+      "description": "Customer records and client history.",
+      "version": "1.0.0",
+      "category": "Operations",
+      "icon": "👥",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Customers",
+        "mobileLabel": "Customers",
+        "sortOrder": 0
+      },
+      "frontend": {
+        "basePath": "/modules/customers/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "customers"
+      },
+      "backend": {
+        "functions": [
+          {
+            "name": "customers",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "route": "/api/modules/customers/records",
+            "file": "backend/functions/customers.mjs"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "customers.view",
+          "label": "View Customers",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "customers.manage",
+          "label": "Manage Customers",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "estimate-quote-center",
+      "title": "Estimate & Quote Center",
+      "description": "Requests, estimates, AI quotes, approvals, and quote conversion.",
+      "version": "1.0.0",
+      "category": "Sales",
+      "icon": "🧾",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Estimate & Quote Center",
+        "mobileLabel": "Estimate",
+        "sortOrder": 10
+      },
+      "frontend": {
+        "basePath": "/modules/estimate-quote-center/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "estimate-quote-center"
+      },
+      "backend": {
+        "functions": [
+          {
+            "name": "estimate-quote-center",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "route": "/api/modules/estimate-quote-center/records",
+            "file": "backend/functions/estimate-quote-center.mjs"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "estimate-quote-center.view",
+          "label": "View Estimate & Quote Center",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "estimate-quote-center.manage",
+          "label": "Manage Estimate & Quote Center",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [
+        "request:created",
+        "quote:accepted",
+        "work-order:created"
+      ],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "finance",
+      "title": "Finance",
+      "description": "Revenue, payments, aging, and financial reporting.",
+      "version": "1.0.0",
+      "category": "Finance",
+      "icon": "📈",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Finance",
+        "mobileLabel": "Finance",
+        "sortOrder": 80
+      },
+      "frontend": {
+        "basePath": "/modules/finance/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "finance"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "finance.view",
+          "label": "View Finance",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "finance.manage",
+          "label": "Manage Finance",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "homepage-editor",
+      "title": "Homepage Editor",
+      "description": "Editor-driven public homepage sections and service content.",
+      "version": "1.0.0",
+      "category": "Admin",
+      "icon": "🏠",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Homepage Editor",
+        "mobileLabel": "Homepage",
+        "sortOrder": 110
+      },
+      "frontend": {
+        "basePath": "/modules/homepage-editor/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "homepage-editor"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "homepage-editor.view",
+          "label": "View Homepage Editor",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "homepage-editor.manage",
+          "label": "Manage Homepage Editor",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "inventory",
+      "title": "Inventory",
+      "description": "Parts, materials, stock levels, and supplier placeholders.",
+      "version": "1.0.0",
+      "category": "Operations",
+      "icon": "📦",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Inventory",
+        "mobileLabel": "Inventory",
+        "sortOrder": 70
+      },
+      "frontend": {
+        "basePath": "/modules/inventory/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "inventory"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "inventory.view",
+          "label": "View Inventory",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "inventory.manage",
+          "label": "Manage Inventory",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "invoices",
+      "title": "Invoices & Payments",
+      "description": "Invoice generation, Square payment link support, paid status, and archive.",
+      "version": "1.0.0",
+      "category": "Finance",
+      "icon": "💳",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Invoices & Payments",
+        "mobileLabel": "Invoices",
+        "sortOrder": 30
+      },
+      "frontend": {
+        "basePath": "/modules/invoices/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "invoices"
+      },
+      "backend": {
+        "functions": [
+          {
+            "name": "invoices",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "route": "/api/modules/invoices/records",
+            "file": "backend/functions/invoices.mjs"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "invoices.view",
+          "label": "View Invoices & Payments",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "invoices.manage",
+          "label": "Manage Invoices & Payments",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "module-manager",
+      "title": "Module Manager",
+      "description": "Real drop-in module health, permissions, visibility, and enablement.",
+      "version": "1.0.0",
+      "category": "Admin",
+      "icon": "🧩",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Module Manager",
+        "mobileLabel": "Module",
+        "sortOrder": 120
+      },
+      "frontend": {
+        "basePath": "/modules/module-manager/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "module-manager"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "module-manager.view",
+          "label": "View Module Manager",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "module-manager.manage",
+          "label": "Manage Module Manager",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "schedule",
+      "title": "Schedule",
+      "description": "Dispatch calendar and worker availability.",
+      "version": "1.0.0",
+      "category": "Operations",
+      "icon": "📅",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Schedule",
+        "mobileLabel": "Schedule",
+        "sortOrder": 60
+      },
+      "frontend": {
+        "basePath": "/modules/schedule/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "schedule"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "schedule.view",
+          "label": "View Schedule",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "schedule.manage",
+          "label": "Manage Schedule",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "theme-manager",
+      "title": "Theme Manager",
+      "description": "Brand colors, sidebar/mobile nav colors, light/dark/system mode.",
+      "version": "1.0.0",
+      "category": "Admin",
+      "icon": "🎨",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Theme Manager",
+        "mobileLabel": "Theme",
+        "sortOrder": 100
+      },
+      "frontend": {
+        "basePath": "/modules/theme-manager/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "theme-manager"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "theme-manager.view",
+          "label": "View Theme Manager",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "theme-manager.manage",
+          "label": "Manage Theme Manager",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "users-permissions",
+      "title": "Users & Permissions",
+      "description": "Roles, permissions, owner super-user, and impersonation controls.",
+      "version": "1.0.0",
+      "category": "Admin",
+      "icon": "🔐",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Users & Permissions",
+        "mobileLabel": "Users",
+        "sortOrder": 90
+      },
+      "frontend": {
+        "basePath": "/modules/users-permissions/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "users-permissions"
+      },
+      "backend": {
+        "functions": []
+      },
+      "permissions": [
+        {
+          "key": "users-permissions.view",
+          "label": "View Users & Permissions",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "users-permissions.manage",
+          "label": "Manage Users & Permissions",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "work-orders",
+      "title": "Work Orders",
+      "description": "Assignment, scheduling, completion, review, and archive flow.",
+      "version": "1.0.0",
+      "category": "Operations",
+      "icon": "🛠️",
+      "enabledByDefault": true,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Work Orders",
+        "mobileLabel": "Work",
+        "sortOrder": 20
+      },
+      "frontend": {
+        "basePath": "/modules/work-orders/frontend",
+        "entry": "module.js",
+        "html": "module.html",
+        "css": "module.css",
+        "registerId": "work-orders"
+      },
+      "backend": {
+        "functions": [
+          {
+            "name": "work-orders",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "route": "/api/modules/work-orders/records",
+            "file": "backend/functions/work-orders.mjs"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "work-orders.view",
+          "label": "View Work Orders",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "work-orders.manage",
+          "label": "Manage Work Orders",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "workflowEvents": [],
+      "settings": {
+        "dropIn": true
+      }
+    }
+  ]
+}

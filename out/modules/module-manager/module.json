@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "module-manager",
+  "title": "Module Manager",
+  "description": "Real drop-in module health, permissions, visibility, and enablement.",
+  "version": "1.0.0",
+  "category": "Admin",
+  "icon": "🧩",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Module Manager",
+    "mobileLabel": "Module",
+    "sortOrder": 120
+  },
+  "frontend": {
+    "basePath": "/modules/module-manager/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "module-manager"
+  },
+  "backend": {
+    "functions": []
+  },
+  "permissions": [
+    {
+      "key": "module-manager.view",
+      "label": "View Module Manager",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "module-manager.manage",
+      "label": "Manage Module Manager",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "dropIn": true
+  }
+}

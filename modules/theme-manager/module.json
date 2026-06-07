@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "theme-manager",
+  "title": "Theme Manager",
+  "description": "Brand colors, sidebar/mobile nav colors, light/dark/system mode.",
+  "version": "1.0.0",
+  "category": "Admin",
+  "icon": "🎨",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Theme Manager",
+    "mobileLabel": "Theme",
+    "sortOrder": 100
+  },
+  "frontend": {
+    "basePath": "/modules/theme-manager/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "theme-manager"
+  },
+  "backend": {
+    "functions": []
+  },
+  "permissions": [
+    {
+      "key": "theme-manager.view",
+      "label": "View Theme Manager",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "theme-manager.manage",
+      "label": "Manage Theme Manager",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "dropIn": true
+  }
+}
