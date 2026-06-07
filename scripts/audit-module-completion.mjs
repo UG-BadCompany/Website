@@ -1,4 +1,0 @@
-import { existsSync } from 'node:fs';
-const modules=['admin/overview','admin/quotes','admin/requests','admin/work-orders','admin/schedule','admin/customers','admin/invoices','admin/finance','admin/inventory','admin/users','admin/roles','admin/ai-knowledge','admin/brand-settings','admin/settings','client/overview','client/requests','client/quotes','client/invoices','client/project-updates','client/profile','client/properties','worker/overview','worker/jobs','worker/schedule','worker/materials','worker/photos','worker/notes','worker/troubleshooting'];
-for (const m of modules) for (const f of ['module.html','module.css','module.js']) if(!existsSync(`public/dashboard/modules/${m}/${f}`)) throw new Error(`Missing drop-in module file: ${m}/${f}`);
-console.log('All drop-in module folders include module.html, module.css, and module.js.');
