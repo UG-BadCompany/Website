@@ -1,0 +1,2 @@
+import { json, getConfig } from './_shared/config.mjs';
+export async function handler(event){if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});const cfg=getConfig();const {email}=JSON.parse(event.body||'{}');return json(200,{ok:true,message:cfg.email.resendApiKey?`Magic link queued for ${email}`:`Magic link prepared for ${email}; configure RESEND_API_KEY to send email.`})}

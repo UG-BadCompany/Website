@@ -1,0 +1,54 @@
+{
+  "id": "admin-dashboard",
+  "title": "Admin Dashboard",
+  "description": "Admin operational command center",
+  "version": "1.0.0",
+  "icon": "🧑‍💼",
+  "workspace": "admin",
+  "category": "dashboard",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "admin-dashboard:read",
+    "admin-dashboard:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/admin-dashboard",
+      "title": "Admin Dashboard",
+      "view": "admin-dashboard-view",
+      "workspace": "admin"
+    }
+  ],
+  "nav": {
+    "label": "Admin Dashboard",
+    "path": "/dashboard/admin-dashboard",
+    "icon": "🧑‍💼",
+    "workspace": "admin",
+    "order": 16
+  },
+  "mobileNav": {
+    "label": "Admin Dashboard",
+    "path": "/dashboard/admin-dashboard",
+    "icon": "🧑‍💼"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "admin-dashboard/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}

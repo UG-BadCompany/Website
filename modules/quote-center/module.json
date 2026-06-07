@@ -1,0 +1,54 @@
+{
+  "id": "quote-center",
+  "title": "Quote Center",
+  "description": "Create, review, send, and accept quotes",
+  "version": "1.0.0",
+  "icon": "🧾",
+  "workspace": "admin",
+  "category": "sales",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "quote-center:read",
+    "quote-center:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/quote-center",
+      "title": "Quote Center",
+      "view": "quote-center-view",
+      "workspace": "admin"
+    }
+  ],
+  "nav": {
+    "label": "Quote Center",
+    "path": "/dashboard/quote-center",
+    "icon": "🧾",
+    "workspace": "admin",
+    "order": 5
+  },
+  "mobileNav": {
+    "label": "Quote Center",
+    "path": "/dashboard/quote-center",
+    "icon": "🧾"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "quote-center/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "owner-dashboard",
+  "title": "Owner Dashboard",
+  "description": "Executive overview and controls",
+  "version": "1.0.0",
+  "icon": "👑",
+  "workspace": "owner",
+  "category": "dashboard",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "owner-dashboard:read",
+    "owner-dashboard:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/owner-dashboard",
+      "title": "Owner Dashboard",
+      "view": "owner-dashboard-view",
+      "workspace": "owner"
+    }
+  ],
+  "nav": {
+    "label": "Owner Dashboard",
+    "path": "/dashboard/owner-dashboard",
+    "icon": "👑",
+    "workspace": "owner",
+    "order": 15
+  },
+  "mobileNav": {
+    "label": "Owner Dashboard",
+    "path": "/dashboard/owner-dashboard",
+    "icon": "👑"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "owner-dashboard/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}

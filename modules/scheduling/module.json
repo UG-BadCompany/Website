@@ -1,0 +1,54 @@
+{
+  "id": "scheduling",
+  "title": "Scheduling",
+  "description": "Schedule crews, jobs, and visits",
+  "version": "1.0.0",
+  "icon": "📅",
+  "workspace": "manager",
+  "category": "operations",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "scheduling:read",
+    "scheduling:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/scheduling",
+      "title": "Scheduling",
+      "view": "scheduling-view",
+      "workspace": "manager"
+    }
+  ],
+  "nav": {
+    "label": "Scheduling",
+    "path": "/dashboard/scheduling",
+    "icon": "📅",
+    "workspace": "manager",
+    "order": 7
+  },
+  "mobileNav": {
+    "label": "Scheduling",
+    "path": "/dashboard/scheduling",
+    "icon": "📅"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "scheduling/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}

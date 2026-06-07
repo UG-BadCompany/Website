@@ -1,0 +1,54 @@
+{
+  "id": "ai-troubleshooting",
+  "title": "AI Troubleshooting",
+  "description": "Guided diagnostics for field and office teams",
+  "version": "1.0.0",
+  "icon": "🤖",
+  "workspace": "worker",
+  "category": "ai",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "ai-troubleshooting:read",
+    "ai-troubleshooting:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/ai-troubleshooting",
+      "title": "AI Troubleshooting",
+      "view": "ai-troubleshooting-view",
+      "workspace": "worker"
+    }
+  ],
+  "nav": {
+    "label": "AI Troubleshooting",
+    "path": "/dashboard/ai-troubleshooting",
+    "icon": "🤖",
+    "workspace": "worker",
+    "order": 20
+  },
+  "mobileNav": {
+    "label": "AI Troubleshooting",
+    "path": "/dashboard/ai-troubleshooting",
+    "icon": "🤖"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "ai-troubleshooting/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}

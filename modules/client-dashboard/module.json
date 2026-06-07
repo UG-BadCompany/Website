@@ -1,0 +1,54 @@
+{
+  "id": "client-dashboard",
+  "title": "Client Dashboard",
+  "description": "Client workspace dashboard",
+  "version": "1.0.0",
+  "icon": "🙋",
+  "workspace": "client",
+  "category": "dashboard",
+  "enabledByDefault": true,
+  "dependencies": [],
+  "permissions": [
+    "client-dashboard:read",
+    "client-dashboard:write"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/client-dashboard",
+      "title": "Client Dashboard",
+      "view": "client-dashboard-view",
+      "workspace": "client"
+    }
+  ],
+  "nav": {
+    "label": "Client Dashboard",
+    "path": "/dashboard/client-dashboard",
+    "icon": "🙋",
+    "workspace": "client",
+    "order": 19
+  },
+  "mobileNav": {
+    "label": "Client Dashboard",
+    "path": "/dashboard/client-dashboard",
+    "icon": "🙋"
+  },
+  "api": [
+    {
+      "method": "GET",
+      "path": "client-dashboard/summary",
+      "handler": "summary.mjs"
+    }
+  ],
+  "events": [
+    "workflow.updated",
+    "module.toggled"
+  ],
+  "settings": {
+    "configurable": true
+  },
+  "homepageSections": [],
+  "installerSteps": [],
+  "migrations": [
+    "netlify/migrations/0001_initial_platform.sql"
+  ]
+}
