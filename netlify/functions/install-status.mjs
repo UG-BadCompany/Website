@@ -1,3 +1,0 @@
-import { json } from './shared/http.mjs';
-import { getInstallState } from './shared/store.mjs';
-export async function handler() { try { const s=await getInstallState(); const installed=!!s.installation_complete; return json(200, installed ? {ok:true,installed:true,installationComplete:true,needsInstall:false,installedAt:s.installed_at,installedVersion:s.installed_version||'1.0.0'} : {ok:true,installed:false,installationComplete:false,needsInstall:true,currentStep:s.current_step||'welcome'}); } catch { return json(200,{ok:true,installed:false,installationComplete:false,needsInstall:true,currentStep:'welcome'}); } }

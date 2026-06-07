@@ -903,6 +903,278 @@ The owner should never have to hunt through dozens of uncategorized cards.
 
 ---
 
+
+---
+
+## 2.0D Installer Theme and Sidebar Colors UX Requirements
+
+The First-Run Installer Theme and Sidebar Colors step must be fully functional and polished.
+
+The installer must not show broken plain text fields or unusable color inputs.
+
+### Current Problem to Avoid
+
+During install, the Theme and Sidebar Colors screen can appear with:
+
+- Mode displayed as a plain text input instead of a dropdown.
+- Color fields appearing as broken blank bars.
+- Primary Color, Accent Color, Background, Surface, and Text fields not opening proper color pickers.
+- No preview of how the selected theme will look.
+- Custom colors not saving or applying correctly.
+- System mode not following the user's OS theme.
+- Sidebar colors not matching the selected theme.
+
+This must be fixed in the build.
+
+### Theme Mode Field
+
+The Mode field must be a proper dropdown/select.
+
+Allowed values:
+
+```txt
+Light
+Dark
+System
+Custom
+```
+
+Internal values:
+
+```txt
+light
+dark
+system
+custom
+```
+
+Default:
+
+```txt
+system
+```
+
+System mode must detect:
+
+```js
+window.matchMedia('(prefers-color-scheme: dark)')
+```
+
+If OS is dark, the installer preview and final site should be dark.
+If OS is light, the installer preview and final site should be light.
+
+### Color Fields
+
+Color fields must use real color picker controls.
+
+Use:
+
+```html
+<input type="color">
+```
+
+or a custom color picker component.
+
+Each color setting should include:
+
+- visible color swatch
+- hex input
+- reset-to-default button
+- accessible label
+- live preview update
+- validation for valid hex color
+
+Required fields:
+
+```txt
+Primary Color
+Accent Color
+Background Color
+Surface Color
+Text Color
+Border Color
+Button Color
+Button Text Color
+Sidebar Background
+Sidebar Text
+Sidebar Active Background
+Sidebar Active Text
+Sidebar Hover Background
+Mobile Nav Background
+Mobile Nav Active
+Mobile Nav Text
+```
+
+### Custom Color Behavior
+
+When Mode is:
+
+Light:
+- use light theme defaults
+- allow optional overrides only if custom override toggle is enabled
+
+Dark:
+- use dark theme defaults
+- allow optional overrides only if custom override toggle is enabled
+
+System:
+- resolve to light or dark based on OS
+- allow sidebar to follow resolved theme unless custom sidebar colors are enabled
+
+Custom:
+- use all custom color values
+- require live preview
+- validate colors before saving
+
+### Sidebar Color Behavior
+
+Sidebar colors must not be disconnected from the main theme.
+
+Default behavior:
+
+```txt
+Sidebar follows selected theme.
+```
+
+Only use custom sidebar colors when:
+
+```txt
+custom_sidebar_colors_enabled = true
+```
+
+Installer must include a toggle:
+
+```txt
+Use custom sidebar colors
+```
+
+If disabled:
+
+- hide or disable sidebar custom fields
+- sidebar uses theme surface/background colors
+
+If enabled:
+
+- show sidebar color pickers
+- save sidebar custom color values
+- preview sidebar colors live
+
+### Mobile Navigation Colors
+
+Installer must include:
+
+```txt
+Use custom mobile nav colors
+```
+
+If disabled:
+
+- mobile nav follows main theme
+
+If enabled:
+
+- show mobile nav color pickers
+- preview mobile nav colors live
+
+### Theme Preview
+
+The Theme and Sidebar Colors step must include a live preview card.
+
+Preview should show:
+
+- public header
+- sample homepage card
+- sample dashboard sidebar
+- sample button
+- sample input
+- sample mobile nav
+- light/dark/system/custom mode result
+
+The preview should update immediately when values change.
+
+### Save Requirements
+
+Clicking Save & Continue must persist:
+
+- theme mode
+- resolved theme preference
+- all color values
+- custom sidebar enabled flag
+- sidebar colors
+- custom mobile nav enabled flag
+- mobile nav colors
+- updated timestamp
+
+After refresh, the installer should show the saved values.
+
+After install completion, the public homepage, portal, dashboard, modules, quotes, invoices, and installer should all use the saved theme.
+
+### Validation
+
+Before saving:
+
+- Mode must be one of: light, dark, system, custom.
+- Color fields must be valid hex colors if provided.
+- If Custom mode is selected, required custom colors must be valid.
+- Invalid color values should show inline errors.
+- Do not silently save broken color values.
+
+### Theme Storage
+
+Store theme settings in the main company/theme settings table, not hardcoded files.
+
+Suggested fields:
+
+```txt
+theme_mode
+theme_primary_color
+theme_accent_color
+theme_background_color
+theme_surface_color
+theme_text_color
+theme_border_color
+theme_button_color
+theme_button_text_color
+custom_sidebar_colors_enabled
+sidebar_background_color
+sidebar_text_color
+sidebar_active_background_color
+sidebar_active_text_color
+sidebar_hover_background_color
+custom_mobile_nav_colors_enabled
+mobile_nav_background_color
+mobile_nav_active_color
+mobile_nav_text_color
+updated_at
+```
+
+### Theme Bootstrap
+
+Theme must apply before first paint.
+
+The installer and generated `/config/bootstrap.json` must include safe public theme values only.
+
+No page should flash white in dark/system mode.
+
+### Installer Acceptance Tests
+
+- Mode is a dropdown, not a text input.
+- Light/Dark/System/Custom options work.
+- Color fields open real color pickers.
+- Hex inputs validate correctly.
+- Theme preview updates live.
+- Sidebar follows theme by default.
+- Custom sidebar colors work only when enabled.
+- Mobile nav follows theme by default.
+- Custom mobile nav colors work only when enabled.
+- Save & Continue persists settings.
+- Refresh keeps saved values.
+- System mode follows OS.
+- Dashboard and public site use saved theme after install.
+- No broken blank color bars appear.
+
+---
+
 ## 2A. Full First-Run Installer and Setup Process
 
 The rebuilt platform must include a complete first-run installer. The installer is not optional. A new deployment should not require manual DB edits, hardcoded company branding, hardcoded owner accounts, or hidden setup steps.

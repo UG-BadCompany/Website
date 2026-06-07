@@ -1,6 +1,0 @@
-import fs from 'node:fs/promises';
-import { json, currentUser } from './shared/http.mjs';
-import { getStore } from './shared/store.mjs';
-export async function handler(event){ const db=await getStore(); if(!db.installation.installation_complete) return json(423,{ok:false,code:'INSTALLATION_REQUIRED',redirect:'/install/'}); const user=currentUser(event); const owner=user.role==='owner'; const registry=JSON.parse(await fs.readFile('netlify/generated/module-registry.json','utf8').catch(()=>'{"modules":[]}'));
- const modules=registry.modules.filter(m=>owner || (m.enabledByDefault!==false && (m.workspaces||[]).includes(user.role))).map(m=>({...m, ownerVisible:owner}));
- return json(200,{ok:true,company:db.company,theme:db.theme,homepage:db.homepage,user:{...user,workspaces:owner?['owner','admin','manager','worker','client','public-homepage','public-portal','public-quote','public-invoice']:[user.role]},permissions:owner?['*']:db.permissions.map(p=>p.key),modules,impersonation:null,workflowStatuses:['request_new','quote_draft','quote_sent','quote_accepted','work_order_created','assigned','scheduled','in_progress','worker_completed','invoice_ready','invoice_sent','paid','payment_verified','closed','archived']}); }
