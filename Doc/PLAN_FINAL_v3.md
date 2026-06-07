@@ -500,6 +500,409 @@ Admin access requires explicit owner-granted permission.
 
 ---
 
+
+---
+
+## 2.0B Environment Variable Help Links and Value Guidance
+
+During the First-Run Installer, the Environment Variables / Integrations step must not only ask for values.
+
+It must also explain where each value comes from and provide a link or instructions for getting it.
+
+Important:
+
+Environment Variable values are unique per customer, per deployment, and per external account.
+
+Do NOT hardcode example values as real defaults.
+
+Do NOT assume every customer uses the same URL, account, location ID, API key, sender email, license key, or webhook URL.
+
+The installer should help the owner find or create the correct value for their own account.
+
+### Variable Help Metadata
+
+Create a metadata registry for environment variables.
+
+Example:
+
+```js
+{
+  key: "OPENAI_API_KEY",
+  label: "OpenAI API Key",
+  required: true,
+  secret: true,
+  category: "AI",
+  description: "Used for AI Quote, AI Photo Estimate, and AI Troubleshooting.",
+  helpUrl: "https://platform.openai.com/api-keys",
+  helpText: "Create or copy an API key from your OpenAI platform account.",
+  valueInstructions: [
+    "Open the OpenAI API Keys page.",
+    "Sign in to the account that will pay for AI usage.",
+    "Create a new secret key.",
+    "Copy the value and paste it here.",
+    "The value will be stored server-side only."
+  ],
+  placeholder: "sk-...",
+  canTest: true
+}
+```
+
+The installer should render this help metadata for every integration.
+
+### Required UX
+
+For each variable card, show:
+
+- variable name
+- plain English purpose
+- required/optional badge
+- configured/missing status
+- secure input field
+- "Where do I find this?" help link
+- step-by-step instructions
+- test connection button if supported
+- last checked date
+- safe last-four display only
+
+### External Account Links
+
+Provide safe links to external dashboards where the owner can obtain values.
+
+Examples:
+
+OpenAI:
+- API key page
+- usage/billing page if useful
+
+Resend:
+- API keys page
+- domains page
+- sender/domain verification instructions
+
+Square:
+- developer dashboard
+- applications page
+- locations page
+- webhook configuration page
+
+Google reCAPTCHA:
+- admin console
+- site key / secret key instructions
+
+SerpAPI:
+- dashboard/API key page
+
+License Server:
+- future licensing portal URL from `LICENSE_VERIFY_URL` or configured reseller system
+
+Google Maps:
+- Google Cloud API credentials page
+
+SMTP:
+- generic provider instructions, because values differ by mail provider
+
+### Dynamic URL Guidance
+
+Some URLs depend on this specific deployment.
+
+The installer must generate and display deployment-specific callback/webhook URLs.
+
+Examples:
+
+Magic link / site URL:
+
+```txt
+SITE_URL = current deployment URL or custom domain
+```
+
+Square webhook URL:
+
+```txt
+https://YOUR_DOMAIN/api/payments/square/webhook
+```
+
+Public site:
+
+```txt
+https://YOUR_DOMAIN/
+```
+
+Client portal:
+
+```txt
+https://YOUR_DOMAIN/login/
+```
+
+The installer should calculate these based on:
+
+- current browser origin
+- `SITE_URL`
+- `SITE_URL_ALIASES`
+- configured custom domain
+
+Do not hardcode `ta-contracting.org`, `tacontracting.netlify.app`, or any customer-specific domain.
+
+### Customer-Specific Values
+
+The installer must clearly explain that values are not shared between customers.
+
+Examples:
+
+- Square Location ID is different for each Square account.
+- OpenAI API key is different for each OpenAI account.
+- Resend API key is different for each Resend account.
+- SITE_URL is different for each deployment/custom domain.
+- License key is different for each sold website/customer.
+- Webhook URL depends on the deployed website domain.
+
+### Copy Buttons
+
+For generated callback/webhook URLs, add:
+
+- Copy URL button
+- Open setup guide button
+- Mark as configured button
+- Test webhook button where possible
+
+### Safe Defaults
+
+The installer may use safe placeholders only:
+
+```txt
+Paste your OpenAI API key
+Paste your Square access token
+Paste your Resend API key
+https://your-domain.com
+```
+
+Never use fake working-looking values.
+
+Never use another customer’s values.
+
+### Environment Help Registry
+
+Create a reusable environment help registry used by:
+
+- First-Run Installer
+- System Center → Environment & Integrations
+- setup validation
+- docs generator
+
+Suggested file:
+
+```txt
+netlify/functions/shared/env-metadata.mjs
+```
+
+or:
+
+```txt
+shared/env-metadata.json
+```
+
+It should define:
+
+- key
+- label
+- category
+- required
+- secret
+- publicSafe
+- description
+- helpUrl
+- setupSteps
+- placeholder
+- testAction
+- dependsOn
+- generatedValueHint
+
+### Acceptance Tests
+
+- Installer shows help links for external integrations.
+- Installer explains where to get each value.
+- Installer generates deployment-specific callback/webhook URLs.
+- Installer does not hardcode customer-specific domains.
+- Installer never uses real example secrets.
+- Square webhook URL uses the current deployment domain.
+- SITE_URL can be detected from current deployment.
+- Owner can copy generated URLs.
+- Owner can open external dashboard links.
+- System Center uses the same help metadata after install.
+
+---
+
+
+---
+
+## 2.0C Environment Variable Categories and Installer UX
+
+The First-Run Installer must NOT overwhelm the owner with dozens of integration cards.
+
+Environment Variables must be grouped into categories.
+
+### Category 1 — Required Setup
+
+These are the minimum values required to complete installation.
+
+```txt
+SITE_URL
+MAGIC_LINK_FROM_EMAIL
+RESEND_API_KEY
+```
+
+If one of these is missing, installation should warn the owner.
+
+### Category 2 — Recommended (AI)
+
+These should be configured during install but should NOT block installation.
+
+```txt
+OPENAI_API_KEY
+OPENAI_MODEL
+OPENAI_RESPONSES_MODEL
+OPENAI_PHOTO_ESTIMATE_MODEL
+OPENAI_QUOTE_MODEL
+OPENAI_TROUBLESHOOTING_MODEL
+QUOTE_FROM_EMAIL
+```
+
+Display:
+
+"Recommended for full AI functionality."
+
+### Category 3 — Payments
+
+Only required if the owner enables Square payments.
+
+```txt
+SQUARE_ACCESS_TOKEN
+SQUARE_API_VERSION
+SQUARE_ENVIRONMENT
+SQUARE_LOCATION_ID
+SQUARE_WEBHOOK_SIGNATURE_KEY
+```
+
+Display:
+
+"Optional. Can be configured later."
+
+### Category 4 — Security
+
+```txt
+RECAPTCHA_SITE_KEY
+RECAPTCHA_SECRET_KEY
+```
+
+Optional.
+
+### Category 5 — Licensing (Future)
+
+```txt
+LICENSE_VERIFY_URL
+LICENSE_VERIFY_TOKEN
+LICENSE_PRODUCT_ID
+LICENSE_GRACE_DAYS
+LICENSE_VALIDATION_ENABLED
+```
+
+Hidden behind:
+
+Future Features
+
+Disabled by default.
+
+### Category 6 — Advanced Integrations
+
+```txt
+SERPAPI_API_KEY
+GOOGLE_MAPS_API_KEY
+SUPPLIER_API_KEY
+SMTP_HOST
+SMTP_USER
+SMTP_PASSWORD
+CDN_URL
+FILE_STORAGE_PROVIDER
+IMAGE_MAX_UPLOAD_MB
+MODULE_AUTO_DISCOVERY
+PUBLIC_BOOTSTRAP_CACHE_TTL
+DASHBOARD_BOOTSTRAP_CACHE_TTL
+INSTALLATION_LOCK_ENABLED
+INSTALLATION_ROUTE
+```
+
+These should be collapsed by default.
+
+---
+
+### Installer Layout
+
+The installer should use tabs:
+
+```txt
+[ Required ]
+[ AI ]
+[ Payments ]
+[ Security ]
+[ Advanced ]
+[ Future ]
+```
+
+Only the Required tab is opened initially.
+
+All other tabs are collapsed until selected.
+
+Display counts:
+
+```txt
+Required (3)
+AI (7)
+Payments (5)
+Security (2)
+Advanced (13)
+Future (5)
+```
+
+---
+
+### Optional Variables
+
+Optional variables must never block installation.
+
+They should show:
+
+- Optional
+- Configure Later
+- Skip For Now
+
+The installer should explain that these can be managed later from:
+
+Owner
+→ System Center
+→ Environment & Integrations
+
+---
+
+### Post-Install Management
+
+The same categorized layout should be reused after installation.
+
+The owner should never have to hunt through dozens of uncategorized cards.
+
+---
+
+### Acceptance Tests
+
+- Environment Variables are grouped into categories.
+- Only Required Setup is expanded by default.
+- Optional integrations do not block installation.
+- Square only becomes required when payments are enabled.
+- Future license variables are hidden by default.
+- Advanced variables are collapsed.
+- System Center uses the same grouped layout.
+- Installer feels simple and approachable for first-time users.
+
+---
+
 ## 2A. Full First-Run Installer and Setup Process
 
 The rebuilt platform must include a complete first-run installer. The installer is not optional. A new deployment should not require manual DB edits, hardcoded company branding, hardcoded owner accounts, or hidden setup steps.
@@ -2872,6 +3275,9 @@ The final architecture must allow a new module to be dropped into the repo and a
 - Secret values are never written to public bootstrap config.
 - Secret values are never logged.
 - Owner can test OpenAI, Resend, Square, reCAPTCHA, license server, and SITE_URL.
+- Installer provides help links and step-by-step instructions for finding each value.
+- Installer generates customer-specific callback/webhook URLs using the current deployment domain.
+- No customer-specific URL or secret is hardcoded.
 - System Center includes Environment & Integrations manager after install.
 
 ### Super Owner
