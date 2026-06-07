@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "invoices",
+  "title": "Invoices",
+  "description": "Invoices drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Finance",
+  "icon": "\ud83d\udcb3",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Invoices",
+    "mobileLabel": "Invoices",
+    "sortOrder": 70
+  },
+  "frontend": {
+    "basePath": "/modules/invoices/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "invoices"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "invoices",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/invoices/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "invoices.view",
+      "label": "Invoices View",
+      "group": "Invoices",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "key": "invoices.manage",
+      "label": "Invoices Manage",
+      "group": "Invoices",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "request.created",
+    "quote.accepted",
+    "workorder.completed"
+  ],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

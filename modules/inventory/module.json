@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "inventory",
+  "title": "Inventory",
+  "description": "Inventory drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Operations",
+  "icon": "\ud83d\udce6",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Inventory",
+    "mobileLabel": "Inventory",
+    "sortOrder": 60
+  },
+  "frontend": {
+    "basePath": "/modules/inventory/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "inventory"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "inventory",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/inventory/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "inventory.view",
+      "label": "Inventory View",
+      "group": "Inventory",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "key": "inventory.manage",
+      "label": "Inventory Manage",
+      "group": "Inventory",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-photo-estimate",
+  "title": "AI Photo Estimate",
+  "description": "AI Photo Estimate drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "AI",
+  "icon": "\ud83d\udcf8",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "AI Photo Estimate",
+    "mobileLabel": "AI",
+    "sortOrder": 20
+  },
+  "frontend": {
+    "basePath": "/modules/ai-photo-estimate/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "ai-photo-estimate"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "ai-photo-estimate",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/ai-photo-estimate/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "ai.photo-estimate.use",
+      "label": "Ai Photo Estimate Use",
+      "group": "AI Photo Estimate",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ]
+    },
+    {
+      "key": "ai.photo-estimate.manage",
+      "label": "Ai Photo Estimate Manage",
+      "group": "AI Photo Estimate",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

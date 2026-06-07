@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "work-orders",
+  "title": "Work Orders",
+  "description": "Work Orders drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Operations",
+  "icon": "\ud83d\udee0\ufe0f",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Work Orders",
+    "mobileLabel": "Work",
+    "sortOrder": 40
+  },
+  "frontend": {
+    "basePath": "/modules/work-orders/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "work-orders"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "work-orders",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/work-orders/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "work-orders.view",
+      "label": "Work Orders View",
+      "group": "Work Orders",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "key": "work-orders.assign",
+      "label": "Work Orders Assign",
+      "group": "Work Orders",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "work-orders.manage",
+      "label": "Work Orders Manage",
+      "group": "Work Orders",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "request.created",
+    "quote.accepted",
+    "workorder.completed"
+  ],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

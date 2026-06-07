@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "reports",
+  "title": "Reports",
+  "description": "Reports drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Analytics",
+  "icon": "\ud83d\udcca",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Reports",
+    "mobileLabel": "Reports",
+    "sortOrder": 140
+  },
+  "frontend": {
+    "basePath": "/modules/reports/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "reports"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "reports",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/reports/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "reports.view",
+      "label": "Reports View",
+      "group": "Reports",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}
