@@ -1,1 +1,0 @@
-import { existsSync } from 'node:fs'; if(!existsSync('out/index.html')||!existsSync('out/install/index.html')){console.error('Required /out files missing');process.exit(1)} console.log('/out verified.');
