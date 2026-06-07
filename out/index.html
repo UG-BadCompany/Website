@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Contractor Portal | Repairs, Maintenance &amp; Improvements</title>
+  <title>T&amp;A Contracting | Arizona Property Maintenance Done Right</title>
   <link rel="stylesheet" href="/assets/css/base.css">
   <link rel="stylesheet" href="/assets/css/public.css">
   <!-- compatibility: --dash-bg: #070a0f -->
@@ -14,10 +14,13 @@
       <a class="brand" href="/" data-brand aria-label="Company home"></a>
       <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-label="Open menu">☰</button>
       <nav class="nav-links" aria-label="Main navigation">
+        <a href="/">Home</a>
         <a href="#services">Services</a>
-        <a href="#estimate">Request Estimate</a>
-        <a class="btn" href="#estimate">Request Estimate</a>
-        <a class="btn secondary" href="/login/" data-portal-link data-dashboard-link>Client Portal</a><a class="sr-only" href="/dashboard/">Dashboard</a>
+        <a href="#recent-work">Gallery</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <a href="/login/" data-portal-link data-dashboard-link>Client Portal</a>
+        <a class="btn" href="#estimate">Request Estimate</a><a class="sr-only" href="/dashboard/">Dashboard</a>
       </nav>
     </div>
   </header>
@@ -37,9 +40,12 @@
     <section class="section" id="services">
       <div class="container"><div class="section-heading centered"><span class="pill">Services</span><h2>Professional repair and maintenance services.</h2><p>HVAC, plumbing, electrical, drywall, painting, doors, windows, appliances, handyman work, property maintenance, and tenant improvements.</p></div></div>
     </section>
+    <section class="section" id="recent-work" hidden></section>
+    <section class="section" id="about" hidden></section>
     <section class="section" id="estimate" aria-label="Request estimate form">
       <div class="container"><p>Use the estimate form below to send your request securely.</p></div>
     </section>
+    <section class="section" id="contact" hidden></section>
   </main>
 
   <template id="estimate-template">
@@ -82,10 +88,23 @@
         </div>
         <div class="wizard-stage" data-wizard-stage="2" hidden>
           <span class="eyebrow">Step 3</span>
-          <h3>Upload or link photos.</h3>
-          <div class="premium-upload-drop"><strong>Drop-zone ready photo intake</strong><span>Paste a shared image, folder, or file URL. You can also add photos later in the portal.</span><input name="photoUrl" type="url" placeholder="https://..."></div>
-          <label class="checkbox-line"><input type="checkbox" name="photosProvided"> I have photos or can provide them if needed.</label>
-          <div class="skeleton-strip" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h3>Upload photos.</h3>
+          <div class="premium-upload-drop real-upload-drop" data-upload-drop tabindex="0" role="button" aria-label="Upload project photos">
+            <input class="sr-only" id="estimate-photo-files" name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple data-photo-input>
+            <span class="upload-camera">📷</span>
+            <strong>Upload Photos</strong>
+            <span>Drag &amp; Drop or Tap to Browse</span>
+            <small>Supports JPG, PNG, WEBP, HEIC · up to 10 photos</small>
+          </div>
+          <input type="hidden" name="photosProvided" value="false" data-photos-provided>
+          <input type="hidden" name="photoNames" value="[]" data-photo-names>
+          <input type="hidden" name="photoUploads" value="[]" data-photo-uploads>
+          <div class="uploaded-photo-strip" data-photo-preview aria-live="polite"></div>
+          <aside class="ai-analysis-card" data-ai-preview hidden>
+            <div class="ai-analysis-header"><span>🤖 AI Analysis</span><i data-ai-state>Ready after upload</i></div>
+            <div class="skeleton-strip ai-loading" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="ai-analysis-body" data-ai-body></div>
+          </aside>
         </div>
         <div class="wizard-stage" data-wizard-stage="3" hidden>
           <span class="eyebrow">Step 4</span>
