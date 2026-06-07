@@ -444,7 +444,22 @@ export const normalizePayload = (payload) => {
   normalized.workCategory = normalized.service;
   normalized.customerSupplied = clean(payload.customerSupplied || payload.customer_supplied || '').slice(0, 800);
   normalized.photoNames = Array.isArray(payload.photoNames) ? payload.photoNames.map((name) => clean(name).slice(0, 160)).filter(Boolean) : [];
-  normalized.photosProvided = Boolean(payload.photosProvided || payload.hasUpload || normalized.photoNames.length);
+  const rawUploads = Array.isArray(payload.photoUploads) ? payload.photoUploads : (Array.isArray(payload.photos) ? payload.photos : (Array.isArray(payload.files) ? payload.files : []));
+  normalized.photoUploads = rawUploads.slice(0, 10).map((photo, index) => ({
+    id: clean(photo.id).slice(0, 80) || `request-photo-${index + 1}`,
+    name: clean(photo.name || photo.fileName).slice(0, 180) || `request-photo-${index + 1}`,
+    fileName: clean(photo.fileName || photo.name).slice(0, 180) || `request-photo-${index + 1}`,
+    mimeType: clean(photo.mimeType || photo.type).slice(0, 80) || 'image/*',
+    sizeBytes: Number(photo.sizeBytes || photo.size || 0) || null,
+    dataUrl: String(photo.dataUrl || photo.url || '').slice(0, 16 * 1024 * 1024),
+    photoType: clean(photo.photoType || 'issue').slice(0, 80),
+    category: clean(photo.category || 'ai_photo_estimate').slice(0, 80),
+    sourceContext: clean(photo.sourceContext || 'public_estimate_request').slice(0, 80),
+    visibility: clean(photo.visibility || 'client_visible').slice(0, 80),
+    sortOrder: Number(photo.sortOrder || index + 1),
+  })).filter((photo) => photo.dataUrl || photo.fileName);
+  if (!normalized.photoNames.length) normalized.photoNames = normalized.photoUploads.map((photo) => photo.fileName).filter(Boolean);
+  normalized.photosProvided = Boolean(payload.photosProvided || payload.hasUpload || normalized.photoNames.length || normalized.photoUploads.length);
 
   return normalized;
 };
@@ -914,6 +929,45 @@ const tryImproveDraftWithOpenAi = async (payload, draft) => {
   }
 };
 
+
+const saveRequestPhotosAndEstimate = async ({ db, jobRequest, client, payload }) => {
+  const photos = Array.isArray(payload.photoUploads) ? payload.photoUploads.filter((photo) => photo.dataUrl || photo.fileName) : [];
+  if (!photos.length) return { files: [], photoEstimate: null };
+
+  const files = [];
+  for (const [index, photo] of photos.entries()) {
+    const fileUrl = photo.dataUrl || photo.url || '';
+    const [file] = await db.sql`
+      insert into files (owner_id, uploaded_by_user_id, job_request_id, request_id, customer_id, path, file_path, file_url, file_name, mime_type, file_type, size_bytes, file_size, photo_type, file_category, visibility, source_context, metadata, ai_analysis)
+      values (${client.id}, ${client.id}, ${jobRequest.id}, ${jobRequest.id}, ${client.id}, ${fileUrl}, ${fileUrl}, ${fileUrl}, ${photo.fileName || photo.name || `request-photo-${index + 1}`}, ${photo.mimeType || 'image/*'}, ${photo.mimeType || 'image/*'}, ${photo.sizeBytes || null}, ${photo.sizeBytes || null}, ${photo.photoType || 'issue'}, ${photo.category || 'ai_photo_estimate'}, ${photo.visibility || 'client_visible'}, ${photo.sourceContext || 'public_estimate_request'}, ${JSON.stringify({ source: 'public_request_estimate', photoId: photo.id, sortOrder: photo.sortOrder || index + 1 })}::jsonb, ${JSON.stringify(payload.intakeAnalysis?.photoIntelligence || {})}::jsonb)
+      returning id, file_url, file_name
+    `;
+    files.push(file);
+  }
+
+  const analysis = {
+    source: 'public_request_estimate',
+    customerVisibleMessage: 'Photos received. We’ll review them with your request.',
+    photoCount: photos.length,
+    photoNames: photos.map((photo) => photo.fileName || photo.name).filter(Boolean),
+    intakePhotoIntelligence: payload.intakeAnalysis?.photoIntelligence || {},
+    adminReviewRequired: true,
+  };
+
+  const [photoEstimate] = await db.sql`
+    insert into photo_estimates (customer_id, request_id, created_by, status, service_category, description, property_address, photo_urls, ai_analysis, confidence, customer_summary)
+    values (${client.id}, ${jobRequest.id}, ${client.id}, 'needs_review', ${payload.service}, ${payload.description}, ${`${payload.streetAddress}, ${payload.city}, AZ`}, ${JSON.stringify(photos.map((photo, index) => ({ id: photo.id, name: photo.fileName || photo.name, type: photo.mimeType, size: photo.sizeBytes, dataUrl: photo.dataUrl, sortOrder: photo.sortOrder || index + 1 })))}::jsonb, ${JSON.stringify(analysis)}::jsonb, ${JSON.stringify({ level: 'admin_review', photoCount: photos.length })}::jsonb, ${'Photos received. We’ll review them with your request.'})
+    returning id, status
+  `;
+
+  await db.sql`
+    insert into audit_events (event_type, entity_type, entity_id, metadata)
+    values (${ 'photo.uploaded' }, ${ 'job_request' }, ${jobRequest.id}, ${JSON.stringify({ source: 'public_request_estimate', photoCount: photos.length, fileIds: files.map((file) => file.id), photoEstimateId: photoEstimate?.id || null })}::jsonb)
+  `;
+
+  return { files, photoEstimate };
+};
+
 const createAutomaticEstimateDraft = async ({ db, jobRequest, client, payload }) => {
   let draft = estimateFromPayload(payload);
   draft = await tryImproveDraftWithOpenAi(payload, draft);
@@ -1106,6 +1160,7 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         })}::jsonb
       )
     `;
+    const savedPhotos = await saveRequestPhotosAndEstimate({ db, jobRequest, client, payload });
     const estimateDraft = await createAutomaticEstimateDraft({ db, jobRequest, client, payload });
 
     let emailResult = { sent: false, reason: payload.emailProvided ? 'Email delivery is not configured.' : 'Customer did not provide email.' };
@@ -1135,6 +1190,8 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
       emailSent: emailResult.sent,
       quoteId: estimateDraft.quote?.id || null,
       quoteStatus: estimateDraft.quote?.status || 'draft',
+      uploadedPhotoCount: savedPhotos.files?.length || 0,
+      photoEstimateId: savedPhotos.photoEstimate?.id || null,
       intakeAnalysis: payload.intakeAnalysis,
       optionalInformation: {
         message: payload.intakeAnalysis.optionalCollectionMessage,
@@ -1150,8 +1207,8 @@ export const createJobRequestHandler = ({ getDatabase = loadDatabase, makeToken 
         confidenceScores: payload.intakeAnalysis.confidenceScores,
       },
       message: emailResult.sent
-        ? 'Estimate request saved. Check your email for a confirmation and secure client portal link.'
-        : 'Estimate request saved immediately. Optional information can improve accuracy, but your request was not blocked.',
+        ? `Estimate request saved. ${savedPhotos.files?.length ? 'Photos received. We’ll review them with your request. ' : ''}Check your email for a confirmation and secure client portal link.`
+        : `Estimate request saved immediately. ${savedPhotos.files?.length ? 'Photos received. We’ll review them with your request.' : 'Optional information can improve accuracy, but your request was not blocked.'}`,
     });
   } catch (error) {
     console.error('Failed to create job request', error);
