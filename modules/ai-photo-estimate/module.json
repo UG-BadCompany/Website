@@ -1,78 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "ai-photo-estimate",
-  "title": "AI Photo Estimate",
-  "description": "Drop-in module for ai photo estimate.",
+  "name": "AI Photo Estimate",
+  "description": "Photo-based scope and estimate assistant",
+  "status": "beta",
   "version": "1.0.0",
   "category": "AI",
-  "icon": "\ud83d\udcf8",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin",
-    "manager",
-    "worker",
-    "client"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": true,
-    "label": "AI Photo Estimate",
-    "mobileLabel": "AI",
-    "sortOrder": 20
-  },
-  "frontend": {
-    "basePath": "/modules/ai-photo-estimate/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "ai-photo-estimate"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "ai-photo-estimate",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/ai-photo-estimate/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "ai.photo-estimate.use"
-      }
-    ]
-  },
+  "hidden": false,
   "permissions": [
+    "module:ai-photo-estimate:view",
+    "module:ai-photo-estimate:manage"
+  ],
+  "routes": [
     {
-      "key": "ai.photo-estimate.use",
-      "label": "Ai Photo Estimate Use",
-      "defaultRoles": [
-        "owner",
-        "admin",
-        "manager",
-        "worker",
-        "client"
-      ]
-    },
-    {
-      "key": "ai.photo-estimate.manage",
-      "label": "Ai Photo Estimate Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-ai-photo-estimate",
+      "label": "AI Photo Estimate"
     }
   ],
-  "dependencies": [
-    "customers",
-    "estimate-quote-center"
-  ],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true,
-    "requiresOpenAI": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "ai-photo-estimate-summary"
+  ]
 }

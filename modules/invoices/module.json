@@ -1,81 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "invoices",
-  "title": "Invoices & Payments",
-  "description": "Drop-in module for invoices & payments.",
+  "name": "Invoices",
+  "description": "Invoice generation and status",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "Finance",
-  "icon": "\ud83d\udcb3",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin",
-    "manager",
-    "client"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": true,
-    "label": "Invoices & Payments",
-    "mobileLabel": "Invoices",
-    "sortOrder": 70
-  },
-  "frontend": {
-    "basePath": "/modules/invoices/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "invoices"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "invoices",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/invoices/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "invoices.view"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:invoices:view",
+    "module:invoices:manage"
+  ],
+  "routes": [
     {
-      "key": "invoices.view",
-      "label": "Invoices View",
-      "defaultRoles": [
-        "owner",
-        "admin",
-        "manager",
-        "client"
-      ]
-    },
-    {
-      "key": "invoices.manage",
-      "label": "Invoices Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
-    },
-    {
-      "key": "payments.manage",
-      "label": "Payments Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-invoices",
+      "label": "Invoices"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true,
-    "squarePayments": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "invoices-summary"
+  ]
 }

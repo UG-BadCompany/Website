@@ -1,0 +1,29 @@
+{
+  "id": "square-payments",
+  "name": "Square Payments",
+  "description": "Payment capture and paid status sync",
+  "status": "beta",
+  "version": "1.0.0",
+  "category": "Operations",
+  "hidden": false,
+  "permissions": [
+    "module:square-payments:view",
+    "module:square-payments:manage"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/#module-square-payments",
+      "label": "Square Payments"
+    }
+  ],
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "square-payments-summary"
+  ]
+}

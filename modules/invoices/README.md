@@ -1,3 +1,3 @@
-# Invoices & Payments
+# Invoices
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Invoice generation and status. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

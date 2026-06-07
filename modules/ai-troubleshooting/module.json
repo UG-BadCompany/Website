@@ -1,74 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "ai-troubleshooting",
-  "title": "AI Troubleshooting",
-  "description": "Drop-in module for ai troubleshooting.",
+  "name": "AI Troubleshooting",
+  "description": "Guided diagnostic assistant",
+  "status": "beta",
   "version": "1.0.0",
   "category": "AI",
-  "icon": "\ud83e\udde0",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin",
-    "manager",
-    "worker",
-    "client"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": true,
-    "label": "AI Troubleshooting",
-    "mobileLabel": "AI",
-    "sortOrder": 30
-  },
-  "frontend": {
-    "basePath": "/modules/ai-troubleshooting/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "ai-troubleshooting"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "ai-troubleshooting",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/ai-troubleshooting/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "ai.troubleshooting.use"
-      }
-    ]
-  },
+  "hidden": false,
   "permissions": [
+    "module:ai-troubleshooting:view",
+    "module:ai-troubleshooting:manage"
+  ],
+  "routes": [
     {
-      "key": "ai.troubleshooting.use",
-      "label": "Ai Troubleshooting Use",
-      "defaultRoles": [
-        "owner",
-        "admin",
-        "manager",
-        "worker",
-        "client"
-      ]
-    },
-    {
-      "key": "ai.troubleshooting.manage",
-      "label": "Ai Troubleshooting Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-ai-troubleshooting",
+      "label": "AI Troubleshooting"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "ai-troubleshooting-summary"
+  ]
 }

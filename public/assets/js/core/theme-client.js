@@ -1,8 +1,8 @@
-export function applyTheme(theme = {}) {
-  const root = document.documentElement;
-  const dark = theme.mode === 'dark' || (theme.mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-  root.dataset.theme = dark ? 'dark' : 'light';
-  const map = { primary:'--primary', accent:'--accent', background:'--color-background', surface:'--color-surface', text:'--color-text', border:'--color-border', button:'--button', buttonText:'--button-text' };
-  for (const [k,v] of Object.entries(map)) if (theme[k]) root.style.setProperty(v, theme[k]);
+const KEY='cmms-theme-mode';
+export function applyTheme(mode = localStorage.getItem(KEY) || 'system') {
+  const resolved = mode === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode;
+  document.documentElement.dataset.theme = resolved === 'custom' ? 'light' : resolved;
+  localStorage.setItem(KEY, mode);
 }
-export async function loadBootstrapTheme(){ try { const b = await fetch('/config/bootstrap.json',{cache:'no-store'}).then(r=>r.json()); applyTheme(b.theme); } catch {} }
+export function wireThemeSelect(selector='[data-theme-select]') { const el=document.querySelector(selector); if(el){el.value=localStorage.getItem(KEY)||'system'; el.addEventListener('change',()=>applyTheme(el.value));} }
+applyTheme();

@@ -1,70 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "finance",
-  "title": "Finance",
-  "description": "Drop-in module for finance.",
+  "name": "Finance",
+  "description": "Revenue, expense, payout visibility",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "Finance",
-  "icon": "\ud83d\udcc8",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin",
-    "manager"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": true,
-    "label": "Finance",
-    "mobileLabel": "Finance",
-    "sortOrder": 80
-  },
-  "frontend": {
-    "basePath": "/modules/finance/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "finance"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "finance",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/finance/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "finance.view"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:finance:view",
+    "module:finance:manage"
+  ],
+  "routes": [
     {
-      "key": "finance.view",
-      "label": "Finance View",
-      "defaultRoles": [
-        "owner",
-        "admin",
-        "manager"
-      ]
-    },
-    {
-      "key": "finance.manage",
-      "label": "Finance Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-finance",
+      "label": "Finance"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "finance-summary"
+  ]
 }

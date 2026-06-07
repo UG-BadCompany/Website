@@ -1,3 +1,3 @@
-# Backup & Restore
+# Backup/Restore
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Export and restore foundations. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

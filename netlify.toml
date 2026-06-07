@@ -3,101 +3,54 @@
   publish = "out"
   functions = "netlify/functions"
 
-[build.environment]
-  NODE_VERSION = "20"
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+[functions]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/api/install-status"
   to = "/.netlify/functions/install-status"
   status = 200
-
 [[redirects]]
-  from = "/api/install/*"
-  to = "/.netlify/functions/install"
+  from = "/api/install/health"
+  to = "/.netlify/functions/install-health"
   status = 200
-
 [[redirects]]
-  from = "/api/env/*"
-  to = "/.netlify/functions/env"
+  from = "/api/install/draft"
+  to = "/.netlify/functions/install-draft"
   status = 200
-
 [[redirects]]
-  from = "/api/dashboard-bootstrap"
-  to = "/.netlify/functions/dashboard-bootstrap"
+  from = "/api/install/finish"
+  to = "/.netlify/functions/install-finish"
   status = 200
-
 [[redirects]]
-  from = "/api/modules/*"
-  to = "/.netlify/functions/module-api"
+  from = "/config/bootstrap.json"
+  to = "/.netlify/functions/config-bootstrap"
   status = 200
-
 [[redirects]]
-  from = "/api/workflow/*"
-  to = "/.netlify/functions/workflow"
+  from = "/api/module/:module/:action"
+  to = "/.netlify/functions/module-api?module=:module&action=:action"
   status = 200
-
 [[redirects]]
-  from = "/api/ai/*"
-  to = "/.netlify/functions/ai"
+  from = "/api/system/:action"
+  to = "/.netlify/functions/system?action=:action"
   status = 200
-
 [[redirects]]
-  from = "/api/system/*"
-  to = "/.netlify/functions/system"
+  from = "/install/recovery"
+  to = "/install/recovery/index.html"
   status = 200
-
-[[redirects]]
-  from = "/dashboard/*"
-  to = "/dashboard/index.html"
-  status = 200
-
 [[redirects]]
   from = "/install/*"
   to = "/install/index.html"
   status = 200
-
 [[redirects]]
-  from = "/portal/*"
-  to = "/portal/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/client/*"
-  to = "/portal/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/login/*"
-  to = "/login/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/quote/*"
-  to = "/quote/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/invoice/*"
-  to = "/invoice/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/admin/*"
+  from = "/dashboard/*"
   to = "/dashboard/index.html"
   status = 200
-
 [[redirects]]
-  from = "/manager/*"
-  to = "/dashboard/index.html"
+  from = "/config/*"
+  to = "/config/:splat"
   status = 200
-
 [[redirects]]
-  from = "/worker/*"
-  to = "/dashboard/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/request-estimate/*"
+  from = "/*"
   to = "/index.html"
   status = 200

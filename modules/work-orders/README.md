@@ -1,3 +1,3 @@
 # Work Orders
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Dispatch and complete service work. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

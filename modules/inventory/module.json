@@ -1,72 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "inventory",
-  "title": "Inventory",
-  "description": "Drop-in module for inventory.",
+  "name": "Inventory",
+  "description": "Parts, stock, suppliers",
+  "status": "stable",
   "version": "1.0.0",
   "category": "Operations",
-  "icon": "\ud83d\udce6",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin",
-    "manager",
-    "worker"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": true,
-    "label": "Inventory",
-    "mobileLabel": "Inventory",
-    "sortOrder": 60
-  },
-  "frontend": {
-    "basePath": "/modules/inventory/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "inventory"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "inventory",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/inventory/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "inventory.view"
-      }
-    ]
-  },
+  "hidden": false,
   "permissions": [
+    "module:inventory:view",
+    "module:inventory:manage"
+  ],
+  "routes": [
     {
-      "key": "inventory.view",
-      "label": "Inventory View",
-      "defaultRoles": [
-        "owner",
-        "admin",
-        "manager",
-        "worker"
-      ]
-    },
-    {
-      "key": "inventory.manage",
-      "label": "Inventory Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-inventory",
+      "label": "Inventory"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "inventory-summary"
+  ]
 }

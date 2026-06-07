@@ -1,5 +1,1 @@
-export const route = { method: ['GET','POST'], path: '/records', permission: 'modules.view' };
-export default async function handler(request, context) {
-  if (request.method === 'POST') return context.json(200, { ok: true, data: { moduleId: 'module-manager', saved: true }, message: 'Saved.' });
-  return context.json(200, { ok: true, data: { moduleId: 'module-manager', records: [] } });
-}
+export async function records(payload={}){return [{id:'module-manager-record',status:'ready',payload}];}

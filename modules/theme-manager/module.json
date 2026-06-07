@@ -1,68 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "theme-manager",
-  "title": "Theme Manager",
-  "description": "Drop-in module for theme manager.",
+  "name": "Theme Manager",
+  "description": "Manage light/dark/system/custom brand themes",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "System",
-  "icon": "\ud83c\udfa8",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": false,
-    "label": "Theme Manager",
-    "mobileLabel": "Theme",
-    "sortOrder": 110
-  },
-  "frontend": {
-    "basePath": "/modules/theme-manager/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "theme-manager"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "theme-manager",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/theme-manager/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "theme.view"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:theme-manager:view",
+    "module:theme-manager:manage"
+  ],
+  "routes": [
     {
-      "key": "theme.view",
-      "label": "Theme View",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
-    },
-    {
-      "key": "theme.manage",
-      "label": "Theme Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-theme-manager",
+      "label": "Theme Manager"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "theme-manager-summary"
+  ]
 }

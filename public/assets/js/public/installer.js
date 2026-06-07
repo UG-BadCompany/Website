@@ -1,27 +1,74 @@
-import { api } from '/assets/js/core/api-client.js';
-import { applyTheme } from '/assets/js/core/theme-client.js';
-const stepDefs = [
- ['welcome','Welcome'],['system-check','System Check'],['license','License (Future)'],['company','Company Profile'],['branding','Branding'],['theme','Theme & Sidebar'],['owner','Owner Account'],['roles','Roles & Permissions'],['modules','Modules'],['services','Services & Trades'],['homepage','Homepage Content'],['environment','Environment & Integrations'],['ai','AI Settings'],['email','Email Settings'],['payments','Square Payments'],['portal','Portal Settings'],['review','Review & Finish']
-];
-let state, current='welcome', activeEnv='required', draft={ owner:{email:'owner@example.com',fullName:'Platform Owner'} };
-const app=document.querySelector('#app');
-const hex=/^#[0-9a-fA-F]{6}$/;
-async function load(){ state=await api('/api/install/state'); current=state.currentStep==='finish'?'review':state.currentStep; draft.company=state.company; draft.theme=state.theme||state.company.theme; render(); }
-function pct(){ return Math.round(((stepDefs.findIndex(([id])=>id===current)+1)/stepDefs.length)*100); }
-function stepNav(){ return `<aside class="steps card"><h2>Setup</h2><p>Step ${stepDefs.findIndex(([id])=>id===current)+1} of ${stepDefs.length}</p><div class="progress"><span style="width:${pct()}%"></span></div><p>${pct()}% complete</p>${stepDefs.map(([id,label])=>`<button class="step ${id===current?'active':''}" data-step="${id}">${label}<br><small>${state.installation?.metadata?.steps?.[id]?.status||'Not Started'}</small></button>`).join('')}<a class="btn secondary" href="/install/recovery/">Recovery</a></aside>`; }
-function help(){ const label=stepDefs.find(([id])=>id===current)?.[1]; return `<aside class="help card"><h3>Help: ${label}</h3><p>This guided installer saves progress every step, explains required values, and lets optional integrations be configured later from Owner → System Center → Environment & Integrations.</p><ul><li>Secrets are saved server-side only.</li><li>Optional AI, Square, security, and future license settings do not block install.</li><li>Finish Install creates the owner, roles, permissions, modules, homepage config, bootstrap config, and install lock.</li></ul></aside>`; }
-function content(){ if(current==='theme') return themeStep(); if(current==='environment'||current==='ai'||current==='email'||current==='payments') return envStep(); if(current==='modules') return moduleStep(); if(current==='homepage') return homepageStep(); if(current==='owner') return ownerStep(); if(current==='review') return reviewStep(); if(current==='company'||current==='branding') return companyStep(); return genericStep(); }
-function genericStep(){ return `<section class="card"><h1>${stepDefs.find(([id])=>id===current)[1]}</h1><p class="muted">This step is guided and can be revisited before finishing installation.</p><div class="grid two"><div class="card"><strong>What this does</strong><p>Prepares ${current.replace('-',' ')} settings for this white-label deployment.</p></div><div class="card"><strong>Can I skip?</strong><p>Required setup is minimal. Optional integrations can be configured later.</p></div></div>${navButtons()}</section>`; }
-function companyStep(){ const c=draft.company||{}; return `<section class="card"><h1>Company and Branding</h1><label class="field">Company Name<input id="companyName" value="${c.companyName||''}" placeholder="Your Company"></label><label class="field">Business Type<input id="businessType" value="${c.businessType||''}" placeholder="Contractor Services"></label><label class="field">Logo URL<input id="logoUrl" value="${c.logoUrl||''}" placeholder="https://your-domain.com/logo.png"></label><label class="field">Website Address<input id="siteUrl" value="${c.siteUrl||location.origin}" placeholder="${location.origin}"></label>${navButtons()}</section>`; }
-const colors=['primary','accent','background','surface','text','border','button','buttonText','sidebarBackground','sidebarText','sidebarActiveBackground','sidebarActiveText','sidebarHoverBackground','mobileNavBackground','mobileNavActive','mobileNavText'];
-function themeStep(){ const t=draft.theme||{}; return `<section class="card"><h1>Theme and Sidebar Colors</h1><label class="field">Mode<select id="mode"><option value="light">Light</option><option value="dark">Dark</option><option value="system">System</option><option value="custom">Custom</option></select></label><label><input type="checkbox" id="customSidebar" ${t.customSidebar?'checked':''}> Use custom sidebar colors</label><label><input type="checkbox" id="customMobileNav" ${t.customMobileNav?'checked':''}> Use custom mobile nav colors</label><div class="grid">${colors.map(k=>`<div class="color-row" data-color-row="${k}"><label>${k.replace(/([A-Z])/g,' $1')}</label><input type="color" id="${k}Picker" value="${t[k]||'#2563eb'}"><input id="${k}" value="${t[k]||'#2563eb'}"><button class="secondary" data-reset="${k}" type="button">Reset</button></div>`).join('')}</div><h2>Live Preview</h2><div class="preview"><div class="preview-head">Public header</div><div style="display:grid;grid-template-columns:120px 1fr"><div class="preview-side">Dashboard sidebar<br><button>Active</button></div><div style="padding:1rem"><div class="card">Sample homepage card <button>Button</button><input placeholder="Sample input"></div></div></div><div class="preview-mobile">Mobile nav preview</div></div>${navButtons()}</section>`; }
-function envStep(){ const groups=state.environmentGroups||[]; const group=groups.find(g=>g.id===activeEnv)||groups[0]; return `<section class="card"><h1>Environment & Integrations</h1><p>Only Required opens first. Optional integrations can be skipped and managed later.</p><div class="env-tabs">${groups.map(g=>`<button class="secondary" data-env-tab="${g.id}">${g.label} (${g.count})</button>`).join('')}</div><h2>${group.label}</h2><p class="muted">${group.description}</p><div class="grid">${group.variables.map(v=>`<article class="card env-card"><div><strong>${v.label}</strong><br><code>${v.key}</code><p>${v.description}</p><a href="${v.helpUrl}" target="_blank" rel="noreferrer">Where do I find this?</a><ol>${v.setupSteps.map(s=>`<li>${s}</li>`).join('')}</ol>${v.generatedUrls?`<small>Square webhook: ${v.generatedUrls.squareWebhookUrl}</small>`:''}</div><div><input data-env-key="${v.key}" type="${v.secret?'password':'text'}" placeholder="${v.placeholder}"><button type="button" data-copy="${v.generatedUrls?.squareWebhookUrl||''}">Copy URL</button><button type="button" data-test="${v.key}">Test</button><button type="button" class="secondary">Skip For Now</button></div></article>`).join('')}</div>${navButtons()}</section>`; }
-function moduleStep(){ return `<section class="card"><h1>Drop-in Modules</h1><p>These modules were discovered automatically from folders and manifests.</p><div class="grid two">${state.modules.map(m=>`<article class="card"><h3>${m.icon} ${m.title}</h3><p>${m.description}</p><span class="badge">${m.version}</span> <span class="badge">${m.category}</span><p>${m.workspaces.join(', ')}</p></article>`).join('')}</div>${navButtons()}</section>`; }
-function homepageStep(){ return `<section class="card"><h1>Homepage Builder</h1><p>Hero, services, estimate card, gallery, stats, CTA, footer, header, background effects, section order, and visibility are editor-driven.</p>${state.homepage.sections.map(s=>`<article class="card"><strong>${s.type}</strong><label><input type="checkbox" checked> Visible</label><input value="${s.data.title||s.data.eyebrow||s.type}"></article>`).join('')}${navButtons()}</section>`; }
-function ownerStep(){ return `<section class="card"><h1>Owner Account</h1><p>The owner is the Super Owner and can switch workspaces, impersonate users, and test all workflows.</p><label class="field">Full Name<input id="ownerName" value="${draft.owner.fullName}"></label><label class="field">Email<input id="ownerEmail" type="email" value="${draft.owner.email}"></label>${navButtons()}</section>`; }
-function reviewStep(){ return `<section class="card"><h1>Review and Finish</h1><ul><li>Company, theme, homepage, roles, permissions, modules, license placeholder, environment statuses, and bootstrap config will be finalized.</li><li>Finish Install will set installation_complete = true and redirect to dashboard.</li></ul><button id="finish">Finish Install</button><button class="secondary" data-prev>Back</button><pre id="finishResult"></pre></section>`; }
-function navButtons(){ return `<div style="display:flex;gap:.5rem;margin-top:1rem"><button data-save>Save & Continue</button><button class="secondary" data-prev>Back</button></div>`; }
-function collect(){ if(document.querySelector('#companyName')) draft.company={...draft.company,companyName:companyName.value,businessType:businessType.value,logoUrl:logoUrl.value,siteUrl:siteUrl.value}; if(document.querySelector('#mode')){ draft.theme={...draft.theme,mode:mode.value,customSidebar:customSidebar.checked,customMobileNav:customMobileNav.checked}; for(const k of colors){ const v=document.getElementById(k).value; if(v&&!hex.test(v)){ alert(`Invalid hex color for ${k}`); throw new Error('invalid color'); } draft.theme[k]=v; } applyTheme(draft.theme); } if(document.querySelector('#ownerEmail')) draft.owner={email:ownerEmail.value,fullName:ownerName.value}; }
-async function save(next=true){ collect(); const values={}; document.querySelectorAll('[data-env-key]').forEach(i=>{ if(i.value) values[i.dataset.envKey]=i.value; }); if(Object.keys(values).length) await api('/api/env/save',{method:'POST',body:JSON.stringify({values})}); const idx=stepDefs.findIndex(([id])=>id===current); const nextStep=next?stepDefs[Math.min(idx+1,stepDefs.length-1)][0]:current; await api('/api/install/save-step',{method:'POST',body:JSON.stringify({step:current,nextStep,status:'Complete',company:draft.company,theme:draft.theme})}); current=nextStep; render(); }
-function render(){ app.innerHTML=stepNav()+`<main>${content()}</main>`+help(); if(document.querySelector('#mode')){ mode.value=(draft.theme&&draft.theme.mode)||'system'; document.querySelectorAll('input[type=color]').forEach(p=>p.addEventListener('input',()=>{document.getElementById(p.id.replace('Picker','')).value=p.value; collect();})); document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>{document.getElementById(b.dataset.reset).value='#2563eb';document.getElementById(`${b.dataset.reset}Picker`).value='#2563eb';collect();}); } app.onclick=async(e)=>{ const t=e.target; if(t.matches('[data-step]')){ current=t.dataset.step; render(); } if(t.matches('[data-save]')) await save(true); if(t.matches('[data-prev]')){ const idx=stepDefs.findIndex(([id])=>id===current); current=stepDefs[Math.max(0,idx-1)][0]; render(); } if(t.matches('[data-env-tab]')){ activeEnv=t.dataset.envTab; render(); } if(t.matches('[data-copy]')) navigator.clipboard?.writeText(t.dataset.copy); if(t.matches('[data-test]')) alert((await api('/api/env/test',{method:'POST',body:JSON.stringify({key:t.dataset.test})})).message); if(t.id==='finish'){ collect(); const result=await api('/api/install/finish',{method:'POST',body:JSON.stringify({owner:draft.owner})}); finishResult.textContent=JSON.stringify(result,null,2); location.href=result.redirectTo; } }; }
-load();
+import { api } from '../core/api-client.js';
+import { redirectIfInstalled } from '../core/install-lock.js';
+
+const GROUPS = {
+  Required: [
+    ['SITE_URL', 'Site URL', 'Canonical deployed site URL', 'Required', 'Netlify site settings or deployed URL', 'https://docs.netlify.com/site-deploys/overview/', 'Copy your production URL and save it as SITE_URL.'],
+    ['MAGIC_LINK_FROM_EMAIL', 'Magic-link sender email', 'Verified email used for sign-in links', 'Required', 'Resend verified sender/domain', 'https://resend.com/docs/send-with-domains', 'Verify a sender/domain in Resend, then enter the from email.'],
+    ['RESEND_API_KEY', 'Resend API key', 'Sends magic links and owner setup email', 'Required', 'Resend API Keys', 'https://resend.com/api-keys', 'Create a restricted Resend key and paste it into Netlify environment variables.']
+  ],
+  AI: [['OPENAI_API_KEY', 'OpenAI API key', 'AI quote, photo estimate, troubleshooting', 'Optional', 'OpenAI dashboard', 'https://platform.openai.com/api-keys', 'Create an API key and store only in Netlify environment variables.']],
+  Payments: [
+    ['SQUARE_ACCESS_TOKEN', 'Square access token', 'Invoice payment collection', 'Optional', 'Square Developer dashboard', 'https://developer.squareup.com/', 'Create an app token for the active environment.'],
+    ['SQUARE_LOCATION_ID', 'Square location ID', 'Payment location routing', 'Optional', 'Square locations', 'https://developer.squareup.com/docs/locations-api', 'Copy the location ID used for payments.']
+  ],
+  Security: [['SESSION_SECRET', 'Session secret', 'Signs secure sessions', 'Recommended', 'Password manager', 'https://docs.netlify.com/environment-variables/overview/', 'Generate a long random value.']],
+  Advanced: [['DATABASE_URL', 'Database URL', 'Postgres connection override', 'Optional', 'Netlify Database', 'https://docs.netlify.com/storage/netlify-database/', 'Use Netlify Database connection details when not auto-injected.']],
+  Future: [['STRIPE_SECRET_KEY', 'Stripe key', 'Future payment provider', 'Future optional', 'Stripe dashboard', 'https://stripe.com/docs/keys', 'Leave blank unless enabling future Stripe integration.']]
+};
+
+let active = 'Required';
+
+function renderEnv() {
+  const tabs = document.querySelector('#env-tabs');
+  const panel = document.querySelector('#env-panel');
+  tabs.innerHTML = Object.keys(GROUPS).map(group => `<button type="button" class="tab" aria-selected="${group === active}">${group}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(button => button.onclick = () => { active = button.textContent; renderEnv(); });
+  panel.innerHTML = GROUPS[active].map(([name, label, purpose, required, where, link, steps]) => `
+    <article class="card">
+      <label>${label}<input type="password" name="env_${name}" data-env-name="${name}" placeholder="${name}"></label>
+      <p><strong>${name}</strong> · ${required}</p>
+      <p class="muted">${purpose}</p>
+      <p>Where: ${where} · <a href="${link}" target="_blank" rel="noreferrer">Help</a></p>
+      <p class="muted">${steps}</p>
+      <button type="button" class="secondary" data-test-env="${name}">Test</button>
+    </article>`).join('');
+  panel.querySelectorAll('[data-test-env]').forEach(button => button.onclick = async () => {
+    button.textContent = 'Testing…';
+    const result = await api('/api/install/health');
+    button.textContent = result.ok ? 'Detected safely' : 'Check manually';
+  });
+}
+
+async function init() {
+  try {
+    await redirectIfInstalled();
+    renderEnv();
+    const health = await api('/api/install/health');
+    document.querySelector('#installer-alert').textContent = health.ok ? 'Installer ready. Secrets are checked server-side and never exposed.' : 'Installer API unavailable; fallback shell remains visible.';
+    document.querySelector('#install-form').addEventListener('submit', finish);
+  } catch (error) {
+    document.querySelector('#installer-alert').textContent = `Installer fallback active after script error: ${error.message}`;
+  }
+}
+
+async function finish(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const env = {};
+  for (const [key, value] of form.entries()) if (key.startsWith('env_') && value) env[key.slice(4)] = '__provided__';
+  const payload = {
+    company: { name: form.get('companyName'), site_url: form.get('siteUrl') },
+    owner: { name: form.get('ownerName'), email: form.get('ownerEmail') },
+    theme: { mode: form.get('themeMode') },
+    homepage: { headline: form.get('headline') },
+    env
+  };
+  const output = document.querySelector('#install-output');
+  output.textContent = 'Finishing installation…';
+  const result = await api('/api/install/finish', { method: 'POST', body: JSON.stringify(payload) });
+  output.textContent = JSON.stringify(result.data, null, 2);
+  if (result.ok && result.data.installation_complete) location.href = '/dashboard/';
+}
+
+init();

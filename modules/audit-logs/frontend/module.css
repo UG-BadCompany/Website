@@ -1,1 +1,1 @@
-.module-card{background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border);border-radius:18px;padding:1.25rem;box-shadow:var(--shadow-card)} .module-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.module-audit-logs{display:block}

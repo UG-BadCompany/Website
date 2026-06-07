@@ -1,1 +1,21 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Install Recovery</title><link rel="stylesheet" href="/assets/css/design-system.css"></head><body><main class="container" style="padding:3rem 0"><section class="card"><h1>Installation Recovery</h1><p>Resume the guided setup from the last saved step.</p><a class="btn" href="/install/">Resume Setup</a></section></main></body></html>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Installer Recovery</title>
+    <link rel="stylesheet" href="/assets/css/design-system.css">
+  </head>
+  <body>
+    <main class="hero">
+      <span class="status">Recovery shell</span>
+      <h1>Installer recovery</h1>
+      <p class="muted">This page is static and does not depend on database, bootstrap config, registry, theme, or API calls.</p>
+      <div class="grid cards" style="max-width:900px;margin:2rem auto;text-align:left">
+        <article class="card"><h3>Health</h3><p>Check <code>/api/install/health</code> for safe diagnostics.</p></article>
+        <article class="card"><h3>Restart</h3><p>Return to the guided installer.</p><a class="button" href="/install/">Open installer</a></article>
+        <article class="card"><h3>Required variables</h3><p>SITE_URL, MAGIC_LINK_FROM_EMAIL, RESEND_API_KEY.</p></article>
+      </div>
+    </main>
+  </body>
+</html>

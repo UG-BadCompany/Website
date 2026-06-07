@@ -1,58 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "platform-health",
-  "title": "Platform Health",
-  "description": "Drop-in module for platform health.",
+  "name": "Platform Health",
+  "description": "Install, API, database, module diagnostics",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "System",
-  "icon": "\ud83d\udfe2",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": false,
-    "label": "Platform Health",
-    "mobileLabel": "Platform",
-    "sortOrder": 160
-  },
-  "frontend": {
-    "basePath": "/modules/platform-health/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "platform-health"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "platform-health",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/platform-health/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "platform.health.view"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:platform-health:view",
+    "module:platform-health:manage"
+  ],
+  "routes": [
     {
-      "key": "platform.health.view",
-      "label": "Platform Health View",
-      "defaultRoles": [
-        "owner"
-      ]
+      "path": "/dashboard/#module-platform-health",
+      "label": "Platform Health"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "platform-health-summary"
+  ]
 }

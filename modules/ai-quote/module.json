@@ -1,0 +1,29 @@
+{
+  "id": "ai-quote",
+  "name": "AI Quote",
+  "description": "Generate quotes from request context",
+  "status": "beta",
+  "version": "1.0.0",
+  "category": "AI",
+  "hidden": false,
+  "permissions": [
+    "module:ai-quote:view",
+    "module:ai-quote:manage"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/#module-ai-quote",
+      "label": "AI Quote"
+    }
+  ],
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "ai-quote-summary"
+  ]
+}

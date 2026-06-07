@@ -1,1 +1,58 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Install Platform</title><script type="module">import{loadBootstrapTheme}from'/assets/js/core/theme-client.js';loadBootstrapTheme();</script><link rel="stylesheet" href="/assets/css/design-system.css"><style>.installer{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;gap:1rem;min-height:100vh;padding:1rem}.steps{position:sticky;top:1rem;height:calc(100vh - 2rem);overflow:auto}.step{display:block;width:100%;text-align:left;margin:.25rem 0}.step.active{outline:3px solid color-mix(in srgb,var(--primary) 25%,transparent)}.progress{height:10px;background:var(--color-border);border-radius:99px;overflow:hidden}.progress span{display:block;height:100%;background:var(--primary)}.field{margin:.75rem 0}.env-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}.env-card{display:grid;grid-template-columns:1fr auto;gap:.7rem;align-items:end}.color-row{display:grid;grid-template-columns:1fr 56px 120px auto;gap:.5rem;align-items:center}.preview{border:1px solid var(--color-border);border-radius:18px;overflow:hidden}.preview-head,.preview-side,.preview-mobile{padding:.7rem;background:var(--color-surface);border-bottom:1px solid var(--color-border)}@media(max-width:1000px){.installer{grid-template-columns:1fr}.steps,.help{position:static;height:auto}}</style></head><body><main id="app" class="installer"></main><script type="module" src="/assets/js/public/installer.js"></script></body></html>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Install Contractor CMMS</title>
+    <link rel="stylesheet" href="/assets/css/design-system.css">
+    <script type="module" src="/assets/js/public/installer.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" style="padding:2rem 1rem">
+        <span class="status">Installer-first setup</span>
+        <h1>Set up your Contractor CMMS</h1>
+        <p class="muted">This static fallback is intentionally visible before JavaScript and remains useful if APIs, database, config, theme, or module registry fail.</p>
+        <noscript><div class="fallback-banner">JavaScript is disabled. Use /install/recovery or enable JavaScript to finish installation.</div></noscript>
+      </section>
+      <section class="content" style="max-width:1100px;margin:auto">
+        <div id="installer-alert" class="fallback-banner">Loading guided installer… If this message remains, the fallback shell is still available and the recovery page can be opened.</div>
+        <form id="install-form" class="grid" autocomplete="off">
+          <article class="panel">
+            <h2>1. Company</h2>
+            <div class="grid cards">
+              <label>Company name<input name="companyName" required value="Demo Contractor Co"></label>
+              <label>Site URL<input name="siteUrl" required placeholder="https://example.netlify.app"></label>
+            </div>
+          </article>
+          <article class="panel">
+            <h2>2. Owner account</h2>
+            <div class="grid cards">
+              <label>Owner name<input name="ownerName" required value="Platform Owner"></label>
+              <label>Owner email<input name="ownerEmail" type="email" required placeholder="owner@example.com"></label>
+            </div>
+          </article>
+          <article class="panel">
+            <h2>3. Environment variables</h2>
+            <div class="tabs" id="env-tabs"></div>
+            <div id="env-panel" class="grid"></div>
+          </article>
+          <article class="panel">
+            <h2>4. Theme and homepage</h2>
+            <div class="grid cards">
+              <label>Theme mode<select name="themeMode"><option>system</option><option>light</option><option>dark</option><option>custom</option></select></label>
+              <label>Homepage headline<input name="headline" value="Contractor operations, quoting, and service workflows in one place"></label>
+            </div>
+          </article>
+          <article class="panel">
+            <h2>5. Finish</h2>
+            <p class="muted">Finish Install validates required steps, seeds settings, owner, roles, permissions, modules, workflow defaults, theme/homepage settings, bootstrap config, and then redirects to /dashboard/.</p>
+            <button type="submit">Finish Install</button>
+            <a class="button secondary" href="/install/recovery">Recovery</a>
+            <pre id="install-output" aria-live="polite"></pre>
+          </article>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

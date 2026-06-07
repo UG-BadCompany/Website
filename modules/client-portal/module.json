@@ -1,0 +1,29 @@
+{
+  "id": "client-portal",
+  "name": "Client Portal",
+  "description": "Client requests, approvals, files, invoices",
+  "status": "stable",
+  "version": "1.0.0",
+  "category": "Operations",
+  "hidden": false,
+  "permissions": [
+    "module:client-portal:view",
+    "module:client-portal:manage"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/#module-client-portal",
+      "label": "Client Portal"
+    }
+  ],
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "client-portal-summary"
+  ]
+}

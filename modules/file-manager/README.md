@@ -1,3 +1,3 @@
-# File Manager
+# File/photo Manager
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Files, photos, attachments. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

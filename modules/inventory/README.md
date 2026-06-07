@@ -1,3 +1,3 @@
 # Inventory
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Parts, stock, suppliers. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

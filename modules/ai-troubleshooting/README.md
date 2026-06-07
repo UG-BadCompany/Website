@@ -1,3 +1,3 @@
 # AI Troubleshooting
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Guided diagnostic assistant. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

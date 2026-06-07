@@ -1,68 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "module-manager",
-  "title": "Module Manager",
-  "description": "Drop-in module for module manager.",
+  "name": "Module Manager",
+  "description": "Enable, disable, inspect drop-in modules",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "System",
-  "icon": "\ud83e\udde9",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": false,
-    "label": "Module Manager",
-    "mobileLabel": "Module",
-    "sortOrder": 130
-  },
-  "frontend": {
-    "basePath": "/modules/module-manager/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "module-manager"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "module-manager",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/module-manager/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "modules.view"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:module-manager:view",
+    "module:module-manager:manage"
+  ],
+  "routes": [
     {
-      "key": "modules.view",
-      "label": "Modules View",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
-    },
-    {
-      "key": "modules.manage",
-      "label": "Modules Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-module-manager",
+      "label": "Module Manager"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "module-manager-summary"
+  ]
 }

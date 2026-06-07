@@ -1,3 +1,3 @@
 # Module Manager
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Enable, disable, inspect drop-in modules. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

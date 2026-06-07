@@ -1,60 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "audit-logs",
-  "title": "Audit Logs",
-  "description": "Drop-in module for audit logs.",
+  "name": "Audit Logs",
+  "description": "Security, impersonation, workflow logs",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "System",
-  "icon": "\ud83d\udcdc",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner",
-    "admin"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": false,
-    "label": "Audit Logs",
-    "mobileLabel": "Audit",
-    "sortOrder": 190
-  },
-  "frontend": {
-    "basePath": "/modules/audit-logs/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "audit-logs"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "audit-logs",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/audit-logs/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "audit.view"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:audit-logs:view",
+    "module:audit-logs:manage"
+  ],
+  "routes": [
     {
-      "key": "audit.view",
-      "label": "Audit View",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-audit-logs",
+      "label": "Audit Logs"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "audit-logs-summary"
+  ]
 }

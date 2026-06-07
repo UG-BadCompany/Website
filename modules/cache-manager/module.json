@@ -1,59 +1,29 @@
 {
-  "schemaVersion": 1,
   "id": "cache-manager",
-  "title": "Cache Manager",
-  "description": "Drop-in module for cache manager.",
+  "name": "Cache Manager",
+  "description": "Clear generated config and cache",
+  "status": "stable",
   "version": "1.0.0",
-  "category": "System",
-  "icon": "\u26a1",
-  "enabledByDefault": true,
-  "workspaces": [
-    "owner"
-  ],
-  "nav": {
-    "showInSidebar": true,
-    "showInMobileNav": false,
-    "label": "Cache Manager",
-    "mobileLabel": "Cache",
-    "sortOrder": 170
-  },
-  "frontend": {
-    "basePath": "/modules/cache-manager/frontend",
-    "entry": "module.js",
-    "html": "module.html",
-    "css": "module.css",
-    "registerId": "cache-manager"
-  },
-  "backend": {
-    "functions": [
-      {
-        "name": "cache-manager",
-        "method": [
-          "GET",
-          "POST"
-        ],
-        "route": "/api/modules/cache-manager/records",
-        "file": "backend/functions/records.mjs",
-        "permission": "cache.manage"
-      }
-    ]
-  },
+  "category": "Operations",
+  "hidden": false,
   "permissions": [
+    "module:cache-manager:view",
+    "module:cache-manager:manage"
+  ],
+  "routes": [
     {
-      "key": "cache.manage",
-      "label": "Cache Manage",
-      "defaultRoles": [
-        "owner",
-        "admin"
-      ]
+      "path": "/dashboard/#module-cache-manager",
+      "label": "Cache Manager"
     }
   ],
-  "dependencies": [],
-  "workflowEvents": [
-    "record:viewed",
-    "record:saved"
-  ],
-  "settings": {
-    "dropIn": true
-  }
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "cache-manager-summary"
+  ]
 }

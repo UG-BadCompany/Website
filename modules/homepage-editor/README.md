@@ -1,3 +1,3 @@
 # Homepage Editor
 
-Drop-in module. Add or remove the folder to change platform registration; no router/sidebar edits required.
+Edit public homepage sections and CTAs. Drop this folder into `modules/` to auto-register routes, navigation, permissions, manager listing, and API dispatcher access.

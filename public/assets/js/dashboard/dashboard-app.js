@@ -1,8 +1,31 @@
-import { api } from '/assets/js/core/api-client.js';
-import { applyTheme } from '/assets/js/core/theme-client.js';
-import { mountModule } from '/assets/js/core/module-runtime.js';
-let workspace=new URL(location.href).searchParams.get('view')||'owner'; let selected=location.hash.slice(1)||'';
-const app=document.querySelector('#dashboard'); const bootstrap=await api(`/api/dashboard-bootstrap?view=${workspace}`); applyTheme(bootstrap.theme); if(!selected) selected=bootstrap.modules[0]?.id;
-function renderShell(){ const modules=bootstrap.modules; app.innerHTML=`${bootstrap.impersonation?`<div class="banner">Impersonating ${bootstrap.impersonation.email}</div>`:''}<aside class="sidebar"><h2>${bootstrap.company.companyName||'Platform'}</h2><p>${bootstrap.user.fullName||bootstrap.user.email}</p><div class="workspace-switcher">${bootstrap.availableWorkspaces.map(w=>`<a class="badge" href="/dashboard/?view=${w}">${w}</a>`).join('')}</div><hr>${modules.map(m=>`<button class="nav-btn ${m.id===selected?'active':''}" data-module="${m.id}"><span>${m.icon}</span>${m.nav.label}</button>`).join('')}</aside><main class="main"><div class="topbar"><div><h1>${modules.find(m=>m.id===selected)?.title||'Dashboard'}</h1><p class="muted">Workspace: ${workspace}</p></div><button id="diagnostics">Run Platform Diagnostics</button></div><div id="module-root"></div></main><nav class="mobile-nav">${modules.filter(m=>m.nav.showInMobileNav).map(m=>`<button class="nav-btn" data-module="${m.id}">${m.icon}<br>${m.nav.mobileLabel}</button>`).join('')}</nav>`; app.onclick=async(e)=>{ if(e.target.closest('[data-module]')){ selected=e.target.closest('[data-module]').dataset.module; location.hash=selected; renderShell(); await loadModule(); } if(e.target.id==='diagnostics'){ alert(JSON.stringify((await api('/api/system/health')).data,null,2)); } }; }
-async function loadModule(){ const mod=bootstrap.modules.find(m=>m.id===selected); const root=document.querySelector('#module-root'); if(!mod){root.innerHTML='<div class="card">No module selected.</div>';return;} await mountModule(mod,{root,api,user:bootstrap.user,company:bootstrap.company,permissions:bootstrap.permissions,workspace,module:mod,router:{navigate:(id)=>{selected=id}},workflow:{},eventBus:new EventTarget(),ui:{},config:bootstrap,signal:null}); }
-renderShell(); await loadModule();
+import { requireInstalled } from '../core/install-lock.js';
+import { api } from '../core/api-client.js';
+import { renderModules } from '../core/module-runtime.js';
+import { wireThemeSelect } from '../core/theme-client.js';
+
+const navItems = ['Overview', 'Homepage Editor', 'Theme Manager', 'Client Portal', 'AI Quote', 'Quote Center', 'Work Orders', 'Scheduling', 'Inventory', 'Invoices', 'Finance', 'Files', 'Platform Health', 'Cache Manager', 'Audit Logs', 'Backup Restore', 'Module Manager'];
+const metricItems = ['Requests', 'Quotes', 'Work Orders', 'Invoices', 'Payments', 'Active Modules'];
+
+async function init() {
+  if (!(await requireInstalled())) return;
+  wireThemeSelect();
+  document.querySelector('#sidebar').innerHTML = navItems.map(item => `<a class="navlink" href="#${item.toLowerCase().replaceAll(' ', '-')}">${item}</a>`).join('');
+  document.querySelector('#metrics').innerHTML = metricItems.map((item, index) => `<article class="card"><h3>${index + 1}</h3><p>${item}</p></article>`).join('');
+  const switcher = document.querySelector('#view-switcher');
+  switcher.onchange = () => renderView(switcher.value);
+  renderView('Owner');
+  await renderModules(document.querySelector('#module-list'), { superOwner: true });
+  document.querySelector('#workflow-test').onclick = runWorkflow;
+}
+
+function renderView(view) {
+  document.querySelector('#workspace').innerHTML = `<h3>${view} view</h3><p class="muted">Super Owner can switch Owner/Admin/Manager/Worker/Client/Public views, see hidden/beta modules, impersonate test users, and audit workflow checks.</p><button id="impersonate">Audit impersonation test</button>`;
+  document.querySelector('#impersonate').onclick = () => api('/api/system/audit', { method: 'POST', body: JSON.stringify({ action: 'impersonation.test', target: view }) });
+}
+
+async function runWorkflow() {
+  const result = await api('/api/system/workflow-demo', { method: 'POST', body: JSON.stringify({ request: 'Photo estimate request', amount: 1250 }) });
+  document.querySelector('#workflow-output').textContent = JSON.stringify(result.data, null, 2);
+}
+
+init();

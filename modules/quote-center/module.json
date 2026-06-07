@@ -1,0 +1,29 @@
+{
+  "id": "quote-center",
+  "name": "Quote Center",
+  "description": "Estimate, quote, approval lifecycle",
+  "status": "stable",
+  "version": "1.0.0",
+  "category": "Operations",
+  "hidden": false,
+  "permissions": [
+    "module:quote-center:view",
+    "module:quote-center:manage"
+  ],
+  "routes": [
+    {
+      "path": "/dashboard/#module-quote-center",
+      "label": "Quote Center"
+    }
+  ],
+  "navigation": {
+    "sidebar": true,
+    "mobile": true
+  },
+  "api": {
+    "dispatcher": "/api/module/:module/:action"
+  },
+  "widgets": [
+    "quote-center-summary"
+  ]
+}
