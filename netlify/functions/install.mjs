@@ -1,2 +1,0 @@
-import { json, envStatus } from './_shared/config.mjs'; import { saveInstallation } from './_shared/store.mjs';
-export async function handler(event){if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});const payload=JSON.parse(event.body||'{}');const install=await saveInstallation({company:payload.company||{},license:{status:'verification_disabled',validationEnabled:false,...payload.license},modules:payload.modules||[],owner:payload.owner||null,environment:envStatus()});return json(200,{ok:true,install})}

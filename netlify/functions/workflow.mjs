@@ -1,2 +1,0 @@
-import { json } from './_shared/config.mjs'; import { store, seedWorkflow } from './_shared/store.mjs'; import { advance, counts, workflowStates } from './_shared/workflow-engine.mjs';
-export async function handler(event){seedWorkflow();if(event.httpMethod==='POST'){const {id}=JSON.parse(event.body||'{}');store.workflow=store.workflow.map(i=>i.id===id?advance(i):i)}return json(200,{states:workflowStates,items:store.workflow,counts:counts(store.workflow)})}
