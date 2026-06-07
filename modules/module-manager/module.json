@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "module-manager",
+  "title": "Module Manager",
+  "description": "Module Manager drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Admin",
+  "icon": "\ud83e\udde9",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Module Manager",
+    "mobileLabel": "Module",
+    "sortOrder": 130
+  },
+  "frontend": {
+    "basePath": "/modules/module-manager/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "module-manager"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "module-manager",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/module-manager/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "modules.view",
+      "label": "Modules View",
+      "group": "Module Manager",
+      "defaultRoles": [
+        "owner"
+      ]
+    },
+    {
+      "key": "modules.manage",
+      "label": "Modules Manage",
+      "group": "Module Manager",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

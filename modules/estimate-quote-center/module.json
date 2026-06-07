@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "estimate-quote-center",
+  "title": "Estimate & Quote Center",
+  "description": "Estimate & Quote Center drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Operations",
+  "icon": "\ud83e\uddfe",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Estimate & Quote Center",
+    "mobileLabel": "Estimate",
+    "sortOrder": 10
+  },
+  "frontend": {
+    "basePath": "/modules/estimate-quote-center/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "estimate-quote-center"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "estimate-quote-center",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/estimate-quote-center/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "quotes.view",
+      "label": "Quotes View",
+      "group": "Estimate & Quote Center",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "key": "quotes.manage",
+      "label": "Quotes Manage",
+      "group": "Estimate & Quote Center",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "request.created",
+    "quote.accepted",
+    "workorder.completed"
+  ],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

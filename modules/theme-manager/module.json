@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "theme-manager",
+  "title": "Theme Manager",
+  "description": "Theme Manager drop-in module for the white-label contractor platform.",
+  "version": "1.0.0",
+  "category": "Admin",
+  "icon": "\ud83c\udfa8",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Theme Manager",
+    "mobileLabel": "Theme",
+    "sortOrder": 110
+  },
+  "frontend": {
+    "basePath": "/modules/theme-manager/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "theme-manager"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "theme-manager",
+        "method": [
+          "GET",
+          "POST",
+          "PATCH"
+        ],
+        "route": "/api/modules/theme-manager/records",
+        "file": "backend/handler.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "theme.view",
+      "label": "Theme View",
+      "group": "Theme Manager",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "theme.manage",
+      "label": "Theme Manage",
+      "group": "Theme Manager",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "ownerAlwaysVisible": true
+  }
+}

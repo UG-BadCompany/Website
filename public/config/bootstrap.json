@@ -1,0 +1,10 @@
+{
+  "generatedAt": null,
+  "installationComplete": false,
+  "company": null,
+  "theme": null,
+  "homepage": null,
+  "sidebar": [],
+  "enabledModules": [],
+  "note": "Public-safe bootstrap cache placeholder. Secrets are never written here. Runtime install completion regenerates equivalent safe data server-side."
+}
