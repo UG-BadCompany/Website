@@ -7,6 +7,12 @@ const outDir = path.join(root, 'out');
 const publicDir = path.join(root, 'public');
 const outIndex = path.join(outDir, 'index.html');
 const publicIndex = path.join(publicDir, 'index.html');
+const requiredOutputPaths = [
+  ['index.html', path.join(outDir, 'index.html')],
+  ['404.html', path.join(outDir, '404.html')],
+  ['assets/', path.join(outDir, 'assets')],
+  ['dashboard/', path.join(outDir, 'dashboard')],
+];
 
 try {
   await access(outIndex);
@@ -20,3 +26,19 @@ try {
   await cp(publicDir, outDir, { recursive: true });
   console.log('Created Netlify publish directory ./out from ./public fallback.');
 }
+
+const missingOutputPaths = [];
+
+for (const [label, outputPath] of requiredOutputPaths) {
+  try {
+    await access(outputPath);
+  } catch {
+    missingOutputPaths.push(label);
+  }
+}
+
+if (missingOutputPaths.length > 0) {
+  throw new Error(`Netlify publish directory ./out is missing required output: ${missingOutputPaths.join(', ')}`);
+}
+
+console.log('OUT DIRECTORY VERIFIED');

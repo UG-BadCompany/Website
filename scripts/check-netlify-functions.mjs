@@ -33,3 +33,4 @@ if (failures.length) {
 }
 
 console.log(`Netlify function syntax verified: ${functionFiles.length} file${functionFiles.length === 1 ? '' : 's'}.`);
+console.log('FUNCTION CHECK COMPLETE');

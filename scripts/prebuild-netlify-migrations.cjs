@@ -66,3 +66,4 @@ if (errors.length > 0) {
 
 console.log(`Netlify Database migrations verified: ${files.join(', ')}`);
 console.log('Applied migration checksums verified.');
+console.log('PREBUILD COMPLETE');
