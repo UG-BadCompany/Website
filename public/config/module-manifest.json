@@ -1,0 +1,409 @@
+{
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "modules": [
+    {
+      "id": "ai-photo-estimate",
+      "title": "AI Photo Estimate",
+      "version": "1.0.0",
+      "category": "AI",
+      "description": "Photo upload analysis and AI estimate preparation with manual fallback when AI is unavailable.",
+      "icon": "sparkles",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client",
+        "public"
+      ],
+      "frontend": {
+        "entry": "frontend.js",
+        "route": "/dashboard/ai-photo-estimate"
+      },
+      "backend": {
+        "routes": [
+          {
+            "action": "analyze",
+            "method": [
+              "POST"
+            ],
+            "path": "/analyze",
+            "permission": "ai-photo-estimate.manage"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "ai-photo-estimate.manage",
+          "label": "Manage AI Photo Estimates",
+          "group": "AI",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        }
+      ],
+      "dependencies": [
+        "requests",
+        "quotes"
+      ],
+      "workflowEvents": [
+        "photo.uploaded",
+        "photo.analyzed",
+        "quote.draft-created"
+      ],
+      "settings": {
+        "allowClientUse": true,
+        "allowWorkerUse": true,
+        "requiresOpenAI": true
+      },
+      "status": "beta",
+      "path": "modules/ai-photo-estimate",
+      "api": [
+        {
+          "action": "analyze",
+          "method": [
+            "POST"
+          ],
+          "path": "/analyze",
+          "permission": "ai-photo-estimate.manage"
+        }
+      ]
+    },
+    {
+      "id": "invoices",
+      "title": "Invoices & Payments",
+      "version": "1.0.0",
+      "category": "Finance",
+      "description": "Invoices, payment links, payment verification, and finance queue updates.",
+      "icon": "receipt",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ],
+      "frontend": {
+        "entry": "frontend.js",
+        "route": "/dashboard/invoices"
+      },
+      "backend": {
+        "routes": [
+          {
+            "action": "records",
+            "method": [
+              "GET",
+              "POST",
+              "PATCH"
+            ],
+            "path": "/records",
+            "permission": "invoices.manage"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "invoices.manage",
+          "label": "Manage Invoices",
+          "group": "Invoices",
+          "defaultRoles": [
+            "owner",
+            "admin"
+          ]
+        }
+      ],
+      "dependencies": [
+        "work-orders"
+      ],
+      "workflowEvents": [
+        "invoice.created",
+        "invoice.sent",
+        "invoice.paid",
+        "payment.verified"
+      ],
+      "status": "stable",
+      "path": "modules/invoices",
+      "api": [
+        {
+          "action": "records",
+          "method": [
+            "GET",
+            "POST",
+            "PATCH"
+          ],
+          "path": "/records",
+          "permission": "invoices.manage"
+        }
+      ]
+    },
+    {
+      "id": "quotes",
+      "title": "Quote Center",
+      "version": "1.0.0",
+      "category": "Sales",
+      "description": "AI-assisted quote drafting, sending, and conversion.",
+      "icon": "file-text",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ],
+      "frontend": {
+        "entry": "frontend.js",
+        "route": "/dashboard/quotes"
+      },
+      "backend": {
+        "routes": [
+          {
+            "action": "records",
+            "method": [
+              "GET",
+              "POST",
+              "PATCH"
+            ],
+            "path": "/records",
+            "permission": "quotes.manage"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "quotes.manage",
+          "label": "Manage Quotes",
+          "group": "Quotes",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        }
+      ],
+      "dependencies": [
+        "requests"
+      ],
+      "workflowEvents": [
+        "quote.drafted",
+        "quote.sent",
+        "quote.accepted",
+        "quote.converted"
+      ],
+      "status": "stable",
+      "path": "modules/quotes",
+      "api": [
+        {
+          "action": "records",
+          "method": [
+            "GET",
+            "POST",
+            "PATCH"
+          ],
+          "path": "/records",
+          "permission": "quotes.manage"
+        }
+      ]
+    },
+    {
+      "id": "requests",
+      "title": "Requests",
+      "version": "1.0.0",
+      "category": "Workflow",
+      "description": "Request estimate intake and active request queues.",
+      "icon": "inbox",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "client",
+        "public"
+      ],
+      "frontend": {
+        "entry": "frontend.js",
+        "route": "/dashboard/requests"
+      },
+      "backend": {
+        "routes": [
+          {
+            "action": "records",
+            "method": [
+              "GET",
+              "POST"
+            ],
+            "path": "/records",
+            "permission": "requests.manage"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "requests.manage",
+          "label": "Manage Requests",
+          "group": "Requests",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "status": "stable",
+      "path": "modules/requests",
+      "api": [
+        {
+          "action": "records",
+          "method": [
+            "GET",
+            "POST"
+          ],
+          "path": "/records",
+          "permission": "requests.manage"
+        }
+      ]
+    },
+    {
+      "id": "system-center",
+      "title": "System Center",
+      "version": "1.0.0",
+      "category": "Administration",
+      "description": "Environment integrations, license placeholder, module manager, audit logs, and platform settings.",
+      "icon": "settings",
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "frontend": {
+        "entry": "frontend.js",
+        "route": "/dashboard/system-center"
+      },
+      "backend": {
+        "routes": [
+          {
+            "action": "health",
+            "method": [
+              "GET"
+            ],
+            "path": "/health",
+            "permission": "system-center.manage"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "system-center.manage",
+          "label": "Manage System Center",
+          "group": "System",
+          "defaultRoles": [
+            "owner"
+          ]
+        },
+        {
+          "key": "environment-integrations.manage",
+          "label": "Manage Environment & Integrations",
+          "group": "System",
+          "defaultRoles": [
+            "owner"
+          ]
+        }
+      ],
+      "dependencies": [],
+      "status": "stable",
+      "ownerAlwaysVisible": true,
+      "path": "modules/system-center",
+      "api": [
+        {
+          "action": "health",
+          "method": [
+            "GET"
+          ],
+          "path": "/health",
+          "permission": "system-center.manage"
+        }
+      ]
+    },
+    {
+      "id": "work-orders",
+      "title": "Work Orders",
+      "version": "1.0.0",
+      "category": "Operations",
+      "description": "Assignments, scheduling, completion review, and active/history work order queues.",
+      "icon": "wrench",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "frontend": {
+        "entry": "frontend.js",
+        "route": "/dashboard/work-orders"
+      },
+      "backend": {
+        "routes": [
+          {
+            "action": "records",
+            "method": [
+              "GET",
+              "POST",
+              "PATCH"
+            ],
+            "path": "/records",
+            "permission": "work-orders.manage"
+          }
+        ]
+      },
+      "permissions": [
+        {
+          "key": "work-orders.manage",
+          "label": "Manage Work Orders",
+          "group": "Work Orders",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        },
+        {
+          "key": "work-orders.assign",
+          "label": "Assign Work Orders",
+          "group": "Work Orders",
+          "defaultRoles": [
+            "owner",
+            "admin",
+            "manager"
+          ]
+        }
+      ],
+      "dependencies": [
+        "quotes"
+      ],
+      "workflowEvents": [
+        "workorder.created",
+        "workorder.assigned",
+        "workorder.scheduled",
+        "workorder.started",
+        "workorder.worker_completed",
+        "workorder.admin_approved",
+        "workorder.client_approved",
+        "workorder.closed",
+        "workorder.archived"
+      ],
+      "status": "stable",
+      "path": "modules/work-orders",
+      "api": [
+        {
+          "action": "records",
+          "method": [
+            "GET",
+            "POST",
+            "PATCH"
+          ],
+          "path": "/records",
+          "permission": "work-orders.manage"
+        }
+      ]
+    }
+  ]
+}
