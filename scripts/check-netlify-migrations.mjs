@@ -60,7 +60,7 @@ export const validateMigrationFiles = async () => {
 
     const actualSha256 = await sha256File(file);
     if (actualSha256 !== expectedSha256) {
-      errors.push(`${file} checksum changed after it was applied (${actualSha256}); expected ${expectedSha256}. Netlify Database already applied this migration; restore the applied file and add schema changes in a later migration.`);
+      errors.push(`${file} checksum changed after it was applied (${actualSha256}); expected ${expectedSha256}. Applied migration was modified. Create a new migration instead.`);
     }
   }
 
