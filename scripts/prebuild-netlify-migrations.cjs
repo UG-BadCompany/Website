@@ -1,0 +1,1 @@
+const fs=require('fs'); const files=fs.readdirSync('netlify/database/migrations').filter(f=>/^\d{4}_.+\.sql$/.test(f)); const nums=new Set(); for(const f of files){const n=f.slice(0,4); if(nums.has(n)){console.error('Duplicate migration number '+n);process.exit(1)} nums.add(n)} console.log(`Validated ${files.length} migrations.`);

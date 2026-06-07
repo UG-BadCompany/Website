@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "estimate-quote-center",
+  "title": "Estimate & Quote Center",
+  "description": "Requests, estimates, AI quotes, approvals, and quote conversion.",
+  "version": "1.0.0",
+  "category": "Sales",
+  "icon": "🧾",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Estimate & Quote Center",
+    "mobileLabel": "Estimate",
+    "sortOrder": 10
+  },
+  "frontend": {
+    "basePath": "/modules/estimate-quote-center/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "estimate-quote-center"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "estimate-quote-center",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/estimate-quote-center/records",
+        "file": "backend/functions/estimate-quote-center.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "estimate-quote-center.view",
+      "label": "View Estimate & Quote Center",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "estimate-quote-center.manage",
+      "label": "Manage Estimate & Quote Center",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "request:created",
+    "quote:accepted",
+    "work-order:created"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}

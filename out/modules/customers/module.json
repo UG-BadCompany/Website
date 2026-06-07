@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "customers",
+  "title": "Customers",
+  "description": "Customer records and client history.",
+  "version": "1.0.0",
+  "category": "Operations",
+  "icon": "👥",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Customers",
+    "mobileLabel": "Customers",
+    "sortOrder": 0
+  },
+  "frontend": {
+    "basePath": "/modules/customers/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "customers"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "customers",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/customers/records",
+        "file": "backend/functions/customers.mjs"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "customers.view",
+      "label": "View Customers",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "customers.manage",
+      "label": "Manage Customers",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [],
+  "settings": {
+    "dropIn": true
+  }
+}
