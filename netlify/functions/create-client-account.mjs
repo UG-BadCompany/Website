@@ -24,6 +24,7 @@ const normalizeSetupPayload = (body = {}) => ({
   city: clean(body.city, 120),
   state: clean(body.state, 60),
   zip: clean(body.zip || body.postalCode || body.postal_code, 40),
+  preferredContactMethod: clean(body.preferredContactMethod || body.preferred_contact_method, 40),
   acceptedTerms: Boolean(body.acceptedTerms || body.accepted_terms || body.consent),
 });
 
@@ -50,38 +51,38 @@ const completeClientAccountSetup = async (db, request, body) => {
   const payload = normalizeSetupPayload(body);
   if (!payload.fullName) return json(422, { ok: false, message: 'Full name is required.' });
   if (!payload.phone) return json(422, { ok: false, message: 'Phone is required.' });
-  if (body.requireTerms && !payload.acceptedTerms) return json(422, { ok: false, message: 'Please accept the terms to continue.' });
+  if (!payload.propertyAddress) return json(422, { ok: false, message: 'Address is required.' });
+  if (!payload.acceptedTerms) return json(422, { ok: false, message: 'Please accept the terms to continue.' });
 
   const [user] = await db.sql`
     update app_users
     set full_name = ${payload.fullName},
         phone = ${payload.phone},
         company_name = ${payload.companyName || null},
+        preferred_contact_method = ${payload.preferredContactMethod || null},
         source = coalesce(nullif(source, ''), 'portal_magic_link_signup'),
         account_setup_complete = true,
         last_login_at = coalesce(last_login_at, now()),
         last_seen_at = now(),
         updated_at = now()
     where id = ${session.user_id}
-    returning id, email, full_name, phone, company_name
+    returning id, email, full_name, phone, company_name, preferred_contact_method
   `;
 
   await ensureClientRoleAndWorkspace(db, session.user_id);
   await linkEmailOwnedRecords(db, user);
 
-  if (payload.propertyAddress) {
-    await db.sql`
-      insert into properties (client_id, label, street, city, state, postal_code)
-      values (${session.user_id}, 'Primary Property', ${payload.propertyAddress}, ${payload.city || null}, ${payload.state || 'AZ'}, ${payload.zip || null})
-    `;
-  }
+  await db.sql`
+    insert into properties (client_id, label, street, city, state, postal_code, access_notes)
+    values (${session.user_id}, 'Primary Property', ${payload.propertyAddress}, ${payload.city || null}, ${payload.state || 'AZ'}, ${payload.zip || null}, ${payload.preferredContactMethod ? `Preferred contact: ${payload.preferredContactMethod}` : null})
+  `;
 
   await db.sql`
     insert into audit_events (actor_user_id, event_type, entity_type, entity_id, metadata)
-    values (${session.user_id}, 'client.account_setup_completed', 'app_user', ${session.user_id}, ${JSON.stringify({ source: 'portal_magic_link_signup', linkedByEmail: user.email })}::jsonb)
+    values (${session.user_id}, 'client.account_setup_completed', 'app_user', ${session.user_id}, ${JSON.stringify({ source: 'portal_magic_link_signup', linkedByEmail: user.email, preferredContactMethod: payload.preferredContactMethod || null })}::jsonb)
   `;
 
-  return json(200, { ok: true, location: '/dashboard/#client.overview', user: { id: user.id, email: user.email, fullName: user.full_name, phone: user.phone, companyName: user.company_name, role: 'client', workspaceAccess: ['client'] } });
+  return json(200, { ok: true, location: '/dashboard/#client.overview', user: { id: user.id, email: user.email, fullName: user.full_name, phone: user.phone, companyName: user.company_name, preferredContactMethod: user.preferred_contact_method, role: 'client', workspaceAccess: ['client'] } });
 };
 
 export const createClientAccountHandler = ({

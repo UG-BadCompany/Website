@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Account Setup · Client Portal</title>
+  <title>Complete Account Setup · Client Portal</title>
   <link rel="stylesheet" href="/assets/css/base.css">
   <link rel="stylesheet" href="/assets/css/public.css">
 </head>
@@ -22,9 +22,9 @@
     <div class="container public-onboarding-wrap">
       <form class="card stack public-auth-card onboarding-card" id="account-setup-form">
         <div class="brand auth-brand" data-brand></div>
-        <span class="pill">First-time portal setup</span>
+        <span class="pill">Complete Account Setup</span>
         <div>
-          <h1>Finish setting up your client account.</h1>
+          <h1>Complete Account Setup</h1>
           <p>Confirm your profile so your requests, estimates, approvals, photos, invoices, and updates stay connected to one secure client portal.</p>
         </div>
         <div class="form-grid">
@@ -32,12 +32,13 @@
           <label class="field"><span>Verified email</span><input name="email" type="email" autocomplete="email" readonly required></label>
           <label class="field"><span>Phone</span><input name="phone" autocomplete="tel" required></label>
           <label class="field"><span>Company <small>(optional)</small></span><input name="companyName" autocomplete="organization"></label>
-          <label class="field wide"><span>Primary property address <small>(optional)</small></span><input name="propertyAddress" autocomplete="street-address"></label>
+          <label class="field"><span>Preferred contact <small>(optional)</small></span><select name="preferredContactMethod"><option value="">No preference</option><option value="email">Email</option><option value="phone">Phone</option><option value="text">Text message</option></select></label>
+          <label class="field wide"><span>Primary property address</span><input name="propertyAddress" autocomplete="street-address" required></label>
           <label class="field"><span>City</span><input name="city" autocomplete="address-level2"></label>
           <label class="field"><span>State</span><input name="state" autocomplete="address-level1"></label>
           <label class="field"><span>ZIP</span><input name="zip" autocomplete="postal-code"></label>
         </div>
-        <label class="checkbox-line premium-checkbox"><input type="checkbox" name="acceptedTerms" required> I consent to create a client portal account for this email.</label>
+        <label class="checkbox-line premium-checkbox"><input type="checkbox" name="acceptedTerms" required> I accept the terms and consent to create a client portal account for this email.</label>
         <div class="action-row">
           <button class="btn" type="submit">Create Client Account</button>
           <a class="btn secondary" href="/login/">Use another email</a>

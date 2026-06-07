@@ -26,6 +26,7 @@
     setStatus('Creating your client account…');
     const data = Object.fromEntries(new FormData(form).entries());
     data.acceptedTerms = form.acceptedTerms.checked;
+    data.requireTerms = true;
     data.email = form.email.value;
     try {
       const result = await window.TAApi.post('/api/auth/client-account', data);

@@ -8,48 +8,68 @@
   <link rel="stylesheet" href="/assets/css/public.css">
   <!-- compatibility: --dash-bg: #070a0f -->
 </head>
-<body class="public-auth-page">
-  <header class="site-header premium-public-header customer-public-header">
+<body class="public-auth-page premium-portal-page">
+  <header class="site-header premium-public-header customer-public-header portal-public-header">
     <div class="container nav">
       <a class="brand" href="/" data-brand aria-label="Company home"></a>
       <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-label="Open menu">☰</button>
       <nav class="nav-links" aria-label="Portal navigation">
         <a href="/#services">Services</a>
         <a href="/#estimate">Request Estimate</a>
-        <a class="btn secondary" href="/dashboard/">Dashboard</a>
+        <a href="/login/" data-portal-link data-label="Client Portal">Client Portal</a>
+        <a class="btn secondary" href="/dashboard/" data-dashboard-link data-label="Dashboard" hidden>Dashboard</a>
       </nav>
     </div>
   </header>
-  <main class="hero public-auth-hero">
-    <div class="container public-auth-grid">
-      <section class="public-auth-copy">
-        <span class="pill">Secure customer access</span>
-        <h1>Secure Client Portal</h1><h2>Open your client portal with a secure email link.</h2>
-        <p>Access your requests, estimates, invoices, project updates, and messages in one secure customer portal—no password to remember.</p>
-        <div class="public-auth-steps" aria-label="Portal sign-in steps">
-          <span>1. Enter email</span>
-          <span>2. Check inbox</span>
-          <span>3. Open portal</span>
-        </div>
+
+  <main class="hero public-auth-hero portal-hero">
+    <div class="container public-auth-grid portal-redesign-grid">
+      <section class="public-auth-copy portal-story-panel" aria-labelledby="portal-headline">
+        <div class="portal-story-lockup" data-portal-logo></div>
+        <span class="pill portal-badge" data-portal-badge>Secure customer access</span>
+        <h1 id="portal-headline" data-portal-headline>Secure Client Portal</h1>
+        <p class="portal-subheadline" data-portal-subheadline>Manage your entire project online with one secure email link.</p>
+        <p class="portal-description" data-portal-description>Access your estimates, approved quotes, work orders, project photos, invoices, payment history, and real-time project updates from one place.</p>
+
+        <ul class="portal-feature-list" data-portal-features aria-label="Client portal capabilities"></ul>
+
+        <div class="portal-preview-grid" data-portal-preview-cards aria-label="Portal preview examples"></div>
+
+        <article class="portal-ai-card" data-portal-ai-card>
+          <div>
+            <p class="eyebrow">AI Photo Estimate</p>
+            <h2>Upload photos. Get project guidance faster.</h2>
+          </div>
+          <ul>
+            <li>✓ Upload photos</li>
+            <li>✓ AI analyzes project</li>
+            <li>✓ Receive estimate</li>
+            <li>✓ Approve online</li>
+          </ul>
+        </article>
       </section>
-      <form class="card stack public-auth-card" id="login-form" data-auth-form action="/api/auth/magic-link">
-        <div class="brand auth-brand" data-brand></div>
-        <div>
-          <p class="eyebrow">Client Portal</p>
-          <h2>Send secure sign-in link</h2>
-          <p>Use the same email you used for your estimate request or client account.</p>
+
+      <form class="card stack public-auth-card portal-login-card" id="login-form" data-auth-form action="/api/auth/magic-link">
+        <div class="portal-card-heading">
+          <p class="eyebrow" data-portal-card-eyebrow>Client Portal</p>
+          <h2 data-portal-card-title>Send secure sign-in link</h2>
+          <p data-portal-login-copy>Use the same email you used for your estimate or account.</p>
         </div>
         <label class="field"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label>
-        <button class="btn" type="submit">Send Secure Link</button>
-        <p id="login-status" class="notice subtle">We’ll only send portal access if this email is authorized.</p>
-        <a class="btn secondary" href="/#estimate">Need an estimate first?</a>
+        <button class="btn portal-submit" type="submit" data-portal-submit>Send Secure Link</button>
+        <div class="portal-trust-stack" data-portal-trust-list aria-label="Portal security details"></div>
+        <p id="login-status" class="notice subtle">Passwordless access uses a secure one-time email link. New customers will complete setup after verification.</p>
+        <div class="portal-estimate-cta">
+          <span data-portal-estimate-copy>Need an estimate first?</span>
+          <a class="btn secondary" href="/#estimate" data-portal-estimate-link>Request Estimate</a>
+        </div>
       </form>
     </div>
   </main>
-  <script src="/assets/js/api-client.js"></script>
-  <script src="/assets/js/theme.js"></script>
-  <script src="/assets/js/company-settings.js"></script>
-  <script src="/assets/js/auth-client.js"></script>
-  <script src="/login/login.js"></script>
+  <script src="/assets/js/api-client.js" defer></script>
+  <script src="/assets/js/theme.js" defer></script>
+  <script src="/assets/js/company-settings.js" defer></script>
+  <script src="/assets/js/auth-client.js" defer></script>
+  <script src="/assets/login.js" defer></script>
 </body>
 </html>
