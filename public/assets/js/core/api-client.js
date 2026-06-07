@@ -1,1 +1,0 @@
-export async function api(path, options={}){ const res = await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options}); const data = await res.json().catch(()=>({ok:false,message:'Invalid JSON'})); if(!res.ok||data.ok===false) throw Object.assign(new Error(data.message||'API error'),{data,status:res.status}); return data; }
