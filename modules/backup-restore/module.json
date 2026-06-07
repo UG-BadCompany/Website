@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "backup-restore",
+  "title": "Backup & Restore",
+  "description": "Drop-in module for backup & restore.",
+  "version": "1.0.0",
+  "category": "System",
+  "icon": "\ud83d\udcbe",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": false,
+    "label": "Backup & Restore",
+    "mobileLabel": "Backup",
+    "sortOrder": 200
+  },
+  "frontend": {
+    "basePath": "/modules/backup-restore/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "backup-restore"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "backup-restore",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/backup-restore/records",
+        "file": "backend/functions/records.mjs",
+        "permission": "backup.manage"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "backup.manage",
+      "label": "Backup Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "record:viewed",
+    "record:saved"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "estimate-quote-center",
+  "title": "Estimate & Quote Center",
+  "description": "Drop-in module for estimate & quote center.",
+  "version": "1.0.0",
+  "category": "Operations",
+  "icon": "\ud83e\uddfe",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": true,
+    "label": "Estimate & Quote Center",
+    "mobileLabel": "Estimate",
+    "sortOrder": 10
+  },
+  "frontend": {
+    "basePath": "/modules/estimate-quote-center/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "estimate-quote-center"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "estimate-quote-center",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/estimate-quote-center/records",
+        "file": "backend/functions/records.mjs",
+        "permission": "workflow.manage"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "workflow.manage",
+      "label": "Workflow Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "quotes.manage",
+      "label": "Quotes Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "record:viewed",
+    "record:saved"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}

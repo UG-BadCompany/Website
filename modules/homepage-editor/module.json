@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "homepage-editor",
+  "title": "Homepage Editor",
+  "description": "Drop-in module for homepage editor.",
+  "version": "1.0.0",
+  "category": "System",
+  "icon": "\ud83c\udfe0",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": false,
+    "label": "Homepage Editor",
+    "mobileLabel": "Homepage",
+    "sortOrder": 120
+  },
+  "frontend": {
+    "basePath": "/modules/homepage-editor/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "homepage-editor"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "homepage-editor",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/homepage-editor/records",
+        "file": "backend/functions/records.mjs",
+        "permission": "homepage.view"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "homepage.view",
+      "label": "Homepage View",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "homepage.manage",
+      "label": "Homepage Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "record:viewed",
+    "record:saved"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}

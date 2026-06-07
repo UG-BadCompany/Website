@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "cache-manager",
+  "title": "Cache Manager",
+  "description": "Drop-in module for cache manager.",
+  "version": "1.0.0",
+  "category": "System",
+  "icon": "\u26a1",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": false,
+    "label": "Cache Manager",
+    "mobileLabel": "Cache",
+    "sortOrder": 170
+  },
+  "frontend": {
+    "basePath": "/modules/cache-manager/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "cache-manager"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "cache-manager",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/cache-manager/records",
+        "file": "backend/functions/records.mjs",
+        "permission": "cache.manage"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "cache.manage",
+      "label": "Cache Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "record:viewed",
+    "record:saved"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}

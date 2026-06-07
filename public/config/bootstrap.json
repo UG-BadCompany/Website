@@ -1,0 +1,424 @@
+{
+  "ok": true,
+  "installed": false,
+  "company": {
+    "companyName": "Your Company",
+    "businessType": "Contractor Services"
+  },
+  "theme": {
+    "mode": "system",
+    "primary": "#2563eb",
+    "accent": "#f97316",
+    "background": "#f8fafc",
+    "surface": "#ffffff",
+    "text": "#0f172a",
+    "border": "#cbd5e1",
+    "button": "#2563eb",
+    "buttonText": "#ffffff"
+  },
+  "modules": [
+    {
+      "id": "estimate-quote-center",
+      "title": "Estimate & Quote Center",
+      "category": "Operations",
+      "icon": "🧾",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Estimate & Quote Center",
+        "mobileLabel": "Estimate",
+        "sortOrder": 10
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "ai-photo-estimate",
+      "title": "AI Photo Estimate",
+      "category": "AI",
+      "icon": "📸",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "AI Photo Estimate",
+        "mobileLabel": "AI",
+        "sortOrder": 20
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "ai-troubleshooting",
+      "title": "AI Troubleshooting",
+      "category": "AI",
+      "icon": "🧠",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "AI Troubleshooting",
+        "mobileLabel": "AI",
+        "sortOrder": 30
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "work-orders",
+      "title": "Work Orders",
+      "category": "Operations",
+      "icon": "🛠️",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Work Orders",
+        "mobileLabel": "Work",
+        "sortOrder": 40
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "schedule",
+      "title": "Schedule",
+      "category": "Operations",
+      "icon": "📅",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Schedule",
+        "mobileLabel": "Schedule",
+        "sortOrder": 50
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "inventory",
+      "title": "Inventory",
+      "category": "Operations",
+      "icon": "📦",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Inventory",
+        "mobileLabel": "Inventory",
+        "sortOrder": 60
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "invoices",
+      "title": "Invoices & Payments",
+      "category": "Finance",
+      "icon": "💳",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Invoices & Payments",
+        "mobileLabel": "Invoices",
+        "sortOrder": 70
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "finance",
+      "title": "Finance",
+      "category": "Finance",
+      "icon": "📈",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Finance",
+        "mobileLabel": "Finance",
+        "sortOrder": 80
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "customers",
+      "title": "Customers",
+      "category": "CRM",
+      "icon": "👥",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": true,
+        "label": "Customers",
+        "mobileLabel": "Customers",
+        "sortOrder": 90
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "users-permissions",
+      "title": "Users & Permissions",
+      "category": "System",
+      "icon": "🔐",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Users & Permissions",
+        "mobileLabel": "Users",
+        "sortOrder": 100
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "theme-manager",
+      "title": "Theme Manager",
+      "category": "System",
+      "icon": "🎨",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Theme Manager",
+        "mobileLabel": "Theme",
+        "sortOrder": 110
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "homepage-editor",
+      "title": "Homepage Editor",
+      "category": "System",
+      "icon": "🏠",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Homepage Editor",
+        "mobileLabel": "Homepage",
+        "sortOrder": 120
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "module-manager",
+      "title": "Module Manager",
+      "category": "System",
+      "icon": "🧩",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Module Manager",
+        "mobileLabel": "Module",
+        "sortOrder": 130
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "reports",
+      "title": "Reports",
+      "category": "Insights",
+      "icon": "📊",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Reports",
+        "mobileLabel": "Reports",
+        "sortOrder": 140
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "maintenance-plans",
+      "title": "Maintenance Plans",
+      "category": "Operations",
+      "icon": "🔁",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Maintenance Plans",
+        "mobileLabel": "Maintenance",
+        "sortOrder": 150
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "platform-health",
+      "title": "Platform Health",
+      "category": "System",
+      "icon": "🟢",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Platform Health",
+        "mobileLabel": "Platform",
+        "sortOrder": 160
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "cache-manager",
+      "title": "Cache Manager",
+      "category": "System",
+      "icon": "⚡",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Cache Manager",
+        "mobileLabel": "Cache",
+        "sortOrder": 170
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "file-manager",
+      "title": "File Manager",
+      "category": "System",
+      "icon": "🗂️",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "File Manager",
+        "mobileLabel": "File",
+        "sortOrder": 180
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "audit-logs",
+      "title": "Audit Logs",
+      "category": "System",
+      "icon": "📜",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Audit Logs",
+        "mobileLabel": "Audit",
+        "sortOrder": 190
+      },
+      "enabledByDefault": true
+    },
+    {
+      "id": "backup-restore",
+      "title": "Backup & Restore",
+      "category": "System",
+      "icon": "💾",
+      "version": "1.0.0",
+      "workspaces": [
+        "owner"
+      ],
+      "nav": {
+        "showInSidebar": true,
+        "showInMobileNav": false,
+        "label": "Backup & Restore",
+        "mobileLabel": "Backup",
+        "sortOrder": 200
+      },
+      "enabledByDefault": true
+    }
+  ],
+  "generatedAt": "2026-06-07T22:03:34.290Z"
+}

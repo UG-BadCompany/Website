@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "file-manager",
+  "title": "File Manager",
+  "description": "Drop-in module for file manager.",
+  "version": "1.0.0",
+  "category": "System",
+  "icon": "\ud83d\uddc2\ufe0f",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": false,
+    "label": "File Manager",
+    "mobileLabel": "File",
+    "sortOrder": 180
+  },
+  "frontend": {
+    "basePath": "/modules/file-manager/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "file-manager"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "file-manager",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/file-manager/records",
+        "file": "backend/functions/records.mjs",
+        "permission": "files.view"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "files.view",
+      "label": "Files View",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "files.manage",
+      "label": "Files Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "record:viewed",
+    "record:saved"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}
