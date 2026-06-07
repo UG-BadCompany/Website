@@ -17,3 +17,4 @@ await mkdir(outputDir, { recursive: true });
 await cp(sourceDir, outputDir, { recursive: true });
 
 console.log('Static site built successfully. Netlify will publish ./out');
+console.log('STATIC BUILD COMPLETE');

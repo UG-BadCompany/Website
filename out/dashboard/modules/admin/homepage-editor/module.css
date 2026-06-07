@@ -49,3 +49,11 @@
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
 }
+.editor-public-preview { display:grid; gap:1rem; }
+.editor-public-preview section { border:1px solid var(--color-border); border-radius:18px; padding:1rem; background:var(--color-surface); }
+.editor-public-preview .service-tabs { display:flex; flex-wrap:wrap; gap:.5rem; margin:.5rem 0; }
+.editor-public-preview .service-tab { border:1px solid var(--color-border); border-radius:999px; padding:.45rem .7rem; background:var(--color-background); }
+.editor-public-preview .service-tab.active { border-color:var(--color-primary); }
+.editor-public-preview .service-mini-grid, .editor-public-preview .project-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; }
+.editor-public-preview .service-tile, .editor-public-preview .project-card { border:1px solid var(--color-border); border-radius:14px; padding:.75rem; background:var(--color-background); }
+.editor-public-preview .project-card img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; }
