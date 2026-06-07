@@ -1,5 +1,5 @@
 -- Homepage editor layout and project configuration belongs in this
--- forward-only migration because 0048 has already been applied by Netlify.
+-- forward-only migration because 0048 is the applied module registry identity.
 -- The structured layout, grouped services, projects, contact CTA, estimate,
 -- and footer editor payloads are stored in homepage_settings.homepage_config.
 alter table if exists homepage_settings

@@ -9,7 +9,7 @@ const appliedMigrationSha256 = new Map([
   ['0031_ai_intelligence_engine.sql', 'de4a761c15f9b3076684e0af10bfa29b84476881567a7cbc4410dd6eda2b591b'],
   ['0036_company_admin_settings.sql', 'f58dc19c08d718e27ae92059ad23979fce34bf2bed08ac6e5c1c6903d2b54590'],
   ['0040_supplier_price_research_metadata.sql', '25be759a97b49ff4c9694a6c6f67eaeea57c392c82acba093440483645c86288'],
-  ['0048_homepage_editor_driven_config.sql', '6bb558a074fb0ffb2c19525c3838464816f1818c367150177e22853e701d4d5b'],
+  ['0048_module_registry_drop_in_modules.sql', '162dde8e7cd6d0485b4a6ec7dded56f8fc4910e6954142956b4e1e64f1fa4666'],
 ]);
 
 const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
