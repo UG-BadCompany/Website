@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 
 const migrationsDir = new URL('../netlify/database/migrations/', import.meta.url);
 const lockedScheduleSha256 = 'c0583dd2a53b96ea6db8898cd9bf805c9c013350add30b57592b958e109af9d1';
+const lockedHomepageEditorSha256 = '6bb558a074fb0ffb2c19525c3838464816f1818c367150177e22853e701d4d5b';
 
 test('Netlify Database migrations allow applied compatibility names to remain committed', async () => {
   const { errors, files } = await validateMigrationFiles();
@@ -37,6 +38,13 @@ test('applied 0004 schedule migration keeps locked checksum', async () => {
   const checksum = createHash('sha256').update(appliedSchedule).digest('hex');
 
   assert.equal(checksum, lockedScheduleSha256);
+});
+
+test('applied 0048 homepage editor migration keeps locked checksum', async () => {
+  const appliedHomepageEditor = await readFile(new URL('0048_homepage_editor_driven_config.sql', migrationsDir));
+  const checksum = createHash('sha256').update(appliedHomepageEditor).digest('hex');
+
+  assert.equal(checksum, lockedHomepageEditorSha256);
 });
 
 test('applied compatibility migrations keep their original SQL bodies', async () => {
