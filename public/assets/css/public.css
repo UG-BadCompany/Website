@@ -1224,3 +1224,15 @@ html[data-theme="dark"] .premium-estimate-card {
   background: color-mix(in srgb, #151b26 82%, transparent);
   border-color: rgba(255,255,255,.11);
 }
+
+/* Editor-driven homepage refinements */
+.service-tabs { display:flex; flex-wrap:wrap; justify-content:center; gap:.65rem; margin:0 0 1.1rem; }
+.service-tab { border:1px solid var(--color-border); border-radius:999px; padding:.7rem 1rem; background:color-mix(in srgb, var(--color-surface) 76%, transparent); color:var(--color-text); font-weight:900; cursor:pointer; }
+.service-tab.active, .service-tab:hover { border-color:color-mix(in srgb, var(--color-primary) 58%, var(--color-border)); box-shadow:var(--premium-soft-shadow); transform:translateY(-1px); }
+.service-tab-panel[hidden] { display:none !important; }
+.service-tile a[data-preselect-service] { display:inline-flex; margin-top:.75rem; font-weight:900; color:var(--color-primary); text-decoration:none; }
+.contact-cta-section .final-customer-cta { display:grid; gap:1.1rem; padding:clamp(1.4rem,4vw,2.4rem); }
+.contact-trust-list { display:flex; flex-wrap:wrap; gap:.55rem; list-style:none; padding:0; margin:1rem 0 0; }
+.contact-trust-list li { border:1px solid var(--color-border); border-radius:999px; padding:.5rem .75rem; background:color-mix(in srgb, var(--color-surface) 70%, transparent); font-weight:800; }
+.contact-grid a { color:inherit; text-decoration:none; }
+.project-card img, .job-photo-card img { cursor:zoom-in; }

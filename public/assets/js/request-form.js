@@ -3,6 +3,8 @@
   const MAX_BYTES = 12 * 1024 * 1024;
   const ACCEPTED_TYPES = /image\/(jpeg|jpg|png|webp|heic|heif)/i;
   const progressLabels = ['Reading photos', 'Detecting materials', 'Estimating labor', 'Preparing preview'];
+  let activeConfig = {};
+  const esc = (v = '') => String(v ?? '').replace(/[&<>\"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#39;' }[c]));
 
   const fileToDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -81,6 +83,29 @@
     }, 420);
   };
 
+
+  const configureWizard = (config = {}, settings = {}) => {
+    activeConfig = { ...activeConfig, ...config };
+    document.querySelectorAll('.estimate-wizard-shell').forEach((shell) => {
+      const title = shell.querySelector('.estimate-intro-card h2');
+      const sub = shell.querySelector('.estimate-intro-card p');
+      if (title && config.heading) title.textContent = config.heading;
+      if (sub && config.subheading) sub.textContent = config.subheading;
+      const categories = (config.serviceCategories || []).filter((item) => item?.enabled !== false && (item.label || item.value)).sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0));
+      const list = shell.querySelector('.estimate-type-list');
+      if (list && categories.length) list.innerHTML = categories.map((item) => `<span>${esc(item.label || item.value)}</span>`).join('');
+      const choices = shell.querySelector('.choice-grid');
+      if (choices && categories.length) choices.innerHTML = [...categories.slice(0, 8), { label: 'Not sure yet', value: 'Other / Not Sure', icon: '✨', enabled: true }].map((item, index) => `<label><input type="radio" name="service" value="${esc(item.value || item.label)}" ${index === 0 ? 'checked' : ''}><span>${esc([item.icon, item.label || item.value].filter(Boolean).join(' '))}</span></label>`).join('');
+      const drop = shell.querySelector('[data-upload-drop]');
+      const photoStage = shell.querySelector('[data-wizard-stage="2"]');
+      if (config.photoUploadEnabled === false) { if (drop) drop.hidden = true; if (photoStage) photoStage.querySelector('h3').textContent = 'Photos are optional.'; }
+      const permission = shell.querySelector('input[name="permissionToContact"]')?.closest('label');
+      if (permission && config.permissionText) { const input = permission.querySelector('input'); permission.innerHTML = ''; permission.append(input); permission.append(` ${config.permissionText}`); }
+      const stored = sessionStorage.getItem('taEstimateService');
+      if (stored) shell.querySelectorAll('input[name="service"]').forEach((input) => { input.checked = input.value === stored; });
+    });
+  };
+
   const bindUploads = (form) => {
     if (form.dataset.uploadBound === '1') return;
     form.dataset.uploadBound = '1';
@@ -120,6 +145,7 @@
 
   const bindWizard = () => {
     document.querySelectorAll('.estimate-wizard').forEach((form) => {
+      configureWizard(activeConfig);
       bindUploads(form);
       if (form.dataset.wizardBound === '1') return;
       form.dataset.wizardBound = '1';
@@ -142,7 +168,7 @@
       show(0);
     });
   };
-  window.TAEstimateWizard = { bind: bindWizard };
+  window.TAEstimateWizard = { bind: bindWizard, configure: configureWizard };
   document.addEventListener('DOMContentLoaded', bindWizard);
   document.addEventListener('ta:homepage-rendered', bindWizard);
 })();
@@ -167,7 +193,7 @@
         payload.photos = payload.photoUploads;
         const data=await TAApi.post('/api/job-requests',payload);
         const id=data.requestId||data.id||data.request?.id||data.jobRequest?.id||'';
-        if(status) { status.textContent=payload.photoUploads?.length ? 'Photos received. We’ll review them with your request. Opening your next steps…' : 'Request received. Opening your next steps…'; status.dataset.tone='success'; }
+        if(status) { status.textContent=activeConfig.successMessage || (payload.photoUploads?.length ? 'Photos received. We’ll review them with your request. Opening your next steps…' : 'Request received. Opening your next steps…'); status.dataset.tone='success'; }
         location.href='/thank-you/'+(id?'?request='+encodeURIComponent(id):'')
       }catch(err){
         if(status) { status.textContent=err.message||'We could not submit the request. Please call us or try again.'; status.dataset.tone='error'; }
