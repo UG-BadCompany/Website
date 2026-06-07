@@ -1,14 +1,14 @@
 # Netlify Deployment Fix
 
-The latest Netlify logs show the build completes, but the deploy fails because Netlify is still configured to publish `out`:
+The latest Netlify logs show the static build completes, then deploy fails because the Netlify UI is still loading the Next.js Runtime plugin against the static `out/` publish directory:
 
 ```text
-Custom publish path detected. Proceeding with the specified path: 'out'
-Deploy did not succeed: Deploy directory 'out' does not exist
-publish: /opt/build/repo/out
+Using Next.js Runtime - v5.15.10
+Plugin "@netlify/plugin-nextjs" failed
+Your publish directory does not contain expected Next.js build output.
 ```
 
-Because the Netlify dashboard is still forcing `out`, this repo now matches that setting instead of fighting it.
+This repository builds a static site into `out/` with `node scripts/build-static-site.mjs` and deploys Netlify Functions from `netlify/functions`. It does not produce `.next` runtime output, so `@netlify/plugin-nextjs` must not run for this site.
 
 
 ## Deployment health checklist
@@ -21,9 +21,11 @@ Use these settings in Netlify:
 
 - **Build command:** `npm run build`
 - **Publish directory:** `out`
+- **Functions directory:** `netlify/functions`
 - **Node version:** `20`
+- **Plugins:** remove / uninstall `@netlify/plugin-nextjs` from **Site configuration → Build & deploy → Plugins**
 
-These settings are committed in `netlify.toml`.
+These build settings and the `NETLIFY_NEXT_PLUGIN_SKIP=true` safety flag are committed in `netlify.toml`. The skip flag is only a backup; a UI-installed Next.js plugin should still be removed from Netlify.
 
 ## Why this fixes the error
 
@@ -34,7 +36,9 @@ The build now creates the same folder Netlify is trying to publish:
 3. The build copies `public/` into `out/`.
 4. Netlify publishes `out/` successfully.
 
-A `postbuild` safety script also verifies `out/index.html` exists. If `out/` is missing but `public/index.html` exists, it recreates `out/` from `public/`.
+A `postbuild` safety script also verifies Netlify Function syntax before verifying that `out/index.html` exists. If `out/` is missing but `public/index.html` exists, it recreates `out/` from `public/`.
+
+The repository-level config intentionally contains no `@netlify/plugin-nextjs` plugin block. Remove the same plugin from the Netlify UI so deploys run as **Static site + Netlify Functions**, not as a Next.js runtime app.
 
 ## Local verification
 
@@ -50,8 +54,11 @@ Expected result:
 
 ```text
 Static site built successfully. Netlify will publish ./out
+Netlify function syntax verified.
 Netlify publish directory verified: ./out
 ```
+
+Expected Netlify deploy result after uninstalling the UI plugin: no `Using Next.js Runtime` line, no `@netlify/plugin-nextjs` step, and no missing Next.js build output error.
 
 `out/index.html` should exist.
 
@@ -86,7 +93,8 @@ Check these in Netlify:
 3. Confirm the repository is `UG-BadCompany/Website` if that is the intended repo.
 4. Keep **Publish directory** as `out` for this fix.
 5. Keep **Build command** as `npm run build`.
-6. Trigger **Clear cache and deploy site**.
+6. Remove / uninstall `@netlify/plugin-nextjs` under **Site configuration → Build & deploy → Plugins**.
+7. Trigger **Clear cache and deploy site**.
 
 ## Future Next.js version
 

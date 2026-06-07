@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -29,6 +29,25 @@ test('npm postbuild checks Netlify function syntax before verifying publish outp
   );
 });
 
+
+test('Netlify deploy is configured as a static site with functions and no Next.js runtime plugin', async () => {
+  const config = await loadNetlifyToml();
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+
+  assert.match(config, /command = "npm run build"/);
+  assert.match(config, /publish = "out"/);
+  assert.match(config, /functions = "netlify\/functions"/);
+  assert.match(config, /NETLIFY_NEXT_PLUGIN_SKIP = "true"/);
+  assert.doesNotMatch(config, /@netlify\/plugin-nextjs/);
+  assert.ok(!packageJson.dependencies?.next, 'static deploy should not install Next.js');
+  assert.ok(!packageJson.devDependencies?.next, 'static deploy should not install Next.js');
+  assert.ok(!packageJson.dependencies?.['@netlify/plugin-nextjs'], 'static deploy should not install Netlify Next plugin');
+  assert.ok(!packageJson.devDependencies?.['@netlify/plugin-nextjs'], 'static deploy should not install Netlify Next plugin');
+
+  await assert.rejects(access(new URL('../next.config.ts', import.meta.url)), /ENOENT/);
+  await assert.rejects(access(new URL('../next-env.d.ts', import.meta.url)), /ENOENT/);
+  await assert.rejects(access(new URL('../app', import.meta.url)), /ENOENT/);
+});
 
 test('generated dashboard artifact preserves auth token exchange hooks', async () => {
   const dashboard = await loadOutDashboardHtml();
