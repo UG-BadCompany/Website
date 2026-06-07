@@ -1,0 +1,6 @@
+import fs from 'node:fs/promises';
+const secretNames = ['OPENAI_API_KEY','SQUARE_ACCESS_TOKEN','RESEND_API_KEY','SQUARE_WEBHOOK_SIGNATURE_KEY','RECAPTCHA_SECRET_KEY','LICENSE_VERIFY_TOKEN'];
+const allowed = new Set(['Doc/PLAN_FINAL_v7.md','netlify/functions/shared/env-metadata.mjs','scripts/audit-all.mjs']);
+async function files(dir){ const out=[]; for(const e of await fs.readdir(dir,{withFileTypes:true})){ if(['.git','node_modules','out'].includes(e.name)) continue; const p=`${dir}/${e.name}`; if(e.isDirectory()) out.push(...await files(p)); else out.push(p.replace(/^\.\//,'')); } return out; }
+let ok=true; for(const f of await files('.')){ const text=await fs.readFile(f,'utf8').catch(()=>null); if(text==null) continue; if(!allowed.has(f) && /ta-contracting\.org|tacontracting\.netlify\.app/i.test(text)){ console.error(`Hardcoded customer domain in ${f}`); ok=false; } if(!allowed.has(f)){ for(const name of secretNames){ if(new RegExp(`${name}\s*=\s*['\"][^'\"]+`).test(text)){ console.error(`Possible hardcoded secret in ${f}`); ok=false; } } } if(/background:\s*(white|#fff)\b|color:\s*#000\b/i.test(text) && f.endsWith('.css')){ console.error(`Design token violation in ${f}`); ok=false; } }
+if(!ok) process.exit(1); console.log('audit:all passed');

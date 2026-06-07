@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "maintenance-plans",
+  "title": "Maintenance Plans",
+  "description": "Drop-in module for maintenance plans.",
+  "version": "1.0.0",
+  "category": "Operations",
+  "icon": "\ud83d\udd01",
+  "enabledByDefault": true,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "client"
+  ],
+  "nav": {
+    "showInSidebar": true,
+    "showInMobileNav": false,
+    "label": "Maintenance Plans",
+    "mobileLabel": "Maintenance",
+    "sortOrder": 150
+  },
+  "frontend": {
+    "basePath": "/modules/maintenance-plans/frontend",
+    "entry": "module.js",
+    "html": "module.html",
+    "css": "module.css",
+    "registerId": "maintenance-plans"
+  },
+  "backend": {
+    "functions": [
+      {
+        "name": "maintenance-plans",
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "route": "/api/modules/maintenance-plans/records",
+        "file": "backend/functions/records.mjs",
+        "permission": "maintenance.view"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "key": "maintenance.view",
+      "label": "Maintenance View",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "key": "maintenance.manage",
+      "label": "Maintenance Manage",
+      "defaultRoles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "workflowEvents": [
+    "record:viewed",
+    "record:saved"
+  ],
+  "settings": {
+    "dropIn": true
+  }
+}
