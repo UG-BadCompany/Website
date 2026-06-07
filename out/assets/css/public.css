@@ -1236,3 +1236,192 @@ html[data-theme="dark"] .premium-estimate-card {
 .contact-trust-list li { border:1px solid var(--color-border); border-radius:999px; padding:.5rem .75rem; background:color-mix(in srgb, var(--color-surface) 70%, transparent); font-weight:800; }
 .contact-grid a { color:inherit; text-decoration:none; }
 .project-card img, .job-photo-card img { cursor:zoom-in; }
+
+/* Homepage AI estimate hero visual restored as editor-driven demo content. */
+.estimate-hero-visual {
+  --estimate-glow: 1;
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+}
+.ai-estimate-demo-card {
+  position: relative;
+  width: min(100%, 520px);
+  min-height: clamp(520px, 58vw, 640px);
+  padding: clamp(1rem, 3vw, 1.45rem);
+  border: 1px solid color-mix(in srgb, #d8c093 28%, transparent);
+  border-radius: clamp(28px, 4vw, 42px);
+  background:
+    linear-gradient(color-mix(in srgb, #111827 78%, transparent), color-mix(in srgb, #111827 78%, transparent)),
+    var(--estimate-bg, linear-gradient(145deg, color-mix(in srgb, var(--lux-graphite) 92%, var(--color-surface)), color-mix(in srgb, var(--lux-copper) 34%, var(--lux-graphite))));
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 calc(28px * var(--estimate-glow)) calc(90px * var(--estimate-glow)) color-mix(in srgb, var(--lux-copper) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent);
+  overflow: hidden;
+  transform-style: preserve-3d;
+  animation: estimateFloat 7s ease-in-out infinite;
+}
+.ai-estimate-demo-card::before,
+.ai-estimate-demo-card::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.ai-estimate-demo-card::before {
+  width: 280px;
+  height: 280px;
+  right: -86px;
+  top: -74px;
+  background: radial-gradient(circle, color-mix(in srgb, #60a5fa 34%, transparent), transparent 68%);
+  filter: blur(8px);
+  opacity: calc(.45 + (.25 * var(--estimate-glow)));
+  animation: estimateGlowPulse 5.8s ease-in-out infinite;
+}
+.ai-estimate-demo-card::after {
+  width: 320px;
+  height: 320px;
+  left: -120px;
+  bottom: -118px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lux-gold) 30%, transparent), transparent 70%);
+  filter: blur(10px);
+  opacity: calc(.42 + (.24 * var(--estimate-glow)));
+  animation: estimateGlowPulse 6.8s ease-in-out infinite reverse;
+}
+.estimate-trade-badges {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  max-width: 92%;
+}
+.estimate-trade-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  padding: .62rem .8rem;
+  border: 1px solid color-mix(in srgb, #d8c093 25%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #111827 54%, transparent);
+  color: #f8efe0;
+  font-size: .8rem;
+  font-weight: 950;
+  letter-spacing: .01em;
+  box-shadow: 0 12px 34px rgba(0,0,0,.18);
+  backdrop-filter: blur(18px) saturate(1.2);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.estimate-trade-badge:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: color-mix(in srgb, var(--lux-gold) 62%, transparent);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--lux-gold) 18%, transparent);
+}
+.estimate-trade-badge i { font-style: normal; }
+.estimate-house-visual {
+  position: absolute;
+  z-index: 1;
+  top: 92px;
+  left: clamp(1.2rem, 4vw, 2.4rem);
+  right: clamp(1.2rem, 4vw, 2.4rem);
+  height: 245px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #d8c093 18%, transparent);
+  border-radius: 30px;
+  background: linear-gradient(135deg, color-mix(in srgb, #1d4ed8 20%, transparent), color-mix(in srgb, #d9b86f 10%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 16%, transparent), 0 24px 70px rgba(0,0,0,.18);
+  transform: translateZ(20px);
+}
+.estimate-house-visual.has-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  opacity: .86;
+}
+.estimate-house-visual span {
+  position: relative;
+  width: 154px;
+  height: 108px;
+  margin-top: 42px;
+  border: 5px solid color-mix(in srgb, #f8efe0 92%, transparent);
+  border-top: 0;
+  border-radius: 0 0 22px 22px;
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,.26));
+}
+.estimate-house-visual span::before {
+  content: "";
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  left: 17px;
+  top: -57px;
+  border-left: 5px solid currentColor;
+  border-top: 5px solid currentColor;
+  border-radius: 16px 0 0;
+  color: color-mix(in srgb, #f8efe0 92%, transparent);
+  transform: rotate(45deg);
+}
+.estimate-preview-panel {
+  position: absolute;
+  z-index: 4;
+  left: clamp(1rem, 4vw, 2rem);
+  right: clamp(1rem, 4vw, 2rem);
+  bottom: clamp(1rem, 3vw, 1.6rem);
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border: 1px solid color-mix(in srgb, #d8c093 26%, transparent);
+  border-radius: 26px;
+  background: color-mix(in srgb, #111827 68%, transparent);
+  color: #f8efe0;
+  box-shadow: 0 24px 70px rgba(0,0,0,.28);
+  backdrop-filter: blur(22px) saturate(1.35);
+  transform: translateZ(42px);
+}
+.estimate-panel-head,
+.estimate-status-line,
+.estimate-material-tags {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+.estimate-panel-head { justify-content: space-between; margin-bottom: .65rem; }
+.estimate-panel-head span { color: #bfdbfe; font-size: .74rem; font-weight: 950; text-transform: uppercase; letter-spacing: .12em; }
+.estimate-panel-head strong { display:grid; place-items:center; width:36px; height:36px; border-radius:14px; background: linear-gradient(135deg, #2563eb, var(--lux-gold)); color:#fff; font-size:.82rem; }
+.estimate-preview-panel h3 { margin: .2rem 0 .75rem; color: #fff8ea; font-size: clamp(1.35rem, 3vw, 2rem); letter-spacing: -.04em; }
+.estimate-preview-panel ul { list-style: none; padding: 0; margin: 0 0 .9rem; display: grid; gap: .35rem; color: #dbeafe; font-weight: 850; }
+.estimate-price-range { font-size: clamp(2rem, 5vw, 3rem); line-height: 1; letter-spacing: -.06em; font-weight: 950; color: #fff; margin: .7rem 0; }
+.estimate-material-tags span { padding: .42rem .58rem; border-radius: 999px; background: color-mix(in srgb, #60a5fa 18%, transparent); border: 1px solid color-mix(in srgb, #bfdbfe 18%, transparent); color: #eaf2ff; font-weight: 850; font-size: .82rem; }
+.estimate-status-line { margin-top: .9rem; color: #f7dfab; font-weight: 900; }
+.estimate-status-line i { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 7px rgba(34,197,94,.14); }
+@keyframes estimateFloat { 0%,100% { transform: translateY(0) rotateX(0) rotateY(0); } 50% { transform: translateY(-10px) rotateX(1.2deg) rotateY(-1deg); } }
+@keyframes estimateGlowPulse { 0%,100% { opacity: .7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .ai-estimate-demo-card,
+  .ai-estimate-demo-card::before,
+  .ai-estimate-demo-card::after { animation: none; }
+}
+@media (max-width: 960px) {
+  .estimate-hero-visual { margin-top: .5rem; }
+  .ai-estimate-demo-card { min-height: 560px; width: min(100%, 560px); }
+}
+@media (max-width: 680px) {
+  .estimate-hero-visual { justify-items: center; }
+  .ai-estimate-demo-card { min-height: 560px; border-radius: 30px; }
+  .estimate-trade-badges { max-width: 100%; gap: .45rem; }
+  .estimate-trade-badge { padding: .52rem .62rem; font-size: .74rem; }
+  .estimate-house-visual { top: 112px; height: 198px; }
+  .estimate-preview-panel { border-radius: 22px; }
+}
+@media (max-width: 430px) {
+  .ai-estimate-demo-card { min-height: 540px; padding: .85rem; }
+  .estimate-house-visual { left: .85rem; right: .85rem; }
+  .estimate-preview-panel { left: .85rem; right: .85rem; bottom: .85rem; }
+  .estimate-price-range { font-size: 2rem; }
+}
