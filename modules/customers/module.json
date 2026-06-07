@@ -1,0 +1,57 @@
+{
+  "id": "customers",
+  "version": "1.0.0",
+  "name": "Customers",
+  "description": "Drop-in module for Customers.",
+  "category": "Operations",
+  "minimumPlatform": "1.0.0",
+  "status": "stable",
+  "enabledByDefault": true,
+  "hidden": false,
+  "beta": false,
+  "experimental": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "label": "Customers",
+    "icon": "◼",
+    "order": 9
+  },
+  "permissions": [
+    {
+      "key": "customers.view",
+      "label": "Use Customers",
+      "group": "Customers",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "frontend": {
+    "entry": "/modules/customers/frontend/module.js",
+    "style": "/modules/customers/frontend/module.css"
+  },
+  "api": {
+    "handler": "modules/customers/backend/api.mjs",
+    "routes": [
+      {
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "path": "/records",
+        "permission": "customers.view"
+      }
+    ]
+  },
+  "homepageSections": [],
+  "workflows": []
+}

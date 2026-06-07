@@ -1,0 +1,55 @@
+{
+  "id": "users-company",
+  "version": "1.0.0",
+  "name": "Users / Company Management",
+  "description": "Drop-in module for Users / Company Management.",
+  "category": "Operations",
+  "minimumPlatform": "1.0.0",
+  "status": "stable",
+  "enabledByDefault": true,
+  "hidden": false,
+  "beta": false,
+  "experimental": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "nav": {
+    "label": "Users",
+    "icon": "◼",
+    "order": 10
+  },
+  "permissions": [
+    {
+      "key": "users.manage",
+      "label": "Use Users / Company Management",
+      "group": "Users / Company Management",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "frontend": {
+    "entry": "/modules/users-company/frontend/module.js",
+    "style": "/modules/users-company/frontend/module.css"
+  },
+  "api": {
+    "handler": "modules/users-company/backend/api.mjs",
+    "routes": [
+      {
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "path": "/records",
+        "permission": "users.manage"
+      }
+    ]
+  },
+  "homepageSections": [],
+  "workflows": []
+}

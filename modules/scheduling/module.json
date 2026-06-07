@@ -1,0 +1,57 @@
+{
+  "id": "scheduling",
+  "version": "1.0.0",
+  "name": "Scheduling",
+  "description": "Drop-in module for Scheduling.",
+  "category": "Operations",
+  "minimumPlatform": "1.0.0",
+  "status": "stable",
+  "enabledByDefault": true,
+  "hidden": false,
+  "beta": false,
+  "experimental": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "label": "Schedule",
+    "icon": "◼",
+    "order": 5
+  },
+  "permissions": [
+    {
+      "key": "scheduling.view",
+      "label": "Use Scheduling",
+      "group": "Scheduling",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "frontend": {
+    "entry": "/modules/scheduling/frontend/module.js",
+    "style": "/modules/scheduling/frontend/module.css"
+  },
+  "api": {
+    "handler": "modules/scheduling/backend/api.mjs",
+    "routes": [
+      {
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "path": "/records",
+        "permission": "scheduling.view"
+      }
+    ]
+  },
+  "homepageSections": [],
+  "workflows": []
+}

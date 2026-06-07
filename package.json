@@ -1,0 +1,23 @@
+{
+  "name": "contractor-cmms-ai-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
+    "build": "node scripts/discover-modules.mjs && node scripts/build-static-site.mjs",
+    "postbuild": "node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs",
+    "test": "node tests/run-tests.mjs",
+    "verify:all": "npm run verify:installer && npm run audit:all",
+    "verify:installer": "node scripts/verify-installer.mjs",
+    "audit:all": "npm run audit:modules && npm run audit:migrations && npm run audit:theme && npm run audit:functions",
+    "audit:modules": "node scripts/audit-modules.mjs",
+    "audit:migrations": "node scripts/audit-migrations.mjs",
+    "audit:theme": "node scripts/audit-theme.mjs",
+    "audit:functions": "node scripts/audit-functions.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "engines": { "node": "20.x" }
+}

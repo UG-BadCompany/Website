@@ -1,0 +1,57 @@
+{
+  "id": "module-manager",
+  "version": "1.0.0",
+  "name": "Module Manager",
+  "description": "Drop-in module for Module Manager.",
+  "category": "System",
+  "minimumPlatform": "1.0.0",
+  "status": "stable",
+  "enabledByDefault": true,
+  "hidden": false,
+  "beta": false,
+  "experimental": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "label": "Modules",
+    "icon": "◼",
+    "order": 14
+  },
+  "permissions": [
+    {
+      "key": "modules.manage",
+      "label": "Use Module Manager",
+      "group": "Module Manager",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "frontend": {
+    "entry": "/modules/module-manager/frontend/module.js",
+    "style": "/modules/module-manager/frontend/module.css"
+  },
+  "api": {
+    "handler": "modules/module-manager/backend/api.mjs",
+    "routes": [
+      {
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "path": "/records",
+        "permission": "modules.manage"
+      }
+    ]
+  },
+  "homepageSections": [],
+  "workflows": []
+}

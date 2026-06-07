@@ -1,0 +1,57 @@
+{
+  "id": "work-orders",
+  "version": "1.0.0",
+  "name": "Work Orders",
+  "description": "Drop-in module for Work Orders.",
+  "category": "Operations",
+  "minimumPlatform": "1.0.0",
+  "status": "stable",
+  "enabledByDefault": true,
+  "hidden": false,
+  "beta": false,
+  "experimental": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker",
+    "client"
+  ],
+  "nav": {
+    "label": "Work Orders",
+    "icon": "◼",
+    "order": 4
+  },
+  "permissions": [
+    {
+      "key": "work-orders.view",
+      "label": "Use Work Orders",
+      "group": "Work Orders",
+      "defaultRoles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "frontend": {
+    "entry": "/modules/work-orders/frontend/module.js",
+    "style": "/modules/work-orders/frontend/module.css"
+  },
+  "api": {
+    "handler": "modules/work-orders/backend/api.mjs",
+    "routes": [
+      {
+        "method": [
+          "GET",
+          "POST"
+        ],
+        "path": "/records",
+        "permission": "work-orders.view"
+      }
+    ]
+  },
+  "homepageSections": [],
+  "workflows": []
+}

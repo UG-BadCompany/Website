@@ -1,0 +1,85 @@
+{
+  "generatedAt": "2026-06-07T23:22:23.193Z",
+  "modules": [
+    {
+      "moduleId": "ai-photo-estimate",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "ai-troubleshooting",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "customers",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "finance",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "homepage-editor",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "inventory",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "invoices",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "maintenance-plans",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "module-manager",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "quote-center",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "reports",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "scheduling",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "theme-manager",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "users-company",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "work-orders",
+      "enabledByDefault": true,
+      "dependencies": []
+    },
+    {
+      "moduleId": "workspace-permissions",
+      "enabledByDefault": true,
+      "dependencies": []
+    }
+  ]
+}

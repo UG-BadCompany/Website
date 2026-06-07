@@ -1,0 +1,1 @@
+import { promises as fs } from 'fs'; const funcs=(await fs.readdir('netlify/functions')).filter(f=>f.endsWith('.mjs')); if(funcs.length<7) throw new Error('missing functions'); console.log(`Function audit passed (${funcs.length} functions).`);

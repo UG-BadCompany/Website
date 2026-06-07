@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { promises as fs } from 'fs';
+import { handler as installStatus } from '../netlify/functions/install-status.mjs';
+import { handler as install } from '../netlify/functions/install.mjs';
+import { handler as dashboard } from '../netlify/functions/dashboard-bootstrap.mjs';
+import { handler as moduleApi } from '../netlify/functions/module-api.mjs';
+import { simulateWorkflow } from '../netlify/functions/shared/workflow-engine.mjs';
+async function call(fn,event={}){const r=await fn({httpMethod:'GET',path:'',...event}); return {statusCode:r.statusCode,body:JSON.parse(r.body)}}
+await fs.rm('.data',{recursive:true,force:true});
+let r=await call(installStatus); assert.equal(r.body.needsInstall,true);
+r=await call(install,{path:'/api/install/health'}); assert.equal(r.body.ok,true); assert.ok(r.body.data.environment.find(e=>e.key==='RESEND_API_KEY').secret);
+r=await call(install,{httpMethod:'POST',path:'/api/install/draft',body:JSON.stringify({draft:{companyName:'Acme Service',ownerName:'Pat Owner',ownerEmail:'owner@example.com',SITE_URL:'https://example.com'},currentStep:'review'})}); assert.equal(r.body.ok,true);
+r=await call(install,{httpMethod:'POST',path:'/api/install/finish',body:JSON.stringify({confirm:true})}); assert.equal(r.body.installationComplete,true);
+r=await call(installStatus); assert.equal(r.body.installed,true);
+r=await call(dashboard); assert.equal(r.body.data.user.superOwner,true); assert.ok(r.body.data.workspaceAccess.includes('public-invoice-view')); assert.ok(r.body.data.modules.length>=16);
+r=await call(moduleApi,{path:'/api/modules/work-orders/records',httpMethod:'GET'}); assert.equal(r.body.ok,true); assert.equal(r.body.data.moduleId,'work-orders');
+const wf=simulateWorkflow(); assert.equal(wf.activeQueues.workOrders,0); assert.equal(wf.historyQueues.closed,1);
+const bootstrap=await fs.readFile('public/config/bootstrap.json','utf8'); assert.ok(!bootstrap.includes('RESEND_API_KEY')); assert.ok(!bootstrap.includes('OPENAI_API_KEY'));
+await fs.writeFile('public/config/bootstrap.json', JSON.stringify({generatedAt:null,installationComplete:false,company:{displayName:'Setup Required'},theme:{mode:'system',primary:'#2563eb'},homepage:{hero:{headline:'Setup required',subheadline:'Complete installation to publish the homepage.'}},modules:[]}, null, 2));
+await fs.rm('.data',{recursive:true,force:true});
+console.log('All tests passed.');
