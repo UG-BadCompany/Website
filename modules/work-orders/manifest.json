@@ -1,0 +1,23 @@
+{
+  "id": "work-orders",
+  "name": "Work Orders",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [
+    "quote-center",
+    "workflow-engine"
+  ],
+  "category": "operations",
+  "route": "/dashboard/work-orders",
+  "nav": {
+    "label": "Work Orders",
+    "icon": "square",
+    "order": 12
+  },
+  "permissions": [
+    "workorder.manage"
+  ],
+  "healthCheck": "/api/modules/work-orders/health",
+  "enabledByDefault": true,
+  "description": "Assign, schedule, complete, review, and archive work orders."
+}

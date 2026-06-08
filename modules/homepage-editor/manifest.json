@@ -1,0 +1,20 @@
+{
+  "id": "homepage-editor",
+  "name": "Homepage Editor",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "system",
+  "route": "/dashboard/system/homepage",
+  "nav": {
+    "label": "Homepage Editor",
+    "icon": "square",
+    "order": 23
+  },
+  "permissions": [
+    "homepage.manage"
+  ],
+  "healthCheck": "/api/modules/homepage-editor/health",
+  "enabledByDefault": true,
+  "description": "Page builder for hero, services, gallery, stats, CTA, footer, and ordering."
+}

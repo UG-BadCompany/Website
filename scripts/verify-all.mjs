@@ -1,0 +1,12 @@
+import fs from 'fs';
+import assert from 'node:assert/strict';
+const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
+assert.equal(pkg.scripts.build, 'node scripts/build-static-site.mjs');
+assert.equal(pkg.engines.node, '20.x');
+const toml = fs.readFileSync('netlify.toml','utf8');
+assert.match(toml,/publish = "out"/);
+assert.match(toml,/functions = "netlify\/functions"/);
+assert.match(toml,/NETLIFY_NEXT_PLUGIN_SKIP = "true"/);
+assert.doesNotMatch(toml,/@netlify\/plugin-nextjs/);
+for (const file of ['src/assets/app.js','netlify/functions/install-status.js','netlify/functions/install-finish.js','netlify/functions/modules.js']) assert.ok(fs.existsSync(file), file);
+console.log('verify:all passed.');

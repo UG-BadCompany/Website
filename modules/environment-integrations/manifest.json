@@ -1,0 +1,20 @@
+{
+  "id": "environment-integrations",
+  "name": "Environment & Integrations",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "system",
+  "route": "/dashboard/system/integrations",
+  "nav": {
+    "label": "Environment & Integrations",
+    "icon": "square",
+    "order": 32
+  },
+  "permissions": [
+    "integrations.manage"
+  ],
+  "healthCheck": "/api/modules/environment-integrations/health",
+  "enabledByDefault": true,
+  "description": "Post-install OpenAI, Resend, Square, SMTP, SerpAPI, license, and webhook setup."
+}

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { discoverModules, validateModuleCompatibility } from '../src/lib/modules.mjs';
+import { finishInstallation, safeInstallStatus } from '../src/lib/state.mjs';
+const modules = validateModuleCompatibility(discoverModules());
+assert.ok(modules.length >= 20, 'core module registry should discover drop-in modules');
+assert.equal(modules.every((m) => m.compatible), true, 'module dependencies should be compatible');
+assert.equal(safeInstallStatus({}).needsInstall, true, 'empty database/status should need install safely');
+const result = finishInstallation({ companyProfile: true, ownerAccount: true, themeSettings: true, homepageConfig: true, moduleRegistry: true, servicesTrades: true }, modules);
+assert.equal(result.ok, true, 'finish install should succeed with optional integrations missing');
+assert.equal(result.installationComplete, true, 'finish install sets installationComplete true');
+assert.ok(result.warnings.length >= 3, 'missing optional integrations are warnings');
+console.log('Platform unit tests passed.');

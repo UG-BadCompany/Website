@@ -1,0 +1,20 @@
+{
+  "id": "workflow-engine",
+  "name": "Workflow Engine",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "core",
+  "route": "/dashboard/workflow",
+  "nav": {
+    "label": "Workflow Engine",
+    "icon": "square",
+    "order": 29
+  },
+  "permissions": [
+    "workflow.manage"
+  ],
+  "healthCheck": "/api/modules/workflow-engine/health",
+  "enabledByDefault": true,
+  "description": "Single workflow object from request to archive."
+}

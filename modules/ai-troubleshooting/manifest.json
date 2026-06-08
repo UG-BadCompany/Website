@@ -1,0 +1,20 @@
+{
+  "id": "ai-troubleshooting",
+  "name": "AI Troubleshooting",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "ai",
+  "route": "/dashboard/ai/troubleshooting",
+  "nav": {
+    "label": "AI Troubleshooting",
+    "icon": "square",
+    "order": 20
+  },
+  "permissions": [
+    "ai.troubleshoot"
+  ],
+  "healthCheck": "/api/modules/ai-troubleshooting/health",
+  "enabledByDefault": true,
+  "description": "Troubleshooting assistant with graceful missing-key warnings."
+}

@@ -1,0 +1,2 @@
+import { json, readState } from './_lib/store.js';
+export async function handler(){try{const s=readState(); if(!s.installation_complete) return json({ok:true,installed:false,installationComplete:false,needsInstall:true,currentStep:s.current_step||'welcome'}); return json({ok:true,installed:true,installationComplete:true,needsInstall:false,installedAt:s.installed_at,installedVersion:s.installed_version||'1.0.0'});}catch{return json({ok:true,installed:false,installationComplete:false,needsInstall:true,currentStep:'welcome'})}}

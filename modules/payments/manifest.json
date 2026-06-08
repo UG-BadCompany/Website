@@ -1,0 +1,22 @@
+{
+  "id": "payments",
+  "name": "Square Payments",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [
+    "invoices"
+  ],
+  "category": "finance",
+  "route": "/dashboard/payments",
+  "nav": {
+    "label": "Square Payments",
+    "icon": "square",
+    "order": 16
+  },
+  "permissions": [
+    "payment.manage"
+  ],
+  "healthCheck": "/api/modules/payments/health",
+  "enabledByDefault": true,
+  "description": "Create Square payment links when configured; manual payment fallback otherwise."
+}

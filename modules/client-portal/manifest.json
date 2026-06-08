@@ -1,0 +1,20 @@
+{
+  "id": "client-portal",
+  "name": "Client Portal",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "client",
+  "route": "/portal/",
+  "nav": {
+    "label": "Client Portal",
+    "icon": "square",
+    "order": 30
+  },
+  "permissions": [
+    "portal.access"
+  ],
+  "healthCheck": "/api/modules/client-portal/health",
+  "enabledByDefault": true,
+  "description": "Client request, quote, invoice, payment, and history portal."
+}

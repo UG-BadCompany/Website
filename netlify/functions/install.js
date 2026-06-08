@@ -1,0 +1,2 @@
+import { json, readState, writeState, optionalWarnings } from './_lib/store.js';
+export async function handler(event){if(event.httpMethod==='GET') return json({ok:true,state:readState(),warnings:optionalWarnings()}); const body=event.body?JSON.parse(event.body):{}; return json({ok:true,state:writeState({current_step:body.currentStep||body.current_step||'draft',metadata:body}),warnings:optionalWarnings()});}

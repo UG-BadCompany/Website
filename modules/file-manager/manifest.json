@@ -1,0 +1,20 @@
+{
+  "id": "file-manager",
+  "name": "File Manager",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "system",
+  "route": "/dashboard/system/files",
+  "nav": {
+    "label": "File Manager",
+    "icon": "square",
+    "order": 21
+  },
+  "permissions": [
+    "files.manage"
+  ],
+  "healthCheck": "/api/modules/file-manager/health",
+  "enabledByDefault": true,
+  "description": "Manage logos, gallery, AI uploads, invoice PDFs, and attachments."
+}
