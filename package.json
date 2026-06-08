@@ -1,0 +1,17 @@
+{
+  "name": "white-label-contractor-cmms-ai-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "20.x" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@netlify/database": "^1.0.0",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {}
+}

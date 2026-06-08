@@ -1,0 +1,75 @@
+{
+  "id": "module-manager",
+  "name": "Module Manager",
+  "icon": "puzzle",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/module-manager",
+  "apiBase": "/api/modules/module-manager",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 29
+  },
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "permissions": [
+    {
+      "key": "module-manager.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "module-manager.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "module-manager.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "module-manager.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "module-manager.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "module-manager.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Module Manager records yet",
+    "body": "Use Module Manager to manage this part of your contractor CMMS workflow.",
+    "action": "Open Module Manager"
+  },
+  "workflowCapabilities": false
+}

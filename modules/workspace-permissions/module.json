@@ -1,0 +1,75 @@
+{
+  "id": "workspace-permissions",
+  "name": "Workspace & Permissions",
+  "icon": "shield-check",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/workspace-permissions",
+  "apiBase": "/api/modules/workspace-permissions",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 26
+  },
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "permissions": [
+    {
+      "key": "workspace-permissions.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "workspace-permissions.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "workspace-permissions.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "workspace-permissions.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "workspace-permissions.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "workspace-permissions.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Workspace & Permissions records yet",
+    "body": "Use Workspace & Permissions to manage this part of your contractor CMMS workflow.",
+    "action": "Open Workspace & Permissions"
+  },
+  "workflowCapabilities": false
+}

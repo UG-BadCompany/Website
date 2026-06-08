@@ -1,0 +1,77 @@
+{
+  "id": "ai-quote-builder",
+  "name": "AI Quote Builder",
+  "icon": "sparkles",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "AI",
+  "route": "/dashboard/modules/ai-quote-builder",
+  "apiBase": "/api/modules/ai-quote-builder",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 15
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "permissions": [
+    {
+      "key": "ai-quote-builder.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "ai-quote-builder.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "ai-quote-builder.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "ai-quote-builder.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "ai-quote-builder.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "ai-quote-builder.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No AI Quote Builder records yet",
+    "body": "Use AI Quote Builder to manage this part of your contractor CMMS workflow.",
+    "action": "Open AI Quote Builder"
+  },
+  "workflowCapabilities": false
+}

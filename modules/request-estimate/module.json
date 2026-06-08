@@ -1,0 +1,79 @@
+{
+  "id": "request-estimate",
+  "name": "Request Estimate",
+  "icon": "clipboard-plus",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/request-estimate",
+  "apiBase": "/api/modules/request-estimate",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 12
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "client"
+  ],
+  "permissions": [
+    {
+      "key": "request-estimate.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "key": "request-estimate.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "request-estimate.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "request-estimate.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "request-estimate.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "request-estimate.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Request Estimate records yet",
+    "body": "Use Request Estimate to manage this part of your contractor CMMS workflow.",
+    "action": "Open Request Estimate"
+  },
+  "workflowCapabilities": true
+}

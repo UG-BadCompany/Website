@@ -1,0 +1,75 @@
+{
+  "id": "platform-health",
+  "name": "Platform Health",
+  "icon": "activity",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "System",
+  "route": "/dashboard/modules/platform-health",
+  "apiBase": "/api/modules/platform-health",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 31
+  },
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "permissions": [
+    {
+      "key": "platform-health.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "platform-health.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "platform-health.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "platform-health.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "platform-health.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "platform-health.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Platform Health records yet",
+    "body": "Use Platform Health to manage this part of your contractor CMMS workflow.",
+    "action": "Open Platform Health"
+  },
+  "workflowCapabilities": false
+}

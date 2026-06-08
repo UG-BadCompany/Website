@@ -1,0 +1,77 @@
+{
+  "id": "customers",
+  "name": "Customers / Clients",
+  "icon": "users",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/customers",
+  "apiBase": "/api/modules/customers",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 11
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "permissions": [
+    {
+      "key": "customers.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "key": "customers.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "customers.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "customers.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "customers.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "customers.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Customers / Clients records yet",
+    "body": "Use Customers / Clients to manage this part of your contractor CMMS workflow.",
+    "action": "Open Customers / Clients"
+  },
+  "workflowCapabilities": false
+}

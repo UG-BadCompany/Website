@@ -1,0 +1,75 @@
+{
+  "id": "system-center",
+  "name": "System Center",
+  "icon": "settings",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "System",
+  "route": "/dashboard/modules/system-center",
+  "apiBase": "/api/modules/system-center",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 35
+  },
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "permissions": [
+    {
+      "key": "system-center.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "system-center.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "system-center.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "system-center.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "system-center.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "system-center.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No System Center records yet",
+    "body": "Use System Center to manage this part of your contractor CMMS workflow.",
+    "action": "Open System Center"
+  },
+  "workflowCapabilities": false
+}
