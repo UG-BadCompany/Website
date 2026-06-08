@@ -97,18 +97,20 @@ function val(path, fallback=''){ return path.split('.').reduce((o,k)=>o?.[k], st
 function renderStep(){ return [stepDatabase, stepCompany, stepBranding, stepTheme, stepOwner, stepModules, stepServices, stepHomepage, stepReview][state.step](); }
 function statusLine(ok, good, bad){ return `<div class="${ok?'status-ok':'status-bad'}">${ok?'✓':'✗'} ${ok?good:bad}</div>`; }
 function waitingLine(text){ return `<div class="muted">${text}</div>`; }
-function sourceLabel(db){ return db.connectionSourceLabel || (db.selectedConnectionSource === '@netlify/database:getConnectionString' ? '@netlify/database getConnectionString()' : db.selectedConnectionSource) || db.environmentVariableUsed || 'None detected'; }
+function sourceLabel(db){ return db.connectionSourceLabel || db.selectedConnectionSource || db.environmentVariableUsed || 'None detected'; }
+function connectionAttemptLabel(db){ return db.connectionAttempt || (db.connected ? 'Succeeded' : (db.configured || db.databaseUrlDetected ? 'Failed' : 'Not Run')); }
 function dbDiagnostics(db){
-  const rawEnvFound = db.rawEnvUrlAvailable || (db.databaseUrlDetected && db.selectedConnectionSource !== '@netlify/database:getConnectionString');
   return [
     `Database Client: ${db.databaseClientInstalled || db.clientInstalled ? 'Installed' : 'Missing'}`,
-    `getConnectionString(): ${db.getConnectionStringAvailable ? 'Available' : 'Failed'}`,
-    `Raw DB URL Env: ${rawEnvFound ? 'Found' : 'Missing'}`,
+    `DATABASE_URL: ${db.databaseUrlEnvDetected ? 'Detected' : 'Missing'}`,
+    `NETLIFY_DATABASE_URL: ${db.netlifyDatabaseUrlEnvDetected ? 'Detected' : 'Missing'}`,
+    `getConnectionString(): ${db.getConnectionStringSucceeded ? 'Succeeded' : 'Failed'}`,
     `Selected Connection Source: ${sourceLabel(db)}`,
-    `Connection Attempt: ${db.connectionAttempt || (db.connected ? 'Success' : 'Failed')}`,
+    `Connection Attempt: ${connectionAttemptLabel(db)}`,
     `Schema: ${db.schemaReady ? 'Ready' : 'Not Ready'}`,
-    `Write Test: ${db.writeTestPassed ? 'Passed' : 'Failed'}`
-  ].join('\n');
+    `Write Test: ${db.writeTestPassed ? 'Passed' : 'Failed'}`,
+    db.connectionError || db.safeDetails ? `Safe Error: ${db.connectionError || db.safeDetails}` : ''
+  ].filter(Boolean).join('\n');
 }
 async function copyDiagnostics(){
   const text=dbDiagnostics(state.db||{});
@@ -118,24 +120,28 @@ async function copyDiagnostics(){
 function stepDatabase(){
   const db=state.db||{};
   const clientInstalled = db.databaseClientInstalled ?? db.clientInstalled ?? true;
-  const dbDetected = Boolean(db.connected || db.databaseUrlDetected || db.configured);
+  const connectionConfigured = Boolean(db.configured || db.databaseUrlDetected);
+  const dbDetected = Boolean(db.connected || connectionConfigured);
   const dashboardUrl = 'https://app.netlify.com/';
   const manualLinkRequired = Boolean(db.manualDatabaseLinkRequired);
-  const provisioningText = `<p><b>Checking Netlify Database provisioning...</b></p><p><b>Netlify Database client is installed, but the runtime did not provide a connection string yet.</b></p><p>This platform includes @netlify/database, so Netlify should automatically provision a database during deploy.</p><p>This can happen immediately after the first deploy. Redeploy or click Retry Database Check after Netlify finishes provisioning.</p>`;
+  const connectionFailed = connectionConfigured && !db.connected && connectionAttemptLabel(db) === 'Failed';
+  const provisioningText = `<p><b>Waiting for Netlify Database provisioning...</b></p><p>This platform includes @netlify/database, so Netlify should automatically provision a database during deploy.</p><p>This can happen immediately after the first deploy. Redeploy or click Retry Database Check after Netlify finishes provisioning.</p>`;
   const manualLinkText = provisioningText;
-  const readyFlow = dbDetected ? `<div class="card"><p><b>Database connected.</b></p><p>Creating tables...</p><p>Seeding platform...</p><p>Running write test...</p><p><b>${db.schemaReady && db.writeTestPassed ? 'Database ready.' : 'Database bootstrap can run now.'}</b></p></div>` : '';
+  const readyFlow = db.connected ? `<div class="card"><p><b>Database connected.</b></p><p>Creating tables...</p><p>Seeding platform...</p><p>Running write test...</p><p><b>${db.schemaReady && db.writeTestPassed ? 'Database ready.' : 'Database bootstrap can run now.'}</b></p></div>` : '';
+  const failureText = connectionFailed ? `<div class="card status-bad"><p><b>A database connection string was found, but the connection attempt failed.</b></p><p>Review the diagnostics below for the safe error message.</p><pre>${escapeHtml(db.connectionError || db.safeDetails || 'No safe error was returned.')}</pre></div>` : '';
   return `<h2>Database Setup</h2>
     <p>The installer tracks the database client package, linked database resource, schema bootstrap, and write verification as four separate states.</p>
     <div class="grid cols-2">
       <div class="card"><b>Database Client</b>${statusLine(clientInstalled,'Installed','Missing')}</div>
-      <div class="card"><b>Database Connection</b>${statusLine(dbDetected,'Connected','No Database Linked')}</div>
+      <div class="card"><b>Database Connection</b>${statusLine(Boolean(db.connected),'Connected', connectionConfigured ? 'Connection Failed' : 'No Database Linked')}</div>
       <div class="card"><b>Schema Bootstrap</b>${dbDetected ? statusLine(Boolean(db.schemaReady),'Schema Ready','Not Ready') : waitingLine('Waiting for database connection')}</div>
       <div class="card"><b>Write Verification</b>${db.schemaReady ? statusLine(Boolean(db.writeTestPassed),'Write Test Passed','Failed') : waitingLine('Waiting for schema bootstrap')}</div>
     </div>
     ${readyFlow}
+    ${failureText}
     ${dbDetected ? '' : `<div class="card">${manualLinkRequired ? manualLinkText : provisioningText}<p>Once connected, this installer will automatically:</p><ul><li>Create all required CMMS tables</li><li>Create indexes</li><li>Seed roles and permissions</li><li>Register modules</li><li>Create the owner account</li><li>Verify database writes</li></ul><p><b>No manual SQL is required.</b></p></div>`}
     ${manualLinkRequired ? `<div class="card"><h3>Manual database fallback</h3><ol><li>Open Netlify Dashboard</li><li>Open this Site</li><li>Storage → Database</li><li>Create or Link a Database</li><li>Redeploy if prompted</li><li>Return here</li><li>Click Retry Database Check</li></ol><p><a href="${dashboardUrl}" target="_blank" rel="noreferrer"><button type="button">Open Netlify Dashboard</button></a> <button type="button" class="secondary" id="retryDbInline">Retry Database Check</button> <button type="button" class="ghost" id="copyDiagnostics">Copy Diagnostics</button></p></div>` : `<div class="card"><button type="button" class="secondary" id="retryDbInline">Retry Database Check</button> <button type="button" class="ghost" id="copyDiagnostics">Copy Diagnostics</button></div>`}
-    <details class="card"><summary><b>Diagnostics</b></summary><dl><dt>Database Client:</dt><dd>${clientInstalled?'Installed':'Missing'}</dd><dt>getConnectionString():</dt><dd>${db.getConnectionStringAvailable?'Available':'Failed'}</dd><dt>Raw DB URL Env:</dt><dd>${db.rawEnvUrlAvailable?'Found':'Missing'}</dd><dt>Selected Connection Source:</dt><dd>${escapeHtml(sourceLabel(db))}</dd><dt>Connection Attempt:</dt><dd>${escapeHtml(db.connectionAttempt || (db.connected?'Success':'Failed'))}</dd><dt>Schema:</dt><dd>${db.schemaReady?'Ready':'Not Ready'}</dd><dt>Write Test:</dt><dd>${db.writeTestPassed?'Passed':'Failed'}</dd></dl><p class="muted">Actual database URL values are never displayed.</p></details>`;
+    <details class="card"><summary><b>Diagnostics</b></summary><dl><dt>Database Client:</dt><dd>${clientInstalled?'Installed':'Missing'}</dd><dt>DATABASE_URL:</dt><dd>${db.databaseUrlEnvDetected?'Detected':'Missing'}</dd><dt>NETLIFY_DATABASE_URL:</dt><dd>${db.netlifyDatabaseUrlEnvDetected?'Detected':'Missing'}</dd><dt>getConnectionString():</dt><dd>${db.getConnectionStringSucceeded?'Succeeded':'Failed'}</dd><dt>Selected Connection Source:</dt><dd>${escapeHtml(sourceLabel(db))}</dd><dt>Connection Attempt:</dt><dd>${escapeHtml(connectionAttemptLabel(db))}</dd><dt>Schema:</dt><dd>${db.schemaReady?'Ready':'Not Ready'}</dd><dt>Write Test:</dt><dd>${db.writeTestPassed?'Passed':'Failed'}</dd><dt>Safe Error:</dt><dd>${escapeHtml(db.connectionError || db.safeDetails || 'None')}</dd></dl><p class="muted">Actual database URL values are never displayed.</p></details>`;
 }
 function stepCompany(){ return `<h2>Company Profile</h2><div class="form-row"><label class="field">Company name<input data-field="company.name" value="${escapeHtml(val('company.name',''))}"></label><label class="field">Email<input data-field="company.email" value="${escapeHtml(val('company.email',''))}"></label><label class="field">Phone<input data-field="company.phone" value="${escapeHtml(val('company.phone',''))}"></label><label class="field">Website<input data-field="company.website" value="${escapeHtml(val('company.website',''))}"></label></div><label class="field">Address<textarea data-field="company.address">${escapeHtml(val('company.address',''))}</textarea></label>`; }
 function stepBranding(){ return `<h2>Branding Assets</h2><div class="form-row"><label class="field">Logo upload<input id="logoUpload" type="file" accept="image/*"></label><label class="field">Favicon upload<input id="faviconUpload" type="file" accept="image/*"></label></div><p class="muted">Assets are encoded into the installer draft and written through the database-backed file manager after install, rather than URL-only settings.</p><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div>`; }
