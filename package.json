@@ -1,0 +1,14 @@
+{
+  "name": "white-label-contractor-cmms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/platform.test.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "pg": "latest"
+  }
+}
