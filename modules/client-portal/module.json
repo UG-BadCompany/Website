@@ -1,0 +1,77 @@
+{
+  "id": "client-portal",
+  "name": "Client Portal",
+  "icon": "door-open",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Portal",
+  "route": "/dashboard/modules/client-portal",
+  "apiBase": "/api/modules/client-portal",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 39
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "client"
+  ],
+  "permissions": [
+    {
+      "key": "client-portal.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "client"
+      ]
+    },
+    {
+      "key": "client-portal.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "client-portal.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "client-portal.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "client-portal.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "client-portal.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Client Portal records yet",
+    "body": "Use Client Portal to manage this part of your contractor CMMS workflow.",
+    "action": "Open Client Portal"
+  },
+  "workflowCapabilities": false
+}

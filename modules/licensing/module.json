@@ -1,0 +1,73 @@
+{
+  "id": "licensing",
+  "name": "Licensing",
+  "icon": "badge-check",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "System",
+  "route": "/dashboard/modules/licensing",
+  "apiBase": "/api/modules/licensing",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 37
+  },
+  "workspaces": [
+    "owner"
+  ],
+  "permissions": [
+    {
+      "key": "licensing.view",
+      "action": "view",
+      "roles": [
+        "owner"
+      ]
+    },
+    {
+      "key": "licensing.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "licensing.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "licensing.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "licensing.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "licensing.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Licensing records yet",
+    "body": "Use Licensing to manage this part of your contractor CMMS workflow.",
+    "action": "Open Licensing"
+  },
+  "workflowCapabilities": false
+}

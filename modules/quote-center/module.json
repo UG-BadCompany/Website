@@ -1,0 +1,79 @@
+{
+  "id": "quote-center",
+  "name": "Estimate & Quote Center",
+  "icon": "file-pen",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/quote-center",
+  "apiBase": "/api/modules/quote-center",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 13
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "client"
+  ],
+  "permissions": [
+    {
+      "key": "quote-center.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "key": "quote-center.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "quote-center.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "quote-center.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "quote-center.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "quote-center.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Estimate & Quote Center records yet",
+    "body": "Use Estimate & Quote Center to manage this part of your contractor CMMS workflow.",
+    "action": "Open Estimate & Quote Center"
+  },
+  "workflowCapabilities": true
+}

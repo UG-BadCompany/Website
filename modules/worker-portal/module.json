@@ -1,0 +1,79 @@
+{
+  "id": "worker-portal",
+  "name": "Worker Portal",
+  "icon": "briefcase",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Portal",
+  "route": "/dashboard/modules/worker-portal",
+  "apiBase": "/api/modules/worker-portal",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 40
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "permissions": [
+    {
+      "key": "worker-portal.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "key": "worker-portal.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "worker-portal.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "worker-portal.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "worker-portal.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "worker-portal.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Worker Portal records yet",
+    "body": "Use Worker Portal to manage this part of your contractor CMMS workflow.",
+    "action": "Open Worker Portal"
+  },
+  "workflowCapabilities": false
+}

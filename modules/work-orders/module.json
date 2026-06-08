@@ -1,0 +1,79 @@
+{
+  "id": "work-orders",
+  "name": "Work Orders",
+  "icon": "wrench",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/work-orders",
+  "apiBase": "/api/modules/work-orders",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 17
+  },
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "permissions": [
+    {
+      "key": "work-orders.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "key": "work-orders.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "work-orders.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "work-orders.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "work-orders.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "work-orders.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Work Orders records yet",
+    "body": "Use Work Orders to manage this part of your contractor CMMS workflow.",
+    "action": "Open Work Orders"
+  },
+  "workflowCapabilities": true
+}

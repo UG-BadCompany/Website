@@ -1,0 +1,75 @@
+{
+  "id": "theme-manager",
+  "name": "Theme Manager",
+  "icon": "palette",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "Operations",
+  "route": "/dashboard/modules/theme-manager",
+  "apiBase": "/api/modules/theme-manager",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 27
+  },
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "permissions": [
+    {
+      "key": "theme-manager.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "theme-manager.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "theme-manager.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "theme-manager.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "theme-manager.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "theme-manager.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Theme Manager records yet",
+    "body": "Use Theme Manager to manage this part of your contractor CMMS workflow.",
+    "action": "Open Theme Manager"
+  },
+  "workflowCapabilities": false
+}

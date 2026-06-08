@@ -1,0 +1,75 @@
+{
+  "id": "audit-logs",
+  "name": "Audit Logs",
+  "icon": "scroll-text",
+  "version": "1.0.0",
+  "enabledByDefault": true,
+  "category": "System",
+  "route": "/dashboard/modules/audit-logs",
+  "apiBase": "/api/modules/audit-logs",
+  "nav": {
+    "sidebar": true,
+    "mobile": true,
+    "order": 33
+  },
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "permissions": [
+    {
+      "key": "audit-logs.view",
+      "action": "view",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "audit-logs.create",
+      "action": "create",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "audit-logs.update",
+      "action": "update",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "audit-logs.delete",
+      "action": "delete",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "audit-logs.approve",
+      "action": "approve",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "key": "audit-logs.export",
+      "action": "export",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "No Audit Logs records yet",
+    "body": "Use Audit Logs to manage this part of your contractor CMMS workflow.",
+    "action": "Open Audit Logs"
+  },
+  "workflowCapabilities": false
+}
