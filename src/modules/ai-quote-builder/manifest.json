@@ -1,0 +1,25 @@
+{
+  "id": "ai-quote-builder",
+  "label": "AI Quote Builder",
+  "group": "AI Tools",
+  "icon": "✨",
+  "route": "/dashboard/ai-quote",
+  "permission": "quotes.manage",
+  "version": "1.0.0",
+  "api": "/api/ai-quote-builder",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

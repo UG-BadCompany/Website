@@ -1,0 +1,16 @@
+{
+  "name": "contractor-cmms-ai-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
+    "build": "node scripts/build-static-site.mjs",
+    "postbuild": "node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {}
+}
