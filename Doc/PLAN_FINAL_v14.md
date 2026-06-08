@@ -6892,3 +6892,625 @@ The platform should NOT be smaller.
 Build the full platform with a simpler, smarter, auto-detecting installer.
 
 ---
+
+
+---
+
+# FINAL v14 UPDATE — 10/10 Quality Standard, Real CMMS Implementation, and No Prototype Shells
+
+This section is a required update to PLAN_FINAL_v13.
+
+The goal is not "working enough."
+
+The goal is a 10/10 professional white-label Contractor CMMS + AI Quoting Platform.
+
+The finished product should feel like a serious commercial SaaS product, not a prototype, placeholder dashboard, or developer demo.
+
+If any earlier section allows placeholder-only behavior, hardcoded-only modules, temporary stores, fake data persistence, or unfinished module cards, this v14 section overrides it.
+
+---
+
+## v14.1 10/10 Product Standard
+
+Every part of the system must meet these standards:
+
+```txt
+Professional
+Polished
+Fast
+Reliable
+Mobile-friendly
+Desktop-friendly
+Database-backed
+Theme-aware
+Role-aware
+Permission-aware
+Workflow-aware
+Empty-state friendly
+No placeholder-only modules
+No fake persistence
+No broken routes
+No white screens
+No random hardcoded UI
+```
+
+A page or module is not complete unless it can be used by a real contractor business.
+
+---
+
+## v14.2 No Prototype Shells
+
+The implementation must not stop at:
+
+- placeholder cards
+- fake module tiles
+- static module arrays
+- temporary JSON file storage
+- "coming soon" modules
+- hardcoded demo-only dashboards
+- empty tables with no actions
+- buttons that do nothing
+- forms that do not save
+- routes that 404
+- APIs that return fake success
+- modules that only show text
+
+Every core module must include real UI, real API, real database persistence, real validation, and real empty states.
+
+---
+
+## v14.3 Real Database Required
+
+The platform must use Netlify Database / PostgreSQL for production data.
+
+Temporary JSON storage such as `/tmp/*.json` is not acceptable for production platform data.
+
+The following must be stored in real database tables:
+
+```txt
+installation state
+installer draft
+company settings
+theme settings
+homepage settings
+users
+roles
+permissions
+role permissions
+workspace access
+module registry
+module settings
+customers
+properties
+requests
+quotes
+quote line items
+work orders
+assignments
+schedule events
+inventory items
+inventory transactions
+invoices
+payments
+uploaded files
+photo estimates
+AI runs
+audit logs
+system health events
+```
+
+Temporary in-memory or file storage may only be used for local development fallback and must be clearly separated from production behavior.
+
+Production must use database persistence.
+
+---
+
+## v14.4 Core Module Completion Definition
+
+A core module is complete only when it has:
+
+```txt
+module manifest
+registered route
+sidebar entry
+mobile behavior
+permissions
+database table support
+API endpoints
+list view
+detail view
+create form
+edit form
+delete/archive behavior where appropriate
+empty state with action
+loading state
+error state
+audit logging where appropriate
+theme support
+mobile support
+desktop support
+role filtering
+workflow integration where applicable
+```
+
+This applies at minimum to:
+
+```txt
+Dashboard / Overview
+Customers / Clients
+Request Estimate
+Estimate & Quote Center
+Work Orders
+Schedule / Calendar
+Inventory
+Invoices
+Finance
+Users & Roles
+Workspace & Permissions
+File / Photo Manager
+System Center
+Environment & Integrations
+Homepage Editor
+Theme Manager
+Module Manager
+Platform Health
+Audit Logs
+Cache Manager
+Backup / Restore
+Licensing
+AI Photo Estimate
+AI Quote Builder
+AI Troubleshooting
+Client Portal
+Worker Portal
+```
+
+---
+
+## v14.5 Required Core Module Behavior
+
+### Dashboard / Overview
+
+Must show:
+
+- role-aware overview
+- quick stats
+- active requests
+- active quotes
+- active work orders
+- invoices due
+- schedule today
+- quick actions
+- setup checklist
+- business health
+- recent activity
+
+### Customers / Clients
+
+Must support:
+
+- create customer
+- edit customer
+- view customer
+- archive customer
+- add properties/addresses
+- view related requests, quotes, work orders, invoices, files
+
+### Request Estimate
+
+Must support:
+
+- manual request creation
+- public request creation
+- client request creation
+- photo upload
+- service category
+- address/property
+- urgency/priority
+- notes
+- convert to quote
+- status tracking
+
+This module is not AI-only.
+
+### Estimate & Quote Center
+
+Must support:
+
+- create manual quote
+- create quote from request
+- edit labor/material lines
+- pricing totals
+- status
+- send to client when email configured
+- manual share link when email not configured
+- client acceptance
+- convert accepted quote to work order
+- remove converted quotes from active quote queue
+
+### Work Orders
+
+Must support:
+
+- create from quote
+- create manually
+- assign worker
+- schedule
+- priority
+- status
+- job notes
+- photos
+- materials used
+- inventory connection
+- worker completion
+- admin review
+- archive/close
+
+### Schedule / Calendar
+
+Must support:
+
+- calendar view
+- list view
+- worker filter
+- date filter
+- scheduled work orders
+- drag/reschedule optional
+- mobile-friendly schedule cards
+
+### Inventory
+
+Must support:
+
+- inventory items
+- stock quantity
+- reorder level
+- locations
+- material usage on work orders
+- stock adjustments
+- inventory transaction history
+
+### Invoices
+
+Must support:
+
+- create from work order
+- create manually
+- line items
+- totals
+- taxes/fees placeholders
+- view invoice
+- download invoice
+- send invoice if email configured
+- Square payment link if configured
+- manual payment tracking if Square not configured
+
+### Finance
+
+Must support:
+
+- invoice totals
+- paid/unpaid
+- manual payments
+- payment verification
+- revenue overview
+- outstanding balances
+- basic reporting
+
+### Client Portal
+
+Must support:
+
+- my requests
+- my quotes
+- quote approval
+- my invoices
+- payment link/manual payment instructions
+- project/work status
+- uploaded photos/files
+- account setup
+
+### Worker Portal
+
+Must support:
+
+- assigned jobs
+- schedule
+- job details
+- upload photos
+- record materials used
+- submit completion
+- notes
+- status updates
+
+---
+
+## v14.6 10/10 UX Requirements
+
+The system must feel polished on both desktop and mobile.
+
+### Desktop
+
+Test and polish:
+
+```txt
+1024px
+1280px
+1440px
+1920px
+```
+
+Requirements:
+
+- clean spacing
+- no overlapping buttons
+- no clipped text
+- no random white cards in dark mode
+- clear page titles
+- professional cards/tables
+- responsive grids
+- sticky actions where useful
+- dashboard feels like commercial SaaS
+
+### Mobile
+
+Test and polish:
+
+```txt
+320px
+390px
+430px
+768px
+```
+
+Requirements:
+
+- no horizontal scroll
+- tappable buttons
+- readable forms
+- cards stack correctly
+- bottom nav does not overlap content
+- safe-area support
+- tables become cards
+- modals fit screen
+- no merged buttons
+- no blank wasted space
+
+---
+
+## v14.7 Dashboard Sidebar 10/10 Standard
+
+Sidebar must be organized, elegant, and scalable.
+
+Required:
+
+- logo
+- company name
+- current role/view
+- owner view switcher
+- grouped navigation
+- icons
+- active state
+- collapsed mode
+- search/filter modules if many
+- mobile bottom nav
+- More menu on mobile
+- no duplicate nav
+- no internal developer IDs visible
+
+Sidebar groups:
+
+```txt
+Main
+Operations
+Financial
+People
+AI Tools
+System
+```
+
+The sidebar should feel like a finished CMMS product, not a list of test links.
+
+---
+
+## v14.8 Theme System 10/10 Standard
+
+Theme must work everywhere:
+
+```txt
+installer
+homepage
+login
+account setup
+dashboard
+client portal
+worker portal
+quote viewer
+invoice viewer
+all modules
+all modals
+all forms
+all cards
+all tables
+```
+
+Light, Dark, System, and Custom must work.
+
+System must follow OS.
+
+Theme must apply before first paint.
+
+No page may hardcode white backgrounds or black text.
+
+Theme live preview during install and Theme Manager must update immediately.
+
+---
+
+## v14.9 Install Must Create a Real Platform
+
+Finish Install must create a usable system.
+
+After install, the owner should be able to:
+
+```txt
+log in
+view dashboard
+switch role views
+create customer
+create request
+create quote
+accept quote
+create work order
+assign worker
+schedule work
+complete work
+create invoice
+mark paid
+archive job
+edit homepage
+change theme
+manage modules
+view health
+```
+
+without external integrations configured.
+
+If OpenAI, Resend, Square, or SerpAPI are missing, manual mode must still work.
+
+---
+
+## v14.10 Workflow Engine Must Be Real
+
+All status transitions must use one shared workflow engine.
+
+Do not duplicate quote/work order/invoice status logic across modules.
+
+The system must enforce valid transitions.
+
+Example:
+
+```txt
+request.new
+request.reviewed
+quote.draft
+quote.sent
+quote.accepted
+work_order.ready_to_assign
+work_order.assigned
+work_order.scheduled
+work_order.in_progress
+work_order.worker_completed
+work_order.admin_review
+invoice.draft
+invoice.sent
+invoice.paid
+payment.verified
+workflow.closed
+workflow.archived
+```
+
+Completed/paid/closed/archived records must leave active queues.
+
+---
+
+## v14.11 AI Must Be Real but Optional
+
+AI modules must exist, but must not fake output.
+
+If OpenAI is configured:
+
+- AI Photo Estimate analyzes uploaded photos.
+- AI Quote Builder produces editable quote drafts.
+- AI Troubleshooting provides structured troubleshooting steps.
+
+If OpenAI is not configured:
+
+- show clear "AI not configured" state.
+- allow manual fallback.
+- save uploaded photos/requests.
+- do not crash.
+- do not invent fake analysis.
+
+---
+
+## v14.12 Platform Verification Must Be Strict
+
+Use a single verification command:
+
+```txt
+npm run verify
+```
+
+It must check:
+
+- installer routes exist
+- install finish works
+- database tables/migrations exist
+- core modules exist
+- module manifests valid
+- sidebar generated from modules
+- required environment keys use exact names
+- `SERPAPI_KEY` does not appear anywhere
+- `SERPAPI_API_KEY` does appear where needed
+- no hardcoded white/black theme violations
+- no missing API handlers
+- no placeholder-only modules
+- no temporary JSON production store
+- magic login routes exist
+- workflow routes exist
+- build outputs `/out`
+
+Do not call the build complete if verification fails.
+
+---
+
+## v14.13 10/10 Acceptance Tests
+
+The implementation is not complete until:
+
+- Fresh install loads `/install/`.
+- Installer theme preview updates live.
+- Integration warnings detect all required environment variable names.
+- Finish Install creates real DB records.
+- Dashboard opens after install.
+- Owner account exists.
+- Roles and permissions exist.
+- Owner can switch all role views.
+- Sidebar is organized and professional.
+- Basic modules are real, not placeholders.
+- Request can become quote.
+- Quote can become work order.
+- Work order can become invoice.
+- Invoice can be marked paid.
+- Paid/closed items leave active lists.
+- Client portal works.
+- Worker portal works.
+- Magic login exists.
+- Homepage Editor works.
+- Theme Manager works.
+- Module Manager works.
+- Environment & Integrations works.
+- Platform Health works.
+- No white screens.
+- No empty dead-end pages.
+- No fake persistence.
+- No prototype-only module cards.
+- Mobile and desktop UX are polished.
+
+---
+
+## v14.14 Final v14 Override
+
+If any earlier section conflicts with v14, v14 wins.
+
+The platform must be 10/10.
+
+Do not stop at "it builds."
+
+Do not stop at "the route exists."
+
+Do not stop at "there is a placeholder card."
+
+Build the real product.
+
+---
