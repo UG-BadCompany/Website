@@ -10,6 +10,7 @@ const require=createRequire(moduleFilename);
 export const databaseEnvKeys=['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
 export const databaseClientPackage='@netlify/database';
 export const databaseDriverPackage='pg';
+export const requiredInstallerTables=['platform_installation','installer_drafts','company_settings','theme_settings','homepage_settings','app_users','roles','permissions','role_permissions','user_roles','workspace_access','module_registry','module_settings','service_categories','customers','job_requests','quotes','work_orders','schedule_events','inventory_items','invoices','payments','audit_logs','magic_tokens'];
 
 function safeMessage(error){ return error?.message ? String(error.message) : 'Unknown database loader error.'; }
 
@@ -181,8 +182,31 @@ export async function runMigrations(db=sql()){
 
 export async function ensureSchema(db=sql()){
   const migrations=await runMigrations(db);
+  await db.unsafe(coreSchemaSql);
+  await db.unsafe(bootstrapRepairSchemaSql);
   await db`insert into platform_installation(id) values('default') on conflict(id) do nothing`;
   await db`insert into installer_drafts(id,draft) values('default','{}'::jsonb) on conflict(id) do nothing`;
   return migrations;
+}
+
+export async function verifyRequiredTables(db=sql()){
+  const rows=await db.unsafe(`select table_name from information_schema.tables where table_schema='public' and table_name = any($1::text[])`,[requiredInstallerTables]);
+  const existing=new Set(rows.map(row=>row.table_name));
+  const missing=requiredInstallerTables.filter(table=>!existing.has(table));
+  if(missing.length) throw Object.assign(new Error(`Database schema is missing required installer tables: ${missing.join(', ')}.`),{code:'DATABASE_SCHEMA_INCOMPLETE',missingTables:missing});
+  return {ok:true,tables:requiredInstallerTables,missing:[]};
+}
+
+export async function verifyDatabaseWrites(db=sql()){
+  const marker=`db_write_test_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return await db.begin(async tx=>{
+    const [inserted]=await tx`insert into audit_logs(action,entity_type,entity_id,metadata) values('install.database_write_test','platform_installation',${marker},${tx.json({marker,source:'installer_bootstrap'})}) returning id, entity_id`;
+    const [readBack]=await tx`select id, entity_id from audit_logs where id=${inserted.id}`;
+    if(!readBack || readBack.entity_id!==marker) throw Object.assign(new Error('Database write test failed: inserted audit log could not be read back.'),{code:'DATABASE_WRITE_TEST_FAILED'});
+    await tx`delete from audit_logs where id=${inserted.id}`;
+    const remaining=await tx`select id from audit_logs where id=${inserted.id}`;
+    if(remaining.length) throw Object.assign(new Error('Database write test failed: test audit log could not be deleted.'),{code:'DATABASE_WRITE_TEST_FAILED'});
+    return {ok:true,inserted:true,readBack:true,deleted:true,table:'audit_logs',marker};
+  });
 }
 export async function audit(action, metadata={}, entityType=null, entityId=null){ try { const db=sql(); await db`insert into audit_logs(action, entity_type, entity_id, metadata) values(${action},${entityType},${entityId},${db.json(metadata)})`; } catch {} }

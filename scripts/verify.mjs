@@ -14,11 +14,16 @@ const pkg=JSON.parse(await readFile('package.json','utf8'));
 if(!pkg.dependencies?.['@netlify/database']) failures.push('Missing @netlify/database client dependency in package.json');
 if(!pkg.dependencies?.pg) failures.push('Missing pg database driver dependency in package.json');
 const db=await readFile('netlify/functions/shared/db.mjs','utf8');
+if(!db.includes('loadNetlifyDatabaseClientResult')) failures.push('Database client package loader is missing');
+if(!db.includes('verifyDatabaseWrites')) failures.push('Database write verification helper is missing');
+if(!db.includes('verifyRequiredTables')) failures.push('Required table verification helper is missing');
 for(const table of ['platform_installation','company_settings','homepage_settings','app_users','roles','permissions','role_permissions','user_roles','workspace_access','module_registry','module_settings','service_categories','customers','customer_properties','estimate_requests','job_requests','quotes','quote_line_items','work_orders','work_order_assignments','schedule_events','inventory_items','inventory_transactions','invoices','payments','uploaded_files','files','ai_runs','workflow_events','audit_logs','magic_tokens','magic_link_tokens','platform_secret_settings','installer_drafts']) if(!db.includes(`create table if not exists ${table}`)) failures.push(`Missing table ${table}`);
 for(const m of modules){ try{const raw=await readFile(`src/modules/${m.id}/manifest.json`,'utf8'); const json=JSON.parse(raw); if(!json.route||!json.permission||!json.features?.includes('workflow')) failures.push(`Incomplete manifest ${m.id}`);}catch{failures.push(`Missing manifest ${m.id}`);} }
 const env=await readFile('netlify/functions/shared/env-metadata.mjs','utf8');
 if(!env.includes('SERPAPI_API_KEY')) failures.push('SERPAPI_API_KEY missing');
 if(env.includes('SERPAPI'+'_KEY')) failures.push('Wrong SerpAPI key present in env metadata');
+if(!api.includes('/install/bootstrap-database')) failures.push('Bootstrap database route is missing');
+if(!api.includes('writeTest')) failures.push('Installer finish/bootstrap write test reporting is missing');
 if(api.includes('temporary JSON')||api.includes('fake success')) failures.push('Prototype persistence wording found');
 try{await stat('out/index.html');}catch{console.warn('out/index.html not present yet; run npm run build before release verification.');}
 if(failures.length){ console.error(failures.join('\n')); process.exit(1); }
