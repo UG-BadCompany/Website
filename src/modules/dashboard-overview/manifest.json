@@ -1,0 +1,25 @@
+{
+  "id": "dashboard-overview",
+  "label": "Dashboard / Overview",
+  "group": "Main",
+  "icon": "📊",
+  "route": "/dashboard/",
+  "permission": "dashboard.view",
+  "version": "1.0.0",
+  "api": "/api/dashboard-overview",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

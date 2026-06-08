@@ -1,0 +1,25 @@
+{
+  "id": "schedule-calendar",
+  "label": "Schedule / Calendar",
+  "group": "Operations",
+  "icon": "📅",
+  "route": "/dashboard/schedule",
+  "permission": "schedule.view",
+  "version": "1.0.0",
+  "api": "/api/schedule-calendar",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

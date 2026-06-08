@@ -1,0 +1,25 @@
+{
+  "id": "cache-manager",
+  "label": "Cache Manager",
+  "group": "System",
+  "icon": "⚡",
+  "route": "/dashboard/cache",
+  "permission": "system.manage",
+  "version": "1.0.0",
+  "api": "/api/cache-manager",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

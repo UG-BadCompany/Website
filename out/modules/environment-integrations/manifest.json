@@ -1,0 +1,25 @@
+{
+  "id": "environment-integrations",
+  "label": "Environment & Integrations",
+  "group": "System",
+  "icon": "🔌",
+  "route": "/dashboard/integrations",
+  "permission": "system.manage",
+  "version": "1.0.0",
+  "api": "/api/environment-integrations",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

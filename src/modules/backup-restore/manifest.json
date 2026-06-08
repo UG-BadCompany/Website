@@ -1,0 +1,25 @@
+{
+  "id": "backup-restore",
+  "label": "Backup / Restore",
+  "group": "System",
+  "icon": "💾",
+  "route": "/dashboard/backup",
+  "permission": "system.manage",
+  "version": "1.0.0",
+  "api": "/api/backup-restore",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

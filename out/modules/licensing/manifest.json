@@ -1,0 +1,25 @@
+{
+  "id": "licensing",
+  "label": "Licensing",
+  "group": "System",
+  "icon": "📄",
+  "route": "/dashboard/licensing",
+  "permission": "system.manage",
+  "version": "1.0.0",
+  "api": "/api/licensing",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}

@@ -1,0 +1,22 @@
+import { modules, permissions, roles, services } from './core-data.mjs';
+export const defaultTheme={mode:'system',primary:'#2563eb',accent:'#14b8a6',background:'#f8fafc',surface:'#ffffff',text:'#0f172a',border:'#cbd5e1',button:'#2563eb',buttonText:'#ffffff',sidebarBackground:'#0f172a',sidebarText:'#e2e8f0',sidebarActiveBackground:'#1d4ed8',sidebarActiveText:'#ffffff',sidebarHoverBackground:'#1e293b',mobileNavBackground:'#ffffff',mobileNavActive:'#2563eb',mobileNavText:'#334155'};
+export async function seedPlatform(db, draft={}){
+  const company=draft.company||{}; const owner=draft.owner||{}; const homepage=draft.homepage||{}; const theme={...defaultTheme,...(draft.theme||{})};
+  const email=String(owner.email||company.email||'owner@example.com').trim().toLowerCase();
+  const fullName=owner.fullName||owner.full_name||'Platform Owner';
+  await db.begin(async tx=>{
+    await tx`insert into platform_installation(id, installer_draft) values('default', ${tx.json(draft)}) on conflict(id) do update set installer_draft=${tx.json(draft)}, updated_at=now()`;
+    await tx`insert into company_settings(id, company_name, logo_url, phone, email, address, theme) values('default', ${company.name||'Contractor Platform'}, ${company.logoUrl||null}, ${company.phone||null}, ${company.email||email}, ${company.address||null}, ${tx.json(theme)}) on conflict(id) do update set company_name=excluded.company_name, logo_url=excluded.logo_url, phone=excluded.phone, email=excluded.email, address=excluded.address, theme=excluded.theme, updated_at=now()`;
+    await tx`insert into homepage_settings(id, content, published) values('default', ${tx.json({heroTitle:homepage.heroTitle||`Welcome to ${company.name||'Contractor Platform'}`, heroSubtitle:homepage.heroSubtitle||'Request estimates, approve quotes, and track work from one polished portal.', services, cta:'Request an Estimate'})}, true) on conflict(id) do update set content=excluded.content, published=true, updated_at=now()`;
+    const [user]=await tx`insert into app_users(full_name,email,normalized_email,phone,active,metadata) values(${fullName},${email},${email},${owner.phone||null},true,${tx.json({installerOwner:true})}) on conflict(normalized_email) do update set full_name=excluded.full_name, phone=excluded.phone, active=true, updated_at=now() returning id`;
+    for(const [key,perms] of Object.entries(roles)) await tx`insert into roles(key,label,description) values(${key},${key[0].toUpperCase()+key.slice(1)},${`${key} workspace role`}) on conflict(key) do nothing`;
+    for(const p of permissions) await tx`insert into permissions(key,label) values(${p},${p.replaceAll('.',' ')}) on conflict(key) do nothing`;
+    for(const [role,perms] of Object.entries(roles)) for(const p of perms) await tx`insert into role_permissions(role_key,permission_key) values(${role},${p}) on conflict do nothing`;
+    await tx`insert into user_roles(user_id, role_key) values(${user.id}, 'owner') on conflict do nothing`;
+    for(const workspace of ['owner','admin','manager','worker','client']) await tx`insert into workspace_access(user_id,workspace,role_key) values(${user.id},${workspace},${workspace}) on conflict(user_id,workspace) do update set role_key=excluded.role_key`;
+    for(const m of modules){ await tx`insert into module_registry(id,label,group_name,icon,route,permission_key,enabled,manifest) values(${m.id},${m.label},${m.group},${m.icon},${m.route},${m.permission},true,${tx.json(m)}) on conflict(id) do update set label=excluded.label, group_name=excluded.group_name, icon=excluded.icon, route=excluded.route, permission_key=excluded.permission_key, enabled=true, manifest=excluded.manifest, updated_at=now()`; await tx`insert into module_settings(module_id, settings) values(${m.id}, '{}'::jsonb) on conflict(module_id) do nothing`; }
+    for(const s of services) await tx`insert into service_categories(name,active) values(${s},true) on conflict(name) do update set active=true`;
+    await tx`insert into audit_logs(action,entity_type,entity_id,metadata) values('install.finish','platform_installation','default',${tx.json({ownerEmail:email,moduleCount:modules.length})})`;
+    await tx`update platform_installation set installation_complete=true, completed_at=coalesce(completed_at, now()), updated_at=now() where id='default'`;
+  });
+}

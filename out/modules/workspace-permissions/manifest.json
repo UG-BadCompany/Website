@@ -1,0 +1,25 @@
+{
+  "id": "workspace-permissions",
+  "label": "Workspace & Permissions",
+  "group": "People",
+  "icon": "🏢",
+  "route": "/dashboard/workspaces",
+  "permission": "roles.manage",
+  "version": "1.0.0",
+  "api": "/api/workspace-permissions",
+  "features": [
+    "list",
+    "detail",
+    "create",
+    "edit",
+    "archive",
+    "empty-state",
+    "loading-state",
+    "error-state",
+    "audit",
+    "workflow",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ]
+}
