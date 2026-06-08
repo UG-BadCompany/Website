@@ -32,14 +32,18 @@ test('installer separates database client, connection, schema, and write states'
   assert(app.includes('Database Connection'));
   assert(app.includes('Schema Bootstrap'));
   assert(app.includes('Write Verification'));
-  assert(app.includes('The required database client is already included with this platform.'));
+  assert(app.includes('Checking Netlify Database provisioning...'));
+  assert(app.includes('This platform includes @netlify/database, so Netlify should automatically provision a database during deploy.'));
+  assert(!app.includes('No database connection has been detected.'));
   assert(!app.includes('deploy with the @netlify/database dependency'));
 });
 
 test('database detection supports linked Netlify and Postgres URL variables without exposing values', async () => {
   const db = await readFile('netlify/functions/lib/db.mjs','utf8');
+  assert(db.includes('getConnectionString()'));
+  assert(db.includes("new pg.Pool({ connectionString"));
   for (const name of ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL']) assert(db.includes(name), name);
   const app = await readFile('src/app.js','utf8');
   assert(app.includes('Actual database URL values are never displayed.'));
-  assert(app.includes('Environment Variable Used'));
+  assert(app.includes('Connection Source'));
 });

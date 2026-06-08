@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import pg from 'pg';
 
 export function getConnectionString() {
   return process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -16,20 +16,19 @@ export function getDatabase(options = {}) {
         values: (value) => ({ values: value }),
         default: { default: true }
       }),
-      pool: { connect: () => Promise.reject(error) }
+      pool: { connect: () => Promise.reject(error), query: () => Promise.reject(error) }
     };
   }
-  const sql = postgres(connectionString, { ssl: 'require', max: 3, idle_timeout: 20 });
+  const pool = new pg.Pool({ connectionString });
   return {
-    sql,
-    pool: {
-      async connect() {
-        return {
-          query(text, params) { return sql.unsafe(text, params || []); },
-          release() {}
-        };
-      }
-    }
+    sql: Object.assign(() => Promise.reject(new Error('Tagged SQL is unavailable in the local @netlify/database shim. Use sql.unsafe().')), {
+      unsafe: async (text, params = []) => (await pool.query(text, params)).rows,
+      raw: (value) => ({ raw: String(value) }),
+      identifier: (value) => ({ identifier: value }),
+      values: (value) => ({ values: value }),
+      default: { default: true }
+    }),
+    pool
   };
 }
 
