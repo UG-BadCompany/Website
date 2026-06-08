@@ -42,7 +42,7 @@ test('database detection supports linked Netlify and Postgres URL variables with
   const db = await readFile('netlify/functions/lib/db.mjs','utf8');
   assert(db.includes('getConnectionString()'));
   assert(db.includes("new pg.Pool({ connectionString"));
-  for (const name of ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL']) assert(db.includes(name), name);
+  for (const name of ['NETLIFY_DB_URL','NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL']) assert(db.includes(name), name);
   const app = await readFile('src/app.js','utf8');
   assert(app.includes('Actual database URL values are never displayed.'));
   assert(app.includes('Connection Source'));

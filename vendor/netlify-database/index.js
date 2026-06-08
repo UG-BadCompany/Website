@@ -1,6 +1,6 @@
 import pg from 'pg';
 
-const databaseUrlEnvNames = ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
+const databaseUrlEnvNames = ['NETLIFY_DB_URL','NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
 
 export function getConnectionString() {
   for (const name of databaseUrlEnvNames) {

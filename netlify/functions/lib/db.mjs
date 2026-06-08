@@ -2,7 +2,7 @@ import { getConnectionString } from '@netlify/database';
 import pg from 'pg';
 import { coreModules, defaultRoles, permissions, rolePermissions, defaultServices } from './platformData.mjs';
 
-const databaseUrlEnvNames = ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
+const databaseUrlEnvNames = ['NETLIFY_DB_URL','NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
 const netlifyDatabaseHelperSource = '@netlify/database:getConnectionString';
 const netlifyDatabaseHelperLabel = '@netlify/database getConnectionString()';
 const noConnectionMessage = 'Netlify Database client is installed, but no connection string was provided by Netlify runtime.';
@@ -11,8 +11,21 @@ const provisioningMessage = 'Netlify Database client is installed, but the runti
 let cachedPool;
 let cachedConnectionString;
 
+function redactSecretValue(value) {
+  return String(value || '')
+    .replace(/postgres(?:ql)?:\/\/[^\s"'<>]+/gi, '[REDACTED_POSTGRES_URL]')
+    .replace(/(password|passwd|pwd|token|secret|key)=([^&\s]+)/gi, '$1=[REDACTED]');
+}
+
 function safeErrorMessage(error) {
-  return error instanceof Error ? error.message : String(error || 'Unknown error');
+  const name = error instanceof Error && error.name ? error.name : 'Error';
+  const message = error instanceof Error ? error.message : String(error || 'Unknown error');
+  const code = error && typeof error === 'object' && 'code' in error ? ` code=${error.code}` : '';
+  return redactSecretValue(`${name}${code}: ${message}`);
+}
+
+function safeRuntimeEnvironment() {
+  return process.env.NETLIFY ? `netlify:${process.env.CONTEXT || 'unknown'}` : 'local-or-non-netlify';
 }
 
 export function detectedDatabaseUrl() {
@@ -27,6 +40,7 @@ export function detectedDatabaseUrl() {
         value: helperValue,
         source: netlifyDatabaseHelperSource,
         helperError: null,
+        getConnectionStringReturnedValue: true,
         getConnectionStringAvailable: true,
         rawEnvUrlAvailable: databaseUrlEnvNames.some((name) => Boolean(process.env[name])),
         rawEnvUrlName: databaseUrlEnvNames.find((name) => Boolean(process.env[name])) || null
@@ -42,6 +56,7 @@ export function detectedDatabaseUrl() {
         value: process.env[name],
         source: name,
         helperError,
+        getConnectionStringReturnedValue: false,
         getConnectionStringAvailable: false,
         rawEnvUrlAvailable: true,
         rawEnvUrlName: name
@@ -53,6 +68,7 @@ export function detectedDatabaseUrl() {
     value: '',
     source: null,
     helperError,
+    getConnectionStringReturnedValue: false,
     getConnectionStringAvailable: false,
     rawEnvUrlAvailable: false,
     rawEnvUrlName: null
@@ -66,9 +82,12 @@ export function databaseBaseStatus(overrides = {}) {
   return {
     databaseClientInstalled: true,
     clientInstalled: true,
+    getConnectionStringImportSucceeded: true,
+    getConnectionStringReturnedValue: Boolean(detected.getConnectionStringReturnedValue),
     getConnectionStringAvailable: Boolean(detected.getConnectionStringAvailable),
     getConnectionStringStatus: detected.getConnectionStringAvailable ? 'Available' : 'Failed',
     getConnectionStringError: detected.helperError,
+    rawEnvDetected: Boolean(detected.rawEnvUrlAvailable),
     rawEnvUrlAvailable: Boolean(detected.rawEnvUrlAvailable),
     rawEnvUrlStatus: detected.rawEnvUrlAvailable ? 'Found' : 'Missing',
     databaseUrlDetected: Boolean(detected.value),
@@ -80,10 +99,40 @@ export function databaseBaseStatus(overrides = {}) {
     connectionAttempt,
     configured: Boolean(detected.value),
     manualDatabaseLinkRequired: !detected.value,
+    runtimeEnvironment: safeRuntimeEnvironment(),
+    nodeVersion: process.version,
+    safeError: detected.helperError || (detected.value ? null : 'getConnectionString() returned no connection string and no raw database URL environment fallback was found.'),
     provisioningMessage,
     ...overrides
   };
 }
+export function databaseRuntimeDiagnostics() {
+  const detected = detectedDatabaseUrl();
+  const diagnostic = {
+    databaseClientInstalled: true,
+    getConnectionStringImportSucceeded: true,
+    getConnectionStringReturnedValue: Boolean(detected.getConnectionStringReturnedValue),
+    rawEnvDetected: Boolean(detected.rawEnvUrlAvailable),
+    connectionSource: detected.source || null,
+    runtimeEnvironment: safeRuntimeEnvironment(),
+    nodeVersion: process.version,
+    safeError: detected.helperError || (detected.value ? null : 'getConnectionString() returned no connection string and no raw database URL environment fallback was found.'),
+    rawEnvNamesChecked: databaseUrlEnvNames,
+    rawEnvNameDetected: detected.rawEnvUrlName
+  };
+  if (!diagnostic.getConnectionStringReturnedValue) {
+    console.warn('[install-runtime-diagnostics] Netlify Database connection string unavailable', {
+      getConnectionStringImportSucceeded: diagnostic.getConnectionStringImportSucceeded,
+      rawEnvDetected: diagnostic.rawEnvDetected,
+      connectionSource: diagnostic.connectionSource,
+      runtimeEnvironment: diagnostic.runtimeEnvironment,
+      nodeVersion: diagnostic.nodeVersion,
+      safeError: diagnostic.safeError
+    });
+  }
+  return diagnostic;
+}
+
 export function getPool() {
   const detected = detectedDatabaseUrl();
   if (!detected.value) {
@@ -94,7 +143,8 @@ export function getPool() {
   }
   if (!cachedPool || cachedConnectionString !== detected.value) {
     cachedConnectionString = detected.value;
-    cachedPool = new pg.Pool({ connectionString: detected.value });
+    const connectionString = detected.value;
+    cachedPool = new pg.Pool({ connectionString });
   }
   return cachedPool;
 }
