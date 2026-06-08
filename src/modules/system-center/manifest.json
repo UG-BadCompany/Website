@@ -1,0 +1,10 @@
+{
+  "id": "system-center",
+  "label": "System Center",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/system-center"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "environment-integrations",
+  "label": "Environment & Integrations",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/environment-integrations"
+  ]
+}

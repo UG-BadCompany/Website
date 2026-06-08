@@ -1,0 +1,10 @@
+{
+  "id": "module-manager",
+  "label": "Module Manager",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/module-manager"
+  ]
+}

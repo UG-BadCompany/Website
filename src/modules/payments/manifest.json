@@ -1,0 +1,10 @@
+{
+  "id": "payments",
+  "label": "Payments",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/payments"
+  ]
+}
