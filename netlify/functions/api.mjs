@@ -22,14 +22,21 @@ const parse=(event)=> event.body ? JSON.parse(event.body) : {};
 const clean=(r)=>JSON.parse(JSON.stringify(r));
 const safeDatabaseMessage='A database URL was found, but the connection failed.';
 const databaseCheckingMessage='No database connection URL was found.';
-const databaseMissingMessage='Database connection not detected. The installer can create all database tables automatically after a database is linked. Netlify does not allow this function to create a brand-new database automatically from inside the deployed site. Open Netlify → Storage → Database, create/link a database, then click Retry.';
+const databaseMissingMessage='Database connection not detected. Netlify does not allow this deployed function to create/link a brand-new database resource automatically. Link a Netlify Database once, then the installer will automatically create all required tables and seed records.';
 const netlifyDatabaseGuide=['Open Netlify dashboard.','Go to Storage → Database.','Create or link a database.','Redeploy if Netlify asks.','Click Retry Database Check.'];
-function dbNotConfigured(message=databaseCheckingMessage, extra={}){ return {ok:false,installed:false,needsInstall:true,safeMode:true,code:'NO_DATABASE_URL',state:'NO_DATABASE_URL',message,canRetry:true,manualDatabaseLinkRequired:true,manualSetupRequired:true,canBootstrapSchema:false,runtimeProvisioningSupported:false,netlifyRuntimeCanProvisionDatabase:false,nextAction:'Link a Netlify Database, then click Retry.',netlifyDatabaseDetected:false,...extra}; }
+function dbNotConfigured(message=databaseMissingMessage, extra={}){ return {ok:false,installed:false,needsInstall:true,safeMode:true,code:'NO_DATABASE_URL',state:'NO_DATABASE_URL',message,canRetry:true,manualDatabaseLinkRequired:true,manualSetupRequired:true,canBootstrapSchema:false,runtimeProvisioningSupported:false,netlifyRuntimeCanProvisionDatabase:false,memoryFallbackAllowed:false,nextAction:'Link a Netlify Database, then click Retry Database Check.',netlifyDatabaseDetected:false,guide:netlifyDatabaseGuide,...extra}; }
 function dbManualRequired(message=databaseMissingMessage, extra={}){ return {ok:false,installed:false,needsInstall:true,safeMode:true,code:'MANUAL_DATABASE_LINK_REQUIRED',state:'MANUAL_DATABASE_LINK_REQUIRED',message,canRetry:true,manualDatabaseLinkRequired:true,manualSetupRequired:true,canBootstrapSchema:false,runtimeProvisioningSupported:false,netlifyRuntimeCanProvisionDatabase:false,nextAction:'Link a Netlify Database, then click Retry.',netlifyDatabaseDetected:false,guide:netlifyDatabaseGuide,...extra}; }
 function dbUnavailable(message=safeDatabaseMessage, extra={}){ return {ok:false,installed:false,needsInstall:true,safeMode:true,code:'DATABASE_CONNECTION_FAILED',state:'DATABASE_CONNECTION_FAILED',message,canRetry:true,manualDatabaseLinkRequired:false,manualSetupRequired:false,canBootstrapSchema:false,runtimeProvisioningSupported:false,netlifyRuntimeCanProvisionDatabase:false,netlifyDatabaseDetected:true,...extra}; }
 function validationFailed(message, missing=[], goToStep='review'){ return {ok:false,code:'INSTALL_VALIDATION_FAILED',message,missing,goToStep}; }
 function isDatabaseError(error){ return ['NO_DATABASE_URL','DATABASE_NOT_CONFIGURED','MANUAL_DATABASE_LINK_REQUIRED','DATABASE_MANUAL_LINK_REQUIRED','DATABASE_UNAVAILABLE','DATABASE_CONNECTION_FAILED','DATABASE_DRIVER_LOAD_FAILED','DATABASE_DRIVER_MISSING','NETLIFY_DATABASE_REQUIRED'].includes(error?.code)||/database|postgres|connection|pg|relation|schema|migration|module|import|package/i.test(error?.message||''); }
-async function withDb(fn){ const { ensureSchema, sql }=await loadDbDeps(); await ensureSchema(); return fn(sql()); }
+async function bootstrapInstallerDatabase(){
+ const { ensureSchema, seedInstallerPrerequisites, sql }=await loadAppDeps();
+ const db=sql();
+ const migrations=await ensureSchema(db);
+ await seedInstallerPrerequisites(db);
+ return {db,migrations};
+}
+async function withDb(fn){ const { db }=await bootstrapInstallerDatabase(); return fn(db); }
 async function tryInstallDb(fn, failureBody){
  try{ return await withDb(fn); }catch(error){
   if(['NO_DATABASE_URL','DATABASE_NOT_CONFIGURED','NETLIFY_DATABASE_REQUIRED'].includes(error?.code)) return json(200,{...dbNotConfigured(undefined,{draft:failureBody.draft,goToStep:failureBody.goToStep}),databaseError:error.message});
@@ -42,7 +49,7 @@ async function databaseHealth(){
  try{ deps=await loadDbDeps(); }catch(error){
   return {configured:false,reachable:false,driverPackage:'pg',driverLoaded:false,driverError:error.message,error:`Database support could not be loaded: ${error.message}`,env:[]};
  }
- const { ensureSchema, sql, getDatabaseUrl, configuredDatabaseUrl, databaseEnvStatus, databaseDriverPackage, loadDatabaseDriverResult }=deps;
+ const { sql, getDatabaseUrl, configuredDatabaseUrl, databaseEnvStatus, databaseDriverPackage, loadDatabaseDriverResult }=deps;
  const configured=!!getDatabaseUrl(); const configuredEnv=configuredDatabaseUrl?.();
  const driverResult=loadDatabaseDriverResult();
  const driverLoaded=!!driverResult.ok;
@@ -50,9 +57,9 @@ async function databaseHealth(){
  if(!configured) return {configured:false,reachable:false,databaseConnected:false,schemaReady:false,state:'NO_DATABASE_URL',code:'NO_DATABASE_URL',driverPackage:databaseDriverPackage,driverLoaded,driverError:null,error:`Database is not configured yet. Checked: ${databaseEnvStatus().map((item)=>item.key).join(', ')}.`,env:databaseEnvStatus(),requiresDatabase:true,manualDatabaseLinkRequired:true,manualSetupRequired:true,canBootstrapSchema:false};
  if(!driverLoaded) return {configured:true,configuredEnv:configuredEnv?.key,reachable:false,databaseConnected:false,schemaReady:false,state:'DATABASE_DRIVER_MISSING',driverPackage:databaseDriverPackage,driverLoaded,driverError,error:driverError,env:databaseEnvStatus(),code:'DATABASE_DRIVER_MISSING'};
  try{
-  const migrations=await ensureSchema();
+  const { migrations }=await bootstrapInstallerDatabase();
   const [row]=await sql()`select true as reachable`;
-  return {configured:true,configuredEnv:configuredEnv?.key,reachable:!!row?.reachable,databaseConnected:!!row?.reachable,schemaReady:!!row?.reachable,state:'SCHEMA_READY',code:'SCHEMA_READY',driverPackage:databaseDriverPackage,driverLoaded,driverError:null,error:null,env:databaseEnvStatus(),migrations};
+  return {configured:true,configuredEnv:configuredEnv?.key,reachable:!!row?.reachable,databaseConnected:!!row?.reachable,schemaReady:!!row?.reachable,state:'SCHEMA_READY',code:'SCHEMA_READY',driverPackage:databaseDriverPackage,driverLoaded,driverError:null,error:null,env:databaseEnvStatus(),migrations,seedReady:!!row?.reachable,bootstrapAtStartup:true};
  }catch(error){
   return {configured:true,configuredEnv:configuredEnv?.key,reachable:false,databaseConnected:false,schemaReady:false,state:'DATABASE_CONNECTION_FAILED',driverPackage:databaseDriverPackage,driverLoaded,driverError:null,error:error.message,env:databaseEnvStatus(),code:'DATABASE_CONNECTION_FAILED',safeDetails:error?.code||error?.name||'Connection attempt failed'};
  }
@@ -74,13 +81,13 @@ export const handler=async(event)=>{ try{
  }
  if(path==='/install/health') {
   const health=await databaseHealth();
-  const body=health.reachable?{ok:true,code:'SCHEMA_READY',state:'SCHEMA_READY',message:'Database schema is ready.',database:'ok',databaseConnected:true,schemaReady:true,canBootstrapSchema:true}:(health.requiresDatabase?dbNotConfigured('No database connection URL was found.'):dbUnavailable(health.code==='DATABASE_DRIVER_MISSING'?'Database driver is missing.':'A database URL was found, but the connection failed.',{code:health.code,state:health.state,safeDetails:health.safeDetails}));
+  const body=health.reachable?{ok:true,code:'SCHEMA_READY',state:'SCHEMA_READY',message:'Database schema is ready.',database:'ok',databaseConnected:true,schemaReady:true,canBootstrapSchema:true}:(health.requiresDatabase?dbNotConfigured():dbUnavailable(health.code==='DATABASE_DRIVER_MISSING'?'Database driver is missing.':'A database URL was found, but the connection failed.',{code:health.code,state:health.state,safeDetails:health.safeDetails}));
   return json(200,{...body,safeMode:!health.reachable,databaseConfigured:health.configured,databaseReachable:health.reachable,databaseConnected:health.databaseConnected||false,schemaReady:health.schemaReady||false,netlifyDatabaseDetected:health.configured,databaseError:health.error||null,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env,guide:body.manualSetupRequired?netlifyDatabaseGuide:undefined,needsInstall:!health.reachable,migrations:health.migrations});
  }
  if(path==='/install/bootstrap-database' && method==='POST') {
   const health=await databaseHealth();
   if(health.reachable) return json(200,{ok:true,code:'SCHEMA_READY',state:'SCHEMA_READY',databaseConnected:true,schemaReady:true,canBootstrapSchema:true,message:'Database schema is ready.',database:'ok',databaseConfigured:true,databaseReachable:true,migrations:health.migrations,attemptedAutomaticBootstrap:true});
-  if(health.requiresDatabase) return json(200,{...dbNotConfigured('No database connection was detected. Link a Netlify Database, then retry.'),databaseConfigured:false,databaseReachable:false,databaseConnected:false,schemaReady:false,databaseError:health.error,env:health.env,attemptedAutomaticBootstrap:true});
+  if(health.requiresDatabase) return json(200,{...dbNotConfigured(),databaseConfigured:false,databaseReachable:false,databaseConnected:false,schemaReady:false,databaseError:health.error,env:health.env,attemptedAutomaticBootstrap:true});
   return json(200,{...dbUnavailable(health.code==='DATABASE_DRIVER_MISSING'?'Database driver is missing.':'A database URL was found, but the connection failed.',{code:health.code,state:health.state,safeDetails:health.safeDetails}),databaseConfigured:health.configured,databaseReachable:false,databaseConnected:false,schemaReady:false,databaseError:health.error,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env,attemptedAutomaticBootstrap:true});
  }
  if(path==='/install/draft' && method==='GET') return await tryInstallDb(async db=>{ const rows=await db`select installer_draft from platform_installation where id='default'`; return json(200,{ok:true,draft:rows[0]?.installer_draft||{}}); }, dbUnavailable('Automatic bootstrap could not load installer draft.',{draft:{}}));

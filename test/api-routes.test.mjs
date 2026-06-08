@@ -47,7 +47,7 @@ test('installer status route reports actionable first-run database state', async
   assert.equal(response.json.ok,false);
   assert.equal(response.json.installed,false);
   assert.equal(response.json.code,'NO_DATABASE_URL');
-  assert.equal(response.json.message,'No database connection URL was found.');
+  assert.match(response.json.message,/Netlify does not allow this deployed function to create\/link a brand-new database resource automatically/);
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
   assert.equal(response.json.netlifyDatabaseDetected,false);
@@ -76,7 +76,7 @@ test('bootstrap endpoint returns missing database URL JSON without raw 502/503',
   assert.equal(response.json.code,'NO_DATABASE_URL');
   assert.equal(response.json.manualDatabaseLinkRequired,true);
   assert.equal(response.json.canBootstrapSchema,false);
-  assert.equal(response.json.message,'No database connection was detected. Link a Netlify Database, then retry.');
+  assert.match(response.json.message,/Link a Netlify Database once, then the installer will automatically create all required tables and seed records/);
   assert.equal(response.json.attemptedAutomaticBootstrap,true);
 });
 
@@ -93,4 +93,18 @@ test('installer retry database button uses bound handlers instead of missing inl
   assert.equal(source.includes('onclick=\"retryAutomaticSetup()'),false);
   assert.equal(source.includes('data-retry-database'),true);
   assert.equal(source.includes('window.retryAutomaticSetup=retryAutomaticSetup'),true);
+  assert.equal(source.includes('Memory fallback is disabled here'),true);
+});
+
+
+test('installer startup health path runs schema bootstrap and prerequisite seed before finish install', async()=>{
+  const apiSource=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../netlify/functions/api.mjs', import.meta.url),'utf8'));
+  const seedSource=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../netlify/functions/shared/seed.mjs', import.meta.url),'utf8'));
+  assert.match(apiSource,/async function bootstrapInstallerDatabase\(\)/);
+  assert.match(apiSource,/const \{ migrations \}=await bootstrapInstallerDatabase\(\)/);
+  assert.match(seedSource,/export async function seedInstallerPrerequisites\(db\)/);
+  assert.match(seedSource,/insert into platform_installation/);
+  assert.match(seedSource,/insert into installer_drafts/);
+  assert.match(seedSource,/insert into module_registry/);
+  assert.match(seedSource,/insert into service_categories/);
 });
