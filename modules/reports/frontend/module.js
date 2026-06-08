@@ -1,2 +1,0 @@
-window.TAModules = window.TAModules || { registry:{}, register(m){ this.registry[m.id]=m; } };
-window.TAModules.register({ id: "reports", version: '1.0.0', async mount(context){ context.root.innerHTML = '<section class="module-empty"><h2>Reports</h2><p>Reports is ready. Create your first record to start using this workspace.</p><button class="primary">Create Reports</button><a href="/dashboard/?module=system-help">Open help guide</a></section>'; }, async unmount(){}, async refresh(){}, getActions(){ return []; } });

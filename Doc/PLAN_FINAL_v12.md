@@ -20,6 +20,331 @@ Codex must treat this document as the single source of truth.
 
 ---
 
+---
+
+# 0. FINAL v12 CLARIFICATION — Simplified Installer, Full Platform Still Required
+
+This document must NOT be interpreted as removing core platform features.
+
+The installer should be simpler, but the platform itself must still include the full Contractor CMMS + AI Quoting system.
+
+The simplified installer philosophy is:
+
+1. Auto Detect First.
+2. Manual Entry Second.
+3. Optional Integrations Never Block Installation.
+4. Business Ready in 5 Minutes.
+5. True Drop-In Modules.
+6. Everything Database Driven.
+7. Owner Can Test Everything.
+8. No Empty Screens.
+9. No White Screens.
+10. One Workflow Engine Powers Everything.
+
+The installer must not overwhelm the owner, but the final system must still include all core modules, magic login, dashboards, workflows, AI tools, payment support, and white-label controls.
+
+---
+
+## 0.1 Required Core Modules
+
+The finished platform must include these modules.
+
+Each module must be implemented as a true drop-in module with a module manifest, module runtime registration, permissions, routes, and Module Manager visibility.
+
+Core required modules:
+
+1. Dashboard / Overview
+2. Customers / Clients
+3. Request Estimate
+4. Estimate & Quote Center
+5. AI Photo Estimate
+6. AI Quote Builder
+7. AI Troubleshooting
+8. Work Orders
+9. Schedule / Calendar
+10. Worker Jobs
+11. Inventory
+12. Invoices
+13. Payments / Square Support
+14. Finance
+15. File / Photo Manager
+16. Users & Roles
+17. Workspace & Permissions
+18. Theme Manager
+19. Homepage Editor
+20. Module Manager
+21. Reports
+22. Platform Health
+23. Cache Manager
+24. Audit Logs
+25. Backup / Restore Foundation
+26. System Center
+27. Environment & Integrations
+28. Licensing
+29. Maintenance Plans
+30. Client Portal
+31. Worker Portal
+
+No core module should be removed just because the installer is simplified.
+
+---
+
+## 0.2 Magic Login / Passwordless Authentication
+
+Magic login is required.
+
+The platform must support passwordless email login using secure magic links.
+
+Required auth behavior:
+
+- Client enters email.
+- System sends secure one-time login link when email sending is configured.
+- Link signs user in and creates/updates session.
+- Existing users go directly to their dashboard/portal.
+- New users go to account setup.
+- New client accounts can be created even if they never submitted a previous request.
+- Account setup links user records by normalized email.
+- Sessions are secure and expire.
+- Tokens are hashed server-side.
+- Tokens are single-use.
+- Expired or invalid tokens show a friendly error.
+
+If Resend or email sending is not configured:
+
+- installation still completes.
+- owner dashboard still works.
+- auth system shows "Email not configured yet."
+- owner can use setup/session mode created during install.
+- System Center guides owner to configure email later.
+
+Magic login must work after email is configured.
+
+---
+
+## 0.3 Account Setup Flow
+
+First-time user flow:
+
+```txt
+User enters email
+→ Magic link sent
+→ Link clicked
+→ If existing user: login
+→ If new user: account setup
+→ Create profile
+→ Assign client role by default
+→ Open client portal
+```
+
+Required account setup fields:
+
+- full name
+- email locked
+- phone
+- contact permission
+
+Optional fields:
+
+- company
+- property address
+- preferred contact method
+- notes
+
+The account setup flow must link existing records by normalized email:
+
+- customers
+- job requests
+- quotes
+- invoices
+- work orders
+- uploaded files
+- photo estimates
+
+No duplicate users for the same email.
+
+---
+
+## 0.4 Required Workspaces
+
+The platform must include these workspace views:
+
+- Owner
+- Admin
+- Manager
+- Worker
+- Client
+
+Owner is Super User and can switch between all views for testing.
+
+Admin and Manager can manage operations based on permissions.
+
+Worker sees assigned work, schedule, job details, photos, materials, and completion actions.
+
+Client sees requests, quotes, work progress, invoices, payments, photos, and approvals.
+
+---
+
+## 0.5 Full Workflow Must Remain
+
+The platform must support the complete business workflow:
+
+```txt
+Client Request
+→ AI/manual estimate
+→ Admin quote review
+→ Quote sent to client
+→ Client accepts quote
+→ Work order created
+→ Worker assigned
+→ Work scheduled
+→ Work in progress
+→ Worker completes work
+→ Admin review
+→ Client approval if required
+→ Invoice created
+→ Payment link/manual payment
+→ Payment verified
+→ Work archived/closed
+```
+
+All status changes must flow through the shared workflow engine.
+
+Completed, paid, closed, and archived items must leave active lists.
+
+---
+
+## 0.6 Simplified Installer Does Not Remove System Center
+
+The installer should not ask for advanced API keys.
+
+However, System Center must still include:
+
+- Environment & Integrations
+- Licensing
+- Platform Health
+- Cache Manager
+- Backup / Restore
+- Audit Logs
+- Module Manager
+- Theme Manager
+- Homepage Editor
+- User / Role Management
+
+The installer should get the owner operational quickly.
+
+System Center is where advanced configuration happens later.
+
+---
+
+## 0.7 Required Installer Steps
+
+The installer should use this simplified flow:
+
+```txt
+1. Welcome
+2. Company
+3. Branding
+4. Theme
+5. Owner Account
+6. Services
+7. Modules
+8. Homepage
+9. Review
+10. Finish
+```
+
+Do NOT include a required Environment Variables step.
+
+Do NOT include required API key entry.
+
+Do NOT block install for missing OpenAI, Resend, Square, SMTP, SerpAPI, reCAPTCHA, or license server values.
+
+---
+
+## 0.8 Auto-Detection Must Stay
+
+The simplified installer must still auto-detect:
+
+- current SITE_URL / deployment URL
+- existing company name
+- existing logo
+- existing theme
+- existing homepage config
+- existing module manifests
+- existing install draft/progress
+- existing host environment variable status, without showing secrets
+- existing owner email if authenticated/available
+
+Auto-detected values should be presented as:
+
+```txt
+We found:
+✓ Domain
+✓ Company Name
+✓ Logo
+✓ Theme
+✓ Modules
+
+[Keep Existing]
+[Change]
+```
+
+---
+
+## 0.9 Post-Install Business Ready Mode
+
+Immediately after installation, redirect to:
+
+```txt
+/dashboard/
+```
+
+Show:
+
+```txt
+Welcome to Your New Business Platform
+```
+
+Include:
+
+- Quick Start Checklist
+- Business Health
+- Recommended Actions
+- Create First Client
+- Create First Request
+- Create First Quote
+- Create First Work Order
+- View Homepage
+- Open System Center
+
+The system must work in manual mode even when external integrations are missing.
+
+---
+
+## 0.10 v12 Acceptance Rules
+
+The platform is not complete unless:
+
+- Magic login exists.
+- Account setup exists.
+- All required core modules exist.
+- True drop-in module system exists.
+- Owner can access all workspace views.
+- Client portal exists.
+- Worker portal exists.
+- Request / Quote / Work Order / Invoice / Payment workflow works.
+- Homepage Editor exists.
+- Theme Manager exists.
+- Module Manager exists.
+- System Center exists.
+- Environment & Integrations exists after install.
+- Platform works without OpenAI, Resend, Square, or license server configured.
+- Installer remains simple and does not block on optional integrations.
+- No page is blank or useless when empty.
+
+---
+
+
 
 Repository: `UG-BadCompany/Website`  
 Target: rebuild the current project with the same Netlify static-site + Netlify Functions + Netlify Database environment, while preserving the current feature set and making the module system truly drop-in.
@@ -5721,5 +6046,20 @@ Environment variables are not required during first install.
 Missing optional integrations must never block Finish Install.
 
 Missing installer API routes are real system failures and must be fixed before launch.
+
+---
+
+
+---
+
+# FINAL v12 OVERRIDE
+
+If any earlier section appears to remove or reduce the full module list, magic login, workspace views, account setup, or full workflow, ignore that interpretation.
+
+The installer should be simpler.
+
+The platform should NOT be smaller.
+
+Build the full platform with a simpler, smarter, auto-detecting installer.
 
 ---
