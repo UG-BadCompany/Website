@@ -37,6 +37,7 @@ for(const [method,path,body] of [
     assert.notEqual(response.statusCode,502);
     assert.notEqual(response.statusCode,503);
     assert.equal(typeof response.json.ok,'boolean');
+    if(path.startsWith('/api/install')) assert.notEqual(response.json.code,'DATABASE_UNAVAILABLE');
   });
 }
 
@@ -44,17 +45,21 @@ test('installer status route reports actionable first-run database state', async
   const response=await request('GET','/api/install-status');
   assert.equal(response.json.ok,false);
   assert.equal(response.json.installed,false);
-  assert.equal(response.json.code,'DATABASE_UNAVAILABLE');
-  assert.equal(response.json.message,'Database is unavailable. Installer can load in recovery mode.');
+  assert.equal(response.json.code,'NETLIFY_DATABASE_REQUIRED');
+  assert.equal(response.json.message,'Netlify Database is not linked yet. Create or link Netlify Database, then retry bootstrap.');
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
+  assert.equal(response.json.netlifyDatabaseDetected,false);
+  assert.ok(response.json.guide.some((item)=>item.includes('Netlify Database')));
   assert.equal(response.json.safeMode,true);
 });
 
-test('installer health route reports database env and driver metadata', async()=>{
+test('installer health route reports Netlify Database linking guidance and driver metadata', async()=>{
   const response=await request('GET','/api/install/health');
   assert.equal(response.json.ok,false);
   assert.equal(response.json.databaseReachable,false);
+  assert.equal(response.json.code,'NETLIFY_DATABASE_REQUIRED');
+  assert.equal(response.json.netlifyDatabaseDetected,false);
   assert.equal(response.json.driverPackage,'pg');
   assert.ok(response.json.env.some((item)=>item.key==='NETLIFY_DATABASE_URL'));
 });
