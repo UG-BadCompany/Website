@@ -1,7 +1,12 @@
 import pg from 'pg';
 
+const databaseUrlEnvNames = ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
+
 export function getConnectionString() {
-  return process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+  for (const name of databaseUrlEnvNames) {
+    if (process.env[name]) return process.env[name];
+  }
+  return '';
 }
 
 export function getDatabase(options = {}) {
