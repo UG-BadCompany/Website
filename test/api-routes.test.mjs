@@ -46,12 +46,13 @@ test('installer status route reports actionable first-run database state', async
   const response=await request('GET','/api/install-status');
   assert.equal(response.json.ok,false);
   assert.equal(response.json.installed,false);
-  assert.equal(response.json.code,'DATABASE_NOT_CONFIGURED');
-  assert.equal(response.json.message,'Database not detected. Attempting automatic bootstrap...');
+  assert.equal(response.json.code,'NO_DATABASE_URL');
+  assert.equal(response.json.message,'No database connection URL was found.');
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
   assert.equal(response.json.netlifyDatabaseDetected,false);
-  assert.equal(response.json.manualSetupRequired,false);
+  assert.equal(response.json.manualDatabaseLinkRequired,true);
+  assert.equal(response.json.manualSetupRequired,true);
   assert.equal(response.json.safeMode,true);
 });
 
@@ -59,22 +60,24 @@ test('installer health route reports Netlify Database linking guidance and drive
   const response=await request('GET','/api/install/health');
   assert.equal(response.json.ok,false);
   assert.equal(response.json.databaseReachable,false);
-  assert.equal(response.json.code,'DATABASE_NOT_CONFIGURED');
+  assert.equal(response.json.code,'NO_DATABASE_URL');
   assert.equal(response.json.netlifyDatabaseDetected,false);
-  assert.equal(response.json.manualSetupRequired,false);
+  assert.equal(response.json.manualDatabaseLinkRequired,true);
+  assert.equal(response.json.manualSetupRequired,true);
   assert.equal(response.json.driverPackage,'pg');
   assert.ok(response.json.env.some((item)=>item.key==='NETLIFY_DATABASE_URL'));
 });
 
 
-test('bootstrap endpoint confirms manual link only after automatic bootstrap is attempted', async()=>{
+test('bootstrap endpoint returns missing database URL JSON without raw 502/503', async()=>{
   const response=await request('POST','/api/install/bootstrap-database');
   assert.equal(response.statusCode,200);
   assert.equal(response.json.ok,false);
-  assert.equal(response.json.code,'DATABASE_MANUAL_LINK_REQUIRED');
-  assert.equal(response.json.manualSetupRequired,true);
+  assert.equal(response.json.code,'NO_DATABASE_URL');
+  assert.equal(response.json.manualDatabaseLinkRequired,true);
+  assert.equal(response.json.canBootstrapSchema,false);
+  assert.equal(response.json.message,'No database connection was detected. Link a Netlify Database, then retry.');
   assert.equal(response.json.attemptedAutomaticBootstrap,true);
-  assert.ok(response.json.guide.some((item)=>item.includes('Netlify')));
 });
 
 test('integration status route returns exact public-safe environment status metadata', async()=>{
@@ -83,4 +86,11 @@ test('integration status route returns exact public-safe environment status meta
   assert.equal(response.json.ok,true);
   assert.ok(response.json.integrations.some((item)=>item.key==='SERPAPI_API_KEY'));
   assert.equal(response.json.integrations.some((item)=>item.key==='SERPAPI_KEY'),false);
+});
+
+test('installer retry database button uses bound handlers instead of missing inline globals', async()=>{
+  const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../src/app.js', import.meta.url),'utf8'));
+  assert.equal(source.includes('onclick=\"retryAutomaticSetup()'),false);
+  assert.equal(source.includes('data-retry-database'),true);
+  assert.equal(source.includes('window.retryAutomaticSetup=retryAutomaticSetup'),true);
 });

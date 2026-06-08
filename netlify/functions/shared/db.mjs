@@ -5,7 +5,7 @@ let pgModule;
 const moduleFilename=typeof import.meta.url==='string'&&import.meta.url ? import.meta.url : `${process.cwd()}/netlify/functions/shared/db.mjs`;
 const require=createRequire(moduleFilename);
 
-export const databaseEnvKeys=['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL','NETLIFY_DB_URL'];
+export const databaseEnvKeys=['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
 export const databaseDriverPackage='pg';
 
 function safeMessage(error){ return error?.message ? String(error.message) : 'Unknown database loader error.'; }
@@ -82,7 +82,7 @@ function createDb(queryable, release){
 
 function getPool(){
   const configured=configuredDatabaseUrl();
-  if(!configured) throw Object.assign(new Error(`Database URL is not configured. Checked ${databaseEnvKeys.join(', ')}.`),{code:'DATABASE_NOT_CONFIGURED',statusCode:200,manualSetupRequired:false});
+  if(!configured) throw Object.assign(new Error(`Database URL is not configured. Checked ${databaseEnvKeys.join(', ')}.`),{code:'NO_DATABASE_URL',statusCode:200,manualDatabaseLinkRequired:true,manualSetupRequired:true});
   const { Pool }=loadDatabaseDriver();
   if(!client) client=new Pool({connectionString:configured.value, max:5, ssl:shouldUseSsl(configured.value)?{rejectUnauthorized:false}:false});
   return client;
