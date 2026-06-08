@@ -1,12 +1,61 @@
-import postgres from 'postgres';
+import pg from 'pg';
+
 let client;
-export function getDatabaseUrl(){ return process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL; }
-export function sql(){
+const { Pool } = pg;
+
+export function getDatabaseUrl(){ return process.env.NETLIFY_DATABASE_URL || process.env.NETLIFY_DB_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL; }
+
+function shouldUseSsl(url){
+  if(process.env.PGSSLMODE==='disable') return false;
+  if(/localhost|127\.0\.0\.1|\[::1\]/.test(url)) return false;
+  return true;
+}
+
+function parameterize(strings, values){
+  let text=strings[0];
+  for(let i=0;i<values.length;i++) text += `$${i+1}` + strings[i+1];
+  return { text, values };
+}
+
+function createDb(queryable, release){
+  async function db(strings, ...values){
+    const query=Array.isArray(strings?.raw) ? parameterize(strings, values) : { text:String(strings), values };
+    const result=await queryable.query(query.text, query.values);
+    return result.rows;
+  }
+  db.unsafe=async(query, values=[])=>{
+    const result=await queryable.query(query, values);
+    return result.rows;
+  };
+  db.json=(value)=>JSON.stringify(value ?? null);
+  db.begin=async(fn)=>{
+    const pool=getPool();
+    const connection=await pool.connect();
+    const tx=createDb(connection, ()=>connection.release());
+    try{
+      await connection.query('begin');
+      const result=await fn(tx);
+      await connection.query('commit');
+      return result;
+    }catch(error){
+      try{ await connection.query('rollback'); }catch{}
+      throw error;
+    }finally{
+      tx.release?.();
+    }
+  };
+  if(release) db.release=release;
+  return db;
+}
+
+function getPool(){
   const url=getDatabaseUrl();
-  if(!url) throw Object.assign(new Error('Database URL is not configured. Set NETLIFY_DATABASE_URL, DATABASE_URL, or POSTGRES_URL.'),{statusCode:503});
-  if(!client) client=postgres(url,{ssl:'require', max:5});
+  if(!url) throw Object.assign(new Error('Database URL is not configured. Set NETLIFY_DATABASE_URL, NETLIFY_DB_URL, DATABASE_URL, or POSTGRES_URL.'),{statusCode:503});
+  if(!client) client=new Pool({connectionString:url, max:5, ssl:shouldUseSsl(url)?{rejectUnauthorized:false}:false});
   return client;
 }
+
+export function sql(){ return createDb(getPool()); }
 export async function ensureSchema(db=sql()){
   await db.unsafe(`create extension if not exists pgcrypto;
   create table if not exists platform_installation(id text primary key default 'default', installation_complete boolean not null default false, installer_draft jsonb not null default '{}'::jsonb, completed_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
