@@ -4,7 +4,7 @@ import { handler } from '../netlify/functions/api.mjs';
 
 async function request(method, path, body){
   const previous={};
-  for(const key of ['NETLIFY_DATABASE_URL','NETLIFY_DB_URL','DATABASE_URL','POSTGRES_URL']){
+  for(const key of ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL','NETLIFY_DB_URL']){
     previous[key]=process.env[key];
     delete process.env[key];
   }
@@ -24,6 +24,7 @@ for(const [method,path,body] of [
   ['GET','/api/install/health'],
   ['GET','/api/install/draft'],
   ['POST','/api/install/draft',{company:{name:'Test'}}],
+  ['POST','/api/install/bootstrap-database'],
   ['POST','/api/install/finish',{company:{name:'Test'},owner:{email:'owner@example.com'}}],
   ['GET','/api/install/integration-status'],
 ]){
@@ -45,12 +46,12 @@ test('installer status route reports actionable first-run database state', async
   const response=await request('GET','/api/install-status');
   assert.equal(response.json.ok,false);
   assert.equal(response.json.installed,false);
-  assert.equal(response.json.code,'NETLIFY_DATABASE_REQUIRED');
-  assert.equal(response.json.message,'Netlify Database is not linked yet. Create or link Netlify Database, then retry bootstrap.');
+  assert.equal(response.json.code,'DATABASE_NOT_CONFIGURED');
+  assert.equal(response.json.message,'Database not detected. Attempting automatic bootstrap...');
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
   assert.equal(response.json.netlifyDatabaseDetected,false);
-  assert.ok(response.json.guide.some((item)=>item.includes('Netlify Database')));
+  assert.equal(response.json.manualSetupRequired,false);
   assert.equal(response.json.safeMode,true);
 });
 
@@ -58,10 +59,22 @@ test('installer health route reports Netlify Database linking guidance and drive
   const response=await request('GET','/api/install/health');
   assert.equal(response.json.ok,false);
   assert.equal(response.json.databaseReachable,false);
-  assert.equal(response.json.code,'NETLIFY_DATABASE_REQUIRED');
+  assert.equal(response.json.code,'DATABASE_NOT_CONFIGURED');
   assert.equal(response.json.netlifyDatabaseDetected,false);
+  assert.equal(response.json.manualSetupRequired,false);
   assert.equal(response.json.driverPackage,'pg');
   assert.ok(response.json.env.some((item)=>item.key==='NETLIFY_DATABASE_URL'));
+});
+
+
+test('bootstrap endpoint confirms manual link only after automatic bootstrap is attempted', async()=>{
+  const response=await request('POST','/api/install/bootstrap-database');
+  assert.equal(response.statusCode,200);
+  assert.equal(response.json.ok,false);
+  assert.equal(response.json.code,'DATABASE_MANUAL_LINK_REQUIRED');
+  assert.equal(response.json.manualSetupRequired,true);
+  assert.equal(response.json.attemptedAutomaticBootstrap,true);
+  assert.ok(response.json.guide.some((item)=>item.includes('Netlify')));
 });
 
 test('integration status route returns exact public-safe environment status metadata', async()=>{
