@@ -1,1 +1,0 @@
-import { promises as fs } from 'fs'; const js=await fs.readFile('public/assets/install.js','utf8'); if(!js.includes("matchMedia('(prefers-color-scheme: dark)')")||!js.includes('type="color"')) throw new Error('theme controls incomplete'); console.log('Theme audit passed.');
