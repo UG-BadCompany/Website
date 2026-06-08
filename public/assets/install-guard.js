@@ -1,0 +1,1 @@
+(function(){if(location.pathname.startsWith('/install'))return;fetch('/api/install-status',{cache:'no-store'}).then(r=>r.json()).then(j=>{if(!j.installation_complete)location.replace('/install/')}).catch(()=>{});})();
