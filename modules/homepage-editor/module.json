@@ -1,0 +1,32 @@
+{
+  "id": "homepage-editor",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Homepage Editor",
+  "description": "Homepage Editor module for the contractor platform.",
+  "category": "System",
+  "icon": "🏠",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "route": "/dashboard/?module=homepage-editor",
+  "sidebar": {
+    "label": "Homepage Editor",
+    "order": 13
+  },
+  "mobileNav": {
+    "label": "Homepage Editor",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "homepage.manage",
+      "name": "Homepage Manage"
+    }
+  ],
+  "dependencies": []
+}

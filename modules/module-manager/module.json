@@ -1,0 +1,31 @@
+{
+  "id": "module-manager",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Module Manager",
+  "description": "Module Manager module for the contractor platform.",
+  "category": "System",
+  "icon": "🧩",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner"
+  ],
+  "route": "/dashboard/?module=module-manager",
+  "sidebar": {
+    "label": "Module Manager",
+    "order": 14
+  },
+  "mobileNav": {
+    "label": "Module Manager",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "modules.manage",
+      "name": "Modules Manage"
+    }
+  ],
+  "dependencies": []
+}

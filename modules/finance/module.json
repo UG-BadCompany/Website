@@ -1,0 +1,32 @@
+{
+  "id": "finance",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Finance",
+  "description": "Finance module for the contractor platform.",
+  "category": "Finance",
+  "icon": "💵",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "route": "/dashboard/?module=finance",
+  "sidebar": {
+    "label": "Finance",
+    "order": 8
+  },
+  "mobileNav": {
+    "label": "Finance",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "finance.view",
+      "name": "Finance View"
+    }
+  ],
+  "dependencies": []
+}

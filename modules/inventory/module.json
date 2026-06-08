@@ -1,0 +1,38 @@
+{
+  "id": "inventory",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Inventory",
+  "description": "Inventory module for the contractor platform.",
+  "category": "Operations",
+  "icon": "📦",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "route": "/dashboard/?module=inventory",
+  "sidebar": {
+    "label": "Inventory",
+    "order": 6
+  },
+  "mobileNav": {
+    "label": "Inventory",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "inventory.view",
+      "name": "Inventory View"
+    },
+    {
+      "id": "inventory.manage",
+      "name": "Inventory Manage"
+    }
+  ],
+  "dependencies": []
+}

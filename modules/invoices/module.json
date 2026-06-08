@@ -1,0 +1,42 @@
+{
+  "id": "invoices",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Invoices",
+  "description": "Invoices module for the contractor platform.",
+  "category": "Finance",
+  "icon": "🧾",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "client"
+  ],
+  "route": "/dashboard/?module=invoices",
+  "sidebar": {
+    "label": "Invoices",
+    "order": 7
+  },
+  "mobileNav": {
+    "label": "Invoices",
+    "show": true
+  },
+  "permissions": [
+    {
+      "id": "invoices.view",
+      "name": "Invoices View"
+    },
+    {
+      "id": "invoices.create",
+      "name": "Invoices Create"
+    },
+    {
+      "id": "invoices.pay",
+      "name": "Invoices Pay"
+    }
+  ],
+  "dependencies": []
+}

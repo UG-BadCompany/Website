@@ -1,0 +1,42 @@
+{
+  "id": "work-orders",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Work Orders",
+  "description": "Work Orders module for the contractor platform.",
+  "category": "Operations",
+  "icon": "🧰",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "route": "/dashboard/?module=work-orders",
+  "sidebar": {
+    "label": "Work Orders",
+    "order": 4
+  },
+  "mobileNav": {
+    "label": "Work Orders",
+    "show": true
+  },
+  "permissions": [
+    {
+      "id": "workorders.view",
+      "name": "Workorders View"
+    },
+    {
+      "id": "workorders.create",
+      "name": "Workorders Create"
+    },
+    {
+      "id": "workorders.assign",
+      "name": "Workorders Assign"
+    }
+  ],
+  "dependencies": []
+}

@@ -1,0 +1,34 @@
+{
+  "id": "ai-troubleshooting",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "AI Troubleshooting",
+  "description": "AI Troubleshooting module for the contractor platform.",
+  "category": "AI",
+  "icon": "🧠",
+  "enabledByDefault": true,
+  "status": "beta",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager",
+    "worker"
+  ],
+  "route": "/dashboard/?module=ai-troubleshooting",
+  "sidebar": {
+    "label": "AI Troubleshooting",
+    "order": 3
+  },
+  "mobileNav": {
+    "label": "AI Troubleshooting",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "ai.troubleshoot",
+      "name": "Ai Troubleshoot"
+    }
+  ],
+  "dependencies": []
+}

@@ -1,0 +1,33 @@
+{
+  "id": "reports",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Reports",
+  "description": "Reports module for the contractor platform.",
+  "category": "Analytics",
+  "icon": "📊",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "route": "/dashboard/?module=reports",
+  "sidebar": {
+    "label": "Reports",
+    "order": 15
+  },
+  "mobileNav": {
+    "label": "Reports",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "reports.view",
+      "name": "Reports View"
+    }
+  ],
+  "dependencies": []
+}

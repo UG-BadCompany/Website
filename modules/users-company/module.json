@@ -1,0 +1,40 @@
+{
+  "id": "users-company",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Users / Company Management",
+  "description": "Users / Company Management module for the contractor platform.",
+  "category": "System",
+  "icon": "🏢",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "route": "/dashboard/?module=users-company",
+  "sidebar": {
+    "label": "Users / Company Management",
+    "order": 10
+  },
+  "mobileNav": {
+    "label": "Users / Company Management",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "users.view",
+      "name": "Users View"
+    },
+    {
+      "id": "users.manage",
+      "name": "Users Manage"
+    },
+    {
+      "id": "company.manage",
+      "name": "Company Manage"
+    }
+  ],
+  "dependencies": []
+}
