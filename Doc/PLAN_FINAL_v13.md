@@ -20,6 +20,835 @@ Codex must treat this document as the single source of truth.
 
 ---
 
+
+---
+
+# FINAL v13 UPDATE — Installer Theme Live Preview, Integration Detection, DB Seeding, Sidebar UX, Core Modules, and Role View Testing
+
+This section is a required update to the plan.
+
+The platform remains a full White-Label Contractor CMMS + AI Quoting System.
+
+The installer should be simple, but it must still create a real working platform.
+
+Current issues this section fixes:
+
+- Theme selector during install does not update live.
+- Integration Warnings use wrong variable name `SERPAPI_KEY`; it must be `SERPAPI_API_KEY`.
+- Integration Warnings do not auto-detect all existing host environment variables.
+- Dashboard/sidebar needs a more organized professional layout.
+- Installer appears to finish without saving/creating real database records.
+- Basic accounts, roles, permissions, services, and modules must be created.
+- Basic non-AI modules must exist immediately.
+- Owner needs a role/view switcher to test all default roles.
+
+---
+
+## v13.1 Installer Theme Selector Must Update Live
+
+During install, the Theme step must update the actual installer preview immediately when the owner changes theme mode or colors.
+
+### Required Behavior
+
+When owner changes:
+
+- Light
+- Dark
+- System
+- Custom
+
+the installer must immediately update:
+
+- background
+- text color
+- cards
+- buttons
+- inputs
+- sidebar preview
+- mobile nav preview
+- header preview
+- sample dashboard card
+- sample public homepage card
+
+No page refresh.
+
+No waiting until Save.
+
+No broken preview.
+
+### Technical Requirements
+
+On every change, update the document theme and CSS variables immediately:
+
+```js
+document.documentElement.dataset.theme = resolvedTheme;
+document.documentElement.style.setProperty('--primary', value);
+document.documentElement.style.setProperty('--accent', value);
+document.documentElement.style.setProperty('--color-background', value);
+document.documentElement.style.setProperty('--color-surface', value);
+document.documentElement.style.setProperty('--color-text', value);
+```
+
+System mode must resolve using:
+
+```js
+window.matchMedia('(prefers-color-scheme: dark)')
+```
+
+If OS theme changes while installer is open and mode is `system`, preview must update.
+
+### Save Requirements
+
+Save & Continue must persist theme values to the installer draft and final company/theme settings.
+
+After refresh, saved theme values must reload.
+
+After Finish Install, dashboard/public site/client portal must use the saved theme.
+
+### Acceptance Tests
+
+- Theme mode changes preview live.
+- Color changes preview live.
+- System mode follows OS.
+- Refresh keeps saved theme.
+- Dashboard uses saved theme.
+- Public site uses saved theme.
+- No hardcoded white background appears after theme change.
+
+---
+
+## v13.2 Correct Integration Warning Variable Names
+
+The installer and System Center must use the exact Netlify Environment Variable names.
+
+Current wrong value:
+
+```txt
+SERPAPI_KEY
+```
+
+Correct value:
+
+```txt
+SERPAPI_API_KEY
+```
+
+The platform must never invent alternate names.
+
+### Required Integration Warning List
+
+The installer Review step and System Center detection must check these exact variables:
+
+```txt
+MAGIC_LINK_FROM_EMAIL
+OPENAI_API_KEY
+QUOTE_FROM_EMAIL
+RECAPTCHA_SECRET_KEY
+RECAPTCHA_SITE_KEY
+RESEND_API_KEY
+SERPAPI_API_KEY
+SITE_URL
+SITE_URL_ALIASES
+SQUARE_ACCESS_TOKEN
+SQUARE_API_VERSION
+SQUARE_ENVIRONMENT
+SQUARE_LOCATION_ID
+SQUARE_WEBHOOK_SIGNATURE_KEY
+```
+
+### Detection Display Rules
+
+Show each variable status as:
+
+```txt
+VARIABLE_NAME: Configured
+```
+
+or:
+
+```txt
+VARIABLE_NAME: Not configured; platform will use manual mode.
+```
+
+Never show secret values.
+
+For configured secrets, optional display:
+
+```txt
+Configured ending in abcd
+```
+
+Only if safe last-four metadata is available.
+
+### Required vs Optional During Install
+
+These are optional warnings during install.
+
+Missing values must not block Finish Install.
+
+The installer should say:
+
+```txt
+These integrations can be configured later in System Center.
+```
+
+### Acceptance Tests
+
+- `SERPAPI_API_KEY` is used everywhere.
+- `SERPAPI_KEY` appears nowhere in source code or UI.
+- All listed environment variables are checked.
+- Missing optional integrations show warnings only.
+- Configured variables are detected without exposing secrets.
+- Finish Install works even if all integrations are missing.
+
+---
+
+## v13.3 Auto-Detect Existing Host Environment Variables
+
+The installer must auto-detect existing host environment variables when possible.
+
+### Detection Source
+
+Server-side functions should read:
+
+```js
+process.env
+```
+
+and return only safe status.
+
+Create or update:
+
+```txt
+GET /api/install/integration-status
+GET /api/system/integration-status
+```
+
+Response example:
+
+```json
+{
+  "ok": true,
+  "integrations": [
+    {
+      "key": "OPENAI_API_KEY",
+      "configured": true,
+      "requiredForInstall": false,
+      "category": "AI"
+    },
+    {
+      "key": "SERPAPI_API_KEY",
+      "configured": false,
+      "requiredForInstall": false,
+      "category": "Search"
+    }
+  ]
+}
+```
+
+Never return actual values.
+
+### Categories
+
+Group integration warnings:
+
+```txt
+Email
+AI
+Search
+Security
+Site URL
+Payments
+```
+
+### Exact Mapping
+
+Email:
+
+```txt
+MAGIC_LINK_FROM_EMAIL
+QUOTE_FROM_EMAIL
+RESEND_API_KEY
+```
+
+AI:
+
+```txt
+OPENAI_API_KEY
+```
+
+Search:
+
+```txt
+SERPAPI_API_KEY
+```
+
+Security:
+
+```txt
+RECAPTCHA_SECRET_KEY
+RECAPTCHA_SITE_KEY
+```
+
+Site:
+
+```txt
+SITE_URL
+SITE_URL_ALIASES
+```
+
+Payments:
+
+```txt
+SQUARE_ACCESS_TOKEN
+SQUARE_API_VERSION
+SQUARE_ENVIRONMENT
+SQUARE_LOCATION_ID
+SQUARE_WEBHOOK_SIGNATURE_KEY
+```
+
+### Acceptance Tests
+
+- Existing Netlify env vars show Configured.
+- Missing vars show Not Configured.
+- No env values are exposed.
+- Review screen shows complete detection list.
+- System Center uses same detection code.
+
+---
+
+## v13.4 Installer Must Actually Create Database Records
+
+Finish Install must not just change UI.
+
+It must create/upsert the minimum required database records so the platform works immediately.
+
+### Required Database Creation
+
+`POST /api/install/finish` must create or upsert:
+
+```txt
+platform_installation
+company_settings
+theme_settings or company theme fields
+homepage_settings
+app_users
+roles
+permissions
+role_permissions
+user_roles
+workspace_access
+module_registry
+module_settings
+service_categories
+audit_logs
+```
+
+If the schema is not created yet, migrations must create it.
+
+The install function should not assume records already exist.
+
+### Owner Account Creation
+
+Installer must create the owner user.
+
+Required owner fields:
+
+```txt
+full_name
+email
+phone optional
+role = owner
+active = true
+created_at
+updated_at
+```
+
+If owner already exists by normalized email, update it and ensure owner role exists.
+
+### Default Roles
+
+Seed roles:
+
+```txt
+owner
+admin
+manager
+worker
+client
+```
+
+### Default Role Capabilities
+
+Owner:
+
+```txt
+all permissions
+all workspaces
+can impersonate
+can view all role views
+can manage modules
+can manage system center
+```
+
+Admin:
+
+```txt
+dashboard
+customers
+requests
+quotes
+work orders
+schedule
+inventory
+invoices
+finance
+users limited
+```
+
+Manager:
+
+```txt
+dashboard
+customers
+requests
+quotes
+work orders
+schedule
+inventory
+worker assignment
+```
+
+Worker:
+
+```txt
+worker portal
+assigned jobs
+schedule
+job photos
+materials used
+completion submission
+```
+
+Client:
+
+```txt
+client portal
+requests
+quotes
+invoices
+project photos
+approvals
+payments
+```
+
+### Required Permissions
+
+At minimum create permissions for:
+
+```txt
+dashboard.view
+customers.view
+customers.manage
+requests.view
+requests.manage
+quotes.view
+quotes.manage
+workorders.view
+workorders.manage
+workorders.assign
+schedule.view
+schedule.manage
+inventory.view
+inventory.manage
+invoices.view
+invoices.manage
+finance.view
+finance.manage
+users.view
+users.manage
+roles.manage
+modules.view
+modules.manage
+theme.manage
+homepage.manage
+system.view
+system.manage
+audit.view
+impersonation.use
+```
+
+### Install Finish Validation
+
+After Finish Install, verify records exist:
+
+```txt
+owner user exists
+owner role exists
+owner has owner role
+roles exist
+permissions exist
+role_permissions exist
+module_registry contains required core modules
+company settings exist
+theme settings exist
+homepage settings exist
+installation_complete = true
+```
+
+If any required creation fails, return clear JSON error.
+
+### Acceptance Tests
+
+- Finish Install creates owner account.
+- Finish Install creates roles.
+- Finish Install creates permissions.
+- Finish Install creates role permissions.
+- Finish Install creates workspace access.
+- Finish Install creates company settings.
+- Finish Install creates homepage settings.
+- Finish Install creates module registry.
+- Finish Install creates services.
+- Dashboard can load immediately after install.
+- Database is not empty after install.
+
+---
+
+## v13.5 Required Basic Modules Must Exist Immediately
+
+The following basic non-AI modules are required at minimum and must be created/registered during install.
+
+These must exist even if AI integrations are not configured:
+
+```txt
+Dashboard / Overview
+Customers / Clients
+Request Estimate
+Estimate & Quote Center
+Work Orders
+Schedule / Calendar
+Inventory
+Invoices
+Finance
+```
+
+### Module IDs
+
+Use stable module IDs:
+
+```txt
+dashboard-overview
+customers
+request-estimate
+estimate-quote-center
+work-orders
+schedule-calendar
+inventory
+invoices
+finance
+```
+
+### Required Module Behavior
+
+Dashboard / Overview:
+
+```txt
+shows quick stats, recent activity, quick actions, setup checklist
+```
+
+Customers / Clients:
+
+```txt
+create/view/edit customers and properties
+```
+
+Request Estimate:
+
+```txt
+manual request form with photo upload support, not AI-only
+```
+
+Estimate & Quote Center:
+
+```txt
+create/view/edit/send quotes manually; AI optional
+```
+
+Work Orders:
+
+```txt
+create/manage/assign/schedule/complete work orders
+```
+
+Schedule / Calendar:
+
+```txt
+calendar and list view for scheduled work
+```
+
+Inventory:
+
+```txt
+items, stock, transactions, materials used
+```
+
+Invoices:
+
+```txt
+create/view/download/send invoices; payment optional
+```
+
+Finance:
+
+```txt
+revenue, invoices, payments, manual payment tracking
+```
+
+### AI Modules Are Additional
+
+AI modules must still exist, but they are not required for manual operation:
+
+```txt
+AI Photo Estimate
+AI Quote Builder
+AI Troubleshooting
+```
+
+If OpenAI is not configured, AI modules show:
+
+```txt
+AI is not configured yet.
+Configure OpenAI in System Center → Environment & Integrations.
+```
+
+No fake results.
+
+No crash.
+
+### Acceptance Tests
+
+- Basic modules appear after install.
+- Basic modules work without OpenAI.
+- Basic modules work without Square.
+- Basic modules are visible in sidebar.
+- Basic modules are visible in Module Manager.
+- Request Estimate is not AI-only.
+- Quotes can be created manually.
+- Invoices can be created manually.
+- Finance supports manual payment tracking.
+
+---
+
+## v13.6 Dashboard Sidebar Must Be Organized and Professional
+
+The dashboard sidebar must be redesigned to be organized, clear, and scalable.
+
+### Sidebar Goals
+
+The sidebar should feel like a polished SaaS CMMS dashboard.
+
+It must not be a random flat list.
+
+It must be grouped by workflow.
+
+### Required Sidebar Groups
+
+Use these groups:
+
+```txt
+Main
+Operations
+Financial
+People
+AI Tools
+System
+```
+
+Main:
+
+```txt
+Dashboard / Overview
+```
+
+Operations:
+
+```txt
+Customers / Clients
+Request Estimate
+Estimate & Quote Center
+Work Orders
+Schedule / Calendar
+Inventory
+```
+
+Financial:
+
+```txt
+Invoices
+Finance
+Payments
+```
+
+People:
+
+```txt
+Users & Roles
+Workspace & Permissions
+```
+
+AI Tools:
+
+```txt
+AI Photo Estimate
+AI Quote Builder
+AI Troubleshooting
+```
+
+System:
+
+```txt
+Homepage Editor
+Theme Manager
+Module Manager
+System Center
+Platform Health
+Audit Logs
+Cache Manager
+Backup / Restore
+Environment & Integrations
+Licensing
+```
+
+### Sidebar UX Requirements
+
+Sidebar must include:
+
+- company logo
+- company name
+- current workspace
+- role/view switcher for Owner
+- grouped nav sections
+- icons
+- active state
+- collapsed mode
+- mobile-friendly bottom nav
+- clear module labels
+- no duplicate modules
+- no developer/internal route names visible
+
+### Owner Role/View Switcher
+
+Owner must have a visible control:
+
+```txt
+Viewing as: Owner
+[Switch View]
+```
+
+Available views:
+
+```txt
+Owner
+Admin
+Manager
+Worker
+Client
+```
+
+Switching view should simulate default role view for testing.
+
+It should not require logout.
+
+It should not permanently change the owner role.
+
+### Acceptance Tests
+
+- Sidebar is grouped.
+- Sidebar is not a flat random list.
+- Owner can switch role views.
+- Admin/Manager/Worker/Client views show appropriate nav.
+- Active module is highlighted.
+- Sidebar works on mobile.
+- No duplicate nav entries.
+- No internal IDs shown to normal users.
+
+---
+
+## v13.7 Owner Default Role View Testing
+
+Owner needs a way to test all default role experiences.
+
+### Required Feature
+
+Add:
+
+```txt
+Owner View Tester
+```
+
+or integrate into workspace switcher.
+
+Owner can preview:
+
+```txt
+Owner View
+Admin View
+Manager View
+Worker View
+Client View
+```
+
+### Behavior
+
+When Owner selects a view:
+
+- sidebar updates to that role's default modules
+- dashboard content updates to that role's perspective
+- permissions are simulated for UI testing
+- a banner appears:
+
+```txt
+Testing Admin View as Owner
+[Exit Test View]
+```
+
+Owner still retains emergency ability to exit back to Owner.
+
+### Audit
+
+Changing test view does not need a heavy audit log, but impersonating a real user does.
+
+Testing a role view should be local/session-level.
+
+### Acceptance Tests
+
+- Owner can test Admin view.
+- Owner can test Manager view.
+- Owner can test Worker view.
+- Owner can test Client view.
+- Owner can return to Owner view.
+- Test view does not permanently change permissions.
+- Sidebar changes to match selected role view.
+
+---
+
+## v13.8 Final Override for Current Issues
+
+If any earlier section conflicts with this v13 section, this v13 section wins.
+
+Specifically:
+
+- `SERPAPI_API_KEY` is the correct variable name.
+- Integration warnings must check the full provided env var list.
+- Theme selector must update live during install.
+- Finish Install must create real DB records.
+- Basic modules must exist after install.
+- Dashboard sidebar must be organized.
+- Owner must be able to view/test all default role views.
+
+---
+
+
 ---
 
 # 0. FINAL v12 CLARIFICATION — Simplified Installer, Full Platform Still Required
