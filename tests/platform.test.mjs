@@ -49,3 +49,14 @@ test('database detection supports linked Netlify and Postgres URL variables with
   assert(app.includes('Selected Connection Source'));
   assert(app.includes('A database connection string was found, but the connection attempt failed.'));
 });
+
+test('database bootstrap schema is idempotent and versioned', async () => {
+  const db = await readFile('netlify/functions/lib/db.mjs','utf8');
+  assert(!/create\s+table(?!\s+if\s+not\s+exists)/i.test(db));
+  assert(!/create\s+(?:unique\s+)?index(?!\s+if\s+not\s+exists)/i.test(db));
+  assert(db.includes('schema_version integer'));
+  assert(db.includes('alter table platform_installation add column if not exists schema_version'));
+  assert(db.includes('tablesDetected'));
+  assert(db.includes('seedRecordsInserted'));
+  assert(db.includes("error?.code === '42P07'"));
+});

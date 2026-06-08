@@ -8,6 +8,7 @@ const netlifyDatabaseHelperSource = 'getConnectionString()';
 const netlifyDatabaseHelperLabel = 'getConnectionString()';
 const noConnectionMessage = 'Waiting for Netlify Database provisioning...';
 const connectionFoundButFailedMessage = 'A database connection string was found, but the connection attempt failed. Review the diagnostics below for the safe error message.';
+const currentSchemaVersion = 1;
 const provisioningMessage = 'Waiting for Netlify Database provisioning...';
 
 let cachedPool;
@@ -185,6 +186,12 @@ async function requiredTableStatus() {
   const missingTables = requiredTableNames.filter((name) => !existing.has(name));
   return { tablesReady: missingTables.length === 0, missingTables, tableCount: rows.length };
 }
+async function indexStatus() {
+  const rows = await query(`select indexname from pg_indexes where schemaname='public' and indexname = any($1)`, [requiredIndexNames]);
+  const existing = new Set(rows.map((row) => row.indexname));
+  const missingIndexes = requiredIndexNames.filter((name) => !existing.has(name));
+  return { indexesReady: missingIndexes.length === 0, missingIndexes, indexCount: rows.length };
+}
 export async function databaseStatus() {
   const detected = detectedDatabaseUrl();
   if (!detected.value) {
@@ -205,29 +212,38 @@ export async function databaseStatus() {
   try {
     await query('select now() as now');
     const { tablesReady, missingTables, tableCount } = await requiredTableStatus();
+    const { indexesReady, missingIndexes, indexCount } = tablesReady ? await indexStatus() : { indexesReady: false, missingIndexes: [], indexCount: 0 };
     let installationComplete = false;
     let writeTestPassed = false;
+    let schemaVersion = 0;
     if (tablesReady) {
-      const install = await query('select installation_complete, write_test_passed from platform_installation order by id limit 1');
+      const versionColumns = await query(`select column_name from information_schema.columns where table_schema='public' and table_name='platform_installation' and column_name='schema_version'`);
+      if (!versionColumns.length) return bootstrapSchema();
+      const install = await query('select installation_complete, write_test_passed, schema_version from platform_installation order by id limit 1');
       installationComplete = Boolean(install?.[0]?.installation_complete);
       writeTestPassed = Boolean(install?.[0]?.write_test_passed);
+      schemaVersion = Number(install?.[0]?.schema_version || 0);
     }
-    if (!tablesReady || !writeTestPassed) {
+    if (!tablesReady || !indexesReady || !writeTestPassed || schemaVersion < currentSchemaVersion) {
       return bootstrapSchema();
     }
     return databaseBaseStatus({
       ok: true,
-      code: tablesReady ? 'SCHEMA_READY' : 'SCHEMA_NOT_READY',
+      code: tablesReady && indexesReady ? 'SCHEMA_READY' : 'SCHEMA_NOT_READY',
       connected: true,
       databaseConnected: true,
-      schemaReady: tablesReady,
+      schemaReady: tablesReady && indexesReady,
       writeTestPassed,
       installationComplete,
-      canBootstrapSchema: !tablesReady,
+      canBootstrapSchema: !(tablesReady && indexesReady),
       connectionAttempt: 'Succeeded',
       selectNowSucceeded: true,
       tableCount,
-      missingTables
+      tablesDetected: tableCount,
+      indexCount,
+      schemaVersion,
+      missingTables,
+      missingIndexes
     });
   } catch (error) {
     return databaseBaseStatus({ ok: false, code: 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, installationComplete: false, canBootstrapSchema: false, connectionAttempt: 'Failed', selectNowSucceeded: false, message: connectionFoundButFailedMessage, safeDetails: safeErrorMessage(error), connectionError: safeErrorMessage(error) });
@@ -235,7 +251,7 @@ export async function databaseStatus() {
 }
 
 const ddl = [
-`create table if not exists platform_installation (id bigserial primary key, installation_complete boolean not null default false, schema_ready boolean not null default false, write_test_passed boolean not null default false, installed_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), metadata jsonb not null default '{}'::jsonb)`,
+`create table if not exists platform_installation (id bigserial primary key, schema_version integer not null default 1, installation_complete boolean not null default false, schema_ready boolean not null default false, write_test_passed boolean not null default false, installed_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), metadata jsonb not null default '{}'::jsonb)`,
 `create table if not exists installer_drafts (id text primary key default 'current', draft jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now())`,
 `create table if not exists company_settings (id bigserial primary key, company_name text not null, email text, phone text, website text, address text, logo_file_id bigint, favicon_file_id bigint, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists theme_settings (id bigserial primary key, mode text not null default 'system', primary_color text not null default '#2563eb', accent_color text not null default '#f59e0b', background_color text not null default '#f8fafc', surface_color text not null default '#ffffff', text_color text not null default '#0f172a', sidebar_color text not null default '#0f172a', mobile_nav_color text not null default '#111827', custom jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
@@ -271,6 +287,7 @@ const ddl = [
 ];
 const requiredTableNames = ddl.map((statement) => statement.match(/create table if not exists ([a-z_]+)/i)?.[1]).filter(Boolean);
 const indexes = [
+`create unique index if not exists idx_platform_installation_id on platform_installation(id)`,
 `create index if not exists idx_app_users_email on app_users(lower(email))`,
 `create index if not exists idx_job_requests_status on job_requests(status)`,
 `create index if not exists idx_work_orders_status on work_orders(status)`,
@@ -279,6 +296,31 @@ const indexes = [
 `create index if not exists idx_audit_logs_action on audit_logs(action)`,
 `create index if not exists idx_workflow_events_entity on workflow_events(entity_type, entity_id)`
 ];
+const requiredIndexNames = indexes.map((statement) => statement.match(/create (?:unique )?index if not exists ([a-z0-9_]+)/i)?.[1]).filter(Boolean);
+const migrations = [
+`alter table platform_installation add column if not exists id bigserial`,
+`alter table platform_installation add column if not exists schema_version integer not null default 1`,
+`alter table platform_installation add column if not exists installation_complete boolean not null default false`,
+`alter table platform_installation add column if not exists schema_ready boolean not null default false`,
+`alter table platform_installation add column if not exists write_test_passed boolean not null default false`,
+`alter table platform_installation add column if not exists installed_at timestamptz`,
+`alter table platform_installation add column if not exists created_at timestamptz not null default now()`,
+`alter table platform_installation add column if not exists updated_at timestamptz not null default now()`,
+`alter table platform_installation add column if not exists metadata jsonb not null default '{}'::jsonb`
+];
+
+async function runSchemaStatement(statement) {
+  try {
+    await query(statement);
+    return true;
+  } catch (error) {
+    if (error?.code === '42P07' || error?.code === '42710') {
+      console.warn('[install-bootstrap] Skipped duplicate schema object', { code: error.code, statement: redactSecretValue(statement) });
+      return false;
+    }
+    throw error;
+  }
+}
 
 export async function bootstrapSchema() {
   const detected = detectedDatabaseUrl();
@@ -308,28 +350,41 @@ export async function bootstrapSchema() {
     return databaseBaseStatus({ ok: false, code: 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, canBootstrapSchema: false, connectionAttempt: 'Failed', selectNowSucceeded: false, message: connectionFoundButFailedMessage, safeDetails: safeErrorMessage(error), connectionError: safeErrorMessage(error) });
   }
   try {
-    for (const statement of ddl) await query(statement);
-    for (const statement of indexes) await query(statement);
-    await seedRequiredRecords();
+    const beforeTables = await requiredTableStatus();
+    const beforeIndexes = await indexStatus();
+
+    for (const statement of ddl) await runSchemaStatement(statement);
+    for (const statement of migrations) await runSchemaStatement(statement);
+    for (const statement of indexes) await runSchemaStatement(statement);
+
+    const seedStats = await seedRequiredRecords();
     const writeTestPassed = await verifyWrites();
     const { tablesReady, missingTables, tableCount } = await requiredTableStatus();
-    await query(`insert into platform_installation (id, schema_ready, write_test_passed, metadata) values (1, $1, $2, $3::jsonb) on conflict (id) do update set schema_ready = excluded.schema_ready, write_test_passed = excluded.write_test_passed, updated_at = now(), metadata = excluded.metadata`, [tablesReady, writeTestPassed, JSON.stringify({ bootstrap: 'automatic', selectedConnectionSource: detected.source })]);
-    await query(`insert into system_health_events(component,status,message,metadata) values('database',$1,$2,$3::jsonb)`, [tablesReady && writeTestPassed ? 'ready' : 'not_ready', tablesReady && writeTestPassed ? 'Automatic schema bootstrap completed' : 'Automatic schema bootstrap did not pass all checks', JSON.stringify({ tablesReady, writeTestPassed })]);
+    const { indexesReady, missingIndexes, indexCount } = await indexStatus();
+    const tablesCreated = Math.max(0, tableCount - beforeTables.tableCount);
+    const indexesCreated = Math.max(0, indexCount - beforeIndexes.indexCount);
+    await query(`insert into platform_installation (id, schema_version, schema_ready, write_test_passed, metadata, updated_at) values (1, $1, $2, $3, $4::jsonb, now()) on conflict (id) do update set schema_version = greatest(platform_installation.schema_version, excluded.schema_version), schema_ready = excluded.schema_ready, write_test_passed = excluded.write_test_passed, updated_at = now(), metadata = excluded.metadata`, [currentSchemaVersion, tablesReady && indexesReady, writeTestPassed, JSON.stringify({ bootstrap: 'automatic', selectedConnectionSource: detected.source, tablesDetected: tableCount, tablesCreated, indexesCreated, seedRecordsInserted: seedStats.inserted })]);
+    await query(`insert into system_health_events(component,status,message,metadata) values('database',$1,$2,$3::jsonb)`, [tablesReady && indexesReady && writeTestPassed ? 'ready' : 'not_ready', tablesReady && indexesReady && writeTestPassed ? 'Automatic schema bootstrap completed' : 'Automatic schema bootstrap did not pass all checks', JSON.stringify({ tablesReady, indexesReady, writeTestPassed, tablesDetected: tableCount, tablesCreated, indexesCreated, seedRecordsInserted: seedStats.inserted })]);
     return databaseBaseStatus({
-      ok: Boolean(tablesReady && writeTestPassed),
-      code: tablesReady && writeTestPassed ? 'SCHEMA_READY' : (writeTestPassed ? 'SCHEMA_NOT_READY' : 'WRITE_TEST_FAILED'),
+      ok: Boolean(tablesReady && indexesReady && writeTestPassed),
+      code: tablesReady && indexesReady && writeTestPassed ? 'SCHEMA_READY' : (writeTestPassed ? 'SCHEMA_NOT_READY' : 'WRITE_TEST_FAILED'),
       connected: true,
       databaseConnected: true,
-      schemaReady: tablesReady,
+      schemaReady: tablesReady && indexesReady,
       writeTestPassed,
-      canBootstrapSchema: !tablesReady,
+      canBootstrapSchema: !(tablesReady && indexesReady),
       connectionAttempt: 'Succeeded',
       selectNowSucceeded: true,
-      tablesCreated: ddl.length,
-      indexesCreated: indexes.length,
-      tableCount,
+      schemaVersion: currentSchemaVersion,
+      tablesDetected: tableCount,
+      tablesCreated,
+      indexesCreated,
+      indexCount,
       missingTables,
-      message: tablesReady && writeTestPassed ? 'Database schema is ready.' : 'Database bootstrap ran, but one or more verification checks failed.'
+      missingIndexes,
+      seedRecordsInserted: seedStats.inserted,
+      seedRecordsUpserted: seedStats.upserted,
+      message: tablesReady && indexesReady && writeTestPassed ? 'Database schema is ready.' : 'Database bootstrap ran, but one or more verification checks failed.'
     });
   } catch (error) {
     return databaseBaseStatus({ ok: false, code: 'SCHEMA_BOOTSTRAP_FAILED', connected: true, databaseConnected: true, schemaReady: false, writeTestPassed: false, canBootstrapSchema: true, connectionAttempt: 'Succeeded', selectNowSucceeded: true, message: safeErrorMessage(error), safeDetails: safeErrorMessage(error) });
@@ -337,14 +392,21 @@ export async function bootstrapSchema() {
 }
 
 export async function seedRequiredRecords() {
-  for (const slug of defaultRoles) await query(`insert into roles(slug,name,description) values($1,$2,$3) on conflict(slug) do update set name=excluded.name`, [slug, slug[0].toUpperCase()+slug.slice(1), `${slug} default role`]);
-  for (const slug of permissions) await query(`insert into permissions(slug,description) values($1,$2) on conflict(slug) do nothing`, [slug, `Allows ${slug}`]);
-  for (const [role, perms] of Object.entries(rolePermissions)) for (const perm of perms) await query(`insert into role_permissions(role_id, permission_id) select r.id,p.id from roles r, permissions p where r.slug=$1 and p.slug=$2 on conflict do nothing`, [role, perm]);
+  const stats = { inserted: 0, upserted: 0 };
+  const countInserted = (rows) => {
+    const inserted = rows.filter((row) => row.inserted === true || row.inserted === 'true').length;
+    stats.inserted += inserted;
+    stats.upserted += rows.length;
+  };
+  for (const slug of defaultRoles) countInserted(await query(`insert into roles(slug,name,description) values($1,$2,$3) on conflict(slug) do update set name=excluded.name returning (xmax = 0) as inserted`, [slug, slug[0].toUpperCase()+slug.slice(1), `${slug} default role`]));
+  for (const slug of permissions) countInserted(await query(`insert into permissions(slug,description) values($1,$2) on conflict(slug) do nothing returning true as inserted`, [slug, `Allows ${slug}`]));
+  for (const [role, perms] of Object.entries(rolePermissions)) for (const perm of perms) countInserted(await query(`insert into role_permissions(role_id, permission_id) select r.id,p.id from roles r, permissions p where r.slug=$1 and p.slug=$2 on conflict do nothing returning true as inserted`, [role, perm]));
   for (const [id,label,group] of coreModules) {
-    await query(`insert into module_registry(id,label,nav_group,enabled,manifest) values($1,$2,$3,true,$4::jsonb) on conflict(id) do update set label=excluded.label, nav_group=excluded.nav_group, enabled=true, updated_at=now()`, [id,label,group,JSON.stringify({id,label,group,dropIn:true})]);
-    await query(`insert into module_settings(module_id,settings) values($1,'{}'::jsonb) on conflict(module_id) do nothing`, [id]);
+    countInserted(await query(`insert into module_registry(id,label,nav_group,enabled,manifest) values($1,$2,$3,true,$4::jsonb) on conflict(id) do update set label=excluded.label, nav_group=excluded.nav_group, enabled=true, updated_at=now() returning (xmax = 0) as inserted`, [id,label,group,JSON.stringify({id,label,group,dropIn:true})]));
+    countInserted(await query(`insert into module_settings(module_id,settings) values($1,'{}'::jsonb) on conflict(module_id) do nothing returning true as inserted`, [id]));
   }
-  for (let i=0;i<defaultServices.length;i++) await query(`insert into service_categories(name,sort_order) values($1,$2) on conflict(name) do update set active=true`, [defaultServices[i], i+1]);
+  for (let i=0;i<defaultServices.length;i++) countInserted(await query(`insert into service_categories(name,sort_order) values($1,$2) on conflict(name) do update set active=true returning (xmax = 0) as inserted`, [defaultServices[i], i+1]));
+  return stats;
 }
 export async function verifyWrites() {
   await query(`create table if not exists bootstrap_write_tests (id text primary key, marker text not null, created_at timestamptz not null default now())`);
