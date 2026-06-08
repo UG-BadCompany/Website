@@ -43,7 +43,9 @@ for(const [method,path,body] of [
 test('installer status route reports actionable first-run database state', async()=>{
   const response=await request('GET','/api/install-status');
   assert.equal(response.json.ok,false);
+  assert.equal(response.json.installed,false);
   assert.equal(response.json.code,'DATABASE_UNAVAILABLE');
+  assert.equal(response.json.message,'Database is unavailable. Installer can load in recovery mode.');
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
   assert.equal(response.json.safeMode,true);

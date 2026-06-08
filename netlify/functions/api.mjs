@@ -1,17 +1,30 @@
 import crypto from 'node:crypto';
-import { ensureSchema, sql, getDatabaseUrl, audit, databaseEnvStatus, databaseDriverPackage, loadDatabaseDriver } from './shared/db.mjs';
-import { seedPlatform } from './shared/seed.mjs';
-import { integrationStatus } from './shared/env-metadata.mjs';
-import { modules, roles, permissions } from './shared/core-data.mjs';
-import { transition, assertTransition } from './shared/workflow.mjs';
+
+let dbDepsPromise;
+let appDepsPromise;
+let appDepsLoaded;
+async function loadDbDeps(){
+ if(!dbDepsPromise) dbDepsPromise=import('./shared/db.mjs');
+ return dbDepsPromise;
+}
+async function loadAppDeps(){
+ if(!appDepsPromise) appDepsPromise=Promise.all([
+  loadDbDeps(),
+  import('./shared/seed.mjs'),
+  import('./shared/env-metadata.mjs'),
+  import('./shared/core-data.mjs'),
+  import('./shared/workflow.mjs')
+ ]).then(([db,seed,env,core,workflow])=>{ appDepsLoaded={...db,...seed,...env,...core,...workflow}; return appDepsLoaded; });
+ return appDepsPromise;
+}
 const json=(statusCode,body)=>({statusCode,headers:{'content-type':'application/json','cache-control':'no-store'},body:JSON.stringify(body)});
 const parse=(event)=> event.body ? JSON.parse(event.body) : {};
 const clean=(r)=>JSON.parse(JSON.stringify(r));
-const safeDatabaseMessage='The database is not available yet. Please check Netlify Database connection and migrations.';
-function dbUnavailable(message=safeDatabaseMessage, extra={}){ return {ok:false,code:'DATABASE_UNAVAILABLE',message,safeMode:true,...extra}; }
+const safeDatabaseMessage='Database is unavailable. Installer can load in recovery mode.';
+function dbUnavailable(message=safeDatabaseMessage, extra={}){ return {ok:false,installed:false,needsInstall:true,safeMode:true,code:'DATABASE_UNAVAILABLE',message,...extra}; }
 function validationFailed(message, missing=[], goToStep='review'){ return {ok:false,code:'INSTALL_VALIDATION_FAILED',message,missing,goToStep}; }
-function isDatabaseError(error){ return error?.code==='DATABASE_UNAVAILABLE'||error?.code==='DATABASE_DRIVER_MISSING'||error?.statusCode===503||/database|postgres|connection|pg|relation|schema|migration/i.test(error?.message||''); }
-async function withDb(fn){ await ensureSchema(); return fn(sql()); }
+function isDatabaseError(error){ return error?.code==='DATABASE_UNAVAILABLE'||error?.code==='DATABASE_DRIVER_MISSING'||error?.statusCode===503||/database|postgres|connection|pg|relation|schema|migration|module|import|package/i.test(error?.message||''); }
+async function withDb(fn){ const { ensureSchema, sql }=await loadDbDeps(); await ensureSchema(); return fn(sql()); }
 async function tryInstallDb(fn, failureBody){
  try{ return await withDb(fn); }catch(error){
   if(isDatabaseError(error)) return json(200,{...failureBody,databaseError:error.message});
@@ -19,6 +32,11 @@ async function tryInstallDb(fn, failureBody){
  }
 }
 async function databaseHealth(){
+ let deps;
+ try{ deps=await loadDbDeps(); }catch(error){
+  return {configured:false,reachable:false,driverPackage:'pg',driverLoaded:false,driverError:error.message,error:`Database support could not be loaded: ${error.message}`,env:[]};
+ }
+ const { ensureSchema, sql, getDatabaseUrl, databaseEnvStatus, databaseDriverPackage, loadDatabaseDriver }=deps;
  const configured=!!getDatabaseUrl();
  let driverLoaded=false;
  let driverError=null;
@@ -35,18 +53,20 @@ async function databaseHealth(){
 }
 function pathOf(event){ return ('/'+(event.path||'').replace(/^\/\.netlify\/functions\/api/,'').replace(/^\/api/,'')).replace(/\/+/g,'/'); }
 async function list(db, table, active=true){ const where= active ? ` where coalesce(status,'active') not in ('workflow.closed','workflow.archived','quote.accepted','invoice.paid')` : ''; return db.unsafe(`select * from ${table}${where} order by created_at desc limit 200`); }
-async function createCrud(db, table, body, defaults={}){ const data={...defaults,...body}; const keys=Object.keys(data).filter(k=>data[k]!==undefined); const values=keys.map(k=>data[k]); const cols=keys.map(k=>`"${k}"`).join(','); const params=keys.map((_,i)=>`$${i+1}`).join(','); const rows=await db.unsafe(`insert into ${table}(${cols}) values(${params}) returning *`,values); await audit(`${table}.create`,{id:rows[0].id},table,rows[0].id); return rows[0]; }
-async function updateCrud(db, table, id, body){ const keys=Object.keys(body).filter(k=>!['id','created_at','updated_at'].includes(k)); if(!keys.length) return (await db.unsafe(`select * from ${table} where id=$1`,[id]))[0]; const sets=keys.map((k,i)=>`"${k}"=$${i+1}`).join(','); const rows=await db.unsafe(`update ${table} set ${sets}, updated_at=now() where id=$${keys.length+1} returning *`,[...keys.map(k=>body[k]),id]); await audit(`${table}.update`,{id},table,id); return rows[0]; }
+async function createCrud(db, table, body, defaults={}){ const data={...defaults,...body}; const keys=Object.keys(data).filter(k=>data[k]!==undefined); const values=keys.map(k=>data[k]); const cols=keys.map(k=>`"${k}"`).join(','); const params=keys.map((_,i)=>`$${i+1}`).join(','); const rows=await db.unsafe(`insert into ${table}(${cols}) values(${params}) returning *`,values); await appDepsLoaded?.audit?.(`${table}.create`,{id:rows[0].id},table,rows[0].id); return rows[0]; }
+async function updateCrud(db, table, id, body){ const keys=Object.keys(body).filter(k=>!['id','created_at','updated_at'].includes(k)); if(!keys.length) return (await db.unsafe(`select * from ${table} where id=$1`,[id]))[0]; const sets=keys.map((k,i)=>`"${k}"=$${i+1}`).join(','); const rows=await db.unsafe(`update ${table} set ${sets}, updated_at=now() where id=$${keys.length+1} returning *`,[...keys.map(k=>body[k]),id]); await appDepsLoaded?.audit?.(`${table}.update`,{id},table,id); return rows[0]; }
 export const handler=async(event)=>{ try{
  const method=event.httpMethod; const path=pathOf(event);
  if(path==='/install-status') {
   const health=await databaseHealth();
-  if(!health.reachable) return json(200,{...dbUnavailable(),needsInstall:true,installation_complete:false,draft:{},completed_at:null,databaseConfigured:health.configured,databaseReachable:false,databaseError:health.error,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env});
+  if(!health.reachable) return json(200,{...dbUnavailable(),installation_complete:false,draft:{},completed_at:null,databaseConfigured:health.configured,databaseReachable:false,databaseError:health.error,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env});
+  const { sql }=await loadDbDeps();
   const db=sql();
   const rows=await db`select installation_complete, installer_draft, completed_at from platform_installation where id='default'`;
   const complete=!!rows[0]?.installation_complete;
-  return json(200,{ok:true,needsInstall:!complete,installation_complete:complete,draft:rows[0]?.installer_draft||{},completed_at:rows[0]?.completed_at||null,databaseConfigured:true,databaseReachable:true,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,env:health.env});
+  return json(200,{ok:true,installed:complete,needsInstall:!complete,installation_complete:complete,draft:rows[0]?.installer_draft||{},completed_at:rows[0]?.completed_at||null,databaseConfigured:true,databaseReachable:true,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,env:health.env});
  }
+ const { audit, seedPlatform, integrationStatus, modules, roles, permissions, transition, assertTransition }=await loadAppDeps();
  if(path==='/install/health') {
   const health=await databaseHealth();
   return json(200,{ok:health.reachable,code:health.reachable?'DATABASE_AVAILABLE':'DATABASE_UNAVAILABLE',message:health.reachable?'Database is connected and migrations are available.':safeDatabaseMessage,safeMode:!health.reachable,databaseConfigured:health.configured,databaseReachable:health.reachable,database:health.reachable,databaseError:health.error||null,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env,needsInstall:!health.reachable});
