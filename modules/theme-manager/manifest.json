@@ -1,0 +1,29 @@
+{
+  "id": "theme-manager",
+  "name": "Theme Manager",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Light, dark, system, and custom theme controls.",
+  "category": "Operations",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Theme Manager",
+    "route": "/dashboard/modules/theme-manager",
+    "icon": "grid",
+    "order": 120,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker"
+    ]
+  },
+  "permissions": [
+    "theme_manager:view",
+    "theme_manager:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "theme-manager",
+  "healthCheck": true,
+  "entry": "/modules/theme-manager/entry.js"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "homepage-editor",
+  "name": "Homepage Editor",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Editor-driven public page builder with sections, visibility, and ordering.",
+  "category": "Operations",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Homepage Editor",
+    "route": "/dashboard/modules/homepage-editor",
+    "icon": "grid",
+    "order": 110,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "homepage_editor:view",
+    "homepage_editor:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "homepage-editor",
+  "healthCheck": true,
+  "entry": "/modules/homepage-editor/entry.js"
+}

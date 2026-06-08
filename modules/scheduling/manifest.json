@@ -1,0 +1,30 @@
+{
+  "id": "scheduling",
+  "name": "Scheduling",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Calendar, dispatch, worker assignments, and appointment queue.",
+  "category": "Operations",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Scheduling",
+    "route": "/dashboard/modules/scheduling",
+    "icon": "grid",
+    "order": 40,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "schedule:view",
+    "schedule:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "scheduling",
+  "healthCheck": true,
+  "entry": "/modules/scheduling/entry.js"
+}

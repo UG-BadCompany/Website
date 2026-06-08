@@ -1,0 +1,30 @@
+{
+  "id": "client-portal",
+  "name": "Client Portal",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Client requests, quotes, invoices, files, and project history.",
+  "category": "Operations",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Client Portal",
+    "route": "/dashboard/modules/client-portal",
+    "icon": "grid",
+    "order": 140,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "client_portal:view",
+    "client_portal:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "client-portal",
+  "healthCheck": true,
+  "entry": "/modules/client-portal/entry.js"
+}
