@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { ensureSchema, sql, getDatabaseUrl, audit } from './shared/db.mjs';
+import { ensureSchema, sql, getDatabaseUrl, audit, databaseEnvStatus, databaseDriverPackage, loadDatabaseDriver } from './shared/db.mjs';
 import { seedPlatform } from './shared/seed.mjs';
 import { integrationStatus } from './shared/env-metadata.mjs';
 import { modules, roles, permissions } from './shared/core-data.mjs';
@@ -7,16 +7,30 @@ import { transition, assertTransition } from './shared/workflow.mjs';
 const json=(statusCode,body)=>({statusCode,headers:{'content-type':'application/json','cache-control':'no-store'},body:JSON.stringify(body)});
 const parse=(event)=> event.body ? JSON.parse(event.body) : {};
 const clean=(r)=>JSON.parse(JSON.stringify(r));
+const safeDatabaseMessage='The database is not available yet. Please check Netlify Database connection and migrations.';
+function dbUnavailable(message=safeDatabaseMessage, extra={}){ return {ok:false,code:'DATABASE_UNAVAILABLE',message,safeMode:true,...extra}; }
+function validationFailed(message, missing=[], goToStep='review'){ return {ok:false,code:'INSTALL_VALIDATION_FAILED',message,missing,goToStep}; }
+function isDatabaseError(error){ return error?.code==='DATABASE_UNAVAILABLE'||error?.code==='DATABASE_DRIVER_MISSING'||error?.statusCode===503||/database|postgres|connection|pg|relation|schema|migration/i.test(error?.message||''); }
 async function withDb(fn){ await ensureSchema(); return fn(sql()); }
+async function tryInstallDb(fn, failureBody){
+ try{ return await withDb(fn); }catch(error){
+  if(isDatabaseError(error)) return json(200,{...failureBody,databaseError:error.message});
+  throw error;
+ }
+}
 async function databaseHealth(){
  const configured=!!getDatabaseUrl();
- if(!configured) return {configured:false,reachable:false,error:'Database URL is not configured.'};
+ let driverLoaded=false;
+ let driverError=null;
+ try{ loadDatabaseDriver(); driverLoaded=true; }catch(error){ driverError=error.message; }
+ if(!configured) return {configured:false,reachable:false,driverPackage:databaseDriverPackage,driverLoaded,driverError,error:`Database URL is not configured. Set one of: ${databaseEnvStatus().map((item)=>item.key).join(', ')}.`,env:databaseEnvStatus()};
+ if(!driverLoaded) return {configured:true,reachable:false,driverPackage:databaseDriverPackage,driverLoaded,driverError,error:driverError,env:databaseEnvStatus()};
  try{
   await ensureSchema();
   const [row]=await sql()`select true as reachable`;
-  return {configured:true,reachable:!!row?.reachable};
+  return {configured:true,reachable:!!row?.reachable,driverPackage:databaseDriverPackage,driverLoaded,driverError:null,error:null,env:databaseEnvStatus()};
  }catch(error){
-  return {configured:true,reachable:false,error:error.message};
+  return {configured:true,reachable:false,driverPackage:databaseDriverPackage,driverLoaded,driverError:null,error:error.message,env:databaseEnvStatus()};
  }
 }
 function pathOf(event){ return ('/'+(event.path||'').replace(/^\/\.netlify\/functions\/api/,'').replace(/^\/api/,'')).replace(/\/+/g,'/'); }
@@ -27,20 +41,20 @@ export const handler=async(event)=>{ try{
  const method=event.httpMethod; const path=pathOf(event);
  if(path==='/install-status') {
   const health=await databaseHealth();
-  if(!health.reachable) return json(200,{ok:true,needsInstall:true,installation_complete:false,draft:{},completed_at:null,databaseConfigured:health.configured,databaseReachable:false,databaseError:health.error});
+  if(!health.reachable) return json(200,{...dbUnavailable(),needsInstall:true,installation_complete:false,draft:{},completed_at:null,databaseConfigured:health.configured,databaseReachable:false,databaseError:health.error,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env});
   const db=sql();
   const rows=await db`select installation_complete, installer_draft, completed_at from platform_installation where id='default'`;
   const complete=!!rows[0]?.installation_complete;
-  return json(200,{ok:true,needsInstall:!complete,installation_complete:complete,draft:rows[0]?.installer_draft||{},completed_at:rows[0]?.completed_at||null,databaseConfigured:true,databaseReachable:true});
+  return json(200,{ok:true,needsInstall:!complete,installation_complete:complete,draft:rows[0]?.installer_draft||{},completed_at:rows[0]?.completed_at||null,databaseConfigured:true,databaseReachable:true,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,env:health.env});
  }
  if(path==='/install/health') {
   const health=await databaseHealth();
-  return json(200,{ok:true,databaseConfigured:health.configured,databaseReachable:health.reachable,database:health.reachable,error:health.error||null,needsInstall:!health.reachable});
+  return json(200,{ok:health.reachable,code:health.reachable?'DATABASE_AVAILABLE':'DATABASE_UNAVAILABLE',message:health.reachable?'Database is connected and migrations are available.':safeDatabaseMessage,safeMode:!health.reachable,databaseConfigured:health.configured,databaseReachable:health.reachable,database:health.reachable,databaseError:health.error||null,driverPackage:health.driverPackage,driverLoaded:health.driverLoaded,driverError:health.driverError,env:health.env,needsInstall:!health.reachable});
  }
- if(path==='/install/draft' && method==='GET') return await withDb(async db=>{ const rows=await db`select installer_draft from platform_installation where id='default'`; return json(200,{ok:true,draft:rows[0]?.installer_draft||{}}); });
- if(path==='/install/draft' && method==='POST') return await withDb(async db=>{ const body=parse(event); await db`insert into platform_installation(id,installer_draft) values('default',${db.json(body)}) on conflict(id) do update set installer_draft=platform_installation.installer_draft || excluded.installer_draft, updated_at=now()`; return json(200,{ok:true,draft:body}); });
+ if(path==='/install/draft' && method==='GET') return await tryInstallDb(async db=>{ const rows=await db`select installer_draft from platform_installation where id='default'`; return json(200,{ok:true,draft:rows[0]?.installer_draft||{}}); }, dbUnavailable('Could not load installer draft because the database is unavailable.',{draft:{}}));
+ if(path==='/install/draft' && method==='POST') return await tryInstallDb(async db=>{ const body=parse(event); await db`insert into platform_installation(id,installer_draft) values('default',${db.json(body)}) on conflict(id) do update set installer_draft=platform_installation.installer_draft || excluded.installer_draft, updated_at=now()`; return json(200,{ok:true,draft:body}); }, dbUnavailable('Could not save installer draft because the database is unavailable.'));
  if(['/install/integration-status','/system/integration-status','/install/env-status'].includes(path)) return json(200,{ok:true,integrations:integrationStatus(),variables:integrationStatus()});
- if(path==='/install/finish' && method==='POST') return await withDb(async db=>{ const body=parse(event); await seedPlatform(db,body); const checks=await db`select (select count(*) from app_users) users,(select count(*) from roles) roles,(select count(*) from permissions) permissions,(select count(*) from role_permissions) role_permissions,(select count(*) from module_registry) modules,(select installation_complete from platform_installation where id='default') complete`; const c=checks[0]; if(!c.complete||Number(c.users)<1||Number(c.roles)<5||Number(c.permissions)<25||Number(c.role_permissions)<25||Number(c.modules)<25) return json(500,{ok:false,error:'Install validation failed',checks:c}); return json(200,{ok:true,redirect:'/dashboard/',checks:c}); });
+ if(path==='/install/finish' && method==='POST') { const body=parse(event); const missing=[]; if(!body.owner?.email && !body.company?.email) missing.push('owner_account'); if(missing.length) return json(200,validationFailed('Owner account is missing.',missing,'owner')); return await tryInstallDb(async db=>{ await seedPlatform(db,body); const checks=await db`select (select count(*) from app_users) users,(select count(*) from roles) roles,(select count(*) from permissions) permissions,(select count(*) from role_permissions) role_permissions,(select count(*) from module_registry) modules,(select installation_complete from platform_installation where id='default') complete`; const c=checks[0]; if(!c.complete||Number(c.users)<1||Number(c.roles)<5||Number(c.permissions)<25||Number(c.role_permissions)<25||Number(c.modules)<25) return json(200,{ok:false,code:'INSTALL_VALIDATION_FAILED',message:'Install validation failed after database writes.',checks:c,goToStep:'review'}); return json(200,{ok:true,redirect:'/dashboard/',checks:c}); }, dbUnavailable('Installation cannot finish because the database is unavailable.',{goToStep:'review'})); }
  if(path==='/bootstrap') return await withDb(async db=>{ const [company]=await db`select * from company_settings where id='default'`; const mods=await db`select * from module_registry where enabled=true order by group_name,label`; return json(200,{ok:true,company:company||null,modules:mods.length?mods:modules,roles:Object.keys(roles)}); });
  if(path==='/modules') return await withDb(async db=>json(200,{ok:true,modules:await db`select * from module_registry order by group_name,label`}));
  if(path==='/dashboard/summary') return await withDb(async db=>{ const [row]=await db`select (select count(*) from customers where status='active') customers,(select count(*) from estimate_requests where status not in ('workflow.closed','workflow.archived')) requests,(select count(*) from quotes where status not in ('quote.accepted','workflow.archived')) quotes,(select count(*) from work_orders where status not in ('workflow.closed','workflow.archived')) work_orders,(select count(*) from invoices where status not in ('invoice.paid','workflow.archived')) invoices_due,(select coalesce(sum(total-paid_total),0) from invoices where status <> 'invoice.paid') outstanding`; const activity=await db`select action, entity_type, created_at from audit_logs order by created_at desc limit 10`; return json(200,{ok:true,stats:row,activity,quickStart:['Create first client','Create first request','Create first quote','Schedule a work order','Send an invoice','Configure integrations']}); });
@@ -59,4 +73,4 @@ export const handler=async(event)=>{ try{
  if(path==='/ai/run'&&method==='POST') return json(200,{ok:!!process.env.OPENAI_API_KEY,configured:!!process.env.OPENAI_API_KEY,message:process.env.OPENAI_API_KEY?'AI request accepted.':'AI is not configured yet. Configure OpenAI in System Center → Environment & Integrations.'});
  if(path==='/health') return await withDb(async db=>{ const [counts]=await db`select (select count(*) from module_registry) modules,(select count(*) from roles) roles,(select count(*) from permissions) permissions`; return json(200,{ok:true,database:true,counts,integrations:integrationStatus().map(i=>({key:i.key,configured:i.configured,category:i.category}))}); });
  return json(404,{ok:false,error:'API route not found',path});
- }catch(err){ return json(err.statusCode||500,{ok:false,error:err.message||'Unexpected error'}); }};
+ }catch(err){ const path=pathOf(event); if(path.startsWith('/install')||path==='/install-status') return json(200,{ok:false,code:isDatabaseError(err)?'DATABASE_UNAVAILABLE':'INSTALL_API_ERROR',message:isDatabaseError(err)?safeDatabaseMessage:(err.message||'Unexpected installer API error'),safeMode:true,databaseError:isDatabaseError(err)?err.message:undefined}); return json(err.statusCode||500,{ok:false,error:err.message||'Unexpected error'}); }};

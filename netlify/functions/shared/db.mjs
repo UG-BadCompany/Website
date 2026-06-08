@@ -1,9 +1,24 @@
-import pg from 'pg';
+import { createRequire } from 'node:module';
 
 let client;
-const { Pool } = pg;
+let pgModule;
+const require=createRequire(import.meta.url);
 
-export function getDatabaseUrl(){ return process.env.NETLIFY_DATABASE_URL || process.env.NETLIFY_DB_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL; }
+export const databaseEnvKeys=['NETLIFY_DATABASE_URL','NETLIFY_DB_URL','DATABASE_URL','POSTGRES_URL'];
+export const databaseDriverPackage='pg';
+
+export function loadDatabaseDriver(){
+  if(pgModule) return pgModule;
+  try{
+    pgModule=require(databaseDriverPackage);
+    return pgModule;
+  }catch(error){
+    throw Object.assign(new Error(`Database driver package "${databaseDriverPackage}" is not installed or cannot be loaded. Run npm install and confirm package.json includes ${databaseDriverPackage}.`),{code:'DATABASE_DRIVER_MISSING',statusCode:503,cause:error});
+  }
+}
+
+export function getDatabaseUrl(){ return databaseEnvKeys.map((key)=>process.env[key]).find(Boolean); }
+export function databaseEnvStatus(){ return databaseEnvKeys.map((key)=>({key,configured:Boolean(process.env[key])})); }
 
 function shouldUseSsl(url){
   if(process.env.PGSSLMODE==='disable') return false;
@@ -50,7 +65,8 @@ function createDb(queryable, release){
 
 function getPool(){
   const url=getDatabaseUrl();
-  if(!url) throw Object.assign(new Error('Database URL is not configured. Set NETLIFY_DATABASE_URL, NETLIFY_DB_URL, DATABASE_URL, or POSTGRES_URL.'),{statusCode:503});
+  if(!url) throw Object.assign(new Error(`Database URL is not configured. Set ${databaseEnvKeys.join(', ')}.`),{code:'DATABASE_UNAVAILABLE',statusCode:503});
+  const { Pool }=loadDatabaseDriver();
   if(!client) client=new Pool({connectionString:url, max:5, ssl:shouldUseSsl(url)?{rejectUnauthorized:false}:false});
   return client;
 }
