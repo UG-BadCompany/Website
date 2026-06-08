@@ -60,3 +60,22 @@ test('database bootstrap schema is idempotent and versioned', async () => {
   assert(db.includes('seedRecordsInserted'));
   assert(db.includes("error?.code === '42P07'"));
 });
+
+test('installer has polished theme, services, and homepage builders', async () => {
+  const app = await readFile('src/app.js','utf8');
+  for (const preset of ['Contractor Dark','Modern Blue','Copper Canyon','Slate Pro','Arizona Sand','Clean Light','Forest Service','High Contrast']) assert(app.includes(preset), preset);
+  for (const text of ['Primary Brand Color','Use custom sidebar colors','Use custom mobile nav colors','Live Theme Preview']) assert(app.includes(text), text);
+  for (const template of ['Handyman','HVAC','Plumbing','Electrical','Remodeling','Property Maintenance','Commercial Maintenance','General Contractor']) assert(app.includes(template), template);
+  for (const text of ['data-service-move','data-service-remove','data-service-toggle','Default labor rate optional']) assert(app.includes(text), text);
+  assert(app.includes('Advanced Developer Settings'));
+  assert(app.includes('<details class="builder-section"><summary><b>Advanced Developer Settings</b></summary>'));
+  for (const text of ['Hero Section','Hero image upload','Featured Projects','Testimonials','Homepage Live Preview']) assert(app.includes(text), text);
+});
+
+test('finish install persists structured theme services and homepage data', async () => {
+  const db = await readFile('netlify/functions/lib/db.mjs','utf8');
+  for (const column of ['button_color','sidebar_text_color','mobile_nav_text_color','company_info','projects jsonb','testimonials jsonb','default_labor_rate','metadata jsonb']) assert(db.includes(column), column);
+  assert(db.includes('serviceItems'));
+  assert(db.includes('insert into service_categories(name,category,icon,color,default_labor_rate,active,sort_order,metadata'));
+  assert(db.includes('insert into homepage_settings(id,hero_title,hero_subtitle,cta_label,cta_link,secondary_cta_label'));
+});
