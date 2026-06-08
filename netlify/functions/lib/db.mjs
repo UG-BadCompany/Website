@@ -1,32 +1,70 @@
-import { getDatabase, getConnectionString } from '@netlify/database';
+import { getConnectionString } from '@netlify/database';
+import pg from 'pg';
 import { coreModules, defaultRoles, permissions, rolePermissions, defaultServices } from './platformData.mjs';
 
 const databaseUrlEnvNames = ['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
+const provisioningMessage = 'Checking Netlify Database provisioning. This platform includes @netlify/database, so Netlify should automatically provision a database during deploy. If provisioning has not completed yet, click Retry Database Check.';
+
+let cachedPool;
+let cachedConnectionString;
 
 export function detectedDatabaseUrl() {
-  for (const name of databaseUrlEnvNames) {
-    if (process.env[name]) return { name, value: process.env[name] };
+  let helperError = null;
+  try {
+    const value = getConnectionString();
+    if (value) return { name: '@netlify/database getConnectionString()', value, source: 'netlifyDatabaseHelper', helperError: null };
+  } catch (error) {
+    helperError = error instanceof Error ? error.message : String(error);
   }
-  const value = getConnectionString();
-  return value ? { name: 'NETLIFY_DATABASE_URL', value } : { name: null, value: '' };
+  for (const name of databaseUrlEnvNames) {
+    if (process.env[name]) return { name, value: process.env[name], source: 'environment', helperError };
+  }
+  return { name: null, value: '', source: null, helperError };
 }
 export function hasDatabaseConfig() { return Boolean(detectedDatabaseUrl().value); }
 export function databaseBaseStatus(overrides = {}) {
   const detected = detectedDatabaseUrl();
+  const helperFailed = Boolean(detected.helperError);
   return {
     databaseClientInstalled: true,
     clientInstalled: true,
+    netlifyDatabaseHelperAttempted: true,
+    netlifyDatabaseHelperFailed: helperFailed,
+    getConnectionStringError: detected.helperError,
     databaseUrlDetected: Boolean(detected.value),
     environmentVariableUsed: detected.name,
+    databaseConnectionSource: detected.source,
     configured: Boolean(detected.value),
+    manualDatabaseLinkRequired: helperFailed && !detected.value,
+    provisioningMessage,
     ...overrides
   };
 }
-export function getDb() { const detected = detectedDatabaseUrl(); return getDatabase(detected.value ? { connectionString: detected.value } : {}); }
-export async function query(text, params = []) { return await getDb().sql.unsafe(text, params); }
+export function getPool() {
+  const detected = detectedDatabaseUrl();
+  if (!detected.value) {
+    const reason = detected.helperError || provisioningMessage;
+    const error = new Error(reason);
+    error.code = detected.helperError ? 'NETLIFY_DATABASE_HELPER_FAILED' : 'NETLIFY_DATABASE_PROVISIONING_PENDING';
+    throw error;
+  }
+  if (!cachedPool || cachedConnectionString !== detected.value) {
+    cachedConnectionString = detected.value;
+    cachedPool = new pg.Pool({ connectionString: detected.value });
+  }
+  return cachedPool;
+}
+export async function connectToDatabase() {
+  const client = await getPool().connect();
+  return client;
+}
+export async function query(text, params = []) {
+  const result = await getPool().query(text, params);
+  return result.rows || [];
+}
 export async function databaseStatus() {
   const configured = hasDatabaseConfig();
-  if (!configured) return databaseBaseStatus({ connected: false, schemaReady: false, writeTestPassed: false, installationComplete: false, manualDatabaseLinkRequired: true, message: 'No database connection has been detected. Link a Netlify Database to this site, then retry.' });
+  if (!configured) return databaseBaseStatus({ connected: false, schemaReady: false, writeTestPassed: false, installationComplete: false, message: provisioningMessage });
   try {
     await query('select 1 as ok');
     const rows = await query("select to_regclass('public.platform_installation') as table_name");
@@ -93,14 +131,27 @@ const indexes = [
 ];
 
 export async function bootstrapSchema() {
-  if (!hasDatabaseConfig()) return databaseBaseStatus({ connected: false, schemaReady: false, writeTestPassed: false, manualDatabaseLinkRequired: true, message: 'No database connection was detected. Link a Netlify Database, then retry.' });
-  for (const statement of ddl) await query(statement);
-  for (const statement of indexes) await query(statement);
-  await seedRequiredRecords();
-  const writeTestPassed = await verifyWrites();
-  await query(`insert into platform_installation (id, schema_ready, write_test_passed, metadata) values (1, true, $1, '{"bootstrap":"automatic"}'::jsonb) on conflict (id) do update set schema_ready = true, write_test_passed = excluded.write_test_passed, updated_at = now()`, [writeTestPassed]);
-  await query(`insert into system_health_events(component,status,message) values('database','ready','Automatic schema bootstrap completed')`);
-  return databaseBaseStatus({ connected: true, schemaReady: true, writeTestPassed, tablesCreated: ddl.length, indexesCreated: indexes.length, message: 'Database schema is ready.' });
+  if (!hasDatabaseConfig()) return databaseBaseStatus({ ok: false, code: 'NETLIFY_DATABASE_PROVISIONING_PENDING', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, message: provisioningMessage });
+  let client;
+  try {
+    client = await connectToDatabase();
+    await client.query('select 1 as ok');
+  } catch (error) {
+    return databaseBaseStatus({ ok: false, code: error.code || 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, message: error instanceof Error ? error.message : String(error) });
+  } finally {
+    client?.release();
+  }
+  try {
+    for (const statement of ddl) await query(statement);
+    for (const statement of indexes) await query(statement);
+    await seedRequiredRecords();
+    const writeTestPassed = await verifyWrites();
+    await query(`insert into platform_installation (id, schema_ready, write_test_passed, metadata) values (1, true, $1, '{"bootstrap":"automatic"}'::jsonb) on conflict (id) do update set schema_ready = true, write_test_passed = excluded.write_test_passed, updated_at = now()`, [writeTestPassed]);
+    await query(`insert into system_health_events(component,status,message) values('database','ready','Automatic schema bootstrap completed')`);
+    return databaseBaseStatus({ ok: writeTestPassed, code: writeTestPassed ? 'SCHEMA_READY' : 'WRITE_TEST_FAILED', connected: true, databaseConnected: true, schemaReady: true, writeTestPassed, tablesCreated: ddl.length, indexesCreated: indexes.length, message: writeTestPassed ? 'Database schema is ready.' : 'Database schema was created, but the write/read/delete verification failed.' });
+  } catch (error) {
+    return databaseBaseStatus({ ok: false, code: 'SCHEMA_BOOTSTRAP_FAILED', connected: true, databaseConnected: true, schemaReady: false, writeTestPassed: false, message: error instanceof Error ? error.message : String(error) });
+  }
 }
 export async function seedRequiredRecords() {
   for (const slug of defaultRoles) await query(`insert into roles(slug,name,description) values($1,$2,$3) on conflict(slug) do update set name=excluded.name`, [slug, slug[0].toUpperCase()+slug.slice(1), `${slug} default role`]);

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@netlify/database": "file:vendor/netlify-database",
-    "postgres": "^3.4.7"
+    "postgres": "^3.4.7",
+    "pg": "^8.21.0"
   }
 }

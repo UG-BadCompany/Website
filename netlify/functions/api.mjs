@@ -22,7 +22,7 @@ export async function handler(event) {
     }
     if (method === 'POST' && path === '/api/install/bootstrap-database') {
       const result = await bootstrapSchema();
-      return json(result.connected && result.writeTestPassed ? 200 : 200, { ok: result.connected && result.schemaReady, ...result });
+      return json(200, { ok: Boolean(result.connected && result.schemaReady && result.writeTestPassed), ...result });
     }
     if (method === 'GET' && path === '/api/install/draft') {
       const status = await databaseStatus();
