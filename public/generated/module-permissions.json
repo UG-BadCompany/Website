@@ -1,0 +1,285 @@
+{
+  "permissions": [
+    {
+      "id": "quotes.view",
+      "name": "Quotes View",
+      "moduleId": "estimate-quote-center",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "quotes.create",
+      "name": "Quotes Create",
+      "moduleId": "estimate-quote-center",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "quotes.convert",
+      "name": "Quotes Convert",
+      "moduleId": "estimate-quote-center",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "ai.photo.estimate",
+      "name": "Ai Photo Estimate",
+      "moduleId": "ai-photo-estimate",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "ai.troubleshoot",
+      "name": "Ai Troubleshoot",
+      "moduleId": "ai-troubleshooting",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "workorders.view",
+      "name": "Workorders View",
+      "moduleId": "work-orders",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "workorders.create",
+      "name": "Workorders Create",
+      "moduleId": "work-orders",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "workorders.assign",
+      "name": "Workorders Assign",
+      "moduleId": "work-orders",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "schedule.view",
+      "name": "Schedule View",
+      "moduleId": "schedule",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "schedule.manage",
+      "name": "Schedule Manage",
+      "moduleId": "schedule",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "inventory.view",
+      "name": "Inventory View",
+      "moduleId": "inventory",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "inventory.manage",
+      "name": "Inventory Manage",
+      "moduleId": "inventory",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ]
+    },
+    {
+      "id": "invoices.view",
+      "name": "Invoices View",
+      "moduleId": "invoices",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "id": "invoices.create",
+      "name": "Invoices Create",
+      "moduleId": "invoices",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "id": "invoices.pay",
+      "name": "Invoices Pay",
+      "moduleId": "invoices",
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ]
+    },
+    {
+      "id": "finance.view",
+      "name": "Finance View",
+      "moduleId": "finance",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "id": "customers.view",
+      "name": "Customers View",
+      "moduleId": "customers",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "customers.manage",
+      "name": "Customers Manage",
+      "moduleId": "customers",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "users.view",
+      "name": "Users View",
+      "moduleId": "users-company",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "id": "users.manage",
+      "name": "Users Manage",
+      "moduleId": "users-company",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "id": "company.manage",
+      "name": "Company Manage",
+      "moduleId": "users-company",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "id": "permissions.manage",
+      "name": "Permissions Manage",
+      "moduleId": "workspace-permissions",
+      "roles": [
+        "owner"
+      ]
+    },
+    {
+      "id": "theme.manage",
+      "name": "Theme Manage",
+      "moduleId": "theme-manager",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "id": "homepage.manage",
+      "name": "Homepage Manage",
+      "moduleId": "homepage-editor",
+      "roles": [
+        "owner",
+        "admin"
+      ]
+    },
+    {
+      "id": "modules.manage",
+      "name": "Modules Manage",
+      "moduleId": "module-manager",
+      "roles": [
+        "owner"
+      ]
+    },
+    {
+      "id": "reports.view",
+      "name": "Reports View",
+      "moduleId": "reports",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "maintenance.view",
+      "name": "Maintenance View",
+      "moduleId": "maintenance-plans",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    },
+    {
+      "id": "maintenance.manage",
+      "name": "Maintenance Manage",
+      "moduleId": "maintenance-plans",
+      "roles": [
+        "owner",
+        "admin",
+        "manager"
+      ]
+    }
+  ]
+}

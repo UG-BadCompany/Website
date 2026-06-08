@@ -1,0 +1,31 @@
+{
+  "id": "workspace-permissions",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Workspace & Permissions",
+  "description": "Workspace & Permissions module for the contractor platform.",
+  "category": "System",
+  "icon": "🔐",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner"
+  ],
+  "route": "/dashboard/?module=workspace-permissions",
+  "sidebar": {
+    "label": "Workspace & Permissions",
+    "order": 11
+  },
+  "mobileNav": {
+    "label": "Workspace & Permissions",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "permissions.manage",
+      "name": "Permissions Manage"
+    }
+  ],
+  "dependencies": []
+}

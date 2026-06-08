@@ -1,0 +1,594 @@
+{
+  "generatedAt": "2026-06-08T02:59:30.757Z",
+  "modules": [
+    {
+      "id": "estimate-quote-center",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Estimate & Quote Center",
+      "description": "Estimate & Quote Center module for the contractor platform.",
+      "category": "Operations",
+      "icon": "💬",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "route": "/dashboard/?module=estimate-quote-center",
+      "sidebar": {
+        "label": "Estimate & Quote Center",
+        "order": 1
+      },
+      "mobileNav": {
+        "label": "Estimate & Quote Center",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "quotes.view",
+          "name": "Quotes View"
+        },
+        {
+          "id": "quotes.create",
+          "name": "Quotes Create"
+        },
+        {
+          "id": "quotes.convert",
+          "name": "Quotes Convert"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/estimate-quote-center/module.json"
+    },
+    {
+      "id": "ai-photo-estimate",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "AI Photo Estimate",
+      "description": "AI Photo Estimate module for the contractor platform.",
+      "category": "AI",
+      "icon": "📸",
+      "enabledByDefault": true,
+      "status": "beta",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "route": "/dashboard/?module=ai-photo-estimate",
+      "sidebar": {
+        "label": "AI Photo Estimate",
+        "order": 2
+      },
+      "mobileNav": {
+        "label": "AI Photo Estimate",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "ai.photo.estimate",
+          "name": "Ai Photo Estimate"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/ai-photo-estimate/module.json"
+    },
+    {
+      "id": "ai-troubleshooting",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "AI Troubleshooting",
+      "description": "AI Troubleshooting module for the contractor platform.",
+      "category": "AI",
+      "icon": "🧠",
+      "enabledByDefault": true,
+      "status": "beta",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "route": "/dashboard/?module=ai-troubleshooting",
+      "sidebar": {
+        "label": "AI Troubleshooting",
+        "order": 3
+      },
+      "mobileNav": {
+        "label": "AI Troubleshooting",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "ai.troubleshoot",
+          "name": "Ai Troubleshoot"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/ai-troubleshooting/module.json"
+    },
+    {
+      "id": "work-orders",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Work Orders",
+      "description": "Work Orders module for the contractor platform.",
+      "category": "Operations",
+      "icon": "🧰",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "route": "/dashboard/?module=work-orders",
+      "sidebar": {
+        "label": "Work Orders",
+        "order": 4
+      },
+      "mobileNav": {
+        "label": "Work Orders",
+        "show": true
+      },
+      "permissions": [
+        {
+          "id": "workorders.view",
+          "name": "Workorders View"
+        },
+        {
+          "id": "workorders.create",
+          "name": "Workorders Create"
+        },
+        {
+          "id": "workorders.assign",
+          "name": "Workorders Assign"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/work-orders/module.json"
+    },
+    {
+      "id": "schedule",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Schedule",
+      "description": "Schedule module for the contractor platform.",
+      "category": "Operations",
+      "icon": "📅",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "route": "/dashboard/?module=schedule",
+      "sidebar": {
+        "label": "Schedule",
+        "order": 5
+      },
+      "mobileNav": {
+        "label": "Schedule",
+        "show": true
+      },
+      "permissions": [
+        {
+          "id": "schedule.view",
+          "name": "Schedule View"
+        },
+        {
+          "id": "schedule.manage",
+          "name": "Schedule Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/schedule/module.json"
+    },
+    {
+      "id": "inventory",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Inventory",
+      "description": "Inventory module for the contractor platform.",
+      "category": "Operations",
+      "icon": "📦",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "worker"
+      ],
+      "route": "/dashboard/?module=inventory",
+      "sidebar": {
+        "label": "Inventory",
+        "order": 6
+      },
+      "mobileNav": {
+        "label": "Inventory",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "inventory.view",
+          "name": "Inventory View"
+        },
+        {
+          "id": "inventory.manage",
+          "name": "Inventory Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/inventory/module.json"
+    },
+    {
+      "id": "invoices",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Invoices",
+      "description": "Invoices module for the contractor platform.",
+      "category": "Finance",
+      "icon": "🧾",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager",
+        "client"
+      ],
+      "route": "/dashboard/?module=invoices",
+      "sidebar": {
+        "label": "Invoices",
+        "order": 7
+      },
+      "mobileNav": {
+        "label": "Invoices",
+        "show": true
+      },
+      "permissions": [
+        {
+          "id": "invoices.view",
+          "name": "Invoices View"
+        },
+        {
+          "id": "invoices.create",
+          "name": "Invoices Create"
+        },
+        {
+          "id": "invoices.pay",
+          "name": "Invoices Pay"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/invoices/module.json"
+    },
+    {
+      "id": "finance",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Finance",
+      "description": "Finance module for the contractor platform.",
+      "category": "Finance",
+      "icon": "💵",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "route": "/dashboard/?module=finance",
+      "sidebar": {
+        "label": "Finance",
+        "order": 8
+      },
+      "mobileNav": {
+        "label": "Finance",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "finance.view",
+          "name": "Finance View"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/finance/module.json"
+    },
+    {
+      "id": "customers",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Customers",
+      "description": "Customers module for the contractor platform.",
+      "category": "CRM",
+      "icon": "👥",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "route": "/dashboard/?module=customers",
+      "sidebar": {
+        "label": "Customers",
+        "order": 9
+      },
+      "mobileNav": {
+        "label": "Customers",
+        "show": true
+      },
+      "permissions": [
+        {
+          "id": "customers.view",
+          "name": "Customers View"
+        },
+        {
+          "id": "customers.manage",
+          "name": "Customers Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/customers/module.json"
+    },
+    {
+      "id": "users-company",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Users / Company Management",
+      "description": "Users / Company Management module for the contractor platform.",
+      "category": "System",
+      "icon": "🏢",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "route": "/dashboard/?module=users-company",
+      "sidebar": {
+        "label": "Users / Company Management",
+        "order": 10
+      },
+      "mobileNav": {
+        "label": "Users / Company Management",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "users.view",
+          "name": "Users View"
+        },
+        {
+          "id": "users.manage",
+          "name": "Users Manage"
+        },
+        {
+          "id": "company.manage",
+          "name": "Company Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/users-company/module.json"
+    },
+    {
+      "id": "workspace-permissions",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Workspace & Permissions",
+      "description": "Workspace & Permissions module for the contractor platform.",
+      "category": "System",
+      "icon": "🔐",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner"
+      ],
+      "route": "/dashboard/?module=workspace-permissions",
+      "sidebar": {
+        "label": "Workspace & Permissions",
+        "order": 11
+      },
+      "mobileNav": {
+        "label": "Workspace & Permissions",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "permissions.manage",
+          "name": "Permissions Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/workspace-permissions/module.json"
+    },
+    {
+      "id": "theme-manager",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Theme Manager",
+      "description": "Theme Manager module for the contractor platform.",
+      "category": "System",
+      "icon": "🎨",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "route": "/dashboard/?module=theme-manager",
+      "sidebar": {
+        "label": "Theme Manager",
+        "order": 12
+      },
+      "mobileNav": {
+        "label": "Theme Manager",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "theme.manage",
+          "name": "Theme Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/theme-manager/module.json"
+    },
+    {
+      "id": "homepage-editor",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Homepage Editor",
+      "description": "Homepage Editor module for the contractor platform.",
+      "category": "System",
+      "icon": "🏠",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin"
+      ],
+      "route": "/dashboard/?module=homepage-editor",
+      "sidebar": {
+        "label": "Homepage Editor",
+        "order": 13
+      },
+      "mobileNav": {
+        "label": "Homepage Editor",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "homepage.manage",
+          "name": "Homepage Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/homepage-editor/module.json"
+    },
+    {
+      "id": "module-manager",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Module Manager",
+      "description": "Module Manager module for the contractor platform.",
+      "category": "System",
+      "icon": "🧩",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner"
+      ],
+      "route": "/dashboard/?module=module-manager",
+      "sidebar": {
+        "label": "Module Manager",
+        "order": 14
+      },
+      "mobileNav": {
+        "label": "Module Manager",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "modules.manage",
+          "name": "Modules Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/module-manager/module.json"
+    },
+    {
+      "id": "reports",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Reports",
+      "description": "Reports module for the contractor platform.",
+      "category": "Analytics",
+      "icon": "📊",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "route": "/dashboard/?module=reports",
+      "sidebar": {
+        "label": "Reports",
+        "order": 15
+      },
+      "mobileNav": {
+        "label": "Reports",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "reports.view",
+          "name": "Reports View"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/reports/module.json"
+    },
+    {
+      "id": "maintenance-plans",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "name": "Maintenance Plans",
+      "description": "Maintenance Plans module for the contractor platform.",
+      "category": "Operations",
+      "icon": "🛠️",
+      "enabledByDefault": true,
+      "status": "stable",
+      "hidden": false,
+      "workspaces": [
+        "owner",
+        "admin",
+        "manager"
+      ],
+      "route": "/dashboard/?module=maintenance-plans",
+      "sidebar": {
+        "label": "Maintenance Plans",
+        "order": 16
+      },
+      "mobileNav": {
+        "label": "Maintenance Plans",
+        "show": false
+      },
+      "permissions": [
+        {
+          "id": "maintenance.view",
+          "name": "Maintenance View"
+        },
+        {
+          "id": "maintenance.manage",
+          "name": "Maintenance Manage"
+        }
+      ],
+      "dependencies": [],
+      "manifestPath": "modules/maintenance-plans/module.json"
+    }
+  ]
+}

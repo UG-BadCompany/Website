@@ -1,0 +1,2 @@
+window.TAModules = window.TAModules || { registry:{}, register(m){ this.registry[m.id]=m; } };
+window.TAModules.register({ id: "ai-troubleshooting", version: '1.0.0', async mount(context){ context.root.innerHTML = '<section class="module-empty"><h2>AI Troubleshooting</h2><p>AI Troubleshooting is ready. Create your first record to start using this workspace.</p><button class="primary">Create Troubleshooting</button><a href="/dashboard/?module=system-help">Open help guide</a></section>'; }, async unmount(){}, async refresh(){}, getActions(){ return []; } });

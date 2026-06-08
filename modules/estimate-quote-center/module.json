@@ -1,0 +1,41 @@
+{
+  "id": "estimate-quote-center",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Estimate & Quote Center",
+  "description": "Estimate & Quote Center module for the contractor platform.",
+  "category": "Operations",
+  "icon": "💬",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin",
+    "manager"
+  ],
+  "route": "/dashboard/?module=estimate-quote-center",
+  "sidebar": {
+    "label": "Estimate & Quote Center",
+    "order": 1
+  },
+  "mobileNav": {
+    "label": "Estimate & Quote Center",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "quotes.view",
+      "name": "Quotes View"
+    },
+    {
+      "id": "quotes.create",
+      "name": "Quotes Create"
+    },
+    {
+      "id": "quotes.convert",
+      "name": "Quotes Convert"
+    }
+  ],
+  "dependencies": []
+}

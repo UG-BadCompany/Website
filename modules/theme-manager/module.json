@@ -1,0 +1,32 @@
+{
+  "id": "theme-manager",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "name": "Theme Manager",
+  "description": "Theme Manager module for the contractor platform.",
+  "category": "System",
+  "icon": "🎨",
+  "enabledByDefault": true,
+  "status": "stable",
+  "hidden": false,
+  "workspaces": [
+    "owner",
+    "admin"
+  ],
+  "route": "/dashboard/?module=theme-manager",
+  "sidebar": {
+    "label": "Theme Manager",
+    "order": 12
+  },
+  "mobileNav": {
+    "label": "Theme Manager",
+    "show": false
+  },
+  "permissions": [
+    {
+      "id": "theme.manage",
+      "name": "Theme Manage"
+    }
+  ],
+  "dependencies": []
+}

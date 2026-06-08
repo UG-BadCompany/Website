@@ -1,0 +1,2 @@
+window.TAModules = window.TAModules || { registry:{}, register(m){ this.registry[m.id]=m; } };
+window.TAModules.register({ id: "estimate-quote-center", version: '1.0.0', async mount(context){ context.root.innerHTML = '<section class="module-empty"><h2>Estimate & Quote Center</h2><p>Estimate & Quote Center is ready. Create your first record to start using this workspace.</p><button class="primary">Create Estimate</button><a href="/dashboard/?module=system-help">Open help guide</a></section>'; }, async unmount(){}, async refresh(){}, getActions(){ return []; } });
