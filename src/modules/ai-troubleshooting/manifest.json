@@ -1,0 +1,10 @@
+{
+  "id": "ai-troubleshooting",
+  "label": "AI Troubleshooting",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/ai-troubleshooting"
+  ]
+}

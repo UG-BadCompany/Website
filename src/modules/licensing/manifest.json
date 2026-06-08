@@ -1,0 +1,10 @@
+{
+  "id": "licensing",
+  "label": "Licensing",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/licensing"
+  ]
+}

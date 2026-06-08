@@ -1,0 +1,265 @@
+{
+  "generatedAt": "2026-06-08T20:10:28.979Z",
+  "modules": [
+    {
+      "id": "ai-photo-estimate",
+      "label": "AI Photo Estimate",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/ai-photo-estimate"
+      ]
+    },
+    {
+      "id": "ai-quote-builder",
+      "label": "AI Quote Builder",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/ai-quote-builder"
+      ]
+    },
+    {
+      "id": "ai-troubleshooting",
+      "label": "AI Troubleshooting",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/ai-troubleshooting"
+      ]
+    },
+    {
+      "id": "audit-logs",
+      "label": "Audit Logs",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/audit-logs"
+      ]
+    },
+    {
+      "id": "backup-restore",
+      "label": "Backup / Restore",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/backup-restore"
+      ]
+    },
+    {
+      "id": "cache-manager",
+      "label": "Cache Manager",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/cache-manager"
+      ]
+    },
+    {
+      "id": "customers",
+      "label": "Customers / Clients",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/customers"
+      ]
+    },
+    {
+      "id": "dashboard-overview",
+      "label": "Dashboard / Overview",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/dashboard-overview"
+      ]
+    },
+    {
+      "id": "environment-integrations",
+      "label": "Environment & Integrations",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/environment-integrations"
+      ]
+    },
+    {
+      "id": "estimate-quote-center",
+      "label": "Estimate & Quote Center",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/estimate-quote-center"
+      ]
+    },
+    {
+      "id": "file-manager",
+      "label": "File / Photo Manager",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/file-manager"
+      ]
+    },
+    {
+      "id": "finance",
+      "label": "Finance",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/finance"
+      ]
+    },
+    {
+      "id": "homepage-editor",
+      "label": "Homepage Editor",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/homepage-editor"
+      ]
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/inventory"
+      ]
+    },
+    {
+      "id": "invoices",
+      "label": "Invoices",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/invoices"
+      ]
+    },
+    {
+      "id": "licensing",
+      "label": "Licensing",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/licensing"
+      ]
+    },
+    {
+      "id": "module-manager",
+      "label": "Module Manager",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/module-manager"
+      ]
+    },
+    {
+      "id": "payments",
+      "label": "Payments",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/payments"
+      ]
+    },
+    {
+      "id": "platform-health",
+      "label": "Platform Health",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/platform-health"
+      ]
+    },
+    {
+      "id": "request-estimate",
+      "label": "Request Estimate",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/request-estimate"
+      ]
+    },
+    {
+      "id": "schedule-calendar",
+      "label": "Schedule / Calendar",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/schedule-calendar"
+      ]
+    },
+    {
+      "id": "system-center",
+      "label": "System Center",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/system-center"
+      ]
+    },
+    {
+      "id": "theme-manager",
+      "label": "Theme Manager",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/theme-manager"
+      ]
+    },
+    {
+      "id": "users-roles",
+      "label": "Users & Roles",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/users-roles"
+      ]
+    },
+    {
+      "id": "work-orders",
+      "label": "Work Orders",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/work-orders"
+      ]
+    },
+    {
+      "id": "worker-jobs",
+      "label": "Worker Jobs",
+      "version": "1.0.0",
+      "entry": "index.js",
+      "permissions": [],
+      "routes": [
+        "/dashboard/worker-jobs"
+      ]
+    }
+  ]
+}

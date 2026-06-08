@@ -1,0 +1,10 @@
+{
+  "id": "theme-manager",
+  "label": "Theme Manager",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/theme-manager"
+  ]
+}

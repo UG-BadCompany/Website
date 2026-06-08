@@ -1,0 +1,10 @@
+{
+  "id": "inventory",
+  "label": "Inventory",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/inventory"
+  ]
+}

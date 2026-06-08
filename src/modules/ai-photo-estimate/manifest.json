@@ -1,0 +1,10 @@
+{
+  "id": "ai-photo-estimate",
+  "label": "AI Photo Estimate",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/ai-photo-estimate"
+  ]
+}

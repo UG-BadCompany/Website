@@ -1,0 +1,10 @@
+{
+  "id": "dashboard-overview",
+  "label": "Dashboard / Overview",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/dashboard-overview"
+  ]
+}

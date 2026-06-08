@@ -1,0 +1,10 @@
+{
+  "id": "platform-health",
+  "label": "Platform Health",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/platform-health"
+  ]
+}

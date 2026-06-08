@@ -1,0 +1,10 @@
+{
+  "id": "request-estimate",
+  "label": "Request Estimate",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/request-estimate"
+  ]
+}

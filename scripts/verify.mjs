@@ -1,0 +1,16 @@
+import { readFile, readdir } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const pkg = JSON.parse(await readFile('package.json','utf8'));
+assert(pkg.dependencies['@netlify/database'], 'package.json must include @netlify/database');
+const api = await readFile('netlify/functions/api.mjs','utf8');
+for (const route of ['/api/install-status','/api/install/health','/api/install/bootstrap-database','/api/install/draft','/api/install/finish']) assert(api.includes(route), `missing ${route}`);
+const db = await readFile('netlify/functions/lib/db.mjs','utf8');
+for (const table of ['platform_installation','installer_drafts','company_settings','theme_settings','homepage_settings','app_users','roles','permissions','role_permissions','user_roles','workspace_access','module_registry','module_settings','service_categories','customers','customer_properties','job_requests','quotes','quote_line_items','work_orders','work_order_assignments','schedule_events','inventory_items','inventory_transactions','invoices','payments','uploaded_files','ai_runs','workflow_events','magic_tokens','platform_secret_settings','audit_logs','system_health_events']) assert(db.includes(`create table if not exists ${table}`), `missing table ${table}`);
+assert(db.includes('bootstrap_write_tests'), 'missing write test table');
+assert(db.includes('writeTestPassed'), 'missing write test response');
+const integrations = await readFile('netlify/functions/lib/integrations.mjs','utf8');
+assert(integrations.includes('SERPAPI_API_KEY'), 'SERPAPI_API_KEY missing');
+assert(!integrations.includes('SERPAPI_KEY\''), 'wrong SERPAPI_KEY present');
+const modules = await readdir('src/modules');
+assert(modules.length >= 26, 'expected core modules');
+console.log('Verification passed: database schema, installer APIs, integration keys, and drop-in modules are present.');

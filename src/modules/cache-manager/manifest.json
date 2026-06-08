@@ -1,0 +1,10 @@
+{
+  "id": "cache-manager",
+  "label": "Cache Manager",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "permissions": [],
+  "routes": [
+    "/dashboard/cache-manager"
+  ]
+}
