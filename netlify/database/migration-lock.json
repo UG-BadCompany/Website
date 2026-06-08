@@ -1,7 +1,0 @@
-{
-  "lockedAt": "2026-06-07T00:00:00.000Z",
-  "migrations": {
-    "0001_platform_core.sql": "initial platform, installation, roles, settings, audit schema",
-    "0002_workflow_business.sql": "workflow, quote, work order, invoice, file, ai schema"
-  }
-}
