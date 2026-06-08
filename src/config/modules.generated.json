@@ -1,0 +1,571 @@
+{
+  "generatedAt": "2026-06-08T02:30:19.356Z",
+  "modules": [
+    {
+      "id": "quote-center",
+      "name": "Quote Center",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Manage request-to-quote conversion, approvals, and active/history queues.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Quote Center",
+        "route": "/dashboard/modules/quote-center",
+        "icon": "grid",
+        "order": 20,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "quotes:view",
+        "quotes:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "quote-center",
+      "healthCheck": true,
+      "entry": "/modules/quote-center/entry.js"
+    },
+    {
+      "id": "work-orders",
+      "name": "Work Orders",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Create, assign, complete, review, and archive work orders.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Work Orders",
+        "route": "/dashboard/modules/work-orders",
+        "icon": "grid",
+        "order": 30,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "work_orders:view",
+        "work_orders:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "work-orders",
+      "healthCheck": true,
+      "entry": "/modules/work-orders/entry.js"
+    },
+    {
+      "id": "scheduling",
+      "name": "Scheduling",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Calendar, dispatch, worker assignments, and appointment queue.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Scheduling",
+        "route": "/dashboard/modules/scheduling",
+        "icon": "grid",
+        "order": 40,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "schedule:view",
+        "schedule:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "scheduling",
+      "healthCheck": true,
+      "entry": "/modules/scheduling/entry.js"
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Parts, suppliers, low stock, and work order usage.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Inventory",
+        "route": "/dashboard/modules/inventory",
+        "icon": "grid",
+        "order": 50,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "inventory:view",
+        "inventory:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "inventory",
+      "healthCheck": true,
+      "entry": "/modules/inventory/entry.js"
+    },
+    {
+      "id": "invoices",
+      "name": "Invoices",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Invoice creation, manual payment tracking, and Square links when configured.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Invoices",
+        "route": "/dashboard/modules/invoices",
+        "icon": "grid",
+        "order": 60,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "invoices:view",
+        "invoices:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "invoices",
+      "healthCheck": true,
+      "entry": "/modules/invoices/entry.js"
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Revenue, expenses, taxes, and payment reporting.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Finance",
+        "route": "/dashboard/modules/finance",
+        "icon": "grid",
+        "order": 70,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "finance:view",
+        "finance:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "finance",
+      "healthCheck": true,
+      "entry": "/modules/finance/entry.js"
+    },
+    {
+      "id": "ai-photo-estimate",
+      "name": "AI Photo Estimate",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Photo estimate intake with OpenAI when configured and manual review fallback.",
+      "category": "AI",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "AI Photo Estimate",
+        "route": "/dashboard/modules/ai-photo-estimate",
+        "icon": "grid",
+        "order": 80,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "ai_photo_estimate:view",
+        "ai_photo_estimate:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "ai-photo-estimate",
+      "healthCheck": true,
+      "entry": "/modules/ai-photo-estimate/entry.js"
+    },
+    {
+      "id": "ai-quote",
+      "name": "AI Quote",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Quote drafting with shared AI service or manual-review fallback.",
+      "category": "AI",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "AI Quote",
+        "route": "/dashboard/modules/ai-quote",
+        "icon": "grid",
+        "order": 90,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "ai_quote:view",
+        "ai_quote:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "ai-quote",
+      "healthCheck": true,
+      "entry": "/modules/ai-quote/entry.js"
+    },
+    {
+      "id": "ai-troubleshooting",
+      "name": "AI Troubleshooting",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Troubleshooting assistant with safe degraded mode when AI is missing.",
+      "category": "AI",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "AI Troubleshooting",
+        "route": "/dashboard/modules/ai-troubleshooting",
+        "icon": "grid",
+        "order": 100,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "ai_troubleshooting:view",
+        "ai_troubleshooting:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "ai-troubleshooting",
+      "healthCheck": true,
+      "entry": "/modules/ai-troubleshooting/entry.js"
+    },
+    {
+      "id": "homepage-editor",
+      "name": "Homepage Editor",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Editor-driven public page builder with sections, visibility, and ordering.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Homepage Editor",
+        "route": "/dashboard/modules/homepage-editor",
+        "icon": "grid",
+        "order": 110,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "homepage_editor:view",
+        "homepage_editor:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "homepage-editor",
+      "healthCheck": true,
+      "entry": "/modules/homepage-editor/entry.js"
+    },
+    {
+      "id": "theme-manager",
+      "name": "Theme Manager",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Light, dark, system, and custom theme controls.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Theme Manager",
+        "route": "/dashboard/modules/theme-manager",
+        "icon": "grid",
+        "order": 120,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker"
+        ]
+      },
+      "permissions": [
+        "theme_manager:view",
+        "theme_manager:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "theme-manager",
+      "healthCheck": true,
+      "entry": "/modules/theme-manager/entry.js"
+    },
+    {
+      "id": "module-manager",
+      "name": "Module Manager",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Auto-discovered modules, dependencies, permissions, health, and lifecycle controls.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Module Manager",
+        "route": "/dashboard/modules/module-manager",
+        "icon": "grid",
+        "order": 130,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker"
+        ]
+      },
+      "permissions": [
+        "module_manager:view",
+        "module_manager:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "module-manager",
+      "healthCheck": true,
+      "entry": "/modules/module-manager/entry.js"
+    },
+    {
+      "id": "client-portal",
+      "name": "Client Portal",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Client requests, quotes, invoices, files, and project history.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Client Portal",
+        "route": "/dashboard/modules/client-portal",
+        "icon": "grid",
+        "order": 140,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "client_portal:view",
+        "client_portal:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "client-portal",
+      "healthCheck": true,
+      "entry": "/modules/client-portal/entry.js"
+    },
+    {
+      "id": "platform-health",
+      "name": "Platform Health",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Diagnostics for database, functions, cache, modules, AI, email, Square, and installer lock.",
+      "category": "System",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Platform Health",
+        "route": "/dashboard/modules/platform-health",
+        "icon": "grid",
+        "order": 150,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "platform_health:view",
+        "platform_health:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "platform-health",
+      "healthCheck": true,
+      "entry": "/modules/platform-health/entry.js"
+    },
+    {
+      "id": "cache-manager",
+      "name": "Cache Manager",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Clear homepage, dashboard, theme, bootstrap, module, and image caches.",
+      "category": "System",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Cache Manager",
+        "route": "/dashboard/modules/cache-manager",
+        "icon": "grid",
+        "order": 160,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker"
+        ]
+      },
+      "permissions": [
+        "cache_manager:view",
+        "cache_manager:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "cache-manager",
+      "healthCheck": true,
+      "entry": "/modules/cache-manager/entry.js"
+    },
+    {
+      "id": "audit-logs",
+      "name": "Audit Logs",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Sensitive action logs including install, impersonation, payment, theme, and environment changes.",
+      "category": "System",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Audit Logs",
+        "route": "/dashboard/modules/audit-logs",
+        "icon": "grid",
+        "order": 170,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "audit_logs:view",
+        "audit_logs:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "audit-logs",
+      "healthCheck": true,
+      "entry": "/modules/audit-logs/entry.js"
+    },
+    {
+      "id": "file-manager",
+      "name": "File Manager",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Logos, gallery, AI uploads, worker uploads, invoice PDFs, and orphan cleanup.",
+      "category": "System",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "File Manager",
+        "route": "/dashboard/modules/file-manager",
+        "icon": "grid",
+        "order": 180,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker"
+        ]
+      },
+      "permissions": [
+        "file_manager:view",
+        "file_manager:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "file-manager",
+      "healthCheck": true,
+      "entry": "/modules/file-manager/entry.js"
+    },
+    {
+      "id": "workflow-engine",
+      "name": "Workflow Engine",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Single Request → Quote → Work Order → Invoice → Payment → Archive engine.",
+      "category": "Operations",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Workflow Engine",
+        "route": "/dashboard/modules/workflow-engine",
+        "icon": "grid",
+        "order": 190,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "workflow_engine:view",
+        "workflow_engine:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "workflow-engine",
+      "healthCheck": true,
+      "entry": "/modules/workflow-engine/entry.js"
+    },
+    {
+      "id": "backup-restore",
+      "name": "Backup / Restore",
+      "version": "1.0.0",
+      "minimumPlatform": "1.0.0",
+      "description": "Manual/daily/weekly backups, restore points, and safe update foundation.",
+      "category": "System",
+      "enabledByDefault": true,
+      "nav": {
+        "label": "Backup / Restore",
+        "route": "/dashboard/modules/backup-restore",
+        "icon": "grid",
+        "order": 200,
+        "workspaces": [
+          "owner",
+          "admin",
+          "manager",
+          "worker",
+          "client"
+        ]
+      },
+      "permissions": [
+        "backup_restore:view",
+        "backup_restore:manage"
+      ],
+      "dependencies": [],
+      "apiNamespace": "backup-restore",
+      "healthCheck": true,
+      "entry": "/modules/backup-restore/entry.js"
+    }
+  ]
+}

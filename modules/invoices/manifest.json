@@ -1,0 +1,30 @@
+{
+  "id": "invoices",
+  "name": "Invoices",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Invoice creation, manual payment tracking, and Square links when configured.",
+  "category": "Operations",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Invoices",
+    "route": "/dashboard/modules/invoices",
+    "icon": "grid",
+    "order": 60,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "invoices:view",
+    "invoices:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "invoices",
+  "healthCheck": true,
+  "entry": "/modules/invoices/entry.js"
+}
