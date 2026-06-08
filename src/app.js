@@ -61,11 +61,21 @@ function renderInstaller(){
   $('#prev').onclick=()=>{state.step=Math.max(0,state.step-1);renderInstaller();};
   $('#next').onclick=nextStep; $('#saveDraft').onclick=async()=>{await api('/api/install/draft',{method:'POST',body:JSON.stringify({draft:state.draft})}); alert('Draft saved to the database when connected.');};
   $('#retryDb').onclick=retryDatabase;
+  $('#retryDbInline')?.addEventListener('click', retryDatabase);
+  $('#copyDiagnostics')?.addEventListener('click', copyDiagnostics);
   bindInputs();
 }
 function $$(sel, root=document){ return [...root.querySelectorAll(sel)]; }
 async function nextStep(){ if(state.step===steps.length-1) return finishInstall(); await api('/api/install/draft',{method:'POST',body:JSON.stringify({draft:state.draft})}); state.step++; renderInstaller(); }
-async function retryDatabase(){ const res=await api('/api/install/bootstrap-database',{method:'POST',body:'{}'}); state.db=res; renderInstaller(); }
+async function retryDatabase(){
+  const btn=$('#retryDb'); if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
+  const res=await api('/api/install/bootstrap-database',{method:'POST',body:'{}'});
+  state.db=res;
+  const status = await api('/api/install-status');
+  state.db={...res,...status};
+  if(state.step===0 && state.db.connected && state.db.schemaReady && state.db.writeTestPassed) state.step=1;
+  renderInstaller();
+}
 async function finishInstall(){
   const btn=$('#next'); btn.disabled=true; btn.textContent='Finishing…';
   const res=await api('/api/install/finish',{method:'POST',body:JSON.stringify({draft:state.draft})});
@@ -80,7 +90,39 @@ function bindInputs(){
 }
 function val(path, fallback=''){ return path.split('.').reduce((o,k)=>o?.[k], state.draft) ?? fallback; }
 function renderStep(){ return [stepDatabase, stepCompany, stepBranding, stepTheme, stepOwner, stepModules, stepServices, stepHomepage, stepReview][state.step](); }
-function stepDatabase(){ const db=state.db||{}; return `<h2>Real Database Architecture</h2><p>The installer uses Netlify Database and never relies on production memory fallback.</p><div class="grid cols-3"><div class="card"><b>Connected</b><div class="${db.connected?'status-ok':'status-bad'}">${db.connected?'Yes':'No'}</div></div><div class="card"><b>Schema ready</b><div class="${db.schemaReady?'status-ok':'status-bad'}">${db.schemaReady?'Yes':'No'}</div></div><div class="card"><b>Write test</b><div class="${db.writeTestPassed?'status-ok':'status-bad'}">${db.writeTestPassed?'Passed':'Pending'}</div></div></div><p class="muted">If the database is not connected, deploy with the @netlify/database dependency and use Retry Database Check after Netlify provisions the database.</p>`; }
+function statusLine(ok, good, bad){ return `<div class="${ok?'status-ok':'status-bad'}">${ok?'✓':'✗'} ${ok?good:bad}</div>`; }
+function waitingLine(text){ return `<div class="muted">${text}</div>`; }
+function dbDiagnostics(db){
+  return [
+    `Database Client: ${db.databaseClientInstalled || db.clientInstalled ? 'Installed' : 'Missing'}`,
+    `Database URL: ${db.databaseUrlDetected || db.connected || db.configured ? 'Detected' : 'Missing'}`,
+    `Schema: ${db.schemaReady ? 'Ready' : 'Not Ready'}`,
+    `Write Test: ${db.writeTestPassed ? 'Passed' : 'Failed'}`,
+    `Environment Variable Used: ${db.environmentVariableUsed || 'None detected'}`
+  ].join('\n');
+}
+async function copyDiagnostics(){
+  const text=dbDiagnostics(state.db||{});
+  await navigator.clipboard?.writeText(text);
+  alert('Diagnostics copied. Secret values were not included.');
+}
+function stepDatabase(){
+  const db=state.db||{};
+  const clientInstalled = db.databaseClientInstalled ?? db.clientInstalled ?? true;
+  const dbDetected = Boolean(db.connected || db.databaseUrlDetected || db.configured);
+  const dashboardUrl = 'https://app.netlify.com/';
+  return `<h2>Database Setup</h2>
+    <p>The installer tracks the database client package, linked database resource, schema bootstrap, and write verification as four separate states.</p>
+    <div class="grid cols-2">
+      <div class="card"><b>Database Client</b>${statusLine(clientInstalled,'Installed','Missing')}</div>
+      <div class="card"><b>Database Connection</b>${statusLine(dbDetected,'Connected','No Database Linked')}</div>
+      <div class="card"><b>Schema Bootstrap</b>${dbDetected ? statusLine(Boolean(db.schemaReady),'Schema Ready','Not Ready') : waitingLine('Waiting for database connection')}</div>
+      <div class="card"><b>Write Verification</b>${db.schemaReady ? statusLine(Boolean(db.writeTestPassed),'Write Test Passed','Failed') : waitingLine('Waiting for schema bootstrap')}</div>
+    </div>
+    ${dbDetected ? '' : `<div class="card"><p>No database connection has been detected.</p><p>The required database client is already included with this platform.</p><p>To finish installation, link a Netlify Database to this site.</p><p>Once connected, this installer will automatically:</p><ul><li>Create all required CMMS tables</li><li>Create indexes</li><li>Seed roles and permissions</li><li>Register modules</li><li>Create the owner account</li><li>Verify database writes</li></ul><p><b>No manual SQL is required.</b></p></div>`}
+    <div class="card"><h3>How to connect a database</h3><ol><li>Open Netlify Dashboard</li><li>Open this Site</li><li>Storage → Database</li><li>Create or Link a Database</li><li>Redeploy if prompted</li><li>Return here</li><li>Click Retry Database Check</li></ol><p><a href="${dashboardUrl}" target="_blank" rel="noreferrer"><button type="button">Open Netlify Dashboard</button></a> <button type="button" class="secondary" id="retryDbInline">Retry Database Check</button> <button type="button" class="ghost" id="copyDiagnostics">Copy Diagnostics</button></p></div>
+    <details class="card"><summary><b>Diagnostics</b></summary><dl><dt>Database Client:</dt><dd>${clientInstalled?'Installed':'Missing'}</dd><dt>Database URL:</dt><dd>${dbDetected?'Detected':'Missing'}</dd><dt>Schema:</dt><dd>${db.schemaReady?'Ready':'Not Ready'}</dd><dt>Write Test:</dt><dd>${db.writeTestPassed?'Passed':'Failed'}</dd><dt>Environment Variable Used:</dt><dd>${escapeHtml(db.environmentVariableUsed || 'None detected')}</dd></dl><p class="muted">Actual database URL values are never displayed.</p></details>`;
+}
 function stepCompany(){ return `<h2>Company Profile</h2><div class="form-row"><label class="field">Company name<input data-field="company.name" value="${escapeHtml(val('company.name',''))}"></label><label class="field">Email<input data-field="company.email" value="${escapeHtml(val('company.email',''))}"></label><label class="field">Phone<input data-field="company.phone" value="${escapeHtml(val('company.phone',''))}"></label><label class="field">Website<input data-field="company.website" value="${escapeHtml(val('company.website',''))}"></label></div><label class="field">Address<textarea data-field="company.address">${escapeHtml(val('company.address',''))}</textarea></label>`; }
 function stepBranding(){ return `<h2>Branding Assets</h2><div class="form-row"><label class="field">Logo upload<input id="logoUpload" type="file" accept="image/*"></label><label class="field">Favicon upload<input id="faviconUpload" type="file" accept="image/*"></label></div><p class="muted">Assets are encoded into the installer draft and written through the database-backed file manager after install, rather than URL-only settings.</p><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div>`; }
 function stepTheme(){ const t=state.draft.theme||{}; return `<h2>Theme & Live Preview</h2><div class="form-row"><label class="field">Theme mode<select data-field="theme.mode"><option ${t.mode==='system'?'selected':''}>system</option><option ${t.mode==='light'?'selected':''}>light</option><option ${t.mode==='dark'?'selected':''}>dark</option><option ${t.mode==='custom'?'selected':''}>custom</option></select></label>${color('Primary','theme.primary',t.primary||'#2563eb')}${color('Accent','theme.accent',t.accent||'#f59e0b')}${color('Background','theme.background',t.background||'#f8fafc')}${color('Surface','theme.surface',t.surface||'#ffffff')}${color('Text','theme.text',t.text||'#0f172a')}${color('Sidebar','theme.sidebar',t.sidebar||'#0f172a')}${color('Mobile nav','theme.mobileNav',t.mobileNav||'#111827')}</div>${themePreview()}`; }
