@@ -7,10 +7,11 @@
     "prebuild": "node scripts/prebuild-netlify-migrations.cjs",
     "build": "node scripts/build-static-site.mjs",
     "postbuild": "node scripts/check-netlify-functions.mjs && node scripts/ensure-netlify-out.mjs",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "test": "node --test"
   },
   "dependencies": {
-    "postgres": "^3.4.5"
+    "pg": "^8.13.0"
   },
   "devDependencies": {}
 }
