@@ -103,7 +103,8 @@ test('installer startup health path runs schema bootstrap and prerequisite seed 
   const apiSource=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../netlify/functions/api.mjs', import.meta.url),'utf8'));
   const seedSource=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../netlify/functions/shared/seed.mjs', import.meta.url),'utf8'));
   assert.match(apiSource,/async function bootstrapInstallerDatabase\(\)/);
-  assert.match(apiSource,/const \{ migrations \}=await bootstrapInstallerDatabase\(\)/);
+  assert.match(apiSource,/const bootstrapped=await bootstrapInstallerDatabase\(\)/);
+  assert.match(apiSource,/const \{ migrations, tableCheck \}=bootstrapped/);
   assert.match(seedSource,/export async function seedInstallerPrerequisites\(db\)/);
   assert.match(seedSource,/insert into platform_installation/);
   assert.match(seedSource,/insert into installer_drafts/);
