@@ -1,0 +1,20 @@
+{
+  "id": "inventory",
+  "name": "Inventory",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "operations",
+  "route": "/dashboard/inventory",
+  "nav": {
+    "label": "Inventory",
+    "icon": "square",
+    "order": 14
+  },
+  "permissions": [
+    "inventory.manage"
+  ],
+  "healthCheck": "/api/modules/inventory/health",
+  "enabledByDefault": true,
+  "description": "Track stock, materials, usage, reorder points, and suppliers."
+}

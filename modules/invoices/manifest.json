@@ -1,0 +1,23 @@
+{
+  "id": "invoices",
+  "name": "Invoices",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [
+    "work-orders",
+    "workflow-engine"
+  ],
+  "category": "finance",
+  "route": "/dashboard/invoices",
+  "nav": {
+    "label": "Invoices",
+    "icon": "square",
+    "order": 15
+  },
+  "permissions": [
+    "invoice.manage"
+  ],
+  "healthCheck": "/api/modules/invoices/health",
+  "enabledByDefault": true,
+  "description": "Generate invoices and move paid items out of active queues."
+}

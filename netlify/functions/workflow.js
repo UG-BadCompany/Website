@@ -1,0 +1,3 @@
+import { json } from './_lib/store.js';
+const transitions={request:'quote',quote:'work_order',work_order:'schedule',schedule:'worker',worker:'completion',completion:'invoice',invoice:'payment',payment:'verification',verification:'archive'};
+export async function handler(event){const body=event.body?JSON.parse(event.body):{}; const current=body.stage||'request'; const next=transitions[current]||'archive'; const closed=['quote','work_order','invoice','payment','verification'].includes(current); return json({ok:true,workflowId:body.workflowId||crypto.randomUUID(),from:current,to:next,activeQueue:!closed,archived:next==='archive',message:'Single workflow engine advanced the master record.'});}

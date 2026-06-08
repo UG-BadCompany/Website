@@ -1,0 +1,20 @@
+{
+  "id": "backup-restore",
+  "name": "Backup & Restore",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "system",
+  "route": "/dashboard/system/backup",
+  "nav": {
+    "label": "Backup & Restore",
+    "icon": "square",
+    "order": 28
+  },
+  "permissions": [
+    "backup.manage"
+  ],
+  "healthCheck": "/api/modules/backup-restore/health",
+  "enabledByDefault": true,
+  "description": "Daily, weekly, manual backups and restore points."
+}

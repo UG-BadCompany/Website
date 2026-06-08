@@ -1,0 +1,20 @@
+{
+  "id": "module-manager",
+  "name": "Module Manager",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "dependencies": [],
+  "category": "system",
+  "route": "/dashboard/system/modules",
+  "nav": {
+    "label": "Module Manager",
+    "icon": "square",
+    "order": 24
+  },
+  "permissions": [
+    "modules.manage"
+  ],
+  "healthCheck": "/api/modules/module-manager/health",
+  "enabledByDefault": true,
+  "description": "Shows auto-discovered modules, dependencies, permissions, and health."
+}

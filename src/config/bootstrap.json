@@ -1,0 +1,20 @@
+{
+  "installationComplete": false,
+  "installedVersion": "1.0.0",
+  "company": { "name": "Your Contractor Company", "phone": "", "email": "", "domain": "" },
+  "theme": { "mode": "system", "primary": "#2563eb", "accent": "#f59e0b", "radius": "18px", "density": "comfortable" },
+  "homepage": {
+    "header": { "title": "Premium Contractor Services", "subtitle": "White-label CMMS, estimates, scheduling, work orders, invoices, and client portal." },
+    "sections": ["hero", "services", "estimate", "gallery", "stats", "cta"],
+    "services": ["General Contracting", "Painting", "Drywall", "Flooring", "Repairs"],
+    "stats": [{"label":"Response time","value":"Same day"},{"label":"Workflow","value":"Request to payment"},{"label":"Portal","value":"24/7"}]
+  },
+  "integrations": {
+    "openai": "warning",
+    "resend": "warning",
+    "square": "warning",
+    "smtp": "warning",
+    "serpapi": "warning",
+    "license": "warning"
+  }
+}
