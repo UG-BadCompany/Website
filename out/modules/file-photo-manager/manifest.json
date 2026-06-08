@@ -1,0 +1,37 @@
+{
+  "id": "file-photo-manager",
+  "label": "File / Photo Manager",
+  "group": "Operations",
+  "icon": "🖼️",
+  "route": "/dashboard/files",
+  "permission": "files.view",
+  "api": "/api/files",
+  "version": "1.0.0",
+  "lifecycle": [
+    "install",
+    "enable",
+    "disable",
+    "upgrade"
+  ],
+  "capabilities": [
+    "ui",
+    "api",
+    "database",
+    "permissions",
+    "audit",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ],
+  "database": true,
+  "ui": {
+    "desktop": true,
+    "mobile": true,
+    "loadingState": true,
+    "errorState": true,
+    "emptyState": true,
+    "roleFiltering": true
+  },
+  "audit": true,
+  "workflowIntegration": true
+}

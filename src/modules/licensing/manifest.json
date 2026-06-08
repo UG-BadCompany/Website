@@ -1,0 +1,37 @@
+{
+  "id": "licensing",
+  "label": "Licensing",
+  "group": "System",
+  "icon": "📄",
+  "route": "/dashboard/licensing",
+  "permission": "licensing.manage",
+  "api": "/api/licensing",
+  "version": "1.0.0",
+  "lifecycle": [
+    "install",
+    "enable",
+    "disable",
+    "upgrade"
+  ],
+  "capabilities": [
+    "ui",
+    "api",
+    "database",
+    "permissions",
+    "audit",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ],
+  "database": true,
+  "ui": {
+    "desktop": true,
+    "mobile": true,
+    "loadingState": true,
+    "errorState": true,
+    "emptyState": true,
+    "roleFiltering": true
+  },
+  "audit": true,
+  "workflowIntegration": true
+}
