@@ -3,23 +3,58 @@ import test from 'node:test';
 import { handler } from '../netlify/functions/api.mjs';
 
 async function request(method, path, body){
-  const response=await handler({httpMethod:method,path,body:body===undefined?undefined:JSON.stringify(body)});
-  return {...response,json:JSON.parse(response.body)};
+  const previous={};
+  for(const key of ['NETLIFY_DATABASE_URL','NETLIFY_DB_URL','DATABASE_URL','POSTGRES_URL']){
+    previous[key]=process.env[key];
+    delete process.env[key];
+  }
+  try{
+    const response=await handler({httpMethod:method,path,body:body===undefined?undefined:JSON.stringify(body)});
+    return {...response,json:JSON.parse(response.body)};
+  }finally{
+    for(const [key,value] of Object.entries(previous)){
+      if(value===undefined) delete process.env[key];
+      else process.env[key]=value;
+    }
+  }
 }
 
-test('installer status route imports and returns a safe first-run response without a database URL', async()=>{
+for(const [method,path,body] of [
+  ['GET','/api/install-status'],
+  ['GET','/api/install/health'],
+  ['GET','/api/install/draft'],
+  ['POST','/api/install/draft',{company:{name:'Test'}}],
+  ['POST','/api/install/finish',{company:{name:'Test'},owner:{email:'owner@example.com'}}],
+  ['GET','/api/install/integration-status'],
+]){
+  test(`${method} ${path} returns safe JSON without database env`, async()=>{
+    const response=await request(method,path,body);
+    assert.equal(response.statusCode,200);
+    assert.match(response.headers['content-type'],/application\/json/);
+    assert.notEqual(response.body,'');
+    assert.notEqual(response.json.statusCode,502);
+    assert.notEqual(response.json.statusCode,503);
+    assert.notEqual(response.statusCode,502);
+    assert.notEqual(response.statusCode,503);
+    assert.equal(typeof response.json.ok,'boolean');
+  });
+}
+
+test('installer status route reports actionable first-run database state', async()=>{
   const response=await request('GET','/api/install-status');
-  assert.equal(response.statusCode,200);
-  assert.equal(response.json.ok,true);
+  assert.equal(response.json.ok,false);
+  assert.equal(response.json.code,'DATABASE_UNAVAILABLE');
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
+  assert.equal(response.json.safeMode,true);
 });
 
-test('installer health route executes without throwing when database is not configured', async()=>{
+test('installer health route reports database env and driver metadata', async()=>{
   const response=await request('GET','/api/install/health');
-  assert.equal(response.statusCode,200);
-  assert.equal(response.json.ok,true);
+  assert.equal(response.json.ok,false);
   assert.equal(response.json.databaseReachable,false);
+  assert.equal(response.json.driverPackage,'pg');
+  assert.ok(response.json.env.some((item)=>item.key==='NETLIFY_DATABASE_URL'));
 });
 
 test('integration status route returns exact public-safe environment status metadata', async()=>{
