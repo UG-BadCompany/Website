@@ -1,0 +1,37 @@
+{
+  "id": "workspace-permissions",
+  "label": "Workspace & Permissions",
+  "group": "People",
+  "icon": "🏢",
+  "route": "/dashboard/workspaces",
+  "permission": "roles.manage",
+  "api": "/api/workspaces",
+  "version": "1.0.0",
+  "lifecycle": [
+    "install",
+    "enable",
+    "disable",
+    "upgrade"
+  ],
+  "capabilities": [
+    "ui",
+    "api",
+    "database",
+    "permissions",
+    "audit",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ],
+  "database": true,
+  "ui": {
+    "desktop": true,
+    "mobile": true,
+    "loadingState": true,
+    "errorState": true,
+    "emptyState": true,
+    "roleFiltering": true
+  },
+  "audit": true,
+  "workflowIntegration": true
+}

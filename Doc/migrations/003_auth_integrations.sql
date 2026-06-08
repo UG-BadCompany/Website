@@ -1,0 +1,3 @@
+-- Passwordless authentication and secure integration secret storage.
+create table if not exists magic_link_tokens (id uuid primary key default gen_random_uuid(), normalized_email text not null, token_hash text not null unique, expires_at timestamptz not null, used_at timestamptz, created_at timestamptz not null default now());
+create table if not exists platform_secret_settings (id uuid primary key default gen_random_uuid(), key text not null unique, encrypted_value text not null, provider text not null default 'encrypted_db', last_four text, status text not null default 'configured', last_tested_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());

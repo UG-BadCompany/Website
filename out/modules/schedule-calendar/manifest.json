@@ -1,0 +1,37 @@
+{
+  "id": "schedule-calendar",
+  "label": "Schedule / Calendar",
+  "group": "Operations",
+  "icon": "📅",
+  "route": "/dashboard/schedule",
+  "permission": "schedule.view",
+  "api": "/api/schedule",
+  "version": "1.0.0",
+  "lifecycle": [
+    "install",
+    "enable",
+    "disable",
+    "upgrade"
+  ],
+  "capabilities": [
+    "ui",
+    "api",
+    "database",
+    "permissions",
+    "audit",
+    "mobile",
+    "desktop",
+    "role-filtering"
+  ],
+  "database": true,
+  "ui": {
+    "desktop": true,
+    "mobile": true,
+    "loadingState": true,
+    "errorState": true,
+    "emptyState": true,
+    "roleFiltering": true
+  },
+  "audit": true,
+  "workflowIntegration": true
+}

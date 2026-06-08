@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>White-Label Contractor CMMS</title>
+    <script>
+      (function applyThemeBeforePaint() {
+        try {
+          var stored = localStorage.getItem('theme');
+          if (!stored) return;
+          var theme = JSON.parse(stored);
+          var resolved = theme.mode === 'system'
+            ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : (theme.mode || 'light');
+          document.documentElement.dataset.theme = resolved;
+          Object.keys(theme).forEach(function (key) {
+            document.documentElement.style.setProperty('--' + key.replace(/[A-Z]/g, function (m) { return '-' + m.toLowerCase(); }), theme[key]);
+          });
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles/app.css">
+  </head>
+  <body>
+    <div id="app">
+      <section class="boot">
+        <h1>Loading Contractor Platform…</h1>
+        <p>Preparing your installer, portal, or dashboard.</p>
+      </section>
+    </div>
+    <script type="module" src="/app/main.js"></script>
+  </body>
+</html>
