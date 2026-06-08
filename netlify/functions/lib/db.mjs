@@ -2,11 +2,13 @@ import { getConnectionString } from '@netlify/database';
 import pg from 'pg';
 import { coreModules, defaultRoles, permissions, rolePermissions, defaultServices } from './platformData.mjs';
 
-const databaseUrlEnvNames = ['NETLIFY_DB_URL','NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
-const netlifyDatabaseHelperSource = '@netlify/database:getConnectionString';
-const netlifyDatabaseHelperLabel = '@netlify/database getConnectionString()';
-const noConnectionMessage = 'Netlify Database client is installed, but no connection string was provided by Netlify runtime.';
-const provisioningMessage = 'Netlify Database client is installed, but the runtime did not provide a connection string yet. This can happen immediately after the first deploy. Redeploy or click Retry Database Check after Netlify finishes provisioning.';
+const connectionDetectionOrder = ['DATABASE_URL','NETLIFY_DATABASE_URL','getConnectionString()','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
+const databaseUrlEnvNames = connectionDetectionOrder.filter((name) => name !== 'getConnectionString()');
+const netlifyDatabaseHelperSource = 'getConnectionString()';
+const netlifyDatabaseHelperLabel = 'getConnectionString()';
+const noConnectionMessage = 'Waiting for Netlify Database provisioning...';
+const connectionFoundButFailedMessage = 'A database connection string was found, but the connection attempt failed. Review the diagnostics below for the safe error message.';
+const provisioningMessage = 'Waiting for Netlify Database provisioning...';
 
 let cachedPool;
 let cachedConnectionString;
@@ -28,64 +30,76 @@ function safeRuntimeEnvironment() {
   return process.env.NETLIFY ? `netlify:${process.env.CONTEXT || 'unknown'}` : 'local-or-non-netlify';
 }
 
-export function detectedDatabaseUrl() {
+function readEnvConnection(name) {
+  const value = typeof process.env[name] === 'string' ? process.env[name].trim() : '';
+  return value ? { name, value, source: name } : null;
+}
+
+function readHelperConnection() {
+  const helperAvailable = typeof getConnectionString === 'function';
   let helperError = null;
   let helperValue = '';
-  try {
-    const value = getConnectionString();
-    helperValue = typeof value === 'string' ? value.trim() : '';
-    if (helperValue) {
-      return {
-        name: netlifyDatabaseHelperLabel,
-        value: helperValue,
-        source: netlifyDatabaseHelperSource,
-        helperError: null,
-        getConnectionStringReturnedValue: true,
-        getConnectionStringAvailable: true,
-        rawEnvUrlAvailable: databaseUrlEnvNames.some((name) => Boolean(process.env[name])),
-        rawEnvUrlName: databaseUrlEnvNames.find((name) => Boolean(process.env[name])) || null
-      };
-    }
-  } catch (error) {
-    helperError = safeErrorMessage(error);
-  }
-  for (const name of databaseUrlEnvNames) {
-    if (process.env[name]) {
-      return {
-        name,
-        value: process.env[name],
-        source: name,
-        helperError,
-        getConnectionStringReturnedValue: false,
-        getConnectionStringAvailable: false,
-        rawEnvUrlAvailable: true,
-        rawEnvUrlName: name
-      };
+  if (helperAvailable) {
+    try {
+      const value = getConnectionString();
+      helperValue = typeof value === 'string' ? value.trim() : '';
+    } catch (error) {
+      helperError = safeErrorMessage(error);
     }
   }
   return {
-    name: null,
-    value: '',
-    source: null,
+    helperAvailable,
     helperError,
-    getConnectionStringReturnedValue: false,
-    getConnectionStringAvailable: false,
-    rawEnvUrlAvailable: false,
-    rawEnvUrlName: null
+    helperValue,
+    helperSucceeded: Boolean(helperValue && !helperError)
+  };
+}
+
+export function detectedDatabaseUrl() {
+  const helper = readHelperConnection();
+  const envDetected = Object.fromEntries(databaseUrlEnvNames.map((name) => [name, Boolean(readEnvConnection(name))]));
+  let selected = null;
+  for (const source of connectionDetectionOrder) {
+    selected = source === netlifyDatabaseHelperSource
+      ? (helper.helperValue ? { name: netlifyDatabaseHelperLabel, value: helper.helperValue, source: netlifyDatabaseHelperSource } : null)
+      : readEnvConnection(source);
+    if (selected) break;
+  }
+  return {
+    name: selected?.name || null,
+    value: selected?.value || '',
+    source: selected?.source || null,
+    helperError: helper.helperError,
+    getConnectionStringReturnedValue: helper.helperSucceeded,
+    getConnectionStringSucceeded: helper.helperSucceeded,
+    getConnectionStringAvailable: helper.helperAvailable,
+    getConnectionStringStatus: helper.helperSucceeded ? 'Succeeded' : 'Failed',
+    rawEnvUrlAvailable: databaseUrlEnvNames.some((name) => envDetected[name]),
+    rawEnvNameDetected: databaseUrlEnvNames.find((name) => envDetected[name]) || null,
+    rawEnvUrlName: selected?.source && selected.source !== netlifyDatabaseHelperSource ? selected.source : (databaseUrlEnvNames.find((name) => envDetected[name]) || null),
+    databaseUrlDetected: envDetected.DATABASE_URL,
+    netlifyDatabaseUrlDetected: envDetected.NETLIFY_DATABASE_URL,
+    envDetected,
+    detectionOrder: connectionDetectionOrder
   };
 }
 export function hasDatabaseConfig() { return Boolean(detectedDatabaseUrl().value); }
 export function databaseBaseStatus(overrides = {}) {
   const detected = detectedDatabaseUrl();
   const selectedConnectionSource = detected.source || null;
-  const connectionAttempt = overrides.connectionAttempt || (overrides.connected || overrides.databaseConnected ? 'Success' : (overrides.connectionAttemptFailed ? 'Failed' : 'Not Run'));
+  const connectionAttempt = overrides.connectionAttempt || (overrides.connected || overrides.databaseConnected ? 'Succeeded' : (overrides.connectionAttemptFailed ? 'Failed' : 'Not Run'));
   return {
     databaseClientInstalled: true,
     clientInstalled: true,
     getConnectionStringImportSucceeded: true,
+    databaseUrlEnvDetected: Boolean(detected.databaseUrlDetected),
+    netlifyDatabaseUrlEnvDetected: Boolean(detected.netlifyDatabaseUrlDetected),
+    DATABASE_URL: detected.databaseUrlDetected ? 'Detected' : 'Missing',
+    NETLIFY_DATABASE_URL: detected.netlifyDatabaseUrlDetected ? 'Detected' : 'Missing',
     getConnectionStringReturnedValue: Boolean(detected.getConnectionStringReturnedValue),
+    getConnectionStringSucceeded: Boolean(detected.getConnectionStringSucceeded),
     getConnectionStringAvailable: Boolean(detected.getConnectionStringAvailable),
-    getConnectionStringStatus: detected.getConnectionStringAvailable ? 'Available' : 'Failed',
+    getConnectionStringStatus: detected.getConnectionStringStatus,
     getConnectionStringError: detected.helperError,
     rawEnvDetected: Boolean(detected.rawEnvUrlAvailable),
     rawEnvUrlAvailable: Boolean(detected.rawEnvUrlAvailable),
@@ -101,7 +115,7 @@ export function databaseBaseStatus(overrides = {}) {
     manualDatabaseLinkRequired: !detected.value,
     runtimeEnvironment: safeRuntimeEnvironment(),
     nodeVersion: process.version,
-    safeError: detected.helperError || (detected.value ? null : 'getConnectionString() returned no connection string and no raw database URL environment fallback was found.'),
+    safeError: detected.helperError || (detected.value ? null : 'No supported database connection source was found.'),
     provisioningMessage,
     ...overrides
   };
@@ -111,25 +125,34 @@ export function databaseRuntimeDiagnostics() {
   const diagnostic = {
     databaseClientInstalled: true,
     getConnectionStringImportSucceeded: true,
+    getConnectionStringAvailable: Boolean(detected.getConnectionStringAvailable),
     getConnectionStringReturnedValue: Boolean(detected.getConnectionStringReturnedValue),
+    getConnectionStringSucceeded: Boolean(detected.getConnectionStringSucceeded),
+    getConnectionStringStatus: detected.getConnectionStringStatus,
+    databaseUrlEnvDetected: Boolean(detected.databaseUrlDetected),
+    netlifyDatabaseUrlEnvDetected: Boolean(detected.netlifyDatabaseUrlDetected),
+    DATABASE_URL: detected.databaseUrlDetected ? 'Detected' : 'Missing',
+    NETLIFY_DATABASE_URL: detected.netlifyDatabaseUrlDetected ? 'Detected' : 'Missing',
     rawEnvDetected: Boolean(detected.rawEnvUrlAvailable),
     connectionSource: detected.source || null,
+    selectedConnectionSource: detected.source || null,
     runtimeEnvironment: safeRuntimeEnvironment(),
     nodeVersion: process.version,
-    safeError: detected.helperError || (detected.value ? null : 'getConnectionString() returned no connection string and no raw database URL environment fallback was found.'),
+    safeError: detected.helperError || (detected.value ? null : 'No supported database connection source was found.'),
     rawEnvNamesChecked: databaseUrlEnvNames,
-    rawEnvNameDetected: detected.rawEnvUrlName
+    connectionDetectionOrder,
+    rawEnvNameDetected: detected.rawEnvNameDetected
   };
-  if (!diagnostic.getConnectionStringReturnedValue) {
-    console.warn('[install-runtime-diagnostics] Netlify Database connection string unavailable', {
-      getConnectionStringImportSucceeded: diagnostic.getConnectionStringImportSucceeded,
-      rawEnvDetected: diagnostic.rawEnvDetected,
-      connectionSource: diagnostic.connectionSource,
-      runtimeEnvironment: diagnostic.runtimeEnvironment,
-      nodeVersion: diagnostic.nodeVersion,
-      safeError: diagnostic.safeError
-    });
-  }
+  console.warn('[install-runtime-diagnostics] Database connection detection', {
+    DATABASE_URLExists: diagnostic.databaseUrlEnvDetected,
+    NETLIFY_DATABASE_URLExists: diagnostic.netlifyDatabaseUrlEnvDetected,
+    getConnectionStringAvailable: diagnostic.getConnectionStringAvailable,
+    getConnectionStringSucceeded: diagnostic.getConnectionStringSucceeded,
+    selectedSource: diagnostic.selectedConnectionSource || 'none',
+    runtimeEnvironment: diagnostic.runtimeEnvironment,
+    nodeVersion: diagnostic.nodeVersion,
+    safeError: diagnostic.safeError
+  });
   return diagnostic;
 }
 
@@ -138,7 +161,7 @@ export function getPool() {
   if (!detected.value) {
     const error = new Error(noConnectionMessage);
     error.code = 'NETLIFY_DATABASE_CONNECTION_STRING_FAILED';
-    error.safeDetails = detected.helperError || 'getConnectionString() returned no connection string and no raw database URL environment fallback was found.';
+    error.safeDetails = detected.helperError || 'No supported database connection source was found.';
     throw error;
   }
   if (!cachedPool || cachedConnectionString !== detected.value) {
@@ -174,9 +197,9 @@ export async function databaseStatus() {
       writeTestPassed: false,
       installationComplete: false,
       canBootstrapSchema: false,
-      connectionAttempt: 'Failed',
+      connectionAttempt: 'Not Run',
       message: noConnectionMessage,
-      safeDetails: detected.helperError || 'getConnectionString() returned no connection string and raw database URL env vars are missing.'
+      safeDetails: detected.helperError || 'No supported database connection source was found.'
     });
   }
   try {
@@ -189,6 +212,9 @@ export async function databaseStatus() {
       installationComplete = Boolean(install?.[0]?.installation_complete);
       writeTestPassed = Boolean(install?.[0]?.write_test_passed);
     }
+    if (!tablesReady || !writeTestPassed) {
+      return bootstrapSchema();
+    }
     return databaseBaseStatus({
       ok: true,
       code: tablesReady ? 'SCHEMA_READY' : 'SCHEMA_NOT_READY',
@@ -198,13 +224,13 @@ export async function databaseStatus() {
       writeTestPassed,
       installationComplete,
       canBootstrapSchema: !tablesReady,
-      connectionAttempt: 'Success',
+      connectionAttempt: 'Succeeded',
       selectNowSucceeded: true,
       tableCount,
       missingTables
     });
   } catch (error) {
-    return databaseBaseStatus({ ok: false, code: 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, installationComplete: false, canBootstrapSchema: false, connectionAttempt: 'Failed', selectNowSucceeded: false, message: safeErrorMessage(error), safeDetails: safeErrorMessage(error) });
+    return databaseBaseStatus({ ok: false, code: 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, installationComplete: false, canBootstrapSchema: false, connectionAttempt: 'Failed', selectNowSucceeded: false, message: connectionFoundButFailedMessage, safeDetails: safeErrorMessage(error), connectionError: safeErrorMessage(error) });
   }
 }
 
@@ -256,6 +282,12 @@ const indexes = [
 
 export async function bootstrapSchema() {
   const detected = detectedDatabaseUrl();
+  console.warn('[install-bootstrap] Database connection detection', {
+    DATABASE_URLExists: detected.databaseUrlDetected,
+    NETLIFY_DATABASE_URLExists: detected.netlifyDatabaseUrlDetected,
+    getConnectionStringAvailable: detected.getConnectionStringAvailable,
+    selectedSource: detected.source || 'none'
+  });
   if (!detected.value) {
     return databaseBaseStatus({
       ok: false,
@@ -265,15 +297,15 @@ export async function bootstrapSchema() {
       schemaReady: false,
       writeTestPassed: false,
       canBootstrapSchema: false,
-      connectionAttempt: 'Failed',
+      connectionAttempt: 'Not Run',
       message: noConnectionMessage,
-      safeDetails: detected.helperError || 'getConnectionString() returned no connection string and no raw database URL environment fallback was found.'
+      safeDetails: detected.helperError || 'No supported database connection source was found.'
     });
   }
   try {
     await query('select now() as now');
   } catch (error) {
-    return databaseBaseStatus({ ok: false, code: 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, canBootstrapSchema: false, connectionAttempt: 'Failed', selectNowSucceeded: false, message: safeErrorMessage(error), safeDetails: safeErrorMessage(error) });
+    return databaseBaseStatus({ ok: false, code: 'DATABASE_CONNECTION_FAILED', connected: false, databaseConnected: false, schemaReady: false, writeTestPassed: false, canBootstrapSchema: false, connectionAttempt: 'Failed', selectNowSucceeded: false, message: connectionFoundButFailedMessage, safeDetails: safeErrorMessage(error), connectionError: safeErrorMessage(error) });
   }
   try {
     for (const statement of ddl) await query(statement);
@@ -291,7 +323,7 @@ export async function bootstrapSchema() {
       schemaReady: tablesReady,
       writeTestPassed,
       canBootstrapSchema: !tablesReady,
-      connectionAttempt: 'Success',
+      connectionAttempt: 'Succeeded',
       selectNowSucceeded: true,
       tablesCreated: ddl.length,
       indexesCreated: indexes.length,
@@ -300,7 +332,7 @@ export async function bootstrapSchema() {
       message: tablesReady && writeTestPassed ? 'Database schema is ready.' : 'Database bootstrap ran, but one or more verification checks failed.'
     });
   } catch (error) {
-    return databaseBaseStatus({ ok: false, code: 'SCHEMA_BOOTSTRAP_FAILED', connected: true, databaseConnected: true, schemaReady: false, writeTestPassed: false, canBootstrapSchema: true, connectionAttempt: 'Success', selectNowSucceeded: true, message: safeErrorMessage(error), safeDetails: safeErrorMessage(error) });
+    return databaseBaseStatus({ ok: false, code: 'SCHEMA_BOOTSTRAP_FAILED', connected: true, databaseConnected: true, schemaReady: false, writeTestPassed: false, canBootstrapSchema: true, connectionAttempt: 'Succeeded', selectNowSucceeded: true, message: safeErrorMessage(error), safeDetails: safeErrorMessage(error) });
   }
 }
 

@@ -32,7 +32,7 @@ test('installer separates database client, connection, schema, and write states'
   assert(app.includes('Database Connection'));
   assert(app.includes('Schema Bootstrap'));
   assert(app.includes('Write Verification'));
-  assert(app.includes('Checking Netlify Database provisioning...'));
+  assert(app.includes('Waiting for Netlify Database provisioning...'));
   assert(app.includes('This platform includes @netlify/database, so Netlify should automatically provision a database during deploy.'));
   assert(!app.includes('No database connection has been detected.'));
   assert(!app.includes('deploy with the @netlify/database dependency'));
@@ -42,8 +42,10 @@ test('database detection supports linked Netlify and Postgres URL variables with
   const db = await readFile('netlify/functions/lib/db.mjs','utf8');
   assert(db.includes('getConnectionString()'));
   assert(db.includes("new pg.Pool({ connectionString"));
-  for (const name of ['NETLIFY_DB_URL','NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL']) assert(db.includes(name), name);
+  assert(db.includes("['DATABASE_URL','NETLIFY_DATABASE_URL','getConnectionString()','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL']"));
+  for (const name of ['DATABASE_URL','NETLIFY_DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL']) assert(db.includes(name), name);
   const app = await readFile('src/app.js','utf8');
   assert(app.includes('Actual database URL values are never displayed.'));
-  assert(app.includes('Connection Source'));
+  assert(app.includes('Selected Connection Source'));
+  assert(app.includes('A database connection string was found, but the connection attempt failed.'));
 });
