@@ -47,7 +47,7 @@ test('installer status route reports actionable first-run database state', async
   assert.equal(response.json.ok,false);
   assert.equal(response.json.installed,false);
   assert.equal(response.json.code,'NO_DATABASE_URL');
-  assert.match(response.json.message,/Netlify does not allow this deployed function to create\/link a brand-new database resource automatically/);
+  assert.match(response.json.message,/Once a Netlify Database is linked to this site, the installer will automatically create all required tables and seed records/);
   assert.equal(response.json.needsInstall,true);
   assert.equal(response.json.databaseConfigured,false);
   assert.equal(response.json.netlifyDatabaseDetected,false);
@@ -64,6 +64,7 @@ test('installer health route reports Netlify Database linking guidance and drive
   assert.equal(response.json.netlifyDatabaseDetected,false);
   assert.equal(response.json.manualDatabaseLinkRequired,true);
   assert.equal(response.json.manualSetupRequired,true);
+  assert.equal(response.json.clientPackage,'@netlify/database');
   assert.equal(response.json.driverPackage,'pg');
   assert.ok(response.json.env.some((item)=>item.key==='NETLIFY_DATABASE_URL'));
 });
@@ -76,7 +77,7 @@ test('bootstrap endpoint returns missing database URL JSON without raw 502/503',
   assert.equal(response.json.code,'NO_DATABASE_URL');
   assert.equal(response.json.manualDatabaseLinkRequired,true);
   assert.equal(response.json.canBootstrapSchema,false);
-  assert.match(response.json.message,/Link a Netlify Database once, then the installer will automatically create all required tables and seed records/);
+  assert.match(response.json.message,/No database connection was detected\. Link a Netlify Database, then retry\./);
   assert.equal(response.json.attemptedAutomaticBootstrap,true);
 });
 
@@ -92,7 +93,8 @@ test('installer retry database button uses bound handlers instead of missing inl
   const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../src/app.js', import.meta.url),'utf8'));
   assert.equal(source.includes('onclick=\"retryAutomaticSetup()'),false);
   assert.equal(source.includes('data-retry-database'),true);
-  assert.equal(source.includes('window.retryAutomaticSetup=retryAutomaticSetup'),true);
+  assert.equal(source.includes('window.retryAutomaticSetup=retryAutomaticSetup'),false);
+  assert.equal(source.includes("addEventListener('click',retryAutomaticSetup)"),true);
   assert.equal(source.includes('Memory fallback is disabled here'),true);
 });
 
