@@ -7514,3 +7514,483 @@ Do not stop at "there is a placeholder card."
 Build the real product.
 
 ---
+
+
+---
+
+# FINAL v15 UPDATE — Fresh Install Netlify Database Package, Automatic Schema Bootstrap, and Real DB Write Verification
+
+This section is a required update to PLAN_FINAL_v14.
+
+The platform must complete a fresh install using the correct Netlify Database client dependency and must automatically create/write the database schema after a database connection is available.
+
+The installer must not pretend that memory storage, temporary JSON files, or placeholder persistence is production-ready.
+
+---
+
+## v15.1 Database Package Must Be Installed at Build Time
+
+The project must include the correct Netlify Database client package in `package.json`.
+
+Required dependency:
+
+```bash
+npm install @netlify/database
+```
+
+If the implementation also requires PostgreSQL compatibility, include the required package as well, such as:
+
+```bash
+npm install pg
+```
+
+or the current supported Netlify/Postgres driver.
+
+The selected package must be documented in the implementation.
+
+Rules:
+
+- Do not run `npm install` from the browser.
+- Do not run `npm install` from the installer UI.
+- Do not dynamically import an undefined database module path.
+- Do not rely on a dependency that is not listed in `package.json`.
+- `npm run verify` must fail if the required DB client dependency is missing.
+
+---
+
+## v15.2 Fresh Install Database Flow
+
+A fresh deployment must follow this database flow:
+
+```txt
+1. Build installs database dependency from package.json.
+2. User opens /install/.
+3. Installer calls /api/install-status.
+4. Backend checks for database connection.
+5. Installer calls /api/install/bootstrap-database.
+6. If database connection exists:
+   - connect to database,
+   - create all required tables,
+   - seed required starter data,
+   - run write/read/delete verification,
+   - mark schema ready.
+7. If database connection does not exist:
+   - show clear setup instructions,
+   - do not crash,
+   - do not raw 502/503,
+   - do not finish install.
+```
+
+The installer must create/write the schema automatically after the DB is connected.
+
+The installer does not need to create the external Netlify database resource from the browser unless Netlify exposes a safe supported API for doing so.
+
+However, once a database connection exists, all table creation and seed data must be automatic.
+
+---
+
+## v15.3 Database Provisioning vs Schema Bootstrap
+
+The plan must clearly separate two different things.
+
+### Database Provisioning
+
+This means creating/linking the actual Netlify Database resource to the Netlify site.
+
+If this cannot be done from the deployed runtime, the installer must say so clearly.
+
+Example message:
+
+```txt
+No database connection was detected.
+
+A Netlify Database must be linked to this site first.
+
+After the database is linked, this installer will automatically create every required table and seed the platform records.
+```
+
+### Schema Bootstrap
+
+This means creating all tables and initial records inside an already connected database.
+
+Schema bootstrap must be automatic.
+
+No manual SQL should be required.
+
+No manual table creation should be required.
+
+---
+
+## v15.4 Required Database Environment Detection
+
+The backend must check these possible connection variables safely:
+
+```txt
+NETLIFY_DATABASE_URL
+DATABASE_URL
+POSTGRES_URL
+POSTGRES_PRISMA_URL
+POSTGRES_URL_NON_POOLING
+NEON_DATABASE_URL
+```
+
+Use the first configured value.
+
+Never crash if none exist.
+
+If none exist, return safe JSON:
+
+```json
+{
+  "ok": false,
+  "code": "NO_DATABASE_URL",
+  "message": "No database connection URL was found.",
+  "manualDatabaseLinkRequired": true,
+  "canBootstrapSchema": false,
+  "nextAction": "Link a Netlify Database to this site, then retry."
+}
+```
+
+---
+
+## v15.5 Required Bootstrap Endpoint
+
+Create or fix:
+
+```txt
+POST /api/install/bootstrap-database
+```
+
+This endpoint must always return JSON.
+
+If Database URL is missing, return:
+
+```json
+{
+  "ok": false,
+  "code": "NO_DATABASE_URL",
+  "manualDatabaseLinkRequired": true,
+  "canBootstrapSchema": false,
+  "message": "No database connection was detected. Link a Netlify Database, then retry."
+}
+```
+
+If Database client package is missing, return:
+
+```json
+{
+  "ok": false,
+  "code": "DATABASE_CLIENT_MISSING",
+  "message": "Database client package is missing from package.json.",
+  "manualDatabaseLinkRequired": false,
+  "canBootstrapSchema": false
+}
+```
+
+Also fail `npm run verify`.
+
+If Database URL exists, the endpoint must:
+
+1. load the DB client,
+2. connect to the database,
+3. create all required tables,
+4. create required indexes,
+5. seed required platform records,
+6. run a write/read/delete verification test,
+7. return success.
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "code": "SCHEMA_READY",
+  "databaseConnected": true,
+  "schemaReady": true,
+  "writeTestPassed": true,
+  "message": "Database schema is ready."
+}
+```
+
+If connection fails, return:
+
+```json
+{
+  "ok": false,
+  "code": "DATABASE_CONNECTION_FAILED",
+  "message": "A database URL was found, but the connection failed.",
+  "safeDetails": "Non-secret safe error detail."
+}
+```
+
+Never expose secrets.
+
+Never raw 502/503.
+
+---
+
+## v15.6 Required Tables for Fresh Install
+
+The automatic schema bootstrap must create these tables at minimum:
+
+```txt
+platform_installation
+installer_drafts
+company_settings
+theme_settings
+homepage_settings
+app_users
+roles
+permissions
+role_permissions
+user_roles
+workspace_access
+module_registry
+module_settings
+service_categories
+customers
+customer_properties
+job_requests
+quotes
+quote_line_items
+work_orders
+work_order_assignments
+schedule_events
+inventory_items
+inventory_transactions
+invoices
+payments
+uploaded_files
+ai_runs
+workflow_events
+magic_tokens
+platform_secret_settings
+audit_logs
+system_health_events
+```
+
+The schema should use real relational columns where appropriate, not only one generic JSON blob for every production table.
+
+JSONB metadata fields are allowed, but core business fields must be queryable.
+
+Examples:
+
+```txt
+customers: name, email, phone, status
+job_requests: customer_id, service_category_id, status, priority
+quotes: customer_id, request_id, status, subtotal, total
+work_orders: customer_id, quote_id, status, assigned_to_user_id, scheduled_at
+invoices: customer_id, work_order_id, status, total, paid_at
+payments: invoice_id, amount, method, status
+```
+
+---
+
+## v15.7 Required Seed Data
+
+After schema bootstrap, seed:
+
+```txt
+platform_installation default row
+installer draft default row
+owner/admin/manager/worker/client roles
+default permissions
+role_permissions
+workspace access defaults
+required core module registry rows
+required module settings
+default service categories
+default theme settings
+default homepage settings
+audit log entry for bootstrap
+```
+
+Do not mark installation complete until Finish Install creates the owner account and validates required setup.
+
+---
+
+## v15.8 Required Database Write Test
+
+The installer must verify the DB can actually write.
+
+Create a write test during bootstrap:
+
+```txt
+insert test row
+read test row
+delete test row
+confirm deletion
+```
+
+Return:
+
+```json
+{
+  "writeTestPassed": true
+}
+```
+
+Finish Install must not complete unless:
+
+```txt
+databaseConnected = true
+schemaReady = true
+writeTestPassed = true
+```
+
+in production.
+
+---
+
+## v15.9 Production Memory Fallback Is Not Allowed
+
+Memory fallback may exist only for local development.
+
+In production:
+
+- do not use memory store as real persistence,
+- do not use `/tmp` JSON as real persistence,
+- do not mark install complete with only memory storage,
+- do not call memory fallback "database ready."
+
+If database is missing in production, show:
+
+```txt
+Database connection required.
+```
+
+The installer may still load safely, but Finish Install must not complete.
+
+---
+
+## v15.10 Installer UI Copy for Database Setup
+
+When DB is missing, show:
+
+```txt
+Database connection not detected.
+
+A Netlify Database must be linked to this site before installation can finish.
+
+After it is linked, setup will automatically create all required tables and seed the CMMS platform.
+
+Steps:
+1. Open Netlify dashboard.
+2. Go to Storage → Database.
+3. Create or link a database.
+4. Redeploy if Netlify requires it.
+5. Click Retry Database Check.
+```
+
+Buttons:
+
+```txt
+Open Netlify Dashboard
+Retry Database Check
+Open Recovery Mode
+Copy Diagnostic Report
+```
+
+No broken inline handlers.
+
+No `retryAutomaticSetup is not defined`.
+
+---
+
+## v15.11 Retry Database Check Must Work
+
+The Retry Database Check button must:
+
+1. disable itself,
+2. show loading state,
+3. call `/api/install/bootstrap-database`,
+4. display returned status,
+5. call `/api/install-status`,
+6. continue installer if schema is ready,
+7. re-enable on failure.
+
+Use event listeners.
+
+Do not use broken inline `onclick`.
+
+---
+
+## v15.12 Install Finish Database Requirements
+
+`POST /api/install/finish` must:
+
+1. verify DB connection exists,
+2. verify schema is ready,
+3. verify write test passed,
+4. save company settings,
+5. save branding/theme/homepage settings,
+6. create owner account,
+7. seed or verify roles and permissions,
+8. seed or verify module registry,
+9. seed or verify service categories,
+10. set `installation_complete = true`,
+11. write audit log,
+12. return JSON success.
+
+If database is missing:
+
+```json
+{
+  "ok": false,
+  "code": "DATABASE_REQUIRED",
+  "message": "Installation cannot finish until a database is linked and schema bootstrap succeeds.",
+  "goToStep": "review"
+}
+```
+
+---
+
+## v15.13 Verification Requirements
+
+`npm run verify` must fail if:
+
+- `@netlify/database` or selected DB client is missing from `package.json`,
+- DB loader can import undefined,
+- `/api/install/bootstrap-database` route is missing,
+- missing DB URL is reported as ready,
+- production memory fallback is treated as real DB,
+- schema bootstrap does not include required tables,
+- write/read/delete DB test is missing,
+- Finish Install can complete in production without a real DB.
+
+---
+
+## v15.14 Acceptance Tests
+
+- Fresh install loads `/install/`.
+- DB client dependency is installed at build time.
+- Missing DB URL returns safe JSON.
+- Missing DB URL does not raw 502/503.
+- Retry Database Check works.
+- Linked DB automatically creates all required tables.
+- Linked DB automatically seeds required starter data.
+- DB write/read/delete test passes.
+- Finish Install writes real DB records.
+- Finish Install refuses to complete without DB in production.
+- Owner account is saved in DB.
+- Roles and permissions are saved in DB.
+- Module registry is saved in DB.
+- Services are saved in DB.
+- Dashboard reads from DB after install.
+- No production memory fallback is used as real persistence.
+
+---
+
+## v15.15 Final v15 Override
+
+If any earlier section says memory fallback or temporary JSON storage is acceptable for production install completion, this section overrides it.
+
+Production install must use a real database.
+
+The database client must be installed at build time.
+
+The schema must bootstrap automatically after the database is linked.
+
+Finish Install must write real records into the database.
+
+---
