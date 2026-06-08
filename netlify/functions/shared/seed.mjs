@@ -1,5 +1,25 @@
 import { modules, permissions, roles, services } from './core-data.mjs';
 export const defaultTheme={mode:'system',primary:'#2563eb',accent:'#14b8a6',background:'#f8fafc',surface:'#ffffff',text:'#0f172a',border:'#cbd5e1',button:'#2563eb',buttonText:'#ffffff',sidebarBackground:'#0f172a',sidebarText:'#e2e8f0',sidebarActiveBackground:'#1d4ed8',sidebarActiveText:'#ffffff',sidebarHoverBackground:'#1e293b',mobileNavBackground:'#ffffff',mobileNavActive:'#2563eb',mobileNavText:'#334155'};
+
+export async function seedInstallerPrerequisites(db){
+  await db.begin(async tx=>{
+    await tx`insert into platform_installation(id, installer_draft) values('default', '{}'::jsonb) on conflict(id) do nothing`;
+    await tx`insert into installer_drafts(id,draft) values('default','{}'::jsonb) on conflict(id) do nothing`;
+    await tx`insert into company_settings(id, company_name, theme) values('default', 'Contractor Platform', ${tx.json(defaultTheme)}) on conflict(id) do nothing`;
+    await tx`insert into homepage_settings(id, content, published) values('default', ${tx.json({heroTitle:'Welcome to Contractor Platform', heroSubtitle:'Request estimates, approve quotes, and track work from one polished portal.', heroButtonText:'Request an Estimate', heroButtonLink:'/dashboard/requests', services})}, true) on conflict(id) do nothing`;
+    await tx`insert into theme_settings(id, theme, active) values('default', ${tx.json(defaultTheme)}, true) on conflict(id) do nothing`;
+    for(const [key,perms] of Object.entries(roles)) await tx`insert into roles(key,label,description) values(${key},${key[0].toUpperCase()+key.slice(1)},${`${key} workspace role`}) on conflict(key) do nothing`;
+    for(const p of permissions) await tx`insert into permissions(key,label) values(${p},${p.replaceAll('.',' ')}) on conflict(key) do nothing`;
+    for(const [role,perms] of Object.entries(roles)) for(const p of perms) await tx`insert into role_permissions(role_key,permission_key) values(${role},${p}) on conflict do nothing`;
+    for(const m of modules){
+      await tx`insert into module_registry(id,label,group_name,icon,route,permission_key,enabled,manifest) values(${m.id},${m.label},${m.group},${m.icon},${m.route},${m.permission},true,${tx.json(m)}) on conflict(id) do update set label=excluded.label, group_name=excluded.group_name, icon=excluded.icon, route=excluded.route, permission_key=excluded.permission_key, enabled=true, manifest=excluded.manifest, updated_at=now()`;
+      await tx`insert into module_settings(module_id, settings) values(${m.id}, '{}'::jsonb) on conflict(module_id) do nothing`;
+    }
+    for(const s of services) await tx`insert into service_categories(name,active) values(${s},true) on conflict(name) do update set active=true`;
+    await tx`insert into audit_logs(action,entity_type,entity_id,metadata) values('install.bootstrap','platform_installation','default',${tx.json({moduleCount:modules.length, permissionCount:permissions.length, serviceCount:services.length})})`;
+  });
+}
+
 export async function seedPlatform(db, draft={}){
   const company=draft.company||{}; const owner=draft.owner||{}; const homepage=draft.homepage||{}; const selectedServices=Array.isArray(draft.services)&&draft.services.length?draft.services:services; const theme={...defaultTheme,...(draft.theme||{})};
   const logoRef=company.logoAsset||null; const faviconRef=company.faviconAsset||null; const heroRef=homepage.heroAsset||null;
