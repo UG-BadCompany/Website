@@ -1,2 +1,0 @@
-import { json, discoverModules } from './_lib/store.js';
-export async function handler(event){const modules=discoverModules(); const id=(event.path||'').split('/').filter(Boolean).pop(); if(id==='health') return json({ok:true,status:'healthy'}); return json({ok:true,modules,permissions:modules.flatMap(m=>m.permissions||[]),message:'Modules are auto-discovered from dropped-in manifest folders.'});}
