@@ -1,0 +1,30 @@
+{
+  "id": "inventory",
+  "name": "Inventory",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Parts, suppliers, low stock, and work order usage.",
+  "category": "Operations",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Inventory",
+    "route": "/dashboard/modules/inventory",
+    "icon": "grid",
+    "order": 50,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "inventory:view",
+    "inventory:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "inventory",
+  "healthCheck": true,
+  "entry": "/modules/inventory/entry.js"
+}

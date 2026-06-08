@@ -1,0 +1,30 @@
+{
+  "id": "backup-restore",
+  "name": "Backup / Restore",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Manual/daily/weekly backups, restore points, and safe update foundation.",
+  "category": "System",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Backup / Restore",
+    "route": "/dashboard/modules/backup-restore",
+    "icon": "grid",
+    "order": 200,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "backup_restore:view",
+    "backup_restore:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "backup-restore",
+  "healthCheck": true,
+  "entry": "/modules/backup-restore/entry.js"
+}

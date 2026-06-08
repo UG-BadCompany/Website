@@ -1,0 +1,30 @@
+{
+  "id": "ai-quote",
+  "name": "AI Quote",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Quote drafting with shared AI service or manual-review fallback.",
+  "category": "AI",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "AI Quote",
+    "route": "/dashboard/modules/ai-quote",
+    "icon": "grid",
+    "order": 90,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "ai_quote:view",
+    "ai_quote:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "ai-quote",
+  "healthCheck": true,
+  "entry": "/modules/ai-quote/entry.js"
+}

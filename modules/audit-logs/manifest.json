@@ -1,0 +1,30 @@
+{
+  "id": "audit-logs",
+  "name": "Audit Logs",
+  "version": "1.0.0",
+  "minimumPlatform": "1.0.0",
+  "description": "Sensitive action logs including install, impersonation, payment, theme, and environment changes.",
+  "category": "System",
+  "enabledByDefault": true,
+  "nav": {
+    "label": "Audit Logs",
+    "route": "/dashboard/modules/audit-logs",
+    "icon": "grid",
+    "order": 170,
+    "workspaces": [
+      "owner",
+      "admin",
+      "manager",
+      "worker",
+      "client"
+    ]
+  },
+  "permissions": [
+    "audit_logs:view",
+    "audit_logs:manage"
+  ],
+  "dependencies": [],
+  "apiNamespace": "audit-logs",
+  "healthCheck": true,
+  "entry": "/modules/audit-logs/entry.js"
+}
