@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
+fs.rmSync('dist', { recursive:true, force:true });
+fs.mkdirSync('dist/src', { recursive:true });
+fs.mkdirSync('dist/lib', { recursive:true });
+fs.copyFileSync('index.html', 'dist/index.html');
+fs.copyFileSync('src/main.js', 'dist/src/main.js');
+fs.copyFileSync('src/styles.css', 'dist/src/styles.css');
+fs.copyFileSync('lib/platformData.mjs', 'dist/lib/platformData.mjs');
+const html = fs.readFileSync('dist/index.html','utf8');
+const js = fs.readFileSync('dist/src/main.js','utf8');
+if (!html.includes('/src/main.js') || !js.includes('Finish Install')) throw new Error('Build output missing application entry.');
+console.log('Built static platform into dist/');
