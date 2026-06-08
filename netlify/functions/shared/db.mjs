@@ -1,11 +1,14 @@
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 let client;
 let pgModule;
-const moduleFilename=typeof import.meta.url==='string'&&import.meta.url ? import.meta.url : `${process.cwd()}/netlify/functions/shared/db.mjs`;
+let netlifyDatabaseModule;
+const moduleFilename=typeof import.meta.url==='string'&&import.meta.url ? fileURLToPath(import.meta.url) : `${process.cwd()}/netlify/functions/shared/db.mjs`;
 const require=createRequire(moduleFilename);
 
 export const databaseEnvKeys=['NETLIFY_DATABASE_URL','DATABASE_URL','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
+export const databaseClientPackage='@netlify/database';
 export const databaseDriverPackage='pg';
 
 function safeMessage(error){ return error?.message ? String(error.message) : 'Unknown database loader error.'; }
@@ -17,8 +20,25 @@ export function configuredDatabaseUrl(){
   }
   return null;
 }
-export function getDatabaseUrl(){ return configuredDatabaseUrl()?.value; }
+export function getDatabaseUrl(){ return resolveDatabaseConnection()?.value; }
 export function databaseEnvStatus(){ return databaseEnvKeys.map((key)=>({key,configured:typeof process.env[key]==='string'&&process.env[key].trim().length>0})); }
+
+export function loadNetlifyDatabaseClientResult(){
+  if(netlifyDatabaseModule) return {ok:true,client:netlifyDatabaseModule,packageName:databaseClientPackage};
+  if(!databaseClientPackage) return {ok:false,code:'DATABASE_CLIENT_MISSING',message:'Database client package is missing from package.json.',details:'Database client package name is not configured.',packageName:databaseClientPackage};
+  try{
+    netlifyDatabaseModule=require(databaseClientPackage);
+    return {ok:true,client:netlifyDatabaseModule,packageName:databaseClientPackage};
+  }catch(error){
+    return {ok:false,code:'DATABASE_CLIENT_MISSING',message:'Database client package is missing from package.json.',details:safeMessage(error),packageName:databaseClientPackage};
+  }
+}
+
+export function resolveDatabaseConnection(){
+  const configured=configuredDatabaseUrl();
+  if(configured) return {...configured,source:'environment'};
+  return null;
+}
 
 export function loadDatabaseDriverResult(){
   if(pgModule) return {ok:true,driver:pgModule,packageName:databaseDriverPackage};
@@ -81,8 +101,8 @@ function createDb(queryable, release){
 }
 
 function getPool(){
-  const configured=configuredDatabaseUrl();
-  if(!configured) throw Object.assign(new Error(`Database URL is not configured. Checked ${databaseEnvKeys.join(', ')}.`),{code:'NO_DATABASE_URL',statusCode:200,manualDatabaseLinkRequired:true,manualSetupRequired:true});
+  const configured=resolveDatabaseConnection();
+  if(!configured) throw Object.assign(new Error(`Database URL is not configured. Checked ${databaseEnvKeys.join(', ')}.`),{code:'NO_DATABASE_URL',statusCode:200,manualDatabaseLinkRequired:true,manualSetupRequired:true,canBootstrapSchema:false});
   const { Pool }=loadDatabaseDriver();
   if(!client) client=new Pool({connectionString:configured.value, max:5, ssl:shouldUseSsl(configured.value)?{rejectUnauthorized:false}:false});
   return client;

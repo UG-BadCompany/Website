@@ -11,6 +11,7 @@ for(const route of ['/install-status','/install/health','/install/bootstrap-data
 const netlify=await readFile('netlify.toml','utf8');
 if(!netlify.includes('from = "/api/*"')||!netlify.includes('to = "/.netlify/functions/api/:splat"')||!netlify.includes('status = 200')) failures.push('Missing /api/* Netlify function redirect');
 const pkg=JSON.parse(await readFile('package.json','utf8'));
+if(!pkg.dependencies?.['@netlify/database']) failures.push('Missing @netlify/database client dependency in package.json');
 if(!pkg.dependencies?.pg) failures.push('Missing pg database driver dependency in package.json');
 const db=await readFile('netlify/functions/shared/db.mjs','utf8');
 for(const table of ['platform_installation','company_settings','homepage_settings','app_users','roles','permissions','role_permissions','user_roles','workspace_access','module_registry','module_settings','service_categories','customers','customer_properties','estimate_requests','job_requests','quotes','quote_line_items','work_orders','work_order_assignments','schedule_events','inventory_items','inventory_transactions','invoices','payments','uploaded_files','files','ai_runs','workflow_events','audit_logs','magic_tokens','magic_link_tokens','platform_secret_settings','installer_drafts']) if(!db.includes(`create table if not exists ${table}`)) failures.push(`Missing table ${table}`);
