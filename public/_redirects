@@ -1,0 +1,10 @@
+/api/install-status /.netlify/functions/install-status 200
+/api/install/health /.netlify/functions/install-health 200
+/api/install/draft /.netlify/functions/install-draft 200
+/api/install/finish /.netlify/functions/install-finish 200
+/api/install/integration-status /.netlify/functions/integration-status 200
+/api/system/integration-status /.netlify/functions/integration-status 200
+/api/auth/magic-login /.netlify/functions/auth-magic-login 200
+/api/auth/consume-magic-link /.netlify/functions/auth-consume-magic-link 200
+/api/modules/* /.netlify/functions/modules 200
+/* /index.html 200

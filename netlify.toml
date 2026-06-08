@@ -1,0 +1,53 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+[[redirects]]
+  from = "/api/install-status"
+  to = "/.netlify/functions/install-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/install/health"
+  to = "/.netlify/functions/install-health"
+  status = 200
+
+[[redirects]]
+  from = "/api/install/draft"
+  to = "/.netlify/functions/install-draft"
+  status = 200
+
+[[redirects]]
+  from = "/api/install/finish"
+  to = "/.netlify/functions/install-finish"
+  status = 200
+
+[[redirects]]
+  from = "/api/install/integration-status"
+  to = "/.netlify/functions/integration-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/system/integration-status"
+  to = "/.netlify/functions/integration-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/magic-login"
+  to = "/.netlify/functions/auth-magic-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/consume-magic-link"
+  to = "/.netlify/functions/auth-consume-magic-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/modules/*"
+  to = "/.netlify/functions/modules"
+  status = 200
