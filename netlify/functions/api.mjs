@@ -1,5 +1,5 @@
 import { json, ok, fail, safe, parseBody } from './lib/response.mjs';
-import { databaseStatus, bootstrapSchema, getDraft, saveDraft, finishInstall, dashboardBootstrap, query } from './lib/db.mjs';
+import { databaseStatus, databaseRuntimeDiagnostics, bootstrapSchema, getDraft, saveDraft, finishInstall, dashboardBootstrap, query } from './lib/db.mjs';
 import { getIntegrationStatus } from './lib/integrations.mjs';
 
 function methodPath(event) {
@@ -19,6 +19,9 @@ export async function handler(event) {
     if (method === 'GET' && path === '/api/install/health') {
       const status = await databaseStatus();
       return ok({ installer: 'healthy', database: status, recoveryAvailable: true });
+    }
+    if (method === 'GET' && path === '/api/install/runtime-diagnostics') {
+      return ok(databaseRuntimeDiagnostics());
     }
     if (method === 'POST' && path === '/api/install/bootstrap-database') {
       const result = await bootstrapSchema();
