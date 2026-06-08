@@ -65,18 +65,18 @@ function createDb(queryable, release){
 
 function getPool(){
   const url=getDatabaseUrl();
-  if(!url) throw Object.assign(new Error(`Database URL is not configured. Set ${databaseEnvKeys.join(', ')}.`),{code:'DATABASE_UNAVAILABLE',statusCode:503});
+  if(!url) throw Object.assign(new Error(`Database URL is not configured. Set ${databaseEnvKeys.join(', ')}.`),{code:'NETLIFY_DATABASE_REQUIRED',statusCode:503});
   const { Pool }=loadDatabaseDriver();
   if(!client) client=new Pool({connectionString:url, max:5, ssl:shouldUseSsl(url)?{rejectUnauthorized:false}:false});
   return client;
 }
 
 export function sql(){ return createDb(getPool()); }
-export async function ensureSchema(db=sql()){
-  await db.unsafe(`create extension if not exists pgcrypto;
+const coreSchemaSql=`create extension if not exists pgcrypto;
   create table if not exists platform_installation(id text primary key default 'default', installation_complete boolean not null default false, installer_draft jsonb not null default '{}'::jsonb, completed_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
   create table if not exists company_settings(id text primary key default 'default', company_name text not null default 'Contractor Platform', logo_url text, phone text, email text, address text, theme jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
   create table if not exists homepage_settings(id text primary key default 'default', content jsonb not null default '{}'::jsonb, published boolean not null default true, updated_at timestamptz not null default now());
+  create table if not exists theme_settings(id text primary key default 'default', theme jsonb not null default '{}'::jsonb, active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
   create table if not exists app_users(id uuid primary key default gen_random_uuid(), full_name text not null, email text not null unique, normalized_email text not null unique, phone text, active boolean not null default true, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
   create table if not exists roles(id uuid primary key default gen_random_uuid(), key text not null unique, label text not null, description text, created_at timestamptz not null default now());
   create table if not exists permissions(id uuid primary key default gen_random_uuid(), key text not null unique, label text not null, created_at timestamptz not null default now());
@@ -99,6 +99,29 @@ export async function ensureSchema(db=sql()){
   create table if not exists workflow_events(id uuid primary key default gen_random_uuid(), entity_type text not null, entity_id uuid not null, from_status text, to_status text not null, actor_id uuid, notes text, created_at timestamptz not null default now());
   create table if not exists audit_logs(id uuid primary key default gen_random_uuid(), actor_id uuid, action text not null, entity_type text, entity_id text, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now());
   create table if not exists magic_link_tokens(id uuid primary key default gen_random_uuid(), normalized_email text not null, token_hash text not null unique, expires_at timestamptz not null, used_at timestamptz, created_at timestamptz not null default now());
-  create table if not exists platform_secret_settings(id uuid primary key default gen_random_uuid(), key text not null unique, encrypted_value text not null, provider text not null default 'encrypted_db', last_four text, status text not null default 'configured', last_tested_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());`);
+  create table if not exists platform_secret_settings(id uuid primary key default gen_random_uuid(), key text not null unique, encrypted_value text not null, provider text not null default 'encrypted_db', last_four text, status text not null default 'configured', last_tested_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());`;
+
+export const migrations=[
+  {id:'001_core_platform',name:'Core platform schema',sql:coreSchemaSql},
+  {id:'002_theme_settings',name:'Theme settings table',sql:`create table if not exists theme_settings(id text primary key default 'default', theme jsonb not null default '{}'::jsonb, active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now());`}
+];
+
+export async function runMigrations(db=sql()){
+  await db.unsafe(`create table if not exists schema_migrations(id text primary key, name text not null, applied_at timestamptz not null default now());`);
+  const applied=[];
+  for(const migration of migrations){
+    const exists=await db`select id from schema_migrations where id=${migration.id}`;
+    if(exists.length) continue;
+    await db.begin(async tx=>{
+      await tx.unsafe(migration.sql);
+      await tx`insert into schema_migrations(id,name) values(${migration.id},${migration.name}) on conflict(id) do nothing`;
+    });
+    applied.push(migration.id);
+  }
+  return {applied,total:migrations.length};
+}
+
+export async function ensureSchema(db=sql()){
+  return runMigrations(db);
 }
 export async function audit(action, metadata={}, entityType=null, entityId=null){ try { const db=sql(); await db`insert into audit_logs(action, entity_type, entity_id, metadata) values(${action},${entityType},${entityId},${db.json(metadata)})`; } catch {} }
