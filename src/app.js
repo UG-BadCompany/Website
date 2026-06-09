@@ -82,7 +82,81 @@ async function boot(){
   }
   const draft = await api('/api/install/draft'); if(draft.ok && draft.draft){ state.draft={...state.draft,...draft.draft}; applyTheme(); }
   const integrations = await api('/api/install/integration-status'); state.integrations = integrations.integrations || [];
-  if(location.pathname.startsWith('/dashboard') || status.installed) renderDashboard(); else renderInstaller();
+  if (location.pathname.startsWith('/install')) {
+  renderInstaller();
+} else if (location.pathname.startsWith('/dashboard')) {
+  renderDashboard();
+} else {
+  renderHomepage();
+}
+
+function renderHomepage(){
+  applyTheme();
+
+  const installed = Boolean(state.db?.installed || state.db?.installationComplete);
+  const companyName = val('company.name', 'Your Contractor Company');
+  const heroTitle = val('homepage.heroTitle', 'Reliable contractor service, fast estimates, and clear updates.');
+  const heroSubtitle = val('homepage.heroSubtitle', 'A modern contractor platform for estimates, work orders, scheduling, invoices, and client communication.');
+
+  app.innerHTML = `
+    <main class="homepage public-home">
+
+      <header class="public-header">
+        <div class="brand">
+          <div class="brand-logo">
+            ${val('branding.logoData') ? `<img src="${val('branding.logoData')}" alt="">` : '🏗️'}
+          </div>
+          <div>
+            <b>${escapeHtml(companyName)}</b>
+            <div class="workspace">Contractor CMMS</div>
+          </div>
+        </div>
+
+        <nav class="public-nav">
+          <a href="#services">Services</a>
+          <a href="#about">About</a>
+          <a href="/dashboard">Dashboard</a>
+          <a href="/install/">Install</a>
+        </nav>
+      </header>
+
+      <section class="hero public-hero">
+        <div>
+          <h1>${escapeHtml(heroTitle)}</h1>
+          <p>${escapeHtml(heroSubtitle)}</p>
+
+          ${
+            installed
+              ? `<a href="/dashboard"><button>Open Dashboard</button></a>`
+              : `<a href="/install/"><button>Install Platform</button></a>`
+          }
+        </div>
+
+        <aside class="estimate-card">
+          <b>Estimate Preview</b>
+          <p>Quotes, Work Orders, Invoices, Inventory and AI Estimating.</p>
+        </aside>
+      </section>
+
+      <section id="services" class="grid cols-3">
+        <article class="card">
+          <h3>Request Estimates</h3>
+          <p>Customers can submit estimate requests online.</p>
+        </article>
+
+        <article class="card">
+          <h3>Work Orders</h3>
+          <p>Create, assign and complete jobs.</p>
+        </article>
+
+        <article class="card">
+          <h3>Invoices</h3>
+          <p>Track billing and payments.</p>
+        </article>
+      </section>
+
+    </main>
+  `;
 }
 
 function renderInstaller(){
@@ -257,7 +331,7 @@ async function renderDashboard(){
   if(data.theme) applyTheme(themeFromDatabase(data.theme));
   const modules=(data.modules?.length?data.modules:coreModules.map(m=>({id:m.id,label:m.label,nav_group:m.group}))).filter(m=>visibleForRole(m.id,state.view));
   const company=data.company?.company_name || val('company.name','Contractor CMMS');
-  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/'">Installer</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
+  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Installer</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
   $$('[data-nav]').forEach(a=>a.onclick=e=>{e.preventDefault(); state.active=a.dataset.nav; renderDashboard();});
   $('#viewSelect')?.addEventListener('change', e=>{state.view=e.target.value; sessionStorage.setItem('ownerView',state.view); state.active='dashboard-overview'; renderDashboard();});
   $('#exitView')?.addEventListener('click',()=>{state.view='owner';sessionStorage.setItem('ownerView','owner');renderDashboard();});
