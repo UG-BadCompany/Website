@@ -146,7 +146,13 @@ async function renderHomepage(){
   const email = info.email || company.email || val('company.email', '');
 
   app.innerHTML = `
-    <main class="public-home premium-home">
+    <main class="public-home premium-home" id="top">
+      <!-- Animated background elements -->
+      <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+      </div>
       <header class="public-header premium-header">
         <div class="brand">
           <div class="brand-logo">
@@ -246,6 +252,28 @@ async function renderHomepage(){
             </span>
           </div>
         </aside>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="stats-section">
+        <div class="stats-container">
+          <div class="stat-item" data-count="500">
+            <div class="stat-number">0+</div>
+            <div class="stat-label">Projects Completed</div>
+          </div>
+          <div class="stat-item" data-count="98">
+            <div class="stat-number">0%</div>
+            <div class="stat-label">Client Satisfaction</div>
+          </div>
+          <div class="stat-item" data-count="15">
+            <div class="stat-number">0+</div>
+            <div class="stat-label">Years Experience</div>
+          </div>
+          <div class="stat-item" data-count="24">
+            <div class="stat-number">0/7</div>
+            <div class="stat-label">Support Available</div>
+          </div>
+        </div>
       </section>
 
       <section id="services" class="public-section services-section">
@@ -412,6 +440,70 @@ async function renderHomepage(){
 
   $$('.service-tile, .feature-item, .split-section, .contact-band').forEach(el => {
     observer.observe(el);
+  });
+
+  // Animated counter for stats
+  const animateCounter = (el, target) => {
+    let current = 0;
+    const increment = target / 50;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        current = target;
+        clearInterval(timer);
+      }
+      const suffix = el.textContent.includes('%') ? '%' : el.textContent.includes('/') ? '/7' : '+';
+      el.textContent = Math.floor(current) + suffix;
+    }, 30);
+  };
+
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+        entry.target.classList.add('counted');
+        const target = parseInt(entry.target.dataset.count);
+        const numberEl = entry.target.querySelector('.stat-number');
+        if (numberEl && target) {
+          animateCounter(numberEl, target);
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+
+  $$('.stat-item').forEach(el => statsObserver.observe(el));
+
+  // Parallax effect for background orbs
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        const scrolled = window.pageYOffset;
+        const orbs = $$('.orb');
+        orbs.forEach((orb, i) => {
+          const speed = 0.3 + (i * 0.1);
+          orb.style.transform = `translateY(${scrolled * speed}px)`;
+        });
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+
+  // Add hover tilt effect to service cards
+  $$('.service-tile').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = (y - centerY) / 10;
+      const rotateY = (centerX - x) / 10;
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale(1.02)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
   });
 }
 
