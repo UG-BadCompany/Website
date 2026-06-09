@@ -306,7 +306,23 @@ const migrations = [
 `alter table platform_installation add column if not exists installed_at timestamptz`,
 `alter table platform_installation add column if not exists created_at timestamptz not null default now()`,
 `alter table platform_installation add column if not exists updated_at timestamptz not null default now()`,
-`alter table platform_installation add column if not exists metadata jsonb not null default '{}'::jsonb`
+`alter table platform_installation add column if not exists metadata jsonb not null default '{}'::jsonb`,
+
+// Theme Builder migrations
+`alter table theme_settings add column if not exists theme_preset text`,
+`alter table theme_settings add column if not exists border_color text default '#e5e7eb'`,
+`alter table theme_settings add column if not exists button_color text default '#2563eb'`,
+`alter table theme_settings add column if not exists button_text_color text default '#ffffff'`,
+`alter table theme_settings add column if not exists sidebar_background_color text`,
+`alter table theme_settings add column if not exists sidebar_text_color text`,
+`alter table theme_settings add column if not exists sidebar_active_background_color text`,
+`alter table theme_settings add column if not exists sidebar_active_text_color text`,
+`alter table theme_settings add column if not exists sidebar_hover_background_color text`,
+`alter table theme_settings add column if not exists custom_sidebar_colors_enabled boolean not null default false`,
+`alter table theme_settings add column if not exists mobile_nav_background_color text`,
+`alter table theme_settings add column if not exists mobile_nav_active_color text`,
+`alter table theme_settings add column if not exists mobile_nav_text_color text`,
+`alter table theme_settings add column if not exists custom_mobile_nav_colors_enabled boolean not null default false`
 ];
 
 async function runSchemaStatement(statement) {
