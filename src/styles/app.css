@@ -181,4 +181,650 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   .premium-hero {
     padding-top: 2rem;
   }
+
+/* ============================================
+   MAGIC LOGIN PAGE - 10/10 PREMIUM DESIGN
+   ============================================ */
+
+.magic-login-page {
+  min-height: 100vh;
+  background: 
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--primary) 15%, transparent), transparent 50%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 50%),
+    var(--color-background);
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background particles */
+.magic-login-page::before,
+.magic-login-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.05;
+  animation: float 20s infinite ease-in-out;
+}
+
+.magic-login-page::before {
+  width: 400px;
+  height: 400px;
+  background: var(--primary);
+  top: -200px;
+  left: -200px;
+  animation-delay: -5s;
+}
+
+.magic-login-page::after {
+  width: 300px;
+  height: 300px;
+  background: var(--accent);
+  bottom: -150px;
+  right: -150px;
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+.magic-login-container {
+  max-width: 1100px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 3rem;
+  align-items: start;
+  position: relative;
+  z-index: 1;
+}
+
+.magic-login-card {
+  background: var(--color-surface);
+  border: 1px solid var(--border);
+  border-radius: 32px;
+  padding: 3rem;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 0 1px color-mix(in srgb, var(--primary) 10%, transparent);
+  backdrop-filter: blur(20px);
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.magic-login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  opacity: 0.8;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.magic-login-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.magic-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  box-shadow: 
+    0 10px 30px color-mix(in srgb, var(--primary) 30%, transparent),
+    0 0 0 8px color-mix(in srgb, var(--primary) 8%, transparent);
+  animation: pulse 3s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.magic-icon {
+  width: 40px;
+  height: 40px;
+  color: white;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: rotate(0deg); }
+  50% { opacity: 0.8; transform: rotate(10deg); }
+}
+
+.magic-login-header h1 {
+  font-size: 2.5rem;
+  margin: 0.5rem 0;
+  background: linear-gradient(135deg, var(--color-text), color-mix(in srgb, var(--primary) 70%, var(--color-text)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.magic-subtitle {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 420px;
+  margin: 0.75rem auto 0;
+}
+
+.magic-form {
+  margin-bottom: 2rem;
+}
+
+.magic-input-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.magic-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+  color: var(--color-text);
+}
+
+.input-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--primary);
+}
+
+.magic-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 1.05rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.magic-input:focus {
+  border-color: var(--primary);
+  background: var(--color-surface);
+  box-shadow: 
+    0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.magic-input.valid {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 3%, var(--color-surface));
+}
+
+.magic-input.invalid {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 3%, var(--color-surface));
+}
+
+.magic-input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.input-help {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.magic-button {
+  width: 100%;
+  padding: 1.1rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 85%, var(--accent)));
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent),
+    0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.magic-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.magic-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 24px color-mix(in srgb, var(--primary) 40%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.magic-button:hover::before {
+  left: 100%;
+}
+
+.magic-button:active {
+  transform: translateY(0);
+}
+
+.magic-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-content,
+.button-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  transition: opacity 0.2s;
+}
+
+.button-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.magic-button.loading .button-content {
+  opacity: 0;
+}
+
+.magic-button.loading .button-loader {
+  opacity: 1;
+}
+
+.button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.magic-status {
+  padding: 1.25rem;
+  border-radius: 16px;
+  margin-top: 1.5rem;
+  display: none;
+  align-items: flex-start;
+  gap: 1rem;
+  animation: slideInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.magic-status:not(:empty) {
+  display: flex;
+}
+
+.magic-status.success {
+  background: color-mix(in srgb, var(--success) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+  color: var(--success);
+}
+
+.magic-status.error {
+  background: color-mix(in srgb, var(--danger) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  color: var(--danger);
+}
+
+.status-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.magic-status strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.magic-status p {
+  margin: 0;
+  color: var(--color-text);
+  opacity: 0.85;
+  font-size: 0.95rem;
+}
+
+.magic-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+  margin-top: 2rem;
+}
+
+.security-badges {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--color-background);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+
+.badge:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.back-link:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+.back-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.magic-features {
+  display: grid;
+  gap: 1.5rem;
+  animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.feature-item {
+  background: var(--color-surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.feature-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+
+.feature-item:hover::before {
+  opacity: 1;
+}
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 25%, transparent);
+  position: relative;
+}
+
+.feature-item h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: var(--color-text);
+}
+
+.feature-item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Auth callback page styling */
+.auth-page {
+  min-height: 100vh;
+  background: 
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--primary) 15%, transparent), transparent 50%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 50%),
+    var(--color-background);
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-card h1 {
+  font-size: 2rem;
+  margin: 0 0 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .magic-login-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .magic-features {
+    grid-template-columns: 1fr;
+  }
+
+  .magic-login-card {
+    padding: 2rem;
+  }
+
+  .magic-login-header h1 {
+    font-size: 2rem;
+  }
+
+  .magic-icon-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .magic-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 500px) {
+  .magic-login-page {
+    padding: 1rem;
+  }
+
+  .magic-login-card {
+    padding: 1.5rem;
+    border-radius: 24px;
+  }
+
+  .magic-login-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .magic-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .security-badges {
+    gap: 0.5rem;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .feature-item {
+    padding: 1.5rem;
+  }
+}
+
+/* Dark mode enhancements */
+[data-theme="dark"] .magic-login-card,
+[data-theme="dark"] .feature-item {
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+[data-theme="dark"] .magic-input:focus {
+  box-shadow: 
+    0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .badge {
+  background: color-mix(in srgb, var(--color-surface) 50%, var(--color-background));
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+.magic-input:focus-visible,
+.magic-button:focus-visible,
+.back-link:focus-visible,
+.badge:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .magic-login-card,
+  .feature-item {
+    border-width: 2px;
+  }
+
+  .magic-input {
+    border-width: 2px;
+  }
+
+  .badge {
+    border-width: 2px;
+  }
+}
 }
