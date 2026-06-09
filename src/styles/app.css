@@ -181,6 +181,7 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   .premium-hero {
     padding-top: 2rem;
   }
+}
 
 /* ============================================
    MAGIC LOGIN PAGE - 10/10 PREMIUM DESIGN
@@ -826,5 +827,4 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   .badge {
     border-width: 2px;
   }
-}
 }
