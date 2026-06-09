@@ -424,6 +424,19 @@ async function renderHomepage(){
     this.classList.toggle('active');
   });
 
+  // Sticky header scroll effect
+  const header = $('.premium-header');
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset;
+    if (currentScroll > 50) {
+      header?.classList.add('scrolled');
+    } else {
+      header?.classList.remove('scrolled');
+    }
+    lastScroll = currentScroll;
+  });
+
   // Intersection Observer for animations
   const observerOptions = {
     threshold: 0.1,
