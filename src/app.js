@@ -84,6 +84,18 @@ async function boot(){
     state.db = { ...status, ...bootstrapResult };
   }
 
+  const installed = Boolean(
+    state.db.installed ||
+    state.db.installationComplete
+  );
+
+  const onInstallPage = location.pathname.startsWith('/install');
+
+  if (!installed && !onInstallPage) {
+    window.location.replace('/install/');
+    return;
+  }
+
   const draft = await api('/api/install/draft');
   if(draft.ok && draft.draft){
     state.draft = { ...state.draft, ...draft.draft };
@@ -93,17 +105,12 @@ async function boot(){
   const integrations = await api('/api/install/integration-status');
   state.integrations = integrations.integrations || [];
 
-  const installed = Boolean(state.db.installed || state.db.installationComplete);
-
-  if (!installed && !location.pathname.startsWith('/install')) {
-    history.replaceState({}, '', '/install/');
-    renderInstaller();
-  } else if (location.pathname.startsWith('/install')) {
+  if (onInstallPage) {
     renderInstaller();
   } else if (location.pathname.startsWith('/dashboard')) {
     renderDashboard();
   } else {
-    await renderHomepage();
+    renderHomepage();
   }
 }
 
