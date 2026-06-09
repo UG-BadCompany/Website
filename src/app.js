@@ -2,9 +2,15 @@ import { coreModules, sidebarGroups, defaultRoles } from './modules/moduleData.m
 
 const $ = (sel, root=document) => root.querySelector(sel);
 const app = $('#app');
+const sessionStorageKey = 'cmmsSessionToken';
+function getSessionToken(){ return localStorage.getItem(sessionStorageKey) || ''; }
+function saveSessionToken(token){ token ? localStorage.setItem(sessionStorageKey, token) : localStorage.removeItem(sessionStorageKey); }
 const api = async (path, options={}) => {
   try {
-    const res = await fetch(path, { headers:{'content-type':'application/json'}, ...options });
+    const token = getSessionToken();
+    const headers = { 'content-type':'application/json', ...(options.headers || {}) };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(path, { ...options, headers });
     const text = await res.text();
     return JSON.parse(text || '{}');
   } catch (error) {
@@ -90,6 +96,8 @@ async function boot(){
   );
 
   const onInstallPage = location.pathname.startsWith('/install');
+  const onLoginPage = location.pathname.startsWith('/login');
+  const onAuthCallbackPage = location.pathname.startsWith('/auth/callback');
 
   if (!installed && !onInstallPage) {
     window.location.replace('/install/');
@@ -107,6 +115,10 @@ async function boot(){
 
   if (onInstallPage) {
     renderInstaller();
+  } else if (onLoginPage) {
+    renderLogin();
+  } else if (onAuthCallbackPage) {
+    handleAuthCallback();
   } else if (location.pathname.startsWith('/dashboard')) {
     renderDashboard();
   } else {
@@ -123,7 +135,7 @@ async function renderHomepage(){
   const company = data.company || {};
   const home = data.homepage || {};
   const info = home.company_info || {};
-  const services = data.services?.length ? data.services : services();
+  const serviceList = data.services?.length ? data.services : services();
 
   const companyName = company.company_name || val('company.name', 'Your Contractor Company');
   const heroTitle = home.hero_title || val('homepage.heroTitle', `Reliable service from ${companyName}`);
@@ -191,7 +203,7 @@ async function renderHomepage(){
         </div>
 
         <div class="service-grid">
-          ${services.slice(0, 12).map(s => `
+          ${serviceList.slice(0, 12).map(s => `
             <article class="service-tile">
               <span class="service-icon">${escapeHtml(s.icon || '🛠️')}</span>
               <h3>${escapeHtml(s.name)}</h3>
@@ -398,16 +410,69 @@ function stepReview(){ return `<h2>Review & Finish</h2><div class="grid cols-2">
 function readAsset(e,path){ const file=e.target.files?.[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ setDraft(path,r.result); renderInstaller(); }; r.readAsDataURL(file); }
 function readArrayAsset(e,path,index,key){ const file=e.target.files?.[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ const parts=path.split('.'); let node=state.draft; while(parts.length){ const p=parts.shift(); node[p] ||= parts.length ? {} : []; node=node[p]; } node[index] ||= {}; node[index][key]=r.result; saveLocalDraft(); scheduleDraftSave(); renderInstaller(); }; r.readAsDataURL(file); }
 
+async function renderLogin(){
+  applyTheme();
+  const session = await api('/api/auth/session');
+  if (session.ok && session.authenticated) {
+    window.location.replace('/dashboard');
+    return;
+  }
+  app.innerHTML = `<main class="public-home auth-page"><section class="card auth-card"><span class="eyebrow">Secure dashboard access</span><h1>Magic Login</h1><p class="muted">Enter your email and we’ll send a one-time magic link. If the address can access this site, a login link will be sent.</p><form id="magicLoginForm"><label class="field">Email<input id="magicEmail" type="email" autocomplete="email" required placeholder="owner@example.com"></label><button id="magicSubmit" type="submit">Send magic link</button></form><div id="magicLoginStatus" class="status-note" role="status"></div><p><a href="/">Back to homepage</a></p></section></main>`;
+  $('#magicLoginForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = $('#magicSubmit');
+    const status = $('#magicLoginStatus');
+    button.disabled = true;
+    button.textContent = 'Sending…';
+    status.textContent = '';
+    const result = await api('/api/auth/magic-link', { method:'POST', body:JSON.stringify({ email: $('#magicEmail').value }) });
+    status.textContent = result.message || result.error?.message || 'If that email can access this site, a magic link has been sent.';
+    button.disabled = false;
+    button.textContent = 'Send magic link';
+  });
+}
+
+async function handleAuthCallback(){
+  applyTheme();
+  app.innerHTML = `<main class="public-home auth-page"><section class="card auth-card"><h1>Signing you in…</h1><p class="muted">Verifying your magic link.</p></section></main>`;
+  const token = new URLSearchParams(location.search).get('token') || '';
+  if (!token) {
+    app.innerHTML = `<main class="public-home auth-page"><section class="card auth-card"><h1>Invalid login link</h1><p class="muted">Request a new magic link to continue.</p><p><a href="/login/">Back to login</a></p></section></main>`;
+    return;
+  }
+  const result = await api('/api/auth/verify', { method:'POST', body:JSON.stringify({ token }) });
+  if (result.ok && result.sessionToken) {
+    saveSessionToken(result.sessionToken);
+    window.location.replace('/dashboard');
+    return;
+  }
+  saveSessionToken('');
+  app.innerHTML = `<main class="public-home auth-page"><section class="card auth-card"><h1>Login link expired</h1><p class="muted">Magic links can only be used once and expire after 15 minutes.</p><p><a href="/login/">Request a new link</a></p></section></main>`;
+}
+
+async function logout(){
+  await api('/api/auth/logout', { method:'POST', body:'{}' });
+  saveSessionToken('');
+  window.location.href = '/login/';
+}
+
 async function renderDashboard(){
   applyTheme();
+  const session = await api('/api/auth/session');
+  if (!session.ok || !session.authenticated) {
+    saveSessionToken('');
+    window.location.replace('/login/');
+    return;
+  }
   const data=await api('/api/dashboard/bootstrap');
   if(data.theme) applyTheme(themeFromDatabase(data.theme));
   const modules=(data.modules?.length?data.modules:coreModules.map(m=>({id:m.id,label:m.label,nav_group:m.group}))).filter(m=>visibleForRole(m.id,state.view));
   const company=data.company?.company_name || val('company.name','Contractor CMMS');
-  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Homepage</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
+  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Homepage</button><button class="secondary" id="logoutButton">Logout</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
   $$('[data-nav]').forEach(a=>a.onclick=e=>{e.preventDefault(); state.active=a.dataset.nav; renderDashboard();});
   $('#viewSelect')?.addEventListener('change', e=>{state.view=e.target.value; sessionStorage.setItem('ownerView',state.view); state.active='dashboard-overview'; renderDashboard();});
   $('#exitView')?.addEventListener('click',()=>{state.view='owner';sessionStorage.setItem('ownerView','owner');renderDashboard();});
+  $('#logoutButton')?.addEventListener('click', logout);
 }
 function themeFromDatabase(row={}){ const custom=row.custom||{}; return { ...custom, mode:custom.mode||row.mode||'system', primary:custom.primary||row.primary_color, accent:custom.accent||row.accent_color, background:custom.background||row.background_color, surface:custom.surface||row.surface_color, text:custom.text||row.text_color, border:custom.border||row.border_color, button:custom.button||row.button_color, buttonText:custom.buttonText||row.button_text_color, sidebar:custom.sidebar||row.sidebar_color, sidebarText:custom.sidebarText||row.sidebar_text_color, mobileNav:custom.mobileNav||row.mobile_nav_color, mobileNavText:custom.mobileNavText||row.mobile_nav_text_color }; }
 function ownerSwitcher(){ return `<div class="view-switcher"><b>Viewing as: ${cap(state.view)}</b><label class="field">Switch View<select id="viewSelect">${defaultRoles.map(r=>`<option value="${r}" ${state.view===r?'selected':''}>${cap(r)} View</option>`).join('')}</select></label></div>`; }
