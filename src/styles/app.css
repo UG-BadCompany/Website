@@ -8,12 +8,25 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 
 .premium-home {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 20%, transparent), transparent 35rem),
-    radial-gradient(circle at bottom right, color-mix(in srgb, var(--accent) 15%, transparent), transparent 40rem),
-    var(--color-background);
+  background: var(--color-background);
   color: var(--color-text);
   position: relative;
+  overflow-x: hidden;
+}
+
+.premium-home::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent),
+    radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 40%),
+    radial-gradient(circle at 15% 80%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 35%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Animated background orbs */
@@ -165,33 +178,91 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 }
 
 .premium-hero {
-  max-width: 1180px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 5rem 1.25rem;
+  padding: 8rem 2rem 6rem;
   display: grid;
-  grid-template-columns: 1.4fr .8fr;
-  gap: 2rem;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 4rem;
   align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.premium-hero::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 18%, transparent), transparent 65%);
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: float 25s infinite ease-in-out;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.premium-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -15%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+  border-radius: 50%;
+  filter: blur(50px);
+  animation: float 20s infinite ease-in-out reverse;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .hero-copy h1 {
-  font-size: clamp(2.5rem, 7vw, 5.5rem);
-  line-height: .95;
-  margin: .5rem 0 1rem;
+  font-size: clamp(2.8rem, 7vw, 6rem);
+  line-height: 1.05;
+  margin: 1rem 0 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .hero-copy p {
-  font-size: 1.2rem;
-  max-width: 720px;
-  opacity: .85;
+  font-size: 1.3rem;
+  max-width: 600px;
+  opacity: .8;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--primary);
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .12em;
-  font-size: .75rem;
+  letter-spacing: .15em;
+  font-size: .7rem;
+  padding: 0.5rem 1rem;
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
 }
 
 .hero-actions,
@@ -221,25 +292,107 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 }
 
 .hero-card {
-  padding: 2rem;
+  padding: 2.5rem;
+  backdrop-filter: blur(20px);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.hero-card > b {
+  font-size: 1.4rem;
+  display: block;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--color-text), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-card > p {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  opacity: 0.85;
 }
 
 .mini-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: .75rem;
-  margin-top: 1.25rem;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .mini-stats span {
-  background: var(--color-background);
-  border-radius: 16px;
-  padding: .9rem;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--primary) 5%, var(--color-background)),
+    var(--color-background));
+  border: 1px solid color-mix(in srgb, var(--primary) 15%, var(--border));
+  border-radius: 18px;
+  padding: 1.25rem 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.mini-stats b,
+.mini-stats span::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.mini-stats span:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.mini-stats span:hover::before {
+  opacity: 1;
+}
+
+.mini-stats svg {
+  width: 28px;
+  height: 28px;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+  stroke-width: 2.5;
+}
+
+.mini-stats b {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .mini-stats small {
   display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
 }
 
 .public-section {
@@ -1498,17 +1651,10 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   overflow: hidden;
 }
 
-.premium-hero::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%);
-  border-radius: 50%;
-  animation: float 20s infinite ease-in-out;
-  pointer-events: none;
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(30px, -30px) rotate(5deg); }
+  66% { transform: translate(-20px, 20px) rotate(-5deg); }
 }
 
 .animate-in {
@@ -1524,11 +1670,16 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 .animate-in:nth-child(5) { animation-delay: 0.5s; }
 
 .hero-copy h1 {
-  background: linear-gradient(135deg, var(--color-text), color-mix(in srgb, var(--primary) 70%, var(--color-text)));
+  background: linear-gradient(135deg,
+    var(--color-text) 0%,
+    var(--color-text) 40%,
+    color-mix(in srgb, var(--primary) 80%, var(--color-text)) 70%,
+    var(--primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   position: relative;
+  text-shadow: 0 0 80px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .hero-actions {
@@ -1542,12 +1693,22 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 .hero-actions button {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 1.75rem;
-  font-size: 1.05rem;
+  gap: 0.75rem;
+  padding: 1.1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.hero-actions button.secondary {
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .hero-actions button::before {
@@ -1572,8 +1733,14 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 }
 
 .hero-actions button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 35%, transparent);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.hero-actions button.secondary:hover {
+  background: var(--color-surface);
+  border-color: var(--primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 .hero-actions button:hover svg {
@@ -1581,38 +1748,47 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 }
 
 .trust-row {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
+  gap: 1rem;
 }
 
 .trust-row span {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.3s;
+  padding: 0.75rem 1.25rem;
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in srgb, var(--primary) 15%, var(--border));
 }
 
 .trust-row span:hover {
-  transform: translateX(4px);
-  background: color-mix(in srgb, var(--primary) 8%, var(--color-surface));
+  transform: translateX(6px);
+  background: color-mix(in srgb, var(--primary) 10%, var(--color-surface));
+  border-color: var(--primary);
 }
 
 .trust-row svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: var(--primary);
   flex-shrink: 0;
+  stroke-width: 2.5;
 }
 
 .hero-card {
   position: relative;
-  animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+  animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
 .hero-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
+  transform: translateY(-12px) scale(1.03);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.25);
 }
 
 @keyframes slideInRight {
@@ -1632,33 +1808,43 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 20%, transparent), transparent 50%);
+  background: radial-gradient(circle at center,
+    color-mix(in srgb, var(--primary) 25%, transparent),
+    transparent 60%);
   opacity: 0;
-  transition: opacity 0.5s;
+  transition: opacity 0.6s ease;
   pointer-events: none;
+  animation: rotate 15s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .hero-card:hover .card-glow {
-  opacity: 1;
+  opacity: 0.8;
 }
 
 .mini-stats span {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
+  align-items: flex-start;
+  gap: 0.5rem;
   transition: all 0.3s;
+  text-align: left;
 }
 
 .mini-stats span:hover {
   transform: translateY(-4px);
-  background: var(--color-surface);
 }
 
 .mini-stats svg {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   color: var(--primary);
+  stroke-width: 2.5;
+  margin-bottom: 0.5rem;
 }
 
 /* Services section */
