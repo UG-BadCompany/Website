@@ -8,25 +8,14 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 
 .premium-home {
   min-height: 100vh;
-  background: var(--color-background);
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, color-mix(in srgb, var(--primary) 15%, var(--color-background)), var(--color-background) 50%),
+    radial-gradient(circle 800px at 20% 100%, color-mix(in srgb, var(--accent) 12%, transparent), transparent),
+    radial-gradient(circle 600px at 80% 80%, color-mix(in srgb, var(--primary) 10%, transparent), transparent),
+    var(--color-background);
   color: var(--color-text);
   position: relative;
   overflow-x: hidden;
-}
-
-.premium-home::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent),
-    radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 40%),
-    radial-gradient(circle at 15% 80%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 35%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* Animated background orbs */
@@ -83,26 +72,31 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 }
 
 .premium-header {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1.25rem 2.5rem;
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 1300px;
+  width: calc(100% - 4rem);
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
   z-index: 100;
-  background: color-mix(in srgb, var(--color-background) 95%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
   backdrop-filter: blur(30px) saturate(180%);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .premium-header.scrolled {
-  padding: 0.9rem 2.5rem;
-  background: color-mix(in srgb, var(--color-surface) 98%, transparent);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  border-bottom-color: var(--border);
+  top: 1rem;
+  padding: 0.85rem 2rem;
+  background: color-mix(in srgb, var(--color-surface) 95%, transparent);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
+  border-color: var(--border);
 }
 
 .premium-header .brand {
@@ -227,44 +221,14 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 .premium-hero {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 10rem 2.5rem 8rem;
+  padding: 12rem 2.5rem 8rem;
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   gap: 5rem;
   align-items: center;
   position: relative;
   z-index: 1;
-  min-height: 85vh;
-}
-
-.premium-hero::before {
-  content: '';
-  position: absolute;
-  top: -30%;
-  right: -15%;
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 20%, transparent), transparent 60%);
-  border-radius: 50%;
-  filter: blur(80px);
-  animation: float 30s infinite ease-in-out;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.premium-hero::after {
-  content: '';
-  position: absolute;
-  bottom: -20%;
-  left: -10%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 15%, transparent), transparent 65%);
-  border-radius: 50%;
-  filter: blur(70px);
-  animation: float 25s infinite ease-in-out reverse;
-  pointer-events: none;
-  z-index: -1;
+  min-height: 90vh;
 }
 
 .hero-copy h1 {
