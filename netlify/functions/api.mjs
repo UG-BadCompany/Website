@@ -39,13 +39,43 @@ function fromEmailDomain(fromEmail='') {
 
 async function verifyResendFromDomain(resend) {
   const fromDomain = fromEmailDomain(process.env.MAGIC_LINK_FROM_EMAIL);
-  if (!fromDomain) throw new Error('MAGIC_LINK_FROM_EMAIL must include a valid email domain');
+
+  if (!fromDomain) {
+    throw new Error('MAGIC_LINK_FROM_EMAIL must include a valid email domain');
+  }
+
   const result = await resend.domains.list();
-  if (result?.error) throw new Error(`Resend domain verification failed: ${stringifyError(result.error)}`);
-  const domains = Array.isArray(result?.data?.data) ? result.data.data : Array.isArray(result?.data) ? result.data : [];
-  const verifiedDomain = domains.find((domain) => String(domain.name || '').toLowerCase() === fromDomain && domain.status === 'verified');
-  if (!verifiedDomain) throw new Error(`Resend domain ${fromDomain} is not verified or does not match MAGIC_LINK_FROM_EMAIL`);
-  console.log('Resend from domain verified', fromDomain);
+
+  if (result?.error) {
+    throw new Error(`Resend domain verification failed: ${stringifyError(result.error)}`);
+  }
+
+  const domains = Array.isArray(result?.data?.data)
+    ? result.data.data
+    : Array.isArray(result?.data)
+      ? result.data
+      : [];
+
+  const sendingDomain = domains.find((domain) => {
+    const sameDomain = String(domain.name || '').toLowerCase() === fromDomain;
+    const sendingEnabled = domain.capabilities?.sending === 'enabled';
+    const fullyVerified = domain.status === 'verified';
+
+    return sameDomain && (fullyVerified || sendingEnabled);
+  });
+
+  if (!sendingDomain) {
+    throw new Error(
+      `Resend domain ${fromDomain} is not enabled for sending or does not match MAGIC_LINK_FROM_EMAIL`
+    );
+  }
+
+  console.log('Resend from domain sending enabled', {
+    domain: fromDomain,
+    status: sendingDomain.status,
+    sending: sendingDomain.capabilities?.sending,
+    receiving: sendingDomain.capabilities?.receiving
+  });
 }
 
 async function sendMagicLinkEmail({ email, loginUrl }) {
