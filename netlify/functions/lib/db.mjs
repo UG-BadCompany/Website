@@ -564,6 +564,7 @@ export async function createMagicLoginToken(email, metadata={}) {
   const token = generateToken();
   const tokenHash = hashToken(token);
   const [row] = await query(`insert into magic_tokens(user_id, token_hash, expires_at, metadata) values($1,$2,now() + ($3 || ' minutes')::interval,$4::jsonb) returning expires_at`, [user.id, tokenHash, String(magicLinkExpiresMinutes), JSON.stringify({ ...metadata, email: normalizedEmail, purpose: 'magic_login' })]);
+  if (!row?.expires_at) throw new Error('Magic token storage failed');
   return { token, tokenHash, expiresAt: row.expires_at, user };
 }
 

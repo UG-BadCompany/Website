@@ -79,3 +79,37 @@ test('finish install persists structured theme services and homepage data', asyn
   assert(db.includes('insert into service_categories(name,category,icon,color,default_labor_rate,active,sort_order,metadata'));
   assert(db.includes('insert into homepage_settings(id,hero_title,hero_subtitle,cta_label,cta_link,secondary_cta_label'));
 });
+
+
+test('magic login uses Resend SDK with explicit delivery outcomes and logging', async () => {
+  const api = await readFile('netlify/functions/api.mjs','utf8');
+  assert(api.includes("import { Resend } from 'resend';"));
+  assert(api.includes('const resend = new Resend(process.env.RESEND_API_KEY);'));
+  assert(api.includes('await resend.emails.send({'));
+  assert(api.includes('await resend.domains.list()'));
+  assert(api.includes('Resend domain ${fromDomain} is not verified or does not match MAGIC_LINK_FROM_EMAIL'));
+  for (const envName of ['RESEND_API_KEY', 'MAGIC_LINK_FROM_EMAIL', 'SITE_URL']) assert(api.includes(envName), envName);
+  assert(api.includes("code: 'MISSING_EMAIL_CONFIGURATION'"));
+  for (const logLine of ['Magic token created', 'Magic login URL', 'Sending magic email to', 'Magic email send attempted', 'Magic email sent successfully', 'Magic email failed', 'Resend from domain verified']) assert(api.includes(logLine), logLine);
+  assert(api.includes('return json(200, { ok: true, emailSent: true })'));
+  assert(api.includes('return json(200, { ok: false, emailSent: false, error: stringifyError(error) })'));
+  assert(!api.includes("fetch('https://api.resend.com/emails'"));
+  assert(!api.includes('console.warn(\'[auth] Magic link email delivery failed'));
+});
+
+test('magic login verifies token storage and does not silently swallow exceptions', async () => {
+  const db = await readFile('netlify/functions/lib/db.mjs','utf8');
+  assert(db.includes('crypto.randomBytes(32).toString(\'base64url\')'));
+  assert(db.includes('insert into magic_tokens(user_id, token_hash, expires_at, metadata)'));
+  assert(db.includes("throw new Error('Magic token storage failed')"));
+  const response = await readFile('netlify/functions/lib/response.mjs','utf8');
+  assert(response.includes("console.error('[api] Unhandled exception', error)"));
+  assert(response.includes("console.error('[api] Failed to parse request body', error)"));
+});
+
+test('resend dependency is declared for production email delivery', async () => {
+  const pkg = JSON.parse(await readFile('package.json','utf8'));
+  assert(pkg.dependencies.resend, 'package.json must include resend');
+  const packageLock = await readFile('package-lock.json','utf8');
+  assert(packageLock.includes('node_modules/resend'), 'package-lock.json must include resend');
+});

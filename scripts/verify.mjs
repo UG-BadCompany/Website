@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 const pkg = JSON.parse(await readFile('package.json','utf8'));
 assert(pkg.dependencies['@netlify/database'], 'package.json must include @netlify/database');
 assert(pkg.dependencies.pg, 'package.json must include pg');
+assert(pkg.dependencies.resend, 'package.json must include resend');
 
 const netlifyConfig = await readFile('netlify.toml','utf8');
 assert(netlifyConfig.includes('publish = "dist"'), 'netlify.toml must publish dist');
@@ -30,6 +31,7 @@ assert(!packageLock.includes('node_modules/next'), 'package-lock.json must not i
 assert(!packageLock.includes('node_modules/@netlify/plugin-nextjs'), 'package-lock.json must not include @netlify/plugin-nextjs');
 assert(packageLock.includes('node_modules/@netlify/database'), 'package-lock.json must include @netlify/database');
 assert(packageLock.includes('node_modules/pg'), 'package-lock.json must include pg');
+assert(packageLock.includes('node_modules/resend'), 'package-lock.json must include resend');
 const api = await readFile('netlify/functions/api.mjs','utf8');
 for (const route of ['/api/install-status','/api/install/health','/api/install/runtime-diagnostics','/api/install/bootstrap-database','/api/install/draft','/api/install/finish']) assert(api.includes(route), `missing ${route}`);
 const db = await readFile('netlify/functions/lib/db.mjs','utf8');
