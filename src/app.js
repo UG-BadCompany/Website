@@ -150,7 +150,7 @@ async function renderHomepage(){
       <header class="public-header premium-header">
         <div class="brand">
           <div class="brand-logo">
-            ${val('branding.logoData') ? `<img src="${val('branding.logoData')}" alt="">` : '🏗️'}
+            ${val('branding.logoData') ? `<img src="${val('branding.logoData')}" alt="${escapeHtml(companyName)} logo">` : '🏗️'}
           </div>
           <div>
             <b>${escapeHtml(companyName)}</b>
@@ -162,40 +162,93 @@ async function renderHomepage(){
           <a href="#services">Services</a>
           <a href="#why">Why Us</a>
           <a href="#contact">Contact</a>
-          <a href="/dashboard">Dashboard</a>
+          <a href="/dashboard" class="nav-cta">Dashboard</a>
         </nav>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
       </header>
 
       <section class="premium-hero">
         <div class="hero-copy">
-          <span class="eyebrow">Contractor CMMS + Service Platform</span>
-          <h1>${escapeHtml(heroTitle)}</h1>
-          <p>${escapeHtml(heroSubtitle)}</p>
+          <span class="eyebrow animate-in">Contractor CMMS + Service Platform</span>
+          <h1 class="animate-in">${escapeHtml(heroTitle)}</h1>
+          <p class="animate-in">${escapeHtml(heroSubtitle)}</p>
 
-          <div class="hero-actions">
-            <a href="${escapeHtml(ctaLink)}"><button>${escapeHtml(ctaLabel)}</button></a>
-            <a href="#services"><button class="secondary">View Services</button></a>
+          <div class="hero-actions animate-in">
+            <a href="${escapeHtml(ctaLink)}" class="btn-primary">
+              <button>
+                <span>${escapeHtml(ctaLabel)}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </a>
+            <a href="#services" class="btn-secondary">
+              <button class="secondary">View Services</button>
+            </a>
           </div>
 
-          <div class="trust-row">
-            <span>✓ Fast estimates</span>
-            <span>✓ Clear updates</span>
-            <span>✓ Professional service</span>
+          <div class="trust-row animate-in">
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Fast estimates
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Clear updates
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Professional service
+            </span>
           </div>
         </div>
 
-        <aside class="hero-card">
+        <aside class="hero-card animate-in">
+          <div class="card-glow"></div>
           <b>Project Snapshot</b>
           <p>Estimates, quotes, work orders, scheduling, invoices, and payments in one place.</p>
           <div class="mini-stats">
-            <span><b>24/7</b><small>Request Intake</small></span>
-            <span><b>AI</b><small>Quote Ready</small></span>
-            <span><b>Pro</b><small>Tracking</small></span>
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <b>24/7</b>
+              <small>Request Intake</small>
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+              <b>AI</b>
+              <small>Quote Ready</small>
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <b>Pro</b>
+              <small>Tracking</small>
+            </span>
           </div>
         </aside>
       </section>
 
-      <section id="services" class="public-section">
+      <section id="services" class="public-section services-section">
         <div class="section-head">
           <span class="eyebrow">Services</span>
           <h2>What we can help with</h2>
@@ -203,45 +256,163 @@ async function renderHomepage(){
         </div>
 
         <div class="service-grid">
-          ${serviceList.slice(0, 12).map(s => `
-            <article class="service-tile">
-              <span class="service-icon">${escapeHtml(s.icon || '🛠️')}</span>
+          ${serviceList.slice(0, 12).map((s, i) => `
+            <article class="service-tile" style="animation-delay: ${i * 0.05}s">
+              <div class="service-icon-wrapper">
+                <span class="service-icon">${escapeHtml(s.icon || '🛠️')}</span>
+              </div>
               <h3>${escapeHtml(s.name)}</h3>
               <p>${escapeHtml(s.category || 'Professional Service')}</p>
+              <div class="service-hover-effect"></div>
             </article>
           `).join('')}
         </div>
       </section>
 
       <section id="why" class="public-section split-section">
-        <div>
+        <div class="split-content">
           <span class="eyebrow">Why Choose Us</span>
           <h2>Built around clear communication and clean work.</h2>
           <p>${escapeHtml(info.description || 'We help customers get clear estimates, organized scheduling, and dependable project updates from start to finish.')}</p>
         </div>
 
         <div class="feature-list">
-          <div>✓ Easy online estimate requests</div>
-          <div>✓ Quote and invoice tracking</div>
-          <div>✓ Work order updates</div>
-          <div>✓ Photo and file support</div>
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <span>Easy online estimate requests</span>
+          </div>
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            <span>Quote and invoice tracking</span>
+          </div>
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>Work order updates</span>
+          </div>
+          <div class="feature-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>Photo and file support</span>
+          </div>
         </div>
       </section>
 
       <section id="contact" class="public-section contact-band">
-        <div>
+        <div class="contact-content">
           <h2>Ready to get started?</h2>
           <p>${escapeHtml(info.businessHours || 'Send a request anytime and we will follow up as soon as possible.')}</p>
         </div>
 
         <div class="contact-actions">
-          ${phone ? `<a href="tel:${escapeHtml(phone)}"><button>Call ${escapeHtml(phone)}</button></a>` : ''}
-          ${email ? `<a href="mailto:${escapeHtml(email)}"><button class="secondary">Email Us</button></a>` : ''}
-          <a href="${escapeHtml(ctaLink)}"><button>${escapeHtml(ctaLabel)}</button></a>
+          ${phone ? `<a href="tel:${escapeHtml(phone)}">
+            <button>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              Call ${escapeHtml(phone)}
+            </button>
+          </a>` : ''}
+          ${email ? `<a href="mailto:${escapeHtml(email)}">
+            <button class="secondary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              Email Us
+            </button>
+          </a>` : ''}
+          <a href="${escapeHtml(ctaLink)}">
+            <button class="cta-button">
+              <span>${escapeHtml(ctaLabel)}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </a>
         </div>
       </section>
+
+      <footer class="premium-footer">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <div class="brand-logo">
+              ${val('branding.logoData') ? `<img src="${val('branding.logoData')}" alt="${escapeHtml(companyName)} logo">` : '🏗️'}
+            </div>
+            <b>${escapeHtml(companyName)}</b>
+            <p>${escapeHtml(info.serviceArea || 'Professional contractor services')}</p>
+          </div>
+          <div class="footer-links">
+            <div>
+              <h4>Quick Links</h4>
+              <a href="#services">Services</a>
+              <a href="#why">Why Us</a>
+              <a href="#contact">Contact</a>
+              <a href="/dashboard">Dashboard</a>
+            </div>
+            <div>
+              <h4>Contact</h4>
+              ${phone ? `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>` : ''}
+              ${email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''}
+              ${info.businessHours ? `<p class="muted">${escapeHtml(info.businessHours)}</p>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; ${new Date().getFullYear()} ${escapeHtml(companyName)}. All rights reserved.</p>
+          <p class="muted">Powered by White-Label Contractor CMMS</p>
+        </div>
+      </footer>
     </main>
   `;
+
+  // Add smooth scroll behavior
+  $$('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = $(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Mobile menu toggle
+  $('.mobile-menu-toggle')?.addEventListener('click', function() {
+    $('.public-nav')?.classList.toggle('mobile-open');
+    this.classList.toggle('active');
+  });
+
+  // Intersection Observer for animations
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, observerOptions);
+
+  $$('.service-tile, .feature-item, .split-section, .contact-band').forEach(el => {
+    observer.observe(el);
+  });
 }
 
 function renderInstaller(){
