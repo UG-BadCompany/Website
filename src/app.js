@@ -89,6 +89,7 @@ async function boot(){
 } else {
   renderHomepage();
 }
+}
 
 function renderHomepage(){
   applyTheme();
@@ -331,7 +332,7 @@ async function renderDashboard(){
   if(data.theme) applyTheme(themeFromDatabase(data.theme));
   const modules=(data.modules?.length?data.modules:coreModules.map(m=>({id:m.id,label:m.label,nav_group:m.group}))).filter(m=>visibleForRole(m.id,state.view));
   const company=data.company?.company_name || val('company.name','Contractor CMMS');
-  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Installer</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
+  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Homepage</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
   $$('[data-nav]').forEach(a=>a.onclick=e=>{e.preventDefault(); state.active=a.dataset.nav; renderDashboard();});
   $('#viewSelect')?.addEventListener('change', e=>{state.view=e.target.value; sessionStorage.setItem('ownerView',state.view); state.active='dashboard-overview'; renderDashboard();});
   $('#exitView')?.addEventListener('click',()=>{state.view='owner';sessionStorage.setItem('ownerView','owner');renderDashboard();});
