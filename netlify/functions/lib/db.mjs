@@ -337,7 +337,17 @@ const migrations = [
 `alter table homepage_settings add column if not exists testimonials jsonb not null default '[]'::jsonb`,
 `alter table homepage_settings add column if not exists sections jsonb not null default '[]'::jsonb`,
 `alter table homepage_settings add column if not exists config jsonb not null default '{}'::jsonb`,
-`alter table homepage_settings add column if not exists published boolean not null default true`
+`alter table homepage_settings add column if not exists published boolean not null default true`,
+
+// Services Builder migrations
+`alter table service_categories add column if not exists category text`,
+`alter table service_categories add column if not exists icon text`,
+`alter table service_categories add column if not exists color text`,
+`alter table service_categories add column if not exists default_labor_rate numeric(12,2)`,
+`alter table service_categories add column if not exists active boolean not null default true`,
+`alter table service_categories add column if not exists sort_order int not null default 0`,
+`alter table service_categories add column if not exists metadata jsonb not null default '{}'::jsonb`,
+`alter table service_categories add column if not exists updated_at timestamptz not null default now()`
 ];
 
 async function runSchemaStatement(statement) {
