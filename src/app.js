@@ -74,21 +74,37 @@ function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','
 
 async function boot(){
   applyTheme();
-  const status = await api('/api/install-status'); state.db=status;
+
+  const status = await api('/api/install-status');
+  state.db = status;
+
   if (status.databaseConnected && status.canBootstrapSchema) {
     state.db = { ...status, bootstrapPhase: 'Creating tables...' };
     const bootstrapResult = await api('/api/install/bootstrap-database',{method:'POST',body:'{}'});
     state.db = { ...status, ...bootstrapResult };
   }
-  const draft = await api('/api/install/draft'); if(draft.ok && draft.draft){ state.draft={...state.draft,...draft.draft}; applyTheme(); }
-  const integrations = await api('/api/install/integration-status'); state.integrations = integrations.integrations || [];
-  if (location.pathname.startsWith('/install')) {
-  renderInstaller();
-} else if (location.pathname.startsWith('/dashboard')) {
-  renderDashboard();
-} else {
-  renderHomepage();
-}
+
+  const draft = await api('/api/install/draft');
+  if(draft.ok && draft.draft){
+    state.draft = { ...state.draft, ...draft.draft };
+    applyTheme();
+  }
+
+  const integrations = await api('/api/install/integration-status');
+  state.integrations = integrations.integrations || [];
+
+  const installed = Boolean(state.db.installed || state.db.installationComplete);
+
+  if (!installed && !location.pathname.startsWith('/install')) {
+    history.replaceState({}, '', '/install/');
+    renderInstaller();
+  } else if (location.pathname.startsWith('/install')) {
+    renderInstaller();
+  } else if (location.pathname.startsWith('/dashboard')) {
+    renderDashboard();
+  } else {
+    renderHomepage();
+  }
 }
 
 function renderHomepage(){
