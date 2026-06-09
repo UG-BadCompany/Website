@@ -103,75 +103,124 @@ async function boot(){
   } else if (location.pathname.startsWith('/dashboard')) {
     renderDashboard();
   } else {
-    renderHomepage();
+    await renderHomepage();
   }
 }
 
-function renderHomepage(){
+async function renderHomepage(){
   applyTheme();
 
-  const installed = Boolean(state.db?.installed || state.db?.installationComplete);
-  const companyName = val('company.name', 'Your Contractor Company');
-  const heroTitle = val('homepage.heroTitle', 'Reliable contractor service, fast estimates, and clear updates.');
-  const heroSubtitle = val('homepage.heroSubtitle', 'A modern contractor platform for estimates, work orders, scheduling, invoices, and client communication.');
+  const data = await api('/api/dashboard/bootstrap');
+  if (data.theme) applyTheme(themeFromDatabase(data.theme));
+
+  const company = data.company || {};
+  const home = data.homepage || {};
+  const info = home.company_info || {};
+  const services = data.services?.length ? data.services : services();
+
+  const companyName = company.company_name || val('company.name', 'Your Contractor Company');
+  const heroTitle = home.hero_title || val('homepage.heroTitle', `Reliable service from ${companyName}`);
+  const heroSubtitle = home.hero_subtitle || val('homepage.heroSubtitle', 'Fast estimates, trusted work, and clear project updates.');
+  const ctaLabel = home.cta_label || val('homepage.primaryCtaText', 'Request an Estimate');
+  const ctaLink = home.cta_link || val('homepage.primaryCtaLink', '/install/');
+  const phone = info.phone || company.phone || val('company.phone', '');
+  const email = info.email || company.email || val('company.email', '');
 
   app.innerHTML = `
-    <main class="homepage public-home">
-
-      <header class="public-header">
+    <main class="public-home premium-home">
+      <header class="public-header premium-header">
         <div class="brand">
           <div class="brand-logo">
             ${val('branding.logoData') ? `<img src="${val('branding.logoData')}" alt="">` : '🏗️'}
           </div>
           <div>
             <b>${escapeHtml(companyName)}</b>
-            <div class="workspace">Contractor CMMS</div>
+            <div class="workspace">${escapeHtml(info.serviceArea || 'Contractor Services')}</div>
           </div>
         </div>
 
         <nav class="public-nav">
           <a href="#services">Services</a>
-          <a href="#about">About</a>
+          <a href="#why">Why Us</a>
+          <a href="#contact">Contact</a>
           <a href="/dashboard">Dashboard</a>
-          <a href="/install/">Install</a>
         </nav>
       </header>
 
-      <section class="hero public-hero">
-        <div>
+      <section class="premium-hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Contractor CMMS + Service Platform</span>
           <h1>${escapeHtml(heroTitle)}</h1>
           <p>${escapeHtml(heroSubtitle)}</p>
 
-          ${
-            installed
-              ? `<a href="/dashboard"><button>Open Dashboard</button></a>`
-              : `<a href="/install/"><button>Install Platform</button></a>`
-          }
+          <div class="hero-actions">
+            <a href="${escapeHtml(ctaLink)}"><button>${escapeHtml(ctaLabel)}</button></a>
+            <a href="#services"><button class="secondary">View Services</button></a>
+          </div>
+
+          <div class="trust-row">
+            <span>✓ Fast estimates</span>
+            <span>✓ Clear updates</span>
+            <span>✓ Professional service</span>
+          </div>
         </div>
 
-        <aside class="estimate-card">
-          <b>Estimate Preview</b>
-          <p>Quotes, Work Orders, Invoices, Inventory and AI Estimating.</p>
+        <aside class="hero-card">
+          <b>Project Snapshot</b>
+          <p>Estimates, quotes, work orders, scheduling, invoices, and payments in one place.</p>
+          <div class="mini-stats">
+            <span><b>24/7</b><small>Request Intake</small></span>
+            <span><b>AI</b><small>Quote Ready</small></span>
+            <span><b>Pro</b><small>Tracking</small></span>
+          </div>
         </aside>
       </section>
 
-      <section id="services" class="grid cols-3">
-        <article class="card">
-          <h3>Request Estimates</h3>
-          <p>Customers can submit estimate requests online.</p>
-        </article>
+      <section id="services" class="public-section">
+        <div class="section-head">
+          <span class="eyebrow">Services</span>
+          <h2>What we can help with</h2>
+          <p>These services come from your installer Services Builder.</p>
+        </div>
 
-        <article class="card">
-          <h3>Work Orders</h3>
-          <p>Create, assign and complete jobs.</p>
-        </article>
-
-        <article class="card">
-          <h3>Invoices</h3>
-          <p>Track billing and payments.</p>
-        </article>
+        <div class="service-grid">
+          ${services.slice(0, 12).map(s => `
+            <article class="service-tile">
+              <span class="service-icon">${escapeHtml(s.icon || '🛠️')}</span>
+              <h3>${escapeHtml(s.name)}</h3>
+              <p>${escapeHtml(s.category || 'Professional Service')}</p>
+            </article>
+          `).join('')}
+        </div>
       </section>
 
+      <section id="why" class="public-section split-section">
+        <div>
+          <span class="eyebrow">Why Choose Us</span>
+          <h2>Built around clear communication and clean work.</h2>
+          <p>${escapeHtml(info.description || 'We help customers get clear estimates, organized scheduling, and dependable project updates from start to finish.')}</p>
+        </div>
+
+        <div class="feature-list">
+          <div>✓ Easy online estimate requests</div>
+          <div>✓ Quote and invoice tracking</div>
+          <div>✓ Work order updates</div>
+          <div>✓ Photo and file support</div>
+        </div>
+      </section>
+
+      <section id="contact" class="public-section contact-band">
+        <div>
+          <h2>Ready to get started?</h2>
+          <p>${escapeHtml(info.businessHours || 'Send a request anytime and we will follow up as soon as possible.')}</p>
+        </div>
+
+        <div class="contact-actions">
+          ${phone ? `<a href="tel:${escapeHtml(phone)}"><button>Call ${escapeHtml(phone)}</button></a>` : ''}
+          ${email ? `<a href="mailto:${escapeHtml(email)}"><button class="secondary">Email Us</button></a>` : ''}
+          <a href="${escapeHtml(ctaLink)}"><button>${escapeHtml(ctaLabel)}</button></a>
+        </div>
+      </section>
     </main>
   `;
 }

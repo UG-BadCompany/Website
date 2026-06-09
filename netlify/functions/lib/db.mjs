@@ -512,9 +512,15 @@ export async function validateInstall(ownerEmail) {
 }
 export async function dashboardBootstrap() {
   const status = await databaseStatus();
-  if (!status.connected || !status.schemaReady) return { status, company:null, theme:null, modules:[] };
+  if (!status.connected || !status.schemaReady) {
+    return { status, company:null, theme:null, homepage:null, services:[], modules:[] };
+  }
+
   const [company] = await query(`select * from company_settings where id=1`);
   const [theme] = await query(`select * from theme_settings where id=1`);
+  const [homepage] = await query(`select * from homepage_settings where id=1`);
+  const services = await query(`select * from service_categories where active=true order by sort_order,name`);
   const modules = await query(`select id,label,nav_group,enabled,manifest from module_registry where enabled=true order by nav_group,label`);
-  return { status, company, theme, modules };
+
+  return { status, company, theme, homepage, services, modules };
 }
