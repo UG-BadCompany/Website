@@ -1,4 +1,5 @@
 import { getConnectionString } from '@netlify/database';
+import crypto from 'node:crypto';
 import pg from 'pg';
 import { coreModules, defaultRoles, permissions, rolePermissions, defaultServices } from './platformData.mjs';
 
@@ -280,7 +281,8 @@ const ddl = [
 `create table if not exists uploaded_files (id bigserial primary key, owner_user_id bigint references app_users(id), file_name text not null, mime_type text not null, file_size bigint not null default 0, category text not null default 'general', storage_kind text not null default 'database', data_base64 text, created_at timestamptz not null default now())`,
 `create table if not exists ai_runs (id bigserial primary key, run_type text not null, provider text not null default 'openai', status text not null, input jsonb not null default '{}'::jsonb, output jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`,
 `create table if not exists workflow_events (id bigserial primary key, entity_type text not null, entity_id bigint not null, from_status text, to_status text not null, actor_user_id bigint references app_users(id), metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`,
-`create table if not exists magic_tokens (id bigserial primary key, user_id bigint references app_users(id) on delete cascade, token_hash text not null unique, expires_at timestamptz not null, used_at timestamptz, created_at timestamptz not null default now())`,
+`create table if not exists magic_tokens (id bigserial primary key, user_id bigint references app_users(id) on delete cascade, token_hash text not null unique, expires_at timestamptz not null, used_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`,
+`create table if not exists auth_sessions (id bigserial primary key, user_id bigint not null references app_users(id) on delete cascade, token_hash text not null unique, expires_at timestamptz not null, revoked_at timestamptz, last_seen_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`,
 `create table if not exists platform_secret_settings (id bigserial primary key, key text not null unique, encrypted_value text not null, safe_hint text, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists audit_logs (id bigserial primary key, actor_user_id bigint references app_users(id), action text not null, entity_type text, entity_id text, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`,
 `create table if not exists system_health_events (id bigserial primary key, component text not null, status text not null, message text, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`
@@ -294,7 +296,10 @@ const indexes = [
 `create index if not exists idx_schedule_events_start on schedule_events(starts_at)`,
 `create index if not exists idx_uploaded_files_category on uploaded_files(category)`,
 `create index if not exists idx_audit_logs_action on audit_logs(action)`,
-`create index if not exists idx_workflow_events_entity on workflow_events(entity_type, entity_id)`
+`create index if not exists idx_workflow_events_entity on workflow_events(entity_type, entity_id)`,
+`create index if not exists idx_magic_tokens_expires_at on magic_tokens(expires_at)`,
+`create index if not exists idx_auth_sessions_expires_at on auth_sessions(expires_at)`,
+`create index if not exists idx_auth_sessions_user_id on auth_sessions(user_id)`
 ];
 const requiredIndexNames = indexes.map((statement) => statement.match(/create (?:unique )?index if not exists ([a-z0-9_]+)/i)?.[1]).filter(Boolean);
 const migrations = [
@@ -347,7 +352,15 @@ const migrations = [
 `alter table service_categories add column if not exists active boolean not null default true`,
 `alter table service_categories add column if not exists sort_order int not null default 0`,
 `alter table service_categories add column if not exists metadata jsonb not null default '{}'::jsonb`,
-`alter table service_categories add column if not exists updated_at timestamptz not null default now()`
+`alter table service_categories add column if not exists updated_at timestamptz not null default now()`,
+
+// Magic login migrations
+`alter table magic_tokens add column if not exists metadata jsonb not null default '{}'::jsonb`,
+`alter table magic_tokens add column if not exists used_at timestamptz`,
+`alter table magic_tokens add column if not exists expires_at timestamptz`,
+`alter table magic_tokens add column if not exists token_hash text`,
+`create unique index if not exists magic_tokens_token_hash_key on magic_tokens(token_hash)`,
+`create table if not exists auth_sessions (id bigserial primary key, user_id bigint not null references app_users(id) on delete cascade, token_hash text not null unique, expires_at timestamptz not null, revoked_at timestamptz, last_seen_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`
 ];
 
 async function runSchemaStatement(statement) {
@@ -523,4 +536,62 @@ export async function dashboardBootstrap() {
   const modules = await query(`select id,label,nav_group,enabled,manifest from module_registry where enabled=true order by nav_group,label`);
 
   return { status, company, theme, homepage, services, modules };
+}
+
+
+const magicLinkExpiresMinutes = 15;
+const sessionExpiresDays = 7;
+
+function normalizeEmail(email='') { return String(email).trim().toLowerCase(); }
+function generateToken() { return crypto.randomBytes(32).toString('base64url'); }
+function hashToken(token='') { return crypto.createHash('sha256').update(String(token)).digest('hex'); }
+
+async function ensureAuthSchema() {
+  await query(`alter table magic_tokens add column if not exists metadata jsonb not null default '{}'::jsonb`);
+  await query(`alter table magic_tokens add column if not exists used_at timestamptz`);
+  await query(`alter table magic_tokens add column if not exists expires_at timestamptz`);
+  await query(`alter table magic_tokens add column if not exists token_hash text`);
+  await query(`create unique index if not exists magic_tokens_token_hash_key on magic_tokens(token_hash)`);
+  await query(`create table if not exists auth_sessions (id bigserial primary key, user_id bigint not null references app_users(id) on delete cascade, token_hash text not null unique, expires_at timestamptz not null, revoked_at timestamptz, last_seen_at timestamptz, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now())`);
+}
+
+export async function createMagicLoginToken(email, metadata={}) {
+  await ensureAuthSchema();
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
+  const [user] = await query(`select id, email, full_name from app_users where lower(email)=lower($1) and active=true limit 1`, [normalizedEmail]);
+  if (!user) return null;
+  const token = generateToken();
+  const tokenHash = hashToken(token);
+  const [row] = await query(`insert into magic_tokens(user_id, token_hash, expires_at, metadata) values($1,$2,now() + ($3 || ' minutes')::interval,$4::jsonb) returning expires_at`, [user.id, tokenHash, String(magicLinkExpiresMinutes), JSON.stringify({ ...metadata, email: normalizedEmail, purpose: 'magic_login' })]);
+  return { token, tokenHash, expiresAt: row.expires_at, user };
+}
+
+export async function verifyMagicLoginToken(token, metadata={}) {
+  await ensureAuthSchema();
+  const tokenHash = hashToken(token || '');
+  const [magicToken] = await query(`update magic_tokens set used_at=now(), metadata=coalesce(metadata, '{}'::jsonb) || $2::jsonb where token_hash=$1 and used_at is null and expires_at > now() returning user_id`, [tokenHash, JSON.stringify({ ...metadata, verifiedAt: new Date().toISOString() })]);
+  if (!magicToken?.user_id) return null;
+  const sessionToken = generateToken();
+  const sessionTokenHash = hashToken(sessionToken);
+  const [session] = await query(`insert into auth_sessions(user_id, token_hash, expires_at, metadata) values($1,$2,now() + ($3 || ' days')::interval,$4::jsonb) returning expires_at`, [magicToken.user_id, sessionTokenHash, String(sessionExpiresDays), JSON.stringify({ ...metadata, loginMethod: 'magic_link' })]);
+  const [user] = await query(`select id, full_name, email from app_users where id=$1`, [magicToken.user_id]);
+  return { sessionToken, expiresAt: session.expires_at, user };
+}
+
+export async function getSessionFromToken(token) {
+  if (!token) return null;
+  await ensureAuthSchema();
+  const tokenHash = hashToken(token);
+  const [session] = await query(`select s.id, s.expires_at, u.id as user_id, u.full_name, u.email from auth_sessions s join app_users u on u.id=s.user_id where s.token_hash=$1 and s.revoked_at is null and s.expires_at > now() and u.active=true limit 1`, [tokenHash]);
+  if (!session) return null;
+  await query(`update auth_sessions set last_seen_at=now() where id=$1`, [session.id]);
+  return { expiresAt: session.expires_at, user: { id: session.user_id, fullName: session.full_name, email: session.email } };
+}
+
+export async function revokeSessionToken(token) {
+  if (!token) return { revoked: false };
+  await ensureAuthSchema();
+  const result = await query(`update auth_sessions set revoked_at=now() where token_hash=$1 and revoked_at is null returning id`, [hashToken(token)]);
+  return { revoked: result.length > 0 };
 }
