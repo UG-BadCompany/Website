@@ -323,6 +323,21 @@ const migrations = [
 `alter table theme_settings add column if not exists mobile_nav_active_color text`,
 `alter table theme_settings add column if not exists mobile_nav_text_color text`,
 `alter table theme_settings add column if not exists custom_mobile_nav_colors_enabled boolean not null default false`
+
+// Homepage Builder migrations
+`alter table homepage_settings add column if not exists cta_link text`,
+`alter table homepage_settings add column if not exists cta_label text`,
+`alter table homepage_settings add column if not exists secondary_cta_label text`,
+`alter table homepage_settings add column if not exists secondary_cta_link text`,
+`alter table homepage_settings add column if not exists hero_image text`,
+`alter table homepage_settings add column if not exists hero_background_style text`,
+`alter table homepage_settings add column if not exists hero_alignment text`,
+`alter table homepage_settings add column if not exists company_info jsonb not null default '{}'::jsonb`,
+`alter table homepage_settings add column if not exists projects jsonb not null default '[]'::jsonb`,
+`alter table homepage_settings add column if not exists testimonials jsonb not null default '[]'::jsonb`,
+`alter table homepage_settings add column if not exists sections jsonb not null default '[]'::jsonb`,
+`alter table homepage_settings add column if not exists config jsonb not null default '{}'::jsonb`,
+`alter table homepage_settings add column if not exists published boolean not null default true`
 ];
 
 async function runSchemaStatement(statement) {
