@@ -417,18 +417,174 @@ async function renderLogin(){
     window.location.replace('/dashboard');
     return;
   }
-  app.innerHTML = `<main class="public-home auth-page"><section class="card auth-card"><span class="eyebrow">Secure dashboard access</span><h1>Magic Login</h1><p class="muted">Enter your email and we’ll send a one-time magic link. If the address can access this site, a login link will be sent.</p><form id="magicLoginForm"><label class="field">Email<input id="magicEmail" type="email" autocomplete="email" required placeholder="owner@example.com"></label><button id="magicSubmit" type="submit">Send magic link</button></form><div id="magicLoginStatus" class="status-note" role="status"></div><p><a href="/">Back to homepage</a></p></section></main>`;
-  $('#magicLoginForm')?.addEventListener('submit', async (event) => {
+  app.innerHTML = `<main class="magic-login-page">
+    <div class="magic-login-container">
+      <div class="magic-login-card">
+        <div class="magic-login-header">
+          <div class="magic-icon-wrapper">
+            <svg class="magic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+            </svg>
+          </div>
+          <span class="eyebrow">Secure Access</span>
+          <h1>Magic Login</h1>
+          <p class="magic-subtitle">No passwords needed. We'll send a secure one-time link to your email.</p>
+        </div>
+
+        <form id="magicLoginForm" class="magic-form">
+          <div class="magic-input-group">
+            <label for="magicEmail" class="magic-label">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              Email Address
+            </label>
+            <input
+              id="magicEmail"
+              type="email"
+              autocomplete="email"
+              required
+              placeholder="you@company.com"
+              class="magic-input"
+              aria-describedby="emailHelp"
+            >
+            <span id="emailHelp" class="input-help">We'll send a magic link to this address</span>
+          </div>
+
+          <button id="magicSubmit" type="submit" class="magic-button">
+            <span class="button-content">
+              <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+              </svg>
+              Send Magic Link
+            </span>
+            <span class="button-loader">
+              <svg class="spinner" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+              </svg>
+              Sending...
+            </span>
+          </button>
+        </form>
+
+        <div id="magicLoginStatus" class="magic-status" role="status" aria-live="polite"></div>
+
+        <div class="magic-footer">
+          <div class="security-badges">
+            <span class="badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Secure
+            </span>
+            <span class="badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              Encrypted
+            </span>
+            <span class="badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Verified
+            </span>
+          </div>
+          <a href="/" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to homepage
+          </a>
+        </div>
+      </div>
+
+      <div class="magic-features">
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <h3>Instant Access</h3>
+          <p>Click the link in your email and you're in. No password to remember.</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🔒</div>
+          <h3>More Secure</h3>
+          <p>Magic links expire after 15 minutes and can only be used once.</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">✨</div>
+          <h3>Works Everywhere</h3>
+          <p>Access from any device. Your link works on desktop, tablet, or mobile.</p>
+        </div>
+      </div>
+    </div>
+  </main>`;
+  
+  const form = $('#magicLoginForm');
+  const button = $('#magicSubmit');
+  const status = $('#magicLoginStatus');
+  const emailInput = $('#magicEmail');
+
+  // Add input validation feedback
+  emailInput?.addEventListener('input', () => {
+    if (emailInput.validity.valid && emailInput.value) {
+      emailInput.classList.add('valid');
+      emailInput.classList.remove('invalid');
+    } else if (emailInput.value) {
+      emailInput.classList.add('invalid');
+      emailInput.classList.remove('valid');
+    } else {
+      emailInput.classList.remove('valid', 'invalid');
+    }
+  });
+
+  form?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const button = $('#magicSubmit');
-    const status = $('#magicLoginStatus');
+    
     button.disabled = true;
-    button.textContent = 'Sending…';
+    button.classList.add('loading');
     status.textContent = '';
-    const result = await api('/api/auth/magic-link', { method:'POST', body:JSON.stringify({ email: $('#magicEmail').value }) });
-    status.textContent = result.message || result.error?.message || 'If that email can access this site, a magic link has been sent.';
+    status.className = 'magic-status';
+    
+    const result = await api('/api/auth/magic-link', {
+      method:'POST',
+      body:JSON.stringify({ email: emailInput.value })
+    });
+    
     button.disabled = false;
-    button.textContent = 'Send magic link';
+    button.classList.remove('loading');
+    
+    if (result.ok || result.message) {
+      status.className = 'magic-status success';
+      status.innerHTML = `
+        <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <div>
+          <strong>Check your email!</strong>
+          <p>${result.message || 'If that email can access this site, a magic link has been sent.'}</p>
+        </div>
+      `;
+      emailInput.value = '';
+      emailInput.classList.remove('valid', 'invalid');
+    } else {
+      status.className = 'magic-status error';
+      status.innerHTML = `
+        <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <div>
+          <strong>Something went wrong</strong>
+          <p>${result.error?.message || 'Please try again or contact support.'}</p>
+        </div>
+      `;
+    }
   });
 }
 
