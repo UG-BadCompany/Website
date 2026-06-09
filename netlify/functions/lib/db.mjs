@@ -322,7 +322,7 @@ const migrations = [
 `alter table theme_settings add column if not exists mobile_nav_background_color text`,
 `alter table theme_settings add column if not exists mobile_nav_active_color text`,
 `alter table theme_settings add column if not exists mobile_nav_text_color text`,
-`alter table theme_settings add column if not exists custom_mobile_nav_colors_enabled boolean not null default false`
+`alter table theme_settings add column if not exists custom_mobile_nav_colors_enabled boolean not null default false`,
 
 // Homepage Builder migrations
 `alter table homepage_settings add column if not exists cta_link text`,
