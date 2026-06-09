@@ -5,10 +5,10 @@ export function ok(body) { return json(200, { ok: true, ...body }); }
 export function fail(statusCode, code, message, extra = {}) { return json(statusCode, { ok: false, error: { code, message }, ...extra }); }
 export async function safe(handler) {
   try { return await handler(); }
-  catch (error) { return fail(200, 'UNEXPECTED_ERROR', error?.message || 'Unexpected server error. Retry or open recovery mode.'); }
+  catch (error) { console.error('[api] Unhandled exception', error); return fail(200, 'UNEXPECTED_ERROR', error?.message || 'Unexpected server error. Retry or open recovery mode.'); }
 }
 export function parseBody(event) {
   if (!event.body) return {};
   try { return JSON.parse(event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body); }
-  catch { return {}; }
+  catch (error) { console.error('[api] Failed to parse request body', error); return {}; }
 }
