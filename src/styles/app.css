@@ -827,6 +827,7 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   .badge {
     border-width: 2px;
   }
+}
 
 /* ============================================
    PREMIUM HOMEPAGE - 10/10 DESIGN
@@ -1521,5 +1522,4 @@ html {
   html {
     scroll-behavior: auto;
   }
-}
 }
