@@ -73,77 +73,142 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 
 .premium-header {
   position: fixed;
-  top: 2rem;
+  top: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
-  max-width: 1300px;
-  width: calc(100% - 4rem);
-  padding: 1rem 2rem;
+  max-width: 1200px;
+  width: calc(100% - 3rem);
+  padding: 1.2rem 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 100;
-  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
-  backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  backdrop-filter: blur(40px) saturate(200%);
+  border: 1.5px solid color-mix(in srgb, var(--border) 40%, transparent);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .premium-header.scrolled {
-  top: 1rem;
-  padding: 0.85rem 2rem;
-  background: color-mix(in srgb, var(--color-surface) 95%, transparent);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
-  border-color: var(--border);
+  top: 0.75rem;
+  padding: 0.9rem 2.5rem;
+  max-width: 1100px;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  backdrop-filter: blur(50px) saturate(200%);
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 color-mix(in srgb, white 15%, transparent);
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .premium-header .brand {
   display: flex;
   align-items: center;
   gap: 1rem;
-  transition: transform 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
 .premium-header .brand:hover {
-  transform: scale(1.02);
+  transform: translateX(4px);
 }
 
 .premium-header .brand-logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
-  transition: all 0.3s;
+  font-size: 1.4rem;
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 20%, transparent);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-header .brand-logo::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, color-mix(in srgb, white 30%, transparent), transparent);
+  transform: rotate(45deg);
+  transition: all 0.6s;
+}
+
+.premium-header .brand-logo:hover::before {
+  left: 100%;
 }
 
 .premium-header .brand-logo:hover {
-  box-shadow: 0 6px 24px color-mix(in srgb, var(--primary) 40%, transparent);
-  transform: rotate(-5deg);
+  box-shadow:
+    0 6px 24px color-mix(in srgb, var(--primary) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 30%, transparent);
+  transform: translateY(-2px) rotate(-3deg);
+}
+
+.premium-header.scrolled .brand-logo {
+  width: 42px;
+  height: 42px;
+  font-size: 1.2rem;
 }
 
 .premium-header .brand b {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  transition: font-size 0.3s;
+}
+
+.premium-header.scrolled .brand b {
+  font-size: 1.15rem;
 }
 
 .premium-header .workspace {
   font-size: 0.85rem;
   opacity: 0.7;
   font-weight: 500;
+  transition: all 0.3s;
+}
+
+.premium-header.scrolled .workspace {
+  font-size: 0.8rem;
+  opacity: 0.6;
 }
 
 .public-nav {
   display: flex;
-  gap: 2.5rem;
+  gap: 2rem;
   align-items: center;
+  transition: gap 0.3s;
+}
+
+.premium-header.scrolled .public-nav {
+  gap: 1.5rem;
 }
 
 .public-nav a {
@@ -154,8 +219,12 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   opacity: 0.8;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.25rem;
   letter-spacing: -0.01em;
+}
+
+.premium-header.scrolled .public-nav a {
+  font-size: 0.9rem;
 }
 
 .public-nav a::after {
@@ -184,12 +253,36 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color: white;
   padding: 0.75rem 1.75rem;
-  border-radius: 14px;
+  border-radius: 12px;
   font-weight: 700;
   font-size: 0.95rem;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 20%, transparent);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-header.scrolled .public-nav .nav-cta {
+  padding: 0.65rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+.public-nav .nav-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, white 25%, transparent), transparent);
+  transition: left 0.5s;
+}
+
+.public-nav .nav-cta:hover::before {
+  left: 100%;
 }
 
 .public-nav .nav-cta::after {
@@ -197,10 +290,12 @@ button{background:var(--button,var(--primary));color:var(--button-text,#fff)}.si
 }
 
 .public-nav .nav-cta:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 8px 28px color-mix(in srgb, var(--primary) 45%, transparent);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 8px 28px color-mix(in srgb, var(--primary) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 30%, transparent);
   color: white;
-  border-color: color-mix(in srgb, white 30%, transparent);
+  border-color: color-mix(in srgb, white 20%, transparent);
 }
 
 .mobile-menu-toggle {
