@@ -81,6 +81,12 @@ function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','
 async function boot(){
   applyTheme();
 
+  // Determine route immediately
+  const onInstallPage = location.pathname.startsWith('/install');
+  const onLoginPage = location.pathname.startsWith('/login');
+  const onAuthCallbackPage = location.pathname.startsWith('/auth/callback');
+
+  // Check install status (required for routing)
   const status = await api('/api/install-status');
   state.db = status;
 
@@ -95,24 +101,12 @@ async function boot(){
     state.db.installationComplete
   );
 
-  const onInstallPage = location.pathname.startsWith('/install');
-  const onLoginPage = location.pathname.startsWith('/login');
-  const onAuthCallbackPage = location.pathname.startsWith('/auth/callback');
-
   if (!installed && !onInstallPage) {
     window.location.replace('/install/');
     return;
   }
 
-  const draft = await api('/api/install/draft');
-  if(draft.ok && draft.draft){
-    state.draft = { ...state.draft, ...draft.draft };
-    applyTheme();
-  }
-
-  const integrations = await api('/api/install/integration-status');
-  state.integrations = integrations.integrations || [];
-
+  // Render UI immediately based on route
   if (onInstallPage) {
     renderInstaller();
   } else if (onLoginPage) {
@@ -124,26 +118,32 @@ async function boot(){
   } else {
     renderHomepage();
   }
+
+  // Load draft and integrations asynchronously (non-blocking)
+  api('/api/install/draft').then(draft => {
+    if(draft.ok && draft.draft){
+      state.draft = { ...state.draft, ...draft.draft };
+      applyTheme();
+    }
+  });
+
+  api('/api/install/integration-status').then(integrations => {
+    state.integrations = integrations.integrations || [];
+  });
 }
 
 async function renderHomepage(){
   applyTheme();
 
-  const data = await api('/api/dashboard/bootstrap');
-  if (data.theme) applyTheme(themeFromDatabase(data.theme));
-
-  const company = data.company || {};
-  const home = data.homepage || {};
-  const info = home.company_info || {};
-  const serviceList = data.services?.length ? data.services : services();
-
-  const companyName = company.company_name || val('company.name', 'Your Contractor Company');
-  const heroTitle = home.hero_title || val('homepage.heroTitle', `Transform Your Space with Expert Craftsmanship`);
-  const heroSubtitle = home.hero_subtitle || val('homepage.heroSubtitle', 'Premium contractor services backed by cutting-edge project management technology. Get instant estimates, real-time updates, and exceptional results.');
-  const ctaLabel = home.cta_label || val('homepage.primaryCtaText', 'Get Free Estimate');
-  const ctaLink = home.cta_link || val('homepage.primaryCtaLink', '/request-estimate');
-  const phone = info.phone || company.phone || val('company.phone', '');
-  const email = info.email || company.email || val('company.email', '');
+  // Render immediately with cached/default values
+  const companyName = val('company.name', 'Your Contractor Company');
+  const heroTitle = val('homepage.heroTitle', `Transform Your Space with Expert Craftsmanship`);
+  const heroSubtitle = val('homepage.heroSubtitle', 'Premium contractor services backed by cutting-edge project management technology. Get instant estimates, real-time updates, and exceptional results.');
+  const ctaLabel = val('homepage.primaryCtaText', 'Get Free Estimate');
+  const ctaLink = val('homepage.primaryCtaLink', '/request-estimate');
+  const phone = val('company.phone', '');
+  const email = val('company.email', '');
+  const serviceList = services();
 
   app.innerHTML = `
     <main class="public-home premium-home" id="top">
@@ -660,6 +660,26 @@ async function renderHomepage(){
       card.style.transform = '';
     });
   });
+
+  // Load data asynchronously and re-render if needed
+  api('/api/dashboard/bootstrap').then(data => {
+    if (data.theme) applyTheme(themeFromDatabase(data.theme));
+    
+    // Check if we have new data that differs from defaults
+    const company = data.company || {};
+    const home = data.homepage || {};
+    const info = home.company_info || {};
+    
+    const hasNewData =
+      (company.company_name && company.company_name !== companyName) ||
+      (home.hero_title && home.hero_title !== heroTitle) ||
+      (data.services?.length && data.services.length !== serviceList.length);
+    
+    // Only re-render if we have significantly different data
+    if (hasNewData) {
+      renderHomepage();
+    }
+  });
 }
 
 function renderInstaller(){
@@ -830,11 +850,8 @@ function readArrayAsset(e,path,index,key){ const file=e.target.files?.[0]; if(!f
 
 async function renderLogin(){
   applyTheme();
-  const session = await api('/api/auth/session');
-  if (session.ok && session.authenticated) {
-    window.location.replace('/dashboard');
-    return;
-  }
+  
+  // Render login form immediately
   app.innerHTML = `<main class="magic-login-page">
     <div class="magic-login-container">
       <div class="magic-login-card">
@@ -1004,6 +1021,13 @@ async function renderLogin(){
       `;
     }
   });
+  
+  // Check session asynchronously and redirect if already logged in
+  api('/api/auth/session').then(session => {
+    if (session.ok && session.authenticated) {
+      window.location.replace('/dashboard');
+    }
+  });
 }
 
 async function handleAuthCallback(){
@@ -1032,21 +1056,38 @@ async function logout(){
 
 async function renderDashboard(){
   applyTheme();
+  
+  // Render shell immediately with default values
+  const company = val('company.name','Contractor CMMS');
+  const modules = coreModules.map(m=>({id:m.id,label:m.label,nav_group:m.group})).filter(m=>visibleForRole(m.id,state.view));
+  
+  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Homepage</button><button class="secondary" id="logoutButton">Logout</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
+  
+  $$('[data-nav]').forEach(a=>a.onclick=e=>{e.preventDefault(); state.active=a.dataset.nav; renderDashboard();});
+  $('#viewSelect')?.addEventListener('change', e=>{state.view=e.target.value; sessionStorage.setItem('ownerView',state.view); state.active='dashboard-overview'; renderDashboard();});
+  $('#exitView')?.addEventListener('click',()=>{state.view='owner';sessionStorage.setItem('ownerView','owner');renderDashboard();});
+  $('#logoutButton')?.addEventListener('click', logout);
+  
+  // Check session and load data asynchronously
   const session = await api('/api/auth/session');
   if (!session.ok || !session.authenticated) {
     saveSessionToken('');
     window.location.replace('/login/');
     return;
   }
-  const data=await api('/api/dashboard/bootstrap');
-  if(data.theme) applyTheme(themeFromDatabase(data.theme));
-  const modules=(data.modules?.length?data.modules:coreModules.map(m=>({id:m.id,label:m.label,nav_group:m.group}))).filter(m=>visibleForRole(m.id,state.view));
-  const company=data.company?.company_name || val('company.name','Contractor CMMS');
-  app.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brand-logo">${val('branding.logoData')?`<img src="${val('branding.logoData')}">`:'🏗️'}</div><div><b>${escapeHtml(company)}</b><div class="workspace">Primary workspace</div></div></div>${ownerSwitcher()}${nav(modules)}</aside><main class="content"><div class="topbar"><div><h1>${escapeHtml(labelFor(state.active))}</h1><p class="muted">Premium CMMS dashboard loaded from database-backed settings when installed.</p></div><button class="secondary" onclick="location.href='/install/'">Installer</button><button class="secondary" onclick="location.href='/'">Homepage</button><button class="secondary" id="logoutButton">Logout</button></div>${state.view!=='owner'?`<div class="banner">Testing ${cap(state.view)} View as Owner <button class="secondary" id="exitView">Exit Test View</button></div>`:''}${dashboardContent()}</main><nav class="mobile-nav">${modules.slice(0,5).map(m=>`<a href="#${m.id}" data-nav="${m.id}">${labelFor(m.id).split(' ')[0]}</a>`).join('')}</nav></div>`;
-  $$('[data-nav]').forEach(a=>a.onclick=e=>{e.preventDefault(); state.active=a.dataset.nav; renderDashboard();});
-  $('#viewSelect')?.addEventListener('change', e=>{state.view=e.target.value; sessionStorage.setItem('ownerView',state.view); state.active='dashboard-overview'; renderDashboard();});
-  $('#exitView')?.addEventListener('click',()=>{state.view='owner';sessionStorage.setItem('ownerView','owner');renderDashboard();});
-  $('#logoutButton')?.addEventListener('click', logout);
+  
+  // Load dashboard data and update if needed
+  api('/api/dashboard/bootstrap').then(data => {
+    if(data.theme) applyTheme(themeFromDatabase(data.theme));
+    
+    const hasNewData =
+      (data.company?.company_name && data.company.company_name !== company) ||
+      (data.modules?.length && data.modules.length !== modules.length);
+    
+    if (hasNewData) {
+      renderDashboard();
+    }
+  });
 }
 function themeFromDatabase(row={}){ const custom=row.custom||{}; return { ...custom, mode:custom.mode||row.mode||'system', primary:custom.primary||row.primary_color, accent:custom.accent||row.accent_color, background:custom.background||row.background_color, surface:custom.surface||row.surface_color, text:custom.text||row.text_color, border:custom.border||row.border_color, button:custom.button||row.button_color, buttonText:custom.buttonText||row.button_text_color, sidebar:custom.sidebar||row.sidebar_color, sidebarText:custom.sidebarText||row.sidebar_text_color, mobileNav:custom.mobileNav||row.mobile_nav_color, mobileNavText:custom.mobileNavText||row.mobile_nav_text_color }; }
 function ownerSwitcher(){ return `<div class="view-switcher"><b>Viewing as: ${cap(state.view)}</b><label class="field">Switch View<select id="viewSelect">${defaultRoles.map(r=>`<option value="${r}" ${state.view===r?'selected':''}>${cap(r)} View</option>`).join('')}</select></label></div>`; }
