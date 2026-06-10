@@ -1,7 +1,7 @@
 import { getConnectionString } from '@netlify/database';
 import crypto from 'node:crypto';
 import pg from 'pg';
-import { coreModules, defaultRoles, permissions, rolePermissions, defaultServices } from './platformData.mjs';
+import { coreModules, defaultRoles, systemRoles, permissions, rolePermissions, roleDescriptions, defaultServices } from './platformData.mjs';
 
 const connectionDetectionOrder = ['DATABASE_URL','NETLIFY_DATABASE_URL','getConnectionString()','POSTGRES_URL','POSTGRES_PRISMA_URL','POSTGRES_URL_NON_POOLING','NEON_DATABASE_URL'];
 const databaseUrlEnvNames = connectionDetectionOrder.filter((name) => name !== 'getConnectionString()');
@@ -257,14 +257,17 @@ const ddl = [
 `create table if not exists company_settings (id bigserial primary key, company_name text not null, email text, phone text, website text, address text, logo_file_id bigint, favicon_file_id bigint, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists theme_settings (id bigserial primary key, mode text not null default 'system', primary_color text not null default '#2563eb', accent_color text not null default '#f59e0b', background_color text not null default '#f8fafc', surface_color text not null default '#ffffff', text_color text not null default '#0f172a', sidebar_color text not null default '#0f172a', mobile_nav_color text not null default '#111827', custom jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists homepage_settings (id bigserial primary key, hero_title text not null, hero_subtitle text, cta_label text, cta_link text, secondary_cta_label text, secondary_cta_link text, hero_image text, hero_background_style text, hero_alignment text, company_info jsonb not null default '{}'::jsonb, projects jsonb not null default '[]'::jsonb, testimonials jsonb not null default '[]'::jsonb, sections jsonb not null default '[]'::jsonb, config jsonb not null default '{}'::jsonb, published boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
-`create table if not exists app_users (id bigserial primary key, full_name text not null, email text not null unique, phone text, active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
-`create table if not exists roles (id bigserial primary key, slug text not null unique, name text not null, description text, created_at timestamptz not null default now())`,
+`create table if not exists app_users (id bigserial primary key, full_name text not null, email text not null unique, phone text, active boolean not null default true, last_login timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
+`create table if not exists roles (id bigserial primary key, slug text not null unique, name text not null, description text, is_system boolean not null default false, created_at timestamptz not null default now())`,
 `create table if not exists permissions (id bigserial primary key, slug text not null unique, description text, created_at timestamptz not null default now())`,
 `create table if not exists role_permissions (role_id bigint not null references roles(id) on delete cascade, permission_id bigint not null references permissions(id) on delete cascade, primary key(role_id, permission_id))`,
 `create table if not exists user_roles (user_id bigint not null references app_users(id) on delete cascade, role_id bigint not null references roles(id) on delete cascade, primary key(user_id, role_id))`,
 `create table if not exists workspace_access (id bigserial primary key, user_id bigint not null references app_users(id) on delete cascade, workspace text not null, access_level text not null default 'owner', created_at timestamptz not null default now(), unique(user_id, workspace))`,
-`create table if not exists module_registry (id text primary key, label text not null, nav_group text not null, enabled boolean not null default true, installed_version text not null default '1.0.0', manifest jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
+`create table if not exists module_registry (id text primary key, label text not null, nav_group text not null, enabled boolean not null default true, installed_version text not null default '1.0.0', manifest jsonb not null default '{}'::jsonb, allowed_roles jsonb not null default '[]'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists module_settings (module_id text primary key references module_registry(id) on delete cascade, settings jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now())`,
+`create table if not exists licenses (id bigserial primary key, license_key text not null unique, email text not null, company_name text, expires_at timestamptz, active boolean not null default true, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
+`create table if not exists license_modules (license_id bigint not null references licenses(id) on delete cascade, module_id text not null, enabled boolean not null default true, primary key(license_id, module_id))`,
+`create table if not exists user_sessions (id bigserial primary key, user_id bigint not null references app_users(id) on delete cascade, token_hash text not null unique, ip_address text, user_agent text, created_at timestamptz not null default now(), expires_at timestamptz not null, last_activity timestamptz not null default now())`,
 `create table if not exists service_categories (id bigserial primary key, name text not null unique, category text, icon text, color text, default_labor_rate numeric(12,2), active boolean not null default true, sort_order int not null default 0, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists customers (id bigserial primary key, display_name text not null, email text, phone text, notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`,
 `create table if not exists customer_properties (id bigserial primary key, customer_id bigint not null references customers(id) on delete cascade, label text not null, address text, city text, state text, postal_code text, created_at timestamptz not null default now())`,
@@ -452,7 +455,17 @@ export async function seedRequiredRecords() {
     stats.inserted += inserted;
     stats.upserted += rows.length;
   };
-  for (const slug of defaultRoles) countInserted(await query(`insert into roles(slug,name,description) values($1,$2,$3) on conflict(slug) do update set name=excluded.name returning (xmax = 0) as inserted`, [slug, slug[0].toUpperCase()+slug.slice(1), `${slug} default role`]));
+  
+  // Seed roles with system flag and descriptions
+  for (const slug of defaultRoles) {
+    const isSystem = systemRoles.includes(slug);
+    const name = slug.charAt(0).toUpperCase() + slug.slice(1);
+    const description = roleDescriptions[slug] || `${name} role`;
+    countInserted(await query(
+      `insert into roles(slug,name,description,is_system) values($1,$2,$3,$4) on conflict(slug) do update set name=excluded.name, description=excluded.description, is_system=excluded.is_system returning (xmax = 0) as inserted`,
+      [slug, name, description, isSystem]
+    ));
+  }
   for (const slug of permissions) countInserted(await query(`insert into permissions(slug,description) values($1,$2) on conflict(slug) do nothing returning true as inserted`, [slug, `Allows ${slug}`]));
   for (const [role, perms] of Object.entries(rolePermissions)) for (const perm of perms) countInserted(await query(`insert into role_permissions(role_id, permission_id) select r.id,p.id from roles r, permissions p where r.slug=$1 and p.slug=$2 on conflict do nothing returning true as inserted`, [role, perm]));
   for (const [id,label,group] of coreModules) {
@@ -573,9 +586,26 @@ export async function verifyMagicLoginToken(token, metadata={}) {
   const tokenHash = hashToken(token || '');
   const [magicToken] = await query(`update magic_tokens set used_at=now(), metadata=coalesce(metadata, '{}'::jsonb) || $2::jsonb where token_hash=$1 and used_at is null and expires_at > now() returning user_id`, [tokenHash, JSON.stringify({ ...metadata, verifiedAt: new Date().toISOString() })]);
   if (!magicToken?.user_id) return null;
+  
+  // Update last login
+  await updateUserLastLogin(magicToken.user_id);
+  
   const sessionToken = generateToken();
   const sessionTokenHash = hashToken(sessionToken);
-  const [session] = await query(`insert into auth_sessions(user_id, token_hash, expires_at, metadata) values($1,$2,now() + ($3 || ' days')::interval,$4::jsonb) returning expires_at`, [magicToken.user_id, sessionTokenHash, String(sessionExpiresDays), JSON.stringify({ ...metadata, loginMethod: 'magic_link' })]);
+  const ipAddress = metadata.ipAddress || null;
+  const userAgent = metadata.userAgent || null;
+  
+  const [session] = await query(
+    `insert into auth_sessions(user_id, token_hash, expires_at, metadata) values($1,$2,now() + ($3 || ' days')::interval,$4::jsonb) returning expires_at`,
+    [magicToken.user_id, sessionTokenHash, String(sessionExpiresDays), JSON.stringify({ ...metadata, loginMethod: 'magic_link', ipAddress, userAgent })]
+  );
+  
+  // Also insert into user_sessions for enhanced tracking
+  await query(
+    `insert into user_sessions(user_id, token_hash, ip_address, user_agent, expires_at) values($1,$2,$3,$4,now() + ($5 || ' days')::interval)`,
+    [magicToken.user_id, sessionTokenHash, ipAddress, userAgent, String(sessionExpiresDays)]
+  );
+  
   const [user] = await query(`select id, full_name, email from app_users where id=$1`, [magicToken.user_id]);
   return { sessionToken, expiresAt: session.expires_at, user };
 }
@@ -595,4 +625,296 @@ export async function revokeSessionToken(token) {
   await ensureAuthSchema();
   const result = await query(`update auth_sessions set revoked_at=now() where token_hash=$1 and revoked_at is null returning id`, [hashToken(token)]);
   return { revoked: result.length > 0 };
+}
+
+// ============================================================================
+// USER MANAGEMENT FUNCTIONS
+// ============================================================================
+
+export async function getUserById(userId) {
+  const [user] = await query(`select id, full_name, email, phone, active, last_login, created_at, updated_at from app_users where id=$1`, [userId]);
+  if (!user) return null;
+  
+  const roles = await query(`select r.id, r.slug, r.name, r.description, r.is_system from roles r join user_roles ur on ur.role_id=r.id where ur.user_id=$1`, [userId]);
+  const permissions = await query(`select distinct p.slug from permissions p join role_permissions rp on rp.permission_id=p.id join user_roles ur on ur.role_id=rp.role_id where ur.user_id=$1`, [userId]);
+  
+  return { ...user, roles, permissions: permissions.map(p => p.slug) };
+}
+
+export async function getUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const [user] = await query(`select id, full_name, email, phone, active, last_login, created_at, updated_at from app_users where lower(email)=$1`, [normalizedEmail]);
+  if (!user) return null;
+  
+  const roles = await query(`select r.id, r.slug, r.name, r.description, r.is_system from roles r join user_roles ur on ur.role_id=r.id where ur.user_id=$1`, [user.id]);
+  const permissions = await query(`select distinct p.slug from permissions p join role_permissions rp on rp.permission_id=p.id join user_roles ur on ur.role_id=rp.role_id where ur.user_id=$1`, [user.id]);
+  
+  return { ...user, roles, permissions: permissions.map(p => p.slug) };
+}
+
+export async function listUsers(filters = {}) {
+  let whereClause = 'where 1=1';
+  const params = [];
+  
+  if (filters.active !== undefined) {
+    params.push(filters.active);
+    whereClause += ` and active=$${params.length}`;
+  }
+  
+  if (filters.roleSlug) {
+    params.push(filters.roleSlug);
+    whereClause += ` and exists (select 1 from user_roles ur join roles r on r.id=ur.role_id where ur.user_id=app_users.id and r.slug=$${params.length})`;
+  }
+  
+  const users = await query(`select id, full_name, email, phone, active, last_login, created_at, updated_at from app_users ${whereClause} order by created_at desc`);
+  
+  // Get roles for each user
+  for (const user of users) {
+    const roles = await query(`select r.slug, r.name from roles r join user_roles ur on ur.role_id=r.id where ur.user_id=$1`, [user.id]);
+    user.roles = roles;
+  }
+  
+  return users;
+}
+
+export async function createUser(userData) {
+  const { fullName, email, phone } = userData;
+  const normalizedEmail = normalizeEmail(email);
+  
+  const [user] = await query(
+    `insert into app_users(full_name, email, phone, active) values($1, $2, $3, true) returning id, full_name, email, phone, active, created_at, updated_at`,
+    [fullName, normalizedEmail, phone || null]
+  );
+  
+  return user;
+}
+
+export async function updateUser(userId, userData) {
+  const { fullName, email, phone, active } = userData;
+  const updates = [];
+  const params = [];
+  
+  if (fullName !== undefined) {
+    params.push(fullName);
+    updates.push(`full_name=$${params.length}`);
+  }
+  
+  if (email !== undefined) {
+    params.push(normalizeEmail(email));
+    updates.push(`email=$${params.length}`);
+  }
+  
+  if (phone !== undefined) {
+    params.push(phone);
+    updates.push(`phone=$${params.length}`);
+  }
+  
+  if (active !== undefined) {
+    params.push(active);
+    updates.push(`active=$${params.length}`);
+  }
+  
+  if (updates.length === 0) return null;
+  
+  params.push(userId);
+  updates.push('updated_at=now()');
+  
+  const [user] = await query(
+    `update app_users set ${updates.join(', ')} where id=$${params.length} returning id, full_name, email, phone, active, last_login, created_at, updated_at`,
+    params
+  );
+  
+  return user;
+}
+
+export async function updateUserLastLogin(userId) {
+  await query(`update app_users set last_login=now() where id=$1`, [userId]);
+}
+
+export async function assignRoleToUser(userId, roleSlug) {
+  const [role] = await query(`select id from roles where slug=$1`, [roleSlug]);
+  if (!role) throw new Error(`Role ${roleSlug} not found`);
+  
+  await query(
+    `insert into user_roles(user_id, role_id) values($1, $2) on conflict do nothing`,
+    [userId, role.id]
+  );
+  
+  return { success: true };
+}
+
+export async function removeRoleFromUser(userId, roleSlug) {
+  const [role] = await query(`select id from roles where slug=$1`, [roleSlug]);
+  if (!role) throw new Error(`Role ${roleSlug} not found`);
+  
+  await query(`delete from user_roles where user_id=$1 and role_id=$2`, [userId, role.id]);
+  
+  return { success: true };
+}
+
+// ============================================================================
+// ROLE MANAGEMENT FUNCTIONS
+// ============================================================================
+
+export async function listRoles() {
+  return await query(`select id, slug, name, description, is_system, created_at from roles order by is_system desc, name`);
+}
+
+export async function getRoleBySlug(slug) {
+  const [role] = await query(`select id, slug, name, description, is_system, created_at from roles where slug=$1`, [slug]);
+  if (!role) return null;
+  
+  const permissions = await query(
+    `select p.slug, p.description from permissions p join role_permissions rp on rp.permission_id=p.id where rp.role_id=$1 order by p.slug`,
+    [role.id]
+  );
+  
+  return { ...role, permissions: permissions.map(p => p.slug) };
+}
+
+export async function createRole(roleData) {
+  const { slug, name, description } = roleData;
+  
+  const [role] = await query(
+    `insert into roles(slug, name, description, is_system) values($1, $2, $3, false) returning id, slug, name, description, is_system, created_at`,
+    [slug, name, description || null]
+  );
+  
+  return role;
+}
+
+export async function updateRole(roleSlug, roleData) {
+  const [role] = await query(`select id, is_system from roles where slug=$1`, [roleSlug]);
+  if (!role) throw new Error(`Role ${roleSlug} not found`);
+  if (role.is_system) throw new Error(`Cannot modify system role ${roleSlug}`);
+  
+  const { name, description } = roleData;
+  const updates = [];
+  const params = [];
+  
+  if (name !== undefined) {
+    params.push(name);
+    updates.push(`name=$${params.length}`);
+  }
+  
+  if (description !== undefined) {
+    params.push(description);
+    updates.push(`description=$${params.length}`);
+  }
+  
+  if (updates.length === 0) return null;
+  
+  params.push(roleSlug);
+  
+  const [updated] = await query(
+    `update roles set ${updates.join(', ')} where slug=$${params.length} returning id, slug, name, description, is_system, created_at`,
+    params
+  );
+  
+  return updated;
+}
+
+export async function deleteRole(roleSlug) {
+  const [role] = await query(`select id, is_system from roles where slug=$1`, [roleSlug]);
+  if (!role) throw new Error(`Role ${roleSlug} not found`);
+  if (role.is_system) throw new Error(`Cannot delete system role ${roleSlug}`);
+  
+  await query(`delete from roles where id=$1`, [role.id]);
+  
+  return { success: true };
+}
+
+export async function assignPermissionToRole(roleSlug, permissionSlug) {
+  const [role] = await query(`select id, is_system from roles where slug=$1`, [roleSlug]);
+  if (!role) throw new Error(`Role ${roleSlug} not found`);
+  
+  const [permission] = await query(`select id from permissions where slug=$1`, [permissionSlug]);
+  if (!permission) throw new Error(`Permission ${permissionSlug} not found`);
+  
+  await query(
+    `insert into role_permissions(role_id, permission_id) values($1, $2) on conflict do nothing`,
+    [role.id, permission.id]
+  );
+  
+  return { success: true };
+}
+
+export async function removePermissionFromRole(roleSlug, permissionSlug) {
+  const [role] = await query(`select id, is_system from roles where slug=$1`, [roleSlug]);
+  if (!role) throw new Error(`Role ${roleSlug} not found`);
+  if (role.is_system) throw new Error(`Cannot modify permissions for system role ${roleSlug}`);
+  
+  const [permission] = await query(`select id from permissions where slug=$1`, [permissionSlug]);
+  if (!permission) throw new Error(`Permission ${permissionSlug} not found`);
+  
+  await query(`delete from role_permissions where role_id=$1 and permission_id=$2`, [role.id, permission.id]);
+  
+  return { success: true };
+}
+
+// ============================================================================
+// PERMISSION CHECKING FUNCTIONS
+// ============================================================================
+
+export async function userHasPermission(userId, permissionSlug) {
+  const result = await query(
+    `select exists(
+      select 1 from permissions p
+      join role_permissions rp on rp.permission_id=p.id
+      join user_roles ur on ur.role_id=rp.role_id
+      where ur.user_id=$1 and p.slug=$2
+    ) as has_permission`,
+    [userId, permissionSlug]
+  );
+  
+  return result[0]?.has_permission || false;
+}
+
+export async function userHasRole(userId, roleSlug) {
+  const result = await query(
+    `select exists(
+      select 1 from roles r
+      join user_roles ur on ur.role_id=r.id
+      where ur.user_id=$1 and r.slug=$2
+    ) as has_role`,
+    [userId, roleSlug]
+  );
+  
+  return result[0]?.has_role || false;
+}
+
+export async function getUserPermissions(userId) {
+  const permissions = await query(
+    `select distinct p.slug from permissions p
+    join role_permissions rp on rp.permission_id=p.id
+    join user_roles ur on ur.role_id=rp.role_id
+    where ur.user_id=$1
+    order by p.slug`,
+    [userId]
+  );
+  
+  return permissions.map(p => p.slug);
+}
+
+export async function getModulesForUser(userId) {
+  const userRoles = await query(
+    `select r.slug from roles r join user_roles ur on ur.role_id=r.id where ur.user_id=$1`,
+    [userId]
+  );
+  
+  const roleSlugs = userRoles.map(r => r.slug);
+  
+  // Get all enabled modules
+  const modules = await query(
+    `select id, label, nav_group, enabled, allowed_roles from module_registry where enabled=true order by nav_group, label`
+  );
+  
+  // Filter modules based on allowed_roles
+  return modules.filter(module => {
+    const allowedRoles = module.allowed_roles || [];
+    // If no allowed_roles specified, module is available to all
+    if (allowedRoles.length === 0) return true;
+    // Check if user has any of the allowed roles
+    return roleSlugs.some(role => allowedRoles.includes(role));
+  });
 }
