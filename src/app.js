@@ -144,6 +144,11 @@ async function renderHomepage(){
   const phone = val('company.phone', '');
   const email = val('company.email', '');
   const serviceList = services();
+  const info = {
+    serviceArea: val('homepage.serviceArea', 'Professional Services'),
+    description: val('homepage.description', 'We combine decades of hands-on experience with cutting-edge project management technology to deliver results that exceed expectations.'),
+    businessHours: val('homepage.businessHours', 'Get a free estimate today. No obligation, no pressure—just honest advice and transparent pricing.')
+  };
 
   app.innerHTML = `
     <main class="public-home premium-home" id="top">
