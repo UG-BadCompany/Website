@@ -1,6 +1,6 @@
 export type ThemeMode = 'light' | 'dark' | 'system' | 'preset' | 'custom';
 export type HostingProvider = 'netlify' | 'vercel' | 'docker' | 'vps' | 'custom';
-export type DatabaseProvider = 'netlify_database' | 'postgres_url' | 'supabase_postgres';
+export type DatabaseProvider = 'netlify_database' | 'postgres_url' | 'supabase_postgres' | 'vercel_postgres' | 'neon_postgres' | 'docker_compose_postgres' | 'local_postgres' | 'managed_postgres' | 'manual_config' | 'configure_later';
 export type PaymentProvider = 'square' | 'stripe' | 'paypal' | 'authorize_net' | 'manual' | 'configure_later';
 
 export interface Permission { key: string; label: string; group: string }

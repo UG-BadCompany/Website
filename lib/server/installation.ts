@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createDatabase, type Queryable } from './database';
+import { createStorage } from './storage';
 
 export type InstallStatus = {
   installed: boolean;
@@ -24,6 +25,96 @@ const REQUIRED_PERMISSIONS = 36;
 const INSTALLATION_VERSION = process.env.npm_package_version ?? '1.0.0';
 
 const asBoolean = (value: unknown) => value === true || value === 'true';
+
+type UploadInput = { fileName?: string; mimeType?: string; dataUrl?: string };
+type HomepageSetupInput = {
+  logoUrl?: string;
+  logoUpload?: UploadInput | null;
+  faviconUrl?: string;
+  faviconUpload?: UploadInput | null;
+  displayName?: string;
+  tagline?: string;
+  heroHeadline?: string;
+  heroSubheadline?: string;
+  primaryCtaLabel?: string;
+  primaryCtaLink?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaLink?: string;
+  aboutText?: string;
+  servicesIntro?: string;
+  services?: unknown[];
+  contactPhone?: string;
+  contactEmail?: string;
+  contactAddress?: string;
+  serviceArea?: string;
+  businessHours?: string;
+  trustText?: string;
+  yearsExperience?: string;
+  emergencyServiceEnabled?: boolean;
+  financingAvailableEnabled?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+};
+
+async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, companyName: string) {
+  const logoMediaId = setup.logoUpload?.dataUrl ? await storeUpload(db, setup.logoUpload, 'branding/logo') : null;
+  const faviconMediaId = setup.faviconUpload?.dataUrl ? await storeUpload(db, setup.faviconUpload, 'branding/favicon') : null;
+
+  await upsertSetting(db, 'branding.logo_media_id', logoMediaId);
+  await upsertSetting(db, 'branding.logo_url', logoMediaId ? '' : setup.logoUrl?.trim() || '');
+  await upsertSetting(db, 'branding.favicon_media_id', faviconMediaId);
+  await upsertSetting(db, 'branding.favicon_url', faviconMediaId ? '' : setup.faviconUrl?.trim() || '');
+  await upsertSetting(db, 'branding.display_name', setup.displayName?.trim() || companyName);
+  await upsertSetting(db, 'branding.tagline', setup.tagline?.trim() || '');
+  await upsertSetting(db, 'homepage.hero_headline', setup.heroHeadline?.trim() || `${companyName} keeps your property running`);
+  await upsertSetting(db, 'homepage.hero_subheadline', setup.heroSubheadline?.trim() || 'Request estimates, schedule service, and stay informed online.');
+  await upsertSetting(db, 'homepage.primary_cta_label', setup.primaryCtaLabel?.trim() || 'Request Estimate');
+  await upsertSetting(db, 'homepage.primary_cta_link', setup.primaryCtaLink?.trim() || '/request-estimate');
+  await upsertSetting(db, 'homepage.secondary_cta_label', setup.secondaryCtaLabel?.trim() || 'View Services');
+  await upsertSetting(db, 'homepage.secondary_cta_link', setup.secondaryCtaLink?.trim() || '/services');
+  await upsertSetting(db, 'homepage.about_text', setup.aboutText?.trim() || '');
+  await upsertSetting(db, 'homepage.services_intro', setup.servicesIntro?.trim() || '');
+  await upsertSetting(db, 'homepage.services', Array.isArray(setup.services) ? setup.services : []);
+  await upsertSetting(db, 'homepage.contact_phone', setup.contactPhone?.trim() || '');
+  await upsertSetting(db, 'homepage.contact_email', setup.contactEmail?.trim() || '');
+  await upsertSetting(db, 'homepage.contact_address', setup.contactAddress?.trim() || '');
+  await upsertSetting(db, 'homepage.service_area', setup.serviceArea?.trim() || '');
+  await upsertSetting(db, 'homepage.business_hours', setup.businessHours?.trim() || '');
+  await upsertSetting(db, 'homepage.trust_text', setup.trustText?.trim() || '');
+  await upsertSetting(db, 'homepage.years_experience', setup.yearsExperience?.trim() || '');
+  await upsertSetting(db, 'homepage.emergency_service_enabled', Boolean(setup.emergencyServiceEnabled));
+  await upsertSetting(db, 'homepage.financing_available_enabled', Boolean(setup.financingAvailableEnabled));
+  await upsertSetting(db, 'homepage.seo_title', setup.seoTitle?.trim() || `${companyName} | Contractor Services`);
+  await upsertSetting(db, 'homepage.seo_description', setup.seoDescription?.trim() || 'Request a service estimate from a trusted local contractor.');
+}
+
+async function storeUpload(db: Queryable, upload: UploadInput, prefix: string) {
+  const parsed = parseDataUrl(upload.dataUrl || '');
+  const fileName = upload.fileName?.replace(/[^a-z0-9._-]/gi, '-') || 'upload.bin';
+  const storageKey = `${prefix}/${Date.now()}-${fileName}`;
+  const storage = createStorage();
+  const storedPath = await storage.put(storageKey, parsed.buffer);
+  const file = await db.query<{ id: string }>(
+    `insert into files (storage_provider, storage_key, file_name, mime_type, size_bytes)
+     values ($1, $2, $3, $4, $5)
+     returning id`,
+    [process.env.STORAGE_PROVIDER || (process.env.NETLIFY ? 'netlify_blobs' : 'local'), storedPath, fileName, upload.mimeType || parsed.mimeType, parsed.buffer.byteLength]
+  );
+  const media = await db.query<{ id: string }>(
+    `insert into media_assets (file_id, owner_type, visibility, alt_text, metadata)
+     values ($1, 'branding', 'public', $2, $3::jsonb)
+     returning id`,
+    [file.rows[0].id, fileName, JSON.stringify({ storageKey })]
+  );
+  return media.rows[0].id;
+}
+
+function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.*)$/);
+  if (!match) return { mimeType: 'application/octet-stream', buffer: Buffer.from(dataUrl, 'base64') };
+  return { mimeType: match[1], buffer: Buffer.from(match[2], 'base64') };
+}
+
 
 export async function runMigrations(db: Queryable = createDatabase()) {
   const migrationsDir = path.resolve('migrations');
@@ -114,7 +205,7 @@ export async function getInstallStatus(db: Queryable = createDatabase()): Promis
   };
 }
 
-export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown } = {}, db: Queryable = createDatabase()) {
+export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown; homepageSetup?: HomepageSetupInput } = {}, db: Queryable = createDatabase()) {
   await runMigrations(db);
 
   const companyName = input.companyName?.trim() || 'ContractorOS';
@@ -160,8 +251,56 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'installation.completed_at', new Date().toISOString());
   await upsertSetting(db, 'installation.version', INSTALLATION_VERSION);
   if (input.theme) await upsertSetting(db, 'theme.settings', input.theme);
+  if (input.homepageSetup) await saveHomepageSetup(db, input.homepageSetup, companyName);
 
   return getInstallStatus(db);
+}
+
+
+
+export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
+  const keys = [
+    'branding.logo_url','branding.favicon_url','branding.display_name','branding.tagline','homepage.hero_headline','homepage.hero_subheadline',
+    'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
+    'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
+    'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
+  ];
+  const result = await db.query<{ key: string; value: unknown }>(`select key, value from app_settings where key = any($1)`, [keys]);
+  const values = new Map(result.rows.map((row) => [row.key, row.value]));
+  return {
+    branding: {
+      displayName: asText(values.get('branding.display_name'), 'ContractorOS'),
+      tagline: asText(values.get('branding.tagline'), ''),
+      logoSrc: asText(values.get('branding.logo_url'), ''),
+      faviconSrc: asText(values.get('branding.favicon_url'), ''),
+    },
+    homepage: {
+      heroHeadline: asText(values.get('homepage.hero_headline'), 'Contractor services made simple'),
+      heroSubheadline: asText(values.get('homepage.hero_subheadline'), 'Request estimates, schedule service, and stay informed online.'),
+      primaryCtaLabel: asText(values.get('homepage.primary_cta_label'), 'Request Estimate'),
+      primaryCtaLink: asText(values.get('homepage.primary_cta_link'), '/request-estimate'),
+      secondaryCtaLabel: asText(values.get('homepage.secondary_cta_label'), 'View Services'),
+      secondaryCtaLink: asText(values.get('homepage.secondary_cta_link'), '/services'),
+      aboutText: asText(values.get('homepage.about_text'), ''),
+      servicesIntro: asText(values.get('homepage.services_intro'), ''),
+      services: Array.isArray(values.get('homepage.services')) ? values.get('homepage.services') : [],
+      contactPhone: asText(values.get('homepage.contact_phone'), ''),
+      contactEmail: asText(values.get('homepage.contact_email'), ''),
+      contactAddress: asText(values.get('homepage.contact_address'), ''),
+      serviceArea: asText(values.get('homepage.service_area'), ''),
+      businessHours: asText(values.get('homepage.business_hours'), ''),
+      trustText: asText(values.get('homepage.trust_text'), ''),
+      yearsExperience: asText(values.get('homepage.years_experience'), ''),
+      emergencyServiceEnabled: asBoolean(values.get('homepage.emergency_service_enabled')),
+      financingAvailableEnabled: asBoolean(values.get('homepage.financing_available_enabled')),
+      seoTitle: asText(values.get('homepage.seo_title'), 'Contractor Services'),
+      seoDescription: asText(values.get('homepage.seo_description'), 'Request a service estimate from a trusted local contractor.'),
+    },
+  };
+}
+
+function asText(value: unknown, fallback: string) {
+  return typeof value === 'string' ? value : fallback;
 }
 
 export async function resetInstallation(db: Queryable = createDatabase()) {
