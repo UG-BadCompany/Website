@@ -1,5 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { InstallationGate } from './components/InstallationGate';
 import { RouterProvider, useRouter } from './components/Router';
 import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
 import { AccountPage, AuthCallbackPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
@@ -39,4 +40,4 @@ applyTheme();
 window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined));
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><App /></RouterProvider></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><InstallationGate><App /></InstallationGate></RouterProvider></React.StrictMode>);

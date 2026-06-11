@@ -11,4 +11,8 @@ INSERT INTO theme_settings (mode, tokens, active) VALUES ('system', '{"accent":"
 INSERT INTO pages (slug, title, status) VALUES ('home','Homepage','published') ON CONFLICT (slug) DO NOTHING;
 INSERT INTO payment_provider_settings (provider, enabled, key_mapping) VALUES ('square', true, '{"accessToken":"SQUARE_ACCESS_TOKEN","applicationId":"SQUARE_APPLICATION_ID","locationId":"SQUARE_LOCATION_ID"}'),('manual', true, '{}'),('stripe', false, '{}'),('paypal', false, '{}'),('authorize_net', false, '{}') ON CONFLICT (provider) DO NOTHING;
 INSERT INTO expansion_packs (key, name) VALUES ('inventory','Inventory Expansion'),('workforce','Workforce Expansion'),('accounting','Accounting Expansion'),('reporting','Reporting Expansion'),('customer','Customer Expansion') ON CONFLICT (key) DO NOTHING;
+INSERT INTO app_settings (key, value) VALUES
+('installation.completed', 'false'::jsonb),
+('installation.version', '"1.0.0"'::jsonb)
+ON CONFLICT (key) DO NOTHING;
 COMMIT;
