@@ -56,6 +56,46 @@ type HomepageSetupInput = {
   seoDescription?: string;
 };
 
+const PUBLIC_SETTING_KEYS = [
+  'branding.logo_url','branding.favicon_url','branding.display_name','branding.tagline','homepage.hero_headline','homepage.hero_subheadline',
+  'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
+  'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
+  'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
+];
+
+function defaultPublicSiteSettings() {
+  return {
+    branding: {
+      displayName: 'ContractorOS',
+      tagline: 'Foundation business operating system',
+      logoSrc: '',
+      faviconSrc: '',
+    },
+    homepage: {
+      heroHeadline: 'Contractor services made simple',
+      heroSubheadline: 'Request estimates, schedule service, and stay informed online.',
+      primaryCtaLabel: 'Request Estimate',
+      primaryCtaLink: '/request-estimate',
+      secondaryCtaLabel: 'View Services',
+      secondaryCtaLink: '/services',
+      aboutText: '',
+      servicesIntro: '',
+      services: [],
+      contactPhone: '',
+      contactEmail: '',
+      contactAddress: '',
+      serviceArea: '',
+      businessHours: '',
+      trustText: '',
+      yearsExperience: '',
+      emergencyServiceEnabled: false,
+      financingAvailableEnabled: false,
+      seoTitle: 'Contractor Services',
+      seoDescription: 'Request a service estimate from a trusted local contractor.',
+    },
+  };
+}
+
 async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, companyName: string) {
   const logoMediaId = setup.logoUpload?.dataUrl ? await storeUpload(db, setup.logoUpload, 'branding/logo') : null;
   const faviconMediaId = setup.faviconUpload?.dataUrl ? await storeUpload(db, setup.faviconUpload, 'branding/favicon') : null;
@@ -117,10 +157,32 @@ function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
 
 
 export async function runMigrations(db: Queryable = createDatabase()) {
-  const migrationsDir = path.resolve('migrations');
   for (const file of ['001_foundation.sql', '002_seed_foundation.sql']) {
-    await db.query(await readFile(path.join(migrationsDir, file), 'utf8'));
+    await db.query(await readMigration(file));
   }
+}
+
+async function readMigration(file: string) {
+  const candidateDirs = [
+    path.resolve('migrations'),
+    path.resolve(process.cwd(), 'migrations'),
+    process.env.LAMBDA_TASK_ROOT ? path.join(process.env.LAMBDA_TASK_ROOT, 'migrations') : '',
+    process.env.NETLIFY ? path.resolve(process.cwd(), '..', 'migrations') : '',
+  ].filter(Boolean);
+
+  const tried: string[] = [];
+  for (const dir of candidateDirs) {
+    const filePath = path.join(dir, file);
+    tried.push(filePath);
+    try {
+      return await readFile(filePath, 'utf8');
+    } catch (error) {
+      const code = typeof error === 'object' && error && 'code' in error ? (error as { code?: string }).code : undefined;
+      if (code !== 'ENOENT') throw error;
+    }
+  }
+
+  throw new Error(`Migration file ${file} was not found. Tried: ${tried.join(', ')}`);
 }
 
 export async function getInstallChecks(db: Queryable = createDatabase()): Promise<InstallChecks> {
@@ -259,44 +321,55 @@ export async function completeInstallation(input: { companyName?: string; ownerN
 
 
 export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
-  const keys = [
-    'branding.logo_url','branding.favicon_url','branding.display_name','branding.tagline','homepage.hero_headline','homepage.hero_subheadline',
-    'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
-    'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
-    'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
-  ];
-  const result = await db.query<{ key: string; value: unknown }>(`select key, value from app_settings where key = any($1)`, [keys]);
-  const values = new Map(result.rows.map((row) => [row.key, row.value]));
-  return {
-    branding: {
-      displayName: asText(values.get('branding.display_name'), 'ContractorOS'),
-      tagline: asText(values.get('branding.tagline'), ''),
-      logoSrc: asText(values.get('branding.logo_url'), ''),
-      faviconSrc: asText(values.get('branding.favicon_url'), ''),
-    },
-    homepage: {
-      heroHeadline: asText(values.get('homepage.hero_headline'), 'Contractor services made simple'),
-      heroSubheadline: asText(values.get('homepage.hero_subheadline'), 'Request estimates, schedule service, and stay informed online.'),
-      primaryCtaLabel: asText(values.get('homepage.primary_cta_label'), 'Request Estimate'),
-      primaryCtaLink: asText(values.get('homepage.primary_cta_link'), '/request-estimate'),
-      secondaryCtaLabel: asText(values.get('homepage.secondary_cta_label'), 'View Services'),
-      secondaryCtaLink: asText(values.get('homepage.secondary_cta_link'), '/services'),
-      aboutText: asText(values.get('homepage.about_text'), ''),
-      servicesIntro: asText(values.get('homepage.services_intro'), ''),
-      services: Array.isArray(values.get('homepage.services')) ? values.get('homepage.services') : [],
-      contactPhone: asText(values.get('homepage.contact_phone'), ''),
-      contactEmail: asText(values.get('homepage.contact_email'), ''),
-      contactAddress: asText(values.get('homepage.contact_address'), ''),
-      serviceArea: asText(values.get('homepage.service_area'), ''),
-      businessHours: asText(values.get('homepage.business_hours'), ''),
-      trustText: asText(values.get('homepage.trust_text'), ''),
-      yearsExperience: asText(values.get('homepage.years_experience'), ''),
-      emergencyServiceEnabled: asBoolean(values.get('homepage.emergency_service_enabled')),
-      financingAvailableEnabled: asBoolean(values.get('homepage.financing_available_enabled')),
-      seoTitle: asText(values.get('homepage.seo_title'), 'Contractor Services'),
-      seoDescription: asText(values.get('homepage.seo_description'), 'Request a service estimate from a trusted local contractor.'),
-    },
-  };
+  try {
+    const tableResult = await db.query<{ exists: boolean }>(
+      `select exists(
+        select 1
+        from information_schema.tables
+        where table_schema = 'public' and table_name = 'app_settings'
+      ) as exists`
+    );
+
+    if (!tableResult.rows[0]?.exists) return defaultPublicSiteSettings();
+
+    const result = await db.query<{ key: string; value: unknown }>(`select key, value from app_settings where key = any($1)`, [PUBLIC_SETTING_KEYS]);
+    const values = new Map(result.rows.map((row) => [row.key, row.value]));
+    const defaults = defaultPublicSiteSettings();
+
+    return {
+      branding: {
+        displayName: asText(values.get('branding.display_name'), defaults.branding.displayName),
+        tagline: asText(values.get('branding.tagline'), defaults.branding.tagline),
+        logoSrc: asText(values.get('branding.logo_url'), defaults.branding.logoSrc),
+        faviconSrc: asText(values.get('branding.favicon_url'), defaults.branding.faviconSrc),
+      },
+      homepage: {
+        heroHeadline: asText(values.get('homepage.hero_headline'), defaults.homepage.heroHeadline),
+        heroSubheadline: asText(values.get('homepage.hero_subheadline'), defaults.homepage.heroSubheadline),
+        primaryCtaLabel: asText(values.get('homepage.primary_cta_label'), defaults.homepage.primaryCtaLabel),
+        primaryCtaLink: asText(values.get('homepage.primary_cta_link'), defaults.homepage.primaryCtaLink),
+        secondaryCtaLabel: asText(values.get('homepage.secondary_cta_label'), defaults.homepage.secondaryCtaLabel),
+        secondaryCtaLink: asText(values.get('homepage.secondary_cta_link'), defaults.homepage.secondaryCtaLink),
+        aboutText: asText(values.get('homepage.about_text'), defaults.homepage.aboutText),
+        servicesIntro: asText(values.get('homepage.services_intro'), defaults.homepage.servicesIntro),
+        services: Array.isArray(values.get('homepage.services')) ? values.get('homepage.services') : defaults.homepage.services,
+        contactPhone: asText(values.get('homepage.contact_phone'), defaults.homepage.contactPhone),
+        contactEmail: asText(values.get('homepage.contact_email'), defaults.homepage.contactEmail),
+        contactAddress: asText(values.get('homepage.contact_address'), defaults.homepage.contactAddress),
+        serviceArea: asText(values.get('homepage.service_area'), defaults.homepage.serviceArea),
+        businessHours: asText(values.get('homepage.business_hours'), defaults.homepage.businessHours),
+        trustText: asText(values.get('homepage.trust_text'), defaults.homepage.trustText),
+        yearsExperience: asText(values.get('homepage.years_experience'), defaults.homepage.yearsExperience),
+        emergencyServiceEnabled: asBoolean(values.get('homepage.emergency_service_enabled')),
+        financingAvailableEnabled: asBoolean(values.get('homepage.financing_available_enabled')),
+        seoTitle: asText(values.get('homepage.seo_title'), defaults.homepage.seoTitle),
+        seoDescription: asText(values.get('homepage.seo_description'), defaults.homepage.seoDescription),
+      },
+    };
+  } catch (error) {
+    console.warn('Public site settings unavailable; using installer-safe defaults', error);
+    return defaultPublicSiteSettings();
+  }
 }
 
 function asText(value: unknown, fallback: string) {
