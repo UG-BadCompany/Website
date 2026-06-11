@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { PublicLayout } from '../components/Layout';
-import { Link } from '../components/Router';
 import { foundationComponents, permissions, serviceCategories } from '../data/foundation';
 import type { DatabaseProvider, HostingProvider, PaymentProvider, ThemeMode } from '../types/domain';
 
@@ -20,6 +19,59 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   const [database, setDatabase] = useState<DatabaseProvider>('netlify_database');
   const [payment, setPayment] = useState<PaymentProvider>('square');
   const [theme, setTheme] = useState<ThemeMode>('system');
+  const [companyName, setCompanyName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [finishState, setFinishState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [finishMessage, setFinishMessage] = useState('');
   const current = steps[index];
-  return <PublicLayout><section className="installer"><aside className="stepper">{steps.map((s, i) => <button key={s} className={i === index ? 'active' : ''} onClick={() => setIndex(i)}>{i + 1}. {s.replace('-', ' ')}</button>)}</aside><div className="card install-card"><p className="eyebrow">Installer / {current}</p>{current === 'license' && <><h1>Verify license</h1><p>License Option B is represented by a provider interface: license server URL + email + license + domain + install tracking.</p><input placeholder="LICENSE_SERVER_URL key name"/><input placeholder="License key"/><input placeholder="Owner email"/><input placeholder="Domain"/></>}{current === 'hosting' && <><h1>Hosting provider</h1><select value={hosting} onChange={(e) => setHosting(e.target.value as HostingProvider)}><option value="netlify">Netlify</option><option value="vercel">Vercel</option><option value="docker">Docker</option><option value="vps">VPS</option><option value="custom">Other/custom</option></select><p>{hosting === 'netlify' ? 'Netlify detected: installer recommends Netlify Database first.' : 'External PostgreSQL or Supabase remains supported.'}</p></>}{current === 'database' && <><h1>Database setup</h1><select value={database} onChange={(e) => setDatabase(e.target.value as DatabaseProvider)}><option value="netlify_database">Netlify Database</option><option value="postgres_url">External PostgreSQL URL</option><option value="supabase_postgres">Supabase PostgreSQL</option></select><p>The application uses one internal database service so app code is adapter-neutral.</p></>}{current === 'environment' && <><h1>Environment key mapping</h1><p>Map provider env names to ContractorOS normalized config. Secret values are never exposed to the frontend.</p><div className="grid cards"><input defaultValue="SITE_URL → APP_URL"/><input defaultValue="DATABASE_URL → DATABASE_URL"/><input defaultValue="RESEND_API_KEY → RESEND_API_KEY"/><input defaultValue="MAGIC_LINK_FROM_EMAIL → EMAIL_FROM"/></div></>}{current === 'email' && <><h1>Email provider</h1><p>Resend is the v1 default for magic links, quote emails, invoice emails, and setup test email.</p><input defaultValue="RESEND_API_KEY"/><input defaultValue="MAGIC_LINK_FROM_EMAIL"/><button className="button">Send test email</button></>}{current === 'payment' && <><h1>Payment provider</h1><select value={payment} onChange={(e) => setPayment(e.target.value as PaymentProvider)}><option value="square">Square default</option><option value="stripe">Stripe</option><option value="paypal">PayPal</option><option value="authorize_net">Authorize.net</option><option value="manual">Manual cash/check</option><option value="configure_later">Configure later</option></select><ul>{paymentKeys[payment].map((key) => <li key={key}><code>{key}</code></li>)}</ul></>}{current === 'company' && <><h1>Company setup</h1><div className="grid cards"><input placeholder="Company name"/><input placeholder="Company email"/><input placeholder="Company phone"/><input placeholder="Address"/><input placeholder="Website URL"/><input placeholder="Time zone"/></div></>}{current === 'owner' && <><h1>Owner setup</h1><input placeholder="Owner name"/><input placeholder="Owner email"/><p>Install creates the Owner user, assigns the Owner role, and sends a Resend magic login link.</p></>}{current === 'theme' && <><h1>Theme setup</h1><select value={theme} onChange={(e) => setTheme(e.target.value as ThemeMode)}><option>system</option><option>light</option><option>dark</option><option>custom</option></select><p>System mode follows <code>prefers-color-scheme</code> and persists across navigation.</p></>}{current === 'foundation' && <><h1>Install ContractorOS Foundation</h1><div className="grid cards">{foundationComponents.map((name) => <div className="pill" key={name}>{name}</div>)}</div><p>{permissions.length} permissions and {serviceCategories.length} default editable service categories will be created by migrations/seeds.</p></>}{current === 'expansion-packs' && <><h1>Expansion packs</h1><p>Official add-ons are available later. Default v1 recommendation: none selected.</p>{['Inventory','Workforce','Accounting','Reporting','Customer'].map((p) => <label className="check" key={p}><input type="checkbox"/> {p} Expansion</label>)}</>}{current === 'finish' && <><h1>Finish installation</h1><p>Installer locks, migrations complete, owner magic link is sent, and you can open the dashboard.</p><Link href="/dashboard" className="button">Open ContractorOS</Link></>}<div className="actions"><button className="button secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>Back</button><button className="button" disabled={index === steps.length - 1} onClick={() => setIndex(index + 1)}>Continue</button></div></div></section></PublicLayout>;
+
+  const finishInstallation = async () => {
+    setFinishState('saving');
+    setFinishMessage('Locking installer and saving installation flags…');
+    try {
+      const response = await fetch('/api/install/complete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ companyName, ownerName, ownerEmail }),
+      });
+      if (!response.ok) throw new Error(`Installer completion failed with HTTP ${response.status}`);
+      const status = await response.json();
+      if (!status.installed) throw new Error('Installer completion did not return an installed system.');
+      setFinishMessage('Installation complete. Opening ContractorOS…');
+      window.location.assign('/dashboard');
+    } catch (error) {
+      setFinishState('error');
+      setFinishMessage(error instanceof Error ? error.message : 'Unable to complete installation.');
+    }
+  };
+
+  return (
+    <PublicLayout>
+      <section className="installer">
+        <aside className="stepper">
+          {steps.map((s, i) => <button key={s} className={i === index ? 'active' : ''} onClick={() => setIndex(i)}>{i + 1}. {s.replace('-', ' ')}</button>)}
+        </aside>
+        <div className="card install-card">
+          <p className="eyebrow">Installer / {current}</p>
+          {current === 'license' && <><h1>Verify license</h1><p>License Option B is represented by a provider interface: license server URL + email + license + domain + install tracking.</p><input placeholder="LICENSE_SERVER_URL key name"/><input placeholder="License key"/><input placeholder="Owner email"/><input placeholder="Domain"/></>}
+          {current === 'hosting' && <><h1>Hosting provider</h1><select value={hosting} onChange={(e) => setHosting(e.target.value as HostingProvider)}><option value="netlify">Netlify</option><option value="vercel">Vercel</option><option value="docker">Docker</option><option value="vps">VPS</option><option value="custom">Other/custom</option></select><p>{hosting === 'netlify' ? 'Netlify detected: installer recommends Netlify Database first.' : 'External PostgreSQL or Supabase remains supported.'}</p></>}
+          {current === 'database' && <><h1>Database setup</h1><select value={database} onChange={(e) => setDatabase(e.target.value as DatabaseProvider)}><option value="netlify_database">Netlify Database</option><option value="postgres_url">External PostgreSQL URL</option><option value="supabase_postgres">Supabase PostgreSQL</option></select><p>The application uses one internal database service so app code is adapter-neutral.</p></>}
+          {current === 'environment' && <><h1>Environment key mapping</h1><p>Map provider env names to ContractorOS normalized config. Secret values are never exposed to the frontend.</p><div className="grid cards"><input defaultValue="SITE_URL → APP_URL"/><input defaultValue="DATABASE_URL → DATABASE_URL"/><input defaultValue="RESEND_API_KEY → RESEND_API_KEY"/><input defaultValue="MAGIC_LINK_FROM_EMAIL → EMAIL_FROM"/></div></>}
+          {current === 'email' && <><h1>Email provider</h1><p>Resend is the v1 default for magic links, quote emails, invoice emails, and setup test email.</p><input defaultValue="RESEND_API_KEY"/><input defaultValue="MAGIC_LINK_FROM_EMAIL"/><button className="button">Send test email</button></>}
+          {current === 'payment' && <><h1>Payment provider</h1><select value={payment} onChange={(e) => setPayment(e.target.value as PaymentProvider)}><option value="square">Square default</option><option value="stripe">Stripe</option><option value="paypal">PayPal</option><option value="authorize_net">Authorize.net</option><option value="manual">Manual cash/check</option><option value="configure_later">Configure later</option></select><ul>{paymentKeys[payment].map((key) => <li key={key}><code>{key}</code></li>)}</ul></>}
+          {current === 'company' && <><h1>Company setup</h1><div className="grid cards"><input placeholder="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)}/><input placeholder="Company email"/><input placeholder="Company phone"/><input placeholder="Address"/><input placeholder="Website URL"/><input placeholder="Time zone"/></div></>}
+          {current === 'owner' && <><h1>Owner setup</h1><input placeholder="Owner name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)}/><input placeholder="Owner email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)}/><p>Install creates the Owner user, assigns the Owner role, and sends a Resend magic login link.</p></>}
+          {current === 'theme' && <><h1>Theme setup</h1><select value={theme} onChange={(e) => setTheme(e.target.value as ThemeMode)}><option>system</option><option>light</option><option>dark</option><option>custom</option></select><p>System mode follows <code>prefers-color-scheme</code> and persists across navigation.</p></>}
+          {current === 'foundation' && <><h1>Install ContractorOS Foundation</h1><div className="grid cards">{foundationComponents.map((name) => <div className="pill" key={name}>{name}</div>)}</div><p>{permissions.length} permissions and {serviceCategories.length} default editable service categories will be created by migrations/seeds.</p></>}
+          {current === 'expansion-packs' && <><h1>Expansion packs</h1><p>Official add-ons are available later. Default v1 recommendation: none selected.</p>{['Inventory','Workforce','Accounting','Reporting','Customer'].map((p) => <label className="check" key={p}><input type="checkbox"/> {p} Expansion</label>)}</>}
+          {current === 'finish' && <><h1>Finish installation</h1><p>Installer locks, migrations complete, owner magic link is sent, and you can open the dashboard.</p><button className="button" disabled={finishState === 'saving'} onClick={finishInstallation}>{finishState === 'saving' ? 'Finishing…' : 'Complete installation'}</button>{finishMessage && <p className={finishState === 'error' ? 'error-text' : undefined}>{finishMessage}</p>}</>}
+          <div className="actions">
+            <button className="button secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>Back</button>
+            <button className="button" disabled={index === steps.length - 1} onClick={() => setIndex(index + 1)}>Continue</button>
+          </div>
+        </div>
+      </section>
+    </PublicLayout>
+  );
 }

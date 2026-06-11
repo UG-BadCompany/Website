@@ -1,10 +1,11 @@
 import { createMagicToken, hashToken, secureCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
+import { completeInstallation, getInstallStatus } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 
-type NetlifyEvent = { path: string; body?: string | null };
+type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
@@ -12,10 +13,12 @@ const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : 
 export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
   const path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
   try {
-    if (path === '/install/check') return json(200, { installed: false, databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
+    if (path === '/install/status') return json(200, await getInstallStatus());
+    if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
     if (path === '/install/license') return json(200, await new LocalLicenseProvider().verify(readBody(event)));
     if (path === '/install/database') return json(200, { adapter: detectDatabaseAdapter(), migrationsReady: true, netlifyDatabasePreferred: Boolean(process.env.NETLIFY) });
     if (path === '/install/payment-test') return json(200, paymentAdapter(readBody(event).provider).requiredEnv);
+    if (path === '/install/complete' && event.httpMethod === 'POST') return json(200, await completeInstallation(readBody(event)));
     if (path === '/auth/magic-link') {
       const token = createMagicToken();
       return json(200, { sent: true, tokenHashPreview: hashToken(token).slice(0, 12), message: 'Production sends via Resend and stores only token hash.' });
