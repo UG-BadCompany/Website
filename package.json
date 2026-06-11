@@ -1,0 +1,31 @@
+{
+  "name": "contractoros-v1",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "netlify:dev": "netlify dev",
+    "db:migrate": "tsx scripts/migrate.ts"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "lucide-react": "latest",
+    "pg": "latest",
+    "resend": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "tsx": "latest"
+  }
+}

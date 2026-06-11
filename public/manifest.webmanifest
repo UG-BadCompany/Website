@@ -1,0 +1,12 @@
+{
+  "name": "ContractorOS",
+  "short_name": "ContractorOS",
+  "description": "A mobile-first contractor operating system.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
