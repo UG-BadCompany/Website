@@ -457,8 +457,8 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
     const companyName = asText(values.get('company.name'), companySettings?.company_name || asText(values.get('branding.display_name'), defaults.branding.companyName));
     const companyDisplayName = asText(values.get('company.display_name'), asText(values.get('branding.display_name'), companyName));
     const brandingUpdatedAt = asText(values.get('company.updated_at'), asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt));
-    const logoUrl = resolveBrandingAsset(values.get('company.logo_media_id') || values.get('branding.logo_media_id'), values.get('company.logo_url') || values.get('branding.logo_url'), brandingUpdatedAt) || defaults.branding.logoUrl;
-    const faviconUrl = resolveBrandingAsset(values.get('company.favicon_media_id') || values.get('branding.favicon_media_id'), values.get('company.favicon_url') || values.get('branding.favicon_url'), brandingUpdatedAt) || defaults.branding.faviconUrl;
+    const logoUrl = resolveBrandingAsset(values.get('company.logo_media_id') || values.get('branding.logo_media_id'), values.get('company.logo_url') || values.get('branding.logo_url')) || defaults.branding.logoUrl;
+    const faviconUrl = resolveBrandingAsset(values.get('company.favicon_media_id') || values.get('branding.favicon_media_id'), values.get('company.favicon_url') || values.get('branding.favicon_url')) || defaults.branding.faviconUrl;
 
     return {
       companyName,
@@ -558,8 +558,8 @@ function urgencyToPriority(urgency: string) {
   return 'normal';
 }
 
-function resolveBrandingAsset(mediaId: unknown, url: unknown, updatedAt: unknown) {
-  if (typeof mediaId === 'string' && mediaId.trim()) return `/api/media/${mediaId}${typeof updatedAt === 'string' ? `?v=${encodeURIComponent(updatedAt)}` : ''}`;
+function resolveBrandingAsset(mediaId: unknown, url: unknown) {
+  if (typeof mediaId === 'string' && mediaId.trim()) return `/api/media/${encodeURIComponent(mediaId)}`;
   return typeof url === 'string' ? url : '';
 }
 

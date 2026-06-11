@@ -56,3 +56,7 @@ a { color:inherit; text-decoration:none; } button, input, select, textarea { fon
 .success-panel h2 { margin:0; }
 .muted { color:var(--muted); }
 .button-row { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+
+.app-title-lockup { display:flex; align-items:center; gap:.85rem; min-width:0; }
+.app-header-logo { flex:0 0 auto; }
+@media (min-width: 901px) { .app-header-logo { display:none; } }

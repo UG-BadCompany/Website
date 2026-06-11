@@ -122,7 +122,7 @@ export function versionedAsset(url?: string, version?: string) {
   if (!version || !isLocalAsset(url)) return url;
   try {
     const parsed = new URL(url, window.location.origin);
-    parsed.searchParams.set('v', version);
+    parsed.searchParams.set('v', String(new Date(version).getTime() || version));
     return parsed.pathname + parsed.search + parsed.hash;
   } catch {
     return url;

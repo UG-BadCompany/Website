@@ -17,11 +17,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { path, push } = useRouter();
   const auth = useAuth();
 
-  useEffect(() => {
-    if (!auth.isLoading && !auth.isAuthenticated && isProtectedPath(path)) push(`/login?redirect=${encodeURIComponent(path)}`);
-  }, [auth.isAuthenticated, auth.isLoading, path, push]);
+  const protectedPath = isProtectedPath(path);
 
-  if (auth.isLoading && isProtectedPath(path)) return <main className="install-loading"><div className="card"><LoadingState title="Checking secure session…" lines={2}/></div></main>;
-  if (!auth.isAuthenticated && isProtectedPath(path)) return <main className="install-loading"><div className="card"><LoadingState title="Redirecting to secure login…" lines={2}/></div></main>;
+  useEffect(() => {
+    if (auth.status === 'unauthenticated' && protectedPath) push(`/login?redirect=${encodeURIComponent(path)}`);
+  }, [auth.status, path, protectedPath, push]);
+
+  if (auth.isLoading && protectedPath) return <main className="install-loading"><div className="card"><LoadingState title="Checking secure session…" lines={2}/></div></main>;
+  if (auth.status === 'error' && protectedPath) return <main className="install-loading"><div className="card"><h1>Unable to verify your session</h1><p>{auth.authError || 'Please retry once the connection is available.'}</p><button className="button" onClick={() => auth.refreshMe()}>Retry session check</button></div></main>;
+  if (auth.status === 'unauthenticated' && protectedPath) return <main className="install-loading"><div className="card"><LoadingState title="Redirecting to secure login…" lines={2}/></div></main>;
   return <>{children}</>;
 }
