@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { PublicLayout } from '../components/Layout';
+import { AppLayout, Protected, PublicLayout } from '../components/Layout';
 import { Link, useRouter } from '../components/Router';
 import { isAllowedRedirect, useAuth } from '../lib/auth';
 import { pageTitle, useBranding } from '../lib/branding';
@@ -112,4 +112,4 @@ export function AuthMagicPage() {
 }
 
 export function LogoutPage() { usePageTitle('Signed out'); const auth = useAuth(); useEffect(() => { auth.signOutLocal(); }, []); return <PublicLayout><section className="section narrow"><h1>Signed out</h1><p>Your session has been cleared.</p><Link href="/login" className="button">Sign in again</Link></section></PublicLayout>; }
-export function AccountPage() { usePageTitle('Account'); const auth = useAuth(); const branding = useBranding(); return <PublicLayout><section className="section narrow"><p className="eyebrow">Account</p><h1>{auth.user?.name || 'Account'}</h1><p>{branding.displayName} uses secure HTTP-only session cookies after a one-time magic link is verified.</p><button className="button secondary" onClick={() => auth.signOutLocal()}>Logout</button></section></PublicLayout>; }
+export function AccountPage() { usePageTitle('Account'); const auth = useAuth(); const branding = useBranding(); return <Protected permission="account.view"><AppLayout title="Account"><section className="card account-panel"><p className="eyebrow">Account</p><h1>{auth.user?.name || 'Account'}</h1><p>{branding.displayName} uses secure HTTP-only session cookies after a one-time magic link is verified.</p><p className="muted">Signed in as {auth.user?.email}. Editing other accounts requires users.manage or account.manage.</p><button className="button secondary" onClick={() => auth.signOutLocal()}>Logout</button></section></AppLayout></Protected>; }

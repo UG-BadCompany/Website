@@ -172,3 +172,25 @@ main, section, article, aside, header, footer, nav, div { min-width:0; }
   .site-header .button { width:auto; }
   .mobile-nav { left:.5rem; right:.5rem; bottom:.5rem; border-radius:20px; }
 }
+
+/* Database-backed dashboard and admin settings */
+.button-row { display:flex; flex-wrap:wrap; gap:.65rem; align-items:center; }
+.button-row select { min-width:150px; width:auto; }
+.overview-panel { margin-bottom:1rem; background:linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, var(--card)), color-mix(in srgb, var(--accent) 10%, var(--card))); }
+.metric-card { border:1px solid var(--line); border-radius:18px; padding:1rem; background:color-mix(in srgb, var(--card) 88%, transparent); }
+.metric-card .metric-trend { width:max-content; border-radius:999px; padding:.25rem .55rem; font-size:.72rem; font-weight:900; color:var(--secondary); background:color-mix(in srgb, var(--accent) 12%, var(--card)); }
+.metric-warning .metric-trend { color:var(--warning); background:color-mix(in srgb, var(--warning) 12%, var(--card)); }
+.metric-danger .metric-trend { color:var(--danger); background:color-mix(in srgb, var(--danger) 12%, var(--card)); }
+.metric-success .metric-trend { color:var(--success); background:color-mix(in srgb, var(--success) 12%, var(--card)); }
+.dashboard-columns { display:grid; grid-template-columns:minmax(0, 1.2fr) minmax(280px, .8fr); gap:1rem; margin-bottom:1rem; }
+.snapshot-list { display:grid; gap:.65rem; }
+.snapshot-row { display:flex; justify-content:space-between; gap:1rem; align-items:center; padding:.8rem 0; border-bottom:1px solid var(--line); }
+.quick-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:.7rem; }
+.activity-card { margin-bottom:1rem; }
+.dashboard-grid.editing .widget { outline:2px dashed color-mix(in srgb, var(--accent) 65%, transparent); }
+.widget h3 { margin:.1rem 0; }
+.settings-panel pre { max-width:100%; overflow:auto; padding:1rem; border:1px solid var(--line); border-radius:16px; background:color-mix(in srgb, var(--bg) 75%, var(--card)); }
+.permission-list .card { flex:1 1 240px; }
+.permission-list .badge { margin:.2rem; }
+.account-panel { max-width:760px; }
+@media (max-width: 900px) { .dashboard-columns { grid-template-columns:1fr; } .button-row select { width:100%; } }
