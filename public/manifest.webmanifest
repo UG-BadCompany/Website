@@ -1,6 +1,6 @@
 {
-  "name": "ContractorOS",
-  "short_name": "ContractorOS",
+  "name": "Contractor Portal",
+  "short_name": "Portal",
   "description": "A mobile-first contractor operating system.",
   "start_url": "/dashboard",
   "display": "standalone",

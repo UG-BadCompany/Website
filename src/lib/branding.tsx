@@ -60,7 +60,7 @@ export const defaultHomepage: BasicHomepageSettings = {
   primaryCtaLink: '/request-estimate',
   secondaryCtaLabel: 'View Services',
   secondaryCtaLink: '/services',
-  aboutText: 'ContractorOS ships System, Auth, Website, CRM, Operations, Estimating, Financial, Payments, CMMS, Communications, Service Catalog, and Media as one installed product.',
+  aboutText: 'Manage estimates, requests, jobs, invoices, payments, communications, service catalog, media, and CMMS from one installed business platform.',
   servicesIntro: 'Editable service categories are ready for estimates, requests, jobs, and future AI add-ons.',
   services: [],
   contactPhone: '',

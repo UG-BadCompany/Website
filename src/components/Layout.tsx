@@ -21,7 +21,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   return <>
     <header className="site-header"><Link href="/" className="brand"><BrandMark logoUrl={branding.logoUrl} name={branding.displayName}/><strong>{branding.displayName}</strong></Link><nav><Link href="/about">About</Link><Link href="/services">Services</Link><Link href="/contact">Contact</Link><Link href="/request-estimate" className="button small">Request Estimate</Link><Link href="/login">Login</Link></nav></header>
     <main>{children}</main>
-    <footer className="footer"><strong>{branding.displayName}</strong><span>{branding.tagline}</span><span>ContractorOS Foundation • PostgreSQL • Resend • Square-ready</span></footer>
+    <footer className="footer"><strong>{branding.displayName}</strong><span>{branding.tagline}</span><span>Secure estimates, service, invoices, and messaging.</span></footer>
   </>;
 }
 

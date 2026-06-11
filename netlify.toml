@@ -4,10 +4,6 @@ publish = "dist"
 functions = "netlify/functions"
 
 
-[[redirects]]
-from = "/auth/magic"
-to = "/.netlify/functions/api/auth/magic"
-status = 200
 
 [[redirects]]
 from = "/api/*"
