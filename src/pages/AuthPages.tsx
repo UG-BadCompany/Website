@@ -3,7 +3,7 @@ import { PublicLayout } from '../components/Layout';
 import { Link, useRouter } from '../components/Router';
 import { isAllowedRedirect, useAuth } from '../lib/auth';
 import { pageTitle, useBranding } from '../lib/branding';
-import { BrandMark } from '../components/ui';
+import { BrandLogo } from '../components/ui';
 
 type MagicStatus = 'verifying' | 'missing-token' | 'invalid' | 'error';
 
@@ -44,7 +44,7 @@ export function LoginPage() {
     }
   };
 
-  return <PublicLayout><section className="section narrow auth-shell"><div className="auth-card"><div className="auth-brand"><BrandMark logoUrl={branding.logoUrl} name={branding.displayName}/><div><p className="eyebrow">Magic Link First</p><h1>Login to {branding.displayName}</h1></div></div><p>Enter your email address and we’ll send a secure, one-time login link. A session is created only after you click the link from your email.</p>{status === 'sent' ? <div className="success-panel"><h2>Check your email</h2><p>Check your email for a secure login link to {branding.displayName}.</p><p className="muted">The link expires in 15 minutes and can only be used once.</p><button className="button secondary" type="button" onClick={() => setStatus('idle')}>Send another link</button></div> : <form className="form" onSubmit={submit}><label><span className="field-label">Email Address</span><input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}/></label>{error && <p className="error-text">{error}</p>}<button className="button" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Send Magic Link'}</button></form>}</div></section></PublicLayout>;
+  return <PublicLayout><section className="section narrow auth-shell"><div className="auth-card"><div className="auth-brand"><BrandLogo /><div><p className="eyebrow">Magic Link First</p><h1>Login to {branding.displayName}</h1></div></div><p>Enter your email address and we’ll send a secure, one-time login link. A session is created only after you click the link from your email.</p>{status === 'sent' ? <div className="success-panel"><h2>Check your email</h2><p>Check your email for a secure login link to {branding.displayName}.</p><p className="muted">The link expires in 15 minutes and can only be used once.</p><button className="button secondary" type="button" onClick={() => setStatus('idle')}>Send another link</button></div> : <form className="form" onSubmit={submit}><label><span className="field-label">Email Address</span><input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}/></label>{error && <p className="error-text">{error}</p>}<button className="button" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Send Magic Link'}</button></form>}</div></section></PublicLayout>;
 }
 
 export function MagicLinkSentPage() { usePageTitle('Check your email'); const branding = useBranding(); return <PublicLayout><section className="section narrow"><h1>Check your email</h1><p>Check your email for a secure login link to {branding.displayName}.</p><p>The link expires in 15 minutes and can only be used once.</p><Link href="/login" className="button secondary">Send New Link</Link></section></PublicLayout>; }

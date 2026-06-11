@@ -63,9 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus('authenticated');
       return 'authenticated';
     } catch (caught) {
-      setMe(null);
       setAuthError(caught instanceof Error ? caught.message : 'Unable to check session.');
-      setStatus('error');
+      setStatus((current) => current === 'authenticated' ? 'authenticated' : 'error');
       return 'error';
     }
   }, [updateBranding]);

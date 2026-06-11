@@ -1,10 +1,22 @@
 import { ReactNode } from 'react';
 import { versionedAsset, useBranding } from '../lib/branding';
 
-export function BrandMark({ logoUrl, name }: { logoUrl?: string; name: string }) {
+function initialsForBrand(name: string) {
+  const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
+  return initials || 'CO';
+}
+
+export function BrandLogo({ logoUrl, name, className = '' }: { logoUrl?: string; name?: string; className?: string }) {
   const branding = useBranding();
-  const src = versionedAsset(logoUrl, branding.brandingUpdatedAt);
-  return src ? <img className="brand-logo" src={src} alt={`${name} logo`} /> : <span className="brand-fallback" aria-hidden="true">⌂</span>;
+  const displayName = name || branding.companyDisplayName || branding.companyName || branding.displayName || 'Company';
+  const src = versionedAsset(logoUrl ?? branding.logoUrl, branding.brandingUpdatedAt);
+  return src
+    ? <img className={`brand-logo ${className}`.trim()} src={src} alt={`${displayName} logo`} />
+    : <span className={`brand-fallback ${className}`.trim()} aria-label={`${displayName} logo fallback`}>{initialsForBrand(displayName)}</span>;
+}
+
+export function BrandMark({ logoUrl, name }: { logoUrl?: string; name: string }) {
+  return <BrandLogo logoUrl={logoUrl} name={name} />;
 }
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {

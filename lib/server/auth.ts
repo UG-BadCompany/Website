@@ -21,11 +21,12 @@ function secureCookieAttributes(maxAge: number) {
   return `; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
 }
 export function secureCookie(name: string, value: string, maxAge = SESSION_MAX_AGE_SECONDS) { return `${name}=${value}${secureCookieAttributes(maxAge)}`; }
+export function serializeSessionCookie(sessionToken: string, maxAge = SESSION_MAX_AGE_SECONDS) { return secureCookie(SESSION_COOKIE, sessionToken, maxAge); }
 export function clearSessionCookie() { return `${SESSION_COOKIE}=${secureCookieAttributes(0)}`; }
 
 function getHeader(event: EventWithHeaders, key: string) {
   const lower = key.toLowerCase();
-  return event.headers?.[key] || event.headers?.[lower];
+  return event.headers?.[key] || event.headers?.[lower] || Object.entries(event.headers || {}).find(([headerKey]) => headerKey.toLowerCase() === lower)?.[1];
 }
 
 export function readCookie(event: EventWithHeaders, name: string) {
@@ -86,8 +87,15 @@ export async function logLoginActivity(userId: string | null, email: string | nu
 
 export async function createSession(userId: string, db: Queryable = createDatabase()) {
   const sessionToken = createMagicToken();
-  await db.query(`insert into sessions (user_id, session_token_hash, expires_at) values ($1, $2, now() + interval '30 days')`, [userId, hashToken(sessionToken)]);
+  await db.query(`insert into sessions (user_id, session_token_hash, expires_at) values ($1, $2, now() + ($3 || ' seconds')::interval)`, [userId, hashToken(sessionToken), SESSION_MAX_AGE_SECONDS]);
   return sessionToken;
+}
+
+export async function invalidateCurrentSession(event: EventWithHeaders, db: Queryable = createDatabase()) {
+  const token = readCookie(event, SESSION_COOKIE);
+  if (!token) return false;
+  const result = await db.query(`delete from sessions where session_token_hash = $1 returning id`, [hashToken(token)]);
+  return Boolean(result.rows[0]);
 }
 
 function escapeHtml(value: string) {

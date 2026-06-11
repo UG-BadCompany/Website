@@ -3,7 +3,7 @@ import { PublicLayout } from '../components/Layout';
 import { Link, useRouter } from '../components/Router';
 import { serviceCategories } from '../data/foundation';
 import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
-import { ActionCard, BrandMark, Button, LoadingState, PageHeader, SectionHeader, StatusBadge } from '../components/ui';
+import { ActionCard, BrandLogo, Button, LoadingState, PageHeader, SectionHeader, StatusBadge } from '../components/ui';
 
 type EstimateDraft = {
   firstName: string; lastName: string; email: string; phone: string; preferredContact: string; existingCustomer: string;
@@ -133,5 +133,5 @@ export function ThankYouPage() {
   usePageTitle('Request Received');
   const branding = useBranding();
   const requestNumber = sessionStorage.getItem('contractoros.lastRequestNumber') || 'REQ-PENDING';
-  return <PublicLayout><section className="section narrow thank-you"><BrandMark logoUrl={branding.logoUrl} name={branding.displayName}/><PageHeader title="Thank you — request received" description={`Your request number is ${requestNumber}. Our team will review the details, confirm any missing information, and follow up with next steps.`}/><div className="grid cards"><ActionCard title="What happens next" description="The office reviews your request, attaches uploaded media, and can convert it into a quote or scheduled job."/><ActionCard title="Request number" description={requestNumber}/></div><div className="actions"><Link href="/" className="button secondary">Return home</Link><Link href="/login" className="button">Login / check portal</Link></div></section></PublicLayout>;
+  return <PublicLayout><section className="section narrow thank-you"><BrandLogo /><PageHeader title="Thank you — request received" description={`Your request number is ${requestNumber}. Our team will review the details, confirm any missing information, and follow up with next steps.`}/><div className="grid cards"><ActionCard title="What happens next" description="The office reviews your request, attaches uploaded media, and can convert it into a quote or scheduled job."/><ActionCard title="Request number" description={requestNumber}/></div><div className="actions"><Link href="/" className="button secondary">Return home</Link><Link href="/login" className="button">Login / check portal</Link></div></section></PublicLayout>;
 }

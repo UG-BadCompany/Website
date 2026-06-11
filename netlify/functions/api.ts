@@ -1,4 +1,4 @@
-import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPermission, HttpError, redirectAfterLogin, requireAuth, requirePermission, secureCookie, sendMagicLink } from '../../lib/server/auth';
+import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPermission, HttpError, invalidateCurrentSession, redirectAfterLogin, requireAuth, requirePermission, sendMagicLink, serializeSessionCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess } from '../../lib/server/installation';
@@ -7,7 +7,7 @@ import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined> };
-type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string; isBase64Encoded?: boolean };
+type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
 const toApiRoute = (path: string) => `/api${path === '/' ? '' : path}`;
@@ -67,7 +67,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const token = typeof body.token === 'string' ? body.token : '';
       const requestedRedirect = typeof body.redirect === 'string' ? body.redirect : undefined;
       const { sessionToken, user } = await consumeMagicLink(token, event);
-      return json(200, { ok: true, redirectTo: redirectAfterLogin(user, requestedRedirect) }, { 'set-cookie': secureCookie('contractoros_session', sessionToken) });
+      return json(200, { ok: true, redirectTo: redirectAfterLogin(user, requestedRedirect) }, { 'Set-Cookie': serializeSessionCookie(sessionToken) });
     }
     if (path === '/auth/magic' && event.httpMethod === 'GET') {
       const callbackUrl = new URL(event.rawUrl || event.path, readConfig().appUrl);
@@ -83,7 +83,8 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path === '/auth/logout' && event.httpMethod === 'POST') {
       const user = await requireAuth(event).catch(() => null);
       if (user) await auditLog('logout', { method: 'manual' }, user.id);
-      return json(200, { ok: true }, { 'set-cookie': clearSessionCookie() });
+      await invalidateCurrentSession(event).catch(() => undefined);
+      return json(200, { ok: true }, { 'Set-Cookie': clearSessionCookie() });
     }
     if (path === '/auth/me' || path === '/auth/verify' || path === '/me') {
       const user = await requireAuth(event).catch((error) => {
