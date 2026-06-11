@@ -38,7 +38,7 @@ function App() {
   if (path.startsWith('/jobs') || path.startsWith('/work-orders')) return <JobsPage />;
   if (path.startsWith('/invoices') || path.startsWith('/payments')) return <InvoicesPage />;
   if (path.startsWith('/messages')) return <MessagesPage />;
-  if (path.startsWith('/assets')) return <AssetsPage />;
+  if (path.startsWith('/assets') || path.startsWith('/cmms')) return <AssetsPage />;
   if (path.startsWith('/clients') || path.startsWith('/properties')) return <RequestsPage />;
   if (path.startsWith('/settings')) return <SettingsPage area={path.slice(1)} />;
   return <NotFoundPage />;

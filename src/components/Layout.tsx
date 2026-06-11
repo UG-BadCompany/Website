@@ -18,8 +18,11 @@ const appNav = [
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   const branding = useBranding();
+  const auth = useAuth();
+  const accountHref = auth.isAuthenticated ? '/dashboard' : '/login';
+  const accountLabel = auth.isLoading ? 'Checking…' : auth.isAuthenticated ? 'Dashboard' : 'Login';
   return <>
-    <header className="site-header"><Link href="/" className="brand"><BrandLogo /><strong>{branding.displayName}</strong></Link><nav><Link href="/about">About</Link><Link href="/services">Services</Link><Link href="/contact">Contact</Link><Link href="/request-estimate" className="button small">Request Estimate</Link><Link href="/login">Login</Link></nav></header>
+    <header className="site-header"><Link href="/" className="brand"><BrandLogo /><strong>{branding.displayName}</strong></Link><nav><Link href="/about">About</Link><Link href="/services">Services</Link><Link href="/contact">Contact</Link><Link href="/request-estimate" className="button small">Request Estimate</Link><Link href={accountHref} className={auth.isAuthenticated ? 'button secondary small' : undefined} aria-disabled={auth.isLoading ? 'true' : undefined}>{accountLabel}</Link></nav></header>
     <main>{children}</main>
     <footer className="footer"><strong>{branding.displayName}</strong><span>{branding.tagline}</span><span>Secure estimates, service, invoices, and messaging.</span></footer>
   </>;
