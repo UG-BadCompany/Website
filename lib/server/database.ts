@@ -1,4 +1,4 @@
-import pg from 'pg';
+import { Pool } from 'pg';
 import { readConfig } from './config';
 
 export type DbAdapterName = 'netlify_database' | 'postgres_url' | 'supabase_postgres';
@@ -13,6 +13,6 @@ export function detectDatabaseAdapter(env = process.env): DbAdapterName {
 export function createDatabase(env = process.env): Queryable {
   const config = readConfig(env);
   const connectionString = env.NETLIFY_DATABASE_URL || env.NETLIFY_DATABASE_URL_UNPOOLED || config.databaseUrl;
-  const pool = new pg.Pool({ connectionString });
+  const pool = new Pool({ connectionString });
   return { query: <T>(text: string, params: unknown[] = []) => pool.query<T>(text, params) };
 }
