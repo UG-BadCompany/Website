@@ -27,6 +27,18 @@ const propertyTypes = ['Residential','Commercial','Multi-family','Industrial','O
 const contactMethods = ['Phone','Email','Text'];
 const wizardSteps = ['Contact Info','Property Info','Service Needed','Details','Photos / Files','Review & Submit'];
 
+
+function usePublicServiceNames() {
+  const [names, setNames] = useState(serviceCategories);
+  useEffect(() => {
+    fetch('/api/public/service-catalog', { headers: { accept: 'application/json' }, cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((payload) => { const next = payload?.services?.map((service: { name: string }) => service.name).filter(Boolean); if (next?.length) setNames(next); })
+      .catch(() => undefined);
+  }, []);
+  return names;
+}
+
 function usePageTitle(title: string) {
   const branding = useBranding();
   useEffect(() => { document.title = pageTitle(title, branding); }, [title, branding.companyDisplayName, branding.displayName, branding.companyName]);
@@ -53,11 +65,12 @@ export function HomePage() {
 }
 
 export function AboutPage() { usePageTitle('About'); return <PublicLayout><section className="section"><PageHeader eyebrow="About" title="A complete v1 Foundation, not disconnected modules." description="Website, CRM, operations, estimating, financial, payments, CMMS, communications, service catalog, and media in one installed product."/></section></PublicLayout>; }
-export function ServicesPage() { usePageTitle('Services'); return <PublicLayout><section className="section"><SectionHeader eyebrow="Services" title="Service catalog foundation"/><div className="grid cards">{[...serviceCategories, 'Other'].map((s) => <ActionCard key={s} title={s} description="Owners can rename, disable, edit, and add service categories after installation."/>)}</div></section></PublicLayout>; }
+export function ServicesPage() { usePageTitle('Services'); const names = usePublicServiceNames(); return <PublicLayout><section className="section"><SectionHeader eyebrow="Services" title="Service catalog foundation"/><div className="grid cards">{names.map((s) => <ActionCard key={s} title={s} description="This service comes from the enabled database-backed Service Catalog."/>)}</div></section></PublicLayout>; }
 export function ContactPage() { usePageTitle('Contact'); return <PublicLayout><section className="section narrow"><PageHeader eyebrow="Contact" title="Contact the office"/><form className="form"><input placeholder="Name"/><input placeholder="Email"/><textarea placeholder="How can we help?"/><Link href="/request-estimate/thank-you" className="button">Send message</Link></form></section></PublicLayout>; }
 
 export function RequestEstimatePage() {
   usePageTitle('Request Estimate');
+  const serviceOptions = usePublicServiceNames();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<EstimateDraft>(() => {
@@ -104,7 +117,7 @@ export function RequestEstimatePage() {
     <form className="card estimate-card" onSubmit={submit}>{errors.length > 0 && <div className="notice warning">{errors.map((error) => <p key={error}>{error}</p>)}</div>}
       {step === 0 && <WizardSection title="Contact Info"><div className="form-grid"><input placeholder="First name" value={draft.firstName} onChange={(e) => update({ firstName: e.target.value })}/><input placeholder="Last name" value={draft.lastName} onChange={(e) => update({ lastName: e.target.value })}/><input type="email" placeholder="Email" value={draft.email} onChange={(e) => update({ email: e.target.value })}/><input placeholder="Phone" value={draft.phone} onChange={(e) => update({ phone: e.target.value })}/><Select label="Preferred contact method" value={draft.preferredContact} options={contactMethods} onChange={(preferredContact) => update({ preferredContact })}/><Select label="Existing customer?" value={draft.existingCustomer} options={['yes','no']} onChange={(existingCustomer) => update({ existingCustomer })}/></div></WizardSection>}
       {step === 1 && <WizardSection title="Property Info"><div className="form-grid"><input className="span-2" placeholder="Service address" value={draft.serviceAddress} onChange={(e) => update({ serviceAddress: e.target.value })}/><input placeholder="City" value={draft.city} onChange={(e) => update({ city: e.target.value })}/><input placeholder="State" value={draft.state} onChange={(e) => update({ state: e.target.value })}/><input placeholder="ZIP" value={draft.zip} onChange={(e) => update({ zip: e.target.value })}/><Select label="Property type" value={draft.propertyType} options={propertyTypes} onChange={(propertyType) => update({ propertyType })}/><textarea className="span-2" placeholder="Access notes (optional)" value={draft.accessNotes} onChange={(e) => update({ accessNotes: e.target.value })}/></div></WizardSection>}
-      {step === 2 && <WizardSection title="Service Needed"><div className="choice-grid"><Select label="Service category" value={draft.serviceCategory} options={[...serviceCategories, 'Other']} onChange={(serviceCategory) => update({ serviceCategory })}/><Select label="Request type" value={draft.requestType} options={requestTypes} onChange={(requestType) => update({ requestType })}/><Select label="Urgency" value={draft.urgency} options={urgencyOptions} onChange={(urgency) => update({ urgency })}/></div></WizardSection>}
+      {step === 2 && <WizardSection title="Service Needed"><div className="choice-grid"><Select label="Service category" value={draft.serviceCategory} options={serviceOptions} onChange={(serviceCategory) => update({ serviceCategory })}/><Select label="Request type" value={draft.requestType} options={requestTypes} onChange={(requestType) => update({ requestType })}/><Select label="Urgency" value={draft.urgency} options={urgencyOptions} onChange={(urgency) => update({ urgency })}/></div></WizardSection>}
       {step === 3 && <WizardSection title="Details"><div className="form-grid"><input className="span-2" placeholder="Short title" value={draft.title} onChange={(e) => update({ title: e.target.value })}/><textarea className="span-2" placeholder="Detailed description" value={draft.description} onChange={(e) => update({ description: e.target.value })}/><input type="date" value={draft.problemStartedDate} onChange={(e) => update({ problemStartedDate: e.target.value })}/><Select label="Worked on before?" value={draft.workedOnBefore} options={['yes','no']} onChange={(workedOnBefore) => update({ workedOnBefore })}/><input className="span-2" placeholder="Budget range (optional)" value={draft.budgetRange} onChange={(e) => update({ budgetRange: e.target.value })}/></div></WizardSection>}
       {step === 4 && <WizardSection title="Photos / Files"><FileUploader files={draft.files} onChange={(files) => update({ files })}/><p className="muted">You can skip this step if files are not available right now.</p></WizardSection>}
       {step === 5 && <WizardSection title="Review & Submit"><Review draft={draft}/><label className="check"><input type="checkbox" checked={draft.confirmed} onChange={(e) => update({ confirmed: e.target.checked })}/> I confirm this information is accurate.</label></WizardSection>}

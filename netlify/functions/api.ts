@@ -1,11 +1,12 @@
 import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPermission, HttpError, invalidateCurrentSession, redirectAfterLogin, requireAuth, requirePermission, sendMagicLink, serializeSessionCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
-import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
+import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicServiceCatalog, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { getDashboardLayout, getDashboardOverview, getPortalOverview, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
 import { validateEnvironment } from '../../lib/server/env-validation';
+import { handleModuleRoute } from '../../lib/server/modules';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -28,6 +29,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     route = toApiRoute(path);
 
     if (path === '/public/site-settings') return json(200, await getPublicSiteSettings(), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/public/service-catalog' && event.httpMethod === 'GET') return json(200, await getPublicServiceCatalog(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/public/request-estimate' && event.httpMethod === 'POST') return json(200, await createPublicEstimateRequest(readBody(event)));
     if (path === '/media/upload' && event.httpMethod === 'POST') {
       const upload = parseMultipartUpload(event);
@@ -114,6 +116,11 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const user = await requirePermission(event, 'diagnostics.view');
       return json(200, await handleDiagnostics(user), { 'cache-control': 'no-store, max-age=0' });
     }
+    if (isModuleApiPath(path)) {
+      const permission = permissionForPath(path) || 'dashboard.view';
+      const user = await requirePermission(event, permission);
+      return json(200, await handleModuleRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' });
+    }
     if (path === '/auth/me' || path === '/auth/verify' || path === '/me') {
       const user = await requireAuth(event).catch((error) => {
         if (error instanceof HttpError && error.statusCode === 401) return null;
@@ -149,6 +156,10 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
   }
 }
 
+function isModuleApiPath(path: string) {
+  return /^\/(clients|properties|requests|quotes|jobs|invoices|payments|payment-providers|messages|assets|service-catalog|media|account)(?:\/|$)/.test(path);
+}
+
 function permissionForPath(path: string) {
   if (path.startsWith('/settings') || path.startsWith('/admin')) return 'settings.view';
   if (path.match(/^\/(clients)/)) return 'clients.view';
@@ -158,8 +169,10 @@ function permissionForPath(path: string) {
   if (path.match(/^\/(jobs)/)) return 'jobs.view';
   if (path.match(/^\/(work-orders)/)) return 'work_orders.view';
   if (path.match(/^\/(invoices)/)) return 'invoices.view';
-  if (path.match(/^\/(payments)/)) return 'payments.view';
+  if (path === '/payments/manual') return 'payments.manage';
+  if (path.match(/^\/(payments|payment-providers)/)) return 'payments.view';
   if (path.match(/^\/(assets|cmms)/)) return 'cmms.view';
+  if (path.match(/^\/(service-catalog)/)) return 'service_catalog.view';
   if (path.match(/^\/(messages)/)) return 'messages.view';
   if (path.match(/^\/(media)/)) return 'media.view';
   if (path.match(/^\/(dashboard)/)) return 'dashboard.view';
