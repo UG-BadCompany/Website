@@ -114,7 +114,7 @@ export async function getInstallStatus(db: Queryable = createDatabase()): Promis
   };
 }
 
-export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string } = {}, db: Queryable = createDatabase()) {
+export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown } = {}, db: Queryable = createDatabase()) {
   await runMigrations(db);
 
   const companyName = input.companyName?.trim() || 'ContractorOS';
@@ -159,6 +159,7 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'installation.completed', true);
   await upsertSetting(db, 'installation.completed_at', new Date().toISOString());
   await upsertSetting(db, 'installation.version', INSTALLATION_VERSION);
+  if (input.theme) await upsertSetting(db, 'theme.settings', input.theme);
 
   return getInstallStatus(db);
 }
