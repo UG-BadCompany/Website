@@ -1,12 +1,12 @@
 import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPermission, HttpError, invalidateCurrentSession, redirectAfterLogin, requireAuth, requirePermission, sendMagicLink, serializeSessionCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
-import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess } from '../../lib/server/installation';
+import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
 
-type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined> };
+type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
@@ -28,6 +28,10 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
 
     if (path === '/public/site-settings') return json(200, await getPublicSiteSettings(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/public/request-estimate' && event.httpMethod === 'POST') return json(200, await createPublicEstimateRequest(readBody(event)));
+    if (path === '/media/upload' && event.httpMethod === 'POST') {
+      const upload = parseMultipartUpload(event);
+      return json(200, await uploadBrandingMedia(upload));
+    }
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
       if (!media) return json(404, { error: 'Media not found' });
@@ -144,4 +148,57 @@ function scopeForRole(role: string) {
   if (role === 'Client') return 'own-client-records';
   if (role === 'Vendor') return 'vendor-assigned-records';
   return 'permission-scoped-company-records';
+}
+
+
+function headerValue(headers: Record<string, string | undefined> | undefined, name: string) {
+  const target = name.toLowerCase();
+  const entry = Object.entries(headers || {}).find(([key]) => key.toLowerCase() === target);
+  return entry?.[1] || '';
+}
+
+function parseMultipartUpload(event: NetlifyEvent) {
+  const contentType = headerValue(event.headers, 'content-type');
+  const boundary = contentType.match(/boundary=(?:(?:"([^"]+)")|([^;]+))/i)?.[1] || contentType.match(/boundary=(?:(?:"([^"]+)")|([^;]+))/i)?.[2];
+  if (!boundary) throw new HttpError(400, 'multipart/form-data boundary is missing');
+  const body = Buffer.from(event.body || '', event.isBase64Encoded ? 'base64' : 'binary');
+  const parts = splitMultipart(body, boundary);
+  const fields = new Map<string, string>();
+  let file: { filename: string; contentType: string; data: Buffer } | null = null;
+
+  for (const part of parts) {
+    const headerEnd = part.indexOf(Buffer.from('\r\n\r\n'));
+    if (headerEnd < 0) continue;
+    const rawHeaders = part.subarray(0, headerEnd).toString('utf8');
+    const data = part.subarray(headerEnd + 4);
+    const disposition = rawHeaders.match(/content-disposition:\s*([^\r\n]+)/i)?.[1] || '';
+    const name = disposition.match(/name="([^"]+)"/)?.[1] || '';
+    const filename = disposition.match(/filename="([^"]*)"/)?.[1] || '';
+    const partContentType = rawHeaders.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim() || 'application/octet-stream';
+    if (name === 'file' && filename) file = { filename, contentType: partContentType, data };
+    else if (name) fields.set(name, data.toString('utf8'));
+  }
+
+  if (!file) throw new HttpError(400, 'Upload field "file" is required');
+  const purpose = fields.get('purpose') || '';
+  if (!purpose) throw new HttpError(400, 'Upload field "purpose" is required');
+  return { ...file, purpose };
+}
+
+function splitMultipart(body: Buffer, boundary: string) {
+  const delimiter = Buffer.from(`--${boundary}`);
+  const parts: Buffer[] = [];
+  let cursor = body.indexOf(delimiter);
+  while (cursor >= 0) {
+    cursor += delimiter.length;
+    if (body[cursor] === 45 && body[cursor + 1] === 45) break;
+    if (body[cursor] === 13 && body[cursor + 1] === 10) cursor += 2;
+    const next = body.indexOf(delimiter, cursor);
+    if (next < 0) break;
+    let end = next;
+    if (body[end - 2] === 13 && body[end - 1] === 10) end -= 2;
+    parts.push(body.subarray(cursor, end));
+    cursor = next;
+  }
+  return parts;
 }

@@ -35,11 +35,17 @@ const INSTALLATION_VERSION = process.env.npm_package_version ?? '1.0.0';
 const asBoolean = (value: unknown) => value === true || value === 'true';
 
 type UploadInput = { fileName?: string; mimeType?: string; dataUrl?: string };
+type BrandingAssetInput = { mediaId?: string | null; url?: string | null; resolvedUrl?: string | null };
+type MediaUploadResult = { id: string; url: string; filename: string; contentType: string; size: number };
 type EstimateInput = Record<string, unknown> & { firstName?: string; lastName?: string; email?: string; phone?: string; serviceAddress?: string; city?: string; state?: string; zip?: string; serviceCategory?: string; urgency?: string; title?: string; description?: string; files?: UploadInput[] };
 type HomepageSetupInput = {
   logoUrl?: string;
+  logoMediaId?: string | null;
+  logoResolvedUrl?: string | null;
   logoUpload?: UploadInput | null;
   faviconUrl?: string;
+  faviconMediaId?: string | null;
+  faviconResolvedUrl?: string | null;
   faviconUpload?: UploadInput | null;
   displayName?: string;
   tagline?: string;
@@ -66,7 +72,7 @@ type HomepageSetupInput = {
 };
 
 const PUBLIC_SETTING_KEYS = [
-  'branding.logo_media_id','branding.logo_url','branding.favicon_media_id','branding.favicon_url','branding.display_name','branding.tagline','branding.updated_at','company.name','company.display_name','company.email','company.phone','company.logo_url','company.logo_media_id','company.favicon_url','company.favicon_media_id','company.updated_at','theme.settings','homepage.hero_headline','homepage.hero_subheadline',
+  'branding.logo_media_id','branding.logo_url','branding.logo_resolved_url','branding.favicon_media_id','branding.favicon_url','branding.favicon_resolved_url','branding.display_name','branding.tagline','branding.updated_at','company.name','company.display_name','company.email','company.phone','company.logo_url','company.logo_media_id','company.logo_resolved_url','company.favicon_url','company.favicon_media_id','company.favicon_resolved_url','company.updated_at','theme.settings','homepage.hero_headline','homepage.hero_subheadline',
   'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
   'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
   'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
@@ -74,6 +80,7 @@ const PUBLIC_SETTING_KEYS = [
 
 function defaultPublicSiteSettings() {
   return {
+    ok: true,
     companyName: 'ContractorOS',
     companyDisplayName: 'ContractorOS',
     logoUrl: '',
@@ -84,8 +91,12 @@ function defaultPublicSiteSettings() {
       companyDisplayName: 'ContractorOS',
       tagline: 'Foundation business operating system',
       companyName: 'ContractorOS',
+      logoMediaId: '',
       logoUrl: '',
+      logoResolvedUrl: '',
+      faviconMediaId: '',
       faviconUrl: '',
+      faviconResolvedUrl: '',
       theme: {},
       homepage: '/',
       brandingUpdatedAt: '',
@@ -115,27 +126,32 @@ function defaultPublicSiteSettings() {
   };
 }
 
-async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, companyName: string) {
-  const logoMediaId = setup.logoUpload?.dataUrl ? await storeUpload(db, setup.logoUpload, 'branding/logo') : null;
-  const faviconMediaId = setup.faviconUpload?.dataUrl ? await storeUpload(db, setup.faviconUpload, 'branding/favicon') : null;
-
-  await upsertSetting(db, 'branding.logo_media_id', logoMediaId);
-  await upsertSetting(db, 'branding.logo_url', logoMediaId ? '' : setup.logoUrl?.trim() || '');
-  await upsertSetting(db, 'branding.favicon_media_id', faviconMediaId);
-  await upsertSetting(db, 'branding.favicon_url', faviconMediaId ? '' : setup.faviconUrl?.trim() || '');
+async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, companyName: string, branding?: { logo?: BrandingAssetInput; favicon?: BrandingAssetInput }) {
+  const legacyLogo = setup.logoUpload?.dataUrl ? await storeUpload(db, setup.logoUpload, 'branding/logo') : null;
+  const legacyFavicon = setup.faviconUpload?.dataUrl ? await storeUpload(db, setup.faviconUpload, 'branding/favicon') : null;
+  const logo = normalizeBrandingAsset({
+    mediaId: branding?.logo?.mediaId ?? setup.logoMediaId ?? legacyLogo?.id ?? null,
+    url: branding?.logo?.url ?? setup.logoUrl ?? null,
+    resolvedUrl: branding?.logo?.resolvedUrl ?? setup.logoResolvedUrl ?? legacyLogo?.url ?? null,
+  });
+  const favicon = normalizeBrandingAsset({
+    mediaId: branding?.favicon?.mediaId ?? setup.faviconMediaId ?? legacyFavicon?.id ?? null,
+    url: branding?.favicon?.url ?? setup.faviconUrl ?? null,
+    resolvedUrl: branding?.favicon?.resolvedUrl ?? setup.faviconResolvedUrl ?? legacyFavicon?.url ?? null,
+  });
   const displayName = setup.displayName?.trim() || companyName;
+  const updatedAt = new Date().toISOString();
+
+  await saveBrandingSettings(db, { logo, favicon, updatedAt });
+  await saveCompanyBrandingColumns(db, { logo, favicon });
   await upsertSetting(db, 'branding.display_name', displayName);
   await upsertSetting(db, 'company.display_name', displayName);
   await upsertSetting(db, 'company.name', companyName);
   await upsertSetting(db, 'company.email', setup.contactEmail?.trim() || '');
   await upsertSetting(db, 'company.phone', setup.contactPhone?.trim() || '');
-  await upsertSetting(db, 'company.logo_media_id', logoMediaId);
-  await upsertSetting(db, 'company.logo_url', logoMediaId ? '' : setup.logoUrl?.trim() || '');
-  await upsertSetting(db, 'company.favicon_media_id', faviconMediaId);
-  await upsertSetting(db, 'company.favicon_url', faviconMediaId ? '' : setup.faviconUrl?.trim() || '');
-  await upsertSetting(db, 'company.updated_at', new Date().toISOString());
+  await upsertSetting(db, 'company.updated_at', updatedAt);
   await upsertSetting(db, 'branding.tagline', setup.tagline?.trim() || '');
-  await upsertSetting(db, 'branding.updated_at', new Date().toISOString());
+  await upsertSetting(db, 'branding.updated_at', updatedAt);
   await upsertSetting(db, 'homepage.hero_headline', setup.heroHeadline?.trim() || `${companyName} keeps your property running`);
   await upsertSetting(db, 'homepage.hero_subheadline', setup.heroSubheadline?.trim() || 'Request estimates, schedule service, and stay informed online.');
   await upsertSetting(db, 'homepage.primary_cta_label', setup.primaryCtaLabel?.trim() || 'Request Estimate');
@@ -158,7 +174,54 @@ async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, compa
   await upsertSetting(db, 'homepage.seo_description', setup.seoDescription?.trim() || 'Request a service estimate from a trusted local contractor.');
 }
 
-async function storeUpload(db: Queryable, upload: UploadInput, prefix: string) {
+function normalizeBrandingAsset(asset: BrandingAssetInput): Required<BrandingAssetInput> {
+  const mediaId = typeof asset.mediaId === 'string' ? asset.mediaId.trim() : '';
+  const directUrl = typeof asset.url === 'string' ? asset.url.trim() : '';
+  const resolvedUrl = typeof asset.resolvedUrl === 'string' ? asset.resolvedUrl.trim() : '';
+  return {
+    mediaId,
+    url: mediaId ? '' : directUrl,
+    resolvedUrl: resolvedUrl || (mediaId ? mediaUrl(mediaId) : directUrl),
+  };
+}
+
+async function saveBrandingSettings(db: Queryable, input: { logo: Required<BrandingAssetInput>; favicon: Required<BrandingAssetInput>; updatedAt: string }) {
+  await upsertSetting(db, 'branding.logo_media_id', input.logo.mediaId || null);
+  await upsertSetting(db, 'branding.logo_url', input.logo.url || '');
+  await upsertSetting(db, 'branding.logo_resolved_url', input.logo.resolvedUrl || '');
+  await upsertSetting(db, 'branding.favicon_media_id', input.favicon.mediaId || null);
+  await upsertSetting(db, 'branding.favicon_url', input.favicon.url || '');
+  await upsertSetting(db, 'branding.favicon_resolved_url', input.favicon.resolvedUrl || '');
+  await upsertSetting(db, 'branding.updated_at', input.updatedAt);
+  await upsertSetting(db, 'company.logo_media_id', input.logo.mediaId || null);
+  await upsertSetting(db, 'company.logo_url', input.logo.url || '');
+  await upsertSetting(db, 'company.logo_resolved_url', input.logo.resolvedUrl || '');
+  await upsertSetting(db, 'company.favicon_media_id', input.favicon.mediaId || null);
+  await upsertSetting(db, 'company.favicon_url', input.favicon.url || '');
+  await upsertSetting(db, 'company.favicon_resolved_url', input.favicon.resolvedUrl || '');
+}
+
+async function saveCompanyBrandingColumns(db: Queryable, input: { logo: Required<BrandingAssetInput>; favicon: Required<BrandingAssetInput> }) {
+  await db.query(
+    `update company_settings
+     set logo_media_id = nullif($1, '')::uuid,
+         logo_url = nullif($2, ''),
+         logo_resolved_url = nullif($3, ''),
+         favicon_media_id = nullif($4, '')::uuid,
+         favicon_url = nullif($5, ''),
+         favicon_resolved_url = nullif($6, ''),
+         branding_updated_at = now(),
+         updated_at = now()
+     where id = (select id from company_settings order by created_at asc limit 1)`,
+    [input.logo.mediaId, input.logo.url, input.logo.resolvedUrl, input.favicon.mediaId, input.favicon.url, input.favicon.resolvedUrl]
+  );
+}
+
+function mediaUrl(mediaId: string) {
+  return `/api/media/${encodeURIComponent(mediaId)}`;
+}
+
+async function storeUpload(db: Queryable, upload: UploadInput, prefix: string): Promise<MediaUploadResult> {
   const parsed = parseDataUrl(upload.dataUrl || '');
   const fileName = upload.fileName?.replace(/[^a-z0-9._-]/gi, '-') || 'upload.bin';
   const storageKey = `${prefix}/${Date.now()}-${fileName}`;
@@ -176,7 +239,8 @@ async function storeUpload(db: Queryable, upload: UploadInput, prefix: string) {
      returning id`,
     [file.rows[0].id, fileName, JSON.stringify({ storageKey })]
   );
-  return media.rows[0].id;
+  const id = media.rows[0].id;
+  return { id, url: mediaUrl(id), filename: fileName, contentType: upload.mimeType || parsed.mimeType, size: parsed.buffer.byteLength };
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
@@ -297,7 +361,7 @@ export async function getInstallStatus(db: Queryable = createDatabase()): Promis
   };
 }
 
-export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown; homepageSetup?: HomepageSetupInput } = {}, db: Queryable = createDatabase()) {
+export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown; homepageSetup?: HomepageSetupInput; branding?: { logoMediaId?: string | null; logoUrl?: string | null; logoResolvedUrl?: string | null; faviconMediaId?: string | null; faviconUrl?: string | null; faviconResolvedUrl?: string | null } } = {}, db: Queryable = createDatabase()) {
   await runMigrations(db);
 
   const companyName = input.companyName?.trim() || input.homepageSetup?.displayName?.trim() || 'My Company';
@@ -349,7 +413,7 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'company.phone', input.homepageSetup?.contactPhone?.trim() || '');
   await upsertSetting(db, 'company.updated_at', new Date().toISOString());
   if (input.theme) await upsertSetting(db, 'theme.settings', input.theme);
-  if (input.homepageSetup) await saveHomepageSetup(db, input.homepageSetup, companyName);
+  if (input.homepageSetup) await saveHomepageSetup(db, input.homepageSetup, companyName, input.branding ? { logo: { mediaId: input.branding.logoMediaId, url: input.branding.logoUrl, resolvedUrl: input.branding.logoResolvedUrl }, favicon: { mediaId: input.branding.faviconMediaId, url: input.branding.faviconUrl, resolvedUrl: input.branding.faviconResolvedUrl } } : undefined);
 
   try {
     await sendMagicLink(ownerEmail, '/dashboard', await getPublicSiteSettings(db), {}, db);
@@ -450,17 +514,24 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
 
     const result = await db.query<{ key: string; value: unknown }>(`select key, value from app_settings where key = any($1)`, [PUBLIC_SETTING_KEYS]);
     const values = new Map(result.rows.map((row) => [row.key, row.value]));
-    const companyResult = await db.query<{ company_name: string | null; company_email: string | null; company_phone: string | null }>(`select company_name, company_email, company_phone from company_settings order by created_at asc limit 1`);
+    const companyResult = await db.query<{ company_name: string | null; company_email: string | null; company_phone: string | null; logo_media_id: string | null; logo_url: string | null; logo_resolved_url: string | null; favicon_media_id: string | null; favicon_url: string | null; favicon_resolved_url: string | null; branding_updated_at: string | null }>(`select company_name, company_email, company_phone, logo_media_id::text, logo_url, logo_resolved_url, favicon_media_id::text, favicon_url, favicon_resolved_url, branding_updated_at::text from company_settings order by created_at asc limit 1`);
     const companySettings = companyResult.rows[0];
     const defaults = defaultPublicSiteSettings();
 
     const companyName = asText(values.get('company.name'), companySettings?.company_name || asText(values.get('branding.display_name'), defaults.branding.companyName));
     const companyDisplayName = asText(values.get('company.display_name'), asText(values.get('branding.display_name'), companyName));
-    const brandingUpdatedAt = asText(values.get('company.updated_at'), asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt));
-    const logoUrl = resolveBrandingAsset(values.get('company.logo_media_id') || values.get('branding.logo_media_id'), values.get('company.logo_url') || values.get('branding.logo_url')) || defaults.branding.logoUrl;
-    const faviconUrl = resolveBrandingAsset(values.get('company.favicon_media_id') || values.get('branding.favicon_media_id'), values.get('company.favicon_url') || values.get('branding.favicon_url')) || defaults.branding.faviconUrl;
+    const brandingUpdatedAt = asText(values.get('company.updated_at'), asText(values.get('branding.updated_at'), companySettings?.branding_updated_at || defaults.branding.brandingUpdatedAt));
+    const logoMediaId = values.get('company.logo_media_id') || values.get('branding.logo_media_id') || companySettings?.logo_media_id || '';
+    const logoUrlRaw = values.get('company.logo_url') || values.get('branding.logo_url') || companySettings?.logo_url || '';
+    const logoResolvedUrl = values.get('company.logo_resolved_url') || values.get('branding.logo_resolved_url') || companySettings?.logo_resolved_url || '';
+    const faviconMediaId = values.get('company.favicon_media_id') || values.get('branding.favicon_media_id') || companySettings?.favicon_media_id || '';
+    const faviconUrlRaw = values.get('company.favicon_url') || values.get('branding.favicon_url') || companySettings?.favicon_url || '';
+    const faviconResolvedUrl = values.get('company.favicon_resolved_url') || values.get('branding.favicon_resolved_url') || companySettings?.favicon_resolved_url || '';
+    const logoUrl = resolveBrandingAsset(logoResolvedUrl, logoUrlRaw, logoMediaId);
+    const faviconUrl = resolveBrandingAsset(faviconResolvedUrl, faviconUrlRaw, faviconMediaId);
 
     return {
+      ok: true,
       companyName,
       companyDisplayName,
       logoUrl,
@@ -473,8 +544,12 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
         companyDisplayName,
         displayName: companyDisplayName,
         tagline: asText(values.get('branding.tagline'), defaults.branding.tagline),
+        logoMediaId: typeof logoMediaId === 'string' ? logoMediaId : '',
         logoUrl,
+        logoResolvedUrl: typeof logoResolvedUrl === 'string' ? logoResolvedUrl : '',
+        faviconMediaId: typeof faviconMediaId === 'string' ? faviconMediaId : '',
         faviconUrl,
+        faviconResolvedUrl: typeof faviconResolvedUrl === 'string' ? faviconResolvedUrl : '',
         theme: values.get('theme.settings') || defaults.branding.theme,
         homepage: '/',
         brandingUpdatedAt,
@@ -544,8 +619,8 @@ export async function createPublicEstimateRequest(input: EstimateInput, db: Quer
   const files = Array.isArray(input.files) ? input.files : [];
   for (const file of files) {
     if (!file?.dataUrl) continue;
-    const mediaId = await storeUpload(db, file, `requests/${request.rows[0].id}`);
-    await db.query(`update media_assets set owner_type = 'work_request', owner_id = $1, visibility = 'private' where id = $2`, [request.rows[0].id, mediaId]);
+    const media = await storeUpload(db, file, `requests/${request.rows[0].id}`);
+    await db.query(`update media_assets set owner_type = 'work_request', owner_id = $1, visibility = 'private' where id = $2`, [request.rows[0].id, media.id]);
   }
 
   const requestNumber = `REQ-${request.rows[0].id.slice(0, 8).toUpperCase()}`;
@@ -558,9 +633,22 @@ function urgencyToPriority(urgency: string) {
   return 'normal';
 }
 
-function resolveBrandingAsset(mediaId: unknown, url: unknown) {
-  if (typeof mediaId === 'string' && mediaId.trim()) return `/api/media/${encodeURIComponent(mediaId)}`;
-  return typeof url === 'string' ? url : '';
+function resolveBrandingAsset(resolvedUrl: unknown, url: unknown, mediaId: unknown) {
+  if (typeof resolvedUrl === 'string' && resolvedUrl.trim()) return resolvedUrl.trim();
+  if (typeof url === 'string' && url.trim()) return url.trim();
+  if (typeof mediaId === 'string' && mediaId.trim()) return mediaUrl(mediaId.trim());
+  return '';
+}
+
+export async function uploadBrandingMedia(input: { filename: string; contentType: string; data: Buffer; purpose?: string }, db: Queryable = createDatabase()) {
+  await runMigrations(db);
+  if (!['branding_logo', 'branding_favicon'].includes(input.purpose || '')) throw new Error('Unsupported media upload purpose');
+  if (!input.data.byteLength) throw new Error('Uploaded file is empty');
+  if (!input.contentType.startsWith('image/')) throw new Error('Branding uploads must be images');
+  const prefix = input.purpose === 'branding_favicon' ? 'branding/favicon' : 'branding/logo';
+  const media = await storeUpload(db, { fileName: input.filename, mimeType: input.contentType, dataUrl: input.data.toString('base64') }, prefix);
+  if (!media.url) throw new Error('Media upload did not produce a usable URL');
+  return { ok: true, media };
 }
 
 export async function getPublicMedia(mediaId: string, db: Queryable = createDatabase()) {
@@ -612,8 +700,12 @@ export async function getSystemDiagnostics(currentUser?: { email?: string; role?
     branding: {
       companyName,
       displayName,
+      logoMediaId: publicSettings.branding?.logoMediaId || '',
       logoUrl: publicSettings.logoUrl || publicSettings.branding?.logoUrl || '',
+      logoResolvedUrl: publicSettings.branding?.logoResolvedUrl || '',
+      faviconMediaId: publicSettings.branding?.faviconMediaId || '',
       faviconUrl: publicSettings.faviconUrl || publicSettings.branding?.faviconUrl || '',
+      faviconResolvedUrl: publicSettings.branding?.faviconResolvedUrl || '',
       source: usingFallback ? 'fallback' : 'database',
     },
   };

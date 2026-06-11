@@ -7,8 +7,12 @@ export type BrandingSettings = {
   companyName: string;
   displayName: string;
   companyDisplayName: string;
+  logoMediaId?: string;
   logoUrl?: string;
+  logoResolvedUrl?: string;
+  faviconMediaId?: string;
   faviconUrl?: string;
+  faviconResolvedUrl?: string;
   tagline?: string;
   theme?: BrandingTheme;
   homepage?: string;
@@ -76,9 +80,13 @@ export const defaultHomepage: BasicHomepageSettings = {
   seoDescription: 'Request a service estimate from a trusted local contractor.',
 };
 
+function firstBrandingUrl(...values: Array<string | undefined>) {
+  return values.find((value) => typeof value === 'string' && value.trim())?.trim() || '';
+}
+
 function normalizeBranding(input?: Partial<LegacyBrandingSettings>): BrandingSettings {
-  const logoUrl = input?.logoUrl ?? input?.logoSrc ?? '';
-  const faviconUrl = input?.faviconUrl ?? input?.faviconSrc ?? '';
+  const logoUrl = firstBrandingUrl(input?.logoUrl, input?.logoResolvedUrl, input?.logoSrc);
+  const faviconUrl = firstBrandingUrl(input?.faviconUrl, input?.faviconResolvedUrl, input?.faviconSrc);
   const companyDisplayName = (input as Partial<BrandingSettings> | undefined)?.companyDisplayName || input?.companyName || input?.displayName || defaultBranding.displayName;
   const displayName = companyDisplayName;
   return {

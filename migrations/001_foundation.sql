@@ -78,4 +78,13 @@ CREATE TABLE IF NOT EXISTS expansion_packs (id uuid PRIMARY KEY DEFAULT gen_rand
 CREATE TABLE IF NOT EXISTS marketplace_modules (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), key text UNIQUE NOT NULL, name text NOT NULL, version text, status text DEFAULT 'available', manifest jsonb DEFAULT '{}'::jsonb);
 CREATE TABLE IF NOT EXISTS module_settings (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), module_key text NOT NULL, settings jsonb DEFAULT '{}'::jsonb);
 CREATE TABLE IF NOT EXISTS module_events (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), module_key text NOT NULL, event text NOT NULL, payload jsonb DEFAULT '{}'::jsonb, created_at timestamptz DEFAULT now());
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS logo_media_id uuid NULL,
+ADD COLUMN IF NOT EXISTS logo_url text NULL,
+ADD COLUMN IF NOT EXISTS logo_resolved_url text NULL,
+ADD COLUMN IF NOT EXISTS favicon_media_id uuid NULL,
+ADD COLUMN IF NOT EXISTS favicon_url text NULL,
+ADD COLUMN IF NOT EXISTS favicon_resolved_url text NULL,
+ADD COLUMN IF NOT EXISTS branding_updated_at timestamptz NULL;
+
 COMMIT;
