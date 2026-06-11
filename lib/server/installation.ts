@@ -584,6 +584,12 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
 }
 
 
+export async function getPublicServiceCatalog(db: Queryable = createDatabase()) {
+  await runMigrations(db);
+  const result = await db.query<{ id: string; name: string; description: string | null }>(`select id::text, name, description from service_categories where enabled is true order by sort_order, name`);
+  return { ok: true, services: result.rows };
+}
+
 export async function createPublicEstimateRequest(input: EstimateInput, db: Queryable = createDatabase()) {
   await runMigrations(db);
   const firstName = String(input.firstName || '').trim();
@@ -596,24 +602,24 @@ export async function createPublicEstimateRequest(input: EstimateInput, db: Quer
   if (!displayName || (!email && !phone) || !address || !description) throw new Error('Missing required request estimate fields');
 
   const client = await db.query<{ id: string }>(
-    `insert into clients (display_name, status) values ($1, 'lead') returning id`,
-    [displayName]
+    `insert into clients (display_name, status, email, phone) values ($1, 'lead', nullif($2,''), nullif($3,'')) returning id`,
+    [displayName, email, phone]
   );
   await db.query(
     `insert into client_contacts (client_id, name, email, phone, primary_contact) values ($1, $2, nullif($3, ''), nullif($4, ''), true)`,
     [client.rows[0].id, displayName, email, phone]
   );
   const property = await db.query<{ id: string }>(
-    `insert into properties (client_id, address, notes) values ($1, $2, $3) returning id`,
-    [client.rows[0].id, address, JSON.stringify({ propertyType: input.propertyType, accessNotes: input.accessNotes })]
+    `insert into properties (client_id, address, notes, property_type, access_notes) values ($1, $2, $3, $4, $5) returning id`,
+    [client.rows[0].id, address, JSON.stringify({ propertyType: input.propertyType, accessNotes: input.accessNotes }), String(input.propertyType || ''), String(input.accessNotes || '')]
   );
   const category = await db.query<{ id: string }>(
     `insert into service_categories (name, enabled) values ($1, true) on conflict (name) do update set enabled = true returning id`,
-    [String(input.serviceCategory || 'Other')]
+    [String(input.serviceCategory || 'General Repair')]
   );
   const request = await db.query<{ id: string }>(
-    `insert into work_requests (client_id, property_id, service_category_id, status, priority, description) values ($1, $2, $3, 'new', $4, $5) returning id`,
-    [client.rows[0].id, property.rows[0].id, category.rows[0].id, urgencyToPriority(String(input.urgency || 'Flexible')), description]
+    `insert into work_requests (client_id, property_id, service_category_id, title, status, priority, description) values ($1, $2, $3, $4, 'new', $5, $6) returning id`,
+    [client.rows[0].id, property.rows[0].id, category.rows[0].id, String(input.title || input.serviceCategory || 'Service request'), urgencyToPriority(String(input.urgency || 'Flexible')), description]
   );
 
   const files = Array.isArray(input.files) ? input.files : [];

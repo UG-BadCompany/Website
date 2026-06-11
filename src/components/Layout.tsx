@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { BriefcaseBusiness, FileText, LayoutDashboard, MessageSquare, Settings, UserRound, Wrench } from 'lucide-react';
+import { BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, MessageSquare, Settings, UserRound, Users, Wrench } from 'lucide-react';
 import { Link, NavLink } from './Router';
 
 import { pageTitle, useBranding } from '../lib/branding';
@@ -8,10 +8,17 @@ import { BrandLogo } from './ui';
 
 const appNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+  { href: '/clients', label: 'Clients', icon: Users, permission: 'clients.view' },
+  { href: '/properties', label: 'Properties', icon: Home, permission: 'properties.view' },
   { href: '/requests', label: 'Requests', icon: Wrench, permission: 'requests.view' },
   { href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view' },
   { href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view' },
+  { href: '/invoices', label: 'Invoices', icon: FileText, permission: 'invoices.view' },
+  { href: '/payments', label: 'Payments', icon: CreditCard, permission: 'payments.view' },
   { href: '/messages', label: 'Messages', icon: MessageSquare, permission: 'messages.view' },
+  { href: '/assets', label: 'Assets', icon: Building2, permission: 'cmms.view' },
+  { href: '/service-catalog', label: 'Service Catalog', icon: Wrench, permission: 'service_catalog.view' },
+  { href: '/media', label: 'Media', icon: FolderOpen, permission: 'media.view' },
   { href: '/portal', label: 'Portal', icon: UserRound, permission: 'portal.view' },
   { href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view' }
 ];

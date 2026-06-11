@@ -3,7 +3,7 @@ import { AppLayout, Protected, PublicLayout } from '../components/Layout';
 import { Link, useRouter } from '../components/Router';
 import { isAllowedRedirect, useAuth } from '../lib/auth';
 import { pageTitle, useBranding } from '../lib/branding';
-import { AuthCheckingState, BrandLogo } from '../components/ui';
+import { AuthCheckingState, BrandLogo, Badge, EmptyState, LoadingState } from '../components/ui';
 
 type MagicStatus = 'verifying' | 'missing-token' | 'invalid' | 'error';
 
@@ -112,4 +112,17 @@ export function AuthMagicPage() {
 }
 
 export function LogoutPage() { usePageTitle('Signed out'); const auth = useAuth(); useEffect(() => { auth.signOutLocal(); }, []); return <PublicLayout><section className="section narrow"><h1>Signed out</h1><p>Your session has been cleared.</p><Link href="/login" className="button">Sign in again</Link></section></PublicLayout>; }
-export function AccountPage() { usePageTitle('Account'); const auth = useAuth(); const branding = useBranding(); return <Protected permission="account.view"><AppLayout title="Account"><section className="card account-panel"><p className="eyebrow">Account</p><h1>{auth.user?.name || 'Account'}</h1><p>{branding.displayName} uses secure HTTP-only session cookies after a one-time magic link is verified.</p><p className="muted">Signed in as {auth.user?.email}. Editing other accounts requires users.manage or account.manage.</p><button className="button secondary" onClick={() => auth.signOutLocal()}>Logout</button></section></AppLayout></Protected>; }
+export function AccountPage() {
+  usePageTitle('Account');
+  const auth = useAuth();
+  const branding = useBranding();
+  const [account, setAccount] = useState<any>(null);
+  const [status, setStatus] = useState({ loading: true, error: '' });
+  useEffect(() => {
+    fetch('/api/account', { credentials: 'include', cache: 'no-store', headers: { accept: 'application/json' } })
+      .then(async (response) => { const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'Unable to load account.'); return body.account; })
+      .then((data) => { setAccount(data); setStatus({ loading: false, error: '' }); })
+      .catch((caught) => setStatus({ loading: false, error: caught instanceof Error ? caught.message : 'Unable to load account.' }));
+  }, []);
+  return <Protected permission="account.view"><AppLayout title="Account"><section className="card account-panel"><p className="eyebrow">Account</p><h1>{account?.name || auth.user?.name || 'Account'}</h1><p>{branding.displayName} uses magic-link only authentication and secure HTTP-only session cookies.</p>{status.loading && <LoadingState title="Loading account" lines={2}/>} {status.error && <EmptyState title="Account unavailable" description={status.error}/>} {account && <><p><strong>Email:</strong> {account.email}</p><p><strong>Role:</strong> <Badge tone="accent">{account.role}</Badge></p><p className="muted">Permissions summary: {account.permissions?.length || 0} permission keys assigned. Editing other accounts requires users.manage or account.manage.</p><div className="permission-list compact">{(account.permissions || []).slice(0, 24).map((permission: string) => <Badge key={permission}>{permission}</Badge>)}</div></>}<button className="button secondary" onClick={() => { fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(() => auth.signOutLocal()); }}>Logout</button></section></AppLayout></Protected>;
+}

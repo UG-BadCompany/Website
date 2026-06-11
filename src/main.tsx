@@ -6,7 +6,7 @@ import { RouterProvider, useRouter } from './components/Router';
 import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
 import { AccountPage, AuthMagicPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
 import { InstallerPage } from './pages/Installer';
-import { AssetsPage, DashboardPage, InvoicesPage, JobsPage, MessagesPage, PortalPage, QuotesPage, RequestsPage, SettingsPage } from './pages/AppPages';
+import { AssetsPage, ClientsPage, DashboardPage, InvoicesPage, JobsPage, MediaPage, MessagesPage, PaymentsPage, PortalPage, PropertiesPage, QuotesPage, RequestsPage, ServiceCatalogPage, SettingsPage } from './pages/AppPages';
 import { applyTheme } from './lib/theme';
 import { BrandingProvider } from './lib/branding';
 import { AuthProvider } from './lib/auth';
@@ -36,10 +36,14 @@ function App() {
   if (path.startsWith('/requests')) return <RequestsPage />;
   if (path.startsWith('/quotes')) return <QuotesPage />;
   if (path.startsWith('/jobs') || path.startsWith('/work-orders')) return <JobsPage />;
-  if (path.startsWith('/invoices') || path.startsWith('/payments')) return <InvoicesPage />;
+  if (path.startsWith('/invoices')) return <InvoicesPage />;
+  if (path.startsWith('/payments')) return <PaymentsPage />;
   if (path.startsWith('/messages')) return <MessagesPage />;
   if (path.startsWith('/assets') || path.startsWith('/cmms')) return <AssetsPage />;
-  if (path.startsWith('/clients') || path.startsWith('/properties')) return <RequestsPage />;
+  if (path.startsWith('/clients')) return <ClientsPage />;
+  if (path.startsWith('/properties')) return <PropertiesPage />;
+  if (path.startsWith('/service-catalog')) return <ServiceCatalogPage />;
+  if (path.startsWith('/media')) return <MediaPage />;
   if (path.startsWith('/settings')) return <SettingsPage area={path.slice(1)} />;
   return <NotFoundPage />;
 }
