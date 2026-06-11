@@ -1,7 +1,7 @@
-import { auditLog, clearSessionCookie, consumeMagicLink, HttpError, redirectAfterLogin, requireAuth, requirePermission, secureCookie, sendMagicLink } from '../../lib/server/auth';
+import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPermission, HttpError, redirectAfterLogin, requireAuth, requirePermission, secureCookie, sendMagicLink } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
-import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings } from '../../lib/server/installation';
+import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
@@ -45,6 +45,19 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     if (path === '/install/payment-test') return json(200, paymentAdapter(readBody(event).provider).requiredEnv);
     if (path === '/install/complete' && event.httpMethod === 'POST') return json(200, await completeInstallation(readBody(event)));
+    if (path === '/install/repair-owner' && event.httpMethod === 'POST') {
+      const body = readBody(event);
+      const status = await getInstallStatus();
+      const currentUser = await getCurrentUser(event).catch(() => null);
+      const token = typeof body.token === 'string' ? body.token : '';
+      const tokenAllowed = Boolean(process.env.INSTALL_REPAIR_TOKEN && token && token === process.env.INSTALL_REPAIR_TOKEN);
+      if (!status.installerEnabled && !hasPermission(currentUser, '*') && !tokenAllowed) throw new HttpError(403, 'Owner repair is locked. Enable installer, sign in as Owner, or provide INSTALL_REPAIR_TOKEN.');
+      return json(200, await repairOwnerAccess({ ownerEmail: typeof body.ownerEmail === 'string' ? body.ownerEmail : currentUser?.email }));
+    }
+    if (path === '/install/diagnostics' || path === '/system/diagnostics') {
+      const currentUser = await getCurrentUser(event).catch(() => null);
+      return json(200, await getSystemDiagnostics(currentUser), { 'cache-control': 'no-store, max-age=0' });
+    }
     if ((path === '/auth/send-magic-link' || path === '/auth/magic-link') && event.httpMethod === 'POST') {
       const body = readBody(event);
       return json(200, await sendMagicLink(String(body.email || ''), typeof body.redirect === 'string' ? body.redirect : undefined, await getPublicSiteSettings(), event));
@@ -81,7 +94,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const publicSettings = await getPublicSiteSettings();
       return json(200, {
         ok: true,
-        user: { id: user.id, name: user.name, email: user.email, role: { id: user.role, name: user.role } },
+        user: { id: user.id, name: user.name, email: user.email, role: { id: user.role, name: user.role }, permissions: user.permissions },
         role: { id: user.role, name: user.role },
         permissions: user.permissions,
         clientId: user.clientId,

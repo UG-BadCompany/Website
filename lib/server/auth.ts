@@ -170,7 +170,7 @@ export async function consumeMagicLink(signedToken: string, event: EventWithHead
 }
 
 function userSelectSql(whereClause: string) {
-  return `select u.id, u.name, u.email, coalesce(max(r.name), 'Client') as role,
+  return `select u.id, u.name, u.email, coalesce(max(r.name) filter (where lower(r.name) = 'owner'), max(r.name), 'Client') as role,
                 coalesce(array_agg(distinct p.key) filter (where p.key is not null), '{}') as permissions,
                 max(cc.client_id::text) as "clientId"
          from users u
@@ -193,12 +193,12 @@ export async function getCurrentUser(event: EventWithHeaders, db: Queryable = cr
       userSelectSql(`join sessions s on s.user_id = u.id where s.session_token_hash = $1 and s.expires_at > now() and u.status = 'active'`),
       [hashToken(token)]
     );
-    if (result.rows[0]) return result.rows[0];
+    if (result.rows[0]) return normalizeAuthUser(result.rows[0]);
   }
 
   if (devRole) {
     const role = devRole;
-    return { id: 'dev-session-user', name: role, email: `${role.toLowerCase()}@example.com`, role, permissions: fallbackPermissions(role), clientId: null };
+    return normalizeAuthUser({ id: 'dev-session-user', name: role, email: `${role.toLowerCase()}@example.com`, role, permissions: fallbackPermissions(role), clientId: null });
   }
   return null;
 }
@@ -209,14 +209,28 @@ export async function requireAuth(event: EventWithHeaders, db: Queryable = creat
   return user;
 }
 
+export function hasPermission(user: AuthUser | null | undefined, permission: string) {
+  if (!user) return false;
+  const roleName = user.role?.toLowerCase();
+  if (roleName === 'owner') return true;
+  if (user.permissions?.includes('*')) return true;
+  if (user.permissions?.includes(permission)) return true;
+  return false;
+}
+
+function normalizeAuthUser(user: AuthUser): AuthUser {
+  if (user.role?.toLowerCase() !== 'owner') return user;
+  return user.permissions.includes('*') ? user : { ...user, permissions: ['*', ...user.permissions] };
+}
+
 export async function requirePermission(event: EventWithHeaders, permission: string, db: Queryable = createDatabase()) {
   const user = await requireAuth(event, db);
-  if (!user.permissions.includes(permission)) throw new HttpError(403, `Missing permission ${permission}`);
+  if (!hasPermission(user, permission)) throw new HttpError(403, `Missing permission ${permission}`);
   return user;
 }
 
 export function canAccessResource(user: AuthUser, resource: { clientId?: string | null; assignedUserId?: string | null; vendorId?: string | null }) {
-  if (['Owner', 'Admin'].includes(user.role)) return true;
+  if (user.role?.toLowerCase() === 'owner' || user.permissions.includes('*') || user.role === 'Admin') return true;
   if (user.role === 'Technician') return Boolean(resource.assignedUserId && resource.assignedUserId === user.id) || user.permissions.includes('jobs.manage');
   if (user.role === 'Client') return Boolean(resource.clientId && resource.clientId === user.clientId);
   if (user.role === 'Vendor') return Boolean(resource.vendorId && resource.vendorId === user.id);
@@ -224,7 +238,7 @@ export function canAccessResource(user: AuthUser, resource: { clientId?: string 
 }
 
 function fallbackPermissions(role: string) {
-  const all = ['dashboard.view','settings.view','settings.manage','users.view','users.manage','roles.manage','permissions.manage','clients.view','clients.manage','properties.view','properties.manage','requests.view','requests.manage','quotes.view','quotes.create','quotes.approve','quotes.manage','jobs.view','jobs.manage','work_orders.view','work_orders.manage','invoices.view','invoices.manage','payments.view','payments.manage','cmms.view','cmms.manage','messages.view','messages.manage','media.view','media.manage','homepage.manage','theme.manage','license.view','license.manage','expansion_packs.view','expansion_packs.manage'];
+  const all = ['*','dashboard.view','dashboard.manage','settings.view','settings.manage','users.view','users.manage','roles.view','roles.manage','permissions.view','permissions.manage','clients.view','clients.manage','properties.view','properties.manage','requests.view','requests.manage','quotes.view','quotes.create','quotes.approve','quotes.manage','jobs.view','jobs.manage','work_orders.view','work_orders.manage','invoices.view','invoices.manage','payments.view','payments.manage','cmms.view','cmms.manage','messages.view','messages.manage','website.view','website.manage','homepage.manage','theme.view','theme.manage','branding.view','branding.manage','service_catalog.view','service_catalog.manage','media.view','media.manage','audit_logs.view','license.view','license.manage','expansion_packs.view','expansion_packs.manage'];
   if (['Owner', 'Admin'].includes(role)) return all;
   if (role === 'Technician') return ['dashboard.view','jobs.view','work_orders.view','work_orders.manage','messages.view','media.manage','cmms.view'];
   if (role === 'Client') return ['requests.view','quotes.view','quotes.approve','invoices.view','payments.manage','messages.view','messages.manage','media.manage'];

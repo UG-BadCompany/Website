@@ -22,7 +22,14 @@ type InstallChecks = InstallStatus & {
 };
 
 const REQUIRED_ROLES = ['Owner', 'Admin', 'Office', 'Dispatcher', 'Technician', 'Client', 'Vendor'];
-const REQUIRED_PERMISSIONS = 36;
+export const DEFAULT_PERMISSION_KEYS = [
+  'dashboard.view','dashboard.manage','settings.view','settings.manage','users.view','users.manage','roles.view','roles.manage','permissions.view','permissions.manage',
+  'clients.view','clients.manage','properties.view','properties.manage','requests.view','requests.manage','quotes.view','quotes.create','quotes.approve','quotes.manage','jobs.view','jobs.manage',
+  'work_orders.view','work_orders.manage','invoices.view','invoices.manage','payments.view','payments.manage','cmms.view','cmms.manage','messages.view','messages.manage',
+  'website.view','website.manage','homepage.manage','theme.view','theme.manage','branding.view','branding.manage','service_catalog.view','service_catalog.manage','media.view','media.manage',
+  'audit_logs.view','license.view','license.manage','expansion_packs.view','expansion_packs.manage','*'
+];
+const REQUIRED_PERMISSIONS = DEFAULT_PERMISSION_KEYS.length;
 const INSTALLATION_VERSION = process.env.npm_package_version ?? '1.0.0';
 
 const asBoolean = (value: unknown) => value === true || value === 'true';
@@ -59,7 +66,7 @@ type HomepageSetupInput = {
 };
 
 const PUBLIC_SETTING_KEYS = [
-  'branding.logo_media_id','branding.logo_url','branding.favicon_media_id','branding.favicon_url','branding.display_name','branding.tagline','branding.updated_at','company.display_name','company.name','theme.settings','homepage.hero_headline','homepage.hero_subheadline',
+  'branding.logo_media_id','branding.logo_url','branding.favicon_media_id','branding.favicon_url','branding.display_name','branding.tagline','branding.updated_at','company.name','company.display_name','company.email','company.phone','company.logo_url','company.logo_media_id','company.favicon_url','company.favicon_media_id','company.updated_at','theme.settings','homepage.hero_headline','homepage.hero_subheadline',
   'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
   'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
   'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
@@ -120,6 +127,13 @@ async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, compa
   await upsertSetting(db, 'branding.display_name', displayName);
   await upsertSetting(db, 'company.display_name', displayName);
   await upsertSetting(db, 'company.name', companyName);
+  await upsertSetting(db, 'company.email', setup.contactEmail?.trim() || '');
+  await upsertSetting(db, 'company.phone', setup.contactPhone?.trim() || '');
+  await upsertSetting(db, 'company.logo_media_id', logoMediaId);
+  await upsertSetting(db, 'company.logo_url', logoMediaId ? '' : setup.logoUrl?.trim() || '');
+  await upsertSetting(db, 'company.favicon_media_id', faviconMediaId);
+  await upsertSetting(db, 'company.favicon_url', faviconMediaId ? '' : setup.faviconUrl?.trim() || '');
+  await upsertSetting(db, 'company.updated_at', new Date().toISOString());
   await upsertSetting(db, 'branding.tagline', setup.tagline?.trim() || '');
   await upsertSetting(db, 'branding.updated_at', new Date().toISOString());
   await upsertSetting(db, 'homepage.hero_headline', setup.heroHeadline?.trim() || `${companyName} keeps your property running`);
@@ -286,20 +300,20 @@ export async function getInstallStatus(db: Queryable = createDatabase()): Promis
 export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown; homepageSetup?: HomepageSetupInput } = {}, db: Queryable = createDatabase()) {
   await runMigrations(db);
 
-  const companyName = input.companyName?.trim() || 'ContractorOS';
+  const companyName = input.companyName?.trim() || input.homepageSetup?.displayName?.trim() || 'My Company';
   const ownerName = input.ownerName?.trim() || 'Owner';
   const ownerEmail = input.ownerEmail?.trim() || 'owner@example.com';
 
   await db.query(
-    `insert into company_settings (company_name)
-     select $1
+    `insert into company_settings (company_name, company_email, company_phone)
+     select $1, nullif($2, ''), nullif($3, '')
      where not exists (select 1 from company_settings)`,
-    [companyName]
+    [companyName, input.homepageSetup?.contactEmail?.trim() || '', input.homepageSetup?.contactPhone?.trim() || '']
   );
   await db.query(
-    `update company_settings set company_name = coalesce(nullif(company_name, ''), $1), updated_at = now()
+    `update company_settings set company_name = coalesce(nullif(company_name, ''), $1), company_email = coalesce(nullif(company_email, ''), nullif($2, '')), company_phone = coalesce(nullif(company_phone, ''), nullif($3, '')), updated_at = now()
      where id = (select id from company_settings order by created_at asc limit 1)`,
-    [companyName]
+    [companyName, input.homepageSetup?.contactEmail?.trim() || '', input.homepageSetup?.contactPhone?.trim() || '']
   );
 
   const owner = await db.query<{ id: string }>(
@@ -315,6 +329,7 @@ export async function completeInstallation(input: { companyName?: string; ownerN
      on conflict do nothing`,
     [owner.rows[0].id]
   );
+  await repairOwnerAccess({ ownerEmail }, db);
 
   await db.query(
     `insert into installer_state (step, completed, locked, summary)
@@ -330,6 +345,9 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'installation.version', INSTALLATION_VERSION);
   await upsertSetting(db, 'company.name', companyName);
   await upsertSetting(db, 'company.display_name', input.homepageSetup?.displayName?.trim() || companyName);
+  await upsertSetting(db, 'company.email', input.homepageSetup?.contactEmail?.trim() || '');
+  await upsertSetting(db, 'company.phone', input.homepageSetup?.contactPhone?.trim() || '');
+  await upsertSetting(db, 'company.updated_at', new Date().toISOString());
   if (input.theme) await upsertSetting(db, 'theme.settings', input.theme);
   if (input.homepageSetup) await saveHomepageSetup(db, input.homepageSetup, companyName);
 
@@ -340,6 +358,80 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   }
 
   return getInstallStatus(db);
+}
+
+
+function permissionDescription(key: string) {
+  if (key === '*') return 'Wildcard super admin permission';
+  const [group, action] = key.split('.');
+  return `${action === 'manage' ? 'Manage' : 'View'} ${group?.replaceAll('_', ' ') || key}`;
+}
+
+export async function repairOwnerAccess(input: { ownerEmail?: string } = {}, db: Queryable = createDatabase()) {
+  await runMigrations(db);
+
+  await db.query(
+    `insert into roles (name, description, system_role)
+     values ('Owner', 'Full system owner', true)
+     on conflict (name) do update set description = excluded.description, system_role = true`
+  );
+
+  for (const key of DEFAULT_PERMISSION_KEYS) {
+    await db.query(
+      `insert into permissions (key, group_name, description)
+       values ($1, $2, $3)
+       on conflict (key) do update set group_name = excluded.group_name, description = excluded.description`,
+      [key, key === '*' ? 'system' : key.split('.')[0], permissionDescription(key)]
+    );
+  }
+
+  await db.query(
+    `insert into role_permissions (role_id, permission_id)
+     select r.id, p.id from roles r cross join permissions p
+     where r.name = 'Owner' and p.key = any($1)
+     on conflict do nothing`,
+    [DEFAULT_PERMISSION_KEYS]
+  );
+
+  const ownerUser = input.ownerEmail?.trim()
+    ? await db.query<{ id: string; email: string }>(`select id, email::text from users where lower(email::text) = lower($1) limit 1`, [input.ownerEmail.trim()])
+    : await db.query<{ id: string; email: string }>(
+        `select u.id, u.email::text
+         from users u
+         left join user_roles ur on ur.user_id = u.id
+         left join roles r on r.id = ur.role_id
+         order by case when r.name = 'Owner' then 0 else 1 end, u.created_at asc
+         limit 1`
+      );
+
+  if (ownerUser.rows[0]) {
+    await db.query(
+      `insert into user_roles (user_id, role_id)
+       select $1, id from roles where name = 'Owner'
+       on conflict do nothing`,
+      [ownerUser.rows[0].id]
+    );
+  }
+
+  const summary = await db.query<{
+    owner_role_exists: boolean;
+    wildcard_permission_exists: boolean;
+    owner_has_wildcard: boolean;
+    explicit_permissions_assigned: string;
+    owner_user_id: string | null;
+    owner_email: string | null;
+  }>(
+    `select
+       exists(select 1 from roles where name = 'Owner') as owner_role_exists,
+       exists(select 1 from permissions where key = '*') as wildcard_permission_exists,
+       exists(select 1 from roles r join role_permissions rp on rp.role_id = r.id join permissions p on p.id = rp.permission_id where r.name = 'Owner' and p.key = '*') as owner_has_wildcard,
+       (select count(*) from roles r join role_permissions rp on rp.role_id = r.id join permissions p on p.id = rp.permission_id where r.name = 'Owner' and p.key = any($1))::text as explicit_permissions_assigned,
+       $2::uuid as owner_user_id,
+       $3::text as owner_email`,
+    [DEFAULT_PERMISSION_KEYS.filter((key) => key !== '*'), ownerUser.rows[0]?.id || null, ownerUser.rows[0]?.email || null]
+  );
+
+  return { ok: true, repaired: true, ...summary.rows[0], defaultPermissionCount: DEFAULT_PERMISSION_KEYS.length };
 }
 
 
@@ -358,13 +450,15 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
 
     const result = await db.query<{ key: string; value: unknown }>(`select key, value from app_settings where key = any($1)`, [PUBLIC_SETTING_KEYS]);
     const values = new Map(result.rows.map((row) => [row.key, row.value]));
+    const companyResult = await db.query<{ company_name: string | null; company_email: string | null; company_phone: string | null }>(`select company_name, company_email, company_phone from company_settings order by created_at asc limit 1`);
+    const companySettings = companyResult.rows[0];
     const defaults = defaultPublicSiteSettings();
 
-    const companyName = asText(values.get('company.name'), asText(values.get('branding.display_name'), defaults.branding.companyName));
+    const companyName = asText(values.get('company.name'), companySettings?.company_name || asText(values.get('branding.display_name'), defaults.branding.companyName));
     const companyDisplayName = asText(values.get('company.display_name'), asText(values.get('branding.display_name'), companyName));
-    const logoUrl = resolveBrandingAsset(values.get('branding.logo_media_id'), values.get('branding.logo_url'), values.get('branding.updated_at')) || defaults.branding.logoUrl;
-    const faviconUrl = resolveBrandingAsset(values.get('branding.favicon_media_id'), values.get('branding.favicon_url'), values.get('branding.updated_at')) || defaults.branding.faviconUrl;
-    const brandingUpdatedAt = asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt);
+    const brandingUpdatedAt = asText(values.get('company.updated_at'), asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt));
+    const logoUrl = resolveBrandingAsset(values.get('company.logo_media_id') || values.get('branding.logo_media_id'), values.get('company.logo_url') || values.get('branding.logo_url'), brandingUpdatedAt) || defaults.branding.logoUrl;
+    const faviconUrl = resolveBrandingAsset(values.get('company.favicon_media_id') || values.get('branding.favicon_media_id'), values.get('company.favicon_url') || values.get('branding.favicon_url'), brandingUpdatedAt) || defaults.branding.faviconUrl;
 
     return {
       companyName,
@@ -372,6 +466,8 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
       logoUrl,
       faviconUrl,
       brandingUpdatedAt,
+      companyEmail: asText(values.get('company.email'), companySettings?.company_email || ''),
+      companyPhone: asText(values.get('company.phone'), companySettings?.company_phone || ''),
       branding: {
         companyName,
         companyDisplayName,
@@ -482,6 +578,47 @@ export async function getPublicMedia(mediaId: string, db: Queryable = createData
 function asText(value: unknown, fallback: string) {
   return typeof value === 'string' ? value : fallback;
 }
+
+export async function getSystemDiagnostics(currentUser?: { email?: string; role?: string; permissions?: string[] } | null, db: Queryable = createDatabase()) {
+  await runMigrations(db);
+  const publicSettings = await getPublicSiteSettings(db);
+  const permissionStatus = await db.query<{
+    owner_role_exists: boolean;
+    wildcard_permission_exists: boolean;
+    owner_has_wildcard: boolean;
+    dashboard_view_exists: boolean;
+  }>(
+    `select
+      exists(select 1 from roles where name = 'Owner') as owner_role_exists,
+      exists(select 1 from permissions where key = '*') as wildcard_permission_exists,
+      exists(select 1 from roles r join role_permissions rp on rp.role_id = r.id join permissions p on p.id = rp.permission_id where r.name = 'Owner' and p.key = '*') as owner_has_wildcard,
+      exists(select 1 from permissions where key = 'dashboard.view') as dashboard_view_exists`
+  );
+  const companyName = publicSettings.companyName || '';
+  const displayName = publicSettings.companyDisplayName || publicSettings.branding?.displayName || '';
+  const usingFallback = !companyName || companyName === 'ContractorOS' || displayName === 'ContractorOS';
+  return {
+    currentUser: {
+      email: currentUser?.email || '',
+      role: currentUser?.role || '',
+      permissions: currentUser?.permissions || [],
+    },
+    permissions: {
+      ownerRoleExists: Boolean(permissionStatus.rows[0]?.owner_role_exists),
+      wildcardPermissionExists: Boolean(permissionStatus.rows[0]?.wildcard_permission_exists),
+      ownerHasWildcard: Boolean(permissionStatus.rows[0]?.owner_has_wildcard),
+      dashboardViewExists: Boolean(permissionStatus.rows[0]?.dashboard_view_exists),
+    },
+    branding: {
+      companyName,
+      displayName,
+      logoUrl: publicSettings.logoUrl || publicSettings.branding?.logoUrl || '',
+      faviconUrl: publicSettings.faviconUrl || publicSettings.branding?.faviconUrl || '',
+      source: usingFallback ? 'fallback' : 'database',
+    },
+  };
+}
+
 
 export async function resetInstallation(db: Queryable = createDatabase()) {
   await runMigrations(db);
