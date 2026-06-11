@@ -1,13 +1,13 @@
 import { createMagicToken, hashToken, secureCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
-import { completeInstallation, getInstallStatus, getPublicSiteSettings } from '../../lib/server/installation';
+import { completeInstallation, getInstallStatus, getPublicMedia, getPublicSiteSettings } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
 
 type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null };
-type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string };
+type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string; isBase64Encoded?: boolean };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
 const toApiRoute = (path: string) => `/api${path === '/' ? '' : path}`;
@@ -26,7 +26,12 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
     route = toApiRoute(path);
 
-    if (path === '/public/site-settings') return json(200, await getPublicSiteSettings());
+    if (path === '/public/site-settings') return json(200, await getPublicSiteSettings(), { 'cache-control': 'no-store, max-age=0' });
+    if (path.startsWith('/media/')) {
+      const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
+      if (!media) return json(404, { error: 'Media not found' });
+      return { statusCode: 200, headers: { 'content-type': media.mimeType, 'cache-control': 'public, max-age=31536000, immutable' }, body: media.data.toString('base64'), isBase64Encoded: true };
+    }
     if (path === '/install/status') return json(200, await getInstallStatus());
     if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
     if (path === '/install/license') return json(200, await new LocalLicenseProvider().verify(readBody(event)));

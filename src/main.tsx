@@ -1,13 +1,18 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { InstallationGate } from './components/InstallationGate';
+import { PublicLayout } from './components/Layout';
 import { RouterProvider, useRouter } from './components/Router';
 import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
 import { AccountPage, AuthCallbackPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
 import { InstallerPage } from './pages/Installer';
 import { AssetsPage, DashboardPage, InvoicesPage, JobsPage, MessagesPage, PortalPage, QuotesPage, RequestsPage, SettingsPage } from './pages/AppPages';
 import { applyTheme } from './lib/theme';
+import { BrandingProvider } from './lib/branding';
+import { LoadingState } from './components/ui';
 import './styles/global.css';
+
+function NotFoundPage() { return <PublicLayout><section className="section narrow"><LoadingState title="Page not found" lines={2}/><p>The requested page is not available.</p></section></PublicLayout>; }
 
 function App() {
   const { path } = useRouter();
@@ -33,11 +38,11 @@ function App() {
   if (path.startsWith('/assets')) return <AssetsPage />;
   if (path.startsWith('/clients') || path.startsWith('/properties')) return <RequestsPage />;
   if (path.startsWith('/settings')) return <SettingsPage area={path.slice(1)} />;
-  return <HomePage />;
+  return <NotFoundPage />;
 }
 
 applyTheme();
 window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined));
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><InstallationGate><App /></InstallationGate></RouterProvider></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><BrandingProvider><InstallationGate><App /></InstallationGate></BrandingProvider></RouterProvider></React.StrictMode>);

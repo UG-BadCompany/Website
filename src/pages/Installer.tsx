@@ -3,6 +3,7 @@ import { PublicLayout } from '../components/Layout';
 import { foundationComponents, permissions, serviceCategories } from '../data/foundation';
 import { getTheme, saveTheme, themePresets, type ThemePalette, type ThemePresetId, type ThemeVariableKey, type ThemeSettings } from '../lib/theme';
 import { saveJson } from '../lib/storage';
+import { notifyBrandingUpdated } from '../lib/branding';
 import type { DatabaseProvider, HostingProvider, PaymentProvider, ThemeMode } from '../types/domain';
 
 const steps = ['license','hosting','database','environment','email','payment','company','branding-homepage','owner','theme','foundation','expansion-packs','finish'];
@@ -409,7 +410,10 @@ function ThemeStep({ theme, chooseMode, choosePreset, updateCustomPalette }: { t
 function saveHomepagePreview(draft: BrandingHomepageDraft, companyName: string) {
   const logoSrc = draft.logoUpload?.dataUrl || draft.logoUrl;
   const faviconSrc = draft.faviconUpload?.dataUrl || draft.faviconUrl;
-  saveJson('contractoros.branding', { displayName: draft.displayName || companyName || 'ContractorOS', tagline: draft.tagline, logoSrc, faviconSrc });
+  const brandingUpdatedAt = new Date().toISOString();
+  const branding = { companyName: companyName || draft.displayName || 'ContractorOS', displayName: draft.displayName || companyName || 'ContractorOS', tagline: draft.tagline, logoUrl: logoSrc, faviconUrl: faviconSrc, brandingUpdatedAt };
+  saveJson('contractoros.branding', branding);
+  notifyBrandingUpdated(branding);
   saveJson('contractoros.homepage.basic', {
     heroHeadline: draft.heroHeadline, heroSubheadline: draft.heroSubheadline, primaryCtaLabel: draft.primaryCtaLabel, primaryCtaLink: draft.primaryCtaLink,
     secondaryCtaLabel: draft.secondaryCtaLabel, secondaryCtaLink: draft.secondaryCtaLink, aboutText: draft.aboutText, servicesIntro: draft.servicesIntro,

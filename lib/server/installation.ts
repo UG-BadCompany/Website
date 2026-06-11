@@ -57,7 +57,7 @@ type HomepageSetupInput = {
 };
 
 const PUBLIC_SETTING_KEYS = [
-  'branding.logo_url','branding.favicon_url','branding.display_name','branding.tagline','homepage.hero_headline','homepage.hero_subheadline',
+  'branding.logo_media_id','branding.logo_url','branding.favicon_media_id','branding.favicon_url','branding.display_name','branding.tagline','branding.updated_at','company.display_name','company.name','theme.settings','homepage.hero_headline','homepage.hero_subheadline',
   'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
   'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
   'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
@@ -68,8 +68,12 @@ function defaultPublicSiteSettings() {
     branding: {
       displayName: 'ContractorOS',
       tagline: 'Foundation business operating system',
-      logoSrc: '',
-      faviconSrc: '',
+      companyName: 'ContractorOS',
+      logoUrl: '',
+      faviconUrl: '',
+      theme: {},
+      homepage: '/',
+      brandingUpdatedAt: '',
     },
     homepage: {
       heroHeadline: 'Contractor services made simple',
@@ -104,8 +108,12 @@ async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, compa
   await upsertSetting(db, 'branding.logo_url', logoMediaId ? '' : setup.logoUrl?.trim() || '');
   await upsertSetting(db, 'branding.favicon_media_id', faviconMediaId);
   await upsertSetting(db, 'branding.favicon_url', faviconMediaId ? '' : setup.faviconUrl?.trim() || '');
-  await upsertSetting(db, 'branding.display_name', setup.displayName?.trim() || companyName);
+  const displayName = setup.displayName?.trim() || companyName;
+  await upsertSetting(db, 'branding.display_name', displayName);
+  await upsertSetting(db, 'company.display_name', displayName);
+  await upsertSetting(db, 'company.name', companyName);
   await upsertSetting(db, 'branding.tagline', setup.tagline?.trim() || '');
+  await upsertSetting(db, 'branding.updated_at', new Date().toISOString());
   await upsertSetting(db, 'homepage.hero_headline', setup.heroHeadline?.trim() || `${companyName} keeps your property running`);
   await upsertSetting(db, 'homepage.hero_subheadline', setup.heroSubheadline?.trim() || 'Request estimates, schedule service, and stay informed online.');
   await upsertSetting(db, 'homepage.primary_cta_label', setup.primaryCtaLabel?.trim() || 'Request Estimate');
@@ -312,6 +320,8 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'installation.completed', true);
   await upsertSetting(db, 'installation.completed_at', new Date().toISOString());
   await upsertSetting(db, 'installation.version', INSTALLATION_VERSION);
+  await upsertSetting(db, 'company.name', companyName);
+  await upsertSetting(db, 'company.display_name', input.homepageSetup?.displayName?.trim() || companyName);
   if (input.theme) await upsertSetting(db, 'theme.settings', input.theme);
   if (input.homepageSetup) await saveHomepageSetup(db, input.homepageSetup, companyName);
 
@@ -338,10 +348,14 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
 
     return {
       branding: {
-        displayName: asText(values.get('branding.display_name'), defaults.branding.displayName),
+        companyName: asText(values.get('company.name'), asText(values.get('branding.display_name'), defaults.branding.companyName)),
+        displayName: asText(values.get('company.display_name'), asText(values.get('branding.display_name'), defaults.branding.displayName)),
         tagline: asText(values.get('branding.tagline'), defaults.branding.tagline),
-        logoSrc: asText(values.get('branding.logo_url'), defaults.branding.logoSrc),
-        faviconSrc: asText(values.get('branding.favicon_url'), defaults.branding.faviconSrc),
+        logoUrl: resolveBrandingAsset(values.get('branding.logo_media_id'), values.get('branding.logo_url'), values.get('branding.updated_at')) || defaults.branding.logoUrl,
+        faviconUrl: resolveBrandingAsset(values.get('branding.favicon_media_id'), values.get('branding.favicon_url'), values.get('branding.updated_at')) || defaults.branding.faviconUrl,
+        theme: values.get('theme.settings') || defaults.branding.theme,
+        homepage: '/',
+        brandingUpdatedAt: asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt),
       },
       homepage: {
         heroHeadline: asText(values.get('homepage.hero_headline'), defaults.homepage.heroHeadline),
@@ -370,6 +384,23 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
     console.warn('Public site settings unavailable; using installer-safe defaults', error);
     return defaultPublicSiteSettings();
   }
+}
+
+function resolveBrandingAsset(mediaId: unknown, url: unknown, updatedAt: unknown) {
+  if (typeof mediaId === 'string' && mediaId.trim()) return `/api/media/${mediaId}${typeof updatedAt === 'string' ? `?v=${encodeURIComponent(updatedAt)}` : ''}`;
+  return typeof url === 'string' ? url : '';
+}
+
+export async function getPublicMedia(mediaId: string, db: Queryable = createDatabase()) {
+  const result = await db.query<{ storage_key: string; mime_type: string | null }>(
+    `select f.storage_key, f.mime_type from media_assets m join files f on f.id = m.file_id where m.id = $1 and m.visibility = 'public' limit 1`,
+    [mediaId]
+  );
+  const file = result.rows[0];
+  if (!file) return null;
+  const data = await readFile(file.storage_key).catch(() => null);
+  if (!data) return null;
+  return { data, mimeType: file.mime_type || 'application/octet-stream' };
 }
 
 function asText(value: unknown, fallback: string) {
