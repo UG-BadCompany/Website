@@ -9,14 +9,21 @@ import { ActionCard, Badge, Button, EmptyState, LoadingState, PageHeader, Status
 import type { DashboardWidget, PageSection } from '../types/domain';
 
 type ApiState<T> = { loading: boolean; error: string; data: T | null };
+type DashboardMetricMap = {
+  newRequests: number; pendingQuotes: number; approvedQuotes: number; activeJobs: number; completedJobs: number; openInvoices: number;
+  outstandingBalance: number; messagesNeedingReply: number; todayScheduledJobs: number; overdueInvoices: number; unassignedRequests: number; waitingOnCustomer: number;
+};
 type DashboardOverview = {
-  requests: { new: number; open: number; highPriority: number };
-  quotes: { pending: number; approved: number; totalPendingValue: number };
-  jobs: { active: number; completed: number; scheduledToday: number };
-  invoices: { open: number; outstandingBalance: number; overdue: number };
-  messages: { unread: number; needsReply: number };
+  ok: boolean;
+  range: string;
+  metrics: DashboardMetricMap;
   snapshot: Record<string, Record<string, unknown> | null>;
   activity: Array<{ type: string; summary: string; createdAt: string }>;
+  kpis?: Record<string, number>;
+  operationsBoard?: Array<{ key: string; label: string; count: number; href: string }>;
+  financialSnapshot?: { openInvoices: number; overdueInvoices: number; collectedThisMonth: number; outstandingBalance: number; depositsCollected: number; paymentProviderHealth: string };
+  fieldSnapshot?: { jobsScheduledToday: number; assignedTechnicians: number; unassignedJobs: number; blockedJobs: number; urgentRequests: number };
+  alerts?: Array<{ tone: string; message: string }>;
 };
 
 const money = (cents = 0) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
@@ -41,7 +48,8 @@ function useApi<T>(url: string) {
 
 export function DashboardPage() {
   const auth = useAuth();
-  const overview = useApi<DashboardOverview>('/api/dashboard/overview');
+  const [range, setRange] = useState('today');
+  const overview = useApi<DashboardOverview>(`/api/dashboard/overview?range=${range}`);
   const [widgets, setWidgets] = useState<DashboardWidget[]>(defaultWidgets);
   const [stagedWidgets, setStagedWidgets] = useState<DashboardWidget[]>(defaultWidgets);
   const [isEditingDashboard, setIsEditingDashboard] = useState(false);
@@ -55,15 +63,19 @@ export function DashboardPage() {
 
   const visibleWidgets = (isEditingDashboard ? stagedWidgets : widgets).filter((widget) => !widgetPermission(widget.type) || auth.can(widgetPermission(widget.type)));
   const data = overview.data;
-  const metrics = [
-    { label: 'New requests', value: data?.requests.new ?? 0, detail: 'Fresh intake awaiting triage', tone: 'accent' },
-    { label: 'Pending quotes', value: data?.quotes.pending ?? 0, detail: `${money(data?.quotes.totalPendingValue ?? 0)} pending`, tone: 'warning' },
-    { label: 'Approved quotes', value: data?.quotes.approved ?? 0, detail: 'Ready to convert into jobs', tone: 'success' },
-    { label: 'Active jobs', value: data?.jobs.active ?? 0, detail: `${data?.jobs.scheduledToday ?? 0} scheduled today`, tone: 'accent' },
-    { label: 'Completed jobs', value: data?.jobs.completed ?? 0, detail: 'Completed in the selected range', tone: 'success' },
-    { label: 'Open invoices', value: data?.invoices.open ?? 0, detail: `${data?.invoices.overdue ?? 0} overdue`, tone: (data?.invoices.overdue ?? 0) > 0 ? 'danger' : 'accent' },
-    { label: 'Outstanding balance', value: money(data?.invoices.outstandingBalance ?? 0), detail: 'Open customer balances', tone: 'warning' },
-    { label: 'Messages needing reply', value: data?.messages.needsReply ?? 0, detail: `${data?.messages.unread ?? 0} unread`, tone: 'accent' },
+  const metrics = data?.metrics;
+  const kpis = data?.kpis || {};
+  const businessKpis = [
+    { label: 'New requests', value: metrics?.newRequests ?? 0, detail: 'New intake in selected range', tone: 'accent' },
+    { label: 'Requests needing review', value: kpis.requestsNeedingReview ?? 0, detail: `${metrics?.unassignedRequests ?? 0} unassigned`, tone: (metrics?.unassignedRequests ?? 0) > 0 ? 'warning' : 'accent' },
+    { label: 'Pending quote value', value: money(kpis.pendingQuoteValue ?? 0), detail: `${metrics?.pendingQuotes ?? 0} quotes pending`, tone: 'warning' },
+    { label: 'Approved quote value', value: money(kpis.approvedQuoteValue ?? 0), detail: `${metrics?.approvedQuotes ?? 0} approved`, tone: 'success' },
+    { label: 'Quote close rate', value: `${kpis.quoteCloseRate ?? 0}%`, detail: 'Approved vs sent/viewed/declined', tone: 'accent' },
+    { label: 'Active jobs', value: metrics?.activeJobs ?? 0, detail: `${metrics?.todayScheduledJobs ?? 0} scheduled today`, tone: 'accent' },
+    { label: 'Jobs waiting on parts', value: kpis.jobsWaitingOnParts ?? 0, detail: 'Blocked material flow', tone: (kpis.jobsWaitingOnParts ?? 0) > 0 ? 'danger' : 'success' },
+    { label: 'Open invoice balance', value: money(metrics?.outstandingBalance ?? 0), detail: `${metrics?.overdueInvoices ?? 0} overdue`, tone: (metrics?.overdueInvoices ?? 0) > 0 ? 'danger' : 'warning' },
+    { label: 'Payments collected', value: money(kpis.paymentsCollected ?? 0), detail: 'Collected in selected range', tone: 'success' },
+    { label: 'Unread messages', value: kpis.unreadMessages ?? 0, detail: `${metrics?.messagesNeedingReply ?? 0} customer replies needed`, tone: 'accent' },
   ];
 
   const saveLayout = async () => {
@@ -72,23 +84,23 @@ export function DashboardPage() {
     catch (caught) { setSaveStatus(caught instanceof Error ? caught.message : 'Unable to save layout.'); }
   };
 
-  return <Protected permission="dashboard.view"><AppLayout title="Dashboard"><PageHeader eyebrow="Business Overview" title="Business Overview" description="A database-backed command center for intake, estimates, operations, financial health, and messages." action={<div className="button-row"><select aria-label="Date range" defaultValue="this_month"><option value="today">Today</option><option value="this_week">This Week</option><option value="this_month">This Month</option><option value="custom" disabled>Custom later</option></select><Button variant="secondary" onClick={() => overview.reload()}>Refresh</Button>{isEditingDashboard ? <><Button onClick={saveLayout}>Save layout</Button><Button variant="secondary" onClick={() => { setStagedWidgets(widgets); setIsEditingDashboard(false); }}>Cancel</Button><Button variant="secondary" onClick={() => setStagedWidgets([...stagedWidgets, { id: crypto.randomUUID(), title: 'New widget', type: 'metric', x: 0, y: stagedWidgets.length, w: 1, h: 1 }])}>Add widget</Button></> : <Button onClick={() => { setStagedWidgets(widgets); setIsEditingDashboard(true); }}>Edit dashboard</Button>}</div>}/>{overview.error && <div className="card error-text">{overview.error}</div>}{saveStatus && <p className="muted">{saveStatus}</p>}<section className="overview-panel card"><div className="metric-grid">{metrics.map((metric) => <div className={`metric-card metric-${metric.tone}`} key={metric.label}><span className="metric-trend">↗ steady</span><strong>{metric.value}</strong><span>{metric.label}</span><p className="muted">{metric.detail}</p></div>)}</div></section><section className="dashboard-columns"><article className="card"><h2>Operational snapshot</h2><SnapshotRows snapshot={data?.snapshot}/></article><article className="card"><h2>Quick actions</h2><div className="quick-actions">{auth.can('requests.manage') && <Link className="button secondary" href="/requests/new">New request</Link>}{auth.can('quotes.create') && <Link className="button secondary" href="/quotes/new">New quote</Link>}{auth.can('jobs.manage') && <Link className="button secondary" href="/jobs/new">New job</Link>}{auth.can('invoices.manage') && <Link className="button secondary" href="/invoices/new">New invoice</Link>}{auth.can('clients.manage') && <Link className="button secondary" href="/clients/new">Add client</Link>}{auth.can('messages.view') && <Link className="button secondary" href="/messages">Open messages</Link>}</div></article></section><article className="card activity-card"><h2>Activity feed</h2>{overview.loading ? <p className="muted">Loading real activity…</p> : data?.activity?.length ? data.activity.map((event) => <p key={`${event.type}-${event.createdAt}`}><Badge>{event.type}</Badge> {event.summary}</p>) : <EmptyState title="No real activity yet" description="Recent request, quote, invoice, job, payment, and message events will appear here once the database has activity."/>}</article><div className={`dashboard-grid ${isEditingDashboard ? 'editing' : ''}`}>{visibleWidgets.map((w, i) => <article className="card widget" key={w.id} style={{ gridColumn: `span ${w.w}` }}>{isEditingDashboard ? <input value={w.title} onChange={(e) => setStagedWidgets(stagedWidgets.map((x) => x.id === w.id ? { ...x, title: e.target.value } : x))}/> : <h3>{w.title}</h3>}<strong>{w.type === 'metric' ? i + 1 : '•'}</strong><p className="muted">{isEditingDashboard ? 'Editing staged layout. Save to persist this widget arrangement.' : 'Locked dashboard widget. Click Edit dashboard to customize.'}</p>{isEditingDashboard && <div className="widget-actions"><button onClick={() => setStagedWidgets(stagedWidgets.map((x) => x.id === w.id ? { ...x, w: x.w === 1 ? 2 : 1 } : x))}>Resize</button><button onClick={() => i > 0 && setStagedWidgets(stagedWidgets.map((x, idx, arr) => idx === i - 1 ? arr[i] : idx === i ? arr[i - 1] : x))}>Move up</button><button onClick={() => setStagedWidgets(stagedWidgets.filter((x) => x.id !== w.id))}>Remove</button></div>}</article>)}</div></AppLayout></Protected>;
+  return <Protected permission="dashboard.view"><AppLayout title="Dashboard"><PageHeader eyebrow="Business Overview" title="Contractor command center" description="A role-aware, database-backed operating dashboard for intake, estimating, dispatch, receivables, payments, messages, assets, and service history." action={<div className="button-row"><select aria-label="Date range" value={range} onChange={(event) => setRange(event.target.value)}><option value="today">Today</option><option value="this_week">This Week</option><option value="this_month">This Month</option><option value="quarter">Quarter</option><option value="year">Year</option></select><Button variant="secondary" onClick={() => overview.reload()}>Refresh</Button>{isEditingDashboard ? <><Button onClick={saveLayout}>Save layout</Button><Button variant="secondary" onClick={() => { setStagedWidgets(widgets); setIsEditingDashboard(false); }}>Cancel changes</Button><Button variant="secondary" onClick={() => setStagedWidgets([...stagedWidgets, { id: crypto.randomUUID(), title: 'New widget', type: 'metric', x: 0, y: stagedWidgets.length, w: 1, h: 1 }])}>Add widget</Button></> : <Button onClick={() => { setStagedWidgets(widgets); setIsEditingDashboard(true); }}>Edit dashboard</Button>}</div>}/>{overview.error && <div className="card error-text">{overview.error}</div>}{saveStatus && <p className="muted">{saveStatus}</p>}{Boolean(data?.alerts?.length) && <section className="alert-stack">{data?.alerts?.map((alert) => <div className={`card alert-${alert.tone}`} key={alert.message}>{alert.message}</div>)}</section>}<section className="overview-panel card"><div className="metric-grid">{businessKpis.map((metric) => <div className={`metric-card metric-${metric.tone}`} key={metric.label}><span className="metric-trend">↗ live DB</span><strong>{metric.value}</strong><span>{metric.label}</span><p className="muted">{metric.detail}</p></div>)}</div></section><section className="card"><div className="section-heading"><div><p className="eyebrow">Operations board</p><h2>Request → quote → job workflow</h2></div><Badge>{data?.range || range}</Badge></div><div className="kanban-summary">{(data?.operationsBoard || []).map((column) => <Link className="kanban-column" href={column.href} key={column.key}><strong>{column.count}</strong><span>{column.label}</span></Link>)}</div></section><section className="dashboard-columns"><article className="card"><h2>Financial snapshot</h2><SnapshotFacts rows={[["Open invoices", data?.financialSnapshot?.openInvoices ?? 0], ["Overdue invoices", data?.financialSnapshot?.overdueInvoices ?? 0], ["Collected this month", money(data?.financialSnapshot?.collectedThisMonth ?? 0)], ["Outstanding balance", money(data?.financialSnapshot?.outstandingBalance ?? 0)], ["Deposits collected", money(data?.financialSnapshot?.depositsCollected ?? 0)], ["Payment provider", data?.financialSnapshot?.paymentProviderHealth || 'not_configured']]}/></article><article className="card"><h2>Field snapshot</h2><SnapshotFacts rows={[["Jobs scheduled today", data?.fieldSnapshot?.jobsScheduledToday ?? 0], ["Assigned technicians", data?.fieldSnapshot?.assignedTechnicians ?? 0], ["Unassigned jobs", data?.fieldSnapshot?.unassignedJobs ?? 0], ["Blocked jobs", data?.fieldSnapshot?.blockedJobs ?? 0], ["Urgent requests", data?.fieldSnapshot?.urgentRequests ?? 0]]}/></article></section><section className="dashboard-columns"><article className="card"><h2>Operational snapshot</h2><SnapshotRows snapshot={data?.snapshot}/></article><article className="card"><h2>Smart quick actions</h2><div className="quick-actions">{auth.can('clients.manage') && <Link className="button secondary" href="/clients/new">New client</Link>}{auth.can('requests.manage') && <Link className="button secondary" href="/requests/new">New request</Link>}{auth.can('quotes.manage') && <Link className="button secondary" href="/quotes/new">New quote</Link>}{auth.can('jobs.manage') && <Link className="button secondary" href="/jobs/new">New job</Link>}{auth.can('invoices.manage') && <Link className="button secondary" href="/invoices/new">New invoice</Link>}{auth.can('payments.manage') && <Link className="button secondary" href="/payments/new">Record payment</Link>}{auth.can('cmms.manage') && <Link className="button secondary" href="/assets/new">Add asset</Link>}{auth.can('messages.manage') && <Link className="button secondary" href="/messages/new">Send message</Link>}</div></article></section><article className="card activity-card"><h2>Activity feed</h2>{overview.loading ? <p className="muted">Loading real activity…</p> : data?.activity?.length ? data.activity.map((event) => <p key={`${event.type}-${event.createdAt}`}><Badge>{event.type}</Badge> {event.summary}</p>) : <EmptyState title="No real activity yet" description="Recent request, quote, invoice, job, payment, message, and asset service events will appear here once the database has activity."/>}</article><div className={`dashboard-grid ${isEditingDashboard ? 'editing' : ''}`}>{visibleWidgets.map((w) => <article className="card widget" key={w.id} style={{ gridColumn: `span ${w.w}` }}>{isEditingDashboard ? <input value={w.title} onChange={(e) => setStagedWidgets(stagedWidgets.map((x) => x.id === w.id ? { ...x, title: e.target.value } : x))}/> : <h3>{w.title}</h3>}<strong>{widgetValue(w.type, data)}</strong><p className="muted">{isEditingDashboard ? 'Editing staged layout. Save to persist this widget arrangement to your user profile in the database.' : 'Read-only widget. Enable Edit dashboard to move, resize, rename, or remove.'}</p>{isEditingDashboard && <div className="button-row"><button onClick={() => setStagedWidgets(stagedWidgets.map((x) => x.id === w.id ? { ...x, w: Math.min(3, x.w + 1) } : x))}>Resize</button><button onClick={() => setStagedWidgets(stagedWidgets.filter((x) => x.id !== w.id))}>Remove</button></div>}</article>)}</div></AppLayout></Protected>;
 }
+
+function widgetValue(type: string, data: DashboardOverview | null) {
+  if (type === 'activity') return data?.activity?.length ?? 0;
+  return data?.metrics?.activeJobs ?? data?.metrics?.newRequests ?? 0;
+}
+function SnapshotFacts({ rows }: { rows: Array<[string, string | number]> }) { return <div className="snapshot-facts">{rows.map(([label, value]) => <p key={label}><span>{label}</span><strong>{value}</strong></p>)}</div>; }
 
 function widgetPermission(type: string) {
-  if (type.includes('invoice')) return 'invoices.view';
-  if (type.includes('payment')) return 'payments.view';
-  if (type.includes('job')) return 'jobs.view';
-  if (type.includes('request')) return 'requests.view';
-  if (type.includes('message')) return 'messages.view';
-  return '';
+  if (type === 'activity') return 'audit_logs.view';
+  return 'dashboard.view';
 }
-
-function SnapshotRows({ snapshot }: { snapshot?: DashboardOverview['snapshot'] }) {
-  const rows = [
-    ['Next scheduled job', snapshot?.nextScheduledJob], ['Newest request', snapshot?.newestRequest], ['Highest priority item', snapshot?.highestPriorityItem], ['Latest approved quote', snapshot?.latestApprovedQuote], ['Overdue invoice', snapshot?.overdueInvoice],
-  ];
-  return <div className="snapshot-list">{rows.map(([label, value]) => <div className="snapshot-row" key={label as string}><strong>{label as string}</strong>{value ? <span>{String((value as Record<string, unknown>).id || (value as Record<string, unknown>).status || 'Available')}</span> : <span className="muted">No real data yet</span>}</div>)}</div>;
+function SnapshotRows({ snapshot }: { snapshot?: Record<string, Record<string, unknown> | null> }) {
+  const entries = Object.entries(snapshot || {});
+  if (!entries.length || entries.every(([, value]) => !value)) return <EmptyState title="No snapshot records yet" description="Next scheduled job, newest request, priority item, approved quote, and oldest open invoice appear here once created."/>;
+  return <div className="snapshot-list">{entries.map(([key, value]) => <p key={key}><strong>{key.replace(/([A-Z])/g, ' $1')}:</strong> {value ? String(value.title || value.id || value.status || 'record') : 'None'}</p>)}</div>;
 }
 
 export function PortalPage() {

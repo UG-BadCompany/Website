@@ -96,7 +96,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
 
     if (path === '/dashboard/overview' && event.httpMethod === 'GET') {
       const user = await requirePermission(event, 'dashboard.view');
-      return json(200, await getDashboardOverview(user), { 'cache-control': 'no-store, max-age=0' });
+      return json(200, await getDashboardOverview(user, event.queryStringParameters?.range), { 'cache-control': 'no-store, max-age=0' });
     }
     if (path === '/dashboard/layout') {
       const user = await requirePermission(event, 'dashboard.view');

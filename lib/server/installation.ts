@@ -251,7 +251,7 @@ function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
 
 
 export async function runMigrations(db: Queryable = createDatabase()) {
-  for (const file of ['001_foundation.sql', '002_seed_foundation.sql', '003_admin_settings_dashboard.sql']) {
+  for (const file of ['001_foundation.sql', '002_seed_foundation.sql', '003_admin_settings_dashboard.sql', '004_dashboard_modules.sql']) {
     await db.query(await readMigration(file));
   }
 }

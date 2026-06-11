@@ -1,4 +1,4 @@
-import type { DashboardWidget, PageSection, Permission, Role, WorkRequest, Quote, Job, Invoice, MessageThread } from '../types/domain';
+import type { DashboardWidget, PageSection, Permission, Role } from '../types/domain';
 
 export const foundationComponents = [
   'System Foundation','Authentication Foundation','Website Foundation','CRM Foundation','Operations Foundation','Estimating Foundation','Financial Foundation','Payment Gateway Framework','CMMS Foundation','Communications Foundation','Service Catalog Foundation','Media Foundation'
@@ -34,11 +34,3 @@ export const defaultWidgets: DashboardWidget[] = [
   { id: 'unpaid-invoices', title: 'Unpaid invoices', type: 'metric', x: 1, y: 1, w: 1, h: 1 },
   { id: 'recent-activity', title: 'Recent activity', type: 'activity', x: 0, y: 2, w: 2, h: 1 }
 ];
-
-export const sampleRequests: WorkRequest[] = [
-  { id: 'REQ-1001', client: 'New website lead', service: 'General Repair', status: 'New', priority: 'Normal', createdAt: 'Today' }
-];
-export const sampleQuotes: Quote[] = [{ id: 'Q-2044', client: 'Portal client', requestId: 'REQ-1001', status: 'Draft', total: 850 }];
-export const sampleJobs: Job[] = [{ id: 'JOB-3110', client: 'Portal client', quoteId: 'Q-2044', status: 'Ready to schedule', technician: 'Unassigned' }];
-export const sampleInvoices: Invoice[] = [{ id: 'INV-4020', client: 'Portal client', jobId: 'JOB-3110', status: 'Open', balance: 850 }];
-export const sampleThreads: MessageThread[] = [{ id: 'MSG-1', subject: 'Estimate follow-up', participants: ['Client','Office','Technician'], visibility: 'client', updatedAt: 'Today' }];
