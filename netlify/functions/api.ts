@@ -1,12 +1,12 @@
-import { createMagicToken, hashToken, secureCookie } from '../../lib/server/auth';
+import { createMagicToken, hashToken, secureCookie, HttpError, requireAuth, requirePermission } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
-import { completeInstallation, getInstallStatus, getPublicMedia, getPublicSiteSettings } from '../../lib/server/installation';
+import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
 
-type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null };
+type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null; headers?: Record<string, string | undefined> };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string; isBase64Encoded?: boolean };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
@@ -27,6 +27,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     route = toApiRoute(path);
 
     if (path === '/public/site-settings') return json(200, await getPublicSiteSettings(), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/public/request-estimate' && event.httpMethod === 'POST') return json(200, await createPublicEstimateRequest(readBody(event)));
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
       if (!media) return json(404, { error: 'Media not found' });
@@ -50,10 +51,18 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     if (path === '/auth/callback') return json(200, { ok: true }, { 'set-cookie': secureCookie('contractoros_session', createMagicToken()) });
     if (path === '/auth/logout') return json(200, { ok: true }, { 'set-cookie': 'contractoros_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0' });
-    if (path === '/me') return json(200, { user: { id: 'session-user', role: 'Owner' }, permissionsChecked: true });
-    if (path.startsWith('/settings') || path.match(/^\/(clients|properties|requests|quotes|jobs|work-orders|invoices|payments|assets|messages|media)/)) return json(200, { ok: true, route: path, permissionChecked: true });
+    if (path === '/me') {
+      const user = await requireAuth(event);
+      return json(200, { user: { id: user.id, name: user.name, email: user.email, role: user.role }, role: user.role, permissions: user.permissions, branding: (await getPublicSiteSettings()).branding });
+    }
+    const protectedPermission = permissionForPath(path);
+    if (protectedPermission) {
+      const user = await requirePermission(event, protectedPermission);
+      return json(200, { ok: true, route: path, permissionChecked: true, user: { id: user.id, role: user.role }, scope: scopeForRole(user.role) });
+    }
     return json(404, { error: 'Not found', path });
   } catch (error) {
+    if (error instanceof HttpError) return json(error.statusCode, { ok: false, error: error.message });
     const details = errorDetails(error);
     console.error('ContractorOS API unhandled error', { route, method, ...details });
     return json(500, {
@@ -63,4 +72,29 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       ...(process.env.NODE_ENV === 'development' ? { details } : {}),
     });
   }
+}
+
+function permissionForPath(path: string) {
+  if (path.startsWith('/settings')) return 'settings.view';
+  if (path.match(/^\/(clients)/)) return 'clients.view';
+  if (path.match(/^\/(properties)/)) return 'properties.view';
+  if (path.match(/^\/(requests)/)) return 'requests.view';
+  if (path.match(/^\/(quotes)/)) return 'quotes.view';
+  if (path.match(/^\/(jobs)/)) return 'jobs.view';
+  if (path.match(/^\/(work-orders)/)) return 'work_orders.view';
+  if (path.match(/^\/(invoices)/)) return 'invoices.view';
+  if (path.match(/^\/(payments)/)) return 'payments.view';
+  if (path.match(/^\/(assets|cmms)/)) return 'cmms.view';
+  if (path.match(/^\/(messages)/)) return 'messages.view';
+  if (path.match(/^\/(media)/)) return 'media.view';
+  if (path.match(/^\/(dashboard)/)) return 'dashboard.view';
+  return '';
+}
+
+function scopeForRole(role: string) {
+  if (['Owner', 'Admin'].includes(role)) return 'company';
+  if (role === 'Technician') return 'assigned-technician-records';
+  if (role === 'Client') return 'own-client-records';
+  if (role === 'Vendor') return 'vendor-assigned-records';
+  return 'permission-scoped-company-records';
 }
