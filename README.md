@@ -47,11 +47,12 @@ On Netlify, use Netlify Database where available. The app detects Netlify databa
 1. Create a Netlify site from this repository.
 2. Enable Netlify Database for the site when available.
 3. Add required environment variable keys in Netlify site settings.
-4. Deploy with the included `netlify.toml` build settings.
-5. Open `/install` and complete the installer.
-6. Run migrations through your Netlify Database workflow or a one-off command using the database connection string.
+4. Confirm the Netlify site Plugins page does **not** include `@netlify/plugin-nextjs`; this is a Vite app and the Next.js plugin will fail because `dist` is Vite output, not Next.js build output.
+5. Deploy with the included `netlify.toml` build settings (`npm run build`, publish `dist`, functions `netlify/functions`).
+6. Open `/install` and complete the installer.
+7. Run migrations through your Netlify Database workflow or a one-off command using the database connection string.
 
-The included Netlify routing maps `/api/*` to the serverless API function and all frontend routes to `index.html`.
+The included Netlify routing maps `/api/*` to the serverless API function and all frontend routes to `index.html`. The repository `netlify.toml` intentionally has no `[[plugins]]` block for `@netlify/plugin-nextjs`.
 
 ## Required environment variable keys
 
