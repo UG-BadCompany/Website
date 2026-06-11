@@ -49,20 +49,23 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const body = readBody(event);
       return json(200, await sendMagicLink(String(body.email || ''), typeof body.redirect === 'string' ? body.redirect : undefined, await getPublicSiteSettings(), event));
     }
+    if ((path === '/auth/verify-magic-link' || path === '/auth/magic') && event.httpMethod === 'POST') {
+      const body = readBody(event);
+      const token = typeof body.token === 'string' ? body.token : '';
+      const requestedRedirect = typeof body.redirect === 'string' ? body.redirect : undefined;
+      const { sessionToken, user } = await consumeMagicLink(token, event);
+      return json(200, { ok: true, redirectTo: redirectAfterLogin(user, requestedRedirect) }, { 'set-cookie': secureCookie('contractoros_session', sessionToken) });
+    }
     if (path === '/auth/magic' && event.httpMethod === 'GET') {
       const callbackUrl = new URL(event.rawUrl || event.path, readConfig().appUrl);
       const headerHost = event.headers?.host || event.headers?.Host;
       if (headerHost) callbackUrl.host = headerHost;
       const token = callbackUrl.searchParams.get('token') || event.queryStringParameters?.token || '';
-      const requestedRedirect = callbackUrl.searchParams.get('redirect') || event.queryStringParameters?.redirect;
-      try {
-        const { sessionToken, user } = await consumeMagicLink(token, event);
-        return { statusCode: 302, headers: { location: redirectAfterLogin(user, requestedRedirect), 'set-cookie': secureCookie('contractoros_session', sessionToken) }, body: '' };
-      } catch (error) {
-        const redirect = new URL('/auth/magic', readConfig().appUrl);
-        redirect.searchParams.set('invalid', '1');
-        return { statusCode: 302, headers: { location: `${redirect.pathname}${redirect.search}` }, body: '' };
-      }
+      const requestedRedirect = callbackUrl.searchParams.get('redirect') || event.queryStringParameters?.redirect || '/dashboard';
+      const frontend = new URL('/auth/magic', readConfig().appUrl);
+      if (token) frontend.searchParams.set('token', token);
+      if (requestedRedirect) frontend.searchParams.set('redirect', requestedRedirect);
+      return { statusCode: 302, headers: { location: `${frontend.pathname}${frontend.search}` }, body: '' };
     }
     if (path === '/auth/logout' && event.httpMethod === 'POST') {
       const user = await requireAuth(event).catch(() => null);
@@ -70,8 +73,20 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       return json(200, { ok: true }, { 'set-cookie': clearSessionCookie() });
     }
     if (path === '/auth/me' || path === '/auth/verify' || path === '/me') {
-      const user = await requireAuth(event);
-      return json(200, { user: { id: user.id, name: user.name, email: user.email, role: user.role }, role: user.role, permissions: user.permissions, clientId: user.clientId, branding: (await getPublicSiteSettings()).branding });
+      const user = await requireAuth(event).catch((error) => {
+        if (error instanceof HttpError && error.statusCode === 401) return null;
+        throw error;
+      });
+      if (!user) return json(401, { ok: false, error: 'Unauthenticated' }, { 'cache-control': 'no-store, max-age=0' });
+      const publicSettings = await getPublicSiteSettings();
+      return json(200, {
+        ok: true,
+        user: { id: user.id, name: user.name, email: user.email, role: { id: user.role, name: user.role } },
+        role: { id: user.role, name: user.role },
+        permissions: user.permissions,
+        clientId: user.clientId,
+        branding: publicSettings.branding,
+      }, { 'cache-control': 'no-store, max-age=0' });
     }
     const protectedPermission = permissionForPath(path);
     if (protectedPermission) {

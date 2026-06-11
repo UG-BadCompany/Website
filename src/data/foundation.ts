@@ -22,7 +22,7 @@ export const defaultRoles: Role[] = [
 export const serviceCategories = ['HVAC','Plumbing','Electrical','Handyman','Appliance','Maintenance','General Repair'];
 
 export const defaultSections: PageSection[] = [
-  { id: 'hero', type: 'hero', title: 'Run your contracting business from one clean platform', body: 'ContractorOS combines your public website, client portal, estimating, work orders, invoices, payments, messaging, media, and CMMS foundation.', cta: 'Request an estimate' },
+  { id: 'hero', type: 'hero', title: 'Run your contracting business from one clean platform', body: 'Your installed workspace combines your public website, client portal, estimating, work orders, invoices, payments, messaging, media, and CMMS foundation.', cta: 'Request an estimate' },
   { id: 'services', type: 'services', title: 'Services built for real field work', body: 'Manage HVAC, plumbing, electrical, handyman, appliance, maintenance, and general repair categories without duplicate catalog clutter.', cta: 'View services' },
   { id: 'workflow', type: 'cta', title: 'Request → quote → job → invoice → payment', body: 'A complete owner, office, technician, and client workflow is included in the Foundation.', cta: 'Open dashboard' }
 ];

@@ -48,4 +48,6 @@ applyTheme();
 window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined));
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><BrandingProvider><AuthProvider><InstallationGate><ProtectedRoute><App /></ProtectedRoute></InstallationGate></AuthProvider></BrandingProvider></RouterProvider></React.StrictMode>);
+const root = document.getElementById('root');
+if (!root) throw new Error('Application root element was not found.');
+createRoot(root).render(<React.StrictMode><RouterProvider><BrandingProvider><AuthProvider><InstallationGate><ProtectedRoute><App /></ProtectedRoute></InstallationGate></AuthProvider></BrandingProvider></RouterProvider></React.StrictMode>);

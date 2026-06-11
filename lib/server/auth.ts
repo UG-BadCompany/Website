@@ -16,8 +16,12 @@ export class HttpError extends Error { constructor(public statusCode: number, me
 
 export function hashToken(token: string) { return crypto.createHash('sha256').update(token).digest('hex'); }
 export function createMagicToken() { return crypto.randomBytes(32).toString('base64url'); }
-export function secureCookie(name: string, value: string, maxAge = SESSION_MAX_AGE_SECONDS) { return `${name}=${value}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`; }
-export function clearSessionCookie() { return `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`; }
+function secureCookieAttributes(maxAge: number) {
+  const secure = process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true' || process.env.CONTEXT === 'production' ? '; Secure' : '';
+  return `; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+}
+export function secureCookie(name: string, value: string, maxAge = SESSION_MAX_AGE_SECONDS) { return `${name}=${value}${secureCookieAttributes(maxAge)}`; }
+export function clearSessionCookie() { return `${SESSION_COOKIE}=${secureCookieAttributes(0)}`; }
 
 function getHeader(event: EventWithHeaders, key: string) {
   const lower = key.toLowerCase();
@@ -95,7 +99,7 @@ export function magicLinkEmailHtml(loginUrl: string, branding: Branding) {
   const logoUrl = branding.branding?.logoUrl || branding.logoUrl || '';
   const safeCompany = escapeHtml(companyName);
   const safeUrl = escapeHtml(loginUrl);
-  const logo = logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${safeCompany} logo" style="width:56px;height:56px;border-radius:16px;object-fit:contain;border:1px solid #dbe3ef;background:#ffffff;" />` : `<div style="width:56px;height:56px;border-radius:16px;background:#0f766e;color:white;display:grid;place-items:center;font-size:28px;">⌂</div>`;
+  const logo = logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${safeCompany} logo" style="width:56px;height:56px;border-radius:16px;object-fit:contain;border:1px solid #dbe3ef;background:#ffffff;" />` : `<div style="font-size:20px;font-weight:800;color:#0f172a;">${safeCompany}</div>`;
   return `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:Inter,Arial,sans-serif;color:#0f172a;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px;"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #dbe3ef;border-radius:24px;padding:32px;"><tr><td>${logo}<h1 style="margin:24px 0 8px;font-size:28px;line-height:1.1;">Login to ${safeCompany}</h1><p style="margin:0 0 24px;color:#64748b;font-size:16px;line-height:1.6;">Click the secure button below to access your account.</p><p style="margin:0 0 24px;"><a href="${safeUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;border-radius:999px;padding:14px 24px;font-weight:800;">Login Securely</a></p><p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">This link expires in 15 minutes. If you did not request this login link, you can safely ignore this email.</p></td></tr></table></td></tr></table></body></html>`;
 }
 
@@ -121,7 +125,8 @@ export async function sendMagicLink(email: string, redirect: string | undefined,
 
   if (config.resendApiKey && config.emailFrom) {
     const resend = new Resend(config.resendApiKey);
-    await resend.emails.send({ from: config.emailFrom, to: user.email, subject: 'Your ContractorOS Login Link', html: magicLinkEmailHtml(url.toString(), branding) });
+    const companyName = branding.branding?.companyDisplayName || branding.companyDisplayName || branding.branding?.displayName || branding.displayName || branding.branding?.companyName || branding.companyName || 'ContractorOS';
+    await resend.emails.send({ from: config.emailFrom, to: user.email, subject: `Your secure login link for ${companyName}`, html: magicLinkEmailHtml(url.toString(), branding) });
   } else {
     console.warn('Resend is not configured; magic login link generated but email not sent.', { userId: user.id });
   }
