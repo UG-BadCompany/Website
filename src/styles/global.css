@@ -26,3 +26,24 @@ a { color:inherit; text-decoration:none; } button, input, select, textarea { fon
 .loading-state { display:grid; gap:.8rem; } .skeleton { width:100%; height:18px; border-radius:999px; background:linear-gradient(90deg, color-mix(in srgb, var(--line) 65%, transparent), color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--line) 65%, transparent)); background-size:220% 100%; animation:shine 1.4s infinite; } .skeleton.hero { height:88px; border-radius:24px; } .empty-state { display:grid; place-items:center; text-align:center; gap:.7rem; padding:3rem 1rem; border:1px dashed var(--line); border-radius:var(--radius); background:color-mix(in srgb, var(--card) 70%, transparent); } .empty-icon { width:56px; height:56px; display:grid; place-items:center; border-radius:20px; background:linear-gradient(135deg,var(--primary),var(--accent)); color:white; font-size:1.4rem; }
 @keyframes shine { to { background-position:-220% 0; } }
 @media (max-width: 900px) { .site-header { align-items:flex-start; flex-direction:column; } .app-shell { display:block; } .sidebar { display:none; } .mobile-nav { display:grid; } .dashboard-grid, .settings-grid, .installer, .section-hero { grid-template-columns:1fr; } .stepper { position:static; } .section { padding-top:2.5rem; } .section h1, .page-header h1 { font-size:2.75rem; } .builder-row, .service-editor, .mapping-row { grid-template-columns:1fr; } .mapping-row.header { display:none; } .app-top, .page-header { flex-direction:column; } }
+.estimate-shell { max-width:1040px; }
+.wizard-progress { display:grid; grid-template-columns:repeat(6,1fr); gap:.55rem; margin:1rem 0 1.25rem; }
+.wizard-progress button { border:1px solid var(--line); border-radius:18px; padding:.75rem .6rem; background:color-mix(in srgb, var(--card) 88%, transparent); color:var(--muted); font-weight:900; cursor:pointer; text-align:left; }
+.wizard-progress button span { display:inline-grid; place-items:center; width:26px; height:26px; margin-right:.4rem; border-radius:999px; background:color-mix(in srgb, var(--line) 70%, transparent); color:var(--text); }
+.wizard-progress button.active, .wizard-progress button.done { color:white; background:linear-gradient(135deg,var(--primary),var(--accent)); border-color:transparent; box-shadow:0 14px 30px color-mix(in srgb, var(--primary) 22%, transparent); }
+.wizard-progress button.active span, .wizard-progress button.done span { background:rgba(255,255,255,.22); color:white; }
+.estimate-card { display:grid; gap:1.25rem; padding:clamp(1rem,3vw,2rem); }
+.wizard-section h2 { margin-top:0; letter-spacing:-.04em; font-size:clamp(1.6rem,3vw,2.4rem); }
+.form-grid, .choice-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.span-2 { grid-column:span 2; }
+.field-label { display:block; margin:0 0 .4rem; color:var(--muted); font-weight:900; font-size:.84rem; }
+.wizard-actions { display:flex; justify-content:space-between; gap:1rem; padding-top:1rem; border-top:1px solid var(--line); }
+.upload-drop { display:grid; gap:.8rem; padding:1rem; border:2px dashed color-mix(in srgb, var(--accent) 42%, var(--line)); border-radius:22px; background:color-mix(in srgb, var(--accent) 7%, var(--card)); }
+.upload-row { display:grid; grid-template-columns:1fr 150px auto; gap:.7rem; align-items:center; padding:.65rem; border:1px solid var(--line); border-radius:14px; background:var(--card); }
+.upload-row progress { width:100%; accent-color:var(--accent); }
+.upload-row button { border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--muted); font-weight:800; padding:.45rem .75rem; cursor:pointer; }
+.review-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; }
+.review-grid div { border:1px solid var(--line); border-radius:16px; padding:1rem; background:color-mix(in srgb, var(--bg) 45%, var(--card)); }
+.review-grid p { margin:.25rem 0 0; overflow-wrap:anywhere; }
+.thank-you .brand-logo, .thank-you .brand-fallback { width:64px; height:64px; border-radius:20px; }
+@media (max-width: 900px) { .wizard-progress { grid-template-columns:1fr 1fr; } .form-grid, .choice-grid, .review-grid { grid-template-columns:1fr; } .span-2 { grid-column:auto; } .upload-row { grid-template-columns:1fr; } }

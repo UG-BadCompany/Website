@@ -241,7 +241,8 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
       }
       const status = await response.json();
       if (!status.installed) throw new Error('Installer completion did not return an installed system.');
-      setFinishMessage('Installation complete. Opening ContractorOS…');
+      setFinishMessage(`Installation complete. Opening ${homepage.displayName || companyName || 'ContractorOS'}…`);
+      saveJson('contractoros.session.user', { user: { id: 'local-owner', name: ownerName || 'Owner', email: ownerEmail || 'owner@example.com', role: 'Owner' }, role: 'Owner', permissions: ['dashboard.view','settings.view','settings.manage','requests.view','requests.manage','quotes.view','quotes.manage','jobs.view','jobs.manage','invoices.view','messages.view','clients.view','properties.view','cmms.view','media.view'], branding: {} });
       window.location.assign('/dashboard');
     } catch (error) {
       setFinishState('error');
@@ -411,7 +412,8 @@ function saveHomepagePreview(draft: BrandingHomepageDraft, companyName: string) 
   const logoSrc = draft.logoUpload?.dataUrl || draft.logoUrl;
   const faviconSrc = draft.faviconUpload?.dataUrl || draft.faviconUrl;
   const brandingUpdatedAt = new Date().toISOString();
-  const branding = { companyName: companyName || draft.displayName || 'ContractorOS', displayName: draft.displayName || companyName || 'ContractorOS', tagline: draft.tagline, logoUrl: logoSrc, faviconUrl: faviconSrc, brandingUpdatedAt };
+  const displayName = draft.displayName || companyName || 'ContractorOS';
+  const branding = { companyName: companyName || displayName, displayName, companyDisplayName: displayName, tagline: draft.tagline, logoUrl: logoSrc, faviconUrl: faviconSrc, brandingUpdatedAt };
   saveJson('contractoros.branding', branding);
   notifyBrandingUpdated(branding);
   saveJson('contractoros.homepage.basic', {

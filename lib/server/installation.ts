@@ -27,6 +27,7 @@ const INSTALLATION_VERSION = process.env.npm_package_version ?? '1.0.0';
 const asBoolean = (value: unknown) => value === true || value === 'true';
 
 type UploadInput = { fileName?: string; mimeType?: string; dataUrl?: string };
+type EstimateInput = Record<string, unknown> & { firstName?: string; lastName?: string; email?: string; phone?: string; serviceAddress?: string; city?: string; state?: string; zip?: string; serviceCategory?: string; urgency?: string; title?: string; description?: string; files?: UploadInput[] };
 type HomepageSetupInput = {
   logoUrl?: string;
   logoUpload?: UploadInput | null;
@@ -65,8 +66,14 @@ const PUBLIC_SETTING_KEYS = [
 
 function defaultPublicSiteSettings() {
   return {
+    companyName: 'ContractorOS',
+    companyDisplayName: 'ContractorOS',
+    logoUrl: '',
+    faviconUrl: '',
+    brandingUpdatedAt: '',
     branding: {
       displayName: 'ContractorOS',
+      companyDisplayName: 'ContractorOS',
       tagline: 'Foundation business operating system',
       companyName: 'ContractorOS',
       logoUrl: '',
@@ -346,16 +353,28 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
     const values = new Map(result.rows.map((row) => [row.key, row.value]));
     const defaults = defaultPublicSiteSettings();
 
+    const companyName = asText(values.get('company.name'), asText(values.get('branding.display_name'), defaults.branding.companyName));
+    const companyDisplayName = asText(values.get('company.display_name'), asText(values.get('branding.display_name'), companyName));
+    const logoUrl = resolveBrandingAsset(values.get('branding.logo_media_id'), values.get('branding.logo_url'), values.get('branding.updated_at')) || defaults.branding.logoUrl;
+    const faviconUrl = resolveBrandingAsset(values.get('branding.favicon_media_id'), values.get('branding.favicon_url'), values.get('branding.updated_at')) || defaults.branding.faviconUrl;
+    const brandingUpdatedAt = asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt);
+
     return {
+      companyName,
+      companyDisplayName,
+      logoUrl,
+      faviconUrl,
+      brandingUpdatedAt,
       branding: {
-        companyName: asText(values.get('company.name'), asText(values.get('branding.display_name'), defaults.branding.companyName)),
-        displayName: asText(values.get('company.display_name'), asText(values.get('branding.display_name'), defaults.branding.displayName)),
+        companyName,
+        companyDisplayName,
+        displayName: companyDisplayName,
         tagline: asText(values.get('branding.tagline'), defaults.branding.tagline),
-        logoUrl: resolveBrandingAsset(values.get('branding.logo_media_id'), values.get('branding.logo_url'), values.get('branding.updated_at')) || defaults.branding.logoUrl,
-        faviconUrl: resolveBrandingAsset(values.get('branding.favicon_media_id'), values.get('branding.favicon_url'), values.get('branding.updated_at')) || defaults.branding.faviconUrl,
+        logoUrl,
+        faviconUrl,
         theme: values.get('theme.settings') || defaults.branding.theme,
         homepage: '/',
-        brandingUpdatedAt: asText(values.get('branding.updated_at'), defaults.branding.brandingUpdatedAt),
+        brandingUpdatedAt,
       },
       homepage: {
         heroHeadline: asText(values.get('homepage.hero_headline'), defaults.homepage.heroHeadline),
@@ -384,6 +403,56 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
     console.warn('Public site settings unavailable; using installer-safe defaults', error);
     return defaultPublicSiteSettings();
   }
+}
+
+
+export async function createPublicEstimateRequest(input: EstimateInput, db: Queryable = createDatabase()) {
+  await runMigrations(db);
+  const firstName = String(input.firstName || '').trim();
+  const lastName = String(input.lastName || '').trim();
+  const email = String(input.email || '').trim();
+  const phone = String(input.phone || '').trim();
+  const displayName = `${firstName} ${lastName}`.trim() || email || phone || 'Website lead';
+  const address = [input.serviceAddress, input.city, input.state, input.zip].map((value) => String(value || '').trim()).filter(Boolean).join(', ');
+  const description = [input.title, input.description].map((value) => String(value || '').trim()).filter(Boolean).join('\n\n');
+  if (!displayName || (!email && !phone) || !address || !description) throw new Error('Missing required request estimate fields');
+
+  const client = await db.query<{ id: string }>(
+    `insert into clients (display_name, status) values ($1, 'lead') returning id`,
+    [displayName]
+  );
+  await db.query(
+    `insert into client_contacts (client_id, name, email, phone, primary_contact) values ($1, $2, nullif($3, ''), nullif($4, ''), true)`,
+    [client.rows[0].id, displayName, email, phone]
+  );
+  const property = await db.query<{ id: string }>(
+    `insert into properties (client_id, address, notes) values ($1, $2, $3) returning id`,
+    [client.rows[0].id, address, JSON.stringify({ propertyType: input.propertyType, accessNotes: input.accessNotes })]
+  );
+  const category = await db.query<{ id: string }>(
+    `insert into service_categories (name, enabled) values ($1, true) on conflict (name) do update set enabled = true returning id`,
+    [String(input.serviceCategory || 'Other')]
+  );
+  const request = await db.query<{ id: string }>(
+    `insert into work_requests (client_id, property_id, service_category_id, status, priority, description) values ($1, $2, $3, 'new', $4, $5) returning id`,
+    [client.rows[0].id, property.rows[0].id, category.rows[0].id, urgencyToPriority(String(input.urgency || 'Flexible')), description]
+  );
+
+  const files = Array.isArray(input.files) ? input.files : [];
+  for (const file of files) {
+    if (!file?.dataUrl) continue;
+    const mediaId = await storeUpload(db, file, `requests/${request.rows[0].id}`);
+    await db.query(`update media_assets set owner_type = 'work_request', owner_id = $1, visibility = 'private' where id = $2`, [request.rows[0].id, mediaId]);
+  }
+
+  const requestNumber = `REQ-${request.rows[0].id.slice(0, 8).toUpperCase()}`;
+  return { ok: true, id: request.rows[0].id, requestNumber, status: 'new', emailConfirmationQueued: Boolean(email && process.env.RESEND_API_KEY) };
+}
+
+function urgencyToPriority(urgency: string) {
+  if (urgency.toLowerCase().includes('emergency')) return 'emergency';
+  if (urgency.toLowerCase().includes('week')) return 'high';
+  return 'normal';
 }
 
 function resolveBrandingAsset(mediaId: unknown, url: unknown, updatedAt: unknown) {

@@ -6,6 +6,7 @@ export type BrandingTheme = Partial<ThemeSettings> | Record<string, unknown>;
 export type BrandingSettings = {
   companyName: string;
   displayName: string;
+  companyDisplayName: string;
   logoUrl?: string;
   faviconUrl?: string;
   tagline?: string;
@@ -38,13 +39,14 @@ export type BasicHomepageSettings = {
 };
 
 type LegacyBrandingSettings = Partial<BrandingSettings> & { logoSrc?: string; faviconSrc?: string };
-type PublicSiteSettings = { branding?: Partial<LegacyBrandingSettings>; homepage?: Partial<BasicHomepageSettings> };
+type PublicSiteSettings = Omit<Partial<BrandingSettings>, 'homepage'> & { branding?: Partial<LegacyBrandingSettings>; homepage?: Partial<BasicHomepageSettings> };
 type BrandingContextValue = BrandingSettings & { isLoading: boolean; refreshBranding: () => Promise<void>; updateBranding: (branding: Partial<BrandingSettings>) => void };
 
 export const BRANDING_UPDATED_EVENT = 'contractoros:branding-updated';
 export const defaultBranding: BrandingSettings = {
   companyName: 'ContractorOS',
   displayName: 'ContractorOS',
+  companyDisplayName: 'ContractorOS',
   tagline: 'Foundation business operating system',
   logoUrl: '',
   faviconUrl: '',
@@ -77,12 +79,14 @@ export const defaultHomepage: BasicHomepageSettings = {
 function normalizeBranding(input?: Partial<LegacyBrandingSettings>): BrandingSettings {
   const logoUrl = input?.logoUrl ?? input?.logoSrc ?? '';
   const faviconUrl = input?.faviconUrl ?? input?.faviconSrc ?? '';
-  const displayName = input?.displayName || input?.companyName || defaultBranding.displayName;
+  const companyDisplayName = (input as Partial<BrandingSettings> | undefined)?.companyDisplayName || input?.displayName || input?.companyName || defaultBranding.displayName;
+  const displayName = companyDisplayName;
   return {
     ...defaultBranding,
     ...input,
     companyName: input?.companyName || displayName,
     displayName,
+    companyDisplayName,
     logoUrl,
     faviconUrl,
     brandingUpdatedAt: input?.brandingUpdatedAt || '',
@@ -108,9 +112,14 @@ export function getBasicHomepage() {
   return loadJson<BasicHomepageSettings>('contractoros.homepage.basic', defaultHomepage);
 }
 
-function versionedAsset(url?: string, version?: string) {
+function isLocalAsset(url: string) {
+  if (url.startsWith('/')) return true;
+  try { return new URL(url).origin === window.location.origin; } catch { return false; }
+}
+
+export function versionedAsset(url?: string, version?: string) {
   if (!url || url.startsWith('data:') || url.startsWith('blob:')) return url || '';
-  if (!version) return url;
+  if (!version || !isLocalAsset(url)) return url;
   try {
     const parsed = new URL(url, window.location.origin);
     parsed.searchParams.set('v', version);
@@ -118,6 +127,11 @@ function versionedAsset(url?: string, version?: string) {
   } catch {
     return url;
   }
+}
+
+export function pageTitle(pageTitle?: string, branding: Pick<BrandingSettings, 'companyDisplayName' | 'displayName' | 'companyName'> = defaultBranding) {
+  const company = branding.companyDisplayName || branding.displayName || branding.companyName || 'ContractorOS';
+  return pageTitle ? `${pageTitle} | ${company}` : company;
 }
 
 export function applyFavicon(faviconUrl?: string, version?: string) {
@@ -155,7 +169,9 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const settings = await fetchPublicSiteSettings();
-      if (settings.branding) updateBranding(normalizeBranding(settings.branding));
+      const { homepage: _homepage, branding: nestedBranding, ...topLevelBranding } = settings;
+      const publicBranding = nestedBranding ?? topLevelBranding;
+      if (publicBranding) updateBranding(normalizeBranding(publicBranding));
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +188,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(BRANDING_UPDATED_EVENT, listener);
   }, [refreshBranding, updateBranding]);
   useEffect(() => applyFavicon(branding.faviconUrl, branding.brandingUpdatedAt), [branding.faviconUrl, branding.brandingUpdatedAt]);
-  useEffect(() => { document.documentElement.style.setProperty('--brand-logo', branding.logoUrl ? `url("${branding.logoUrl}")` : 'none'); }, [branding.logoUrl]);
+  useEffect(() => { document.title = pageTitle(undefined, branding); }, [branding.companyDisplayName, branding.companyName, branding.displayName]);
+  useEffect(() => { document.documentElement.style.setProperty('--brand-logo', branding.logoUrl ? `url("${versionedAsset(branding.logoUrl, branding.brandingUpdatedAt)}")` : 'none'); }, [branding.logoUrl, branding.brandingUpdatedAt]);
 
   const value = useMemo(() => ({ ...branding, isLoading, refreshBranding, updateBranding }), [branding, isLoading, refreshBranding, updateBranding]);
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;

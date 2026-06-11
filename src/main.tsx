@@ -9,19 +9,22 @@ import { InstallerPage } from './pages/Installer';
 import { AssetsPage, DashboardPage, InvoicesPage, JobsPage, MessagesPage, PortalPage, QuotesPage, RequestsPage, SettingsPage } from './pages/AppPages';
 import { applyTheme } from './lib/theme';
 import { BrandingProvider } from './lib/branding';
+import { AuthProvider } from './lib/auth';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoadingState } from './components/ui';
 import './styles/global.css';
 
 function NotFoundPage() { return <PublicLayout><section className="section narrow"><LoadingState title="Page not found" lines={2}/><p>The requested page is not available.</p></section></PublicLayout>; }
 
 function App() {
-  const { path } = useRouter();
+  const { path: routePath } = useRouter();
+  const path = routePath.split('?')[0];
   if (path === '/') return <HomePage />;
   if (path === '/about') return <AboutPage />;
   if (path === '/services') return <ServicesPage />;
   if (path === '/contact') return <ContactPage />;
   if (path === '/request-estimate') return <RequestEstimatePage />;
-  if (path === '/thank-you') return <ThankYouPage />;
+  if (path === '/request-estimate/thank-you' || path === '/thank-you') return <ThankYouPage />;
   if (path === '/login') return <LoginPage />;
   if (path === '/magic-link-sent') return <MagicLinkSentPage />;
   if (path === '/auth/callback') return <AuthCallbackPage />;
@@ -45,4 +48,4 @@ applyTheme();
 window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined));
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><BrandingProvider><InstallationGate><App /></InstallationGate></BrandingProvider></RouterProvider></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><BrandingProvider><AuthProvider><InstallationGate><ProtectedRoute><App /></ProtectedRoute></InstallationGate></AuthProvider></BrandingProvider></RouterProvider></React.StrictMode>);

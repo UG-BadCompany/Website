@@ -4,9 +4,10 @@ type RouterState = { path: string; push: (path: string) => void };
 const RouterContext = createContext<RouterState>({ path: '/', push: () => undefined });
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [path, setPath] = useState(window.location.pathname);
+  const currentPath = () => `${window.location.pathname}${window.location.search}`;
+  const [path, setPath] = useState(currentPath());
   useEffect(() => {
-    const onPop = () => setPath(window.location.pathname);
+    const onPop = () => setPath(currentPath());
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);

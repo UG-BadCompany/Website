@@ -1,7 +1,10 @@
 import { ReactNode } from 'react';
+import { versionedAsset, useBranding } from '../lib/branding';
 
 export function BrandMark({ logoUrl, name }: { logoUrl?: string; name: string }) {
-  return logoUrl ? <img className="brand-logo" src={logoUrl} alt={`${name} logo`} /> : <span className="brand-fallback" aria-hidden="true">⌂</span>;
+  const branding = useBranding();
+  const src = versionedAsset(logoUrl, branding.brandingUpdatedAt);
+  return src ? <img className="brand-logo" src={src} alt={`${name} logo`} /> : <span className="brand-fallback" aria-hidden="true">⌂</span>;
 }
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {

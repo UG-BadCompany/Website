@@ -1,12 +1,13 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { BriefcaseBusiness, FileText, LayoutDashboard, MessageSquare, Settings, UserRound, Wrench } from 'lucide-react';
 import { Link, NavLink } from './Router';
-import { currentUser, can } from '../lib/permissions';
-import { useBranding } from '../lib/branding';
+
+import { pageTitle, useBranding } from '../lib/branding';
+import { useAuth } from '../lib/auth';
 import { BrandMark } from './ui';
 
 const appNav = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'settings.view' },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { href: '/requests', label: 'Requests', icon: Wrench, permission: 'requests.view' },
   { href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view' },
   { href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view' },
@@ -25,16 +26,19 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 }
 
 export function AppLayout({ title, children }: { title: string; children: ReactNode }) {
-  const nav = appNav.filter((item) => can(currentUser, item.permission));
+  const auth = useAuth();
+  const nav = appNav.filter((item) => auth.can(item.permission) || (item.href === '/dashboard' && auth.isAuthenticated));
   const branding = useBranding();
+  useEffect(() => { document.title = pageTitle(title, branding); }, [title, branding.companyDisplayName, branding.displayName, branding.companyName]);
   return <div className="app-shell">
     <aside className="sidebar"><Link href="/" className="brand"><BrandMark logoUrl={branding.logoUrl} name={branding.displayName}/><strong>{branding.displayName}</strong></Link><div className="sidebar-section"><p className="eyebrow">Operations</p>{nav.map((item) => <NavLink key={item.href} href={item.href}><item.icon size={18}/>{item.label}</NavLink>)}</div></aside>
-    <section className="app-main"><header className="app-top"><div><p className="eyebrow">{branding.displayName} workspace</p><h1>{title}</h1></div><div className="topbar-actions"><span className="pill">{currentUser.role}</span><Link href="/account" className="button secondary small">Account</Link></div></header>{children}</section>
+    <section className="app-main"><header className="app-top"><div><p className="eyebrow">{branding.displayName} workspace</p><h1>{title}</h1></div><div className="topbar-actions"><span className="pill">{auth.role || 'User'}</span><Link href="/account" className="button secondary small">Account</Link></div></header>{children}</section>
     <nav className="mobile-nav">{nav.slice(0,5).map((item) => <NavLink key={item.href} href={item.href}><item.icon size={20}/><small>{item.label}</small></NavLink>)}</nav>
   </div>;
 }
 
 export function Protected({ permission, children }: { permission: string; children: ReactNode }) {
-  if (!can(currentUser, permission)) return <AppLayout title="Access restricted"><div className="card"><h2>Permission required</h2><p>This page requires <code>{permission}</code>.</p></div></AppLayout>;
+  const auth = useAuth();
+  if (!auth.can(permission)) return <AppLayout title="Access restricted"><div className="card"><h2>Permission required</h2><p>This page requires <code>{permission}</code>.</p></div></AppLayout>;
   return <>{children}</>;
 }
