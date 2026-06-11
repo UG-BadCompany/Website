@@ -1,4 +1,4 @@
-import { createMagicToken, hashToken, secureCookie, HttpError, requireAuth, requirePermission } from '../../lib/server/auth';
+import { auditLog, clearSessionCookie, consumeMagicLink, HttpError, redirectAfterLogin, requireAuth, requirePermission, secureCookie, sendMagicLink } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings } from '../../lib/server/installation';
@@ -6,7 +6,7 @@ import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
 
-type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null; headers?: Record<string, string | undefined> };
+type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined> };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string; isBase64Encoded?: boolean };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
@@ -45,15 +45,33 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     if (path === '/install/payment-test') return json(200, paymentAdapter(readBody(event).provider).requiredEnv);
     if (path === '/install/complete' && event.httpMethod === 'POST') return json(200, await completeInstallation(readBody(event)));
-    if (path === '/auth/magic-link') {
-      const token = createMagicToken();
-      return json(200, { sent: true, tokenHashPreview: hashToken(token).slice(0, 12), message: 'Production sends via Resend and stores only token hash.' });
+    if ((path === '/auth/send-magic-link' || path === '/auth/magic-link') && event.httpMethod === 'POST') {
+      const body = readBody(event);
+      return json(200, await sendMagicLink(String(body.email || ''), typeof body.redirect === 'string' ? body.redirect : undefined, await getPublicSiteSettings(), event));
     }
-    if (path === '/auth/callback') return json(200, { ok: true }, { 'set-cookie': secureCookie('contractoros_session', createMagicToken()) });
-    if (path === '/auth/logout') return json(200, { ok: true }, { 'set-cookie': 'contractoros_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0' });
-    if (path === '/me') {
+    if (path === '/auth/magic' && event.httpMethod === 'GET') {
+      const callbackUrl = new URL(event.rawUrl || event.path, readConfig().appUrl);
+      const headerHost = event.headers?.host || event.headers?.Host;
+      if (headerHost) callbackUrl.host = headerHost;
+      const token = callbackUrl.searchParams.get('token') || event.queryStringParameters?.token || '';
+      const requestedRedirect = callbackUrl.searchParams.get('redirect') || event.queryStringParameters?.redirect;
+      try {
+        const { sessionToken, user } = await consumeMagicLink(token, event);
+        return { statusCode: 302, headers: { location: redirectAfterLogin(user, requestedRedirect), 'set-cookie': secureCookie('contractoros_session', sessionToken) }, body: '' };
+      } catch (error) {
+        const redirect = new URL('/auth/magic', readConfig().appUrl);
+        redirect.searchParams.set('invalid', '1');
+        return { statusCode: 302, headers: { location: `${redirect.pathname}${redirect.search}` }, body: '' };
+      }
+    }
+    if (path === '/auth/logout' && event.httpMethod === 'POST') {
+      const user = await requireAuth(event).catch(() => null);
+      if (user) await auditLog('logout', { method: 'manual' }, user.id);
+      return json(200, { ok: true }, { 'set-cookie': clearSessionCookie() });
+    }
+    if (path === '/auth/me' || path === '/auth/verify' || path === '/me') {
       const user = await requireAuth(event);
-      return json(200, { user: { id: user.id, name: user.name, email: user.email, role: user.role }, role: user.role, permissions: user.permissions, branding: (await getPublicSiteSettings()).branding });
+      return json(200, { user: { id: user.id, name: user.name, email: user.email, role: user.role }, role: user.role, permissions: user.permissions, clientId: user.clientId, branding: (await getPublicSiteSettings()).branding });
     }
     const protectedPermission = permissionForPath(path);
     if (protectedPermission) {
@@ -75,7 +93,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
 }
 
 function permissionForPath(path: string) {
-  if (path.startsWith('/settings')) return 'settings.view';
+  if (path.startsWith('/settings') || path.startsWith('/admin')) return 'settings.view';
   if (path.match(/^\/(clients)/)) return 'clients.view';
   if (path.match(/^\/(properties)/)) return 'properties.view';
   if (path.match(/^\/(requests)/)) return 'requests.view';

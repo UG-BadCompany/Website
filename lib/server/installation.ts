@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createDatabase, type Queryable } from './database';
+import { sendMagicLink } from './auth';
 import { createStorage } from './storage';
 
 export type InstallStatus = {
@@ -331,6 +332,12 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'company.display_name', input.homepageSetup?.displayName?.trim() || companyName);
   if (input.theme) await upsertSetting(db, 'theme.settings', input.theme);
   if (input.homepageSetup) await saveHomepageSetup(db, input.homepageSetup, companyName);
+
+  try {
+    await sendMagicLink(ownerEmail, '/dashboard', await getPublicSiteSettings(db), {}, db);
+  } catch (error) {
+    console.warn('Owner magic login link could not be sent during installation.', error);
+  }
 
   return getInstallStatus(db);
 }

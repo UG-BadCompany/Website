@@ -3,8 +3,8 @@ import { useRouter } from './Router';
 import { LoadingState } from './ui';
 import { useAuth } from '../lib/auth';
 
-export const publicRoutes = ['/', '/about', '/services', '/contact', '/request-estimate', '/request-estimate/thank-you', '/thank-you', '/login', '/magic-link-sent', '/auth/callback', '/logout'];
-const protectedPrefixes = ['/dashboard', '/clients', '/properties', '/requests', '/quotes', '/jobs', '/work-orders', '/invoices', '/payments', '/cmms', '/messages', '/settings', '/account', '/admin', '/portal'];
+export const publicRoutes = ['/', '/about', '/services', '/contact', '/request-estimate', '/request-estimate/thank-you', '/thank-you', '/login', '/magic-link-sent', '/auth/magic', '/logout'];
+const protectedPrefixes = ['/dashboard', '/clients', '/properties', '/requests', '/quotes', '/jobs', '/work-orders', '/invoices', '/payments', '/cmms', '/assets', '/messages', '/settings', '/account', '/admin', '/portal'];
 
 export function isProtectedPath(path: string) {
   const pathname = path.split('?')[0];
@@ -18,7 +18,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const auth = useAuth();
 
   useEffect(() => {
-    if (!auth.isLoading && !auth.isAuthenticated && isProtectedPath(path)) push(`/login?redirect=${encodeURIComponent(path.split('?')[0])}`);
+    if (!auth.isLoading && !auth.isAuthenticated && isProtectedPath(path)) push(`/login?redirect=${encodeURIComponent(path)}`);
   }, [auth.isAuthenticated, auth.isLoading, path, push]);
 
   if (auth.isLoading && isProtectedPath(path)) return <main className="install-loading"><div className="card"><LoadingState title="Checking secure session…" lines={2}/></div></main>;
