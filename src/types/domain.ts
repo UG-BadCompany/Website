@@ -1,4 +1,4 @@
-export type ThemeMode = 'light' | 'dark' | 'system' | 'custom';
+export type ThemeMode = 'light' | 'dark' | 'system' | 'preset' | 'custom';
 export type HostingProvider = 'netlify' | 'vercel' | 'docker' | 'vps' | 'custom';
 export type DatabaseProvider = 'netlify_database' | 'postgres_url' | 'supabase_postgres';
 export type PaymentProvider = 'square' | 'stripe' | 'paypal' | 'authorize_net' | 'manual' | 'configure_later';

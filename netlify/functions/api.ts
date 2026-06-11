@@ -4,6 +4,7 @@ import { detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, getInstallStatus } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
+import { validateEnvironment } from '../../lib/server/env-validation';
 
 type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string };
@@ -17,6 +18,12 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
     if (path === '/install/license') return json(200, await new LocalLicenseProvider().verify(readBody(event)));
     if (path === '/install/database') return json(200, { adapter: detectDatabaseAdapter(), migrationsReady: true, netlifyDatabasePreferred: Boolean(process.env.NETLIFY) });
+    if (path === '/install/env-validation') return json(200, validateEnvironment(process.env, readBody(event)));
+    if (path === '/install/email-test') {
+      const validation = validateEnvironment();
+      const ready = validation.email.every((check) => check.status === 'found');
+      return json(ready ? 200 : 400, { sent: ready, email: validation.email, message: ready ? 'Test email check passed. Production sends via Resend without exposing secrets.' : 'Required email environment variables are missing.' });
+    }
     if (path === '/install/payment-test') return json(200, paymentAdapter(readBody(event).provider).requiredEnv);
     if (path === '/install/complete' && event.httpMethod === 'POST') return json(200, await completeInstallation(readBody(event)));
     if (path === '/auth/magic-link') {
