@@ -239,3 +239,17 @@ main, section, article, aside, header, footer, nav, div { min-width:0; }
 .module-tabs span { border:1px solid var(--border); border-radius:999px; padding:.3rem .65rem; background:var(--surface-muted); font-size:.84rem; }
 .module-toolbar select { flex:0 1 12rem; min-width:10rem; }
 .module-create small { display:block; margin-top:.25rem; }
+.view-as-control { position:relative; display:flex; align-items:center; gap:.45rem; max-width:min(34rem, 46vw); }
+.view-as-control select { min-height:38px; padding:.45rem .8rem; border-radius:999px; font-size:.9rem; font-weight:850; background:color-mix(in srgb, var(--card) 86%, transparent); }
+.view-as-popover { position:absolute; top:calc(100% + .65rem); right:0; z-index:45; width:min(420px, 92vw); display:grid; gap:.75rem; box-shadow:0 24px 80px rgba(2,6,23,.22); }
+.view-as-banner { margin:0 1.25rem 1rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:1rem 1.15rem; border:1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius:20px; background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--card)), color-mix(in srgb, var(--primary) 8%, var(--card))); box-shadow:0 18px 42px color-mix(in srgb, var(--primary) 13%, transparent); }
+.view-as-banner strong { display:block; letter-spacing:-.02em; }
+.view-as-banner span { color:var(--muted); }
+.settings-stack { display:grid; gap:1rem; }
+.role-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; }
+.compact-card { display:grid; gap:.8rem; }
+.permission-matrix { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:.55rem; max-height:34rem; overflow:auto; padding:.25rem; }
+.check-row { display:flex; align-items:flex-start; gap:.7rem; padding:.75rem; border:1px solid var(--line); border-radius:16px; background:color-mix(in srgb, var(--card) 88%, transparent); }
+.check-row input[type="checkbox"] { width:auto; min-height:auto; margin-top:.25rem; }
+.check-row small { display:block; color:var(--muted); line-height:1.45; }
+@media (max-width: 900px) { .view-as-control { max-width:100%; width:100%; } .view-as-banner { flex-direction:column; align-items:flex-start; } }
