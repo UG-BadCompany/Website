@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState, type AnchorHTMLAttributes } from 'react';
 
 type RouterState = { path: string; push: (path: string) => void };
 const RouterContext = createContext<RouterState>({ path: '/', push: () => undefined });
@@ -15,9 +15,9 @@ export function RouterProvider({ children }: { children: ReactNode }) {
   return <RouterContext.Provider value={value}>{children}</RouterContext.Provider>;
 }
 export function useRouter() { return useContext(RouterContext); }
-export function Link({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+export function Link({ href, children, className, ...props }: { href: string; children: ReactNode; className?: string } & AnchorHTMLAttributes<HTMLAnchorElement>) {
   const router = useRouter();
-  return <a href={href} className={className} onClick={(e) => { e.preventDefault(); router.push(href); }}>{children}</a>;
+  return <a href={href} className={className} {...props} onClick={(e) => { props.onClick?.(e); if (e.defaultPrevented) return; e.preventDefault(); router.push(href); }}>{children}</a>;
 }
 export function NavLink({ href, children }: { href: string; children: ReactNode }) {
   const { path, push } = useRouter();

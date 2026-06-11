@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { PublicLayout } from '../components/Layout';
 import { Link, useRouter } from '../components/Router';
 import { isAllowedRedirect, useAuth } from '../lib/auth';
 import { pageTitle, useBranding } from '../lib/branding';
-import { BrandLogo } from '../components/ui';
+import { AuthCheckingState, BrandLogo } from '../components/ui';
 
 type MagicStatus = 'verifying' | 'missing-token' | 'invalid' | 'error';
 
@@ -20,12 +20,19 @@ function safeRedirectFromSearch(defaultRedirect = '/dashboard') {
 export function LoginPage() {
   usePageTitle('Login');
   const branding = useBranding();
+  const auth = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState('');
   const redirect = useMemo(() => safeRedirectFromSearch(), []);
 
-  const submit = async (event: React.FormEvent) => {
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+    router.push(isAllowedRedirect(redirect) ? redirect : '/dashboard');
+  }, [auth.isAuthenticated, redirect, router]);
+
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     setStatus('sending');
     setError('');
@@ -44,10 +51,14 @@ export function LoginPage() {
     }
   };
 
-  return <PublicLayout><section className="section narrow auth-shell"><div className="auth-card"><div className="auth-brand"><BrandLogo /><div><p className="eyebrow">Magic Link First</p><h1>Login to {branding.displayName}</h1></div></div><p>Enter your email address and we’ll send a secure, one-time login link. A session is created only after you click the link from your email.</p>{status === 'sent' ? <div className="success-panel"><h2>Check your email</h2><p>Check your email for a secure login link to {branding.displayName}.</p><p className="muted">The link expires in 15 minutes and can only be used once.</p><button className="button secondary" type="button" onClick={() => setStatus('idle')}>Send another link</button></div> : <form className="form" onSubmit={submit}><label><span className="field-label">Email Address</span><input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}/></label>{error && <p className="error-text">{error}</p>}<button className="button" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Send Magic Link'}</button></form>}</div></section></PublicLayout>;
+  if (auth.isLoading || auth.isAuthenticated) {
+    return <PublicLayout><section className="section auth-shell"><div className="auth-card"><AuthCheckingState /></div></section></PublicLayout>;
+  }
+
+  return <PublicLayout><section className="section auth-shell"><div className="auth-card"><div className="auth-brand"><BrandLogo /><div className="auth-brand-copy"><p className="eyebrow">Secure sign in</p><strong>{branding.displayName}</strong></div></div><div className="auth-copy"><h1>Login to your account</h1><p>Enter your email and we’ll send a secure one-time login link for {branding.displayName}.</p>{auth.status === 'error' && <p className="error-text">We could not confirm an existing session, so you can request a new secure login link.</p>}</div>{status === 'sent' ? <div className="success-panel"><h2>Check your email</h2><p>Check your email for a secure login link to {branding.displayName}.</p><p className="muted">The link expires in 15 minutes and can only be used once.</p><button className="button secondary" type="button" onClick={() => setStatus('idle')}>Send another link</button></div> : <form className="form auth-form" onSubmit={submit}><label><span className="field-label">Email Address</span><input className="auth-input" type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}/></label>{error && <p className="error-text">{error}</p>}<button className="button auth-button" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : 'Send Magic Link'}</button></form>}</div></section></PublicLayout>;
 }
 
-export function MagicLinkSentPage() { usePageTitle('Check your email'); const branding = useBranding(); return <PublicLayout><section className="section narrow"><h1>Check your email</h1><p>Check your email for a secure login link to {branding.displayName}.</p><p>The link expires in 15 minutes and can only be used once.</p><Link href="/login" className="button secondary">Send New Link</Link></section></PublicLayout>; }
+export function MagicLinkSentPage() { usePageTitle('Check your email'); const branding = useBranding(); return <PublicLayout><section className="section auth-shell"><div className="auth-card"><div className="auth-brand"><BrandLogo /><div className="auth-brand-copy"><p className="eyebrow">Magic link sent</p><strong>{branding.displayName}</strong></div></div><div className="auth-copy"><h1>Check your email</h1><p>Check your email for a secure login link to {branding.displayName}.</p><p>The link expires in 15 minutes and can only be used once.</p></div><Link href="/login" className="button secondary">Send New Link</Link></div></section></PublicLayout>; }
 
 export function AuthMagicPage() {
   usePageTitle('Login Link');
@@ -94,10 +105,10 @@ export function AuthMagicPage() {
     return () => { active = false; };
   }, []);
 
-  if (status === 'verifying') return <PublicLayout><section className="section narrow"><h1>Signing you in securely…</h1><p>We are verifying your one-time magic link.</p></section></PublicLayout>;
+  if (status === 'verifying') return <PublicLayout><section className="section auth-shell"><div className="auth-card"><AuthCheckingState title="Signing you in securely…" /></div></section></PublicLayout>;
 
   const title = status === 'missing-token' ? 'Login link is missing a token.' : 'This login link is expired or invalid.';
-  return <PublicLayout><section className="section narrow"><h1>{title}</h1><p>{status === 'missing-token' ? 'Please request a new secure login link.' : message || 'Magic links expire after 15 minutes and can only be used once.'}</p><div className="button-row"><Link href="/login" className="button">Send new login link</Link><Link href="/" className="button secondary">Return home</Link></div></section></PublicLayout>;
+  return <PublicLayout><section className="section auth-shell"><div className="auth-card"><div className="auth-copy"><h1>{title}</h1><p>{status === 'missing-token' ? 'Please request a new secure login link.' : message || 'Magic links expire after 15 minutes and can only be used once.'}</p></div><div className="button-row"><Link href="/login" className="button">Send new login link</Link><Link href="/" className="button secondary">Return home</Link></div></div></section></PublicLayout>;
 }
 
 export function LogoutPage() { usePageTitle('Signed out'); const auth = useAuth(); useEffect(() => { auth.signOutLocal(); }, []); return <PublicLayout><section className="section narrow"><h1>Signed out</h1><p>Your session has been cleared.</p><Link href="/login" className="button">Sign in again</Link></section></PublicLayout>; }
