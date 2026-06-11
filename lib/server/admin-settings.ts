@@ -1,4 +1,4 @@
-import { hasPermission, type AuthUser, HttpError } from './auth';
+import { auditLog, hasPermission, type AuthUser, HttpError } from './auth';
 import { createDatabase, type Queryable } from './database';
 import { DEFAULT_PERMISSION_KEYS, getPublicSiteSettings, getSystemDiagnostics, runMigrations } from './installation';
 import { ensureModuleFoundation } from './modules';
@@ -19,6 +19,10 @@ export async function ensureAdminFoundation(db: Queryable = createDatabase()) {
     )
   `);
   await db.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS display_name text, ADD COLUMN IF NOT EXISTS service_area text, ADD COLUMN IF NOT EXISTS business_hours text, ADD COLUMN IF NOT EXISTS logo_media_id uuid NULL, ADD COLUMN IF NOT EXISTS logo_url text NULL, ADD COLUMN IF NOT EXISTS logo_resolved_url text NULL, ADD COLUMN IF NOT EXISTS favicon_media_id uuid NULL, ADD COLUMN IF NOT EXISTS favicon_url text NULL, ADD COLUMN IF NOT EXISTS favicon_resolved_url text NULL, ADD COLUMN IF NOT EXISTS branding_updated_at timestamptz NULL`);
+  await db.query(`ALTER TABLE roles ADD COLUMN IF NOT EXISTS archived_at timestamptz NULL`);
+  await db.query(`ALTER TABLE permissions ADD COLUMN IF NOT EXISTS system_permission boolean DEFAULT true, ADD COLUMN IF NOT EXISTS dangerous_permission boolean DEFAULT false`);
+  await db.query(`UPDATE permissions SET system_permission = true WHERE system_permission IS NULL`);
+  await db.query(`UPDATE permissions SET dangerous_permission = true WHERE key = '*' OR key LIKE '%.manage'`);
   await seedMissingPermissions(db);
 }
 
@@ -66,7 +70,18 @@ function requireManage(user: AuthUser, permission: string) {
 
 export async function handleSettingsRoute(path: string, method: string, body: SettingsBody, user: AuthUser, db: Queryable = createDatabase()) {
   await ensureAdminFoundation(db);
-  const idMatch = path.match(/^\/settings\/(users|roles)\/([^/]+)$/);
+  if (path === '/settings/users/invite') {
+    if (method !== 'POST') throw new HttpError(405, 'Method not allowed');
+    requireManage(user, 'users.manage');
+    return createUser(body, user, db);
+  }
+  const rolePermissionMatch = path.match(/^\/settings\/roles\/([^/]+)\/permissions$/);
+  if (rolePermissionMatch) return handleRolePermissions(rolePermissionMatch[1], method, body, user, db);
+  const roleActionMatch = path.match(/^\/settings\/roles\/([^/]+)\/(duplicate|archive)$/);
+  if (roleActionMatch) return handleRoleAction(roleActionMatch[1], roleActionMatch[2], method, body, user, db);
+  const userActionMatch = path.match(/^\/settings\/users\/([^/]+)\/resend-invite$/);
+  if (userActionMatch) return handleUserAction(userActionMatch[1], method, user, db);
+  const idMatch = path.match(/^\/settings\/(users|roles|permissions)\/([^/]+)$/);
   if (idMatch) return handleSettingsPatch(idMatch[1], idMatch[2], method, body, user, db);
   const section = path.replace(/^\/settings\//, '');
   if (method !== 'GET' && method !== 'POST') throw new HttpError(405, 'Method not allowed');
@@ -75,9 +90,10 @@ export async function handleSettingsRoute(path: string, method: string, body: Se
   if (section === 'company') return method === 'POST' ? saveCompany(body, db) : getCompany(db);
   if (section === 'branding') return method === 'POST' ? saveBranding(body, db) : getBranding(db);
   if (section === 'theme') return method === 'POST' ? saveThemeSettings(body, db) : getThemeSettings(db);
-  if (section === 'users') return method === 'POST' ? createUser(body, db) : getUsers(db);
-  if (section === 'roles') return method === 'POST' ? createRole(body, db) : getRoles(db);
-  if (section === 'permissions') return getPermissions(db);
+  if (section === 'users') return method === 'POST' ? createUser(body, user, db) : getUsers(db);
+  if (section === 'roles') return method === 'POST' ? createRole(body, user, db) : getRoles(db);
+  if (section === 'roles-permissions') return getRoles(db);
+  if (section === 'permissions') return method === 'POST' ? createPermission(body, user, db) : getPermissions(db);
   if (section === 'foundation') return getFoundation(db);
   if (section === 'payment') return method === 'POST' ? savePayment(body, db) : getPayment(db);
   if (section === 'email') return { ok: true, email: await getSetting(db, 'email.settings', { provider: 'resend', configured: Boolean(process.env.RESEND_API_KEY), from: process.env.EMAIL_FROM || '' }) };
@@ -89,17 +105,104 @@ export async function handleSettingsRoute(path: string, method: string, body: Se
 
 async function handleSettingsPatch(kind: string, id: string, method: string, body: SettingsBody, user: AuthUser, db: Queryable) {
   if (method !== 'PATCH') throw new HttpError(405, 'Method not allowed');
-  requireManage(user, kind === 'users' ? 'users.manage' : 'roles.manage');
+  requireManage(user, kind === 'users' ? 'users.manage' : kind === 'permissions' ? 'permissions.manage' : 'roles.manage');
   if (kind === 'users') {
+    const current = (await db.query<any>(`select u.id::text, u.status, coalesce(r.name, '') as role from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id where u.id=$1`, [id])).rows[0];
+    if (!current) throw new HttpError(404, 'User not found');
+    if ((body.status === 'inactive' || body.status === 'deactivated') && current.role === 'Owner') await assertNotLastOwner(id, db);
+    if (typeof body.roleId === 'string' && body.roleId) {
+      const nextRole = (await db.query<{ name: string }>(`select name from roles where id=$1`, [body.roleId])).rows[0]?.name;
+      if (nextRole === 'Owner' && user.role !== 'Owner') throw new HttpError(403, 'Only an Owner can assign Owner role');
+      if (current.role === 'Owner' && nextRole !== 'Owner') await assertNotLastOwner(id, db);
+    }
     await db.query(`update users set name = coalesce(nullif($2, ''), name), status = coalesce(nullif($3, ''), status), updated_at = now() where id = $1`, [id, String(body.name || ''), String(body.status || '')]);
     if (typeof body.roleId === 'string' && body.roleId) {
       await db.query(`delete from user_roles where user_id = $1`, [id]);
       await db.query(`insert into user_roles (user_id, role_id) values ($1, $2) on conflict do nothing`, [id, body.roleId]);
+      await auditLog('user role changed', { targetUserId: id, roleId: body.roleId }, user.id, db).catch(() => undefined);
     }
+    if (body.status === 'inactive' || body.status === 'deactivated') await auditLog('user deactivated', { targetUserId: id }, user.id, db).catch(() => undefined);
     return getUsers(db);
   }
-  await db.query(`update roles set description = coalesce($2, description) where id = $1 and system_role = false`, [id, typeof body.description === 'string' ? body.description : null]);
+  if (kind === 'permissions') {
+    await db.query(`update permissions set description = coalesce(nullif($2,''), description), group_name = coalesce(nullif($3,''), group_name), dangerous_permission = coalesce($4, dangerous_permission) where id::text = $1 or key = $1`, [id, String(body.description || ''), String(body.group || ''), typeof body.dangerousPermission === 'boolean' ? body.dangerousPermission : null]);
+    await auditLog('permission edited', { permissionId: id }, user.id, db).catch(() => undefined);
+    return getPermissions(db);
+  }
+  const existing = (await db.query<any>(`select name, system_role as "systemRole" from roles where id=$1`, [id])).rows[0];
+  if (!existing) throw new HttpError(404, 'Role not found');
+  if (existing.name === 'Owner' && body.name && body.name !== 'Owner') throw new HttpError(400, 'Owner role cannot be renamed');
+  await db.query(`update roles set name = case when system_role = false then coalesce(nullif($2,''), name) else name end, description = coalesce($3, description) where id = $1`, [id, typeof body.name === 'string' ? body.name.trim() : '', typeof body.description === 'string' ? body.description : null]);
+  await auditLog('role edited', { roleId: id }, user.id, db).catch(() => undefined);
   return getRoles(db);
+}
+
+
+async function assertNotLastOwner(targetUserId: string, db: Queryable) {
+  const result = await db.query<{ count: string }>(`select count(*)::text from users u join user_roles ur on ur.user_id=u.id join roles r on r.id=ur.role_id where r.name='Owner' and u.status='active' and u.id <> $1`, [targetUserId]);
+  if (Number(result.rows[0]?.count || 0) < 1) throw new HttpError(400, 'Cannot demote or deactivate the last active Owner');
+}
+
+async function replaceRolePermissions(roleId: string, permissionKeys: string[], db: Queryable) {
+  const role = (await db.query<{ name: string }>(`select name from roles where id=$1`, [roleId])).rows[0];
+  if (!role) throw new HttpError(404, 'Role not found');
+  const keys = [...new Set(role.name === 'Owner' ? ['*', ...permissionKeys] : permissionKeys.filter((key) => key !== '*'))];
+  await db.query(`delete from role_permissions where role_id=$1`, [roleId]);
+  await db.query(`insert into role_permissions (role_id, permission_id) select $1, id from permissions where key = any($2) on conflict do nothing`, [roleId, keys]);
+  if (role.name === 'Owner') await db.query(`insert into role_permissions (role_id, permission_id) select $1, id from permissions where key='*' on conflict do nothing`, [roleId]);
+}
+
+async function handleRolePermissions(id: string, method: string, body: SettingsBody, user: AuthUser, db: Queryable) {
+  requireManage(user, 'roles.manage');
+  if (method === 'GET') {
+    const role = (await db.query<any>(`select r.id::text, r.name, r.description, r.system_role as "systemRole", coalesce(array_agg(p.key order by p.key) filter (where p.key is not null), '{}') as permissions from roles r left join role_permissions rp on rp.role_id=r.id left join permissions p on p.id=rp.permission_id where r.id=$1 group by r.id`, [id])).rows[0];
+    if (!role) throw new HttpError(404, 'Role not found');
+    return { ok: true, role };
+  }
+  if (method !== 'POST') throw new HttpError(405, 'Method not allowed');
+  const role = (await db.query<any>(`select name, system_role as "systemRole" from roles where id=$1`, [id])).rows[0];
+  if (!role) throw new HttpError(404, 'Role not found');
+  const permissionKeys = Array.isArray(body.permissionKeys) ? body.permissionKeys.map(String) : [];
+  if (role.name === 'Owner' && !permissionKeys.includes('*')) throw new HttpError(400, 'Owner must always keep wildcard permission');
+  if (user.role !== 'Owner' && user.permissions.includes('roles.manage') && !permissionKeys.includes('roles.manage') && role.name === user.role) throw new HttpError(400, 'You cannot remove your own roles.manage permission');
+  await replaceRolePermissions(id, permissionKeys, db);
+  await auditLog('permissions changed', { roleId: id, role: role.name, permissionKeys }, user.id, db).catch(() => undefined);
+  return getRoles(db);
+}
+
+async function handleRoleAction(id: string, action: string, method: string, body: SettingsBody, user: AuthUser, db: Queryable) {
+  if (method !== 'POST') throw new HttpError(405, 'Method not allowed');
+  requireManage(user, 'roles.manage');
+  const role = (await db.query<any>(`select id::text, name, description, system_role as "systemRole" from roles where id=$1`, [id])).rows[0];
+  if (!role) throw new HttpError(404, 'Role not found');
+  if (action === 'archive') {
+    if (role.systemRole) throw new HttpError(400, 'System roles cannot be archived');
+    await db.query(`update roles set archived_at=now() where id=$1`, [id]);
+    await auditLog('role archived', { roleId: id, role: role.name }, user.id, db).catch(() => undefined);
+    return getRoles(db);
+  }
+  const name = String(body.name || `${role.name} Copy`).trim();
+  const result = await db.query<{ id: string }>(`insert into roles (name, description, system_role) values ($1, $2, false) returning id`, [name, role.description || `Duplicated from ${role.name}`]);
+  await db.query(`insert into role_permissions (role_id, permission_id) select $1, permission_id from role_permissions where role_id=$2 on conflict do nothing`, [result.rows[0].id, id]);
+  await auditLog('role duplicated', { sourceRoleId: id, newRoleId: result.rows[0].id }, user.id, db).catch(() => undefined);
+  return getRoles(db);
+}
+
+async function handleUserAction(id: string, method: string, user: AuthUser, db: Queryable) {
+  if (method !== 'POST') throw new HttpError(405, 'Method not allowed');
+  requireManage(user, 'users.manage');
+  await auditLog('user invite resent', { targetUserId: id }, user.id, db).catch(() => undefined);
+  return { ok: true };
+}
+
+export async function getViewAsOptions(user: AuthUser, db: Queryable = createDatabase()) {
+  await ensureAdminFoundation(db);
+  if (!(user.role === 'Owner' || user.permissions.includes('*'))) throw new HttpError(403, 'Owner access required');
+  const roles = (await getRoles(db)).roles;
+  const clients = await db.query<any>(`select c.id::text, c.display_name as name, cc.email::text from clients c left join client_contacts cc on cc.client_id=c.id and cc.primary_contact=true order by c.display_name limit 200`).catch(() => ({ rows: [] } as any));
+  const technicians = await db.query<any>(`select u.id::text, u.name, u.email::text from users u join user_roles ur on ur.user_id=u.id join roles r on r.id=ur.role_id where r.name='Technician' and u.status='active' order by u.name limit 200`).catch(() => ({ rows: [] } as any));
+  await auditLog('view as options opened', { roles: roles.length }, user.id, db).catch(() => undefined);
+  return { ok: true, roles, clients: clients.rows, technicians: technicians.rows };
 }
 
 async function getCompany(db: Queryable) {
@@ -135,23 +238,54 @@ async function getThemeSettings(db: Queryable) { return { ok: true, theme: await
 async function saveThemeSettings(body: SettingsBody, db: Queryable) { await upsertSetting(db, 'theme.settings', body.theme as Json || body as Json); return getThemeSettings(db); }
 
 async function getUsers(db: Queryable) {
-  const users = await db.query<any>(`select u.id::text, u.name, u.email::text, u.status, u.created_at::text as "createdAt", r.id::text as "roleId", r.name as role from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id order by u.created_at desc`);
-  const roles = await db.query<any>(`select id::text, name from roles order by name`);
+  const users = await db.query<any>(`select u.id::text, u.name, u.email::text, u.status, u.created_at::text as "createdAt", u.updated_at::text as "lastLogin", r.id::text as "roleId", r.name as role,
+    coalesce(array_agg(distinct p.key) filter (where p.key is not null), '{}') as permissions
+    from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id left join role_permissions rp on rp.role_id=r.id left join permissions p on p.id=rp.permission_id
+    group by u.id, r.id, r.name order by u.created_at desc`);
+  const roles = await db.query<any>(`select id::text, name from roles where archived_at is null order by system_role desc, name`);
   return { ok: true, users: users.rows, roles: roles.rows };
 }
-async function createUser(body: SettingsBody, db: Queryable) {
+async function createUser(body: SettingsBody, user: AuthUser, db: Queryable) {
   const email = String(body.email || '').trim();
   if (!email) throw new HttpError(400, 'Email is required');
   const result = await db.query<{ id: string }>(`insert into users (name, email, status) values ($1, $2, 'active') on conflict (email) do update set name=excluded.name, updated_at=now() returning id`, [String(body.name || email), email]);
   if (body.roleId) await db.query(`insert into user_roles (user_id, role_id) values ($1, $2) on conflict do nothing`, [result.rows[0].id, body.roleId]);
+  await auditLog('user invited', { targetUserId: result.rows[0].id, email }, user.id, db).catch(() => undefined);
   return getUsers(db);
 }
 async function getRoles(db: Queryable) {
-  const roles = await db.query<any>(`select r.id::text, r.name, r.description, r.system_role as "systemRole", count(rp.permission_id)::int as "permissionsCount" from roles r left join role_permissions rp on rp.role_id=r.id group by r.id order by r.system_role desc, r.name`);
-  return { ok: true, roles: roles.rows };
+  const roles = await db.query<any>(`select r.id::text, r.name, r.description, r.system_role as "systemRole", r.archived_at is not null as archived,
+    count(distinct rp.permission_id)::int as "permissionsCount", count(distinct ur.user_id)::int as "userCount",
+    coalesce(array_agg(distinct p.key order by p.key) filter (where p.key is not null), '{}') as permissions
+    from roles r left join role_permissions rp on rp.role_id=r.id left join permissions p on p.id=rp.permission_id left join user_roles ur on ur.role_id=r.id
+    where r.archived_at is null group by r.id order by r.system_role desc, r.name`);
+  const permissions = await getPermissions(db);
+  return { ok: true, roles: roles.rows, permissions: permissions.permissions };
 }
-async function createRole(body: SettingsBody, db: Queryable) { await db.query(`insert into roles (name, description, system_role) values ($1, $2, false) on conflict (name) do update set description=excluded.description`, [String(body.name || '').trim(), String(body.description || '')]); return getRoles(db); }
-async function getPermissions(db: Queryable) { const rows = await db.query<any>(`select key, description, group_name as "group" from permissions order by group_name, key`); return { ok: true, permissions: rows.rows }; }
+async function createRole(body: SettingsBody, user: AuthUser, db: Queryable) {
+  const name = String(body.name || '').trim();
+  if (!name) throw new HttpError(400, 'Role name is required');
+  if (name.toLowerCase() === 'owner') throw new HttpError(400, 'Owner role already exists and is locked');
+  const permissionKeys = Array.isArray(body.permissionKeys) ? body.permissionKeys.map(String).filter(Boolean) : [];
+  const result = await db.query<{ id: string }>(`insert into roles (name, description, system_role) values ($1, $2, false) on conflict (name) do update set description=excluded.description, archived_at=null returning id`, [name, String(body.description || '')]);
+  if (permissionKeys.length) await replaceRolePermissions(result.rows[0].id, permissionKeys, db);
+  await auditLog('role created', { roleId: result.rows[0].id, name, permissionKeys }, user.id, db).catch(() => undefined);
+  return getRoles(db);
+}
+async function getPermissions(db: Queryable) {
+  const rows = await db.query<any>(`select p.id::text, p.key, p.description, p.group_name as "group", p.system_permission as "systemPermission", p.dangerous_permission as "dangerousPermission", coalesce(array_agg(distinct r.name order by r.name) filter (where r.name is not null), '{}') as roles
+    from permissions p left join role_permissions rp on rp.permission_id=p.id left join roles r on r.id=rp.role_id and r.archived_at is null group by p.id order by p.group_name, p.key`);
+  return { ok: true, permissions: rows.rows };
+}
+async function createPermission(body: SettingsBody, user: AuthUser, db: Queryable) {
+  const key = String(body.key || '').trim();
+  if (!key) throw new HttpError(400, 'Permission key is required');
+  if (key === '*') throw new HttpError(400, 'Wildcard permission already exists and cannot be recreated');
+  const group = String(body.group || key.split('.')[0] || 'custom').trim();
+  await db.query(`insert into permissions (key, group_name, description, system_permission, dangerous_permission) values ($1,$2,$3,false,$4) on conflict (key) do update set description=excluded.description, group_name=excluded.group_name, dangerous_permission=excluded.dangerous_permission`, [key, group, String(body.description || `${key} permission`), Boolean(body.dangerousPermission)]);
+  await auditLog('permission created', { key, group }, user.id, db).catch(() => undefined);
+  return getPermissions(db);
+}
 async function getFoundation(db: Queryable) { return { ok: true, foundation: foundationComponents.map((name) => ({ name, status: 'installed', locked: true })) }; }
 async function getPayment(db: Queryable) { const rows = await db.query<any>(`select provider, enabled, key_mapping as "keyMapping" from payment_provider_settings order by provider`).catch(() => ({ rows: [] } as any)); return { ok: true, payment: { providers: rows.rows, settings: await getSetting(db, 'payment.settings', {}) } }; }
 async function savePayment(body: SettingsBody, db: Queryable) { await upsertSetting(db, 'payment.settings', body as Json); return getPayment(db); }

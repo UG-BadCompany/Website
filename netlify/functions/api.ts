@@ -4,7 +4,7 @@ import { detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicServiceCatalog, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
-import { getDashboardLayout, getDashboardOverview, getPortalOverview, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
+import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsOptions, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
@@ -95,6 +95,16 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       return json(200, { ok: true }, { 'Set-Cookie': clearSessionCookie() });
     }
 
+    if (path === '/admin/view-as/options' && event.httpMethod === 'GET') {
+      const user = await requireAuth(event);
+      return json(200, await getViewAsOptions(user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/audit' && event.httpMethod === 'POST') {
+      const user = await requireAuth(event);
+      const body = readBody(event);
+      await auditLog(String(body.event || 'client audit'), typeof body.metadata === 'object' && body.metadata ? body.metadata as Record<string, unknown> : {}, user.id);
+      return json(200, { ok: true });
+    }
     if (path === '/dashboard/overview' && event.httpMethod === 'GET') {
       const user = await requirePermission(event, 'dashboard.view');
       return json(200, await getDashboardOverview(user, event.queryStringParameters?.range), { 'cache-control': 'no-store, max-age=0' });

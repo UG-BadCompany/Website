@@ -1,10 +1,11 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, MessageSquare, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench } from 'lucide-react';
 import { Link, NavLink } from './Router';
 
 import { pageTitle, useBranding } from '../lib/branding';
 import { useAuth } from '../lib/auth';
 import { BrandLogo } from './ui';
+import { fallbackRoleOptions, normalizeRole, type RoleOption } from '../lib/role-management';
 
 const appNavGroups = [
   { group: 'Overview', items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' }] },
@@ -30,7 +31,8 @@ const appNavGroups = [
   { group: 'Administration', items: [
     { href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view' },
     { href: '/settings/users', label: 'Users', icon: UserRound, permission: 'users.view' },
-    { href: '/settings/roles', label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.view' },
+    { href: '/settings/roles', label: 'Roles', icon: ShieldCheck, permission: 'roles.view' },
+    { href: '/settings/roles-permissions', label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.manage' },
     { href: '/settings/diagnostics', label: 'Diagnostics', icon: Stethoscope, permission: 'diagnostics.view' },
   ] },
   { group: 'Portal', items: [
@@ -74,7 +76,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   useEffect(() => { document.title = pageTitle(title, branding); }, [title, branding.companyDisplayName, branding.displayName, branding.companyName]);
   return <div className="app-shell">
     <aside className="sidebar"><Link href="/" className="brand"><BrandLogo /><strong>{branding.displayName}</strong></Link>{visibleGroups.map((group) => <div className="sidebar-section" key={group.group}><p className="eyebrow">{group.group}</p>{group.items.map((item) => <NavLink key={item.href} href={item.href}><item.icon size={18}/>{item.label}</NavLink>)}</div>)}</aside>
-    <section className="app-main"><header className="app-top"><div className="app-title-lockup"><BrandLogo className="app-header-logo"/><div><p className="eyebrow">{branding.displayName} workspace</p><h1>{title}</h1></div></div><div className="topbar-actions"><span className="pill">{auth.role || 'User'}</span><Link href="/account" className="button secondary small">Account</Link></div></header>{children}</section>
+    <section className="app-main"><header className="app-top"><div className="app-title-lockup"><BrandLogo className="app-header-logo"/><div><p className="eyebrow">{branding.displayName} workspace</p><h1>{title}</h1></div></div><div className="topbar-actions"><ViewAsControl/><span className="pill">{auth.isViewAsActive ? `Viewing as ${auth.effectiveRole}` : (auth.realRole || auth.role || 'User')}</span><Link href="/account" className="button secondary small">Account</Link></div></header>{auth.isViewAsActive && <div className="view-as-banner"><div><strong>Owner Preview Mode: Viewing as {auth.effectiveRole}.</strong><span> Actions and navigation are filtered for preview. Your real session remains {auth.realRole}.</span></div><button className="button small" onClick={auth.clearViewAsRole}>Exit View As</button></div>}{children}</section>
     <nav className="mobile-nav">{mobilePriority.map((item) => <NavLink key={item.href} href={item.href}><item.icon size={20}/><small>{item.label}</small></NavLink>)}</nav>
   </div>;
 }
@@ -93,4 +95,66 @@ export function Protected({ permission, children }: { permission: string; childr
   const auth = useAuth();
   if (!auth.can(permission)) return <AppLayout title="Access restricted"><div className="card"><h2>Permission required</h2><p>This page requires <code>{permission}</code>.</p></div></AppLayout>;
   return <>{children}</>;
+}
+
+type ViewAsOptions = { ok?: boolean; roles?: RoleOption[]; clients?: Array<{ id: string; name: string; email?: string }>; technicians?: Array<{ id: string; name: string; email?: string }> };
+
+function ViewAsControl() {
+  const auth = useAuth();
+  const canPreview = auth.realRole.toLowerCase() === 'owner' || auth.realPermissions.includes('*');
+  const [options, setOptions] = useState<ViewAsOptions>({ roles: fallbackRoleOptions(), clients: [], technicians: [] });
+  const [error, setError] = useState('');
+  const [pendingRole, setPendingRole] = useState('');
+  const [contextId, setContextId] = useState('demo');
+
+  useEffect(() => {
+    if (!canPreview) return;
+    fetch('/api/admin/view-as/options', { credentials: 'include', cache: 'no-store', headers: { accept: 'application/json' } })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Unable to load roles (${response.status})`)))
+      .then((data: ViewAsOptions) => setOptions({ roles: (data.roles?.length ? data.roles : fallbackRoleOptions()).map(normalizeRole), clients: data.clients || [], technicians: data.technicians || [] }))
+      .catch((caught: Error) => { setError(caught.message); setOptions({ roles: fallbackRoleOptions().filter((role) => role.name === 'Owner'), clients: [], technicians: [] }); });
+  }, [canPreview]);
+
+  if (!canPreview) return null;
+  const roles = options.roles?.length ? options.roles : fallbackRoleOptions();
+  const selectedRole = roles.find((role) => role.name === pendingRole);
+  const requiresClient = pendingRole.toLowerCase() === 'client';
+  const requiresTechnician = pendingRole.toLowerCase() === 'technician';
+  const contextChoices = requiresClient ? options.clients || [] : requiresTechnician ? options.technicians || [] : [];
+
+  const activate = () => {
+    if (!selectedRole) return;
+    const selectedContextId = contextId === 'demo' ? null : contextId;
+    auth.setViewAsRole(selectedRole.name, {
+      permissions: selectedRole.permissions,
+      clientId: requiresClient ? selectedContextId : null,
+      userId: requiresTechnician ? selectedContextId : null,
+    });
+    setPendingRole('');
+    setContextId('demo');
+  };
+
+  return <div className="view-as-control">
+    <select aria-label="View As role" value={auth.isViewAsActive ? auth.effectiveRole : ''} onChange={(event) => {
+      const roleName = event.target.value;
+      if (!roleName) { auth.clearViewAsRole(); return; }
+      const role = roles.find((item) => item.name === roleName);
+      if (!role) return;
+      if (['Client', 'Technician'].includes(role.name)) { setPendingRole(role.name); setContextId('demo'); return; }
+      auth.setViewAsRole(role.name, { permissions: role.permissions });
+    }}>
+      <option value="">View As: {auth.realRole || 'Owner'} (real)</option>
+      {roles.map((role) => <option key={role.id || role.name} value={role.name}>{role.name} · {role.permissionsCount ?? role.permissions?.length ?? 0} perms · {role.systemRole ? 'System' : 'Custom'}</option>)}
+    </select>
+    {auth.isViewAsActive && <button className="button ghost small" onClick={auth.clearViewAsRole}>Exit</button>}
+    {pendingRole && <div className="view-as-popover card">
+      <strong>Select {pendingRole.toLowerCase()} to preview</strong>
+      <select value={contextId} onChange={(event) => setContextId(event.target.value)}>
+        <option value="demo">Use demo empty {pendingRole.toLowerCase()} shell</option>
+        {contextChoices.map((item) => <option key={item.id} value={item.id}>{item.name}{item.email ? ` — ${item.email}` : ''}</option>)}
+      </select>
+      <div className="button-row"><button className="button small" onClick={activate}>Start preview</button><button className="button secondary small" onClick={() => setPendingRole('')}>Cancel</button></div>
+    </div>}
+    {error && <small className="error-text">View As roles unavailable; Owner only fallback.</small>}
+  </div>;
 }
