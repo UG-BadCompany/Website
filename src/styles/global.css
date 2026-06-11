@@ -27,3 +27,12 @@
 .email-status-row { display:flex; justify-content:space-between; gap:1rem; align-items:center; padding:1rem; border:1px solid var(--line); border-radius:14px; background:var(--card); }
 .button:disabled { opacity:.55; cursor:not-allowed; }
 @media (max-width: 820px) { .mapping-row { grid-template-columns:1fr; }.mapping-row.header { display:none; } }
+.brand img { width:34px; height:34px; border-radius:11px; object-fit:contain; background:var(--card); border:1px solid var(--line); }
+.installer-subsection { margin:1rem 0; padding:1rem; border:1px solid var(--line); border-radius:var(--radius); background:color-mix(in srgb, var(--bg) 55%, var(--card)); }
+.install-card textarea { margin:.35rem 0; }
+.file-upload { display:grid; gap:.45rem; padding:1rem; border:1px dashed var(--line); border-radius:14px; background:var(--card); color:var(--muted); font-weight:800; }
+.file-upload input { padding:.35rem; }
+.file-upload span { color:var(--success); font-size:.85rem; }
+.service-editor { display:grid; grid-template-columns:1fr 1.4fr .8fr auto; gap:.5rem; align-items:center; margin:.6rem 0; }
+.content-summary { margin-top:1rem; padding:1rem; border:1px solid var(--accent); border-radius:var(--radius); background:color-mix(in srgb, var(--accent) 10%, var(--card)); }
+@media (max-width: 820px) { .service-editor { grid-template-columns:1fr; } }

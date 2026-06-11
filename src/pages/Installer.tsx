@@ -2,34 +2,128 @@ import { useEffect, useMemo, useState } from 'react';
 import { PublicLayout } from '../components/Layout';
 import { foundationComponents, permissions, serviceCategories } from '../data/foundation';
 import { getTheme, saveTheme, themePresets, type ThemePalette, type ThemePresetId, type ThemeVariableKey, type ThemeSettings } from '../lib/theme';
+import { saveJson } from '../lib/storage';
 import type { DatabaseProvider, HostingProvider, PaymentProvider, ThemeMode } from '../types/domain';
 
-const steps = ['license','hosting','database','environment','email','payment','company','owner','theme','foundation','expansion-packs','finish'];
-const paymentKeys: Record<PaymentProvider, string[]> = {
-  square: ['SQUARE_ACCESS_TOKEN','SQUARE_LOCATION_ID','SQUARE_ENVIRONMENT','SQUARE_API_VERSION (optional)','SQUARE_WEBHOOK_SIGNATURE_KEY (optional until webhooks are enabled)'],
-  stripe: ['STRIPE_SECRET_KEY','STRIPE_PUBLISHABLE_KEY','STRIPE_WEBHOOK_SECRET'],
-  paypal: ['PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_ENVIRONMENT'],
-  authorize_net: ['AUTHORIZE_API_LOGIN_ID','AUTHORIZE_TRANSACTION_KEY','AUTHORIZE_ENVIRONMENT'],
-  manual: [], configure_later: []
-};
+const steps = ['license','hosting','database','environment','email','payment','company','branding-homepage','owner','theme','foundation','expansion-packs','finish'];
 
 type EnvStatus = 'found' | 'missing' | 'optional' | 'invalid' | 'not_checked';
 type EnvCheck = { key: string; status: EnvStatus; description: string; matchedKey?: string };
 type EnvValidation = { basic: EnvCheck[]; database: EnvCheck[]; payment: EnvCheck[]; email: EnvCheck[]; databaseAdapter: string };
 type MappingRow = { id: string; providerKey: string; contractorKey: 'APP_URL' | 'DATABASE_URL' | 'RESEND_API_KEY' | 'EMAIL_FROM'; description: string };
+type ServiceDraft = { id: string; name: string; description: string; icon: string };
+type UploadDraft = { fileName: string; mimeType: string; dataUrl: string };
+type BrandingHomepageDraft = {
+  logoUrl: string;
+  logoUpload: UploadDraft | null;
+  faviconUrl: string;
+  faviconUpload: UploadDraft | null;
+  displayName: string;
+  tagline: string;
+  heroHeadline: string;
+  heroSubheadline: string;
+  primaryCtaLabel: string;
+  primaryCtaLink: string;
+  secondaryCtaLabel: string;
+  secondaryCtaLink: string;
+  aboutText: string;
+  servicesIntro: string;
+  services: ServiceDraft[];
+  contactPhone: string;
+  contactEmail: string;
+  contactAddress: string;
+  serviceArea: string;
+  businessHours: string;
+  trustText: string;
+  yearsExperience: string;
+  emergencyServiceEnabled: boolean;
+  financingAvailableEnabled: boolean;
+  seoTitle: string;
+  seoDescription: string;
+};
 
-const netlifyMapping: MappingRow[] = [
-  { id: 'app_url', providerKey: 'SITE_URL', contractorKey: 'APP_URL', description: 'Public website URL used for links and redirects.' },
-  { id: 'database_url', providerKey: 'NETLIFY_DATABASE_URL or DATABASE_URL', contractorKey: 'DATABASE_URL', description: 'Database connection used by server functions only.' },
-  { id: 'resend_api_key', providerKey: 'RESEND_API_KEY', contractorKey: 'RESEND_API_KEY', description: 'Server-only key used to send email.' },
-  { id: 'email_from', providerKey: 'MAGIC_LINK_FROM_EMAIL', contractorKey: 'EMAIL_FROM', description: 'From address used for login and system emails.' },
-];
-const genericMapping: MappingRow[] = [
-  { id: 'app_url', providerKey: 'APP_URL', contractorKey: 'APP_URL', description: 'Public website URL used for links and redirects.' },
-  { id: 'database_url', providerKey: 'DATABASE_URL', contractorKey: 'DATABASE_URL', description: 'Database connection used by server functions only.' },
-  { id: 'resend_api_key', providerKey: 'RESEND_API_KEY', contractorKey: 'RESEND_API_KEY', description: 'Server-only key used to send email.' },
-  { id: 'email_from', providerKey: 'EMAIL_FROM', contractorKey: 'EMAIL_FROM', description: 'From address used for login and system emails.' },
-];
+type ProviderFlow = { label: string; databaseOptions: { value: DatabaseProvider; label: string }[]; defaultDatabase: DatabaseProvider; mapping: MappingRow[]; note: string; advancedMappingDefault?: boolean };
+
+const providerFlows: Record<HostingProvider, ProviderFlow> = {
+  netlify: {
+    label: 'Netlify',
+    defaultDatabase: 'netlify_database',
+    databaseOptions: [
+      { value: 'netlify_database', label: 'Netlify Database / Neon recommended' },
+      { value: 'postgres_url', label: 'External PostgreSQL' },
+      { value: 'supabase_postgres', label: 'Supabase PostgreSQL' },
+      { value: 'configure_later', label: 'Configure later / manual' },
+    ],
+    mapping: [
+      { id: 'app_url', providerKey: 'SITE_URL', contractorKey: 'APP_URL', description: 'Public website URL used for links and redirects.' },
+      { id: 'database_url', providerKey: 'NETLIFY_DATABASE_URL or DATABASE_URL', contractorKey: 'DATABASE_URL', description: 'Netlify Database connection used by server functions only.' },
+      { id: 'resend_api_key', providerKey: 'RESEND_API_KEY', contractorKey: 'RESEND_API_KEY', description: 'Server-only key used to send email.' },
+      { id: 'email_from', providerKey: 'MAGIC_LINK_FROM_EMAIL', contractorKey: 'EMAIL_FROM', description: 'From address used for login and system emails.' },
+    ],
+    note: 'Netlify users usually do not need to change these key names.',
+  },
+  vercel: {
+    label: 'Vercel',
+    defaultDatabase: 'vercel_postgres',
+    databaseOptions: [
+      { value: 'vercel_postgres', label: 'Vercel Postgres / Marketplace database if available' },
+      { value: 'neon_postgres', label: 'Neon PostgreSQL' },
+      { value: 'supabase_postgres', label: 'Supabase PostgreSQL' },
+      { value: 'postgres_url', label: 'External PostgreSQL' },
+    ],
+    mapping: [
+      { id: 'app_url', providerKey: 'VERCEL_URL or APP_URL', contractorKey: 'APP_URL', description: 'Stable public website URL for magic links and redirects.' },
+      { id: 'database_url', providerKey: 'DATABASE_URL or POSTGRES_URL', contractorKey: 'DATABASE_URL', description: 'Vercel Marketplace or external database connection.' },
+      { id: 'resend_api_key', providerKey: 'RESEND_API_KEY', contractorKey: 'RESEND_API_KEY', description: 'Server-only key used to send email.' },
+      { id: 'email_from', providerKey: 'MAGIC_LINK_FROM_EMAIL or EMAIL_FROM', contractorKey: 'EMAIL_FROM', description: 'From address used for login and system emails.' },
+    ],
+    note: 'Vercel deployments often expose VERCEL_URL automatically, but production apps should still set a stable APP_URL for magic links.',
+  },
+  docker: {
+    label: 'Docker',
+    defaultDatabase: 'docker_compose_postgres',
+    databaseOptions: [
+      { value: 'docker_compose_postgres', label: 'Docker Compose PostgreSQL recommended' },
+      { value: 'postgres_url', label: 'External PostgreSQL' },
+      { value: 'supabase_postgres', label: 'Supabase PostgreSQL' },
+    ],
+    mapping: genericMapping(),
+    note: 'Use docker-compose.yml to run the app and PostgreSQL together for local or self-hosted installs.',
+  },
+  vps: {
+    label: 'VPS / Node Server',
+    defaultDatabase: 'local_postgres',
+    databaseOptions: [
+      { value: 'local_postgres', label: 'Local PostgreSQL' },
+      { value: 'postgres_url', label: 'External PostgreSQL' },
+      { value: 'supabase_postgres', label: 'Supabase PostgreSQL' },
+      { value: 'managed_postgres', label: 'Managed PostgreSQL' },
+    ],
+    mapping: genericMapping(),
+    note: 'Set environment variables in your process manager, systemd service, or hosting panel.',
+  },
+  custom: {
+    label: 'Other / Custom',
+    defaultDatabase: 'postgres_url',
+    databaseOptions: [
+      { value: 'postgres_url', label: 'External PostgreSQL' },
+      { value: 'supabase_postgres', label: 'Supabase PostgreSQL' },
+      { value: 'manual_config', label: 'Manual configuration' },
+    ],
+    mapping: genericMapping(),
+    note: 'Advanced environment key mapping is visible for custom hosts so you can match your platform naming.',
+    advancedMappingDefault: true,
+  },
+};
+
+const paymentRequirements: Record<PaymentProvider, { required: string[]; optional: string[]; note: string }> = {
+  square: { required: ['SQUARE_ACCESS_TOKEN','SQUARE_LOCATION_ID','SQUARE_ENVIRONMENT'], optional: ['SQUARE_API_VERSION','SQUARE_WEBHOOK_SIGNATURE_KEY'], note: 'Square is the default payment provider.' },
+  stripe: { required: ['STRIPE_SECRET_KEY','STRIPE_PUBLISHABLE_KEY','STRIPE_WEBHOOK_SECRET'], optional: [], note: 'Stripe payment instructions use Stripe-specific environment keys.' },
+  paypal: { required: ['PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_ENVIRONMENT'], optional: [], note: 'PayPal payment instructions use PayPal-specific environment keys.' },
+  authorize_net: { required: ['AUTHORIZE_API_LOGIN_ID','AUTHORIZE_TRANSACTION_KEY','AUTHORIZE_ENVIRONMENT'], optional: [], note: 'Authorize.net payment instructions use Authorize.net-specific environment keys.' },
+  manual: { required: [], optional: [], note: 'Manual payments do not require payment API keys.' },
+  configure_later: { required: [], optional: [], note: 'You can add a payment provider later from settings.' },
+};
 
 const colorControls: { key: ThemeVariableKey; label: string }[] = [
   { key: 'primary', label: 'Primary color' }, { key: 'secondary', label: 'Secondary color' }, { key: 'accent', label: 'Accent color' },
@@ -37,6 +131,30 @@ const colorControls: { key: ThemeVariableKey; label: string }[] = [
   { key: 'text', label: 'Main text' }, { key: 'mutedText', label: 'Muted text' }, { key: 'border', label: 'Border color' },
   { key: 'success', label: 'Success color' }, { key: 'warning', label: 'Warning color' }, { key: 'danger', label: 'Danger color' },
 ];
+
+function genericMapping(): MappingRow[] {
+  return [
+    { id: 'app_url', providerKey: 'APP_URL', contractorKey: 'APP_URL', description: 'Public website URL used for links and redirects.' },
+    { id: 'database_url', providerKey: 'DATABASE_URL', contractorKey: 'DATABASE_URL', description: 'Database connection used by server functions only.' },
+    { id: 'resend_api_key', providerKey: 'RESEND_API_KEY', contractorKey: 'RESEND_API_KEY', description: 'Server-only key used to send email.' },
+    { id: 'email_from', providerKey: 'EMAIL_FROM', contractorKey: 'EMAIL_FROM', description: 'From address used for login and system emails.' },
+  ];
+}
+
+function defaultHomepageDraft(companyName = ''): BrandingHomepageDraft {
+  return {
+    logoUrl: '', logoUpload: null, faviconUrl: '', faviconUpload: null,
+    displayName: companyName || 'ContractorOS', tagline: 'Reliable service from a local team you can trust.',
+    heroHeadline: companyName ? `${companyName} keeps your property running` : 'Contractor services made simple',
+    heroSubheadline: 'Request estimates, schedule service, and stay informed from one easy online experience.',
+    primaryCtaLabel: 'Request Estimate', primaryCtaLink: '/request-estimate', secondaryCtaLabel: 'View Services', secondaryCtaLink: '/services',
+    aboutText: 'Tell customers who you are, what you specialize in, and why your team is the right choice.',
+    servicesIntro: 'Start with your most common services. You can expand the catalog later in the dashboard.',
+    services: [{ id: crypto.randomUUID(), name: 'General Service', description: 'Describe your core service offering.', icon: 'Wrench' }],
+    contactPhone: '', contactEmail: '', contactAddress: '', serviceArea: '', businessHours: '', trustText: 'Licensed and insured', yearsExperience: '',
+    emergencyServiceEnabled: false, financingAvailableEnabled: false, seoTitle: companyName ? `${companyName} | Contractor Services` : 'Contractor Services', seoDescription: 'Request a service estimate from a trusted local contractor.',
+  };
+}
 
 export function InstallerPage({ step = 'install' }: { step?: string }) {
   const initial = Math.max(0, steps.indexOf(step));
@@ -46,22 +164,35 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   const [payment, setPayment] = useState<PaymentProvider>('square');
   const [theme, setTheme] = useState<ThemeSettings>(() => getTheme());
   const [customMapping, setCustomMapping] = useState(false);
-  const [mappingRows, setMappingRows] = useState<MappingRow[]>(netlifyMapping);
+  const [mappingRows, setMappingRows] = useState<MappingRow[]>(providerFlows.netlify.mapping);
   const [envValidation, setEnvValidation] = useState<EnvValidation | null>(null);
   const [emailTestMessage, setEmailTestMessage] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
+  const [homepage, setHomepage] = useState<BrandingHomepageDraft>(() => defaultHomepageDraft());
   const [finishState, setFinishState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [finishMessage, setFinishMessage] = useState('');
   const current = steps[index];
+  const providerFlow = providerFlows[hosting];
 
   useEffect(() => {
-    if (!customMapping) setMappingRows(hosting === 'netlify' ? netlifyMapping : genericMapping);
-    if (hosting === 'netlify') setDatabase('netlify_database');
-  }, [hosting, customMapping]);
+    const nextFlow = providerFlows[hosting];
+    setDatabase(nextFlow.defaultDatabase);
+    setCustomMapping(Boolean(nextFlow.advancedMappingDefault));
+    setMappingRows(nextFlow.mapping);
+  }, [hosting]);
 
   useEffect(() => { saveTheme(theme); }, [theme]);
+
+  useEffect(() => {
+    setHomepage((currentDraft) => ({
+      ...currentDraft,
+      displayName: currentDraft.displayName === 'ContractorOS' && companyName ? companyName : currentDraft.displayName,
+      heroHeadline: currentDraft.heroHeadline === 'Contractor services made simple' && companyName ? `${companyName} keeps your property running` : currentDraft.heroHeadline,
+      seoTitle: currentDraft.seoTitle === 'Contractor Services' && companyName ? `${companyName} | Contractor Services` : currentDraft.seoTitle,
+    }));
+  }, [companyName]);
 
   const mappingPayload = useMemo(() => Object.fromEntries(mappingRows.map((row) => [row.contractorKey, row.providerKey.split(' or ')[0]])), [mappingRows]);
 
@@ -70,20 +201,16 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
     fetch('/api/install/env-validation', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ databaseProvider: database, paymentProvider: payment, mapping: mappingPayload }),
+      body: JSON.stringify({ hostingProvider: hosting, databaseProvider: database, paymentProvider: payment, mapping: mappingPayload }),
     })
       .then((response) => response.ok ? response.json() : null)
       .then((data) => { if (active && data) setEnvValidation(data); })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [database, payment, mappingPayload]);
+  }, [hosting, database, payment, mappingPayload]);
 
   const updateTheme = (patch: Partial<ThemeSettings>) => setTheme((currentTheme) => ({ ...currentTheme, ...patch }));
-  const updateCustomPalette = (patch: Partial<ThemePalette>) => setTheme((currentTheme) => ({
-    ...currentTheme,
-    mode: 'custom',
-    custom: { ...currentTheme.custom, ...patch },
-  }));
+  const updateCustomPalette = (patch: Partial<ThemePalette>) => setTheme((currentTheme) => ({ ...currentTheme, mode: 'custom', custom: { ...currentTheme.custom, ...patch } }));
   const chooseMode = (mode: ThemeMode) => updateTheme({ mode });
   const choosePreset = (presetId: ThemePresetId) => setTheme((currentTheme) => ({ ...currentTheme, mode: 'preset', presetId }));
   const emailReady = envValidation?.email.every((check) => check.status === 'found') ?? false;
@@ -99,10 +226,11 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
     setFinishState('saving');
     setFinishMessage('Locking installer and saving installation flags…');
     try {
+      saveHomepagePreview(homepage, companyName);
       const response = await fetch('/api/install/complete', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ companyName, ownerName, ownerEmail, theme }),
+        body: JSON.stringify({ companyName, ownerName, ownerEmail, theme, homepageSetup: homepage }),
       });
       if (!response.ok) throw new Error(`Installer completion failed with HTTP ${response.status}`);
       const status = await response.json();
@@ -124,17 +252,18 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
         <div className="card install-card">
           <p className="eyebrow">Installer / {current}</p>
           {current === 'license' && <><h1>Verify license</h1><p>License Option B is represented by a provider interface: license server URL + email + license + domain + install tracking.</p><input placeholder="LICENSE_SERVER_URL key name"/><input placeholder="License key"/><input placeholder="Owner email"/><input placeholder="Domain"/></>}
-          {current === 'hosting' && <><h1>Hosting provider</h1><select value={hosting} onChange={(e) => setHosting(e.target.value as HostingProvider)}><option value="netlify">Netlify</option><option value="vercel">Vercel</option><option value="docker">Docker</option><option value="vps">VPS</option><option value="custom">Other/custom</option></select><p>{hosting === 'netlify' ? 'Netlify detected: installer recommends Netlify Database first.' : 'External PostgreSQL or Supabase remains supported.'}</p></>}
-          {current === 'database' && <><h1>Database setup</h1><select value={database} onChange={(e) => setDatabase(e.target.value as DatabaseProvider)}><option value="netlify_database">Netlify Database</option><option value="postgres_url">External PostgreSQL URL</option><option value="supabase_postgres">Supabase PostgreSQL</option></select><p>The application uses one internal database service so app code is adapter-neutral.</p>{envValidation?.database.map((check) => <p key={check.key}><strong>{check.key}:</strong> <StatusBadge status={check.status}/></p>)}</>}
-          {current === 'environment' && <EnvironmentStep hosting={hosting} rows={mappingRows} customMapping={customMapping} setCustomMapping={setCustomMapping} setRows={setMappingRows}/>} 
-          {current === 'email' && <EmailStep validation={envValidation} emailReady={emailReady} sendTestEmail={sendTestEmail} emailTestMessage={emailTestMessage}/>} 
-          {current === 'payment' && <><h1>Payment provider</h1><select value={payment} onChange={(e) => setPayment(e.target.value as PaymentProvider)}><option value="square">Square default</option><option value="stripe">Stripe</option><option value="paypal">PayPal</option><option value="authorize_net">Authorize.net</option><option value="manual">Manual cash/check</option><option value="configure_later">Configure later</option></select><ul>{paymentKeys[payment].map((key) => <li key={key}><code>{key}</code></li>)}</ul>{envValidation?.payment.map((check) => <p key={check.key}><strong>{check.key}:</strong> <StatusBadge status={check.status}/></p>)}</>}
+          {current === 'hosting' && <HostingStep hosting={hosting} setHosting={setHosting}/>}
+          {current === 'database' && <DatabaseStep providerFlow={providerFlow} database={database} setDatabase={setDatabase} validation={envValidation}/>}
+          {current === 'environment' && <EnvironmentStep hosting={hosting} providerFlow={providerFlow} rows={mappingRows} customMapping={customMapping} setCustomMapping={setCustomMapping} setRows={setMappingRows}/>}
+          {current === 'email' && <EmailStep validation={envValidation} emailReady={emailReady} sendTestEmail={sendTestEmail} emailTestMessage={emailTestMessage}/>}
+          {current === 'payment' && <PaymentStep hosting={hosting} payment={payment} setPayment={setPayment} validation={envValidation}/>}
           {current === 'company' && <><h1>Company setup</h1><div className="grid cards"><input placeholder="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)}/><input placeholder="Company email"/><input placeholder="Company phone"/><input placeholder="Address"/><input placeholder="Website URL"/></div></>}
+          {current === 'branding-homepage' && <BrandingHomepageStep draft={homepage} setDraft={setHomepage}/>}
           {current === 'owner' && <><h1>Owner admin</h1><input placeholder="Owner name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)}/><input placeholder="Owner email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)}/><p>Installer creates the first user, assigns the Owner role, and sends a Resend magic login link.</p></>}
-          {current === 'theme' && <ThemeStep theme={theme} chooseMode={chooseMode} choosePreset={choosePreset} updateCustomPalette={updateCustomPalette}/>} 
+          {current === 'theme' && <ThemeStep theme={theme} chooseMode={chooseMode} choosePreset={choosePreset} updateCustomPalette={updateCustomPalette}/>}
           {current === 'foundation' && <><h1>Install ContractorOS Foundation</h1><div className="grid cards">{foundationComponents.map((name) => <div className="pill" key={name}>{name}</div>)}</div><p>{permissions.length} permissions and {serviceCategories.length} default editable service categories will be created by migrations/seeds.</p></>}
           {current === 'expansion-packs' && <><h1>Expansion packs</h1><p>Official add-ons are available later. Default v1 recommendation: none selected.</p>{['Inventory','Workforce','Accounting','Reporting','Customer'].map((p) => <label className="check" key={p}><input type="checkbox"/> {p} Expansion</label>)}</>}
-          {current === 'finish' && <><h1>Finish installation</h1><p>Installer locks, migrations complete, saves the selected theme, owner magic link is sent, and you can open the dashboard.</p><button className="button" disabled={finishState === 'saving'} onClick={finishInstallation}>{finishState === 'saving' ? 'Finishing…' : 'Complete installation'}</button>{finishMessage && <p className={finishState === 'error' ? 'error-text' : undefined}>{finishMessage}</p>}</>}
+          {current === 'finish' && <><h1>Finish installation</h1><p>Installer locks, migrations complete, saves the selected theme and homepage basics, owner magic link is sent, and you can open the dashboard.</p><button className="button" disabled={finishState === 'saving'} onClick={finishInstallation}>{finishState === 'saving' ? 'Finishing…' : 'Complete installation'}</button>{finishMessage && <p className={finishState === 'error' ? 'error-text' : undefined}>{finishMessage}</p>}</>}
           <div className="actions">
             <button className="button secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>Back</button>
             <button className="button" disabled={index === steps.length - 1} onClick={() => setIndex(index + 1)}>Continue</button>
@@ -145,24 +274,46 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   );
 }
 
-function EnvironmentStep({ hosting, rows, customMapping, setCustomMapping, setRows }: { hosting: HostingProvider; rows: MappingRow[]; customMapping: boolean; setCustomMapping: (value: boolean) => void; setRows: (rows: MappingRow[]) => void }) {
+function HostingStep({ hosting, setHosting }: { hosting: HostingProvider; setHosting: (value: HostingProvider) => void }) {
+  const flow = providerFlows[hosting];
+  return <>
+    <h1>Hosting provider</h1>
+    <select value={hosting} onChange={(e) => setHosting(e.target.value as HostingProvider)}><option value="netlify">Netlify</option><option value="vercel">Vercel</option><option value="docker">Docker</option><option value="vps">VPS / Node Server</option><option value="custom">Other / Custom</option></select>
+    <p>{flow.note}</p>
+  </>;
+}
+
+function DatabaseStep({ providerFlow, database, setDatabase, validation }: { providerFlow: ProviderFlow; database: DatabaseProvider; setDatabase: (value: DatabaseProvider) => void; validation: EnvValidation | null }) {
+  return <>
+    <h1>Database setup</h1>
+    <p>{providerFlow.label} installs should use the database option that matches where the connection string is managed.</p>
+    <select value={database} onChange={(e) => setDatabase(e.target.value as DatabaseProvider)}>{providerFlow.databaseOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+    <p className="notice">{providerFlow.note}</p>
+    {database === 'netlify_database' && <p>Installer prefers detecting Netlify Database automatically. If available, no database connection string is requested here.</p>}
+    {(database === 'postgres_url' || database === 'supabase_postgres' || database === 'neon_postgres' || database === 'vercel_postgres') && <p>External database selections validate the mapped database key instead of collecting secrets in the installer.</p>}
+    {(database === 'docker_compose_postgres' || database === 'local_postgres' || database === 'managed_postgres') && <p>Installer checks that <code>DATABASE_URL</code> exists, the database connection works, and migrations can run.</p>}
+    <div className="email-status-list">{validation?.database.map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
+  </>;
+}
+
+function EnvironmentStep({ hosting, providerFlow, rows, customMapping, setCustomMapping, setRows }: { hosting: HostingProvider; providerFlow: ProviderFlow; rows: MappingRow[]; customMapping: boolean; setCustomMapping: (value: boolean) => void; setRows: (rows: MappingRow[]) => void }) {
   return <>
     <h1>Environment key mapping</h1>
-    <p>ContractorOS uses normalized internal config names. This screen shows how your hosting provider's environment variable names map into ContractorOS. These are key names only, not secret values.</p>
-    <span className="status-badge">Recommended mapping locked</span>
-    {hosting === 'netlify' && <p className="notice">Netlify users usually do not need to change this.</p>}
+    <p>These are key names only. Secret values stay in your hosting provider&apos;s environment variable settings.</p>
+    <span className="status-badge">Default mapping locked/read-only</span>
+    <p className="notice">{providerFlow.note}</p>
+    {hosting === 'netlify' && <p className="notice">Netlify users usually do not need to change these key names.</p>}
     <label className="check"><input type="checkbox" checked={customMapping} onChange={(e) => setCustomMapping(e.target.checked)}/> Advanced: customize provider key names</label>
-    {!customMapping ? <p className="notice">Most users should leave this locked. ContractorOS will use the recommended keys for your selected hosting provider.</p> : <p className="notice warning">Only change these if your hosting provider uses different environment variable names.</p>}
+    {!customMapping ? <p className="notice">Most users should leave this locked. ContractorOS internal keys cannot be changed.</p> : <p className="notice warning">Only provider key names are editable. ContractorOS internal keys remain locked.</p>}
     <div className="mapping-table">
-      <div className="mapping-row header"><span>Provider key</span><span>ContractorOS internal key</span><span>Status</span><span>Description</span></div>
+      <div className="mapping-row header"><span>Provider key name</span><span>ContractorOS internal key</span><span>Status</span><span>Description</span></div>
       {rows.map((row) => <div className="mapping-row" key={row.id}>
         {customMapping ? <input aria-label={`${row.contractorKey} provider key`} value={row.providerKey} onChange={(e) => setRows(rows.map((current) => current.id === row.id ? { ...current, providerKey: e.target.value } : current))}/> : <code className="readonly-key">{row.providerKey}</code>}
         <code className="readonly-key">{row.contractorKey}</code>
-        <StatusBadge status="found" label={customMapping ? 'Editable provider key' : 'Locked'}/>
+        <StatusBadge status="found" label={customMapping ? 'Provider key editable' : 'Locked'}/>
         <span>{row.description}</span>
       </div>)}
     </div>
-    <p className="eyebrow">No secret values are collected on this screen.</p>
   </>;
 }
 
@@ -173,12 +324,62 @@ function EmailStep({ validation, emailReady, sendTestEmail, emailTestMessage }: 
   ];
   return <>
     <h1>Email provider</h1>
-    <p>Resend is the v1 default for magic links, quote emails, invoice emails, and setup test email. ContractorOS v1 uses environment variables only and does not collect secret values in the frontend installer.</p>
-    <div className="email-status-list">{emailChecks.map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
-    {!emailReady && <p className="notice warning">Add these environment variables in your hosting provider, then redeploy or refresh installer: <code>RESEND_API_KEY</code> and <code>MAGIC_LINK_FROM_EMAIL</code>.</p>}
+    <p>Resend is the v1 default. ContractorOS detects required environment keys and shows Found/Missing status without editable key-name boxes.</p>
+    <div className="email-status-list">{emailChecks.map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}{check.matchedKey ? ` Found as ${check.matchedKey}.` : ''}</p></div><StatusBadge status={check.status}/></div>)}</div>
+    {!emailReady && <p className="notice warning">Add the missing Resend and email-from variables in your hosting provider, then redeploy or refresh installer.</p>}
     <button className="button" disabled={!emailReady} onClick={sendTestEmail}>Send test email</button>
     {emailTestMessage && <p>{emailTestMessage}</p>}
   </>;
+}
+
+function PaymentStep({ hosting, payment, setPayment, validation }: { hosting: HostingProvider; payment: PaymentProvider; setPayment: (value: PaymentProvider) => void; validation: EnvValidation | null }) {
+  const requirements = paymentRequirements[payment];
+  return <>
+    <h1>Payment provider</h1>
+    <select value={payment} onChange={(e) => setPayment(e.target.value as PaymentProvider)}><option value="square">Square default</option><option value="stripe">Stripe</option><option value="paypal">PayPal</option><option value="authorize_net">Authorize.net</option><option value="manual">Manual cash/check</option><option value="configure_later">Configure later</option></select>
+    <p className="notice">{requirements.note} Add these keys in {providerFlows[hosting].label} environment settings, not in the installer.</p>
+    {requirements.required.length === 0 ? <p>No payment API keys are required for this option.</p> : <><h3>Required keys</h3><ul>{requirements.required.map((key) => <li key={key}><code>{key}</code></li>)}</ul></>}
+    {requirements.optional.length > 0 && <><h3>Optional keys</h3><ul>{requirements.optional.map((key) => <li key={key}><code>{key}</code></li>)}</ul></>}
+    <div className="email-status-list">{validation?.payment.map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
+  </>;
+}
+
+function BrandingHomepageStep({ draft, setDraft }: { draft: BrandingHomepageDraft; setDraft: (draft: BrandingHomepageDraft) => void }) {
+  const update = (patch: Partial<BrandingHomepageDraft>) => setDraft({ ...draft, ...patch });
+  const updateService = (id: string, patch: Partial<ServiceDraft>) => update({ services: draft.services.map((service) => service.id === id ? { ...service, ...patch } : service) });
+  const removeService = (id: string) => update({ services: draft.services.filter((service) => service.id !== id) });
+  const addService = () => update({ services: [...draft.services, { id: crypto.randomUUID(), name: '', description: '', icon: '' }] });
+  return <>
+    <h1>Branding &amp; Basic Homepage</h1>
+    <p className="notice">Set up your basic public homepage now. You can fully customize the homepage later in Dashboard → Website Builder.</p>
+    <section className="installer-subsection"><h3>Company branding</h3><div className="grid cards">
+      <FileUpload label="Company logo upload" onUpload={(logoUpload) => update({ logoUpload })}/><input placeholder="Company logo URL option" value={draft.logoUrl} onChange={(e) => update({ logoUrl: e.target.value })}/>
+      <FileUpload label="Favicon upload" onUpload={(faviconUpload) => update({ faviconUpload })}/><input placeholder="Favicon URL option" value={draft.faviconUrl} onChange={(e) => update({ faviconUrl: e.target.value })}/>
+      <input placeholder="Company display name" value={draft.displayName} onChange={(e) => update({ displayName: e.target.value })}/><input placeholder="Tagline" value={draft.tagline} onChange={(e) => update({ tagline: e.target.value })}/>
+    </div><p className="eyebrow">If both an upload and URL exist, the upload wins.</p></section>
+    <section className="installer-subsection"><h3>Homepage content</h3><div className="grid cards">
+      <input placeholder="Hero headline" value={draft.heroHeadline} onChange={(e) => update({ heroHeadline: e.target.value })}/><input placeholder="Hero subheadline" value={draft.heroSubheadline} onChange={(e) => update({ heroSubheadline: e.target.value })}/>
+      <input placeholder="Primary button label" value={draft.primaryCtaLabel} onChange={(e) => update({ primaryCtaLabel: e.target.value })}/><input placeholder="Primary button link" value={draft.primaryCtaLink} onChange={(e) => update({ primaryCtaLink: e.target.value })}/>
+      <input placeholder="Secondary button label" value={draft.secondaryCtaLabel} onChange={(e) => update({ secondaryCtaLabel: e.target.value })}/><input placeholder="Secondary button link" value={draft.secondaryCtaLink} onChange={(e) => update({ secondaryCtaLink: e.target.value })}/>
+      <textarea placeholder="Short about text" value={draft.aboutText} onChange={(e) => update({ aboutText: e.target.value })}/><textarea placeholder="Services intro text" value={draft.servicesIntro} onChange={(e) => update({ servicesIntro: e.target.value })}/>
+    </div></section>
+    <section className="installer-subsection"><h3>Basic service list</h3>{draft.services.map((service) => <div className="service-editor" key={service.id}><input placeholder="Service name" value={service.name} onChange={(e) => updateService(service.id, { name: e.target.value })}/><input placeholder="Short description" value={service.description} onChange={(e) => updateService(service.id, { description: e.target.value })}/><input placeholder="Icon optional" value={service.icon} onChange={(e) => updateService(service.id, { icon: e.target.value })}/><button className="button secondary" onClick={() => removeService(service.id)}>Remove</button></div>)}<button className="button secondary" onClick={addService}>Add service</button></section>
+    <section className="installer-subsection"><h3>Contact block</h3><div className="grid cards"><input placeholder="Phone" value={draft.contactPhone} onChange={(e) => update({ contactPhone: e.target.value })}/><input placeholder="Email" value={draft.contactEmail} onChange={(e) => update({ contactEmail: e.target.value })}/><input placeholder="Address" value={draft.contactAddress} onChange={(e) => update({ contactAddress: e.target.value })}/><input placeholder="Service area" value={draft.serviceArea} onChange={(e) => update({ serviceArea: e.target.value })}/><input placeholder="Business hours" value={draft.businessHours} onChange={(e) => update({ businessHours: e.target.value })}/></div></section>
+    <section className="installer-subsection"><h3>Trust block</h3><div className="grid cards"><input placeholder="Licensed / insured text" value={draft.trustText} onChange={(e) => update({ trustText: e.target.value })}/><input placeholder="Years of experience" value={draft.yearsExperience} onChange={(e) => update({ yearsExperience: e.target.value })}/><label className="check"><input type="checkbox" checked={draft.emergencyServiceEnabled} onChange={(e) => update({ emergencyServiceEnabled: e.target.checked })}/> Emergency service</label><label className="check"><input type="checkbox" checked={draft.financingAvailableEnabled} onChange={(e) => update({ financingAvailableEnabled: e.target.checked })}/> Financing available</label></div></section>
+    <section className="installer-subsection"><h3>SEO basics</h3><div className="grid cards"><input placeholder="Homepage SEO title" value={draft.seoTitle} onChange={(e) => update({ seoTitle: e.target.value })}/><textarea placeholder="Homepage meta description" value={draft.seoDescription} onChange={(e) => update({ seoDescription: e.target.value })}/></div></section>
+    <section className="content-summary"><p className="eyebrow">Live content summary</p><h2>{draft.heroHeadline || draft.displayName}</h2><p>{draft.heroSubheadline}</p><p><strong>{draft.primaryCtaLabel}</strong> → {draft.primaryCtaLink} · <strong>{draft.secondaryCtaLabel}</strong> → {draft.secondaryCtaLink}</p><p>{draft.services.length} service(s), {draft.contactPhone || 'no phone yet'}, {draft.trustText || 'trust text pending'}</p></section>
+  </>;
+}
+
+function FileUpload({ label, onUpload }: { label: string; onUpload: (upload: UploadDraft) => void }) {
+  const [name, setName] = useState('');
+  return <label className="file-upload">{label}<input type="file" accept="image/*" onChange={(event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setName(file.name); onUpload({ fileName: file.name, mimeType: file.type, dataUrl: String(reader.result) }); };
+    reader.readAsDataURL(file);
+  }}/>{name && <span>{name}</span>}</label>;
 }
 
 function ThemeStep({ theme, chooseMode, choosePreset, updateCustomPalette }: { theme: ThemeSettings; chooseMode: (mode: ThemeMode) => void; choosePreset: (presetId: ThemePresetId) => void; updateCustomPalette: (patch: Partial<ThemePalette>) => void }) {
@@ -198,6 +399,19 @@ function ThemeStep({ theme, chooseMode, choosePreset, updateCustomPalette }: { t
       <label className="color-control">Font style<input value={theme.custom.fontFamily} onChange={(e) => updateCustomPalette({ fontFamily: e.target.value })}/></label>
     </div>}
   </>;
+}
+
+function saveHomepagePreview(draft: BrandingHomepageDraft, companyName: string) {
+  const logoSrc = draft.logoUpload?.dataUrl || draft.logoUrl;
+  const faviconSrc = draft.faviconUpload?.dataUrl || draft.faviconUrl;
+  saveJson('contractoros.branding', { displayName: draft.displayName || companyName || 'ContractorOS', tagline: draft.tagline, logoSrc, faviconSrc });
+  saveJson('contractoros.homepage.basic', {
+    heroHeadline: draft.heroHeadline, heroSubheadline: draft.heroSubheadline, primaryCtaLabel: draft.primaryCtaLabel, primaryCtaLink: draft.primaryCtaLink,
+    secondaryCtaLabel: draft.secondaryCtaLabel, secondaryCtaLink: draft.secondaryCtaLink, aboutText: draft.aboutText, servicesIntro: draft.servicesIntro,
+    services: draft.services, contactPhone: draft.contactPhone, contactEmail: draft.contactEmail, contactAddress: draft.contactAddress, serviceArea: draft.serviceArea,
+    businessHours: draft.businessHours, trustText: draft.trustText, yearsExperience: draft.yearsExperience, emergencyServiceEnabled: draft.emergencyServiceEnabled,
+    financingAvailableEnabled: draft.financingAvailableEnabled, seoTitle: draft.seoTitle, seoDescription: draft.seoDescription,
+  });
 }
 
 function StatusBadge({ status, label }: { status: EnvStatus; label?: string }) {

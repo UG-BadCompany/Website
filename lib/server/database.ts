@@ -1,7 +1,7 @@
 import { Pool, type QueryResult, type QueryResultRow } from 'pg';
 import { readConfig } from './config';
 
-export type DbAdapterName = 'netlify_database' | 'postgres_url' | 'supabase_postgres';
+export type DbAdapterName = 'netlify_database' | 'postgres_url' | 'supabase_postgres' | 'vercel_postgres' | 'neon_postgres' | 'docker_compose_postgres' | 'local_postgres' | 'managed_postgres' | 'manual_config' | 'configure_later';
 export type Queryable = {
   query<T extends QueryResultRow = QueryResultRow>(
     sql: string,

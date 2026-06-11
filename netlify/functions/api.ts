@@ -1,7 +1,7 @@
 import { createMagicToken, hashToken, secureCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
-import { completeInstallation, getInstallStatus } from '../../lib/server/installation';
+import { completeInstallation, getInstallStatus, getPublicSiteSettings } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { validateEnvironment } from '../../lib/server/env-validation';
@@ -14,6 +14,7 @@ const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : 
 export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
   const path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
   try {
+    if (path === '/public/site-settings') return json(200, await getPublicSiteSettings());
     if (path === '/install/status') return json(200, await getInstallStatus());
     if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
     if (path === '/install/license') return json(200, await new LocalLicenseProvider().verify(readBody(event)));
