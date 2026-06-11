@@ -1,6 +1,7 @@
 import { canAccessResource, hasPermission, type AuthUser, HttpError } from './auth';
 import { createDatabase, type Queryable } from './database';
 import { DEFAULT_PERMISSION_KEYS } from './installation';
+import { addActivity, ensureWorkflowFoundation } from './workflow';
 
 type Body = Record<string, unknown>;
 const DEFAULT_CATEGORIES = ['HVAC','Plumbing','Electrical','Handyman','Appliance','Maintenance','General Repair'];
@@ -18,6 +19,7 @@ export async function ensureModuleFoundation(db: Queryable = createDatabase()) {
   await db.query(`alter table assets add column if not exists updated_at timestamptz default now(), add column if not exists serial_number text, add column if not exists model_number text, add column if not exists manufacturer text, add column if not exists installed_at date, add column if not exists notes text`);
   await db.query(`alter table service_categories add column if not exists description text, add column if not exists default_labor_rate_cents int`);
   await db.query(`alter table media_assets add column if not exists archived_at timestamptz, add column if not exists link_type text, add column if not exists link_id uuid`);
+  await ensureWorkflowFoundation(db);
   for (const name of DEFAULT_CATEGORIES) {
     await db.query(`insert into service_categories (name, enabled, sort_order, description) values ($1, true, $2, $3) on conflict (name) do update set enabled = coalesce(service_categories.enabled, true)`, [name, DEFAULT_CATEGORIES.indexOf(name), `${name} services`]);
   }

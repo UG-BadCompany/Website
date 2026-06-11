@@ -33,10 +33,17 @@ const appNavGroups = [
     { href: '/settings/roles', label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.view' },
     { href: '/settings/diagnostics', label: 'Diagnostics', icon: Stethoscope, permission: 'diagnostics.view' },
   ] },
-  { group: 'Portal', items: [{ href: '/portal', label: 'Portal', icon: UserRound, permission: 'portal.view' }] },
+  { group: 'Portal', items: [
+    { href: '/portal', label: 'Portal', icon: UserRound, permission: 'portal.view' },
+    { href: '/requests', label: 'My Requests', icon: Wrench, permission: 'portal.view', roles: ['Client'] },
+    { href: '/quotes', label: 'My Quotes', icon: FileText, permission: 'portal.view', roles: ['Client'] },
+    { href: '/invoices', label: 'My Invoices', icon: FileText, permission: 'portal.view', roles: ['Client'] },
+    { href: '/messages', label: 'Messages', icon: MessageSquare, permission: 'portal.view', roles: ['Client'] },
+    { href: '/account', label: 'Account', icon: UserRound, permission: 'account.view' },
+  ] },
 ];
 
-type NavItem = typeof appNavGroups[number]['items'][number];
+type NavItem = typeof appNavGroups[number]['items'][number] & { roles?: string[] };
 
 
 export function PublicLayout({ children }: { children: ReactNode }) {
@@ -53,9 +60,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
 export function AppLayout({ title, children }: { title: string; children: ReactNode }) {
   const auth = useAuth();
-  const visibleGroups = appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => auth.can(item.permission) || (item.href === '/dashboard' && auth.isAuthenticated)) })).filter((group) => group.items.length > 0);
+  const role = auth.role || '';
+  const visibleGroups = appNavGroups.map((group) => ({ ...group, items: group.items.filter((item: NavItem) => {
+    const roleAllowed = !item.roles || item.roles.includes(role);
+    const permissionAllowed = auth.can(item.permission) || (item.href === '/dashboard' && auth.isAuthenticated);
+    const clientPortalOnly = role === 'Client' ? group.group === 'Portal' || item.href === '/dashboard' : true;
+    const technicianFieldOnly = role === 'Technician' ? !['Administration', 'Financial'].includes(group.group) : true;
+    return roleAllowed && permissionAllowed && clientPortalOnly && technicianFieldOnly;
+  }) })).filter((group) => group.items.length > 0);
   const flatNav = visibleGroups.flatMap((group) => group.items);
-  const mobilePriority = mobileNavForRole(auth.role || '', flatNav);
+  const mobilePriority = mobileNavForRole(role, flatNav);
   const branding = useBranding();
   useEffect(() => { document.title = pageTitle(title, branding); }, [title, branding.companyDisplayName, branding.displayName, branding.companyName]);
   return <div className="app-shell">

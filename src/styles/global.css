@@ -229,3 +229,9 @@ main, section, article, aside, header, footer, nav, div { min-width:0; }
 .alert-warning { border-color:color-mix(in srgb, var(--warning) 45%, var(--line)); background:color-mix(in srgb, var(--warning) 10%, var(--card)); }
 .alert-danger { border-color:color-mix(in srgb, var(--danger) 45%, var(--line)); background:color-mix(in srgb, var(--danger) 10%, var(--card)); }
 @media (max-width: 900px) { .section-heading { flex-direction:column; } .kanban-summary { grid-template-columns:1fr 1fr; } }
+/* Keep sidebar active/hover surfaces clipped to the sidebar and away from the app canvas. */
+.sidebar { overflow-y:auto; overflow-x:hidden; contain:paint; isolation:isolate; }
+.sidebar-section { position:relative; z-index:1; }
+.sidebar a:not(.brand) { position:relative; max-width:100%; overflow:hidden; background-clip:padding-box; }
+.sidebar a.active { box-shadow:inset 0 0 0 1px color-mix(in srgb, white 22%, transparent), 0 10px 20px color-mix(in srgb, var(--primary) 16%, transparent); }
+.app-main { min-width:0; overflow-x:hidden; }
