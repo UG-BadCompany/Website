@@ -7,6 +7,7 @@ import { paymentAdapter } from '../../lib/server/payments';
 import { getDashboardLayout, getDashboardOverview, getPortalOverview, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
+import { handleWorkflowRoute } from '../../lib/server/workflow';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -116,6 +117,11 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const user = await requirePermission(event, 'diagnostics.view');
       return json(200, await handleDiagnostics(user), { 'cache-control': 'no-store, max-age=0' });
     }
+    if (isWorkflowApiPath(path)) {
+      const permission = permissionForWorkflowPath(path) || permissionForPath(path) || 'dashboard.view';
+      const user = await requirePermission(event, permission);
+      return json(200, await handleWorkflowRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' });
+    }
     if (isModuleApiPath(path)) {
       const permission = permissionForPath(path) || 'dashboard.view';
       const user = await requirePermission(event, permission);
@@ -154,6 +160,16 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       ...(process.env.NODE_ENV === 'development' ? { details } : {}),
     });
   }
+}
+
+function permissionForWorkflowPath(path: string) {
+  if (/^\/quotes\/[^/]+\/(approve|decline)$/.test(path)) return 'portal.view';
+  if (/^\/workflow\//.test(path)) return 'dashboard.view';
+  return '';
+}
+
+function isWorkflowApiPath(path: string) {
+  return /^(?:\/(?:requests|quotes|jobs|invoices)\/[^/]+\/(?:convert-to-quote|send|approve|decline|convert-to-job|start|complete|create-invoice|mark-paid|closeout)|\/workflow\/[^/]+\/[^/]+\/(?:timeline|summary))$/.test(path);
 }
 
 function isModuleApiPath(path: string) {

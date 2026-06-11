@@ -88,3 +88,25 @@ ADD COLUMN IF NOT EXISTS favicon_resolved_url text NULL,
 ADD COLUMN IF NOT EXISTS branding_updated_at timestamptz NULL;
 
 COMMIT;
+
+CREATE TABLE IF NOT EXISTS activity_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_type text NOT NULL,
+  entity_id uuid NOT NULL,
+  actor_user_id uuid REFERENCES users(id),
+  event_type text NOT NULL,
+  title text NOT NULL,
+  description text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  visibility text NOT NULL DEFAULT 'internal',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS activity_events_entity_idx ON activity_events(entity_type, entity_id, created_at DESC);
+
+INSERT INTO app_settings (key, value) VALUES
+('workflow.auto_invoice_on_job_complete', 'true'::jsonb),
+('workflow.auto_send_invoice_on_job_complete', 'true'::jsonb),
+('workflow.close_request_when_invoice_sent', 'false'::jsonb),
+('workflow.close_request_when_invoice_paid', 'true'::jsonb),
+('workflow.auto_create_job_on_quote_approval', 'true'::jsonb)
+ON CONFLICT (key) DO NOTHING;

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createDatabase, type Queryable } from './database';
 import { sendMagicLink } from './auth';
 import { createStorage } from './storage';
+import { addActivity, ensureWorkflowFoundation } from './workflow';
 
 export type InstallStatus = {
   installed: boolean;
@@ -592,6 +593,7 @@ export async function getPublicServiceCatalog(db: Queryable = createDatabase()) 
 
 export async function createPublicEstimateRequest(input: EstimateInput, db: Queryable = createDatabase()) {
   await runMigrations(db);
+  await ensureWorkflowFoundation(db);
   const firstName = String(input.firstName || '').trim();
   const lastName = String(input.lastName || '').trim();
   const email = String(input.email || '').trim();
@@ -629,6 +631,9 @@ export async function createPublicEstimateRequest(input: EstimateInput, db: Quer
     await db.query(`update media_assets set owner_type = 'work_request', owner_id = $1, visibility = 'private' where id = $2`, [request.rows[0].id, media.id]);
   }
 
+  await addActivity(db, null, 'client', client.rows[0].id, 'created', 'Client created from public estimate request', { visibility: 'client', metadata: { requestId: request.rows[0].id, propertyId: property.rows[0].id } });
+  await addActivity(db, null, 'property', property.rows[0].id, 'created', 'Property created from public estimate request', { visibility: 'client', metadata: { requestId: request.rows[0].id, clientId: client.rows[0].id } });
+  await addActivity(db, null, 'request', request.rows[0].id, 'created', 'Work request submitted', { visibility: 'client', metadata: { clientId: client.rows[0].id, propertyId: property.rows[0].id, source: 'public_request_estimate' } });
   const requestNumber = `REQ-${request.rows[0].id.slice(0, 8).toUpperCase()}`;
   return { ok: true, id: request.rows[0].id, requestNumber, status: 'new', emailConfirmationQueued: Boolean(email && process.env.RESEND_API_KEY) };
 }

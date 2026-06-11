@@ -18,7 +18,7 @@ export async function ensureAdminFoundation(db: Queryable = createDatabase()) {
       updated_at timestamptz DEFAULT now()
     )
   `);
-  await db.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS display_name text, ADD COLUMN IF NOT EXISTS service_area text, ADD COLUMN IF NOT EXISTS business_hours text`);
+  await db.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS display_name text, ADD COLUMN IF NOT EXISTS service_area text, ADD COLUMN IF NOT EXISTS business_hours text, ADD COLUMN IF NOT EXISTS logo_media_id uuid NULL, ADD COLUMN IF NOT EXISTS logo_url text NULL, ADD COLUMN IF NOT EXISTS logo_resolved_url text NULL, ADD COLUMN IF NOT EXISTS favicon_media_id uuid NULL, ADD COLUMN IF NOT EXISTS favicon_url text NULL, ADD COLUMN IF NOT EXISTS favicon_resolved_url text NULL, ADD COLUMN IF NOT EXISTS branding_updated_at timestamptz NULL`);
   await seedMissingPermissions(db);
 }
 
