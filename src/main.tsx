@@ -4,7 +4,7 @@ import { InstallationGate } from './components/InstallationGate';
 import { PublicLayout } from './components/Layout';
 import { RouterProvider, useRouter } from './components/Router';
 import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
-import { AccountPage, AuthCallbackPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
+import { AccountPage, AuthMagicPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
 import { InstallerPage } from './pages/Installer';
 import { AssetsPage, DashboardPage, InvoicesPage, JobsPage, MessagesPage, PortalPage, QuotesPage, RequestsPage, SettingsPage } from './pages/AppPages';
 import { applyTheme } from './lib/theme';
@@ -27,7 +27,7 @@ function App() {
   if (path === '/request-estimate/thank-you' || path === '/thank-you') return <ThankYouPage />;
   if (path === '/login') return <LoginPage />;
   if (path === '/magic-link-sent') return <MagicLinkSentPage />;
-  if (path === '/auth/callback') return <AuthCallbackPage />;
+  if (path === '/auth/magic') return <AuthMagicPage />;
   if (path === '/logout') return <LogoutPage />;
   if (path === '/account') return <AccountPage />;
   if (path.startsWith('/install')) return <InstallerPage step={path.split('/')[2] ?? 'license'} />;
