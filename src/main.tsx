@@ -1,0 +1,42 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { RouterProvider, useRouter } from './components/Router';
+import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
+import { AccountPage, AuthCallbackPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
+import { InstallerPage } from './pages/Installer';
+import { AssetsPage, DashboardPage, InvoicesPage, JobsPage, MessagesPage, PortalPage, QuotesPage, RequestsPage, SettingsPage } from './pages/AppPages';
+import { applyTheme } from './lib/theme';
+import './styles/global.css';
+
+function App() {
+  const { path } = useRouter();
+  if (path === '/') return <HomePage />;
+  if (path === '/about') return <AboutPage />;
+  if (path === '/services') return <ServicesPage />;
+  if (path === '/contact') return <ContactPage />;
+  if (path === '/request-estimate') return <RequestEstimatePage />;
+  if (path === '/thank-you') return <ThankYouPage />;
+  if (path === '/login') return <LoginPage />;
+  if (path === '/magic-link-sent') return <MagicLinkSentPage />;
+  if (path === '/auth/callback') return <AuthCallbackPage />;
+  if (path === '/logout') return <LogoutPage />;
+  if (path === '/account') return <AccountPage />;
+  if (path.startsWith('/install')) return <InstallerPage step={path.split('/')[2] ?? 'license'} />;
+  if (path === '/dashboard') return <DashboardPage />;
+  if (path.startsWith('/portal')) return <PortalPage />;
+  if (path.startsWith('/requests')) return <RequestsPage />;
+  if (path.startsWith('/quotes')) return <QuotesPage />;
+  if (path.startsWith('/jobs') || path.startsWith('/work-orders')) return <JobsPage />;
+  if (path.startsWith('/invoices') || path.startsWith('/payments')) return <InvoicesPage />;
+  if (path.startsWith('/messages')) return <MessagesPage />;
+  if (path.startsWith('/assets')) return <AssetsPage />;
+  if (path.startsWith('/clients') || path.startsWith('/properties')) return <RequestsPage />;
+  if (path.startsWith('/settings')) return <SettingsPage area={path.slice(1)} />;
+  return <HomePage />;
+}
+
+applyTheme();
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined));
+
+createRoot(document.getElementById('root')!).render(<React.StrictMode><RouterProvider><App /></RouterProvider></React.StrictMode>);

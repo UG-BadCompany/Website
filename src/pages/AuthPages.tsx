@@ -1,0 +1,8 @@
+import { PublicLayout } from '../components/Layout';
+import { Link } from '../components/Router';
+
+export function LoginPage() { return <PublicLayout><section className="section narrow"><p className="eyebrow">Magic link login</p><h1>Sign in securely</h1><p>Enter your email. The server stores hashed one-time tokens and sends links through Resend.</p><form className="form"><input type="email" placeholder="you@example.com"/><Link href="/magic-link-sent" className="button">Send magic link</Link></form></section></PublicLayout>; }
+export function MagicLinkSentPage() { return <PublicLayout><section className="section narrow"><h1>Check your email</h1><p>If this address exists, a one-time magic link was sent.</p><Link href="/auth/callback" className="button">Simulate callback locally</Link></section></PublicLayout>; }
+export function AuthCallbackPage() { return <PublicLayout><section className="section narrow"><h1>Signed in</h1><p>Your secure session cookie would be issued by the auth callback in production.</p><Link href="/dashboard" className="button">Continue to dashboard</Link></section></PublicLayout>; }
+export function LogoutPage() { return <PublicLayout><section className="section narrow"><h1>Signed out</h1><p>Your session has been cleared.</p><Link href="/login" className="button">Sign in again</Link></section></PublicLayout>; }
+export function AccountPage() { return <PublicLayout><section className="section narrow"><p className="eyebrow">Account</p><h1>Owner account</h1><p>Login activity, sessions, profile, and logout are part of the Authentication Foundation.</p><Link href="/logout" className="button secondary">Logout</Link></section></PublicLayout>; }
