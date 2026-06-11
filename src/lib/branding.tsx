@@ -79,7 +79,7 @@ export const defaultHomepage: BasicHomepageSettings = {
 function normalizeBranding(input?: Partial<LegacyBrandingSettings>): BrandingSettings {
   const logoUrl = input?.logoUrl ?? input?.logoSrc ?? '';
   const faviconUrl = input?.faviconUrl ?? input?.faviconSrc ?? '';
-  const companyDisplayName = (input as Partial<BrandingSettings> | undefined)?.companyDisplayName || input?.displayName || input?.companyName || defaultBranding.displayName;
+  const companyDisplayName = (input as Partial<BrandingSettings> | undefined)?.companyDisplayName || input?.companyName || input?.displayName || defaultBranding.displayName;
   const displayName = companyDisplayName;
   return {
     ...defaultBranding,
@@ -130,7 +130,7 @@ export function versionedAsset(url?: string, version?: string) {
 }
 
 export function pageTitle(pageTitle?: string, branding: Pick<BrandingSettings, 'companyDisplayName' | 'displayName' | 'companyName'> = defaultBranding) {
-  const company = branding.companyDisplayName || branding.displayName || branding.companyName || 'ContractorOS';
+  const company = branding.companyDisplayName || branding.companyName || 'ContractorOS';
   return pageTitle ? `${pageTitle} | ${company}` : company;
 }
 

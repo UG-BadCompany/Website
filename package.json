@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "netlify:dev": "netlify dev",
     "db:migrate": "tsx scripts/migrate.ts",
-    "installer:reset": "tsx scripts/installer-reset.ts"
+    "installer:reset": "tsx scripts/installer-reset.ts",
+    "repair:owner": "tsx scripts/repair-owner.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

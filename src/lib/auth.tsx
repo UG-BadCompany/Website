@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from '../components/Router';
 import { useBranding, type BrandingSettings } from './branding';
-import { permissionsForRole } from './permissions';
+import { hasPermission, permissionsForRole } from './permissions';
 import type { AppUser } from '../types/domain';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
@@ -29,7 +29,9 @@ function roleName(role?: ApiRole) {
 function normalizeMe(me?: Partial<MeResponse> | null): { user: AppUser; role: string; permissions: string[]; branding?: Partial<BrandingSettings> } | null {
   if (!me?.user) return null;
   const role = roleName(me.user.role) || roleName(me.role) || 'Client';
-  return { user: { ...me.user, role }, role, permissions: me.permissions?.length ? me.permissions : permissionsForRole(role), branding: me.branding };
+  const permissions = me.permissions?.length ? me.permissions : permissionsForRole(role);
+  const normalizedPermissions = role.toLowerCase() === 'owner' && !permissions.includes('*') ? ['*', ...permissions] : permissions;
+  return { user: { ...me.user, role, permissions: normalizedPermissions }, role, permissions: normalizedPermissions, branding: me.branding };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -87,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authError,
     refreshMe,
     signOutLocal,
-    can: (permission: string) => Boolean(me?.permissions.includes(permission)),
+    can: (permission: string) => hasPermission(me?.user, permission),
   }), [authError, me, refreshMe, signOutLocal, status]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

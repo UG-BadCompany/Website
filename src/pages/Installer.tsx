@@ -241,8 +241,10 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
       }
       const status = await response.json();
       if (!status.installed) throw new Error('Installer completion did not return an installed system.');
-      setFinishMessage(`Installation complete. Opening ${homepage.displayName || companyName || 'ContractorOS'}…`);
-      saveJson('contractoros.session.user', { user: { id: 'local-owner', name: ownerName || 'Owner', email: ownerEmail || 'owner@example.com', role: 'Owner' }, role: 'Owner', permissions: ['dashboard.view','settings.view','settings.manage','requests.view','requests.manage','quotes.view','quotes.manage','jobs.view','jobs.manage','invoices.view','messages.view','clients.view','properties.view','cmms.view','media.view'], branding: {} });
+      setFinishMessage(`Installation complete. Opening ${homepage.displayName || companyName || 'your workspace'}…`);
+      const siteSettings = await fetch('/api/public/site-settings', { headers: { accept: 'application/json' }, cache: 'no-store' }).then((res) => res.ok ? res.json() : null).catch(() => null);
+      if (siteSettings?.branding) notifyBrandingUpdated(siteSettings.branding);
+      saveJson('contractoros.session.user', { user: { id: 'local-owner', name: ownerName || 'Owner', email: ownerEmail || 'owner@example.com', role: 'Owner', permissions: ['*'] }, role: 'Owner', permissions: ['*'], branding: siteSettings?.branding || {} });
       window.location.assign('/dashboard');
     } catch (error) {
       setFinishState('error');
