@@ -1,6 +1,7 @@
 import { hasPermission, type AuthUser, HttpError } from './auth';
 import { createDatabase, type Queryable } from './database';
-import { DEFAULT_PERMISSION_KEYS, getPublicSiteSettings, getSystemDiagnostics } from './installation';
+import { DEFAULT_PERMISSION_KEYS, getPublicSiteSettings, getSystemDiagnostics, runMigrations } from './installation';
+import { ensureModuleFoundation } from './modules';
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
 type SettingsBody = Record<string, unknown>;
@@ -163,31 +164,214 @@ export async function handleDiagnostics(user: AuthUser, db: Queryable = createDa
   return getSystemDiagnostics(user, db);
 }
 
-export async function getDashboardOverview(user: AuthUser, db: Queryable = createDatabase()) {
+type DashboardRange = 'today' | 'this_week' | 'this_month' | 'quarter' | 'year';
+
+function dashboardRange(value?: string): DashboardRange {
+  return ['today', 'this_week', 'this_month', 'quarter', 'year'].includes(value || '') ? value as DashboardRange : 'today';
+}
+
+function rangeSql(range: DashboardRange, column = 'created_at') {
+  if (range === 'today') return `${column} >= current_date and ${column} < current_date + interval '1 day'`;
+  if (range === 'this_week') return `${column} >= date_trunc('week', now())`;
+  if (range === 'this_month') return `${column} >= date_trunc('month', now())`;
+  if (range === 'quarter') return `${column} >= date_trunc('quarter', now())`;
+  return `${column} >= date_trunc('year', now())`;
+}
+
+async function ensureDashboardReady(db: Queryable) {
+  await runMigrations(db);
   await ensureAdminFoundation(db);
-  const clientFilter = user.role === 'Client' && user.clientId ? ' and client_id = $1' : '';
-  const clientParams = user.role === 'Client' && user.clientId ? [user.clientId] : [];
-  const jobFilter = user.role === 'Technician' ? ' and assigned_user_id = $1' : clientFilter;
-  const jobParams = user.role === 'Technician' ? [user.id] : clientParams;
-  const [requests, quotes, jobs, invoices, messages, activity] = await Promise.all([
-    db.query<any>(`select count(*) filter (where lower(status)='new')::int as new, count(*) filter (where lower(status) not in ('closed','completed','cancelled'))::int as open, count(*) filter (where lower(priority) in ('high','emergency','urgent'))::int as "highPriority" from work_requests where true${clientFilter}`, clientParams),
-    db.query<any>(`select count(*) filter (where lower(status) in ('draft','sent','pending'))::int as pending, count(*) filter (where approved_at is not null or lower(status)='approved')::int as approved, coalesce(sum(total_cents) filter (where lower(status) in ('draft','sent','pending')),0)::int as "totalPendingValue" from quotes where true${clientFilter}`, clientParams),
-    db.query<any>(`select count(*) filter (where lower(status) not in ('completed','cancelled'))::int as active, count(*) filter (where lower(status)='completed')::int as completed, (select count(*)::int from schedules s join jobs j on j.id=s.job_id where s.starts_at::date=current_date${user.role === 'Technician' ? ' and s.assigned_user_id = $1' : clientFilter ? ' and j.client_id = $1' : ''}) as "scheduledToday" from jobs where true${jobFilter}`, jobParams),
-    db.query<any>(`select count(*) filter (where lower(status) in ('open','sent','overdue'))::int as open, coalesce(sum(balance_cents) filter (where lower(status) in ('open','sent','overdue')),0)::int as "outstandingBalance", count(*) filter (where due_at < now() and balance_cents > 0)::int as overdue from invoices where true${clientFilter}`, clientParams),
-    db.query<any>(`select count(*)::int as unread, count(*)::int as "needsReply" from messages where read_at is null${clientFilter}`, clientParams).catch(() => ({ rows: [{ unread: 0, needsReply: 0 }] } as any)),
-    db.query<any>(`select entity_type as type, summary, created_at::text as "createdAt" from activity_timeline ${clientFilter ? 'where client_id = $1' : ''} order by created_at desc limit 8`, clientParams).catch(() => ({ rows: [] } as any)),
-  ]);
-  const snapshot = await getOperationalSnapshot(user, db, clientFilter, clientParams, jobFilter, jobParams);
-  return { ok: true, range: 'this_month', requests: requests.rows[0], quotes: quotes.rows[0], jobs: jobs.rows[0], invoices: invoices.rows[0], messages: messages.rows[0], snapshot, activity: activity.rows };
+  await ensureModuleFoundation(db);
+}
+
+function safeUuidParam(value?: string | null) { return value && /^[0-9a-f-]{36}$/i.test(value) ? value : null; }
+
+function scopeForDashboard(user: AuthUser, alias: string, kind: 'client' | 'request' | 'job' | 'quote' | 'invoice' | 'messageThread' = 'client') {
+  if (user.role === 'Client' && user.clientId) return { sql: ` and ${alias}.client_id = $1`, params: [safeUuidParam(user.clientId)] as unknown[] };
+  if (user.role !== 'Technician') return { sql: '', params: [] as unknown[] };
+  if (kind === 'request' || kind === 'job') return { sql: ` and ${alias}.assigned_user_id = $1`, params: [safeUuidParam(user.id)] as unknown[] };
+  if (kind === 'quote') return { sql: ` and exists (select 1 from jobs dash_j where dash_j.quote_id = ${alias}.id and dash_j.assigned_user_id = $1)`, params: [safeUuidParam(user.id)] as unknown[] };
+  if (kind === 'invoice') return { sql: ` and exists (select 1 from jobs dash_j where dash_j.id = ${alias}.job_id and dash_j.assigned_user_id = $1)`, params: [safeUuidParam(user.id)] as unknown[] };
+  if (kind === 'messageThread') return { sql: ` and (${alias}.entity_type = 'job' and exists (select 1 from jobs dash_j where dash_j.id = ${alias}.entity_id and dash_j.assigned_user_id = $1))`, params: [safeUuidParam(user.id)] as unknown[] };
+  return { sql: '', params: [] as unknown[] };
+}
+
+async function dashboardQuery<T extends Record<string, unknown>>(db: Queryable, step: string, sql: string, params: unknown[], fallback: T): Promise<T> {
+  try {
+    return (await db.query<T>(sql, params)).rows[0] || fallback;
+  } catch (error) {
+    console.error('Dashboard overview query failed', { step, message: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
+}
+
+async function dashboardRows<T extends Record<string, unknown>>(db: Queryable, step: string, sql: string, params: unknown[] = []): Promise<T[]> {
+  try {
+    return (await db.query<T>(sql, params)).rows;
+  } catch (error) {
+    console.error('Dashboard overview query failed', { step, message: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
+}
+
+export async function getDashboardOverview(user: AuthUser, rangeValue = 'today', db: Queryable = createDatabase()) {
+  const range = dashboardRange(rangeValue);
+  let step = 'start';
+  try {
+    step = 'verify_migrations';
+    await ensureDashboardReady(db);
+
+    const requestScope = scopeForDashboard(user, 'wr', 'request');
+    const quoteScope = scopeForDashboard(user, 'q', 'quote');
+    const jobScope = scopeForDashboard(user, 'j', 'job');
+    const invoiceScope = scopeForDashboard(user, 'i', 'invoice');
+    const threadScope = scopeForDashboard(user, 'mt', 'messageThread');
+    const clientScope = scopeForDashboard(user, 'x', 'client');
+
+    step = 'requests_metrics';
+    const requests = await dashboardQuery(db, step, `
+      select
+        count(*) filter (where ${rangeSql(range, 'wr.created_at')})::int as "newRequestsInRange",
+        count(*) filter (where lower(wr.status) in ('new','reviewing','needs_info'))::int as "requestsNeedingReview",
+        count(*) filter (where wr.assigned_user_id is null and lower(wr.status) not in ('completed','cancelled','inactive'))::int as "unassignedRequests",
+        count(*) filter (where lower(wr.status) = 'new')::int as "newRequests",
+        count(*) filter (where lower(wr.status) = 'reviewing')::int as reviewing,
+        count(*) filter (where lower(wr.status) = 'quoted')::int as quoted,
+        count(*) filter (where lower(wr.status) in ('approved'))::int as approved,
+        count(*) filter (where lower(wr.status) in ('scheduled'))::int as scheduled,
+        count(*) filter (where lower(wr.status) in ('in_progress'))::int as "inProgress",
+        count(*) filter (where lower(wr.status) in ('completed'))::int as completed,
+        count(*) filter (where lower(wr.priority) in ('high','urgent','emergency'))::int as "urgentRequests",
+        count(*) filter (where lower(wr.status) in ('needs_info'))::int as "waitingOnCustomer"
+      from work_requests wr where true${requestScope.sql}`, requestScope.params, {
+        newRequestsInRange: 0, requestsNeedingReview: 0, unassignedRequests: 0, newRequests: 0, reviewing: 0, quoted: 0, approved: 0, scheduled: 0, inProgress: 0, completed: 0, urgentRequests: 0, waitingOnCustomer: 0,
+      });
+
+    step = 'quotes_metrics';
+    const quotes = await dashboardQuery(db, step, `
+      select
+        count(*) filter (where lower(q.status) in ('draft','ready_to_send','sent','viewed','pending'))::int as "pendingQuotes",
+        count(*) filter (where q.approved_at is not null or lower(q.status) = 'approved')::int as "approvedQuotes",
+        coalesce(sum(q.total_cents) filter (where lower(q.status) in ('draft','ready_to_send','sent','viewed','pending')),0)::int as "pendingQuoteValue",
+        coalesce(sum(q.total_cents) filter (where q.approved_at is not null or lower(q.status) = 'approved'),0)::int as "approvedQuoteValue",
+        count(*) filter (where lower(q.status) in ('sent','viewed','approved','declined'))::int as "decisionQuotes",
+        count(*) filter (where lower(q.status) = 'approved' or q.approved_at is not null)::int as "wonQuotes"
+      from quotes q where true${quoteScope.sql}`, quoteScope.params, { pendingQuotes: 0, approvedQuotes: 0, pendingQuoteValue: 0, approvedQuoteValue: 0, decisionQuotes: 0, wonQuotes: 0 });
+
+    step = 'jobs_metrics';
+    const jobs = await dashboardQuery(db, step, `
+      select
+        count(*) filter (where lower(j.status) not in ('completed','cancelled','canceled'))::int as "activeJobs",
+        count(*) filter (where lower(j.status) = 'completed' and ${rangeSql(range, 'coalesce(j.completed_at,j.updated_at,j.created_at)')})::int as "completedJobs",
+        count(*) filter (where lower(j.status) = 'waiting_parts')::int as "jobsWaitingOnParts",
+        count(*) filter (where lower(j.status) in ('blocked','waiting_parts','waiting_customer'))::int as "blockedJobs",
+        count(*) filter (where j.assigned_user_id is not null and lower(j.status) not in ('completed','cancelled','canceled'))::int as "assignedTechnicians",
+        count(*) filter (where j.assigned_user_id is null and lower(j.status) not in ('completed','cancelled','canceled'))::int as "unassignedJobs",
+        (select count(*)::int from schedules s join jobs sj on sj.id = s.job_id where s.starts_at::date = current_date${user.role === 'Technician' ? ' and s.assigned_user_id = $1' : user.role === 'Client' && user.clientId ? ' and sj.client_id = $1' : ''}) as "todayScheduledJobs"
+      from jobs j where true${jobScope.sql}`, jobScope.params, { activeJobs: 0, completedJobs: 0, jobsWaitingOnParts: 0, blockedJobs: 0, assignedTechnicians: 0, unassignedJobs: 0, todayScheduledJobs: 0 });
+
+    step = 'invoice_metrics';
+    const invoices = await dashboardQuery(db, step, `
+      select
+        count(*) filter (where lower(i.status) in ('open','sent','viewed','partially_paid','overdue'))::int as "openInvoices",
+        coalesce(sum(i.balance_cents) filter (where lower(i.status) in ('open','sent','viewed','partially_paid','overdue') and i.balance_cents > 0),0)::int as "outstandingBalance",
+        count(*) filter (where (lower(i.status) = 'overdue' or i.due_at < now()) and i.balance_cents > 0)::int as "overdueInvoices",
+        coalesce(sum(i.balance_cents) filter (where (lower(i.status) = 'overdue' or i.due_at < now()) and i.balance_cents > 0),0)::int as "overdueInvoiceBalance",
+        coalesce(sum(i.deposit_cents),0)::int as "depositsCollected"
+      from invoices i where true${invoiceScope.sql}`, invoiceScope.params, { openInvoices: 0, outstandingBalance: 0, overdueInvoices: 0, overdueInvoiceBalance: 0, depositsCollected: 0 });
+
+    step = 'payment_metrics';
+    const paymentScopeSql = user.role === 'Client' && user.clientId ? ' and p.client_id = $1' : user.role === 'Technician' ? ' and exists (select 1 from invoices pi join jobs pj on pj.id=pi.job_id where pi.id=p.invoice_id and pj.assigned_user_id=$1)' : '';
+    const paymentParams = user.role === 'Client' && user.clientId ? [user.clientId] : user.role === 'Technician' ? [safeUuidParam(user.id)] : [];
+    const payments = await dashboardQuery(db, step, `select coalesce(sum(p.amount_cents) filter (where lower(p.status) = 'completed' and ${rangeSql(range, 'p.received_at')}),0)::int as "paymentsCollected", coalesce(sum(p.amount_cents) filter (where lower(p.status) = 'completed' and p.received_at >= date_trunc('month', now())),0)::int as "collectedThisMonth" from payments p where true${paymentScopeSql}`, paymentParams, { paymentsCollected: 0, collectedThisMonth: 0 });
+
+    step = 'message_metrics';
+    const messages = await dashboardQuery(db, step, `select coalesce(sum(mt.unread_count),0)::int as "unreadMessages", count(*) filter (where mt.needs_reply or lower(mt.status) = 'waiting_on_staff')::int as "messagesNeedingReply" from message_threads mt where true${threadScope.sql}`, threadScope.params, { unreadMessages: 0, messagesNeedingReply: 0 });
+
+    step = 'activity_feed';
+    const activityWhere = user.role === 'Client' && user.clientId ? 'where at.client_id = $1' : '';
+    const activityParams = user.role === 'Client' && user.clientId ? [user.clientId] : [];
+    const activity = await dashboardRows(db, step, `select at.entity_type as type, at.summary, at.created_at::text as "createdAt" from activity_timeline at ${activityWhere} order by at.created_at desc limit 12`, activityParams);
+
+    step = 'snapshot';
+    const snapshot = await getOperationalSnapshot(user, db, clientScope.sql.replaceAll('x.', ''), clientScope.params, jobScope.sql.replaceAll('j.', ''), jobScope.params);
+
+    const quoteCloseRate = Number(quotes.decisionQuotes || 0) ? Math.round((Number(quotes.wonQuotes || 0) / Number(quotes.decisionQuotes || 1)) * 100) : 0;
+    const metrics = {
+      newRequests: Number(requests.newRequestsInRange || 0),
+      pendingQuotes: Number(quotes.pendingQuotes || 0),
+      approvedQuotes: Number(quotes.approvedQuotes || 0),
+      activeJobs: Number(jobs.activeJobs || 0),
+      completedJobs: Number(jobs.completedJobs || 0),
+      openInvoices: Number(invoices.openInvoices || 0),
+      outstandingBalance: Number(invoices.outstandingBalance || 0),
+      messagesNeedingReply: Number(messages.messagesNeedingReply || 0),
+      todayScheduledJobs: Number(jobs.todayScheduledJobs || 0),
+      overdueInvoices: Number(invoices.overdueInvoices || 0),
+      unassignedRequests: Number(requests.unassignedRequests || 0),
+      waitingOnCustomer: Number(requests.waitingOnCustomer || 0),
+    };
+
+    return {
+      ok: true,
+      range,
+      metrics,
+      snapshot,
+      activity,
+      kpis: {
+        requestsNeedingReview: Number(requests.requestsNeedingReview || 0),
+        pendingQuoteValue: Number(quotes.pendingQuoteValue || 0),
+        approvedQuoteValue: Number(quotes.approvedQuoteValue || 0),
+        quoteCloseRate,
+        jobsWaitingOnParts: Number(jobs.jobsWaitingOnParts || 0),
+        overdueInvoiceBalance: Number(invoices.overdueInvoiceBalance || 0),
+        paymentsCollected: Number(payments.paymentsCollected || 0),
+        unreadMessages: Number(messages.unreadMessages || 0),
+        customerRepliesNeeded: Number(messages.messagesNeedingReply || 0),
+      },
+      operationsBoard: [
+        { key: 'new', label: 'New requests', count: Number(requests.newRequests || 0), href: '/requests?status=new' },
+        { key: 'reviewing', label: 'Reviewing', count: Number(requests.reviewing || 0), href: '/requests?status=reviewing' },
+        { key: 'quoted', label: 'Quoted', count: Number(requests.quoted || 0), href: '/requests?status=quoted' },
+        { key: 'approved', label: 'Approved', count: Number(requests.approved || quotes.approvedQuotes || 0), href: '/quotes?status=approved' },
+        { key: 'scheduled', label: 'Scheduled', count: Number(requests.scheduled || jobs.todayScheduledJobs || 0), href: '/jobs?status=scheduled' },
+        { key: 'in_progress', label: 'In progress', count: Number(requests.inProgress || 0), href: '/jobs?status=in_progress' },
+        { key: 'completed', label: 'Completed', count: Number(requests.completed || jobs.completedJobs || 0), href: '/jobs?status=completed' },
+      ],
+      financialSnapshot: {
+        openInvoices: metrics.openInvoices,
+        overdueInvoices: metrics.overdueInvoices,
+        collectedThisMonth: Number(payments.collectedThisMonth || 0),
+        outstandingBalance: metrics.outstandingBalance,
+        depositsCollected: Number(invoices.depositsCollected || 0),
+        paymentProviderHealth: 'not_configured',
+      },
+      fieldSnapshot: {
+        jobsScheduledToday: metrics.todayScheduledJobs,
+        assignedTechnicians: Number(jobs.assignedTechnicians || 0),
+        unassignedJobs: Number(jobs.unassignedJobs || 0),
+        blockedJobs: Number(jobs.blockedJobs || 0),
+        urgentRequests: Number(requests.urgentRequests || 0),
+      },
+      alerts: [
+        ...(metrics.overdueInvoices > 0 ? [{ tone: 'danger', message: `${metrics.overdueInvoices} invoice${metrics.overdueInvoices === 1 ? '' : 's'} overdue` }] : []),
+        ...(metrics.unassignedRequests > 0 ? [{ tone: 'warning', message: `${metrics.unassignedRequests} request${metrics.unassignedRequests === 1 ? '' : 's'} unassigned` }] : []),
+        ...(Number(jobs.blockedJobs || 0) > 0 ? [{ tone: 'warning', message: `${jobs.blockedJobs} job${Number(jobs.blockedJobs) === 1 ? '' : 's'} blocked or waiting` }] : []),
+      ],
+    };
+  } catch (error) {
+    console.error('Dashboard overview failed', { step, role: user.role, userId: user.id, message: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 async function getOperationalSnapshot(user: AuthUser, db: Queryable, clientFilter: string, clientParams: unknown[], jobFilter: string, jobParams: unknown[]) {
-  const nextJob = await db.query<any>(`select j.id::text, j.status, s.starts_at::text as date from schedules s join jobs j on j.id=s.job_id where s.starts_at >= now()${user.role === 'Technician' ? ' and s.assigned_user_id = $1' : clientFilter ? ' and j.client_id = $1' : ''} order by s.starts_at asc limit 1`, jobParams).catch(() => ({ rows: [] } as any));
-  const newestRequest = await db.query<any>(`select id::text, status, priority, created_at::text as date from work_requests where true${clientFilter} order by created_at desc limit 1`, clientParams);
-  const highPriority = await db.query<any>(`select id::text, status, priority, created_at::text as date from work_requests where lower(priority) in ('high','emergency','urgent')${clientFilter} order by created_at desc limit 1`, clientParams);
-  const approvedQuote = await db.query<any>(`select id::text, status, total_cents as total, approved_at::text as date from quotes where (approved_at is not null or lower(status)='approved')${clientFilter} order by approved_at desc nulls last, created_at desc limit 1`, clientParams);
-  const overdueInvoice = await db.query<any>(`select id::text, status, balance_cents as balance, due_at::text as date from invoices where due_at < now() and balance_cents > 0${clientFilter} order by due_at asc limit 1`, clientParams);
-  return { nextScheduledJob: nextJob.rows[0] || null, newestRequest: newestRequest.rows[0] || null, highestPriorityItem: highPriority.rows[0] || null, latestApprovedQuote: approvedQuote.rows[0] || null, overdueInvoice: overdueInvoice.rows[0] || null };
+  const nextJob = await db.query<any>(`select j.id::text, coalesce(j.title, 'Scheduled job') as title, j.status, s.starts_at::text as date from schedules s join jobs j on j.id=s.job_id where s.starts_at >= now()${user.role === 'Technician' ? ' and s.assigned_user_id = $1' : clientFilter ? ' and j.client_id = $1' : ''} order by s.starts_at asc limit 1`, jobParams).catch(() => ({ rows: [] } as any));
+  const newestRequest = await db.query<any>(`select id::text, coalesce(title, description, 'Work request') as title, status, priority, created_at::text as date from work_requests where true${clientFilter ? ` and ${clientFilter.replace(/^ and /, '')}` : ''} order by created_at desc limit 1`, clientParams).catch(() => ({ rows: [] } as any));
+  const highPriority = await db.query<any>(`select id::text, coalesce(title, description, 'Priority request') as title, status, priority, created_at::text as date from work_requests where lower(priority) in ('high','emergency','urgent')${clientFilter ? ` and ${clientFilter.replace(/^ and /, '')}` : ''} order by created_at desc limit 1`, clientParams).catch(() => ({ rows: [] } as any));
+  const approvedQuote = await db.query<any>(`select id::text, status, total_cents as total, approved_at::text as date from quotes where (approved_at is not null or lower(status)='approved')${clientFilter ? ` and ${clientFilter.replace(/^ and /, '')}` : ''} order by approved_at desc nulls last, created_at desc limit 1`, clientParams).catch(() => ({ rows: [] } as any));
+  const oldestOpenInvoice = await db.query<any>(`select id::text, status, balance_cents as balance, due_at::text as date from invoices where balance_cents > 0 and lower(status) not in ('paid','void')${clientFilter ? ` and ${clientFilter.replace(/^ and /, '')}` : ''} order by due_at asc nulls last, created_at asc limit 1`, clientParams).catch(() => ({ rows: [] } as any));
+  return { nextScheduledJob: nextJob.rows[0] || null, newestRequest: newestRequest.rows[0] || null, highestPriorityItem: highPriority.rows[0] || null, latestApprovedQuote: approvedQuote.rows[0] || null, oldestOpenInvoice: oldestOpenInvoice.rows[0] || null };
 }
 
 export async function getDashboardLayout(user: AuthUser, db: Queryable = createDatabase()) {
