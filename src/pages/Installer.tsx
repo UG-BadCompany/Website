@@ -232,7 +232,12 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ companyName, ownerName, ownerEmail, theme, homepageSetup: homepage }),
       });
-      if (!response.ok) throw new Error(`Installer completion failed with HTTP ${response.status}`);
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null) as { error?: string; route?: string; details?: { message?: string } } | null;
+        const details = errorBody?.details?.message ? `: ${errorBody.details.message}` : '';
+        const route = errorBody?.route ? ` (${errorBody.route})` : '';
+        throw new Error(`${errorBody?.error || 'Installer completion failed'}${route} with HTTP ${response.status}${details}`);
+      }
       const status = await response.json();
       if (!status.installed) throw new Error('Installer completion did not return an installed system.');
       setFinishMessage('Installation complete. Opening ContractorOS…');

@@ -10,10 +10,22 @@ type NetlifyEvent = { httpMethod?: string; path: string; body?: string | null };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; body: string };
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
+const toApiRoute = (path: string) => `/api${path === '/' ? '' : path}`;
+
+function errorDetails(error: unknown) {
+  if (!(error instanceof Error)) return { message: String(error) };
+  return { message: error.message || error.name, name: error.name, stack: error.stack };
+}
 
 export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
-  const path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
+  let path = '/';
+  let route = '/api';
+  const method = event.httpMethod || 'GET';
+
   try {
+    path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
+    route = toApiRoute(path);
+
     if (path === '/public/site-settings') return json(200, await getPublicSiteSettings());
     if (path === '/install/status') return json(200, await getInstallStatus());
     if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
@@ -37,6 +49,13 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path.startsWith('/settings') || path.match(/^\/(clients|properties|requests|quotes|jobs|work-orders|invoices|payments|assets|messages|media)/)) return json(200, { ok: true, route: path, permissionChecked: true });
     return json(404, { error: 'Not found', path });
   } catch (error) {
-    return json(500, { error: error instanceof Error ? error.message : 'Unknown error' });
+    const details = errorDetails(error);
+    console.error('ContractorOS API unhandled error', { route, method, ...details });
+    return json(500, {
+      ok: false,
+      error: 'Internal server error',
+      route,
+      ...(process.env.NODE_ENV === 'development' ? { details } : {}),
+    });
   }
 }
