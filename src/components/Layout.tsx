@@ -12,7 +12,7 @@ const appNav = [
   { href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view' },
   { href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view' },
   { href: '/messages', label: 'Messages', icon: MessageSquare, permission: 'messages.view' },
-  { href: '/portal', label: 'Portal', icon: UserRound, permission: 'requests.view' },
+  { href: '/portal', label: 'Portal', icon: UserRound, permission: 'portal.view' },
   { href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view' }
 ];
 

@@ -4,6 +4,7 @@ import { detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
 import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
+import { getDashboardLayout, getDashboardOverview, getPortalOverview, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
 import { validateEnvironment } from '../../lib/server/env-validation';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
@@ -58,7 +59,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       if (!status.installerEnabled && !hasPermission(currentUser, '*') && !tokenAllowed) throw new HttpError(403, 'Owner repair is locked. Enable installer, sign in as Owner, or provide INSTALL_REPAIR_TOKEN.');
       return json(200, await repairOwnerAccess({ ownerEmail: typeof body.ownerEmail === 'string' ? body.ownerEmail : currentUser?.email }));
     }
-    if (path === '/install/diagnostics' || path === '/system/diagnostics') {
+    if (path === '/install/diagnostics') {
       const currentUser = await getCurrentUser(event).catch(() => null);
       return json(200, await getSystemDiagnostics(currentUser), { 'cache-control': 'no-store, max-age=0' });
     }
@@ -89,6 +90,29 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       if (user) await auditLog('logout', { method: 'manual' }, user.id);
       await invalidateCurrentSession(event).catch(() => undefined);
       return json(200, { ok: true }, { 'Set-Cookie': clearSessionCookie() });
+    }
+
+    if (path === '/dashboard/overview' && event.httpMethod === 'GET') {
+      const user = await requirePermission(event, 'dashboard.view');
+      return json(200, await getDashboardOverview(user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/dashboard/layout') {
+      const user = await requirePermission(event, 'dashboard.view');
+      if (event.httpMethod === 'GET') return json(200, await getDashboardLayout(user), { 'cache-control': 'no-store, max-age=0' });
+      if (event.httpMethod === 'POST') return json(200, await saveDashboardLayout(user, readBody(event).layout));
+      throw new HttpError(405, 'Method not allowed');
+    }
+    if (path === '/portal/overview' && event.httpMethod === 'GET') {
+      const user = await requirePermission(event, 'portal.view');
+      return json(200, await getPortalOverview(user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path.startsWith('/settings/')) {
+      const user = await requirePermission(event, 'settings.view');
+      return json(200, await handleSettingsRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/system/diagnostics') {
+      const user = await requirePermission(event, 'diagnostics.view');
+      return json(200, await handleDiagnostics(user), { 'cache-control': 'no-store, max-age=0' });
     }
     if (path === '/auth/me' || path === '/auth/verify' || path === '/me') {
       const user = await requireAuth(event).catch((error) => {
@@ -139,6 +163,8 @@ function permissionForPath(path: string) {
   if (path.match(/^\/(messages)/)) return 'messages.view';
   if (path.match(/^\/(media)/)) return 'media.view';
   if (path.match(/^\/(dashboard)/)) return 'dashboard.view';
+  if (path.match(/^\/(portal)/)) return 'portal.view';
+  if (path.match(/^\/(account)/)) return 'account.view';
   return '';
 }
 

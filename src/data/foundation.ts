@@ -5,7 +5,7 @@ export const foundationComponents = [
 ];
 
 export const permissions: Permission[] = [
-  'dashboard.view','dashboard.manage','settings.view','settings.manage','users.view','users.manage','roles.view','roles.manage','permissions.view','permissions.manage','clients.view','clients.manage','properties.view','properties.manage','requests.view','requests.manage','quotes.view','quotes.create','quotes.approve','quotes.manage','jobs.view','jobs.manage','work_orders.view','work_orders.manage','invoices.view','invoices.manage','payments.view','payments.manage','cmms.view','cmms.manage','messages.view','messages.manage','website.view','website.manage','homepage.manage','theme.view','theme.manage','branding.view','branding.manage','service_catalog.view','service_catalog.manage','media.view','media.manage','audit_logs.view','license.view','license.manage','expansion_packs.view','expansion_packs.manage','*'
+  'dashboard.view','dashboard.manage','settings.view','settings.manage','company.view','company.manage','users.view','users.manage','roles.view','roles.manage','permissions.view','permissions.manage','clients.view','clients.manage','properties.view','properties.manage','requests.view','requests.manage','quotes.view','quotes.create','quotes.approve','quotes.manage','jobs.view','jobs.manage','work_orders.view','work_orders.manage','invoices.view','invoices.manage','payments.view','payments.manage','payment.view','payment.manage','email.view','email.manage','cmms.view','cmms.manage','messages.view','messages.manage','website.view','website.manage','homepage.view','homepage.manage','theme.view','theme.manage','branding.view','branding.manage','service_catalog.view','service_catalog.manage','media.view','media.manage','portal.view','portal.manage','account.view','account.manage','diagnostics.view','foundation.view','foundation.manage','audit_logs.view','license.view','license.manage','expansion_packs.view','expansion_packs.manage','*'
 ].map((key) => ({ key, label: key.split('.').map((p) => p.replaceAll('_', ' ')).join(' · '), group: key.split('.')[0] }));
 
 const all = permissions.map((p) => p.key);
@@ -14,9 +14,9 @@ export const defaultRoles: Role[] = [
   { name: 'Admin', permissions: all.filter((p) => !['license.manage', 'permissions.manage'].includes(p)) },
   { name: 'Office', permissions: all.filter((p) => !p.startsWith('settings') && !p.startsWith('license') && !p.includes('manage') || ['clients.manage','requests.manage','quotes.manage','invoices.manage','messages.manage'].includes(p)) },
   { name: 'Dispatcher', permissions: ['dashboard.view','requests.view','jobs.view','jobs.manage','work_orders.view','work_orders.manage','messages.view','messages.manage'] },
-  { name: 'Technician', permissions: ['jobs.view','work_orders.view','work_orders.manage','messages.view','media.manage','cmms.view'] },
-  { name: 'Client', permissions: ['requests.view','quotes.view','quotes.approve','invoices.view','payments.manage','messages.view','messages.manage','media.manage'] },
-  { name: 'Vendor', permissions: ['work_orders.view','messages.view'] }
+  { name: 'Technician', permissions: ['account.view','jobs.view','work_orders.view','work_orders.manage','messages.view','media.manage','cmms.view'] },
+  { name: 'Client', permissions: ['portal.view','account.view','requests.view','quotes.view','quotes.approve','invoices.view','payments.manage','messages.view','messages.manage','media.manage'] },
+  { name: 'Vendor', permissions: ['account.view','work_orders.view','messages.view'] }
 ];
 
 export const serviceCategories = ['HVAC','Plumbing','Electrical','Handyman','Appliance','Maintenance','General Repair'];
