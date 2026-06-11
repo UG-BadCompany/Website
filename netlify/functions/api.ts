@@ -8,6 +8,7 @@ import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsO
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
+import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia } from '../../lib/server/homepage-builder';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -29,12 +30,22 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
     route = toApiRoute(path);
 
+
+    if (path === '/public/homepage' && event.httpMethod === 'GET') return json(200, await getPublicHomepage(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/public/site-settings') return json(200, await getPublicSiteSettings(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/public/service-catalog' && event.httpMethod === 'GET') return json(200, await getPublicServiceCatalog(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/public/request-estimate' && event.httpMethod === 'POST') return json(200, await createPublicEstimateRequest(readBody(event)));
     if (path === '/media/upload' && event.httpMethod === 'POST') {
+      if ((headerValue(event.headers, 'content-type') || '').includes('application/json')) {
+        const user = await requirePermission(event, 'homepage.manage');
+        return json(200, await uploadHomepageMedia(readBody(event), user));
+      }
       const upload = parseMultipartUpload(event);
       return json(200, await uploadBrandingMedia(upload));
+    }
+    if (path === '/media' && event.httpMethod === 'GET') {
+      const user = await requirePermission(event, 'homepage.view');
+      return json(200, await listHomepageMedia(event.queryStringParameters || {}, user), { 'cache-control': 'no-store, max-age=0' });
     }
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
@@ -119,6 +130,34 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const user = await requirePermission(event, 'portal.view');
       return json(200, await getPortalOverview(user), { 'cache-control': 'no-store, max-age=0' });
     }
+
+    if (path === '/homepage-builder' && event.httpMethod === 'GET') {
+      const user = await requirePermission(event, 'homepage.view');
+      return json(200, await getHomepageBuilder(user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/homepage-builder/draft' && event.httpMethod === 'POST') {
+      const user = await requirePermission(event, 'homepage.manage');
+      return json(200, await saveHomepageDraft(readBody(event), user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/homepage-builder/publish' && event.httpMethod === 'POST') {
+      const user = await requirePermission(event, 'homepage.manage');
+      return json(200, await publishHomepage(readBody(event), user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/homepage-builder/revert' && event.httpMethod === 'POST') {
+      const user = await requirePermission(event, 'homepage.manage');
+      return json(200, await revertHomepage(user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/homepage-builder/versions' && event.httpMethod === 'GET') {
+      const user = await requirePermission(event, 'homepage.view');
+      return json(200, await listHomepageVersions(user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    const homepageRestoreMatch = path.match(/^\/homepage-builder\/versions\/([^/]+)\/restore$/);
+    if (homepageRestoreMatch && event.httpMethod === 'POST') {
+      const user = await requirePermission(event, 'homepage.manage');
+      return json(200, await restoreHomepageVersion(homepageRestoreMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/homepage-builder/templates' && event.httpMethod === 'GET') return json(200, await homepageTemplates(), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/homepage-builder/section-library' && event.httpMethod === 'GET') return json(200, await homepageSectionLibrary(), { 'cache-control': 'no-store, max-age=0' });
     if (path.startsWith('/settings/')) {
       const user = await requirePermission(event, 'settings.view');
       return json(200, await handleSettingsRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user), { 'cache-control': 'no-store, max-age=0' });

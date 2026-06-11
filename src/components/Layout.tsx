@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, MessageSquare, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench } from 'lucide-react';
+import { BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, MessageSquare, Paintbrush, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench } from 'lucide-react';
 import { Link, NavLink } from './Router';
 
 import { pageTitle, useBranding } from '../lib/branding';
@@ -30,6 +30,7 @@ const appNavGroups = [
   ] },
   { group: 'Administration', items: [
     { href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view' },
+    { href: '/settings/homepage-builder', label: 'Homepage Builder', icon: Paintbrush, permission: 'homepage.view' },
     { href: '/settings/users', label: 'Users', icon: UserRound, permission: 'users.view' },
     { href: '/settings/roles', label: 'Roles', icon: ShieldCheck, permission: 'roles.view' },
     { href: '/settings/roles-permissions', label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.manage' },

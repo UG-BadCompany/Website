@@ -4,6 +4,8 @@ import { Link, useRouter } from '../components/Router';
 import { serviceCategories } from '../data/foundation';
 import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
 import { ActionCard, BrandLogo, Button, LoadingState, PageHeader, SectionHeader, StatusBadge } from '../components/ui';
+import { HomepageRenderer } from '../components/HomepageRenderer';
+import type { HomepageDraft } from '../lib/homepage-builder';
 
 type EstimateDraft = {
   firstName: string; lastName: string; email: string; phone: string; preferredContact: string; existingCustomer: string;
@@ -46,8 +48,18 @@ function usePageTitle(title: string) {
 
 export function HomePage() {
   const { homepage, isLoading } = useHomepageSettings();
+  const [publishedHomepage, setPublishedHomepage] = useState<HomepageDraft | null>(null);
+  const [publicHomepageChecked, setPublicHomepageChecked] = useState(false);
   const branding = useBranding();
   const services = homepage.services.length > 0 ? homepage.services : serviceCategories.map((name) => ({ id: name, name, description: 'Editable service category ready for estimates, requests, jobs, and future AI add-ons.', icon: 'Service' }));
+
+  useEffect(() => {
+    fetch('/api/public/homepage', { headers: { accept: 'application/json' }, cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => { if (payload?.published?.sections?.length) setPublishedHomepage(payload.published); })
+      .catch(() => undefined)
+      .finally(() => setPublicHomepageChecked(true));
+  }, []);
 
   useEffect(() => {
     document.title = pageTitle(undefined, branding);
@@ -56,7 +68,10 @@ export function HomePage() {
     description.content = homepage.seoDescription || 'Request a service estimate from a trusted local contractor.';
   }, [branding.companyDisplayName, branding.displayName, branding.companyName, homepage.seoDescription, homepage.seoTitle]);
 
+  if (publishedHomepage?.sections?.length) return <PublicLayout><HomepageRenderer draft={publishedHomepage}/></PublicLayout>;
+
   return <PublicLayout>
+    {!publicHomepageChecked && <section className="section narrow"><LoadingState title="Checking published homepage…" lines={1}/></section>}
     <section className="section section-hero"><div className="hero-copy"><p className="eyebrow">{branding.tagline || `${branding.displayName} service`}</p>{isLoading ? <LoadingState title="Loading homepage" lines={2}/> : <><h1>{homepage.heroHeadline}</h1><p>{homepage.heroSubheadline}</p><div className="actions"><Link href={homepage.primaryCtaLink || '/request-estimate'} className="button">{homepage.primaryCtaLabel || 'Request Estimate'}</Link><Link href={homepage.secondaryCtaLink || '/services'} className="button secondary">{homepage.secondaryCtaLabel || 'View Services'}</Link></div></>}</div><div className="hero-panel"><StatusBadge status="Ready for dispatch"/><h3>Premium contractor operations</h3><p>Requests, quotes, jobs, invoices, payments, CMMS, and messaging in one branded workspace.</p></div></section>
     <section className="section"><SectionHeader eyebrow="About" title={branding.displayName} description={homepage.aboutText}/></section>
     <section className="section"><SectionHeader eyebrow="Services" title="How we can help" description={homepage.servicesIntro}/><div className="grid cards">{services.map((service) => <ActionCard key={service.id} title={service.name} description={service.description}><span className="pill">{service.icon || 'Service'}</span></ActionCard>)}</div></section>

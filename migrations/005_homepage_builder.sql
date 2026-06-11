@@ -1,0 +1,8 @@
+BEGIN;
+CREATE TABLE IF NOT EXISTS homepage_pages (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), slug text UNIQUE NOT NULL DEFAULT 'home', title text NOT NULL DEFAULT 'Homepage', status text NOT NULL DEFAULT 'draft', draft_version_id uuid NULL, published_version_id uuid NULL, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now());
+CREATE TABLE IF NOT EXISTS homepage_versions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), page_id uuid REFERENCES homepage_pages(id) ON DELETE CASCADE, status text NOT NULL CHECK (status in ('draft','published','archived')), name text, sections jsonb NOT NULL DEFAULT '[]'::jsonb, global_styles jsonb NOT NULL DEFAULT '{}'::jsonb, seo jsonb NOT NULL DEFAULT '{}'::jsonb, created_by uuid NULL REFERENCES users(id), created_at timestamptz DEFAULT now(), published_at timestamptz NULL);
+CREATE TABLE IF NOT EXISTS homepage_assets (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), page_id uuid REFERENCES homepage_pages(id) ON DELETE CASCADE, version_id uuid REFERENCES homepage_versions(id) ON DELETE CASCADE, media_id uuid REFERENCES media_assets(id), usage_type text, created_at timestamptz DEFAULT now());
+INSERT INTO homepage_pages (slug, title, status) VALUES ('home', 'Homepage', 'draft') ON CONFLICT (slug) DO NOTHING;
+INSERT INTO permissions (key, group_name, description) VALUES ('homepage.view','homepage','View homepage builder'),('homepage.manage','homepage','Manage homepage builder') ON CONFLICT (key) DO UPDATE SET group_name=excluded.group_name, description=excluded.description;
+INSERT INTO role_permissions (role_id, permission_id) SELECT r.id, p.id FROM roles r JOIN permissions p ON p.key in ('homepage.view','homepage.manage') WHERE r.name in ('Owner','Admin') ON CONFLICT DO NOTHING;
+COMMIT;

@@ -8,6 +8,7 @@ import { useAuth } from '../lib/auth';
 import { ActionCard, Badge, Button, EmptyState, LoadingState, PageHeader, StatusBadge } from '../components/ui';
 import { fallbackPermissionOptions, roleTemplates, type PermissionOption, type RoleOption } from '../lib/role-management';
 import type { DashboardWidget, PageSection } from '../types/domain';
+import { AdvancedHomepageBuilder } from './HomepageBuilderPage';
 
 type ApiState<T> = { loading: boolean; error: string; data: T | null };
 type DashboardMetricMap = {
@@ -215,12 +216,13 @@ const settingsSections = ['company','branding','theme','users','roles','permissi
 
 export function SettingsPage({ area = 'settings/company' }: { area?: string }) {
   const section = area.split('/')[1] || 'company';
-  return <Protected permission="settings.view"><AppLayout title={`Settings / ${section}`}><div className="settings-grid"><nav className="card settings-nav">{asArray(settingsSections).map((s) => <Link href={`/settings/${s}`} key={s}>{s}</Link>)}</nav><SettingsPanel section={section}/></div></AppLayout></Protected>;
+  const permission = section === 'homepage-builder' ? 'homepage.view' : 'settings.view';
+  return <Protected permission={permission}><AppLayout title={`Settings / ${section}`}><div className={section === 'homepage-builder' ? 'settings-grid homepage-builder-page-grid' : 'settings-grid'}><nav className="card settings-nav">{asArray(settingsSections).map((s) => <Link href={`/settings/${s}`} key={s}>{s}</Link>)}</nav><SettingsPanel section={section}/></div></AppLayout></Protected>;
 }
 
 function SettingsPanel({ section }: { section: string }) {
   const auth = useAuth();
-  const endpoint = section === 'diagnostics' ? '/api/system/diagnostics' : `/api/settings/${section}`;
+  const endpoint = section === 'diagnostics' ? '/api/system/diagnostics' : section === 'homepage-builder' ? '/api/homepage-builder' : `/api/settings/${section}`;
   const state = useApi<any>(endpoint);
   const managePermission = `${section === 'homepage-builder' ? 'homepage' : section}.manage`;
   const canManage = auth.can(managePermission) || (section === 'diagnostics' && auth.can('diagnostics.view'));
@@ -234,7 +236,7 @@ function SettingsPanel({ section }: { section: string }) {
   if (section === 'permissions') return <PermissionsSettings data={state.data} canManage={canManage} reload={state.reload}/>;
   if (section === 'roles-permissions') return <RolePermissionSettings canManage={auth.can('roles.manage')}/>;
   if (section === 'foundation') return <section className="card settings-panel"><h2>Foundation components</h2>{asArray(state.data?.foundation).map((c: any) => <p key={c.name}><Badge tone="success">{c.status}</Badge> {c.name} <span className="muted">Locked foundation component</span></p>)}</section>;
-  if (section === 'homepage-builder') return <HomepageBuilder data={state.data.homepageBuilder} canManage={canManage} reload={state.reload}/>;
+  if (section === 'homepage-builder') return <AdvancedHomepageBuilder initialData={state.data} canManage={canManage} reload={state.reload}/>;
   return <section className="card settings-panel"><h2>{section}</h2><pre>{JSON.stringify(state.data, null, 2)}</pre>{!canManage && <p className="muted">Read-only. Saving requires {managePermission}.</p>}</section>;
 }
 
