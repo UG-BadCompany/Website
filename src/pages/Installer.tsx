@@ -13,11 +13,17 @@ type EnvCheck = { key: string; status: EnvStatus; description: string; matchedKe
 type EnvValidation = { basic: EnvCheck[]; database: EnvCheck[]; payment: EnvCheck[]; email: EnvCheck[]; databaseAdapter: string };
 type MappingRow = { id: string; providerKey: string; contractorKey: 'APP_URL' | 'DATABASE_URL' | 'RESEND_API_KEY' | 'EMAIL_FROM'; description: string };
 type ServiceDraft = { id: string; name: string; description: string; icon: string };
-type UploadDraft = { fileName: string; mimeType: string; dataUrl: string };
+type UploadDraft = { fileName: string; mimeType: string; dataUrl?: string; mediaId?: string; resolvedUrl?: string };
 type BrandingHomepageDraft = {
+  logoFile?: File | null;
   logoUrl: string;
+  logoMediaId: string;
+  logoResolvedUrl: string;
   logoUpload: UploadDraft | null;
+  faviconFile?: File | null;
   faviconUrl: string;
+  faviconMediaId: string;
+  faviconResolvedUrl: string;
   faviconUpload: UploadDraft | null;
   displayName: string;
   tagline: string;
@@ -144,7 +150,7 @@ function genericMapping(): MappingRow[] {
 
 function defaultHomepageDraft(companyName = ''): BrandingHomepageDraft {
   return {
-    logoUrl: '', logoUpload: null, faviconUrl: '', faviconUpload: null,
+    logoFile: null, logoUrl: '', logoMediaId: '', logoResolvedUrl: '', logoUpload: null, faviconFile: null, faviconUrl: '', faviconMediaId: '', faviconResolvedUrl: '', faviconUpload: null,
     displayName: companyName || 'ContractorOS', tagline: 'Reliable service from a local team you can trust.',
     heroHeadline: companyName ? `${companyName} keeps your property running` : 'Contractor services made simple',
     heroSubheadline: 'Request estimates, schedule service, and stay informed from one easy online experience.',
@@ -231,7 +237,21 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
       const response = await fetch('/api/install/complete', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ companyName, ownerName, ownerEmail, theme, homepageSetup: homepage }),
+        body: JSON.stringify({
+          companyName,
+          ownerName,
+          ownerEmail,
+          theme,
+          homepageSetup: homepage,
+          branding: {
+            logoMediaId: homepage.logoMediaId || null,
+            logoUrl: homepage.logoMediaId ? '' : homepage.logoUrl || '',
+            logoResolvedUrl: homepage.logoResolvedUrl || (homepage.logoMediaId ? `/api/media/${encodeURIComponent(homepage.logoMediaId)}` : homepage.logoUrl || ''),
+            faviconMediaId: homepage.faviconMediaId || null,
+            faviconUrl: homepage.faviconMediaId ? '' : homepage.faviconUrl || '',
+            faviconResolvedUrl: homepage.faviconResolvedUrl || (homepage.faviconMediaId ? `/api/media/${encodeURIComponent(homepage.faviconMediaId)}` : homepage.faviconUrl || ''),
+          },
+        }),
       });
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null) as { error?: string; route?: string; details?: { message?: string } } | null;
@@ -354,6 +374,8 @@ function PaymentStep({ hosting, payment, setPayment, validation }: { hosting: Ho
 
 function BrandingHomepageStep({ draft, setDraft }: { draft: BrandingHomepageDraft; setDraft: (draft: BrandingHomepageDraft) => void }) {
   const update = (patch: Partial<BrandingHomepageDraft>) => setDraft({ ...draft, ...patch });
+  const logoPreview = draft.logoResolvedUrl || draft.logoUrl;
+  const faviconPreview = draft.faviconResolvedUrl || draft.faviconUrl;
   const updateService = (id: string, patch: Partial<ServiceDraft>) => update({ services: draft.services.map((service) => service.id === id ? { ...service, ...patch } : service) });
   const removeService = (id: string) => update({ services: draft.services.filter((service) => service.id !== id) });
   const addService = () => update({ services: [...draft.services, { id: crypto.randomUUID(), name: '', description: '', icon: '' }] });
@@ -361,10 +383,10 @@ function BrandingHomepageStep({ draft, setDraft }: { draft: BrandingHomepageDraf
     <h1>Branding &amp; Basic Homepage</h1>
     <p className="notice">Set up your basic public homepage now. You can fully customize the homepage later in Dashboard → Website Builder.</p>
     <section className="installer-subsection"><h3>Company branding</h3><div className="grid cards">
-      <FileUpload label="Company logo upload" onUpload={(logoUpload) => update({ logoUpload })}/><input placeholder="Company logo URL option" value={draft.logoUrl} onChange={(e) => update({ logoUrl: e.target.value })}/>
-      <FileUpload label="Favicon upload" onUpload={(faviconUpload) => update({ faviconUpload })}/><input placeholder="Favicon URL option" value={draft.faviconUrl} onChange={(e) => update({ faviconUrl: e.target.value })}/>
+      <FileUpload label="Company logo upload" purpose="branding_logo" onUpload={(logoUpload, file) => update({ logoFile: file, logoUpload, logoMediaId: logoUpload.mediaId || '', logoResolvedUrl: logoUpload.resolvedUrl || '' })}/><input placeholder="Company logo URL option" value={draft.logoUrl} onChange={(e) => update({ logoUrl: e.target.value, logoResolvedUrl: draft.logoMediaId ? draft.logoResolvedUrl : e.target.value })}/>
+      <FileUpload label="Favicon upload" purpose="branding_favicon" onUpload={(faviconUpload, file) => update({ faviconFile: file, faviconUpload, faviconMediaId: faviconUpload.mediaId || '', faviconResolvedUrl: faviconUpload.resolvedUrl || '' })}/><input placeholder="Favicon URL option" value={draft.faviconUrl} onChange={(e) => update({ faviconUrl: e.target.value, faviconResolvedUrl: draft.faviconMediaId ? draft.faviconResolvedUrl : e.target.value })}/>
       <input placeholder="Company display name" value={draft.displayName} onChange={(e) => update({ displayName: e.target.value })}/><input placeholder="Tagline" value={draft.tagline} onChange={(e) => update({ tagline: e.target.value })}/>
-    </div><p className="eyebrow">If both an upload and URL exist, the upload wins.</p></section>
+    </div><p className="eyebrow">If both an upload and URL exist, the upload wins.</p><div className="branding-preview-row">{logoPreview && <img className="brand-logo" src={logoPreview} alt="Logo preview"/>}{faviconPreview && <img className="brand-logo" src={faviconPreview} alt="Favicon preview"/>}</div></section>
     <section className="installer-subsection"><h3>Homepage content</h3><div className="grid cards">
       <input placeholder="Hero headline" value={draft.heroHeadline} onChange={(e) => update({ heroHeadline: e.target.value })}/><input placeholder="Hero subheadline" value={draft.heroSubheadline} onChange={(e) => update({ heroSubheadline: e.target.value })}/>
       <input placeholder="Primary button label" value={draft.primaryCtaLabel} onChange={(e) => update({ primaryCtaLabel: e.target.value })}/><input placeholder="Primary button link" value={draft.primaryCtaLink} onChange={(e) => update({ primaryCtaLink: e.target.value })}/>
@@ -379,15 +401,27 @@ function BrandingHomepageStep({ draft, setDraft }: { draft: BrandingHomepageDraf
   </>;
 }
 
-function FileUpload({ label, onUpload }: { label: string; onUpload: (upload: UploadDraft) => void }) {
+function FileUpload({ label, purpose, onUpload }: { label: string; purpose: 'branding_logo' | 'branding_favicon'; onUpload: (upload: UploadDraft, file: File) => void }) {
   const [name, setName] = useState('');
-  return <label className="file-upload">{label}<input type="file" accept="image/*" onChange={(event) => {
+  const [status, setStatus] = useState('');
+  return <label className="file-upload">{label}<input type="file" accept="image/*" onChange={async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => { setName(file.name); onUpload({ fileName: file.name, mimeType: file.type, dataUrl: String(reader.result) }); };
-    reader.readAsDataURL(file);
-  }}/>{name && <span>{name}</span>}</label>;
+    setName(file.name);
+    setStatus('Uploading…');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', purpose);
+      const response = await fetch('/api/media/upload', { method: 'POST', body: form, headers: { accept: 'application/json' } });
+      const result = await response.json().catch(() => null) as { ok?: boolean; media?: { id: string; url: string; filename: string; contentType: string; size: number }; error?: string } | null;
+      if (!response.ok || !result?.ok || !result.media?.url) throw new Error(result?.error || 'Branding upload failed.');
+      onUpload({ fileName: result.media.filename, mimeType: result.media.contentType, mediaId: result.media.id, resolvedUrl: result.media.url }, file);
+      setStatus('Uploaded');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Upload failed');
+    }
+  }}/>{name && <span>{name}</span>}{status && <span>{status}</span>}</label>;
 }
 
 function ThemeStep({ theme, chooseMode, choosePreset, updateCustomPalette }: { theme: ThemeSettings; chooseMode: (mode: ThemeMode) => void; choosePreset: (presetId: ThemePresetId) => void; updateCustomPalette: (patch: Partial<ThemePalette>) => void }) {
@@ -410,8 +444,8 @@ function ThemeStep({ theme, chooseMode, choosePreset, updateCustomPalette }: { t
 }
 
 function saveHomepagePreview(draft: BrandingHomepageDraft, companyName: string) {
-  const logoSrc = draft.logoUpload?.dataUrl || draft.logoUrl;
-  const faviconSrc = draft.faviconUpload?.dataUrl || draft.faviconUrl;
+  const logoSrc = draft.logoResolvedUrl || draft.logoUpload?.resolvedUrl || draft.logoUrl;
+  const faviconSrc = draft.faviconResolvedUrl || draft.faviconUpload?.resolvedUrl || draft.faviconUrl;
   const brandingUpdatedAt = new Date().toISOString();
   const displayName = draft.displayName || companyName || 'ContractorOS';
   const branding = { companyName: companyName || displayName, displayName, companyDisplayName: displayName, tagline: draft.tagline, logoUrl: logoSrc, faviconUrl: faviconSrc, brandingUpdatedAt };
