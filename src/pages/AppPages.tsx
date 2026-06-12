@@ -9,6 +9,8 @@ import { ActionCard, Badge, Button, EmptyState, LoadingState, PageHeader, Status
 import { fallbackPermissionOptions, roleTemplates, type PermissionOption, type RoleOption } from '../lib/role-management';
 import type { DashboardWidget, PageSection } from '../types/domain';
 import { AdvancedHomepageBuilder } from './HomepageBuilderPage';
+import { useLicense } from '../lib/license';
+import { friendlyModuleName } from '../../lib/license-modules';
 
 type ApiState<T> = { loading: boolean; error: string; data: T | null };
 type DashboardMetricMap = {
@@ -36,6 +38,20 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
   return payload as T;
+}
+
+
+export function UpgradeRequiredPage({ moduleKey }: { moduleKey: string }) {
+  const { license, requiredTier } = useLicense();
+  const tier = requiredTier(moduleKey);
+  const upgradeUrl = license?.licenseApiUrl ? `${license.licenseApiUrl.replace(/\/+$/, '')}/account/upgrade?licenseKey=${encodeURIComponent(license.maskedLicenseKey || '')}&module=${encodeURIComponent(moduleKey)}` : '';
+  return <AppLayout title="Upgrade required"><section className="card settings-panel"><p className="eyebrow">License required</p><h1>Upgrade required for {friendlyModuleName(moduleKey)}</h1><p>This module requires {tier === 'business' ? 'Business' : 'Pro or Business'}. Your current tier is <strong>{license?.tier || 'basic'}</strong>.</p><p className="muted">Upgrade to unlock the workflow, backend APIs, dashboard actions, and settings for this module.</p><div className="button-row">{upgradeUrl && <a className="button" href={upgradeUrl} target="_blank" rel="noreferrer">Upgrade License</a>}<Link className="button secondary" href="/settings/license">Contact admin / update license</Link></div></section></AppLayout>;
+}
+
+function LicensedModuleRoute({ moduleKey, children }: { moduleKey: string; children: ReactNode }) {
+  const license = useLicense();
+  if (!license.canUseModule(moduleKey)) return <UpgradeRequiredPage moduleKey={moduleKey}/>;
+  return <>{children}</>;
 }
 
 function useApi<T>(url: string) {
@@ -207,8 +223,23 @@ class ModuleErrorBoundary extends Component<{ title: string; children: ReactNode
   }
 }
 
+function moduleKeyForEndpoint(endpoint: string) {
+  if (endpoint.includes('/jobs')) return 'jobs';
+  if (endpoint.includes('/payments')) return 'payments';
+  if (endpoint.includes('/messages')) return 'messages';
+  if (endpoint.includes('/assets')) return 'assets';
+  if (endpoint.includes('/service-catalog')) return 'service_catalog';
+  if (endpoint.includes('/clients')) return 'clients';
+  if (endpoint.includes('/properties')) return 'properties';
+  if (endpoint.includes('/requests')) return 'requests';
+  if (endpoint.includes('/quotes')) return 'quotes';
+  if (endpoint.includes('/invoices')) return 'basic_invoices';
+  if (endpoint.includes('/media')) return 'basic_media';
+  return '';
+}
+
 function ModulePage({ config }: { config: ModuleConfig }) {
-  const auth = useAuth(); const [query, setQuery] = useState(''); const [selected, setSelected] = useState<any | null>(null); const [showCreate, setShowCreate] = useState(false);
+  const auth = useAuth(); const license = useLicense(); const [query, setQuery] = useState(''); const [selected, setSelected] = useState<any | null>(null); const [showCreate, setShowCreate] = useState(false);
   const state = useApi<{ records: any[]; statuses?: string[]; pipeline?: string[] }>(`${config.endpoint}${query ? `?q=${encodeURIComponent(query)}` : ''}`);
   const rows = asArray(state.data?.records).filter((row: any) => {
     if (auth.effectiveRole === 'Client' && auth.effectiveClientId) return !row.clientId || row.clientId === auth.effectiveClientId;
@@ -216,6 +247,8 @@ function ModulePage({ config }: { config: ModuleConfig }) {
     return true;
   });
   const allowedPermissions = Array.isArray(config.permission) ? config.permission : [config.permission];
+  const moduleKey = moduleKeyForEndpoint(config.endpoint);
+  if (moduleKey && !license.canUseModule(moduleKey)) return <UpgradeRequiredPage moduleKey={moduleKey}/>;
   if (!allowedPermissions.some((permission) => auth.can(permission))) return <AppLayout title="Access restricted"><div className="card"><h2>Permission required</h2><p>This page requires one of <code>{allowedPermissions.join(', ')}</code>.</p></div></AppLayout>;
   return <AppLayout title={config.title}><ModuleErrorBoundary title={config.title}><div className="module-shell"><PageHeader eyebrow={auth.effectiveRole === 'Client' ? 'Client portal preview' : auth.effectiveRole === 'Technician' ? 'Technician field preview' : config.eyebrow} title={auth.effectiveRole === 'Client' ? config.title.replace('Work Requests', 'My Requests') : auth.effectiveRole === 'Technician' && config.title === 'Jobs / Work Orders' ? 'My Jobs / Work Orders' : config.title} description={auth.isViewAsActive ? `Preview-filtered for ${auth.effectiveRole}${auth.effectiveClientId ? ` client ${auth.effectiveClientId}` : ''}${auth.effectiveUserId && auth.effectiveRole === 'Technician' ? ` technician ${auth.effectiveUserId}` : ''}.` : config.description}/><ModuleToolbar query={query} setQuery={setQuery} canManage={auth.can(config.managePermission)} actionLabel={config.actionLabel} onCreate={() => setShowCreate(!showCreate)} views={config.views} filters={config.filters}/><StatusPipeline statuses={config.pipeline || asArray(state.data?.statuses)}/>{state.loading && <LoadingState title={`Loading ${config.title}`} lines={3}/>} {state.error && <div className="card error-panel"><h2>Could not load {config.title}</h2><p>{state.error}</p><Button variant="secondary" onClick={state.reload}>Try again</Button></div>} {!state.loading && !state.error && rows.length === 0 && <EmptyState title={config.emptyTitle} description={config.emptyDescription} action={auth.can(config.managePermission) ? <Button onClick={() => setShowCreate(true)}>{config.actionLabel}</Button> : undefined}/>} {showCreate && auth.can(config.managePermission) && <ModuleCreateForm config={config} onDone={() => { state.reload(); setShowCreate(false); }}/>} {rows.length > 0 && <ModuleList rows={rows} columns={config.columns} onSelect={setSelected}/>} {selected && <DetailDrawer row={selected} config={config} onClose={() => setSelected(null)}/>}</div></ModuleErrorBoundary></AppLayout>;
 }
@@ -328,7 +361,7 @@ export function SettingsPage({ area = 'settings/company' }: { area?: string }) {
 
 function SettingsPanel({ section }: { section: string }) {
   const auth = useAuth();
-  const endpoint = section === 'diagnostics' ? '/api/system/diagnostics' : section === 'homepage-builder' ? '/api/homepage-builder' : `/api/settings/${section}`;
+  const endpoint = section === 'license' ? '/api/license/status' : section === 'diagnostics' ? '/api/system/diagnostics' : section === 'homepage-builder' ? '/api/homepage-builder' : `/api/settings/${section}`;
   const state = useApi<any>(endpoint);
   const managePermission = section === 'homepage-builder' ? 'homepage.manage' : section === 'workflow-automation' ? 'settings.manage' : `${section}.manage`;
   const canManage = auth.can(managePermission) || (section === 'diagnostics' && auth.can('diagnostics.view'));
@@ -337,6 +370,7 @@ function SettingsPanel({ section }: { section: string }) {
   if (section === 'company') return <CompanySettings data={state.data.company} canManage={canManage} reload={state.reload}/>;
   if (section === 'branding') return <BrandingSettings data={state.data.branding} canManage={canManage} reload={state.reload}/>;
   if (section === 'theme') return <ThemeSettingsPanel data={state.data.theme} canManage={canManage} reload={state.reload}/>;
+  if (section === 'license') return <LicenseSettingsPanel data={state.data} canManage={auth.can('license.manage') || auth.can('settings.manage')} reload={state.reload}/>;
   if (section === 'users') return <UsersSettings data={state.data} canManage={canManage} reload={state.reload}/>;
   if (section === 'roles') return <RolesSettings data={state.data} canManage={canManage} reload={state.reload}/>;
   if (section === 'permissions') return <PermissionsSettings data={state.data} canManage={canManage} reload={state.reload}/>;
@@ -361,6 +395,16 @@ function ThemeSettingsPanel({ data, canManage, reload }: { data: ThemeSettings; 
   const submit = async () => { setStatus('Saving…'); try { await apiJson('/api/settings/theme', { method: 'POST', body: JSON.stringify({ theme }) }); applyTheme(theme); setStatus('Saved and applied.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Save failed.'); } };
   return <section className="card settings-panel"><h2>Theme</h2><select disabled={!canManage} value={theme.mode} onChange={(e) => { const next = { ...theme, mode: e.target.value as ThemeSettings['mode'] }; setTheme(next); applyTheme(next); }}><option>system</option><option>light</option><option>dark</option><option>preset</option><option>custom</option></select><select disabled={!canManage} value={theme.presetId} onChange={(e) => { const next = { ...theme, presetId: e.target.value as ThemeSettings['presetId'] }; setTheme(next); applyTheme(next); }}>{Object.keys(themePresets).map((key) => <option key={key}>{key}</option>)}</select><Button disabled={!canManage} onClick={submit}>Save theme</Button>{status && <p className="muted">{status}</p>}</section>;
 }
+
+function LicenseSettingsPanel({ data, canManage, reload }: { data: any; canManage: boolean; reload: () => Promise<void> }) {
+  const [form, setForm] = useState({ licenseApiUrl: data.licenseApiUrl || '', licenseKey: '', email: data.licenseEmail || '' });
+  const [status, setStatus] = useState('');
+  const recheck = async () => { setStatus('Re-checking license…'); try { await apiJson('/api/license/recheck', { method: 'POST' }); setStatus('License check complete.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'License check failed.'); } };
+  const update = async (event: FormEvent) => { event.preventDefault(); setStatus('Verifying updated license…'); try { await apiJson('/api/license/update', { method: 'POST', body: JSON.stringify(form) }); setStatus('License updated and verified.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Update failed.'); } };
+  const upgradeUrl = data.licenseApiUrl ? `${String(data.licenseApiUrl).replace(/\/+$/, '')}/account/upgrade` : '';
+  return <section className="card settings-panel"><div className="section-heading"><div><h2>License</h2><p className="muted">Local snapshot from the ContractorOS License Portal API.</p></div><Badge tone={data.status === 'active' ? 'success' : 'danger'}>{data.status || 'unverified'}</Badge></div><div className="grid cards"><p><strong>Tier</strong><br/>{data.tier}</p><p><strong>Email</strong><br/>{data.licenseEmail || '—'}</p><p><strong>License key</strong><br/>{data.maskedLicenseKey || '—'}</p><p><strong>Install ID</strong><br/>{data.installId || '—'}</p><p><strong>Site URL</strong><br/>{data.siteUrl || '—'}</p><p><strong>Last verified</strong><br/>{data.lastVerifiedAt || 'Never'}</p><p><strong>Expires</strong><br/>{data.expiresAt || 'No expiration'}</p><p><strong>Grace period</strong><br/>{data.gracePeriodEndsAt || 'Not active'}</p></div>{asArray<string>(data.warnings).map((warning) => <p className="error-text" key={warning}>{warning}</p>)}{data.lastCheckError && <p className="error-text">{data.lastCheckError}</p>}<form className="form" onSubmit={update}><h3>Update license</h3><label><span className="field-label">License API URL</span><input disabled={!canManage} value={form.licenseApiUrl} onChange={(e) => setForm({ ...form, licenseApiUrl: e.target.value })}/></label><label><span className="field-label">License Key</span><input disabled={!canManage} placeholder={data.maskedLicenseKey || 'COS-…'} value={form.licenseKey} onChange={(e) => setForm({ ...form, licenseKey: e.target.value })}/></label><label><span className="field-label">License Email</span><input disabled={!canManage} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/></label><div className="button-row"><Button disabled={!canManage}>Update and verify</Button><Button type="button" variant="secondary" disabled={!canManage} onClick={recheck}>Re-check license</Button>{upgradeUrl && <a className="button secondary" href={upgradeUrl} target="_blank" rel="noreferrer">Open upgrade page</a>}</div></form><h3>Enabled modules</h3><div className="permission-list">{asArray<string>(data.enabledModules).map((module) => <Badge key={module}>{module}</Badge>)}</div>{status && <p className="muted">{status}</p>}</section>;
+}
+
 function UsersSettings({ data, canManage, reload }: { data: any; canManage: boolean; reload: () => Promise<void> }) {
   const [form, setForm] = useState({ name: '', email: '', roleId: data.roles?.[0]?.id || '' }); const [status, setStatus] = useState('');
   const submit = async (event: FormEvent) => { event.preventDefault(); setStatus('Saving…'); try { await apiJson('/api/settings/users', { method: 'POST', body: JSON.stringify(form) }); setStatus('User invited/created.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Save failed.'); } };

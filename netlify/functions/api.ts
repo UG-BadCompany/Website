@@ -2,12 +2,12 @@ import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPerm
 import { readConfig } from '../../lib/server/config';
 import { detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicServiceCatalog, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
-import { LocalLicenseProvider } from '../../lib/server/license';
 import { paymentAdapter } from '../../lib/server/payments';
 import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsOptions, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
+import { checkLicense, getLicenseStatus, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
@@ -15,6 +15,33 @@ type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; m
 const json = (statusCode: number, body: unknown, headers = {}): NetlifyResponse => ({ statusCode, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const readBody = (event: NetlifyEvent) => event.body ? JSON.parse(event.body) : {};
 const toApiRoute = (path: string) => `/api${path === '/' ? '' : path}`;
+
+
+function moduleForLicensedPath(path: string): string | null {
+  if (path.startsWith('/jobs')) return 'jobs';
+  if (path.startsWith('/work-orders')) return 'work_orders';
+  if (path.startsWith('/payments')) return 'payments';
+  if (path.startsWith('/messages')) return 'messages';
+  if (path.startsWith('/service-catalog')) return 'service_catalog';
+  if (path.startsWith('/project-showcases')) return 'project_showcase';
+  if (path.startsWith('/integrations/google-business')) return 'google_reviews';
+  if (path.startsWith('/portal')) return 'client_portal';
+  if (path.startsWith('/assets')) return 'assets';
+  if (path.startsWith('/cmms')) return 'cmms';
+  if (path.startsWith('/admin/view-as')) return 'owner_view_as';
+  if (path.startsWith('/settings/roles') || path.startsWith('/settings/permissions')) return 'advanced_roles_permissions';
+  if (path.startsWith('/settings/roles-permissions')) return 'advanced_roles_permissions';
+  if (path.startsWith('/settings/workflow-automation') || path.startsWith('/workflow-automation')) return 'workflow_automation';
+  if (path.startsWith('/reports') || path.startsWith('/analytics')) return 'advanced_reporting';
+  if (path.startsWith('/ai/quoting')) return 'ai_quoting';
+  if (path.startsWith('/ai/troubleshooting')) return 'ai_troubleshooting';
+  return null;
+}
+
+async function enforceLicensedPath(path: string) {
+  const moduleKey = moduleForLicensedPath(path);
+  if (moduleKey) await requireLicensedModule(moduleKey);
+}
 
 function errorDetails(error: unknown) {
   if (!(error instanceof Error)) return { message: String(error) };
@@ -54,9 +81,12 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     if (path === '/install/status') return json(200, await getInstallStatus());
     if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
-    if (path === '/install/license') return json(200, await new LocalLicenseProvider().verify(readBody(event)));
     if (path === '/install/database') return json(200, { adapter: detectDatabaseAdapter(), migrationsReady: true, netlifyDatabasePreferred: Boolean(process.env.NETLIFY) });
     if (path === '/install/env-validation') return json(200, validateEnvironment(process.env, readBody(event)));
+    if (path === '/install/license' && event.httpMethod === 'POST') return json(200, await verifyLicense(readBody(event)));
+    if (path === '/license/status' && event.httpMethod === 'GET') return json(200, await getLicenseStatus(), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/license/recheck' && event.httpMethod === 'POST') { await requirePermission(event, 'license.manage'); return json(200, await checkLicense(), { 'cache-control': 'no-store, max-age=0' }); }
+    if (path === '/license/update' && event.httpMethod === 'POST') { await requirePermission(event, 'license.manage'); return json(200, await updateAndVerifyLicense(readBody(event)), { 'cache-control': 'no-store, max-age=0' }); }
     if (path === '/install/email-test') {
       const validation = validateEnvironment();
       const ready = validation.email.every((check) => check.status === 'found');
@@ -105,6 +135,8 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       await invalidateCurrentSession(event).catch(() => undefined);
       return json(200, { ok: true }, { 'Set-Cookie': clearSessionCookie() });
     }
+
+    await enforceLicensedPath(path);
 
     if (path === '/admin/view-as/options' && event.httpMethod === 'GET') {
       const user = await requireAuth(event);
@@ -206,6 +238,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     return json(404, { error: 'Not found', path });
   } catch (error) {
+    if (error instanceof LicenseModuleLockedError) return json(error.statusCode, error.toResponse());
     if (error instanceof HttpError) return json(error.statusCode, { ok: false, error: error.statusCode === 404 ? 'Route not found' : error.statusCode === 405 ? 'Method not allowed' : 'Route failed', route, method, step: stepForRoute(route, method), message: error.message });
     const details = errorDetails(error);
     console.error('ContractorOS API unhandled error', { route, method, ...details });

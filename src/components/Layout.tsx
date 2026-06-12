@@ -4,49 +4,50 @@ import { Link, NavLink, useRouter } from './Router';
 
 import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
 import { useAuth } from '../lib/auth';
+import { useLicense } from '../lib/license';
 import { BrandLogo } from './ui';
 import { fallbackRoleOptions, normalizeRole, type RoleOption } from '../lib/role-management';
 
 const appNavGroups = [
-  { group: 'Overview', items: [{ id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view', aliases: ['Portal'] }] },
+  { group: 'Overview', items: [{ id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view', moduleKey: 'dashboard', aliases: ['Portal'] }] },
   { group: 'Customers', items: [
-    { id: 'clients', href: '/clients', label: 'Clients', icon: Users, permission: 'clients.view' },
-    { id: 'properties', href: '/properties', label: 'Properties', icon: Home, permission: 'properties.view' },
-    { id: 'messages', href: '/messages', label: 'Messages', icon: MessageSquare, permission: 'messages.view' },
+    { id: 'clients', href: '/clients', label: 'Clients', icon: Users, permission: 'clients.view', moduleKey: 'clients' },
+    { id: 'properties', href: '/properties', label: 'Properties', icon: Home, permission: 'properties.view', moduleKey: 'properties' },
+    { id: 'messages', href: '/messages', label: 'Messages', icon: MessageSquare, permission: 'messages.view', moduleKey: 'messages' },
   ] },
   { group: 'Operations', items: [
-    { id: 'requests', href: '/requests', label: 'Requests', icon: Wrench, permission: 'requests.view' },
-    { id: 'quotes', href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view' },
-    { id: 'jobs', href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view', aliases: ['My Jobs', 'Assigned Work'] },
-    { id: 'work-orders', href: '/work-orders', label: 'Work Orders', icon: BriefcaseBusiness, permission: 'work_orders.view', aliases: ['Assigned Work', 'Jobs / Work Orders'] },
+    { id: 'requests', href: '/requests', label: 'Requests', icon: Wrench, permission: 'requests.view', moduleKey: 'requests' },
+    { id: 'quotes', href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view', moduleKey: 'quotes' },
+    { id: 'jobs', href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view', moduleKey: 'jobs', aliases: ['My Jobs', 'Assigned Work'] },
+    { id: 'work-orders', href: '/work-orders', label: 'Work Orders', icon: BriefcaseBusiness, permission: 'work_orders.view', moduleKey: 'work_orders', aliases: ['Assigned Work', 'Jobs / Work Orders'] },
   ] },
   { group: 'Financial', items: [
-    { id: 'invoices', href: '/invoices', label: 'Invoices', icon: FileText, permission: 'invoices.view' },
-    { id: 'payments', href: '/payments', label: 'Payments', icon: CreditCard, permission: 'payments.view' },
+    { id: 'invoices', href: '/invoices', label: 'Invoices', icon: FileText, permission: 'invoices.view', moduleKey: 'basic_invoices' },
+    { id: 'payments', href: '/payments', label: 'Payments', icon: CreditCard, permission: 'payments.view', moduleKey: 'payments' },
   ] },
   { group: 'Assets & Services', items: [
-    { id: 'assets', href: '/assets', label: 'CMMS Assets', icon: Building2, permission: 'cmms.view' },
-    { id: 'service-catalog', href: '/service-catalog', label: 'Service Catalog', icon: Wrench, permission: 'service_catalog.view' },
-    { id: 'media', href: '/media', label: 'Media / Files', icon: FolderOpen, permission: 'media.view' },
-    { id: 'project-showcase', href: '/marketing/project-showcase', label: 'Project Showcase', icon: ImageIcon, permission: 'project_showcase.view' },
+    { id: 'assets', href: '/assets', label: 'CMMS Assets', icon: Building2, permission: 'cmms.view', moduleKey: 'assets' },
+    { id: 'service-catalog', href: '/service-catalog', label: 'Service Catalog', icon: Wrench, permission: 'service_catalog.view', moduleKey: 'service_catalog' },
+    { id: 'media', href: '/media', label: 'Media / Files', icon: FolderOpen, permission: 'media.view', moduleKey: 'basic_media' },
+    { id: 'project-showcase', href: '/marketing/project-showcase', label: 'Project Showcase', icon: ImageIcon, permission: 'project_showcase.view', moduleKey: 'project_showcase' },
   ] },
   { group: 'Administration', items: [
-    { id: 'settings', href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view' },
-    { id: 'users', href: '/settings/users', label: 'Users', icon: UserRound, permission: 'users.view' },
-    { id: 'roles', href: '/settings/roles', label: 'Roles', icon: ShieldCheck, permission: 'roles.view' },
-    { id: 'roles-permissions', href: '/settings/roles-permissions', label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.manage' },
-    { id: 'homepage-builder', href: '/settings/homepage-builder', label: 'Homepage Builder', icon: Paintbrush, permission: 'homepage.view' },
+    { id: 'settings', href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view', moduleKey: 'basic_settings' },
+    { id: 'users', href: '/settings/users', label: 'Users', icon: UserRound, permission: 'users.view', moduleKey: 'advanced_roles_permissions' },
+    { id: 'roles', href: '/settings/roles', label: 'Roles', icon: ShieldCheck, permission: 'roles.view', moduleKey: 'advanced_roles_permissions' },
+    { id: 'roles-permissions', href: '/settings/roles-permissions', label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.manage', moduleKey: 'advanced_roles_permissions' },
+    { id: 'homepage-builder', href: '/settings/homepage-builder', label: 'Homepage Builder', icon: Paintbrush, permission: 'homepage.view', moduleKey: 'homepage_builder' },
     { id: 'diagnostics', href: '/settings/diagnostics', label: 'Diagnostics', icon: Stethoscope, permission: 'diagnostics.view' },
   ] },
   { group: 'Account', items: [
-    { id: 'portal', href: '/portal', label: 'Portal', icon: UserRound, permission: 'portal.view' },
+    { id: 'portal', href: '/portal', label: 'Portal', icon: UserRound, permission: 'portal.view', moduleKey: 'client_portal' },
     { id: 'account', href: '/account', label: 'Account', icon: UserRound, permission: 'account.view' },
     { id: 'logout', href: '/logout', label: 'Logout', icon: LogOut, permission: 'account.view' },
   ] },
 ];
 
 type PermissionSpec = string | string[];
-type NavItem = Omit<typeof appNavGroups[number]['items'][number], 'permission'> & { permission: PermissionSpec; roles?: string[] };
+type NavItem = Omit<typeof appNavGroups[number]['items'][number], 'permission'> & { permission: PermissionSpec; roles?: string[]; aliases?: string[]; moduleKey?: string };
 
 
 export function PublicLayout({ children }: { children: ReactNode }) {
@@ -99,6 +100,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   const router = useRouter();
   const role = auth.role || '';
   const branding = useBranding();
+  const license = useLicense();
   const [moreOpen, setMoreOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -106,12 +108,12 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const permissionsLoaded = !auth.isLoading;
 
-  const accessibleNavItems = useMemo(() => appNavGroups.flatMap((group) => group.items).filter((item) => auth.can(item.permission)), [auth]);
+  const accessibleNavItems = useMemo(() => appNavGroups.flatMap((group) => group.items).filter((item) => auth.can(item.permission) && (!('moduleKey' in item) || license.canUseModule(String(item.moduleKey)))), [auth, license]);
   const visibleGroups = useMemo(() => appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => accessibleNavItems.some((accessible) => accessible.id === item.id)) })).filter((group) => group.items.length > 0), [accessibleNavItems]);
   const primaryMobileItems = useMemo(() => getPrimaryMobileItems(role, accessibleNavItems), [role, accessibleNavItems]);
   const moreItems = useMemo(() => accessibleNavItems.filter((item) => !primaryMobileItems.some((primary) => primary.id === item.id)), [accessibleNavItems, primaryMobileItems]);
   const moreGroups = useMemo(() => appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => moreItems.some((more) => more.id === item.id)) })).filter((group) => group.items.length > 0), [moreItems]);
-  const quickActions = quickActionsForRole(role, auth.can);
+  const quickActions = quickActionsForRole(role, auth.can).filter((action) => !action.moduleKey || license.canUseModule(action.moduleKey));
 
   useEffect(() => { document.title = pageTitle(title, branding); }, [title, branding.companyDisplayName, branding.displayName, branding.companyName]);
   useEffect(() => { setMoreOpen(false); setSearchOpen(false); setNotificationsOpen(false); setQuickOpen(false); }, [router.path]);
@@ -188,7 +190,7 @@ function MobileAppHeader({ title, brandingName, onSearch, onNotifications, onMor
 function MobileBottomNav({ items, moreOpen, onMore, loading }: { items: NavItem[]; moreOpen: boolean; onMore: () => void; loading: boolean }) {
   const { path } = useRouter();
   const auth = useAuth();
-  const safeItems = items.length ? items : [{ id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' } as NavItem];
+  const safeItems = items.length ? items : [{ id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view', moduleKey: 'dashboard' } as NavItem];
   return <nav className="mobile-nav" aria-label="Mobile dashboard navigation">{safeItems.map((item) => <Link key={item.id} href={item.href} className={`mobile-nav-item ${isActivePath(path, item.href) ? 'active' : ''}`}><item.icon size={20}/><small>{labelForRole(item, auth.role)}</small></Link>)}<button type="button" className={`mobile-nav-item ${moreOpen ? 'active' : ''}`} onClick={onMore}><MoreHorizontal size={21}/><small>{loading ? 'Loading' : 'More'}</small></button></nav>;
 }
 
@@ -213,19 +215,19 @@ function NotificationCenter({ onClose }: { onClose: () => void }) {
 
 function quickActionsForRole(role: string, can: (permission: PermissionSpec) => boolean) {
   if (role === 'Technician') return [
-    { label: '+ Note', href: '/jobs', permission: 'work_orders.manage' },
-    { label: '+ Photo', href: '/media', permission: 'media.manage' },
-    { label: '+ Complete Job', href: '/jobs', permission: 'work_orders.manage' },
+    { label: '+ Note', href: '/jobs', permission: 'work_orders.manage', moduleKey: 'work_orders' },
+    { label: '+ Photo', href: '/media', permission: 'media.manage', moduleKey: 'basic_media' },
+    { label: '+ Complete Job', href: '/jobs', permission: 'work_orders.manage', moduleKey: 'work_orders' },
   ].filter((action) => can(action.permission));
   if (role === 'Client') return [
-    { label: '+ Request Estimate', href: '/request-estimate', permission: 'portal.view' },
-    { label: '+ Message', href: '/messages', permission: 'messages.manage' },
+    { label: '+ Request Estimate', href: '/request-estimate', permission: 'portal.view', moduleKey: 'client_portal' },
+    { label: '+ Message', href: '/messages', permission: 'messages.manage', moduleKey: 'messages' },
   ].filter((action) => can(action.permission));
   return [
-    { label: '+ Request', href: '/requests', permission: 'requests.manage' },
-    { label: '+ Quote', href: '/quotes', permission: 'quotes.manage' },
-    { label: '+ Job', href: '/jobs', permission: 'jobs.manage' },
-    { label: '+ Invoice', href: '/invoices', permission: 'invoices.manage' },
+    { label: '+ Request', href: '/requests', permission: 'requests.manage', moduleKey: 'requests' },
+    { label: '+ Quote', href: '/quotes', permission: 'quotes.manage', moduleKey: 'quotes' },
+    { label: '+ Job', href: '/jobs', permission: 'jobs.manage', moduleKey: 'jobs' },
+    { label: '+ Invoice', href: '/invoices', permission: 'invoices.manage', moduleKey: 'basic_invoices' },
   ].filter((action) => can(action.permission));
 }
 

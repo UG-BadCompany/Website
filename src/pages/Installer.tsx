@@ -181,6 +181,10 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   const [companyName, setCompanyName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
+  const [licenseForm, setLicenseForm] = useState({ licenseApiUrl: '', licenseKey: '', email: '', domain: window.location.host });
+  const [licenseStatus, setLicenseStatus] = useState<'idle' | 'verifying' | 'valid' | 'invalid'>('idle');
+  const [licenseMessage, setLicenseMessage] = useState('');
+  const [licenseSnapshot, setLicenseSnapshot] = useState<any>(null);
   const [homepage, setHomepage] = useState<BrandingHomepageDraft>(() => defaultHomepageDraft());
   const [finishState, setFinishState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [finishMessage, setFinishMessage] = useState('');
@@ -233,6 +237,27 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
     setEmailTestMessage(result.message ?? (response.ok ? 'Test email check passed.' : 'Email environment variables are missing.'));
   };
 
+  const verifyInstallerLicense = async () => {
+    setLicenseStatus('verifying');
+    setLicenseMessage(licenseForm.licenseApiUrl.trim() ? 'Verifying license with License Portal…' : 'License API URL is missing.');
+    if (!licenseForm.licenseApiUrl.trim()) { setLicenseStatus('invalid'); return; }
+    try {
+      const response = await fetch('/api/install/license', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ ...licenseForm, siteUrl: window.location.origin, domain: licenseForm.domain || window.location.host, environment: location.hostname.includes('localhost') ? 'local' : 'production', machineFingerprint: navigator.userAgent }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.valid) throw new Error(result.error || result.reason || 'License invalid. Please check your key and email.');
+      setLicenseSnapshot(result.license || result);
+      setLicenseStatus('valid');
+      setLicenseMessage(`License verified: ${result.tier || result.license?.tier || 'active'} tier.`);
+    } catch (error) {
+      setLicenseStatus('invalid');
+      setLicenseMessage(error instanceof Error ? error.message : 'License invalid. Please check your key and email.');
+    }
+  };
+
   const finishInstallation = async () => {
     setFinishState('saving');
     setFinishMessage('Locking installer and saving installation flags…');
@@ -247,6 +272,7 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
           ownerEmail,
           theme,
           homepageSetup: homepage,
+          license: licenseSnapshot,
           branding: {
             logoMediaId: homepage.logoMediaId || null,
             logoUrl: homepage.logoMediaId ? '' : homepage.logoUrl || '',
@@ -283,7 +309,7 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
         </aside>
         <div className="card install-card">
           <p className="eyebrow">Installer / {current}</p>
-          {current === 'license' && <><h1>Verify license</h1><p>License Option B is represented by a provider interface: license server URL + email + license + domain + install tracking.</p><input placeholder="LICENSE_SERVER_URL key name"/><input placeholder="License key"/><input placeholder="Owner email"/><input placeholder="Domain"/></>}
+          {current === 'license' && <LicenseActivationStep form={licenseForm} setForm={setLicenseForm} status={licenseStatus} message={licenseMessage} snapshot={licenseSnapshot} onVerify={verifyInstallerLicense}/>}
           {current === 'hosting' && <HostingStep hosting={hosting} setHosting={setHosting}/>}
           {current === 'database' && <DatabaseStep providerFlow={providerFlow} database={database} setDatabase={setDatabase} validation={envValidation}/>}
           {current === 'environment' && <EnvironmentStep hosting={hosting} providerFlow={providerFlow} rows={mappingRows} customMapping={customMapping} setCustomMapping={setCustomMapping} setRows={setMappingRows}/>}
@@ -298,12 +324,17 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
           {current === 'finish' && <><h1>Finish installation</h1><p>Installer locks, migrations complete, saves the selected theme and homepage basics, owner magic link is sent, and you can open the dashboard.</p><button className="button" disabled={finishState === 'saving'} onClick={finishInstallation}>{finishState === 'saving' ? 'Finishing…' : 'Complete installation'}</button>{finishMessage && <p className={finishState === 'error' ? 'error-text' : undefined}>{finishMessage}</p>}</>}
           <div className="actions">
             <button className="button secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>Back</button>
-            <button className="button" disabled={index === steps.length - 1} onClick={() => setIndex(index + 1)}>Continue</button>
+            <button className="button" disabled={index === steps.length - 1 || (current === 'license' && licenseStatus !== 'valid')} onClick={() => setIndex(index + 1)}>Continue</button>
           </div>
         </div>
       </section>
     </PublicLayout>
   );
+}
+
+
+function LicenseActivationStep({ form, setForm, status, message, snapshot, onVerify }: { form: { licenseApiUrl: string; licenseKey: string; email: string; domain: string }; setForm: (value: { licenseApiUrl: string; licenseKey: string; email: string; domain: string }) => void; status: string; message: string; snapshot: any; onVerify: () => void }) {
+  return <><h1>License Activation</h1><p>Enter your ContractorOS License Portal API URL, license key, and license email. The installer verifies the license before continuing.</p>{!form.licenseApiUrl.trim() && <p className="error-text">License API URL is missing.</p>}<div className="grid cards"><label><span className="field-label">License API URL</span><input placeholder="https://taselling.netlify.app" value={form.licenseApiUrl} onChange={(e) => setForm({ ...form, licenseApiUrl: e.target.value })}/></label><label><span className="field-label">License Key</span><input placeholder="COS-BASIC-XXXX-XXXX-XXXX" value={form.licenseKey} onChange={(e) => setForm({ ...form, licenseKey: e.target.value })}/></label><label><span className="field-label">License Email</span><input placeholder="customer@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/></label><label><span className="field-label">Domain</span><input value={form.domain} onChange={(e) => setForm({ ...form, domain: e.target.value })}/></label></div><button className="button" type="button" disabled={status === 'verifying'} onClick={onVerify}>{status === 'verifying' ? 'Verifying…' : 'Verify License'}</button>{message && <p className={status === 'invalid' ? 'error-text' : 'muted'}>{message}</p>}{snapshot && <div className="permission-list"><span className="pill">Tier: {snapshot.tier}</span>{(snapshot.enabledModules || []).slice(0, 8).map((module: string) => <span className="pill" key={module}>{module}</span>)}</div>}</>;
 }
 
 function HostingStep({ hosting, setHosting }: { hosting: HostingProvider; setHosting: (value: HostingProvider) => void }) {
