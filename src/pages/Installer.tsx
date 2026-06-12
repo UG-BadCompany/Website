@@ -6,6 +6,8 @@ import { saveJson } from '../lib/storage';
 import { notifyBrandingUpdated } from '../lib/branding';
 import type { DatabaseProvider, HostingProvider, PaymentProvider, ThemeMode } from '../types/domain';
 
+const asArray = <T,>(value: T[] | null | undefined): T[] => Array.isArray(value) ? value : [];
+
 const steps = ['license','hosting','database','environment','email','payment','company','branding-homepage','owner','theme','foundation','expansion-packs','finish'];
 
 type EnvStatus = 'found' | 'missing' | 'optional' | 'invalid' | 'not_checked';
@@ -320,7 +322,7 @@ function DatabaseStep({ providerFlow, database, setDatabase, validation }: { pro
     {database === 'netlify_database' && <p>Installer prefers detecting Netlify Database automatically. If available, no database connection string is requested here.</p>}
     {(database === 'postgres_url' || database === 'supabase_postgres' || database === 'neon_postgres' || database === 'vercel_postgres') && <p>External database selections validate the mapped database key instead of collecting secrets in the installer.</p>}
     {(database === 'docker_compose_postgres' || database === 'local_postgres' || database === 'managed_postgres') && <p>Installer checks that <code>DATABASE_URL</code> exists, the database connection works, and migrations can run.</p>}
-    <div className="email-status-list">{validation?.database.map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
+    <div className="email-status-list">{asArray(validation?.database).map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
   </>;
 }
 
@@ -368,7 +370,7 @@ function PaymentStep({ hosting, payment, setPayment, validation }: { hosting: Ho
     <p className="notice">{requirements.note} Add these keys in {providerFlows[hosting].label} environment settings, not in the installer.</p>
     {requirements.required.length === 0 ? <p>No payment API keys are required for this option.</p> : <><h3>Required keys</h3><ul>{requirements.required.map((key) => <li key={key}><code>{key}</code></li>)}</ul></>}
     {requirements.optional.length > 0 && <><h3>Optional keys</h3><ul>{requirements.optional.map((key) => <li key={key}><code>{key}</code></li>)}</ul></>}
-    <div className="email-status-list">{validation?.payment.map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
+    <div className="email-status-list">{asArray(validation?.payment).map((check) => <div className="email-status-row" key={check.key}><div><strong>{check.key}</strong><p>{check.description}</p></div><StatusBadge status={check.status}/></div>)}</div>
   </>;
 }
 
