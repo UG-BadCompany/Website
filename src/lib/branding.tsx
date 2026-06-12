@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { loadJson, saveJson } from './storage';
+import { applyTheme } from './theme';
 import type { ThemeSettings } from './theme';
 
 export type BrandingTheme = Partial<ThemeSettings> | Record<string, unknown>;
@@ -196,6 +197,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(BRANDING_UPDATED_EVENT, listener);
   }, [refreshBranding, updateBranding]);
   useEffect(() => applyFavicon(branding.faviconUrl, branding.brandingUpdatedAt), [branding.faviconUrl, branding.brandingUpdatedAt]);
+  useEffect(() => { if (branding.theme && Object.keys(branding.theme).length) applyTheme(branding.theme as ThemeSettings); }, [branding.theme]);
   useEffect(() => { document.title = pageTitle(undefined, branding); }, [branding.companyDisplayName, branding.companyName, branding.displayName]);
   useEffect(() => { document.documentElement.style.setProperty('--brand-logo', branding.logoUrl ? `url("${versionedAsset(branding.logoUrl, branding.brandingUpdatedAt)}")` : 'none'); }, [branding.logoUrl, branding.brandingUpdatedAt]);
 

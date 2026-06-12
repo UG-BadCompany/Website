@@ -5,7 +5,7 @@ import { serviceCategories } from '../data/foundation';
 import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
 import { ActionCard, BrandLogo, Button, LoadingState, PageHeader, SectionHeader, StatusBadge } from '../components/ui';
 import { HomepageRenderer } from '../components/HomepageRenderer';
-import type { HomepageDraft } from '../lib/homepage-builder';
+import { createPremiumHomepageDraft, type HomepageDraft } from '../lib/homepage-builder';
 
 type EstimateDraft = {
   firstName: string; lastName: string; email: string; phone: string; preferredContact: string; existingCustomer: string;
@@ -51,7 +51,7 @@ export function HomePage() {
   const [publishedHomepage, setPublishedHomepage] = useState<HomepageDraft | null>(null);
   const [publicHomepageChecked, setPublicHomepageChecked] = useState(false);
   const branding = useBranding();
-  const services = homepage.services.length > 0 ? homepage.services : serviceCategories.map((name) => ({ id: name, name, description: 'Editable service category ready for estimates, requests, jobs, and future AI add-ons.', icon: 'Service' }));
+  const defaultDraft = useMemo(() => createPremiumHomepageDraft(branding, homepage), [branding.companyDisplayName, branding.displayName, branding.companyName, homepage.contactPhone, homepage.serviceArea, homepage.yearsExperience, homepage.financingAvailableEnabled, homepage.emergencyServiceEnabled]);
 
   useEffect(() => {
     fetch('/api/public/homepage', { headers: { accept: 'application/json' }, cache: 'no-store' })
@@ -71,11 +71,8 @@ export function HomePage() {
   if (publishedHomepage?.sections?.length) return <PublicLayout><HomepageRenderer draft={publishedHomepage}/></PublicLayout>;
 
   return <PublicLayout>
-    {!publicHomepageChecked && <section className="section narrow"><LoadingState title="Checking published homepage…" lines={1}/></section>}
-    <section className="section section-hero"><div className="hero-copy"><p className="eyebrow">{branding.tagline || `${branding.displayName} service`}</p>{isLoading ? <LoadingState title="Loading homepage" lines={2}/> : <><h1>{homepage.heroHeadline}</h1><p>{homepage.heroSubheadline}</p><div className="actions"><Link href={homepage.primaryCtaLink || '/request-estimate'} className="button">{homepage.primaryCtaLabel || 'Request Estimate'}</Link><Link href={homepage.secondaryCtaLink || '/services'} className="button secondary">{homepage.secondaryCtaLabel || 'View Services'}</Link></div></>}</div><div className="hero-panel"><StatusBadge status="Ready for dispatch"/><h3>Premium contractor operations</h3><p>Requests, quotes, jobs, invoices, payments, CMMS, and messaging in one branded workspace.</p></div></section>
-    <section className="section"><SectionHeader eyebrow="About" title={branding.displayName} description={homepage.aboutText}/></section>
-    <section className="section"><SectionHeader eyebrow="Services" title="How we can help" description={homepage.servicesIntro}/><div className="grid cards">{services.map((service) => <ActionCard key={service.id} title={service.name} description={service.description}><span className="pill">{service.icon || 'Service'}</span></ActionCard>)}</div></section>
-    <section className="section"><SectionHeader eyebrow="Contact" title="Ready to get started?"/><div className="grid cards"><ActionCard title="Contact block" description={homepage.contactPhone || 'Phone coming soon'}><p>{homepage.contactEmail || 'Email coming soon'}</p><p>{homepage.contactAddress || 'Address coming soon'}</p></ActionCard><ActionCard title="Service area" description={homepage.serviceArea || 'Service area coming soon'}><p>{homepage.businessHours || 'Business hours coming soon'}</p></ActionCard><ActionCard title="Trust" description={homepage.trustText}>{homepage.yearsExperience && <p>{homepage.yearsExperience} years of experience</p>}{homepage.emergencyServiceEnabled && <p>Emergency service available</p>}{homepage.financingAvailableEnabled && <p>Financing available</p>}</ActionCard></div></section>
+    {!publicHomepageChecked && !isLoading && <section className="section narrow"><LoadingState title="Preparing premium homepage…" lines={1}/></section>}
+    <HomepageRenderer draft={defaultDraft}/>
   </PublicLayout>;
 }
 
