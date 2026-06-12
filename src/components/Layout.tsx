@@ -44,7 +44,8 @@ const appNavGroups = [
   ] },
 ];
 
-type NavItem = typeof appNavGroups[number]['items'][number] & { roles?: string[] };
+type PermissionSpec = string | string[];
+type NavItem = Omit<typeof appNavGroups[number]['items'][number], 'permission'> & { permission: PermissionSpec; roles?: string[] };
 
 
 export function PublicLayout({ children }: { children: ReactNode }) {
@@ -176,7 +177,7 @@ function NotificationCenter({ onClose }: { onClose: () => void }) {
   return <div className="mobile-more-drawer" role="dialog" aria-modal="true" aria-label="Notifications"><div className="mobile-more-sheet"><div className="mobile-sheet-header"><div><p className="eyebrow">Notification center</p><h2>Alerts</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close notifications"><X size={20}/></button></div><p className="muted">Live notifications are ready for the next event feed. This center will surface:</p><div className="mobile-notification-list">{future.map((item) => <div className="card compact-card" key={item}><strong>{item}</strong><span className="muted">Future real-time alert placeholder</span></div>)}</div></div></div>;
 }
 
-function quickActionsForRole(role: string, can: (permission: string) => boolean) {
+function quickActionsForRole(role: string, can: (permission: PermissionSpec) => boolean) {
   if (role === 'Technician') return [
     { label: '+ Note', href: '/jobs', permission: 'work_orders.manage' },
     { label: '+ Photo', href: '/media', permission: 'media.manage' },
@@ -199,9 +200,9 @@ function FloatingQuickActions({ actions, open, setOpen }: { actions: Array<{ lab
   return <div className={`mobile-fab ${open ? 'open' : ''}`}><div className="mobile-fab-menu">{actions.map((action) => <Link key={action.label} href={action.href} className="button secondary small">{action.label}</Link>)}</div><button type="button" className="mobile-fab-button" aria-label="Quick actions" onClick={() => setOpen(!open)}><Plus size={22}/></button></div>;
 }
 
-export function Protected({ permission, children }: { permission: string; children: ReactNode }) {
+export function Protected({ permission, children }: { permission: PermissionSpec; children: ReactNode }) {
   const auth = useAuth();
-  if (!auth.can(permission)) return <AppLayout title="Access restricted"><div className="card"><h2>Permission required</h2><p>This page requires <code>{permission}</code>.</p></div></AppLayout>;
+  if (!auth.can(permission)) return <AppLayout title="Access restricted"><div className="card"><h2>Permission required</h2><p>This page requires <code>{Array.isArray(permission) ? permission.join(' or ') : permission}</code>.</p></div></AppLayout>;
   return <>{children}</>;
 }
 

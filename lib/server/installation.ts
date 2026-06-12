@@ -228,11 +228,12 @@ async function storeUpload(db: Queryable, upload: UploadInput, prefix: string): 
   const storageKey = `${prefix}/${Date.now()}-${fileName}`;
   const storage = createStorage();
   const storedPath = await storage.put(storageKey, parsed.buffer);
+  await db.query(`alter table files add column if not exists data_base64 text`);
   const file = await db.query<{ id: string }>(
-    `insert into files (storage_provider, storage_key, file_name, mime_type, size_bytes)
-     values ($1, $2, $3, $4, $5)
+    `insert into files (storage_provider, storage_key, file_name, mime_type, size_bytes, data_base64)
+     values ($1, $2, $3, $4, $5, $6)
      returning id`,
-    [process.env.STORAGE_PROVIDER || (process.env.NETLIFY ? 'netlify_blobs' : 'local'), storedPath, fileName, upload.mimeType || parsed.mimeType, parsed.buffer.byteLength]
+    [process.env.STORAGE_PROVIDER || (process.env.NETLIFY ? 'database' : 'local'), storedPath, fileName, upload.mimeType || parsed.mimeType, parsed.buffer.byteLength, parsed.buffer.toString('base64')]
   );
   const media = await db.query<{ id: string }>(
     `insert into media_assets (file_id, owner_type, visibility, alt_text, metadata)
@@ -663,13 +664,13 @@ export async function uploadBrandingMedia(input: { filename: string; contentType
 }
 
 export async function getPublicMedia(mediaId: string, db: Queryable = createDatabase()) {
-  const result = await db.query<{ storage_key: string; mime_type: string | null }>(
-    `select f.storage_key, f.mime_type from media_assets m join files f on f.id = m.file_id where m.id = $1 and m.visibility = 'public' limit 1`,
+  const result = await db.query<{ storage_key: string; mime_type: string | null; data_base64?: string | null }>(
+    `select f.storage_key, f.mime_type, f.data_base64 from media_assets m join files f on f.id = m.file_id where m.id = $1 and m.visibility = 'public' limit 1`,
     [mediaId]
   );
   const file = result.rows[0];
   if (!file) return null;
-  const data = await readFile(file.storage_key).catch(() => null);
+  const data = file.data_base64 ? Buffer.from(file.data_base64, 'base64') : await readFile(file.storage_key).catch(() => null);
   if (!data) return null;
   return { data, mimeType: file.mime_type || 'application/octet-stream' };
 }

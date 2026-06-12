@@ -69,7 +69,7 @@ export async function handleModuleRoute(path: string, method: string, body: Body
 }
 
 async function handleAccount(method: string, body: Body, user: AuthUser, db: Queryable) {
-  if (method === 'GET') return { ok: true, account: { id: user.id, name: user.name, email: user.email, role: user.role, permissions: user.permissions, clientId: user.clientId, auth: 'magic-link only' } };
+  if (method === 'GET') return { ok: true, account: { id: user.id, name: user.name, email: user.email, role: user.role, permissions: user.permissions, clientId: user.clientId, auth: 'magic-link only', activeSession: { authenticated: true, userId: user.id, role: user.role }, loginActivity: [] } };
   if (method === 'PATCH') { await db.query(`update users set name=coalesce(nullif($2,''), name), updated_at=now() where id=$1`, [user.id, str(body.name)]); return handleAccount('GET', {}, user, db); }
   throw new HttpError(405, 'Method not allowed');
 }
