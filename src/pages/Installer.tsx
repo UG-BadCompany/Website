@@ -4,6 +4,7 @@ import { foundationComponents, permissions, serviceCategories } from '../data/fo
 import { getTheme, saveTheme, themePresets, type ThemePalette, type ThemePresetId, type ThemeVariableKey, type ThemeSettings } from '../lib/theme';
 import { saveJson } from '../lib/storage';
 import { notifyBrandingUpdated } from '../lib/branding';
+import { homepageStylePresets, type HomepageStylePresetId } from '../lib/homepage-builder';
 import type { DatabaseProvider, HostingProvider, PaymentProvider, ThemeMode } from '../types/domain';
 
 const asArray = <T,>(value: T[] | null | undefined): T[] => Array.isArray(value) ? value : [];
@@ -49,6 +50,7 @@ type BrandingHomepageDraft = {
   financingAvailableEnabled: boolean;
   seoTitle: string;
   seoDescription: string;
+  homepagePresetId: HomepageStylePresetId;
 };
 
 type ProviderFlow = { label: string; databaseOptions: { value: DatabaseProvider; label: string }[]; defaultDatabase: DatabaseProvider; mapping: MappingRow[]; note: string; advancedMappingDefault?: boolean };
@@ -161,7 +163,7 @@ function defaultHomepageDraft(companyName = ''): BrandingHomepageDraft {
     servicesIntro: 'Start with your most common services. You can expand the catalog later in the dashboard.',
     services: [{ id: crypto.randomUUID(), name: 'General Service', description: 'Describe your core service offering.', icon: 'Wrench' }],
     contactPhone: '', contactEmail: '', contactAddress: '', serviceArea: '', businessHours: '', trustText: 'Licensed and insured', yearsExperience: '',
-    emergencyServiceEnabled: false, financingAvailableEnabled: false, seoTitle: companyName ? `${companyName} | Contractor Services` : 'Contractor Services', seoDescription: 'Request a service estimate from a trusted local contractor.',
+    emergencyServiceEnabled: false, financingAvailableEnabled: false, seoTitle: companyName ? `${companyName} | Contractor Services` : 'Contractor Services', seoDescription: 'Request a service estimate from a trusted local contractor.', homepagePresetId: 'premium-contractor',
   };
 }
 
@@ -389,7 +391,7 @@ function BrandingHomepageStep({ draft, setDraft }: { draft: BrandingHomepageDraf
       <FileUpload label="Favicon upload" purpose="branding_favicon" onUpload={(faviconUpload, file) => update({ faviconFile: file, faviconUpload, faviconMediaId: faviconUpload.mediaId || '', faviconResolvedUrl: faviconUpload.resolvedUrl || '' })}/><input placeholder="Favicon URL option" value={draft.faviconUrl} onChange={(e) => update({ faviconUrl: e.target.value, faviconResolvedUrl: draft.faviconMediaId ? draft.faviconResolvedUrl : e.target.value })}/>
       <input placeholder="Company display name" value={draft.displayName} onChange={(e) => update({ displayName: e.target.value })}/><input placeholder="Tagline" value={draft.tagline} onChange={(e) => update({ tagline: e.target.value })}/>
     </div><p className="eyebrow">If both an upload and URL exist, the upload wins.</p><div className="branding-preview-row">{logoPreview && <img className="brand-logo" src={logoPreview} alt="Logo preview"/>}{faviconPreview && <img className="brand-logo" src={faviconPreview} alt="Favicon preview"/>}</div></section>
-    <section className="installer-subsection"><h3>Homepage content</h3><div className="grid cards">
+    <section className="installer-subsection"><h3>Choose Homepage Style</h3><p className="notice">Fresh installs use this preset to generate a premium homepage draft. You can change it later in the Homepage Builder.</p><div className="grid cards">{Object.values(homepageStylePresets).map((preset) => <button type="button" key={preset.id} className={`preset-card ${draft.homepagePresetId === preset.id ? 'active' : ''}`} onClick={() => update({ homepagePresetId: preset.id })}><strong>{preset.name}</strong><p>{preset.description}</p><div className="swatches">{['primary','secondary','accent','background','card'].map((key) => <span className="swatch" style={{ background: preset.colors[key as keyof typeof preset.colors] }} key={key}/>)}</div></button>)}</div></section><section className="installer-subsection"><h3>Homepage content</h3><div className="grid cards">
       <input placeholder="Hero headline" value={draft.heroHeadline} onChange={(e) => update({ heroHeadline: e.target.value })}/><input placeholder="Hero subheadline" value={draft.heroSubheadline} onChange={(e) => update({ heroSubheadline: e.target.value })}/>
       <input placeholder="Primary button label" value={draft.primaryCtaLabel} onChange={(e) => update({ primaryCtaLabel: e.target.value })}/><input placeholder="Primary button link" value={draft.primaryCtaLink} onChange={(e) => update({ primaryCtaLink: e.target.value })}/>
       <input placeholder="Secondary button label" value={draft.secondaryCtaLabel} onChange={(e) => update({ secondaryCtaLabel: e.target.value })}/><input placeholder="Secondary button link" value={draft.secondaryCtaLink} onChange={(e) => update({ secondaryCtaLink: e.target.value })}/>
@@ -458,7 +460,7 @@ function saveHomepagePreview(draft: BrandingHomepageDraft, companyName: string) 
     secondaryCtaLabel: draft.secondaryCtaLabel, secondaryCtaLink: draft.secondaryCtaLink, aboutText: draft.aboutText, servicesIntro: draft.servicesIntro,
     services: draft.services, contactPhone: draft.contactPhone, contactEmail: draft.contactEmail, contactAddress: draft.contactAddress, serviceArea: draft.serviceArea,
     businessHours: draft.businessHours, trustText: draft.trustText, yearsExperience: draft.yearsExperience, emergencyServiceEnabled: draft.emergencyServiceEnabled,
-    financingAvailableEnabled: draft.financingAvailableEnabled, seoTitle: draft.seoTitle, seoDescription: draft.seoDescription,
+    financingAvailableEnabled: draft.financingAvailableEnabled, seoTitle: draft.seoTitle, seoDescription: draft.seoDescription, presetId: draft.homepagePresetId,
   });
 }
 

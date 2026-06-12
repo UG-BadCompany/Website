@@ -51,7 +51,7 @@ export function HomePage() {
   const [publishedHomepage, setPublishedHomepage] = useState<HomepageDraft | null>(null);
   const [publicHomepageChecked, setPublicHomepageChecked] = useState(false);
   const branding = useBranding();
-  const defaultDraft = useMemo(() => createPremiumHomepageDraft(branding, homepage), [branding.companyDisplayName, branding.displayName, branding.companyName, homepage.contactPhone, homepage.serviceArea, homepage.yearsExperience, homepage.financingAvailableEnabled, homepage.emergencyServiceEnabled]);
+  const defaultDraft = useMemo(() => createPremiumHomepageDraft(branding, homepage), [branding.companyDisplayName, branding.displayName, branding.companyName, homepage.contactPhone, homepage.serviceArea, homepage.yearsExperience, homepage.financingAvailableEnabled, homepage.emergencyServiceEnabled, homepage.presetId]);
 
   useEffect(() => {
     fetch('/api/public/homepage', { headers: { accept: 'application/json' }, cache: 'no-store' })

@@ -41,6 +41,7 @@ export type BasicHomepageSettings = {
   financingAvailableEnabled: boolean;
   seoTitle: string;
   seoDescription: string;
+  presetId?: string;
 };
 
 type LegacyBrandingSettings = Partial<BrandingSettings> & { logoSrc?: string; faviconSrc?: string };
@@ -79,6 +80,7 @@ export const defaultHomepage: BasicHomepageSettings = {
   financingAvailableEnabled: false,
   seoTitle: 'Contractor Services',
   seoDescription: 'Request a service estimate from a trusted local contractor.',
+  presetId: 'premium-contractor',
 };
 
 function firstBrandingUrl(...values: Array<string | undefined>) {
