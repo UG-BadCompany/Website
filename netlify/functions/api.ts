@@ -206,16 +206,26 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     return json(404, { error: 'Not found', path });
   } catch (error) {
-    if (error instanceof HttpError) return json(error.statusCode, { ok: false, error: error.message });
+    if (error instanceof HttpError) return json(error.statusCode, { ok: false, error: error.statusCode === 404 ? 'Route not found' : error.statusCode === 405 ? 'Method not allowed' : 'Route failed', route, method, step: stepForRoute(route, method), message: error.message });
     const details = errorDetails(error);
     console.error('ContractorOS API unhandled error', { route, method, ...details });
     return json(500, {
       ok: false,
-      error: 'Internal server error',
+      error: 'Route failed',
       route,
+      method,
+      step: stepForRoute(route, method),
+      message: details.message,
       ...(process.env.NODE_ENV === 'development' ? { details } : {}),
     });
   }
+}
+
+function stepForRoute(route: string, method: string) {
+  const clean = route.replace(/^\/api/, '') || '/';
+  const module = clean.split('/').filter(Boolean)[0] || 'root';
+  const action = clean.split('/').filter(Boolean).slice(1).join('_') || (method === 'GET' ? 'list' : method.toLowerCase());
+  return `${method.toLowerCase()}_${module}${action ? '_' + action : ''}`.replace(/[^a-z0-9_]+/gi, '_');
 }
 
 function permissionForWorkflowPath(path: string) {

@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from '../components/Router';
 import { useBranding, type BrandingSettings } from './branding';
 import { hasPermission, permissionsForRole } from './permissions';
@@ -74,11 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [authError, setAuthError] = useState('');
   const [viewAs, setViewAs] = useState<ViewAsContext>(() => readStoredViewAs());
+  const lastSessionCheckRef = useRef(0);
+  const inFlightSessionCheckRef = useRef<Promise<AuthStatus> | null>(null);
+  const SESSION_REFRESH_MS = 5 * 60 * 1000;
 
-  const refreshMe = useCallback(async (): Promise<AuthStatus> => {
-    setStatus('loading');
+  const refreshMe = useCallback(async (force = false): Promise<AuthStatus> => {
+    const age = Date.now() - lastSessionCheckRef.current;
+    if (!force && inFlightSessionCheckRef.current) return inFlightSessionCheckRef.current;
+    if (!force && lastSessionCheckRef.current && age < SESSION_REFRESH_MS && status !== 'loading') return status;
+    setStatus((current) => current === 'authenticated' ? current : 'loading');
     setAuthError('');
+    const check = (async (): Promise<AuthStatus> => {
     try {
+      lastSessionCheckRef.current = Date.now();
       const response = await fetch('/api/auth/me', { headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'include' });
       if (response.status === 401) {
         setMe(null);
@@ -104,10 +112,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(caught instanceof Error ? caught.message : 'Unable to check session.');
       setStatus((current) => current === 'authenticated' ? 'authenticated' : 'error');
       return 'error';
+    } finally {
+      inFlightSessionCheckRef.current = null;
     }
-  }, [updateBranding]);
+    })();
+    inFlightSessionCheckRef.current = check;
+    return check;
+  }, [status, updateBranding]);
 
-  useEffect(() => { refreshMe().catch(() => setStatus('error')); }, [refreshMe]);
+  useEffect(() => { refreshMe(true).catch(() => setStatus('error')); }, []);
+  useEffect(() => {
+    const onFocus = () => {
+      if (Date.now() - lastSessionCheckRef.current > SESSION_REFRESH_MS) refreshMe(true).catch(() => undefined);
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshMe]);
 
   const clearViewAsRole = useCallback(() => {
     const previous = readStoredViewAs();
@@ -158,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: status === 'authenticated' && Boolean(me?.user),
       isLoading: status === 'loading',
       authError,
-      refreshMe,
+      refreshMe: () => refreshMe(true),
       signOutLocal,
       can: (permission: string | string[]) => Array.isArray(permission) ? permission.some((entry) => hasPermission(effectiveUser, entry)) : hasPermission(effectiveUser, permission),
     };
