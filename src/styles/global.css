@@ -1003,3 +1003,26 @@ body, .app-shell, .public-page, .auth-page, .installer-page { background: var(--
   .home-media-frame { min-height: 260px; }
   .premium-preset-card { grid-template-columns: 1fr; }
 }
+
+/* Public homepage mobile navigation mirrors dashboard mobile drawer tokens */
+.public-mobile-menu-button { display:none; align-items:center; gap:.45rem; width:auto; min-height:40px; padding:.55rem .75rem; border:1px solid var(--border); border-radius:14px; background:color-mix(in srgb, var(--surface-sidebar) 88%, transparent); color:var(--site-text); font-weight:900; box-shadow:none; }
+.public-mobile-drawer { display:block; }
+.public-mobile-sheet { display:grid; gap:.5rem; }
+.public-mobile-link-list { margin-bottom:.25rem; }
+.public-mobile-cta-row { position:sticky; bottom:0; display:grid; grid-template-columns:1fr 1fr; gap:.65rem; padding-top:.75rem; background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--surface-sidebar) 96%, transparent) 28%); }
+.public-mobile-cta-row .button { width:100%; min-width:0; white-space:normal; text-align:center; }
+.public-call-link { color:var(--site-primary); }
+@media (max-width: 768px) {
+  .public-site-header { position:sticky; top:0; z-index:80; height:64px; padding:0 16px; flex-direction:row; align-items:center; gap:.75rem; background:color-mix(in srgb, var(--surface-sidebar) 88%, transparent); border-bottom:1px solid var(--border); backdrop-filter:blur(10px); }
+  .public-site-header .brand { min-width:0; flex:1 1 auto; }
+  .public-site-header .brand strong { max-width:58vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .public-desktop-nav { display:none !important; }
+  .public-mobile-menu-button { display:inline-flex; flex:0 0 auto; }
+  .public-mobile-sheet { max-height:92vh; padding-bottom:max(20px, env(safe-area-inset-bottom)); }
+  .public-mobile-drawer .mobile-more-link { color:color-mix(in srgb, var(--site-text) 82%, var(--site-muted)); background:color-mix(in srgb, var(--surface-sidebar) 70%, transparent); border-color:color-mix(in srgb, var(--site-muted) 16%, transparent); }
+  .public-mobile-drawer .mobile-more-link:hover { background:var(--surface-sidebar-hover); color:var(--site-text); }
+  body { overflow-x:hidden; }
+}
+@media (min-width: 769px) {
+  .public-mobile-drawer { display:none; }
+}

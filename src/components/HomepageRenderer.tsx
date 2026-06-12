@@ -1,6 +1,6 @@
 import { Link } from './Router';
 import type { HomepageButton, HomepageDraft, HomepageItem, HomepageMedia, HomepageSection } from '../lib/homepage-builder';
-import { generateDesignTokens, normalizeGlobalStyles, normalizeSections } from '../lib/homepage-builder';
+import { normalizeGlobalStyles, normalizeSections } from '../lib/homepage-builder';
 
 const deviceClass = (section: HomepageSection) => [section.visibility.desktop ? '' : 'hide-desktop', section.visibility.tablet ? '' : 'hide-tablet', section.visibility.mobile ? '' : 'hide-mobile'].filter(Boolean).join(' ');
 
@@ -8,9 +8,8 @@ export function HomepageRenderer({ draft, editable = false, selectedId = '', onS
   const globalStyles = normalizeGlobalStyles(draft.globalStyles);
   const design = globalStyles.design;
   const sections = normalizeSections(draft.sections).filter((section) => section.enabled && section.visibility.public);
-  const tokens = generateDesignTokens(design);
-  const background = design.background.type === 'gradient' ? design.background.gradient : design.background.type === 'image' && design.background.imageUrl ? `linear-gradient(var(--site-overlay), var(--site-overlay)), url(${design.background.imageUrl})` : 'var(--site-background)';
-  return <div className={`homepage-renderer homepage-device-${device} design-${design.themePreset} cards-${design.cards.style} buttons-${design.buttons.style}`} style={{ ...tokens, background, ['--homepage-max' as string]: `${globalStyles.maxPageWidth}px` }}>
+  const background = 'var(--site-background)';
+  return <div className={`homepage-renderer homepage-device-${device} design-${design.themePreset} cards-${design.cards.style} buttons-${design.buttons.style}`} style={{ background, ['--homepage-max' as string]: `${globalStyles.maxPageWidth}px`, ['--homepage-radius' as string]: `${globalStyles.cardRadius}px` }}>
     {sections.length ? sections.map((section) => <RenderedSection key={section.id} section={section} editable={editable} selected={selectedId === section.id} onSelect={onSelect} onTextChange={onTextChange}/>) : <section className="public-home-section"><div className="public-home-inner empty-render">No published homepage sections yet.</div></section>}
   </div>;
 }
