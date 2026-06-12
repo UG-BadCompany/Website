@@ -1,4 +1,5 @@
 import type { ThemeMode } from '../types/domain';
+import { generateDesignTokens, type GlobalDesignSettings } from './homepage-builder';
 import { loadJson, saveJson } from './storage';
 
 export type ThemeVariableKey =
@@ -146,6 +147,40 @@ export const themePresets: Record<ThemePresetId, { name: string; description: st
   }
 };
 
+
+const presetAliases: Partial<Record<ThemePresetId, GlobalDesignSettings['themePreset']>> = {
+  contractoros_default: 'modern_blue',
+  modern_dark: 'contractor_dark',
+  industrial_slate: 'industrial_gray',
+  high_contrast: 'premium_black',
+};
+
+const toDesignThemePreset = (presetId: ThemePresetId): GlobalDesignSettings['themePreset'] => {
+  const mapped = presetAliases[presetId] ?? presetId;
+  return mapped === 'modern_blue' || mapped === 'contractor_dark' || mapped === 'arizona_copper' || mapped === 'industrial_gray' || mapped === 'commercial_blue' || mapped === 'premium_black' || mapped === 'clean_light' ? mapped : 'modern_blue';
+};
+
+const paletteToGlobalDesign = (palette: ThemePalette, presetId: ThemePresetId): Partial<GlobalDesignSettings> => ({
+  themePreset: toDesignThemePreset(presetId),
+  colors: {
+    primary: palette.primary,
+    secondary: palette.secondary,
+    accent: palette.accent,
+    success: palette.success,
+    warning: palette.warning,
+    danger: palette.danger,
+    card: palette.surface,
+    text: palette.text,
+    background: palette.background,
+    muted: palette.mutedText,
+  },
+  radius: palette.cardRadius,
+  shadow: '0 22px 60px color-mix(in srgb, var(--site-secondary) 16%, transparent)',
+  typography: { headingStyle: palette.fontFamily, bodyStyle: palette.fontFamily },
+  buttons: { style: palette.buttonRadius === '999px' ? 'pill' : 'rounded' },
+  cards: { style: 'raised' },
+});
+
 const lightPalette = themePresets.clean_light.palette;
 const darkPalette = themePresets.contractor_dark.palette;
 
@@ -184,38 +219,34 @@ export function applyTheme(theme = getTheme()) {
   const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
   const resolved = theme.mode === 'system' ? (prefersDark ? 'dark' : 'light') : theme.mode;
   const palette = resolveThemePalette(theme);
+  const tokenMap = generateDesignTokens(paletteToGlobalDesign(palette, theme.presetId));
 
   root.dataset.theme = resolved;
   root.dataset.themeMode = theme.mode;
-  root.style.setProperty('--primary', palette.primary);
-  root.style.setProperty('--secondary', palette.secondary);
-  root.style.setProperty('--accent', palette.accent);
-  root.style.setProperty('--bg', palette.background);
-  root.style.setProperty('--card', palette.surface);
-  root.style.setProperty('--sidebar', palette.sidebar);
-  root.style.setProperty('--text', palette.text);
-  root.style.setProperty('--muted', palette.mutedText);
-  root.style.setProperty('--line', palette.border);
-  root.style.setProperty('--success', palette.success);
-  root.style.setProperty('--warning', palette.warning);
-  root.style.setProperty('--danger', palette.danger);
+  Object.entries(tokenMap).forEach(([key, value]) => root.style.setProperty(key, value));
+
+  // Legacy aliases remain as read-throughs to the single generated token map so older modules,
+  // emails, and app surfaces inherit the same Theme/Branding color source of truth.
+  root.style.setProperty('--primary', tokenMap['--site-primary']);
+  root.style.setProperty('--secondary', tokenMap['--site-secondary']);
+  root.style.setProperty('--accent', tokenMap['--site-accent']);
+  root.style.setProperty('--bg', tokenMap['--site-background']);
+  root.style.setProperty('--card', tokenMap['--surface-card']);
+  root.style.setProperty('--surface', tokenMap['--surface-card']);
+  root.style.setProperty('--surface-muted', tokenMap['--surface-section-alt']);
+  root.style.setProperty('--sidebar', tokenMap['--surface-sidebar']);
+  root.style.setProperty('--text', tokenMap['--site-text']);
+  root.style.setProperty('--muted', tokenMap['--site-muted']);
+  root.style.setProperty('--line', tokenMap['--site-border']);
+  root.style.setProperty('--border', tokenMap['--site-border']);
+  root.style.setProperty('--success', tokenMap['--site-success']);
+  root.style.setProperty('--warning', tokenMap['--site-warning']);
+  root.style.setProperty('--danger', tokenMap['--site-danger']);
   root.style.setProperty('--button-radius', palette.buttonRadius);
-  root.style.setProperty('--radius', palette.cardRadius);
+  root.style.setProperty('--radius', tokenMap['--site-radius']);
   root.style.setProperty('--font-family', palette.fontFamily);
-  root.style.setProperty('--site-primary', palette.primary);
-  root.style.setProperty('--site-secondary', palette.secondary);
-  root.style.setProperty('--site-accent', palette.accent);
-  root.style.setProperty('--site-background', palette.background);
-  root.style.setProperty('--site-card', palette.surface);
-  root.style.setProperty('--site-text', palette.text);
-  root.style.setProperty('--site-muted', palette.mutedText);
-  root.style.setProperty('--site-radius', palette.cardRadius);
-  const sidebarBase = palette.sidebar || `color-mix(in srgb, ${palette.secondary} 88%, ${palette.background})`;
-  root.style.setProperty('--surface-card', palette.surface);
-  root.style.setProperty('--surface-sidebar', sidebarBase);
-  root.style.setProperty('--surface-sidebar-hover', `color-mix(in srgb, ${palette.primary} 12%, ${sidebarBase})`);
-  root.style.setProperty('--surface-sidebar-active', `linear-gradient(135deg, ${palette.primary}, color-mix(in srgb, ${palette.accent} 80%, ${palette.secondary}))`);
-  root.style.setProperty('--site-shadow', '0 22px 60px rgba(15,23,42,.16)');
+  root.style.setProperty('--site-card', tokenMap['--surface-card']);
+  root.style.setProperty('--site-muted', tokenMap['--site-muted']);
 }
 
 
