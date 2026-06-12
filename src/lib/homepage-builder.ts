@@ -2,17 +2,18 @@ import type { BrandingSettings } from './branding';
 
 export type HomepageSectionType =
   | 'hero' | 'services-grid' | 'service-detail-cards' | 'about' | 'why-choose-us' | 'trust-badges'
-  | 'before-after-gallery' | 'testimonials' | 'faq' | 'call-to-action' | 'contact-block'
+  | 'before-after-gallery' | 'testimonials' | 'google-reviews' | 'faq' | 'call-to-action' | 'contact-block'
   | 'service-area' | 'emergency-banner' | 'financing-banner' | 'process-steps' | 'stats-numbers'
-  | 'team-owner-intro' | 'featured-projects' | 'logo-brand-strip' | 'custom-rich-text'
-  | 'custom-image-text' | 'request-estimate-form';
+  | 'team-owner-intro' | 'team-section' | 'featured-projects' | 'project-showcase' | 'logo-brand-strip' | 'brands-we-service'
+  | 'custom-rich-text' | 'custom-image-text' | 'request-estimate-form';
 
 export type HomepageButton = { id: string; label: string; href: string; style?: 'primary' | 'secondary' | 'ghost' };
 export type HomepageMedia = { id?: string; url: string; alt?: string; visibility?: 'public' | 'private' };
-export type HomepageItem = { id: string; title: string; text?: string; icon?: string; image?: HomepageMedia; label?: string; value?: string; href?: string };
+export type HomepageItem = { id: string; title: string; text?: string; icon?: string; image?: HomepageMedia; label?: string; value?: string; href?: string; rating?: number; beforeImage?: HomepageMedia; afterImage?: HomepageMedia };
 export type HomepageSectionContent = {
   heading?: string; subheading?: string; body?: string; eyebrow?: string; buttons?: HomepageButton[];
-  image?: HomepageMedia; images?: HomepageMedia[]; items?: HomepageItem[]; richText?: string; phone?: string; email?: string; address?: string;
+  image?: HomepageMedia; images?: HomepageMedia[]; videoUrl?: string; phone?: string; email?: string; address?: string; richText?: string; items?: HomepageItem[];
+  emergencyEnabled?: boolean; trustBadges?: string[]; featuredOnly?: boolean; categoryFilter?: string; projectLimit?: number; displayMode?: 'slider' | 'grid' | 'carousel' | 'highlight'; useGoogleReviews?: boolean;
 };
 export type HomepageSectionStyles = {
   backgroundColor?: string; backgroundImage?: HomepageMedia; textColor?: string; accentColor?: string; cardStyle?: 'flat' | 'bordered' | 'elevated' | 'glass';
@@ -20,99 +21,72 @@ export type HomepageSectionStyles = {
   layoutVariant?: string; columns?: number; overlayOpacity?: number; cardShadow?: boolean;
 };
 export type HomepageVisibility = { desktop: boolean; tablet: boolean; mobile: boolean; public: boolean; scheduledPublishAt?: string };
-export type HomepageSection = {
-  id: string; type: HomepageSectionType; title: string; enabled: boolean; order: number; content: HomepageSectionContent; styles: HomepageSectionStyles; visibility: HomepageVisibility;
-  advanced: { anchorId?: string; cssClass?: string; seoLabel?: string }; createdAt: string; updatedAt: string;
+export type HomepageSection = { id: string; type: HomepageSectionType; title: string; enabled: boolean; order: number; content: HomepageSectionContent; styles: HomepageSectionStyles; visibility: HomepageVisibility; advanced: { anchorId?: string; cssClass?: string; seoLabel?: string }; createdAt: string; updatedAt: string };
+export type DesignScope = 'homepage' | 'public' | 'entire-app';
+export type GlobalDesignSettings = {
+  scope: DesignScope;
+  themePreset: 'modern_blue' | 'contractor_dark' | 'arizona_copper' | 'industrial_gray' | 'commercial_blue' | 'premium_black' | 'clean_light' | 'custom';
+  colors: { primary: string; secondary: string; accent: string; success: string; warning: string; danger: string; card: string; text: string; background: string; muted: string };
+  header: { style: 'solid' | 'transparent' | 'glass' | 'centered'; sticky: boolean; showLogo: boolean; showCompanyName: boolean; navAlignment: 'left' | 'center' | 'right' };
+  background: { type: 'solid' | 'gradient' | 'image' | 'pattern'; color: string; gradient: string; imageUrl: string };
+  buttons: { style: 'rounded' | 'pill' | 'square' | 'glass' };
+  cards: { style: 'flat' | 'raised' | 'glass' | 'bordered' };
+  typography: { headingStyle: string; bodyStyle: string };
+  radius: string; shadow: string;
 };
-export type HomepageGlobalStyles = {
-  maxPageWidth: number; sectionSpacingDefault: number; buttonStyle: 'rounded' | 'pill' | 'square'; cardRadius: number; background: string; fontStyle: string;
-  header: { heroUnderHeader: boolean; transparentHeader: boolean; stickyEstimateCta: boolean };
-  footer: { showContactInfo: boolean; showServiceArea: boolean; showBusinessHours: boolean };
-};
+export type HomepageGlobalStyles = { maxPageWidth: number; sectionSpacingDefault: number; buttonStyle: 'rounded' | 'pill' | 'square' | 'glass'; cardRadius: number; background: string; fontStyle: string; design: GlobalDesignSettings; header: { heroUnderHeader: boolean; transparentHeader: boolean; stickyEstimateCta: boolean }; footer: { showContactInfo: boolean; showServiceArea: boolean; showBusinessHours: boolean } };
 export type HomepageSeo = { title: string; description: string; socialTitle: string; socialDescription: string; socialImage?: HomepageMedia };
 export type HomepageDraft = { sections: HomepageSection[]; globalStyles: HomepageGlobalStyles; seo: HomepageSeo };
 export type HomepageVersion = HomepageDraft & { id: string; pageId?: string; status: 'draft' | 'published' | 'archived'; name: string; createdAt: string; publishedAt?: string; createdBy?: string };
 export type HomepageBuilderResponse = { ok: boolean; page: Record<string, unknown>; draft: HomepageDraft; published: HomepageDraft | null; versions: HomepageVersion[] };
+export type ProjectShowcase = { id: string; title: string; description?: string; category?: string; location?: string; beforeImage?: string; afterImage?: string; galleryImages?: string[]; featured: boolean; createdAt: string };
 
 export const sectionTypeLabels: Record<HomepageSectionType, string> = {
-  'hero': 'Hero', 'services-grid': 'Services Grid', 'service-detail-cards': 'Service Detail Cards', 'about': 'About', 'why-choose-us': 'Why Choose Us', 'trust-badges': 'Trust / Badges',
-  'before-after-gallery': 'Before & After Gallery', testimonials: 'Testimonials', faq: 'FAQ', 'call-to-action': 'Call To Action', 'contact-block': 'Contact Block', 'service-area': 'Service Area',
-  'emergency-banner': 'Emergency Banner', 'financing-banner': 'Financing Banner', 'process-steps': 'Process / Steps', 'stats-numbers': 'Stats / Numbers', 'team-owner-intro': 'Team / Owner Intro',
-  'featured-projects': 'Featured Projects', 'logo-brand-strip': 'Logo / Brand Strip', 'custom-rich-text': 'Custom Text / Rich Content', 'custom-image-text': 'Custom Image + Text', 'request-estimate-form': 'Request Estimate Form Embed',
+  hero: 'Hero', 'services-grid': 'Services Grid', 'service-detail-cards': 'Service Detail Cards', about: 'About', 'why-choose-us': 'Why Choose Us', 'trust-badges': 'Trust / Badges',
+  'before-after-gallery': 'Before & After Gallery', testimonials: 'Testimonials', 'google-reviews': 'Google Reviews', faq: 'FAQ', 'call-to-action': 'Call To Action', 'contact-block': 'Contact Block', 'service-area': 'Service Area',
+  'emergency-banner': 'Emergency Banner', 'financing-banner': 'Financing Banner', 'process-steps': 'Process / Steps', 'stats-numbers': 'Stats / Numbers', 'team-owner-intro': 'Team / Owner Intro', 'team-section': 'Team Section',
+  'featured-projects': 'Featured Projects', 'project-showcase': 'Project Showcase', 'logo-brand-strip': 'Logo / Brand Strip', 'brands-we-service': 'Brands We Service', 'custom-rich-text': 'Custom Text / Rich Content', 'custom-image-text': 'Custom Image + Text', 'request-estimate-form': 'Request Estimate Wizard',
 };
 
-export const defaultGlobalStyles: HomepageGlobalStyles = { maxPageWidth: 1180, sectionSpacingDefault: 88, buttonStyle: 'pill', cardRadius: 24, background: '#f6f3ee', fontStyle: 'Inter/System', header: { heroUnderHeader: true, transparentHeader: false, stickyEstimateCta: true }, footer: { showContactInfo: true, showServiceArea: true, showBusinessHours: true } };
+export const designThemePresets: Record<GlobalDesignSettings['themePreset'], Omit<GlobalDesignSettings, 'themePreset'>> = {
+  modern_blue: design('entire-app', '#0f5fff', '#0b1f3a', '#19c2ff', '#f5f9ff', '#ffffff', '#0f172a', 'pill', 'raised', 'Inter, ui-sans-serif'),
+  contractor_dark: design('entire-app', '#f59e0b', '#111827', '#fb923c', '#080b12', '#111827', '#f8fafc', 'rounded', 'glass', 'Inter, ui-sans-serif'),
+  arizona_copper: design('entire-app', '#b45309', '#7c2d12', '#f97316', '#fff7ed', '#fffbeb', '#431407', 'pill', 'raised', 'Inter, ui-sans-serif'),
+  industrial_gray: design('entire-app', '#475569', '#1f2937', '#eab308', '#e2e8f0', '#f8fafc', '#0f172a', 'square', 'bordered', 'Inter, ui-sans-serif'),
+  commercial_blue: design('entire-app', '#1d4ed8', '#0f172a', '#38bdf8', '#eff6ff', '#ffffff', '#0f172a', 'rounded', 'raised', 'Inter, ui-sans-serif'),
+  premium_black: design('entire-app', '#d4af37', '#020617', '#f59e0b', '#030712', '#0b1120', '#fff7ed', 'pill', 'glass', 'Inter, ui-sans-serif'),
+  clean_light: design('entire-app', '#2563eb', '#0f766e', '#60a5fa', '#ffffff', '#f8fafc', '#111827', 'rounded', 'flat', 'Inter, ui-sans-serif'),
+  custom: design('entire-app', '#0f766e', '#134e4a', '#14b8a6', '#f8fafc', '#ffffff', '#0f172a', 'pill', 'raised', 'Inter, ui-sans-serif'),
+};
+function design(scope: DesignScope, primary: string, secondary: string, accent: string, backgroundColor: string, card: string, text: string, buttonStyle: GlobalDesignSettings['buttons']['style'], cardStyle: GlobalDesignSettings['cards']['style'], font: string): Omit<GlobalDesignSettings, 'themePreset'> { return { scope, colors: { primary, secondary, accent, success: '#16a34a', warning: '#d97706', danger: '#dc2626', card, text, background: backgroundColor, muted: '#64748b' }, header: { style: 'glass', sticky: true, showLogo: true, showCompanyName: true, navAlignment: 'right' }, background: { type: 'solid', color: backgroundColor, gradient: `linear-gradient(135deg, ${backgroundColor}, ${card})`, imageUrl: '' }, buttons: { style: buttonStyle }, cards: { style: cardStyle }, typography: { headingStyle: font, bodyStyle: font }, radius: buttonStyle === 'pill' ? '999px' : buttonStyle === 'square' ? '6px' : '18px', shadow: '0 22px 60px rgba(15,23,42,.16)' }; }
+
+export const defaultGlobalDesign: GlobalDesignSettings = { themePreset: 'modern_blue', ...designThemePresets.modern_blue };
+export const defaultGlobalStyles: HomepageGlobalStyles = { maxPageWidth: 1180, sectionSpacingDefault: 88, buttonStyle: 'pill', cardRadius: 24, background: '#f6f3ee', fontStyle: 'Inter/System', design: defaultGlobalDesign, header: { heroUnderHeader: true, transparentHeader: false, stickyEstimateCta: true }, footer: { showContactInfo: true, showServiceArea: true, showBusinessHours: true } };
 export const defaultSeo: HomepageSeo = { title: 'Contractor Services', description: 'Request service from a trusted local contractor.', socialTitle: 'Contractor Services', socialDescription: 'Fast estimates, expert work, and clear communication.' };
-
 const now = () => new Date().toISOString();
-export function makeSection(type: HomepageSectionType, patch: Partial<HomepageSection> = {}): HomepageSection {
-  const stamp = now();
-  const base: HomepageSection = { id: crypto.randomUUID(), type, title: sectionTypeLabels[type], enabled: true, order: 0, content: defaultContent(type), styles: defaultStyles(type), visibility: { desktop: true, tablet: true, mobile: true, public: true }, advanced: { seoLabel: sectionTypeLabels[type] }, createdAt: stamp, updatedAt: stamp };
-  return { ...base, ...patch, content: { ...base.content, ...(patch.content || {}) }, styles: { ...base.styles, ...(patch.styles || {}) }, visibility: { ...base.visibility, ...(patch.visibility || {}) }, advanced: { ...base.advanced, ...(patch.advanced || {}) } };
+const id = () => crypto.randomUUID();
+export function makeSection(type: HomepageSectionType, patch: Partial<HomepageSection> = {}): HomepageSection { const stamp = now(); const base: HomepageSection = { id: id(), type, title: sectionTypeLabels[type], enabled: true, order: 0, content: defaultContent(type), styles: defaultStyles(type), visibility: { desktop: true, tablet: true, mobile: true, public: true }, advanced: { seoLabel: sectionTypeLabels[type] }, createdAt: stamp, updatedAt: stamp }; return { ...base, ...patch, content: { ...base.content, ...(patch.content || {}) }, styles: { ...base.styles, ...(patch.styles || {}) }, visibility: { ...base.visibility, ...(patch.visibility || {}) }, advanced: { ...base.advanced, ...(patch.advanced || {}) } }; }
+export function normalizeGlobalStyles(styles?: Partial<HomepageGlobalStyles>): HomepageGlobalStyles { const designPatch = (styles?.design || {}) as Partial<GlobalDesignSettings>; const preset = (designPatch.themePreset || defaultGlobalDesign.themePreset) as GlobalDesignSettings['themePreset']; const presetDesign: GlobalDesignSettings = { themePreset: preset, ...designThemePresets[preset] }; return { ...defaultGlobalStyles, ...(styles || {}), design: { ...presetDesign, ...designPatch, colors: { ...presetDesign.colors, ...(designPatch.colors || {}) }, header: { ...presetDesign.header, ...(designPatch.header || {}) }, background: { ...presetDesign.background, ...(designPatch.background || {}) }, buttons: { ...presetDesign.buttons, ...(designPatch.buttons || {}) }, cards: { ...presetDesign.cards, ...(designPatch.cards || {}) }, typography: { ...presetDesign.typography, ...(designPatch.typography || {}) } } }; }
+export function normalizeSections(sections?: HomepageSection[]): HomepageSection[] { return Array.isArray(sections) ? sections.map((s, index) => makeSection((s.type || 'custom-rich-text') as HomepageSectionType, { ...s, order: index })).sort((a, b) => a.order - b.order) : []; }
+function defaultStyles(type: HomepageSectionType): HomepageSectionStyles { const dark = type === 'hero' || type === 'emergency-banner'; return { backgroundColor: dark ? '#111827' : '#ffffff', textColor: dark ? '#fff8ed' : '#201a16', accentColor: '#f59e0b', cardStyle: dark ? 'glass' : 'elevated', borderRadius: 24, spacingTop: type === 'hero' ? 112 : 78, spacingBottom: type === 'hero' ? 112 : 78, maxWidth: 1180, alignment: type === 'hero' ? 'left' : 'center', layoutVariant: 'standard', columns: type === 'services-grid' || type === 'stats-numbers' ? 4 : 3, overlayOpacity: type === 'hero' ? 44 : 0, cardShadow: true }; }
+function defaultContent(type: HomepageSectionType): HomepageSectionContent { const buttons = [{ id: id(), label: 'Request Estimate', href: '/request-estimate', style: 'primary' as const }, { id: id(), label: 'Call Now', href: 'tel:+16025550100', style: 'secondary' as const }];
+  if (type === 'hero') return { eyebrow: 'Licensed • Bonded • Insured', heading: 'Premium contractor service without the runaround', subheading: 'Book fast estimates, emergency help, financing options, and expert work from one trusted local team.', buttons, phone: '(602) 555-0100', emergencyEnabled: true, trustBadges: ['4.9 Google rating', '24/7 Emergency', 'Financing Available'] };
+  if (type === 'services-grid' || type === 'service-detail-cards') return { heading: 'Services built for homes and businesses', subheading: 'HVAC, plumbing, electrical, roofing, handyman, and commercial maintenance teams can tailor every card.', items: ['HVAC','Plumbing','Electrical','Roofing','Handyman','Commercial Maintenance'].map((title) => ({ id: id(), title, text: `Professional ${title.toLowerCase()} service with clear pricing and dispatch-ready scheduling.`, icon: title === 'HVAC' ? '❄️' : title === 'Plumbing' ? '🚰' : title === 'Electrical' ? '⚡' : title === 'Roofing' ? '🏠' : '🛠️', href: '/request-estimate' })) };
+  if (type === 'why-choose-us' || type === 'trust-badges') return { heading: 'Why homeowners choose us', items: ['Licensed technicians','Bonded and insured','Upfront estimates','Warranty-backed work','Background-checked crews','Priority emergency response'].map((title) => ({ id: id(), title, text: 'Editable proof point for the homepage builder.', icon: '✓' })) };
+  if (type === 'stats-numbers') return { heading: 'Proven field performance', items: [{ id: id(), title: 'Jobs Completed', value: '12,500+', text: 'completed projects' }, { id: id(), title: 'Happy Customers', value: '8,900+', text: 'served locally' }, { id: id(), title: 'Years Experience', value: '25+', text: 'in business' }, { id: id(), title: 'Google Rating', value: '4.9', text: 'average review' }] };
+  if (type === 'featured-projects' || type === 'project-showcase' || type === 'before-after-gallery') return { heading: type === 'before-after-gallery' ? 'Before & after transformations' : 'Past project showcase', subheading: 'Feature projects by category, show before/after previews, or switch between slider and grid modes.', featuredOnly: true, projectLimit: 6, displayMode: 'slider', images: [] };
+  if (type === 'testimonials' || type === 'google-reviews') return { heading: type === 'google-reviews' ? 'Google reviews from real customers' : 'What customers say', subheading: 'Automatically falls back to manual testimonials when Google reviews are unavailable.', useGoogleReviews: type === 'google-reviews', displayMode: 'carousel', items: [{ id: id(), title: 'Sarah M.', text: 'Fast response, clean work, and the crew explained every option before starting.', rating: 5 }, { id: id(), title: 'David R.', text: 'Premium experience from estimate through job completion.', rating: 5 }] };
+  if (type === 'service-area') return { heading: 'Service areas', subheading: 'Cities, ZIP codes, counties, and embedded map details are builder editable.', items: ['Phoenix','Scottsdale','Mesa','Tempe','Chandler','Glendale'].map((title) => ({ id: id(), title, icon: '📍' })) };
+  if (type === 'process-steps') return { heading: 'Simple process', items: ['Request Estimate','Receive Quote','Schedule Work','Job Completion'].map((title, index) => ({ id: id(), title, value: String(index + 1), text: 'Builder-editable step details.' })) };
+  if (type === 'financing-banner') return { heading: 'Flexible financing available', subheading: 'Show financing companies, monthly payment examples, and a strong CTA.', buttons: [buttons[0]] };
+  if (type === 'emergency-banner') return { eyebrow: '24/7 Emergency Service', heading: 'Need urgent help today?', subheading: 'Call now for priority dispatch.', buttons };
+  if (type === 'faq') return { heading: 'Frequently asked questions', items: ['Do you offer emergency service?','Can I upload photos?','Do you offer financing?','Are you licensed and insured?'].map((title) => ({ id: id(), title, text: 'Yes. Edit this answer in the homepage builder.' })) };
+  if (type === 'team-owner-intro' || type === 'team-section') return { heading: 'Meet the team', subheading: 'Add photos, titles, and bios for owners and technicians.', items: [{ id: id(), title: 'Owner / Lead Technician', text: 'Add a short bio and photo.', icon: '👷' }, { id: id(), title: 'Service Manager', text: 'Add a short bio and photo.', icon: '🧰' }] };
+  if (type === 'logo-brand-strip' || type === 'brands-we-service') return { heading: 'Brands we service', items: ['Trane','Carrier','Lennox','Rheem','Bradford White','GAF'].map((title) => ({ id: id(), title })) };
+  if (type === 'request-estimate-form') return { heading: 'Request an estimate', subheading: 'A guided wizard collects contact details, property information, service needs, photos, review, and submit.', buttons: [buttons[0]] };
+  if (type === 'contact-block') return { heading: 'Ready to get started?', phone: '(602) 555-0100', email: 'service@example.com', address: 'Serving the local metro area', buttons };
+  return { heading: sectionTypeLabels[type], body: 'Use the builder to change copy, cards, media, spacing, backgrounds, visibility, and links.', buttons: type.includes('banner') || type === 'call-to-action' ? buttons.slice(0, 1) : [] };
 }
-
-export function normalizeSections(sections?: HomepageSection[]): HomepageSection[] {
-  return Array.isArray(sections) ? sections.map((s, index) => makeSection((s.type || 'custom-rich-text') as HomepageSectionType, { ...s, order: index })).sort((a, b) => a.order - b.order) : [];
-}
-
-function defaultStyles(type: HomepageSectionType): HomepageSectionStyles {
-  const dark = type === 'hero' || type === 'emergency-banner';
-  return { backgroundColor: dark ? '#17120f' : '#ffffff', textColor: dark ? '#fff8ed' : '#201a16', accentColor: '#b96b2b', cardStyle: 'elevated', borderRadius: 24, spacingTop: type === 'hero' ? 104 : 78, spacingBottom: type === 'hero' ? 104 : 78, maxWidth: 1180, alignment: type.includes('banner') || type === 'call-to-action' ? 'center' : 'left', layoutVariant: type === 'hero' ? 'split' : 'standard', columns: type.includes('grid') ? 3 : 2, overlayOpacity: 35, cardShadow: true };
-}
-function defaultContent(type: HomepageSectionType): HomepageSectionContent {
-  const sharedButtons = [{ id: crypto.randomUUID(), label: 'Request Estimate', href: '/request-estimate', style: 'primary' as const }, { id: crypto.randomUUID(), label: 'Call Now', href: 'tel:+16025550100', style: 'secondary' as const }];
-  const services = ['HVAC Repair', 'Plumbing', 'Electrical', 'Maintenance'].map((title) => ({ id: crypto.randomUUID(), title, text: 'Professional diagnostics, clear options, and clean workmanship.', icon: 'Wrench' }));
-  if (type === 'hero') return { eyebrow: 'Licensed • Insured • Local', heading: 'Premium contractor service without the runaround', subheading: 'Fast estimates, expert crews, and a customer portal that keeps every job moving.', body: 'Customize every headline, image, button, and service block from ContractorOS.', buttons: sharedButtons };
-  if (type === 'services-grid' || type === 'service-detail-cards') return { heading: 'Services built around your property', subheading: 'Residential and commercial service categories', items: services };
-  if (type === 'faq') return { heading: 'Frequently asked questions', items: ['How fast can you come out?', 'Do you offer financing?', 'Are you licensed and insured?'].map((title) => ({ id: crypto.randomUUID(), title, text: 'Edit this answer in the right panel.' })) };
-  if (type === 'testimonials') return { heading: 'Customers trust our crew', items: ['Professional from quote to cleanup', 'The fastest emergency response we have had', 'Clear pricing and excellent communication'].map((title) => ({ id: crypto.randomUUID(), title, text: '★★★★★', label: 'Customer' })) };
-  if (type === 'stats-numbers') return { heading: 'Proven field performance', items: [{ id: crypto.randomUUID(), title: 'Projects', value: '1,200+', text: 'completed' }, { id: crypto.randomUUID(), title: 'Response', value: '24/7', text: 'emergency availability' }, { id: crypto.randomUUID(), title: 'Satisfaction', value: '98%', text: 'customer approval' }] };
-  if (type === 'process-steps') return { heading: 'A simple service process', items: ['Request', 'Inspect', 'Approve', 'Schedule', 'Complete'].map((title, i) => ({ id: crypto.randomUUID(), title: `${i + 1}. ${title}`, text: 'Keep customers informed at every step.' })) };
-  if (type === 'request-estimate-form') return { heading: 'Request your estimate', body: 'Embed the ContractorOS public request-estimate intake flow directly on the homepage.', buttons: [{ id: crypto.randomUUID(), label: 'Start Request', href: '/request-estimate', style: 'primary' }] };
-  if (type === 'contact-block') return { heading: 'Talk with the office', phone: '(602) 555-0100', email: 'office@example.com', address: 'Phoenix, AZ', buttons: sharedButtons.slice(0, 1) };
-  return { heading: sectionTypeLabels[type], subheading: 'Editable premium homepage section', body: 'Use the builder to change copy, cards, media, spacing, backgrounds, visibility, and links.', buttons: type.includes('banner') || type === 'call-to-action' ? sharedButtons.slice(0, 1) : [] };
-}
-
-export function sectionLibrary(): Array<{ id: string; group: string; name: string; description: string; section: HomepageSection }> {
-  const entries: Array<[string, string, HomepageSectionType, Partial<HomepageSection>]> = [
-    ['Hero presets', 'Split image hero', 'hero', { styles: { layoutVariant: 'split' } }], ['Hero presets', 'Centered hero', 'hero', { styles: { layoutVariant: 'centered', alignment: 'center' } }], ['Hero presets', 'Dark overlay hero', 'hero', { styles: { layoutVariant: 'overlay', backgroundColor: '#090807' } }], ['Hero presets', 'Emergency service hero', 'hero', { title: 'Emergency Hero', content: { eyebrow: '24/7 Emergency Service', heading: 'Emergency help from a real local crew' } }],
-    ['Services presets', '3-card services', 'services-grid', { styles: { columns: 3 } }], ['Services presets', 'Icon grid', 'services-grid', { styles: { layoutVariant: 'icon-grid', columns: 4 } }], ['Services presets', 'Trade category grid', 'services-grid', {}], ['Services presets', 'Featured service cards', 'service-detail-cards', {}],
-    ['CTA presets', 'Phone call CTA', 'call-to-action', { content: { heading: 'Need help today?', buttons: [{ id: crypto.randomUUID(), label: 'Call the Office', href: 'tel:+16025550100', style: 'primary' }] } }], ['CTA presets', 'Request estimate CTA', 'call-to-action', {}], ['CTA presets', 'Emergency banner CTA', 'emergency-banner', {}],
-    ['Gallery presets', 'Before/after two-column', 'before-after-gallery', { styles: { columns: 2 } }], ['Gallery presets', 'Project cards', 'featured-projects', {}], ['Gallery presets', 'Image carousel shell', 'before-after-gallery', { styles: { layoutVariant: 'carousel' } }],
-  ];
-  const allTypes = (Object.keys(sectionTypeLabels) as HomepageSectionType[]).map((type) => ['All sections', sectionTypeLabels[type], type, {}] as [string, string, HomepageSectionType, Partial<HomepageSection>]);
-  return [...entries, ...allTypes].map(([group, name, type, patch], index) => ({ id: `${group}-${name}-${index}`, group, name, description: `Add an editable ${name.toLowerCase()} block.`, section: makeSection(type, { title: name, ...patch }) }));
-}
-
-export function pageTemplates(branding?: Partial<BrandingSettings>): Array<{ id: string; name: string; description: string; draft: HomepageDraft }> {
-  const company = branding?.displayName || branding?.companyDisplayName || branding?.companyName || 'Your Company';
-  const mk = (id: string, name: string, types: HomepageSectionType[], dark = false): { id: string; name: string; description: string; draft: HomepageDraft } => ({
-    id, name, description: `A full editable ${name.toLowerCase()} layout for ${company}.`, draft: { globalStyles: { ...defaultGlobalStyles, background: dark ? '#11100f' : id.includes('copper') ? '#f7efe5' : '#f7f7f5' }, seo: { ...defaultSeo, title: `${company} | ${name}`, socialTitle: `${company} ${name}` }, sections: types.map((type, order) => makeSection(type, { order, content: order === 0 ? { ...defaultContent(type), heading: `${company} — ${defaultContent(type).heading}` } : defaultContent(type), styles: { ...defaultStyles(type), ...(dark ? { backgroundColor: order % 2 ? '#1f1a17' : '#11100f', textColor: '#fff7ec', accentColor: '#d49a5f' } : {}) } })) }
-  });
-  return [
-    mk('contractor-classic', 'Contractor Classic', ['hero','trust-badges','services-grid','about','process-steps','testimonials','call-to-action','contact-block']),
-    mk('modern-service-company', 'Modern Service Company', ['hero','stats-numbers','service-detail-cards','why-choose-us','featured-projects','faq','request-estimate-form']),
-    mk('premium-dark', 'Premium Dark', ['hero','services-grid','before-after-gallery','stats-numbers','testimonials','call-to-action'], true),
-    mk('arizona-copper', 'Arizona Copper', ['hero','services-grid','service-area','team-owner-intro','financing-banner','contact-block']),
-    mk('clean-light', 'Clean Light', ['hero','about','services-grid','process-steps','faq','call-to-action']),
-    mk('emergency-service', 'Emergency Service', ['emergency-banner','hero','services-grid','stats-numbers','testimonials','contact-block']),
-    mk('commercial-maintenance', 'Commercial Maintenance', ['hero','logo-brand-strip','service-detail-cards','process-steps','stats-numbers','request-estimate-form']),
-    mk('minimal-one-page', 'Minimal One Page', ['hero','services-grid','about','contact-block']),
-  ];
-}
-
-export function validateHomepage(draft: HomepageDraft): { critical: string[]; warnings: string[] } {
-  const sections = normalizeSections(draft.sections);
-  const critical: string[] = []; const warnings: string[] = [];
-  if (!sections.some((s) => s.enabled && s.visibility.public)) critical.push('Publish requires at least one enabled public section.');
-  const hero = sections.find((s) => s.type === 'hero' && s.enabled);
-  if (hero && !hero.content.heading && !hero.content.image?.url && !hero.styles.backgroundImage?.url) critical.push('Hero sections need a heading or usable image.');
-  for (const section of sections) {
-    for (const button of section.content.buttons || []) if (button.label && !button.href) critical.push(`${section.title}: button "${button.label}" needs a link.`);
-    const media = [section.content.image, section.styles.backgroundImage, ...(section.content.images || [])].filter(Boolean) as HomepageMedia[];
-    media.forEach((image) => { if (!image.url) critical.push(`${section.title}: selected image is missing a URL.`); if (image.visibility === 'private') warnings.push(`${section.title}: private media should be made public for homepage use.`); });
-  }
-  if (!draft.seo?.title) warnings.push('SEO title is recommended before publishing.');
-  if (!draft.seo?.description) warnings.push('SEO description is recommended before publishing.');
-  return { critical, warnings };
-}
+export function sectionLibrary(): Array<{ id: string; group: string; name: string; description: string; section: HomepageSection }> { const entries: Array<[string, string, HomepageSectionType, Partial<HomepageSection>]> = [ ['Hero presets','Premium hero','hero',{ styles:{ layoutVariant:'split' } }], ['Hero presets','Video/slider hero','hero',{ content:{ videoUrl:'', trustBadges:['Licensed','Insured','5-star service'] }, styles:{ layoutVariant:'overlay' } }], ['Services presets','Trade services','services-grid',{}], ['Trust presets','Why choose us','why-choose-us',{}], ['Proof presets','Animated stats','stats-numbers',{}], ['Gallery presets','Project showcase','project-showcase',{}], ['Gallery presets','Before/after slider','before-after-gallery',{ styles:{ layoutVariant:'comparison' } }], ['Reviews presets','Google Reviews','google-reviews',{}], ['Conversion presets','Estimate wizard','request-estimate-form',{}], ['Conversion presets','Emergency banner','emergency-banner',{}], ['Company presets','Team section','team-section',{}], ['Company presets','Financing','financing-banner',{}], ['Company presets','Brands carousel','brands-we-service',{}], ['Company presets','Service areas','service-area',{}] ]; const allTypes = (Object.keys(sectionTypeLabels) as HomepageSectionType[]).map((type) => ['All sections', sectionTypeLabels[type], type, {}] as [string, string, HomepageSectionType, Partial<HomepageSection>]); return [...entries, ...allTypes].map(([group, name, type, patch], index) => ({ id: `${group}-${name}-${index}`, group, name, description: `Add an editable ${name.toLowerCase()} block.`, section: makeSection(type, { title: name, ...patch }) })); }
+export function pageTemplates(branding?: Partial<BrandingSettings>): Array<{ id: string; name: string; description: string; draft: HomepageDraft }> { const company = branding?.displayName || branding?.companyDisplayName || branding?.companyName || 'Your Company'; const mk = (idv: string, name: string, preset: GlobalDesignSettings['themePreset'], types: HomepageSectionType[]): { id: string; name: string; description: string; draft: HomepageDraft } => { const designSettings = { themePreset: preset, ...designThemePresets[preset] }; const gs = normalizeGlobalStyles({ ...defaultGlobalStyles, design: designSettings, background: designSettings.colors.background, buttonStyle: designSettings.buttons.style, cardRadius: parseInt(designSettings.radius, 10) || 18 }); return { id: idv, name, description: `A full editable ${name.toLowerCase()} layout for ${company}.`, draft: { globalStyles: gs, seo: { ...defaultSeo, title: `${company} | ${name}`, socialTitle: `${company} ${name}` }, sections: types.map((type, order) => makeSection(type, { order, content: order === 0 ? { ...defaultContent(type), heading: `${company} — ${defaultContent(type).heading}` } : defaultContent(type) })) } }; }; return [ mk('modern-blue','Modern Blue','modern_blue',['hero','trust-badges','services-grid','stats-numbers','project-showcase','google-reviews','process-steps','request-estimate-form']), mk('contractor-dark','Contractor Dark','contractor_dark',['hero','services-grid','before-after-gallery','stats-numbers','testimonials','emergency-banner','contact-block']), mk('arizona-copper','Arizona Copper','arizona_copper',['hero','services-grid','service-area','team-section','financing-banner','faq','contact-block']), mk('industrial-gray','Industrial Gray','industrial_gray',['hero','logo-brand-strip','service-detail-cards','process-steps','stats-numbers','request-estimate-form']), mk('commercial-blue','Commercial Blue','commercial_blue',['hero','services-grid','why-choose-us','project-showcase','google-reviews','call-to-action']), mk('premium-black','Premium Black','premium_black',['hero','trust-badges','featured-projects','before-after-gallery','testimonials','request-estimate-form']), mk('clean-light','Clean Light','clean_light',['hero','about','services-grid','process-steps','faq','call-to-action']) ]; }
+export function validateHomepage(draft: HomepageDraft): { critical: string[]; warnings: string[] } { const sections = normalizeSections(draft.sections); const critical: string[] = []; const warnings: string[] = []; if (!sections.some((s) => s.enabled && s.visibility.public)) critical.push('Publish requires at least one enabled public section.'); const hero = sections.find((s) => s.type === 'hero' && s.enabled); if (hero && !hero.content.heading && !hero.content.image?.url && !hero.styles.backgroundImage?.url && !hero.content.videoUrl) critical.push('Hero sections need a heading, image, or video.'); for (const section of sections) { for (const button of section.content.buttons || []) if (button.label && !button.href) critical.push(`${section.title}: button "${button.label}" needs a link.`); const media = [section.content.image, section.styles.backgroundImage, ...(section.content.images || [])].filter(Boolean) as HomepageMedia[]; media.forEach((image) => { if (!image.url) critical.push(`${section.title}: selected image is missing a URL.`); if (image.visibility === 'private') warnings.push(`${section.title}: private media should be made public for homepage use.`); }); } if (!draft.seo?.title) warnings.push('SEO title is recommended before publishing.'); if (!draft.globalStyles?.design) warnings.push('Global site design settings are recommended for full platform inheritance.'); return { critical, warnings }; }

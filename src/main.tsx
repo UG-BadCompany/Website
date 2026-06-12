@@ -6,7 +6,7 @@ import { RouterProvider, useRouter } from './components/Router';
 import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
 import { AccountPage, AuthMagicPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
 import { InstallerPage } from './pages/Installer';
-import { AssetsPage, ClientsPage, DashboardPage, MediaPage, MessagesPage, PortalPage, PropertiesPage, ServiceCatalogPage, SettingsPage } from './pages/AppPages';
+import { AssetsPage, ClientsPage, DashboardPage, MediaPage, MessagesPage, PortalPage, PropertiesPage, ServiceCatalogPage, SettingsPage, ProjectShowcasePage, GoogleBusinessIntegrationPage } from './pages/AppPages';
 import { RequestsPage } from './pages/modules/RequestsPage';
 import { QuotesPage } from './pages/modules/QuotesPage';
 import { JobsPage } from './pages/modules/JobsPage';
@@ -49,6 +49,8 @@ function App() {
   if (path.startsWith('/properties')) return <PropertiesPage />;
   if (path.startsWith('/service-catalog')) return <ServiceCatalogPage />;
   if (path.startsWith('/media')) return <MediaPage />;
+  if (path.startsWith('/marketing/project-showcase')) return <ProjectShowcasePage />;
+  if (path.startsWith('/settings/integrations/google-business')) return <GoogleBusinessIntegrationPage />;
   if (path.startsWith('/settings')) return <SettingsPage area={path.slice(1)} />;
   return <NotFoundPage />;
 }

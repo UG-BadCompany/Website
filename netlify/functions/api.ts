@@ -8,7 +8,7 @@ import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsO
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
-import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia } from '../../lib/server/homepage-builder';
+import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -158,6 +158,13 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     if (path === '/homepage-builder/templates' && event.httpMethod === 'GET') return json(200, await homepageTemplates(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/homepage-builder/section-library' && event.httpMethod === 'GET') return json(200, await homepageSectionLibrary(), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/project-showcases' && event.httpMethod === 'GET') return json(200, await listProjectShowcases(await requirePermission(event, 'project_showcase.view')), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/project-showcases' && event.httpMethod === 'POST') return json(200, await saveProjectShowcase(readBody(event), await requirePermission(event, 'project_showcase.manage')));
+    const projectDeleteMatch = path.match(/^\/project-showcases\/([^/]+)$/);
+    if (projectDeleteMatch && event.httpMethod === 'DELETE') return json(200, await deleteProjectShowcase(decodeURIComponent(projectDeleteMatch[1]), await requirePermission(event, 'project_showcase.manage')));
+    if (path === '/integrations/google-business' && event.httpMethod === 'GET') return json(200, await getGoogleBusinessIntegration(await requireAuth(event)), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/integrations/google-business' && event.httpMethod === 'POST') return json(200, await saveGoogleBusinessIntegration(readBody(event), await requirePermission(event, 'integrations.manage')));
+    if (path === '/integrations/google-business/refresh' && event.httpMethod === 'POST') return json(200, await refreshGoogleReviews(await requirePermission(event, 'integrations.manage')));
     if (path.startsWith('/settings/')) {
       const user = await requirePermission(event, 'settings.view');
       return json(200, await handleSettingsRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user), { 'cache-control': 'no-store, max-age=0' });
