@@ -562,3 +562,15 @@ main, section, article, aside, header, footer, nav, div { min-width:0; }
     display: none;
   }
 }
+
+/* Production module workspaces */
+.kanban-board { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1rem 0; }
+.kanban-board .kanban-column { display:flex; flex-direction:column; gap:.75rem; min-height:10rem; }
+.record-card { text-align:left; display:grid; gap:.35rem; border:1px solid var(--border); border-radius:1rem; padding:.85rem; background:var(--surface); color:inherit; cursor:pointer; box-shadow:var(--shadow-sm); }
+.record-card:hover { border-color:var(--accent); transform:translateY(-1px); }
+.table-wrap { overflow-x:auto; }
+.table-wrap table { width:100%; border-collapse:collapse; }
+.table-wrap th, .table-wrap td { text-align:left; padding:.75rem; border-bottom:1px solid var(--border); vertical-align:top; }
+.line-item-row { display:grid; grid-template-columns:1fr 2fr .7fr .9fr auto; gap:.5rem; align-items:end; margin:.5rem 0; }
+.inline { display:flex; align-items:center; gap:.35rem; }
+@media (max-width: 760px) { .line-item-row { grid-template-columns:1fr; } .table-wrap th, .table-wrap td { min-width:9rem; } }

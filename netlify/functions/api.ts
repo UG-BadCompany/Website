@@ -218,7 +218,7 @@ function permissionForWorkflowPath(path: string) {
 }
 
 function isWorkflowApiPath(path: string) {
-  return /^(?:\/(?:requests|quotes|jobs|invoices)\/[^/]+\/(?:convert-to-quote|send|approve|decline|convert-to-job|start|complete|create-invoice|mark-paid|closeout)|\/workflow\/[^/]+\/[^/]+\/(?:timeline|summary))$/.test(path);
+  return /^(?:\/(?:requests|quotes|jobs|invoices)\/[^/]+\/(?:convert-to-quote|convert-to-job|notes|media|send|approve|decline|start|complete|create-invoice|mark-paid|closeout)|\/workflow\/[^/]+\/[^/]+\/(?:timeline|summary))$/.test(path);
 }
 
 function isModuleApiPath(path: string) {

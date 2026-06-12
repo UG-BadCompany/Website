@@ -92,6 +92,9 @@ export async function handleWorkflowRoute(path: string, method: string, body: Bo
   const [, resource, id, action] = match;
 
   if (resource === 'requests' && action === 'convert-to-quote') return convertRequestToQuote(db, user, id, body);
+  if (resource === 'requests' && action === 'convert-to-job') return convertRequestToJob(db, user, id, body);
+  if (resource === 'requests' && action === 'notes') return addRequestNote(db, user, id, body);
+  if (resource === 'requests' && action === 'media') return attachRequestMedia(db, user, id, body);
   if (resource === 'quotes' && action === 'send') return sendQuote(db, user, id);
   if (resource === 'quotes' && action === 'approve') return approveQuote(db, user, id);
   if (resource === 'quotes' && action === 'decline') return declineQuote(db, user, id, body);
@@ -116,6 +119,35 @@ async function convertRequestToQuote(db: Queryable, user: AuthUser, id: string, 
   await transition(db, user, 'request', id, 'work_requests', 'quoted', 'requests').catch(async () => db.query(`update work_requests set status='quoted', updated_at=now() where id=$1`, [id]));
   await addLinkedEvent(db, user, req.clientId, req.propertyId, id, quoteId, null, null, 'quote_created', 'Quote created from request');
   return { ok: true, id: quoteId, quoteId, summary: await getWorkflowSummary(db, 'request', id) };
+}
+
+async function convertRequestToJob(db: Queryable, user: AuthUser, id: string, body: Body) {
+  requireManage(user, 'jobs');
+  const req = (await db.query<any>(`select wr.*, wr.client_id::text as "clientId", wr.property_id::text as "propertyId" from work_requests wr where id=$1`, [id])).rows[0];
+  if (!req) throw new HttpError(404, 'Request not found');
+  const existing = await db.query<{ id: string }>(`select id::text from jobs where request_id=$1 and status <> 'cancelled' order by created_at desc limit 1`, [id]);
+  const jobId = existing.rows[0]?.id || (await db.query<{ id: string }>(`insert into jobs (client_id,property_id,request_id,status,assigned_user_id,title,scope,customer_visible_scope) values ($1,$2,$3,'pending',$4,$5,$6,$7) returning id::text`, [req.clientId, req.propertyId, id, maybeUuid(body.assignedUserId), str(body.title, req.title || `Job for request ${id.slice(0, 8).toUpperCase()}`), str(body.scope, req.description || ''), str(body.customerVisibleScope, req.customer_notes || '')])).rows[0].id;
+  await db.query(`update work_requests set status='scheduled', updated_at=now() where id=$1`, [id]);
+  await addLinkedEvent(db, user, req.clientId, req.propertyId, id, null, jobId, null, 'job_created', 'Job created directly from request');
+  return { ok: true, id: jobId, jobId, status: 'pending', summary: await getWorkflowSummary(db, 'job', jobId) };
+}
+
+async function addRequestNote(db: Queryable, user: AuthUser, id: string, body: Body) {
+  const req = (await db.query<any>(`select client_id::text as "clientId" from work_requests where id=$1`, [id])).rows[0];
+  if (!req) throw new HttpError(404, 'Request not found');
+  await addActivity(db, user, 'request', id, str(body.customerVisible) ? 'customer_update' : 'internal_note', str(body.note) || str(body.body) || 'Request note added', { visibility: body.customerVisible ? 'client' : 'internal', description: str(body.note) || str(body.body) });
+  return { ok: true, id, note: true };
+}
+
+async function attachRequestMedia(db: Queryable, user: AuthUser, id: string, body: Body) {
+  requireManage(user, 'media');
+  const req = (await db.query<any>(`select client_id::text as "clientId" from work_requests where id=$1`, [id])).rows[0];
+  if (!req) throw new HttpError(404, 'Request not found');
+  const mediaId = maybeUuid(body.mediaId) || maybeUuid(body.id);
+  if (!mediaId) throw new HttpError(400, 'mediaId is required');
+  await db.query(`update media_assets set link_type='request', link_id=$2::uuid, visibility=coalesce(nullif($3,''), visibility), alt_text=coalesce(nullif($4,''), alt_text) where id=$1`, [mediaId, id, str(body.visibility), str(body.altText)]);
+  await addActivity(db, user, 'request', id, 'media_attached', 'Media attached to request', { metadata: { mediaId }, visibility: body.visibility === 'public' ? 'client' : 'internal' });
+  return { ok: true, id, mediaId };
 }
 
 async function sendQuote(db: Queryable, user: AuthUser, id: string) {

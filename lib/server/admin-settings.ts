@@ -61,6 +61,7 @@ async function upsertSetting(db: Queryable, key: string, value: Json) {
 
 function managePermissionFor(section: string) {
   if (section === 'homepage-builder') return 'homepage.manage';
+  if (section === 'workflow-automation') return 'settings.manage';
   return `${section}.manage`;
 }
 
@@ -100,6 +101,7 @@ export async function handleSettingsRoute(path: string, method: string, body: Se
   if (section === 'license') return { ok: true, license: await getSetting(db, 'license.settings', { status: 'not_checked' }) };
   if (section === 'media') return getMedia(db);
   if (section === 'homepage-builder') return method === 'POST' ? saveHomepageBuilder(body, db) : getHomepageBuilder(db);
+  if (section === 'workflow-automation') return { ok: true, workflowAutomation: await getSetting(db, 'workflow.automation', { autoCreateJobOnQuoteApproval: true, autoCreateInvoiceOnJobCompletion: true, requestIntakeNotifications: [] }) };
   throw new HttpError(404, 'Unknown settings section');
 }
 

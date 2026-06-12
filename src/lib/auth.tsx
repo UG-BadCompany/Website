@@ -30,7 +30,7 @@ type AuthContextValue = {
   authError: string;
   refreshMe: () => Promise<AuthStatus>;
   signOutLocal: () => void;
-  can: (permission: string) => boolean;
+  can: (permission: string | string[]) => boolean;
 };
 
 const AuthContext = createContext<AuthContextValue>({ user: null, role: '', permissions: [], realUser: null, realRole: '', realPermissions: [], effectiveRole: '', effectivePermissions: [], effectiveClientId: null, effectiveUserId: null, viewAsRole: null, isViewAsActive: false, setViewAsRole: () => undefined, clearViewAsRole: () => undefined, status: 'loading', isAuthenticated: false, isLoading: true, authError: '', refreshMe: async () => 'unauthenticated', signOutLocal: () => undefined, can: () => false });
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authError,
       refreshMe,
       signOutLocal,
-      can: (permission: string) => hasPermission(effectiveUser, permission),
+      can: (permission: string | string[]) => Array.isArray(permission) ? permission.some((entry) => hasPermission(effectiveUser, entry)) : hasPermission(effectiveUser, permission),
     };
   }, [authError, clearViewAsRole, me, refreshMe, setViewAsRole, signOutLocal, status, viewAs]);
 
