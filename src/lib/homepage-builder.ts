@@ -15,7 +15,7 @@ export type HomepageSectionContent = {
   image?: HomepageMedia; images?: HomepageMedia[]; videoUrl?: string; phone?: string; email?: string; address?: string; richText?: string; items?: HomepageItem[];
   emergencyEnabled?: boolean; trustBadges?: string[]; featuredOnly?: boolean; categoryFilter?: string; projectLimit?: number; displayMode?: 'slider' | 'grid' | 'carousel' | 'highlight'; useGoogleReviews?: boolean;
 };
-export type HomepageSectionStyleMode = 'inherit' | 'alternate' | 'primary-accent' | 'dark-contrast' | 'light-contrast' | 'custom';
+export type HomepageSectionStyleMode = 'inherit' | 'alternate' | 'primary-accent' | 'accent-feature' | 'dark-contrast' | 'light-contrast' | 'custom';
 export type HomepageSectionStyles = {
   styleMode?: HomepageSectionStyleMode; background?: string; backgroundColor?: string; backgroundImage?: HomepageMedia; textColor?: string; accentColor?: string; cardBackground?: string; borderColor?: string; cardStyle?: 'flat' | 'bordered' | 'elevated' | 'glass';
   borderRadius?: number; spacingTop?: number; spacingBottom?: number; maxWidth?: number; alignment?: 'left' | 'center' | 'right';
@@ -41,6 +41,95 @@ export type HomepageDraft = { sections: HomepageSection[]; globalStyles: Homepag
 export type HomepageVersion = HomepageDraft & { id: string; pageId?: string; status: 'draft' | 'published' | 'archived'; name: string; createdAt: string; publishedAt?: string; createdBy?: string };
 export type HomepageBuilderResponse = { ok: boolean; page: Record<string, unknown>; draft: HomepageDraft; published: HomepageDraft | null; versions: HomepageVersion[] };
 export type ProjectShowcase = { id: string; title: string; description?: string; category?: string; location?: string; beforeImage?: string; afterImage?: string; galleryImages?: string[]; featured: boolean; createdAt: string };
+
+
+export type DesignTokenMap = Record<`--${string}`, string>;
+const hexToRgb = (hex?: string) => { const clean = (hex || '').replace('#', '').trim(); if (!/^[0-9a-f]{6}$/i.test(clean)) return { r: 15, g: 23, b: 42 }; const n = parseInt(clean, 16); return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }; };
+const luminance = (hex?: string) => { const { r, g, b } = hexToRgb(hex); const channel = (v: number) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }; return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b); };
+const readableOn = (hex?: string) => luminance(hex) > 0.46 ? '#0f172a' : '#ffffff';
+const mix = (a: string, amount: number, b: string) => `color-mix(in srgb, ${a} ${amount}%, ${b})`;
+
+export function generateDesignTokens(theme?: Partial<GlobalDesignSettings>): DesignTokenMap {
+  const preset = theme?.themePreset && designThemePresets[theme.themePreset] ? theme.themePreset : 'modern_blue';
+  const base = { themePreset: preset, ...designThemePresets[preset], ...(theme || {}) } as GlobalDesignSettings;
+  const colors = { ...designThemePresets[preset].colors, ...(theme?.colors || {}) };
+  const isDark = luminance(colors.background) < 0.32;
+  const lightBase = isDark ? mix(colors.primary, 7, colors.background) : colors.background;
+  const section = isDark ? mix(colors.secondary, 42, colors.background) : lightBase;
+  const sectionAlt = isDark ? mix(colors.primary, 15, colors.background) : mix(colors.primary, 6, colors.background);
+  const card = isDark ? mix(colors.secondary, 58, colors.background) : (colors.card || mix(colors.primary, 2, colors.background));
+  const cardHover = isDark ? mix(colors.primary, 16, card) : mix(colors.primary, 8, card);
+  const darkContrast = mix(colors.secondary, 88, '#020617');
+  const lightContrast = mix(colors.primary, 4, '#ffffff');
+  const radius = base.radius || '22px';
+  return {
+    '--site-primary': colors.primary,
+    '--site-primary-contrast': readableOn(colors.primary),
+    '--site-secondary': colors.secondary,
+    '--site-secondary-contrast': readableOn(colors.secondary),
+    '--site-accent': colors.accent,
+    '--site-accent-contrast': readableOn(colors.accent),
+    '--site-background': colors.background,
+    '--surface-section': section,
+    '--surface-section-alt': sectionAlt,
+    '--surface-card': card,
+    '--surface-card-hover': cardHover,
+    '--surface-glass': mix(card, isDark ? 72 : 82, 'transparent'),
+    '--surface-hero': `radial-gradient(circle at 16% 12%, ${mix(colors.accent, 20, 'transparent')}, transparent 32rem), linear-gradient(135deg, ${section}, ${sectionAlt})`,
+    '--surface-footer': darkContrast,
+    '--surface-dark': darkContrast,
+    '--surface-dark-text': readableOn('#020617'),
+    '--surface-light': lightContrast,
+    '--surface-light-text': '#0f172a',
+    '--site-text': colors.text,
+    '--site-text-soft': mix(colors.text, 72, colors.background),
+    '--site-muted': colors.muted,
+    '--site-heading': colors.text,
+    '--site-border': mix(colors.muted, isDark ? 28 : 22, 'transparent'),
+    '--site-border-strong': mix(colors.primary, 38, colors.muted),
+    '--site-radius': radius,
+    '--site-radius-lg': `calc(${radius} + 10px)`,
+    '--site-shadow': base.shadow || '0 22px 60px rgba(15,23,42,.16)',
+    '--site-shadow-lg': `0 30px 90px ${mix(colors.secondary, isDark ? 42 : 18, 'transparent')}`,
+    '--site-overlay': isDark ? 'rgba(2,6,23,.58)' : 'rgba(15,23,42,.22)',
+    '--site-success': colors.success,
+    '--site-warning': colors.warning,
+    '--site-danger': colors.danger,
+    '--button-primary-bg': colors.primary,
+    '--button-primary-text': readableOn(colors.primary),
+    '--button-secondary-bg': isDark ? mix(colors.accent, 22, card) : mix(colors.secondary, 10, card),
+    '--button-secondary-text': isDark ? readableOn(colors.secondary) : colors.text,
+    '--button-outline-border': mix(colors.primary, 46, 'transparent'),
+    '--button-outline-text': colors.text,
+    '--badge-bg': isDark ? mix(colors.accent, 18, card) : mix(colors.primary, 10, card),
+    '--badge-text': isDark ? readableOn(colors.secondary) : colors.text,
+    '--badge-border': mix(colors.accent, 36, 'transparent'),
+    '--homepage-radius': radius,
+  };
+}
+
+export const strictThemeSectionStyles = (mode: HomepageSectionStyleMode = 'inherit'): HomepageSectionStyles => {
+  if (mode === 'alternate') return { styleMode: mode, background: 'var(--surface-section-alt)', backgroundColor: 'var(--surface-section-alt)', textColor: 'var(--site-text)', accentColor: 'var(--site-primary)', cardBackground: 'var(--surface-card)', borderColor: 'var(--site-border)' };
+  if (mode === 'primary-accent') return { styleMode: mode, background: 'var(--site-primary)', backgroundColor: 'var(--site-primary)', textColor: 'var(--site-primary-contrast)', accentColor: 'var(--site-accent)', cardBackground: 'var(--surface-glass)', borderColor: 'var(--site-border)' };
+  if (mode === 'accent-feature') return { styleMode: mode, background: 'var(--site-accent)', backgroundColor: 'var(--site-accent)', textColor: 'var(--site-accent-contrast)', accentColor: 'var(--site-primary)', cardBackground: 'var(--surface-glass)', borderColor: 'var(--site-border)' };
+  if (mode === 'dark-contrast') return { styleMode: mode, background: 'var(--surface-dark)', backgroundColor: 'var(--surface-dark)', textColor: 'var(--surface-dark-text)', accentColor: 'var(--site-accent)', cardBackground: 'var(--surface-glass)', borderColor: 'var(--site-border)' };
+  if (mode === 'light-contrast') return { styleMode: mode, background: 'var(--surface-light)', backgroundColor: 'var(--surface-light)', textColor: 'var(--surface-light-text)', accentColor: 'var(--site-primary)', cardBackground: 'var(--surface-card)', borderColor: 'var(--site-border)' };
+  return { styleMode: 'inherit', background: 'var(--surface-section)', backgroundColor: 'var(--surface-section)', textColor: 'var(--site-text)', accentColor: 'var(--site-primary)', cardBackground: 'var(--surface-card)', borderColor: 'var(--site-border)' };
+};
+
+export function matchSectionToTheme(section: HomepageSection): HomepageSection {
+  return { ...section, styles: { ...section.styles, ...strictThemeSectionStyles('inherit'), borderRadius: 24, spacingTop: section.type === 'hero' ? 112 : 82, spacingBottom: section.type === 'hero' ? 112 : 82, cardStyle: 'elevated', cardShadow: true }, updatedAt: new Date().toISOString() };
+}
+
+export function matchAllSectionsToTheme(sections: HomepageSection[]): { sections: HomepageSection[]; changed: string[] } {
+  const changed: string[] = [];
+  const next = normalizeSections(sections).map((section) => {
+    if (section.styles?.styleMode === 'custom') return section;
+    changed.push(section.title || sectionTypeLabels[section.type]);
+    return matchSectionToTheme(section);
+  });
+  return { sections: next, changed };
+}
 
 export const sectionTypeLabels: Record<HomepageSectionType, string> = {
   hero: 'Hero', 'services-grid': 'Services Grid', 'service-detail-cards': 'Service Detail Cards', about: 'About', 'why-choose-us': 'Why Choose Us', 'trust-badges': 'Trust / Badges',
@@ -321,7 +410,7 @@ export function createPremiumHomepageDraft(branding?: Partial<BrandingSettings>,
     section('google-reviews', 7, { heading: 'What customers say on Google', subheading: 'Connect Google Business later; premium review previews keep the homepage conversion-ready now.', useGoogleReviews: true, displayMode: 'carousel', items: [{ id: id(), title: 'Sarah M.', text: 'Fast response, clean work, and clear options before anything started.', rating: 5 }, { id: id(), title: 'David R.', text: 'Professional from estimate through cleanup. The crew treated our property with respect.', rating: 5 }, { id: id(), title: 'Monica T.', text: 'Easy scheduling, great communication, and premium results.', rating: 5 }] }),
     section('process-steps', 8, { heading: 'A simple process from estimate to completion', items: ['Request Estimate','Receive Quote','Schedule Service','Job Completion'].map((title, index) => ({ id: id(), title, value: String(index + 1), text: ['Tell us what you need and upload photos from any device.','Review clear options, financing, and timing.','Pick a convenient appointment window.','Approve finished work, invoices, and follow-up online.'][index] })) }, { columns: 4, backgroundColor: 'var(--surface-section)' }),
     section('service-area', 9, { heading: 'Proudly serving your local area', subheading: serviceArea, items: serviceArea.split(',').map((city) => ({ id: id(), title: city.trim(), icon: '📍' })).filter((item) => item.title) }, { styleMode: 'alternate', backgroundColor: 'var(--surface-section-alt)' }),
-    section('financing-banner', 10, { eyebrow: 'Flexible financing', heading: 'Get the work done now with payment options that fit', subheading: 'Feature financing partners, monthly payment examples, and approval calls-to-action.', buttons: [{ id: id(), label: 'Ask About Financing', href: '/request-estimate', style: 'primary' }] }, { styleMode: 'primary-accent', backgroundColor: 'var(--site-primary)', textColor: 'var(--site-on-primary)' }),
+    section('financing-banner', 10, { eyebrow: 'Flexible financing', heading: 'Get the work done now with payment options that fit', subheading: 'Feature financing partners, monthly payment examples, and approval calls-to-action.', buttons: [{ id: id(), label: 'Ask About Financing', href: '/request-estimate', style: 'primary' }] }, { styleMode: 'primary-accent', backgroundColor: 'var(--site-primary)', textColor: 'var(--site-primary-contrast)' }),
     section('faq', 11, { heading: 'Frequently asked questions', items: [{ id: id(), title: 'Do you offer emergency service?', text: 'Yes. Emergency requests can be prioritized when enabled for your company.' }, { id: id(), title: 'Can I upload photos?', text: 'Yes. The estimate wizard supports mobile uploads and drag/drop photos.' }, { id: id(), title: 'Do you offer financing?', text: basics?.financingAvailableEnabled === false ? 'Financing details can be added when available.' : 'Yes. Financing details and monthly examples can be shown here.' }, { id: id(), title: 'Are you licensed and insured?', text: 'Yes. Licensing, insurance, warranties, and guarantees are highlighted throughout the site.' }] }),
     section('team-section', 12, { heading: 'Meet the team behind the work', subheading: 'Introduce owners, technicians, certifications, and service values.', items: [{ id: id(), title: 'Owner / Lead Technician', text: 'Local leadership focused on clear communication and quality workmanship.', icon: '👷' }, { id: id(), title: 'Service Manager', text: 'Keeps estimates, scheduling, and job updates moving smoothly.', icon: '🧰' }, { id: id(), title: 'Customer Care', text: 'Friendly support from request through final follow-up.', icon: '☎️' }] }, { columns: 3, backgroundColor: 'var(--surface-section-alt)' }),
     section('brands-we-service', 13, { heading: 'Brands we service', items: ['Trane','Carrier','Lennox','Rheem','Bradford White','GAF','CertainTeed','Daikin'].map((title) => ({ id: id(), title })) }, { spacingTop: 46, spacingBottom: 46 }),
@@ -330,4 +419,35 @@ export function createPremiumHomepageDraft(branding?: Partial<BrandingSettings>,
   return { globalStyles, seo: { ...defaultSeo, title: `${company} | Premium Contractor Services`, description: `Request premium contractor service from ${company}. Fast estimates, trusted technicians, financing, and emergency options.`, socialTitle: `${company} Premium Contractor Services`, socialDescription: 'Fast estimates, expert work, and clear communication.' }, sections };
 }
 
-export function validateHomepage(draft: HomepageDraft): { critical: string[]; warnings: string[] } { const sections = normalizeSections(draft.sections); const critical: string[] = []; const warnings: string[] = []; if (!sections.some((s) => s.enabled && s.visibility.public)) critical.push('Publish requires at least one enabled public section.'); const hero = sections.find((s) => s.type === 'hero' && s.enabled); if (hero && !hero.content.heading && !hero.content.image?.url && !hero.styles.backgroundImage?.url && !hero.content.videoUrl) critical.push('Hero sections need a heading, image, or video.'); for (const section of sections) { for (const button of section.content.buttons || []) if (button.label && !button.href) critical.push(`${section.title}: button "${button.label}" needs a link.`); const media = [section.content.image, section.styles.backgroundImage, ...(section.content.images || [])].filter(Boolean) as HomepageMedia[]; media.forEach((image) => { if (!image.url) critical.push(`${section.title}: selected image is missing a URL.`); if (image.visibility === 'private') warnings.push(`${section.title}: private media should be made public for homepage use.`); }); } if (!draft.seo?.title) warnings.push('SEO title is recommended before publishing.'); if (!draft.globalStyles?.design) warnings.push('Global site design settings are recommended for full platform inheritance.'); return { critical, warnings }; }
+export function validateHomepage(draft: HomepageDraft): { critical: string[]; warnings: string[] } {
+  const sections = normalizeSections(draft.sections);
+  const critical: string[] = [];
+  const warnings: string[] = [];
+  const rawColorPattern = /#(?:[0-9a-f]{3}){1,2}\b|rgba?\(|hsla?\(/i;
+  if (!sections.some((s) => s.enabled && s.visibility.public)) critical.push('Publish requires at least one enabled public section.');
+  const hero = sections.find((s) => s.type === 'hero' && s.enabled);
+  if (hero && !hero.content.heading && !hero.content.image?.url && !hero.styles.backgroundImage?.url && !hero.content.videoUrl) critical.push('Hero sections need a heading, image, or video.');
+  for (const section of sections) {
+    const mode = section.styles?.styleMode || 'inherit';
+    if (section.enabled && section.visibility.public && !section.visibility.mobile) warnings.push(`${section.title}: mobile visibility is disabled; confirm this is intentional.`);
+    if (mode !== 'custom') {
+      for (const [key, value] of Object.entries(section.styles || {})) {
+        if (typeof value === 'string' && rawColorPattern.test(value)) critical.push(`${section.title}: ${key} uses a hardcoded color outside Custom mode.`);
+      }
+    }
+    const styleText = JSON.stringify(section.styles || {});
+    if (mode !== 'custom' && !/var\(--/.test(styleText)) warnings.push(`${section.title}: section styles should inherit generated design tokens.`);
+    for (const button of section.content.buttons || []) {
+      if (!button.label?.trim()) critical.push(`${section.title}: CTA button label cannot be empty.`);
+      if (button.label && !button.href) critical.push(`${section.title}: button "${button.label}" needs a link.`);
+      if (button.href && !/^(\/|#|tel:|mailto:|https?:\/\/)/i.test(button.href)) warnings.push(`${section.title}: button "${button.label}" has a link format that may be broken.`);
+    }
+    const media = [section.content.image, section.styles.backgroundImage, ...(section.content.images || []), ...((section.content.items || []).flatMap((item) => [item.image, item.beforeImage, item.afterImage]))].filter(Boolean) as HomepageMedia[];
+    media.forEach((image) => { if (!image.url) critical.push(`${section.title}: selected image is missing a URL.`); if (image.url && !image.alt?.trim()) warnings.push(`${section.title}: image is missing alt text.`); if (image.visibility === 'private') warnings.push(`${section.title}: private media should be made public for homepage use.`); });
+    if ((section.styles?.columns || 1) > 3 && ['hero','before-after-gallery'].includes(section.type)) warnings.push(`${section.title}: high column count may create mobile overflow risk.`);
+    if (!section.content.heading && !['logo-brand-strip','brands-we-service'].includes(section.type)) warnings.push(`${section.title}: add a clear heading for visual hierarchy and SEO.`);
+  }
+  if (!draft.seo?.title) warnings.push('SEO title is recommended before publishing.');
+  if (!draft.globalStyles?.design) warnings.push('Global site design settings are recommended for full platform inheritance.');
+  return { critical, warnings };
+}
