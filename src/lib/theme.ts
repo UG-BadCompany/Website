@@ -210,6 +210,12 @@ export function applyTheme(theme = getTheme()) {
   root.style.setProperty('--site-text', palette.text);
   root.style.setProperty('--site-muted', palette.mutedText);
   root.style.setProperty('--site-radius', palette.cardRadius);
+  const sidebarBase = palette.sidebar || `color-mix(in srgb, ${palette.secondary} 88%, ${palette.background})`;
+  root.style.setProperty('--surface-card', palette.surface);
+  root.style.setProperty('--surface-sidebar', sidebarBase);
+  root.style.setProperty('--surface-sidebar-hover', `color-mix(in srgb, ${palette.primary} 12%, ${sidebarBase})`);
+  root.style.setProperty('--surface-sidebar-active', `linear-gradient(135deg, ${palette.primary}, color-mix(in srgb, ${palette.accent} 80%, ${palette.secondary}))`);
   root.style.setProperty('--site-shadow', '0 22px 60px rgba(15,23,42,.16)');
 }
+
 

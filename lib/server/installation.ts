@@ -27,7 +27,7 @@ export const DEFAULT_PERMISSION_KEYS = [
   'dashboard.view','dashboard.manage','settings.view','settings.manage','users.view','users.manage','roles.view','roles.manage','permissions.view','permissions.manage',
   'clients.view','clients.manage','properties.view','properties.manage','requests.view','requests.manage','quotes.view','quotes.create','quotes.approve','quotes.manage','jobs.view','jobs.manage',
   'work_orders.view','work_orders.manage','invoices.view','invoices.manage','payments.view','payments.manage','cmms.view','cmms.manage','messages.view','messages.manage',
-  'website.view','website.manage','homepage.manage','theme.view','theme.manage','branding.view','branding.manage','service_catalog.view','service_catalog.manage','media.view','media.manage',
+  'website.view','website.manage','homepage.view','homepage.manage','project_showcase.view','project_showcase.manage','theme.view','theme.manage','branding.view','branding.manage','service_catalog.view','service_catalog.manage','media.view','media.manage','integrations.manage',
   'audit_logs.view','license.view','license.manage','expansion_packs.view','expansion_packs.manage','*'
 ];
 const REQUIRED_PERMISSIONS = DEFAULT_PERMISSION_KEYS.length;
