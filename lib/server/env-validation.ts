@@ -19,6 +19,7 @@ export type EnvValidationResult = {
   database: EnvCheck[];
   payment: EnvCheck[];
   email: EnvCheck[];
+  license: EnvCheck[];
   databaseAdapter: DbAdapterName;
 };
 
@@ -73,11 +74,19 @@ export function validateEnvironment(env = process.env, input: EnvValidationInput
     ...selectedPayment.optional.map((key) => checkOne(env, key, `Optional ${paymentProvider} environment key.`, true)),
   ];
 
+  const license = [
+    checkOne(env, 'LICENSE_API_URL', 'ContractorOS License Portal API base URL.', true),
+    checkOne(env, 'LICENSE_KEY', 'ContractorOS license key; installer can also collect it manually.', true),
+    checkOne(env, 'LICENSE_EMAIL', 'License owner email; installer can also collect it manually.', true),
+    checkOne(env, 'LICENSE_CHECK_INTERVAL_HOURS', 'Runtime license check interval. Defaults to 24 hours.', true),
+  ];
+
   return {
     basic,
     database,
     payment,
     email: [basic[1], basic[2]],
+    license,
     databaseAdapter: detectDatabaseAdapter(env),
   };
 }

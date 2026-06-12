@@ -4,6 +4,7 @@ import { createDatabase, type Queryable } from './database';
 import { sendMagicLink } from './auth';
 import { createStorage } from './storage';
 import { addActivity, ensureWorkflowFoundation } from './workflow';
+import { getLocalLicense } from './license-client';
 
 export type InstallStatus = {
   installed: boolean;
@@ -256,7 +257,7 @@ function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
 
 
 export async function runMigrations(db: Queryable = createDatabase()) {
-  for (const file of ['001_foundation.sql', '002_seed_foundation.sql', '003_admin_settings_dashboard.sql', '004_dashboard_modules.sql', '005_homepage_builder.sql', '006_premium_homepage_design.sql', '007_backend_completion.sql']) {
+  for (const file of ['001_foundation.sql', '002_seed_foundation.sql', '003_admin_settings_dashboard.sql', '004_dashboard_modules.sql', '005_homepage_builder.sql', '006_premium_homepage_design.sql', '007_backend_completion.sql', '008_license_portal.sql']) {
     await db.query(await readMigration(file));
   }
 }
@@ -366,8 +367,10 @@ export async function getInstallStatus(db: Queryable = createDatabase()): Promis
   };
 }
 
-export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown; homepageSetup?: HomepageSetupInput; branding?: { logoMediaId?: string | null; logoUrl?: string | null; logoResolvedUrl?: string | null; faviconMediaId?: string | null; faviconUrl?: string | null; faviconResolvedUrl?: string | null } } = {}, db: Queryable = createDatabase()) {
+export async function completeInstallation(input: { companyName?: string; ownerName?: string; ownerEmail?: string; theme?: unknown; homepageSetup?: HomepageSetupInput; license?: { tier?: string; enabledModules?: string[]; status?: string }; branding?: { logoMediaId?: string | null; logoUrl?: string | null; logoResolvedUrl?: string | null; faviconMediaId?: string | null; faviconUrl?: string | null; faviconResolvedUrl?: string | null } } = {}, db: Queryable = createDatabase()) {
   await runMigrations(db);
+  const localLicense = await getLocalLicense(db).catch(() => null);
+  if (!localLicense || localLicense.status !== 'active') throw new Error('License invalid. Please check your key and email.');
 
   const companyName = input.companyName?.trim() || input.homepageSetup?.displayName?.trim() || 'My Company';
   const ownerName = input.ownerName?.trim() || 'Owner';
@@ -412,6 +415,11 @@ export async function completeInstallation(input: { companyName?: string; ownerN
   await upsertSetting(db, 'installation.completed', true);
   await upsertSetting(db, 'installation.completed_at', new Date().toISOString());
   await upsertSetting(db, 'installation.version', INSTALLATION_VERSION);
+  if (input.license) {
+    await upsertSetting(db, 'license.tier', input.license.tier || 'basic');
+    await upsertSetting(db, 'license.status', input.license.status || 'active');
+    await upsertSetting(db, 'license.enabled_modules', Array.isArray(input.license.enabledModules) ? input.license.enabledModules : []);
+  }
   await upsertSetting(db, 'company.name', companyName);
   await upsertSetting(db, 'company.display_name', input.homepageSetup?.displayName?.trim() || companyName);
   await upsertSetting(db, 'company.email', input.homepageSetup?.contactEmail?.trim() || '');
