@@ -70,13 +70,14 @@ type HomepageSetupInput = {
   financingAvailableEnabled?: boolean;
   seoTitle?: string;
   seoDescription?: string;
+  homepagePresetId?: string;
 };
 
 const PUBLIC_SETTING_KEYS = [
   'branding.logo_media_id','branding.logo_url','branding.logo_resolved_url','branding.favicon_media_id','branding.favicon_url','branding.favicon_resolved_url','branding.display_name','branding.tagline','branding.updated_at','company.name','company.display_name','company.email','company.phone','company.logo_url','company.logo_media_id','company.logo_resolved_url','company.favicon_url','company.favicon_media_id','company.favicon_resolved_url','company.updated_at','theme.settings','homepage.hero_headline','homepage.hero_subheadline',
   'homepage.primary_cta_label','homepage.primary_cta_link','homepage.secondary_cta_label','homepage.secondary_cta_link','homepage.about_text','homepage.services_intro',
   'homepage.services','homepage.contact_phone','homepage.contact_email','homepage.contact_address','homepage.service_area','homepage.business_hours','homepage.trust_text',
-  'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description'
+  'homepage.years_experience','homepage.emergency_service_enabled','homepage.financing_available_enabled','homepage.seo_title','homepage.seo_description','homepage.preset_id'
 ];
 
 function defaultPublicSiteSettings() {
@@ -123,6 +124,7 @@ function defaultPublicSiteSettings() {
       financingAvailableEnabled: false,
       seoTitle: 'Contractor Services',
       seoDescription: 'Request a service estimate from a trusted local contractor.',
+      presetId: 'premium-contractor',
     },
   };
 }
@@ -173,6 +175,7 @@ async function saveHomepageSetup(db: Queryable, setup: HomepageSetupInput, compa
   await upsertSetting(db, 'homepage.financing_available_enabled', Boolean(setup.financingAvailableEnabled));
   await upsertSetting(db, 'homepage.seo_title', setup.seoTitle?.trim() || `${companyName} | Contractor Services`);
   await upsertSetting(db, 'homepage.seo_description', setup.seoDescription?.trim() || 'Request a service estimate from a trusted local contractor.');
+  await upsertSetting(db, 'homepage.preset_id', setup.homepagePresetId?.trim() || 'premium-contractor');
 }
 
 function normalizeBrandingAsset(asset: BrandingAssetInput): Required<BrandingAssetInput> {
@@ -577,6 +580,7 @@ export async function getPublicSiteSettings(db: Queryable = createDatabase()) {
         financingAvailableEnabled: asBoolean(values.get('homepage.financing_available_enabled')),
         seoTitle: asText(values.get('homepage.seo_title'), defaults.homepage.seoTitle),
         seoDescription: asText(values.get('homepage.seo_description'), defaults.homepage.seoDescription),
+        presetId: asText(values.get('homepage.preset_id'), defaults.homepage.presetId),
       },
     };
   } catch (error) {
