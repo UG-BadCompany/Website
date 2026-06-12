@@ -1,8 +1,8 @@
 import { ReactNode, TouchEvent, useEffect, useMemo, useState } from 'react';
-import { Bell, BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, LogOut, Menu, MessageSquare, MoreHorizontal, Image as ImageIcon, Paintbrush, Plus, Search, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench, X } from 'lucide-react';
+import { Bell, BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, LogOut, Menu, MessageSquare, MoreHorizontal, Image as ImageIcon, MapPin as MapPinIcon, Paintbrush, Phone as PhoneIcon, Plus, Search, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench, X } from 'lucide-react';
 import { Link, NavLink, useRouter } from './Router';
 
-import { pageTitle, useBranding } from '../lib/branding';
+import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
 import { useAuth } from '../lib/auth';
 import { BrandLogo } from './ui';
 import { fallbackRoleOptions, normalizeRole, type RoleOption } from '../lib/role-management';
@@ -52,13 +52,46 @@ type NavItem = Omit<typeof appNavGroups[number]['items'][number], 'permission'> 
 export function PublicLayout({ children }: { children: ReactNode }) {
   const branding = useBranding();
   const auth = useAuth();
+  const { homepage } = useHomepageSettings();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const accountHref = auth.isAuthenticated ? '/dashboard' : '/login';
   const accountLabel = auth.isLoading ? 'Checking…' : auth.isAuthenticated ? 'Dashboard' : 'Login';
+  const dialablePhone = (homepage.contactPhone || '').replace(/[^+\d]/g, '');
+  const phoneHref = dialablePhone ? `tel:${dialablePhone}` : 'tel:+16025550100';
+  useEffect(() => { setMobileOpen(false); }, [auth.isAuthenticated]);
   return <>
-    <header className="site-header"><Link href="/" className="brand"><BrandLogo /><strong>{branding.displayName}</strong></Link><nav><Link href="/about">About</Link><Link href="/services">Services</Link><Link href="/contact">Contact</Link><Link href="/request-estimate" className="button small">Request Estimate</Link><Link href={accountHref} className={auth.isAuthenticated ? 'button secondary small' : undefined} aria-disabled={auth.isLoading ? 'true' : undefined}>{accountLabel}</Link></nav></header>
+    <header className="site-header public-site-header">
+      <Link href="/" className="brand"><BrandLogo /><strong>{branding.displayName}</strong></Link>
+      <nav className="public-desktop-nav"><Link href="/about">About</Link><Link href="/services">Services</Link><Link href="/contact">Contact</Link><Link href="/request-estimate" className="button small">Request Estimate</Link><Link href={accountHref} className={auth.isAuthenticated ? 'button secondary small' : undefined} aria-disabled={auth.isLoading ? 'true' : undefined}>{accountLabel}</Link></nav>
+      <button type="button" className="public-mobile-menu-button" aria-label="Open menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu size={20}/><span>Menu</span></button>
+    </header>
     <main>{children}</main>
     <footer className="footer"><strong>{branding.displayName}</strong><span>{branding.tagline}</span><span>Secure estimates, service, invoices, and messaging.</span></footer>
+    {mobileOpen && <PublicMobileDrawer accountHref={accountHref} accountLabel={accountLabel} phoneHref={phoneHref} onClose={() => setMobileOpen(false)} />}
   </>;
+}
+
+function PublicMobileDrawer({ accountHref, accountLabel, phoneHref, onClose }: { accountHref: string; accountLabel: string; phoneHref: string; onClose: () => void }) {
+  const branding = useBranding();
+  const links = [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/about', label: 'About', icon: Building2 },
+    { href: '/services', label: 'Services', icon: Wrench },
+    { href: '/projects', label: 'Past Projects', icon: FolderOpen },
+    { href: '/reviews', label: 'Reviews', icon: MessageSquare },
+    { href: '/service-areas', label: 'Service Areas', icon: MapPinIcon },
+    { href: '/contact', label: 'Contact', icon: UserRound },
+    { href: '/request-estimate', label: 'Request Estimate', icon: FileText },
+    { href: accountHref, label: accountLabel === 'Dashboard' ? 'Dashboard' : 'Login / Dashboard', icon: LayoutDashboard },
+  ];
+  return <div className="mobile-more-drawer public-mobile-drawer" role="dialog" aria-modal="true" aria-label="Website navigation" onClick={onClose}>
+    <div className="mobile-more-sheet public-mobile-sheet" onClick={(event) => event.stopPropagation()}>
+      <div className="mobile-sheet-handle"/>
+      <div className="mobile-sheet-header"><Link href="/" className="mobile-brand"><BrandLogo/><span><strong>{branding.displayName}</strong><small>Website menu</small></span></Link><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu"><X size={20}/></button></div>
+      <section className="mobile-more-group public-mobile-link-list"><h3>Navigation</h3>{links.map((item) => <Link key={item.href + item.label} href={item.href} className="mobile-more-link" onClick={onClose}><item.icon size={18}/><span>{item.label}</span></Link>)}<a href={phoneHref} className="mobile-more-link public-call-link" onClick={onClose}><PhoneIcon size={18}/><span>Call Now</span></a></section>
+      <div className="public-mobile-cta-row"><Link href="/request-estimate" className="button" onClick={onClose}>Request Estimate</Link><a href={phoneHref} className="button secondary" onClick={onClose}>Call Now</a></div>
+    </div>
+  </div>;
 }
 
 export function AppLayout({ title, children }: { title: string; children: ReactNode }) {
