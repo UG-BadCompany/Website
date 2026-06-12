@@ -6,17 +6,22 @@ import { createStorage } from './storage';
 type DraftPayload = { sections?: unknown[]; globalStyles?: Record<string, unknown>; seo?: Record<string, unknown> };
 const defaultGlobalStyles = { maxPageWidth: 1180, sectionSpacingDefault: 88, buttonStyle: 'pill', cardRadius: 24, background: '#f6f3ee', fontStyle: 'Inter/System', header: { heroUnderHeader: true, transparentHeader: false, stickyEstimateCta: true }, footer: { showContactInfo: true, showServiceArea: true, showBusinessHours: true } };
 const defaultSeo = { title: 'Contractor Services', description: 'Request service from a trusted local contractor.', socialTitle: 'Contractor Services', socialDescription: 'Fast estimates, expert work, and clear communication.' };
-const sectionTypes = ['hero','services-grid','service-detail-cards','about','why-choose-us','trust-badges','before-after-gallery','testimonials','faq','call-to-action','contact-block','service-area','emergency-banner','financing-banner','process-steps','stats-numbers','team-owner-intro','featured-projects','logo-brand-strip','custom-rich-text','custom-image-text','request-estimate-form'];
+const sectionTypes = ['hero','services-grid','service-detail-cards','about','why-choose-us','trust-badges','before-after-gallery','testimonials','google-reviews','faq','call-to-action','contact-block','service-area','emergency-banner','financing-banner','process-steps','stats-numbers','team-owner-intro','team-section','featured-projects','project-showcase','logo-brand-strip','brands-we-service','custom-rich-text','custom-image-text','request-estimate-form'];
 const json = (value: unknown) => JSON.stringify(value ?? null);
 
 export async function ensureHomepageFoundation(db: Queryable = createDatabase()) {
   await runMigrations(db);
   await db.query(`CREATE TABLE IF NOT EXISTS homepage_pages (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), slug text UNIQUE NOT NULL DEFAULT 'home', title text NOT NULL DEFAULT 'Homepage', status text NOT NULL DEFAULT 'draft', draft_version_id uuid NULL, published_version_id uuid NULL, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now())`);
   await db.query(`CREATE TABLE IF NOT EXISTS homepage_versions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), page_id uuid REFERENCES homepage_pages(id) ON DELETE CASCADE, status text NOT NULL CHECK (status in ('draft','published','archived')), name text, sections jsonb NOT NULL DEFAULT '[]'::jsonb, global_styles jsonb NOT NULL DEFAULT '{}'::jsonb, seo jsonb NOT NULL DEFAULT '{}'::jsonb, created_by uuid NULL REFERENCES users(id), created_at timestamptz DEFAULT now(), published_at timestamptz NULL)`);
+  await db.query(`CREATE TABLE IF NOT EXISTS global_design_settings (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), scope text NOT NULL DEFAULT 'entire-app', settings jsonb NOT NULL DEFAULT '{}'::jsonb, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now())`);
+  await db.query(`CREATE TABLE IF NOT EXISTS project_showcases (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), title text NOT NULL, description text DEFAULT '', category text DEFAULT '', location text DEFAULT '', before_image text DEFAULT '', after_image text DEFAULT '', gallery_images jsonb NOT NULL DEFAULT '[]'::jsonb, featured boolean NOT NULL DEFAULT false, created_at timestamptz DEFAULT now())`);
+  await db.query(`CREATE TABLE IF NOT EXISTS google_business_integrations (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), api_key text DEFAULT '', place_id text DEFAULT '', reviews_cache jsonb NOT NULL DEFAULT '[]'::jsonb, average_rating numeric DEFAULT 0, review_count integer DEFAULT 0, refreshed_at timestamptz NULL, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now())`);
+  await db.query(`INSERT INTO global_design_settings (scope, settings) SELECT 'entire-app', '{}'::jsonb WHERE NOT EXISTS (SELECT 1 FROM global_design_settings)`);
+  await db.query(`INSERT INTO google_business_integrations (api_key, place_id) SELECT '', '' WHERE NOT EXISTS (SELECT 1 FROM google_business_integrations)`);
   await db.query(`CREATE TABLE IF NOT EXISTS homepage_assets (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), page_id uuid REFERENCES homepage_pages(id) ON DELETE CASCADE, version_id uuid REFERENCES homepage_versions(id) ON DELETE CASCADE, media_id uuid REFERENCES media_assets(id), usage_type text, created_at timestamptz DEFAULT now())`);
   await db.query(`INSERT INTO homepage_pages (slug, title, status) VALUES ('home', 'Homepage', 'draft') ON CONFLICT (slug) DO NOTHING`);
-  await db.query(`INSERT INTO permissions (key, group_name, description) VALUES ('homepage.view','homepage','View homepage builder'),('homepage.manage','homepage','Manage homepage builder') ON CONFLICT (key) DO UPDATE SET group_name=excluded.group_name, description=excluded.description`);
-  await db.query(`insert into role_permissions (role_id, permission_id) select r.id, p.id from roles r join permissions p on p.key in ('homepage.view','homepage.manage') where r.name in ('Owner','Admin') on conflict do nothing`);
+  await db.query(`INSERT INTO permissions (key, group_name, description) VALUES ('homepage.view','homepage','View homepage builder'),('homepage.manage','homepage','Manage homepage builder'),('project_showcase.view','marketing','View project showcase'),('project_showcase.manage','marketing','Manage project showcase'),('integrations.manage','settings','Manage third-party integrations') ON CONFLICT (key) DO UPDATE SET group_name=excluded.group_name, description=excluded.description`);
+  await db.query(`insert into role_permissions (role_id, permission_id) select r.id, p.id from roles r join permissions p on p.key in ('homepage.view','homepage.manage','project_showcase.view','project_showcase.manage','integrations.manage') where r.name in ('Owner','Admin') on conflict do nothing`);
 }
 
 function requireView(user: AuthUser) { if (!hasPermission(user, 'homepage.view')) throw new HttpError(403, 'Missing permission homepage.view'); }
@@ -68,4 +73,50 @@ export async function listHomepageMedia(query: Record<string, string | undefined
   const visibility = query.visibility === 'public' || query.visibility === 'private' ? query.visibility : '';
   const rows = await db.query<any>(`select m.id::text, f.file_name as "fileName", f.mime_type as "mimeType", f.size_bytes as "sizeBytes", m.visibility, m.alt_text as "altText", m.created_at::text as "createdAt" from media_assets m left join files f on f.id=m.file_id where ($1='' or m.visibility=$1) and coalesce(m.archived_at, now() + interval '1 day') > now() order by m.created_at desc limit 100`, [visibility]).catch(() => ({ rows: [] } as any));
   return { ok: true, media: rows.rows.map((r: any) => ({ ...r, url: r.visibility === 'public' ? `/api/media/${r.id}` : '' })) };
+}
+
+
+export async function listProjectShowcases(user: AuthUser, db: Queryable = createDatabase()) {
+  if (!hasPermission(user, 'project_showcase.view') && !hasPermission(user, 'homepage.view')) throw new HttpError(403, 'Missing permission project_showcase.view');
+  await ensureHomepageFoundation(db);
+  const rows = await db.query<any>(`select id::text, title, description, category, location, before_image as "beforeImage", after_image as "afterImage", gallery_images as "galleryImages", featured, created_at::text as "createdAt" from project_showcases order by featured desc, created_at desc limit 100`);
+  return { ok: true, projects: rows.rows };
+}
+export async function saveProjectShowcase(body: Record<string, unknown>, user: AuthUser, db: Queryable = createDatabase()) {
+  if (!hasPermission(user, 'project_showcase.manage')) throw new HttpError(403, 'Missing permission project_showcase.manage');
+  await ensureHomepageFoundation(db);
+  const gallery = Array.isArray(body.galleryImages) ? body.galleryImages : [];
+  if (body.id) {
+    const result = await db.query<any>(`update project_showcases set title=$2, description=$3, category=$4, location=$5, before_image=$6, after_image=$7, gallery_images=$8::jsonb, featured=$9 where id::text=$1 returning id::text`, [String(body.id), String(body.title || 'Untitled project'), String(body.description || ''), String(body.category || ''), String(body.location || ''), String(body.beforeImage || ''), String(body.afterImage || ''), JSON.stringify(gallery), body.featured === true]);
+    if (!result.rows[0]) throw new HttpError(404, 'Project not found');
+  } else {
+    await db.query(`insert into project_showcases (title, description, category, location, before_image, after_image, gallery_images, featured) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8)`, [String(body.title || 'Untitled project'), String(body.description || ''), String(body.category || ''), String(body.location || ''), String(body.beforeImage || ''), String(body.afterImage || ''), JSON.stringify(gallery), body.featured === true]);
+  }
+  return listProjectShowcases(user, db);
+}
+export async function deleteProjectShowcase(id: string, user: AuthUser, db: Queryable = createDatabase()) {
+  if (!hasPermission(user, 'project_showcase.manage')) throw new HttpError(403, 'Missing permission project_showcase.manage');
+  await ensureHomepageFoundation(db);
+  await db.query(`delete from project_showcases where id::text=$1`, [id]);
+  return listProjectShowcases(user, db);
+}
+export async function getGoogleBusinessIntegration(user: AuthUser, db: Queryable = createDatabase()) {
+  if (!hasPermission(user, 'settings.view') && !hasPermission(user, 'integrations.manage')) throw new HttpError(403, 'Missing permission settings.view');
+  await ensureHomepageFoundation(db);
+  const row = (await db.query<any>(`select id::text, case when api_key='' then '' else '••••••••' end as "apiKey", place_id as "placeId", reviews_cache as reviews, average_rating as "averageRating", review_count as "reviewCount", refreshed_at::text as "refreshedAt" from google_business_integrations order by created_at limit 1`)).rows[0];
+  return { ok: true, integration: row };
+}
+export async function saveGoogleBusinessIntegration(body: Record<string, unknown>, user: AuthUser, db: Queryable = createDatabase()) {
+  if (!hasPermission(user, 'integrations.manage')) throw new HttpError(403, 'Missing permission integrations.manage');
+  await ensureHomepageFoundation(db);
+  await db.query(`update google_business_integrations set api_key=case when $1='' or $1='••••••••' then api_key else $1 end, place_id=$2, updated_at=now() where id=(select id from google_business_integrations order by created_at limit 1)`, [String(body.apiKey || ''), String(body.placeId || '')]);
+  return getGoogleBusinessIntegration(user, db);
+}
+export async function refreshGoogleReviews(user: AuthUser, db: Queryable = createDatabase()) {
+  if (!hasPermission(user, 'integrations.manage')) throw new HttpError(403, 'Missing permission integrations.manage');
+  await ensureHomepageFoundation(db);
+  const current = (await db.query<any>(`select place_id from google_business_integrations order by created_at limit 1`)).rows[0];
+  const reviews = [{ author: 'Google reviewer', rating: 5, text: 'Cached review placeholder. Connect a valid Google API key and Place ID in production.', relativeTime: 'recently' }];
+  await db.query(`update google_business_integrations set reviews_cache=$1::jsonb, average_rating=5, review_count=1, refreshed_at=now(), updated_at=now() where id=(select id from google_business_integrations order by created_at limit 1)`, [JSON.stringify(current?.place_id ? reviews : [])]);
+  return getGoogleBusinessIntegration(user, db);
 }

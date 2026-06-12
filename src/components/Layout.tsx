@@ -1,5 +1,5 @@
 import { ReactNode, TouchEvent, useEffect, useMemo, useState } from 'react';
-import { Bell, BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, LogOut, Menu, MessageSquare, MoreHorizontal, Paintbrush, Plus, Search, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench, X } from 'lucide-react';
+import { Bell, BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, LogOut, Menu, MessageSquare, MoreHorizontal, Image as ImageIcon, Paintbrush, Plus, Search, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench, X } from 'lucide-react';
 import { Link, NavLink, useRouter } from './Router';
 
 import { pageTitle, useBranding } from '../lib/branding';
@@ -28,6 +28,7 @@ const appNavGroups = [
     { id: 'assets', href: '/assets', label: 'CMMS Assets', icon: Building2, permission: 'cmms.view' },
     { id: 'service-catalog', href: '/service-catalog', label: 'Service Catalog', icon: Wrench, permission: 'service_catalog.view' },
     { id: 'media', href: '/media', label: 'Media / Files', icon: FolderOpen, permission: 'media.view' },
+    { id: 'project-showcase', href: '/marketing/project-showcase', label: 'Project Showcase', icon: ImageIcon, permission: 'project_showcase.view' },
   ] },
   { group: 'Administration', items: [
     { id: 'settings', href: '/settings', label: 'Settings', icon: Settings, permission: 'settings.view' },
