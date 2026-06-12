@@ -1017,3 +1017,33 @@ body, .app-shell, .public-page, .auth-page, .installer-page { background: var(--
 @media (min-width: 769px) {
   .public-mobile-drawer { display:none; }
 }
+
+/* ContractorOS workflow module polish */
+.segmented { display:inline-flex; flex-wrap:wrap; gap:.25rem; padding:.25rem; border:1px solid var(--border); border-radius:999px; background:var(--surface-muted); }
+.segmented button, .module-tabs button { border:0; border-radius:999px; padding:.5rem .8rem; background:transparent; color:var(--text); font-weight:900; cursor:pointer; }
+.segmented button.active, .module-tabs button.active { background:var(--button-primary-bg); color:var(--button-primary-text); box-shadow:var(--shadow); }
+.notice { padding:.75rem 1rem; border:1px solid color-mix(in srgb, var(--success) 34%, var(--border)); border-radius:16px; background:color-mix(in srgb, var(--success) 10%, var(--surface)); font-weight:850; }
+.module-detail-tabs { display:grid; gap:1rem; }
+.module-tabs { position:sticky; top:0; z-index:2; display:flex; gap:.45rem; overflow:auto; padding:.45rem; border:1px solid var(--border); border-radius:18px; background:color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter:blur(10px); }
+.module-tabs button { flex:0 0 auto; border:1px solid transparent; }
+.module-modal-backdrop { position:fixed; inset:0; z-index:120; display:grid; place-items:center; padding:1rem; background:rgb(0 0 0 / .42); backdrop-filter:blur(8px); }
+.module-modal { width:min(30rem, 100%); }
+.workflow-buttons { display:flex; flex-wrap:wrap; gap:.6rem; }
+.module-timeline { display:grid; gap:.65rem; }
+.module-timeline > div { display:grid; gap:.15rem; padding:.75rem; border-left:4px solid var(--primary); border-radius:14px; background:var(--surface-muted); }
+.module-timeline span { color:var(--muted); font-size:.9rem; }
+.upload-card { display:grid; gap:.55rem; padding:1rem; border:1px dashed var(--border); border-radius:18px; background:var(--surface-muted); }
+.check-row { display:flex; align-items:center; gap:.55rem; font-weight:850; }
+.module-form.compact { grid-template-columns:1fr; }
+.quote-preview { background:linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, var(--surface)), var(--surface)); }
+.schedule-grid, .provider-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap:1rem; }
+.schedule-card { display:grid; gap:.35rem; text-align:left; padding:1rem; border:1px solid var(--border); border-radius:18px; background:var(--surface); color:var(--text); cursor:pointer; }
+.schedule-card:hover { background:var(--surface-muted); }
+.provider-card { display:grid; gap:.45rem; }
+@media (max-width: 720px) {
+  .module-tabs { border-radius:16px; margin-inline:-.25rem; }
+  .workflow-buttons .button, .module-form .button, .module-toolbar .button { min-height:48px; width:100%; }
+  .segmented { width:100%; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); border-radius:18px; }
+  .segmented button { min-height:44px; }
+  .provider-grid, .schedule-grid { grid-template-columns:1fr; }
+}

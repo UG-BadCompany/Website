@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { AppLayout, Protected } from '../../components/Layout';
-import { Badge, Button, EmptyState, LoadingState, PageHeader, StatusBadge } from '../../components/ui';
+import { Badge, Button, EmptyState, LoadingState, MetricCard, PageHeader, StatusBadge } from '../../components/ui';
 import { useAuth } from '../../lib/auth';
 
 export type ApiList<T> = { ok?: boolean; records?: T[]; pipeline?: string[]; statuses?: string[] };
 export type ApiRecord<T> = { ok?: boolean; record?: T };
 export type Row = Record<string, any> & { id: string };
+export type TabSpec = { id: string; label: string; content: ReactNode };
+export type MetricSpec = { label: string; value: string | number; detail?: string };
 
 export const asArray = <T,>(value: T[] | null | undefined): T[] => Array.isArray(value) ? value : [];
 export const money = (cents = 0) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(Number(cents || 0) / 100);
@@ -49,6 +51,35 @@ export function useRecordDetail<T extends Row>(endpoint: string, selectedId?: st
   };
   useEffect(() => { setRecord(null); if (selectedId) void load(selectedId); }, [endpoint, selectedId]);
   return { record, loading, error, reload: load };
+}
+
+
+export function ModuleMetrics({ metrics }: { metrics: MetricSpec[] }) {
+  return <div className="metric-grid">{metrics.map((metric) => <MetricCard key={metric.label} {...metric}/>)}</div>;
+}
+
+export function TabbedDetail({ tabs }: { tabs: TabSpec[] }) {
+  const [active, setActive] = useState(tabs[0]?.id || 'overview');
+  const selected = tabs.find((tab) => tab.id === active) || tabs[0];
+  return <div className="module-detail-tabs"><div className="module-tabs" role="tablist">{tabs.map((tab) => <button type="button" role="tab" aria-selected={tab.id === active} className={tab.id === active ? 'active' : ''} key={tab.id} onClick={() => setActive(tab.id)}>{tab.label}</button>)}</div><div className="drawer-grid">{selected?.content}</div></div>;
+}
+
+export function ConfirmModal({ title, description, confirmLabel, onConfirm, onCancel }: { title: string; description: string; confirmLabel: string; onConfirm: () => void | Promise<void>; onCancel: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return <div className="module-modal-backdrop" role="dialog" aria-modal="true"><section className="card module-modal"><p className="eyebrow">Confirm workflow action</p><h2>{title}</h2><p className="muted">{description}</p><div className="workflow-buttons"><Button variant="secondary" onClick={onCancel} disabled={busy}>Cancel</Button><Button onClick={async () => { setBusy(true); await onConfirm(); setBusy(false); }}>{busy ? 'Working…' : confirmLabel}</Button></div></section></div>;
+}
+
+export function EmptyWorkflow({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
+  return <EmptyState title={title} description={description} action={action}/>;
+}
+
+export function TimelineList({ events }: { events: Array<{ id?: string; summary?: string; note?: string; status?: string; createdAt?: string; receivedAt?: string; customerVisible?: boolean }> }) {
+  if (!events.length) return <p className="muted">No timeline events returned yet. Workflow actions will build this audit trail as records move through ContractorOS.</p>;
+  return <div className="module-timeline">{events.map((event, index) => <div key={event.id || index}><strong>{event.summary || event.note || event.status || 'Workflow event'}</strong><span>{dateTime(event.createdAt || event.receivedAt)}{event.customerVisible ? ' · customer-visible' : ''}</span></div>)}</div>;
+}
+
+export function UploadCard({ label, helper }: { label: string; helper: string }) {
+  return <div className="upload-card"><strong>{label}</strong><p className="muted">{helper}</p><input type="file" multiple/></div>;
 }
 
 export function ModulePageFrame({ permission, title, eyebrow, description, action, children }: { permission: string | string[]; title: string; eyebrow: string; description: string; action?: ReactNode; children: ReactNode }) {
