@@ -62,6 +62,7 @@ export function generateDesignTokens(theme?: Partial<GlobalDesignSettings>): Des
   const darkContrast = mix(colors.secondary, 88, '#020617');
   const lightContrast = mix(colors.primary, 4, '#ffffff');
   const radius = base.radius || '22px';
+  const sidebar = base.scope === 'homepage' ? card : (colors as any).sidebar || (isDark ? mix(colors.secondary, 78, colors.background) : mix(colors.secondary, 8, colors.background));
   return {
     '--site-primary': colors.primary,
     '--site-primary-contrast': readableOn(colors.primary),
@@ -77,6 +78,9 @@ export function generateDesignTokens(theme?: Partial<GlobalDesignSettings>): Des
     '--surface-glass': mix(card, isDark ? 72 : 82, 'transparent'),
     '--surface-hero': `radial-gradient(circle at 16% 12%, ${mix(colors.accent, 20, 'transparent')}, transparent 32rem), linear-gradient(135deg, ${section}, ${sectionAlt})`,
     '--surface-footer': darkContrast,
+    '--surface-sidebar': sidebar,
+    '--surface-sidebar-hover': mix(colors.primary, 12, sidebar),
+    '--surface-sidebar-active': `linear-gradient(135deg, ${colors.primary}, ${mix(colors.accent, 82, colors.secondary)})`,
     '--surface-dark': darkContrast,
     '--surface-dark-text': readableOn('#020617'),
     '--surface-light': lightContrast,
@@ -89,7 +93,7 @@ export function generateDesignTokens(theme?: Partial<GlobalDesignSettings>): Des
     '--site-border-strong': mix(colors.primary, 38, colors.muted),
     '--site-radius': radius,
     '--site-radius-lg': `calc(${radius} + 10px)`,
-    '--site-shadow': base.shadow || '0 22px 60px rgba(15,23,42,.16)',
+    '--site-shadow': base.shadow || '0 22px 60px color-mix(in srgb, var(--site-secondary) 16%, transparent)',
     '--site-shadow-lg': `0 30px 90px ${mix(colors.secondary, isDark ? 42 : 18, 'transparent')}`,
     '--site-overlay': isDark ? 'rgba(2,6,23,.58)' : 'rgba(15,23,42,.22)',
     '--site-success': colors.success,
@@ -148,7 +152,7 @@ export const designThemePresets: Record<GlobalDesignSettings['themePreset'], Omi
   clean_light: design('entire-app', '#2563eb', '#0f766e', '#60a5fa', '#ffffff', '#f8fafc', '#111827', 'rounded', 'flat', 'Inter, ui-sans-serif'),
   custom: design('entire-app', '#0f766e', '#134e4a', '#14b8a6', '#f8fafc', '#ffffff', '#0f172a', 'pill', 'raised', 'Inter, ui-sans-serif'),
 };
-function design(scope: DesignScope, primary: string, secondary: string, accent: string, backgroundColor: string, card: string, text: string, buttonStyle: GlobalDesignSettings['buttons']['style'], cardStyle: GlobalDesignSettings['cards']['style'], font: string): Omit<GlobalDesignSettings, 'themePreset'> { return { scope, colors: { primary, secondary, accent, success: '#16a34a', warning: '#d97706', danger: '#dc2626', card, text, background: backgroundColor, muted: '#64748b' }, header: { style: 'glass', sticky: true, showLogo: true, showCompanyName: true, navAlignment: 'right' }, background: { type: 'solid', color: backgroundColor, gradient: `linear-gradient(135deg, ${backgroundColor}, ${card})`, imageUrl: '' }, buttons: { style: buttonStyle }, cards: { style: cardStyle }, typography: { headingStyle: font, bodyStyle: font }, radius: buttonStyle === 'pill' ? '999px' : buttonStyle === 'square' ? '6px' : '18px', shadow: '0 22px 60px rgba(15,23,42,.16)' }; }
+function design(scope: DesignScope, primary: string, secondary: string, accent: string, backgroundColor: string, card: string, text: string, buttonStyle: GlobalDesignSettings['buttons']['style'], cardStyle: GlobalDesignSettings['cards']['style'], font: string): Omit<GlobalDesignSettings, 'themePreset'> { return { scope, colors: { primary, secondary, accent, success: '#16a34a', warning: '#d97706', danger: '#dc2626', card, text, background: backgroundColor, muted: '#64748b' }, header: { style: 'glass', sticky: true, showLogo: true, showCompanyName: true, navAlignment: 'right' }, background: { type: 'solid', color: backgroundColor, gradient: `linear-gradient(135deg, ${backgroundColor}, ${card})`, imageUrl: '' }, buttons: { style: buttonStyle }, cards: { style: cardStyle }, typography: { headingStyle: font, bodyStyle: font }, radius: buttonStyle === 'pill' ? '999px' : buttonStyle === 'square' ? '6px' : '18px', shadow: '0 22px 60px color-mix(in srgb, var(--site-secondary) 16%, transparent)' }; }
 
 export type HomepageStylePresetId = 'premium-contractor' | 'modern-hvac' | 'arizona-copper' | 'clean-residential' | 'commercial-maintenance' | 'dark-luxury' | 'emergency-service' | 'minimal-professional';
 export type HomepageLayoutPresetId = HomepageStylePresetId;
