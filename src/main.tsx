@@ -6,7 +6,7 @@ import { RouterProvider, useRouter } from './components/Router';
 import { HomePage, AboutPage, ServicesPage, ContactPage, RequestEstimatePage, ThankYouPage } from './pages/PublicPages';
 import { AccountPage, AuthMagicPage, LoginPage, LogoutPage, MagicLinkSentPage } from './pages/AuthPages';
 import { InstallerPage } from './pages/Installer';
-import { AssetsPage, ClientsPage, DashboardPage, MediaPage, MessagesPage, PortalPage, PropertiesPage, ServiceCatalogPage, SettingsPage, ProjectShowcasePage, GoogleBusinessIntegrationPage, UpgradeRequiredPage } from './pages/AppPages';
+import { AssetsPage, ClientsPage, DashboardPage, MediaPage, MessagesPage, PortalPage, PropertiesPage, ServiceCatalogPage, SettingsPage, ProjectShowcasePage, GoogleBusinessIntegrationPage } from './pages/AppPages';
 import { RequestsPage } from './pages/modules/RequestsPage';
 import { QuotesPage } from './pages/modules/QuotesPage';
 import { JobsPage } from './pages/modules/JobsPage';
@@ -19,6 +19,7 @@ import { LicenseProvider } from './lib/license';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useLicense } from './lib/license';
 import { LoadingState } from './components/ui';
+import { LicenseGate, UpgradeRequiredPage } from './components/LicenseGate';
 import './styles/global.css';
 
 function NotFoundPage() { return <PublicLayout><section className="section narrow"><LoadingState title="Page not found" lines={2}/><p>The requested page is not available.</p></section></PublicLayout>; }
@@ -45,6 +46,8 @@ function App() {
   if (path === '/account') return <AccountPage />;
   if (path.startsWith('/install')) return <InstallerPage step={path.split('/')[2] ?? 'license'} />;
   if (path === '/dashboard') return <DashboardPage />;
+  if (path.startsWith('/dashboard/jobs')) return <LicensedPage moduleKey="jobs"><JobsPage /></LicensedPage>;
+  if (path.startsWith('/dashboard/work-orders')) return <LicensedPage moduleKey="work_orders"><JobsPage /></LicensedPage>;
   if (path.startsWith('/portal')) return <LicensedPage moduleKey="client_portal"><PortalPage /></LicensedPage>;
   if (path.startsWith('/requests')) return <RequestsPage />;
   if (path.startsWith('/quotes')) return <QuotesPage />;
@@ -69,4 +72,4 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Application root element was not found.');
-createRoot(root).render(<React.StrictMode><RouterProvider><BrandingProvider><AuthProvider><LicenseProvider><InstallationGate><ProtectedRoute><App /></ProtectedRoute></InstallationGate></LicenseProvider></AuthProvider></BrandingProvider></RouterProvider></React.StrictMode>);
+createRoot(root).render(<React.StrictMode><RouterProvider><BrandingProvider><AuthProvider><LicenseProvider><InstallationGate><ProtectedRoute><LicenseGate><App /></LicenseGate></ProtectedRoute></InstallationGate></LicenseProvider></AuthProvider></BrandingProvider></RouterProvider></React.StrictMode>);

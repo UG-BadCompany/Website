@@ -28,8 +28,13 @@ type LicenseContextValue = {
   isProOrHigher: () => boolean;
 };
 
-const fallback: LicenseStatus = { ok: true, tier: 'basic', status: 'unverified', enabledModules: [], lastVerifiedAt: null, expiresAt: null, warnings: [] };
-const hardLockedStatuses = new Set(['invalid', 'expired', 'suspended', 'revoked']);
+const fallback: LicenseStatus = { ok: false, tier: 'basic', status: 'missing', enabledModules: [], lastVerifiedAt: null, expiresAt: null, warnings: ['No local license snapshot found.'] };
+const hardLockedStatuses = new Set(['missing', 'inactive', 'invalid', 'expired', 'suspended', 'revoked', 'unverified']);
+
+export function isLicenseActive(license: LicenseStatus | null) {
+  if (!license?.ok) return false;
+  return hasActiveLicenseAccess(license);
+}
 
 function hasActiveLicenseAccess(license: LicenseStatus | null) {
   if (!license) return false;
@@ -47,13 +52,14 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const response = await fetch('/api/license/status', { credentials: 'include', cache: 'no-store', headers: { accept: 'application/json' } });
-      setLicense(response.ok ? await response.json() : fallback);
+      const payload = response.ok ? await response.json() : fallback;
+      setLicense({ ...fallback, ...payload });
     } catch { setLicense(fallback); }
     finally { setLoading(false); }
   };
   useEffect(() => { reload(); }, []);
   const value = useMemo<LicenseContextValue>(() => {
-    const active = hasActiveLicenseAccess(license);
+    const active = isLicenseActive(license);
     const tier = active ? (license?.tier || 'basic') : 'basic';
     const enabledModules = active ? (license?.enabledModules || []) : [];
     return {

@@ -1047,3 +1047,17 @@ body, .app-shell, .public-page, .auth-page, .installer-page { background: var(--
   .segmented button { min-height:44px; }
   .provider-grid, .schedule-grid { grid-template-columns:1fr; }
 }
+
+.license-hero, .license-required-card { max-width: 980px; margin: clamp(1rem, 4vw, 3rem) auto; display: grid; gap: 1rem; }
+.license-icon { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 24px; background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, var(--card)), color-mix(in srgb, var(--accent) 22%, var(--card))); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); box-shadow: 0 20px 44px color-mix(in srgb, var(--primary) 16%, transparent); }
+.license-icon.danger { color: var(--danger); background: linear-gradient(135deg, color-mix(in srgb, var(--danger) 16%, var(--card)), color-mix(in srgb, var(--warning) 12%, var(--card))); border-color: color-mix(in srgb, var(--danger) 36%, var(--line)); }
+.license-hero h1, .license-required-card h1 { margin: 0; font-size: clamp(2rem, 6vw, 4rem); line-height: .95; letter-spacing: -.07em; }
+.license-required-card h2 { margin: 0; font-size: clamp(1.1rem, 2.5vw, 1.45rem); color: var(--text); }
+.license-lede { max-width: 760px; color: var(--muted); font-size: 1.08rem; line-height: 1.65; }
+.license-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .8rem; }
+.license-facts span { display: grid; gap: .25rem; padding: .95rem; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--card) 82%, transparent); color: var(--muted); overflow-wrap: anywhere; }
+.license-facts strong { color: var(--text); font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; }
+.license-required-screen { min-height: min(760px, calc(100vh - 8rem)); display: grid; place-items: center; padding: clamp(1rem, 4vw, 3rem); }
+.license-required-card { width: min(980px, 100%); text-align: left; }
+.license-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; color: var(--muted); }
+.status-badge.danger { background: color-mix(in srgb, var(--danger) 14%, var(--card)); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 36%, var(--line)); text-transform: uppercase; letter-spacing: .12em; font-weight: 950; }

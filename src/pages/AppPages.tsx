@@ -10,7 +10,7 @@ import { fallbackPermissionOptions, roleTemplates, type PermissionOption, type R
 import type { DashboardWidget, PageSection } from '../types/domain';
 import { AdvancedHomepageBuilder } from './HomepageBuilderPage';
 import { useLicense } from '../lib/license';
-import { friendlyModuleName } from '../../lib/license-modules';
+import { UpgradeRequiredPage } from '../components/LicenseGate';
 
 type ApiState<T> = { loading: boolean; error: string; data: T | null };
 type DashboardMetricMap = {
@@ -40,13 +40,6 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-
-export function UpgradeRequiredPage({ moduleKey }: { moduleKey: string }) {
-  const { license, requiredTier } = useLicense();
-  const tier = requiredTier(moduleKey);
-  const upgradeUrl = license?.licenseApiUrl ? `${license.licenseApiUrl.replace(/\/+$/, '')}/account/upgrade?licenseKey=${encodeURIComponent(license.maskedLicenseKey || '')}&module=${encodeURIComponent(moduleKey)}` : '';
-  return <AppLayout title="Upgrade required"><section className="card settings-panel"><p className="eyebrow">License required</p><h1>Upgrade required for {friendlyModuleName(moduleKey)}</h1><p>This module requires {tier === 'business' ? 'Business' : 'Pro or Business'}. Your current tier is <strong>{license?.tier || 'basic'}</strong>.</p><p className="muted">Upgrade to unlock the workflow, backend APIs, dashboard actions, and settings for this module.</p><div className="button-row">{upgradeUrl && <a className="button" href={upgradeUrl} target="_blank" rel="noreferrer">Upgrade License</a>}<Link className="button secondary" href="/settings/license">Contact admin / update license</Link></div></section></AppLayout>;
-}
 
 function LicensedModuleRoute({ moduleKey, children }: { moduleKey: string; children: ReactNode }) {
   const license = useLicense();
@@ -404,10 +397,11 @@ function ThemeSettingsPanel({ data, canManage, reload }: { data: ThemeSettings; 
 }
 
 function LicenseSettingsPanel({ data, canManage, reload }: { data: any; canManage: boolean; reload: () => Promise<void> }) {
+  const licenseContext = useLicense();
   const [form, setForm] = useState({ licenseKey: '', email: data.licenseEmail || '' });
   const [status, setStatus] = useState('');
-  const recheck = async () => { setStatus('Re-checking license…'); try { await apiJson('/api/license/recheck', { method: 'POST' }); setStatus('License check complete.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'License check failed.'); } };
-  const update = async (event: FormEvent) => { event.preventDefault(); setStatus('Verifying updated license…'); try { await apiJson('/api/license/update', { method: 'POST', body: JSON.stringify(form) }); setStatus('License updated and verified.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Update failed.'); } };
+  const recheck = async () => { setStatus('Re-checking license…'); try { await apiJson('/api/license/recheck', { method: 'POST' }); setStatus('License check complete.'); await reload(); await licenseContext.reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'License check failed.'); } };
+  const update = async (event: FormEvent) => { event.preventDefault(); setStatus('Verifying updated license…'); try { await apiJson('/api/license/update', { method: 'POST', body: JSON.stringify(form) }); setStatus('License updated and verified.'); await reload(); await licenseContext.reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Update failed.'); } };
   const upgradeUrl = data.licenseApiUrl ? `${String(data.licenseApiUrl).replace(/\/+$/, '')}/account/upgrade` : '';
   return <section className="card settings-panel"><div className="section-heading"><div><h2>License</h2><p className="muted">Local snapshot from the ContractorOS License Portal API.</p></div><Badge tone={data.status === 'active' ? 'success' : 'danger'}>{data.status || 'unverified'}</Badge></div><div className="grid cards"><p><strong>Tier</strong><br/>{data.tier}</p><p><strong>Email</strong><br/>{data.licenseEmail || '—'}</p><p><strong>License key</strong><br/>{data.maskedLicenseKey || '—'}</p><p><strong>License server</strong><br/>{data.licenseServerLabel || 'Official ContractorOS License Server'}</p><p><strong>Install ID</strong><br/>{data.installId || '—'}</p><p><strong>Site URL</strong><br/>{data.siteUrl || '—'}</p><p><strong>Last verified</strong><br/>{data.lastVerifiedAt || 'Never'}</p><p><strong>Expires</strong><br/>{data.expiresAt || 'No expiration'}</p><p><strong>Grace period</strong><br/>{data.gracePeriodEndsAt || 'Not active'}</p></div>{asArray<string>(data.warnings).map((warning) => <p className="error-text" key={warning}>{warning}</p>)}{data.lastCheckError && <p className="error-text">{data.lastCheckError}</p>}<form className="form" onSubmit={update}><h3>Update license</h3><label><span className="field-label">License Key</span><input disabled={!canManage} placeholder={data.maskedLicenseKey || 'COS-…'} value={form.licenseKey} onChange={(e) => setForm({ ...form, licenseKey: e.target.value })}/></label><label><span className="field-label">License Email</span><input disabled={!canManage} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/></label><p className="muted">Updates verify against the official ContractorOS License Portal at https://taselling.netlify.app.</p><div className="button-row"><Button disabled={!canManage}>Update and verify</Button><Button type="button" variant="secondary" disabled={!canManage} onClick={recheck}>Re-check license</Button>{upgradeUrl && <a className="button secondary" href={upgradeUrl} target="_blank" rel="noreferrer">Open upgrade page</a>}</div></form><h3>Enabled modules</h3><div className="permission-list">{asArray<string>(data.enabledModules).map((module) => <Badge key={module}>{module}</Badge>)}</div>{status && <p className="muted">{status}</p>}</section>;
 }
