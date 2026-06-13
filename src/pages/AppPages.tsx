@@ -351,7 +351,7 @@ export function PortalPage() { return <RealModulePage config={realModules.portal
 
 function DataTable({ rows }: { rows?: string[][] }) { const safeRows = asArray(rows); return <div className="table">{safeRows.map((row) => <div className="tr" key={row.join('-')}>{row.map((cell, index) => <span key={`${cell}-${index}`}>{index === 2 ? <StatusBadge status={cell}/> : cell}</span>)}</div>)}</div>; }
 
-const settingsSections = ['company','branding','theme','users','roles','permissions','roles-permissions','foundation','payment','email','license','media','homepage-builder','workflow-automation','diagnostics'];
+const settingsSections = ['company','branding','theme','users','roles','permissions','roles-permissions','foundation','payment','email','license','media','homepage-builder','workflow-automation','diagnostics','ai'];
 
 export function SettingsPage({ area = 'settings/company' }: { area?: string }) {
   const section = area.split('/')[1] || 'company';
@@ -377,6 +377,7 @@ function SettingsPanel({ section }: { section: string }) {
   if (section === 'roles-permissions') return <RolePermissionSettings canManage={auth.can('roles.manage')}/>;
   if (section === 'foundation') return <section className="card settings-panel"><h2>Foundation components</h2>{asArray(state.data?.foundation).map((c: any) => <p key={c.name}><Badge tone="success">{c.status}</Badge> {c.name} <span className="muted">Locked foundation component</span></p>)}</section>;
   if (section === 'homepage-builder') return <AdvancedHomepageBuilder initialData={state.data} canManage={canManage} reload={state.reload}/>;
+  if (section === 'ai') return <AiSettingsPanel data={state.data} canManage={auth.can('settings.manage')} reload={state.reload}/>;
   return <section className="card settings-panel"><h2>{section}</h2><pre>{JSON.stringify(state.data, null, 2)}</pre>{!canManage && <p className="muted">Read-only. Saving requires {managePermission}.</p>}</section>;
 }
 
@@ -500,4 +501,14 @@ export function GoogleBusinessIntegrationPage() {
   const refresh = async () => { await apiJson('/api/integrations/google-business/refresh', { method: 'POST' }); load(); };
   if (!license.canUseModule('google_reviews')) return <UpgradeRequiredPage moduleKey="google_reviews"/>;
   return <Protected permission="settings.view"><AppLayout title="Settings / Integrations / Google Business"><section className="card settings-panel"><PageHeader eyebrow="Integrations" title="Google Business" description="Connect Google API Key and Place ID, cache reviews, refresh ratings, and safely fall back to manual testimonials if unavailable."/>{state.loading ? <LoadingState/> : state.error ? <p className="error-text">{state.error}</p> : <form className="form" onSubmit={save}><label>Google API Key<input value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} placeholder="Google API Key"/></label><label>Google Place ID<input value={form.placeId} onChange={(e) => setForm({ ...form, placeId: e.target.value })} placeholder="Place ID"/></label><div className="page-actions"><Button>Save integration</Button><Button type="button" variant="secondary" onClick={refresh}>Refresh reviews</Button></div><p className="muted">Average rating: {state.data?.integration?.averageRating || 0} · Reviews cached: {state.data?.integration?.reviewCount || 0}</p></form>}</section></AppLayout></Protected>;
+}
+
+
+function AiSettingsPanel({ data, canManage, reload }: { data: any; canManage: boolean; reload: () => Promise<void> }) {
+  const current = data?.settings?.ai_quoting || {};
+  const [form, setForm] = useState<any>({ ...current });
+  const [status, setStatus] = useState('');
+  const save = async (event: FormEvent) => { event.preventDefault(); setStatus('Saving AI settings…'); try { await apiJson('/api/settings/ai', { method: 'PATCH', body: JSON.stringify({ ai_quoting: form }) }); setStatus('AI settings saved.'); reload(); } catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Save failed.'); } };
+  const set = (key: string, value: unknown) => setForm((x: any) => ({ ...x, [key]: value }));
+  return <section className="card settings-panel"><div className="section-heading"><div><h2>AI Quoting</h2><p className="muted">OpenAI model selection is configurable. SerpAPI is optional; missing SerpAPI disables research without blocking AI.</p></div><Badge>{data?.environment?.openAiConfigured ? 'OpenAI configured' : 'AI_NOT_CONFIGURED'}</Badge></div><form className="form" onSubmit={save}><label><input type="checkbox" disabled={!canManage} checked={form.enabled !== false} onChange={(e)=>set('enabled', e.target.checked)}/> Enable AI quote drafts</label><label><input type="checkbox" disabled={!canManage} checked={form.requireHumanApproval !== false} onChange={(e)=>set('requireHumanApproval', e.target.checked)}/> Require human approval before sending</label><label><input type="checkbox" disabled={!canManage} checked={Boolean(form.autoCreateQuoteDraft)} onChange={(e)=>set('autoCreateQuoteDraft', e.target.checked)}/> Auto-create quote draft</label><label><input type="checkbox" disabled={!canManage} checked={Boolean(form.autoSendQuote)} onChange={(e)=>set('autoSendQuote', e.target.checked)}/> Auto-send quote (off by default)</label>{['hourlyLaborRate','minimumServiceFee','markupPercentage','taxPercentage','preferredSuppliers','serviceArea','excludedJobTypes','confidenceThreshold','openAiModel'].map((key)=><label key={key}><span className="field-label">{key}</span><input disabled={!canManage} value={form[key] ?? ''} onChange={(e)=>set(key,e.target.value)}/></label>)}<p className="muted">SerpAPI enabled status: {data?.environment?.serpApiConfigured ? 'configured' : 'SERPAPI_NOT_CONFIGURED'}. Default model: {data?.environment?.defaultModel}</p><Button disabled={!canManage}>Save AI settings</Button>{status && <p className="muted">{status}</p>}</form></section>;
 }
