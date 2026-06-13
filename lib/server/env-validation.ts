@@ -75,7 +75,7 @@ export function validateEnvironment(env = process.env, input: EnvValidationInput
   ];
 
   const license = [
-    checkOne(env, 'LICENSE_API_URL', 'Optional default ContractorOS License Portal API base URL; installer and settings can override it.', true),
+    checkOne(env, 'LICENSE_API_URL_OVERRIDE', 'Optional dev-only License Portal API override for local, staging, or self-hosted testing.', true),
     checkOne(env, 'LICENSE_CHECK_INTERVAL_HOURS', 'Optional runtime license check interval. Defaults to 24 hours.', true),
   ];
 
