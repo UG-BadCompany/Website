@@ -9,6 +9,7 @@ import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
 import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireActiveLicense, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError, LicenseRequiredError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
+import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, quoteDraftAction, runTroubleshooting, getTroubleshooting, troubleshootingAction, aiResponseError } from '../../lib/server/ai/ai-service';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -33,6 +34,7 @@ function moduleForLicensedPath(path: string): string | null {
   if (path.startsWith('/settings/roles-permissions')) return 'advanced_roles_permissions';
   if (path.startsWith('/settings/workflow-automation') || path.startsWith('/workflow-automation')) return 'workflow_automation';
   if (path.startsWith('/reports') || path.startsWith('/analytics')) return 'advanced_reporting';
+  if (path.startsWith('/ai/quote')) return 'ai_quoting';
   if (path.startsWith('/ai/quoting')) return 'ai_quoting';
   if (path.startsWith('/ai/troubleshooting')) return 'ai_troubleshooting';
   return null;
@@ -214,6 +216,38 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path === '/integrations/google-business' && event.httpMethod === 'GET') return json(200, await getGoogleBusinessIntegration(await requireAuth(event)), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/integrations/google-business' && event.httpMethod === 'POST') return json(200, await saveGoogleBusinessIntegration(readBody(event), await requirePermission(event, 'integrations.manage')));
     if (path === '/integrations/google-business/refresh' && event.httpMethod === 'POST') return json(200, await refreshGoogleReviews(await requirePermission(event, 'integrations.manage')));
+
+    if (path === '/settings/ai') {
+      const user = await requirePermission(event, 'settings.view');
+      if (event.httpMethod === 'GET') return json(200, await getAiSettings(), { 'cache-control': 'no-store, max-age=0' });
+      if (event.httpMethod === 'PATCH') { await requirePermission(event, 'settings.manage'); return json(200, await patchAiSettings(readBody(event), user), { 'cache-control': 'no-store, max-age=0' }); }
+      throw new HttpError(405, 'Method not allowed');
+    }
+    if (path.startsWith('/ai/quote/')) {
+      const user = await requirePermission(event, 'quotes.manage');
+      try {
+        const runMatch = path.match(/^\/ai\/quote\/request\/([^/]+)\/run$/);
+        const getMatch = path.match(/^\/ai\/quote\/request\/([^/]+)$/);
+        const actionMatch = path.match(/^\/ai\/quote\/([^/]+)\/(create-quote|approve|reject|rerun)$/);
+        if (runMatch && event.httpMethod === 'POST') return json(200, await runAiQuoteForRequest(runMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
+        if (getMatch && event.httpMethod === 'GET') return json(200, await getAiQuoteForRequest(getMatch[1]), { 'cache-control': 'no-store, max-age=0' });
+        if (actionMatch && event.httpMethod === 'POST') {
+          if (actionMatch[2] === 'rerun') return json(200, await quoteDraftAction(actionMatch[1], 'rerun', user), { 'cache-control': 'no-store, max-age=0' });
+          return json(200, await quoteDraftAction(actionMatch[1], actionMatch[2], user), { 'cache-control': 'no-store, max-age=0' });
+        }
+      } catch (error) { return json(400, aiResponseError(error), { 'cache-control': 'no-store, max-age=0' }); }
+    }
+    if (path.startsWith('/ai/troubleshooting')) {
+      const user = await requirePermission(event, 'jobs.view');
+      try {
+        const getMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)$/);
+        const actionMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)\/(save-to-job|create-checklist|rerun)$/);
+        if (path === '/ai/troubleshooting/run' && event.httpMethod === 'POST') return json(200, await runTroubleshooting(readBody(event), user), { 'cache-control': 'no-store, max-age=0' });
+        if (getMatch && event.httpMethod === 'GET') return json(200, await getTroubleshooting(getMatch[1]), { 'cache-control': 'no-store, max-age=0' });
+        if (actionMatch && event.httpMethod === 'POST') return json(200, await troubleshootingAction(actionMatch[1], actionMatch[2], readBody(event)), { 'cache-control': 'no-store, max-age=0' });
+      } catch (error) { return json(400, aiResponseError(error), { 'cache-control': 'no-store, max-age=0' }); }
+    }
+
     if (path.startsWith('/settings/')) {
       const user = await requirePermission(event, 'settings.view');
       return json(200, await handleSettingsRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user), { 'cache-control': 'no-store, max-age=0' });

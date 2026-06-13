@@ -1,5 +1,5 @@
 import { ReactNode, TouchEvent, useEffect, useMemo, useState } from 'react';
-import { Bell, BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, LogOut, Menu, MessageSquare, MoreHorizontal, Image as ImageIcon, MapPin as MapPinIcon, Paintbrush, Phone as PhoneIcon, Plus, Search, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench, X } from 'lucide-react';
+import { Bot, Bell, BriefcaseBusiness, Building2, CreditCard, FileText, FolderOpen, Home, LayoutDashboard, LogOut, Menu, MessageSquare, MoreHorizontal, Image as ImageIcon, MapPin as MapPinIcon, Paintbrush, Phone as PhoneIcon, Plus, Search, Settings, ShieldCheck, Stethoscope, UserRound, Users, Wrench, X } from 'lucide-react';
 import { Link, NavLink, useRouter } from './Router';
 
 import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
@@ -20,6 +20,10 @@ const appNavGroups = [
     { id: 'quotes', href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view', moduleKey: 'quotes' },
     { id: 'jobs', href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view', moduleKey: 'jobs', aliases: ['My Jobs', 'Assigned Work'] },
     { id: 'work-orders', href: '/work-orders', label: 'Work Orders', icon: BriefcaseBusiness, permission: 'work_orders.view', moduleKey: 'work_orders', aliases: ['Assigned Work', 'Jobs / Work Orders'] },
+  ] },
+  { group: 'AI', items: [
+    { id: 'ai-quoting', href: '/dashboard/ai-quoting', label: 'AI Quoting', icon: Bot, permission: 'quotes.view', moduleKey: 'ai_quoting' },
+    { id: 'ai-troubleshooting', href: '/dashboard/ai-troubleshooting', label: 'AI Troubleshooting', icon: Bot, permission: 'jobs.view', moduleKey: 'ai_troubleshooting' },
   ] },
   { group: 'Financial', items: [
     { id: 'invoices', href: '/invoices', label: 'Invoices', icon: FileText, permission: 'invoices.view', moduleKey: 'basic_invoices' },

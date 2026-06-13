@@ -12,6 +12,7 @@ import { QuotesPage } from './pages/modules/QuotesPage';
 import { JobsPage } from './pages/modules/JobsPage';
 import { InvoicesPage } from './pages/modules/InvoicesPage';
 import { PaymentsPage } from './pages/modules/PaymentsPage';
+import { AiQuotingPage, AiTroubleshootingPage } from './pages/modules/AiPages';
 import { applyTheme } from './lib/theme';
 import { BrandingProvider } from './lib/branding';
 import { AuthProvider } from './lib/auth';
@@ -46,6 +47,8 @@ function App() {
   if (path === '/account') return <AccountPage />;
   if (path.startsWith('/install')) return <InstallerPage step={path.split('/')[2] ?? 'license'} />;
   if (path === '/dashboard') return <DashboardPage />;
+  if (path.startsWith('/dashboard/ai-quoting')) return <LicensedPage moduleKey="ai_quoting"><AiQuotingPage /></LicensedPage>;
+  if (path.startsWith('/dashboard/ai-troubleshooting')) return <LicensedPage moduleKey="ai_troubleshooting"><AiTroubleshootingPage /></LicensedPage>;
   if (path.startsWith('/dashboard/jobs')) return <LicensedPage moduleKey="jobs"><JobsPage /></LicensedPage>;
   if (path.startsWith('/dashboard/work-orders')) return <LicensedPage moduleKey="work_orders"><JobsPage /></LicensedPage>;
   if (path.startsWith('/portal')) return <LicensedPage moduleKey="client_portal"><PortalPage /></LicensedPage>;

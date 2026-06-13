@@ -4,7 +4,8 @@ import { createDatabase, type Queryable } from './database';
 import { sendMagicLink } from './auth';
 import { createStorage } from './storage';
 import { addActivity, ensureWorkflowFoundation } from './workflow';
-import { getLocalLicense } from './license-client';
+import { getLocalLicense, isModuleEnabled } from './license-client';
+import { runAiQuoteForRequest } from './ai/ai-quote-service';
 
 export type InstallStatus = {
   installed: boolean;
@@ -647,6 +648,9 @@ export async function createPublicEstimateRequest(input: EstimateInput, db: Quer
   await addActivity(db, null, 'client', client.rows[0].id, 'created', 'Client created from public estimate request', { visibility: 'client', metadata: { requestId: request.rows[0].id, propertyId: property.rows[0].id } });
   await addActivity(db, null, 'property', property.rows[0].id, 'created', 'Property created from public estimate request', { visibility: 'client', metadata: { requestId: request.rows[0].id, clientId: client.rows[0].id } });
   await addActivity(db, null, 'request', request.rows[0].id, 'created', 'Work request submitted', { visibility: 'client', metadata: { clientId: client.rows[0].id, propertyId: property.rows[0].id, source: 'public_request_estimate' } });
+  if (await isModuleEnabled('ai_quoting', db).catch(() => false)) {
+    runAiQuoteForRequest(request.rows[0].id, null, db).catch((error) => console.error('AI quote generation failed for public request', { requestId: request.rows[0].id, error: error instanceof Error ? error.message : String(error) }));
+  }
   const requestNumber = `REQ-${request.rows[0].id.slice(0, 8).toUpperCase()}`;
   return { ok: true, id: request.rows[0].id, requestNumber, status: 'new', emailConfirmationQueued: Boolean(email && process.env.RESEND_API_KEY) };
 }
