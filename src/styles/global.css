@@ -1061,3 +1061,85 @@ body, .app-shell, .public-page, .auth-page, .installer-page { background: var(--
 .license-required-card { width: min(980px, 100%); text-align: left; }
 .license-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; color: var(--muted); }
 .status-badge.danger { background: color-mix(in srgb, var(--danger) 14%, var(--card)); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 36%, var(--line)); text-transform: uppercase; letter-spacing: .12em; font-weight: 950; }
+
+/* Premium homepage animation drop-ins */
+.homepage-renderer { overflow-x: clip; }
+.home-animations-on .public-home-section { --home-anim-distance: 18px; --home-anim-scale: .985; }
+.home-animations-on .home-anim-intensity-medium { --home-anim-distance: 28px; --home-anim-scale: .965; }
+.home-animations-on .home-anim-intensity-strong { --home-anim-distance: 42px; --home-anim-scale: .94; }
+.home-animations-on .home-anim-speed-slow { --home-anim-speed: 18s; --home-reveal-speed: .85s; }
+.home-animations-on .home-anim-speed-normal { --home-anim-speed: 10s; --home-reveal-speed: .58s; }
+.home-animations-on .home-anim-speed-fast { --home-anim-speed: 6s; --home-reveal-speed: .36s; }
+.home-animations-on .home-anim-fade-up .public-home-inner,
+.home-animations-on .home-anim-reveal-on-scroll .public-home-inner { animation: homeFadeUp var(--home-reveal-speed, .58s) ease both; }
+.home-animations-on .home-anim-slide-left .public-home-inner { animation: homeSlideLeft var(--home-reveal-speed, .58s) ease both; }
+.home-animations-on .home-anim-slide-right .public-home-inner { animation: homeSlideRight var(--home-reveal-speed, .58s) ease both; }
+.home-animations-on .home-anim-scale-in .public-home-inner { animation: homeScaleIn var(--home-reveal-speed, .58s) ease both; }
+.home-animations-on .home-anim-stagger-cards .home-card,
+.home-animations-on .home-anim-stagger-cards .project-card,
+.home-animations-on .home-anim-stagger-cards .review-card { animation: homeFadeUp var(--home-reveal-speed, .58s) ease both; }
+.home-animations-on .home-anim-stagger-cards .home-card:nth-child(2),
+.home-animations-on .home-anim-stagger-cards .project-card:nth-child(2),
+.home-animations-on .home-anim-stagger-cards .review-card:nth-child(2) { animation-delay: .08s; }
+.home-animations-on .home-anim-stagger-cards .home-card:nth-child(3),
+.home-animations-on .home-anim-stagger-cards .project-card:nth-child(3),
+.home-animations-on .home-anim-stagger-cards .review-card:nth-child(3) { animation-delay: .16s; }
+.home-animations-on .home-anim-stagger-cards .home-card:nth-child(n+4) { animation-delay: .22s; }
+.home-animations-on .home-anim-floating .hero-proof-stack,
+.home-animations-on .home-anim-floating .home-cta,
+.home-animations-on .home-anim-floating .floating-proof { animation: homeFloat var(--home-anim-speed, 10s) ease-in-out infinite; }
+.home-animations-on .home-anim-pulse .home-cta,
+.home-animations-on .home-anim-pulse .button:first-child { animation: homePulse var(--home-anim-speed, 10s) ease-in-out infinite; }
+.home-animations-on .home-anim-marquee .logo-strip,
+.home-animations-on .home-anim-marquee .home-card-grid,
+.home-animations-on .home-anim-marquee .review-grid { display: flex; width: max-content; max-width: none; min-width: 100%; animation: homeMarquee var(--home-anim-speed, 18s) linear infinite; will-change: transform; }
+.home-animations-on .home-anim-marquee .public-home-inner { overflow: hidden; }
+.home-animations-on .home-anim-marquee .home-card,
+.home-animations-on .home-anim-marquee .review-card,
+.home-animations-on .home-anim-marquee .logo-strip span { flex: 0 0 min(320px, 82vw); }
+.home-animations-on .public-home-section::before { animation: homeBackgroundDrift 18s ease-in-out infinite alternate; }
+.home-no-continuous .home-anim-trigger-continuous .public-home-inner,
+.home-no-continuous .home-anim-trigger-continuous .hero-proof-stack,
+.home-no-continuous .home-anim-trigger-continuous .home-cta,
+.home-no-continuous .home-anim-trigger-continuous .button,
+.home-no-continuous .home-anim-trigger-continuous .logo-strip,
+.home-no-continuous .home-anim-trigger-continuous .home-card-grid,
+.home-no-continuous .home-anim-trigger-continuous .review-grid,
+.home-animations-off .public-home-section,
+.home-animations-off .public-home-section * { animation: none !important; }
+.library-thumb.thumb-animated span { animation: homeThumbPulse 2.4s ease-in-out infinite; }
+.library-thumb.thumb-animated span:nth-of-type(2) { animation-delay: .18s; }
+.library-thumb.thumb-animated span:nth-of-type(3) { animation-delay: .36s; }
+@keyframes homeFadeUp { from { opacity: 0; transform: translate3d(0, var(--home-anim-distance), 0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+@keyframes homeSlideLeft { from { opacity: 0; transform: translate3d(var(--home-anim-distance), 0, 0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+@keyframes homeSlideRight { from { opacity: 0; transform: translate3d(calc(var(--home-anim-distance) * -1), 0, 0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+@keyframes homeScaleIn { from { opacity: 0; transform: scale(var(--home-anim-scale)); } to { opacity: 1; transform: scale(1); } }
+@keyframes homeFloat { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(0,-10px,0); } }
+@keyframes homePulse { 0%,100% { transform: scale(1); box-shadow: var(--site-shadow); } 50% { transform: scale(1.018); box-shadow: var(--site-shadow-lg); } }
+@keyframes homeMarquee { from { transform: translate3d(0,0,0); } to { transform: translate3d(-28%,0,0); } }
+@keyframes homeBackgroundDrift { from { transform: translate3d(-1%, -1%, 0) scale(1); } to { transform: translate3d(1%, 1%, 0) scale(1.03); } }
+@keyframes homeThumbPulse { 0%,100% { transform: translateY(0); opacity: .75; } 50% { transform: translateY(-4px); opacity: 1; } }
+@media (hover:hover) {
+  .home-anim-trigger-on-hover .home-card:hover,
+  .home-anim-trigger-on-hover .project-card:hover,
+  .home-anim-trigger-on-hover .review-card:hover { transform: translateY(-8px) scale(1.01); }
+}
+@media (max-width: 820px) {
+  .home-mobile-reduce .public-home-section { --home-anim-distance: 10px; }
+  .home-mobile-reduce .home-anim-trigger-continuous .hero-proof-stack,
+  .home-mobile-reduce .home-anim-trigger-continuous .home-cta,
+  .home-mobile-reduce .home-anim-trigger-continuous .floating-proof { animation-duration: 16s; }
+  .home-mobile-reduce .home-anim-marquee .home-card-grid,
+  .home-mobile-reduce .home-anim-marquee .review-grid,
+  .home-mobile-reduce .home-anim-marquee .logo-strip { animation: none; width: 100%; max-width: 100%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .35rem; }
+  .home-mobile-reduce .home-anim-marquee .home-card,
+  .home-mobile-reduce .home-anim-marquee .review-card,
+  .home-mobile-reduce .home-anim-marquee .logo-strip span { scroll-snap-align: start; }
+  .home-mobile-disabled .public-home-inner,
+  .home-mobile-disabled .public-home-section *,
+  .homepage-device-mobile .home-mobile-disabled * { animation: none !important; transform: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .homepage-renderer *, .homepage-renderer *::before, .homepage-renderer *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+  .home-anim-marquee .home-card-grid, .home-anim-marquee .review-grid, .home-anim-marquee .logo-strip { transform: none !important; width: 100% !important; max-width: 100% !important; }
+}
