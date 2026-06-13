@@ -4,7 +4,7 @@ import { Link, NavLink, useRouter } from './Router';
 
 import { pageTitle, useBranding, useHomepageSettings } from '../lib/branding';
 import { useAuth } from '../lib/auth';
-import { useLicense } from '../lib/license';
+import { isLicenseActive, useLicense } from '../lib/license';
 import { BrandLogo } from './ui';
 import { fallbackRoleOptions, normalizeRole, type RoleOption } from '../lib/role-management';
 
@@ -108,12 +108,17 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const permissionsLoaded = !auth.isLoading;
 
-  const accessibleNavItems = useMemo(() => appNavGroups.flatMap((group) => group.items).filter((item) => auth.can(item.permission) && (!('moduleKey' in item) || license.canUseModule(String(item.moduleKey)))), [auth, license]);
-  const visibleGroups = useMemo(() => appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => accessibleNavItems.some((accessible) => accessible.id === item.id)) })).filter((group) => group.items.length > 0), [accessibleNavItems]);
+  const licenseRequiredMode = !license.loading && !isLicenseActive(license.license);
+  const licenseOnlyNavItems = useMemo<NavItem[]>(() => [
+    { id: 'license', href: '/settings/license', label: 'License', icon: ShieldCheck, permission: ['license.view', 'settings.view'], moduleKey: 'basic_settings' },
+    { id: 'logout', href: '/logout', label: 'Logout', icon: LogOut, permission: 'account.view' },
+  ], []);
+  const accessibleNavItems = useMemo(() => licenseRequiredMode ? licenseOnlyNavItems.filter((item) => auth.can(item.permission)) : appNavGroups.flatMap((group) => group.items).filter((item) => auth.can(item.permission) && (!('moduleKey' in item) || license.canUseModule(String(item.moduleKey)))), [auth, license, licenseOnlyNavItems, licenseRequiredMode]);
+  const visibleGroups = useMemo(() => licenseRequiredMode ? [{ group: 'License Required', items: accessibleNavItems }] : appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => accessibleNavItems.some((accessible) => accessible.id === item.id)) })).filter((group) => group.items.length > 0), [accessibleNavItems, licenseRequiredMode]);
   const primaryMobileItems = useMemo(() => getPrimaryMobileItems(role, accessibleNavItems), [role, accessibleNavItems]);
   const moreItems = useMemo(() => accessibleNavItems.filter((item) => !primaryMobileItems.some((primary) => primary.id === item.id)), [accessibleNavItems, primaryMobileItems]);
-  const moreGroups = useMemo(() => appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => moreItems.some((more) => more.id === item.id)) })).filter((group) => group.items.length > 0), [moreItems]);
-  const quickActions = quickActionsForRole(role, auth.can).filter((action) => !action.moduleKey || license.canUseModule(action.moduleKey));
+  const moreGroups = useMemo(() => licenseRequiredMode ? [{ group: 'License Required', items: moreItems }] : appNavGroups.map((group) => ({ ...group, items: group.items.filter((item) => moreItems.some((more) => more.id === item.id)) })).filter((group) => group.items.length > 0), [moreItems, licenseRequiredMode]);
+  const quickActions = licenseRequiredMode ? [] : quickActionsForRole(role, auth.can).filter((action) => !action.moduleKey || license.canUseModule(action.moduleKey));
 
   useEffect(() => { document.title = pageTitle(title, branding); }, [title, branding.companyDisplayName, branding.displayName, branding.companyName]);
   useEffect(() => { setMoreOpen(false); setSearchOpen(false); setNotificationsOpen(false); setQuickOpen(false); }, [router.path]);
@@ -143,8 +148,8 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   return <div className="app-shell">
     <aside className="sidebar"><Link href="/" className="brand"><BrandLogo /><strong>{branding.displayName}</strong></Link>{visibleGroups.map((group) => <div className="sidebar-section" key={group.group}><p className="eyebrow">{group.group}</p>{group.items.map((item) => <NavLink key={item.id} href={item.href}><item.icon size={18}/>{item.label}</NavLink>)}</div>)}</aside>
     <section className="app-main" onTouchStart={(event) => setTouchStart({ x: event.touches[0].clientX, y: event.touches[0].clientY })} onTouchEnd={onShellTouchEnd}>
-      <MobileAppHeader title={title} brandingName={branding.displayName} onSearch={() => setSearchOpen(true)} onNotifications={() => setNotificationsOpen(true)} onMore={() => setMoreOpen(true)} />
-      <header className="app-top"><div className="app-title-lockup"><BrandLogo className="app-header-logo"/><div><p className="eyebrow">{branding.displayName} workspace</p><h1>{title}</h1></div></div><div className="topbar-actions"><ViewAsControl/><span className="pill">{auth.isViewAsActive ? `Viewing as ${auth.effectiveRole}` : (auth.realRole || auth.role || 'User')}</span><Link href="/account" className="button secondary small">Account</Link></div></header>
+      <MobileAppHeader title={title} brandingName={branding.displayName} licenseRequiredMode={licenseRequiredMode} onSearch={() => setSearchOpen(true)} onNotifications={() => setNotificationsOpen(true)} onMore={() => setMoreOpen(true)} />
+      <header className="app-top"><div className="app-title-lockup"><BrandLogo className="app-header-logo"/><div><p className="eyebrow">{branding.displayName} workspace</p><h1>{title}</h1></div></div><div className="topbar-actions">{!licenseRequiredMode && <ViewAsControl/>}<span className="pill">{auth.isViewAsActive ? `Viewing as ${auth.effectiveRole}` : (auth.realRole || auth.role || 'User')}</span>{!licenseRequiredMode && <Link href="/account" className="button secondary small">Account</Link>}</div></header>
       {auth.isViewAsActive && <div className="view-as-banner"><div><strong>Owner Preview Mode: Viewing as {auth.effectiveRole}.</strong><span> Actions and navigation are filtered for preview. Your real session remains {auth.realRole}.</span></div><button className="button small" onClick={auth.clearViewAsRole}>Exit View As</button></div>}
       {!permissionsLoaded && <div className="card mobile-permission-loading"><strong>Loading navigation…</strong><span className="muted">Keeping dashboard access available while permissions load.</span></div>}
       {children}
@@ -183,8 +188,8 @@ function getPrimaryMobileItems(role: string, accessibleNavItems: NavItem[]) {
   return filled.slice(0, 4);
 }
 
-function MobileAppHeader({ title, brandingName, onSearch, onNotifications, onMore }: { title: string; brandingName: string; onSearch: () => void; onNotifications: () => void; onMore: () => void }) {
-  return <header className="mobile-app-header"><Link href="/dashboard" className="mobile-brand"><BrandLogo/><span><strong>{brandingName}</strong><small>{title}</small></span></Link><div className="mobile-header-actions"><button type="button" aria-label="Search" onClick={onSearch}><Search size={19}/></button><button type="button" aria-label="Notifications" onClick={onNotifications}><Bell size={19}/></button><button type="button" aria-label="Open menu" onClick={onMore}><Menu size={20}/></button><Link href="/account" aria-label="Account" className="mobile-avatar"><UserRound size={19}/></Link></div></header>;
+function MobileAppHeader({ title, brandingName, licenseRequiredMode, onSearch, onNotifications, onMore }: { title: string; brandingName: string; licenseRequiredMode?: boolean; onSearch: () => void; onNotifications: () => void; onMore: () => void }) {
+  return <header className="mobile-app-header"><Link href={licenseRequiredMode ? "/settings/license" : "/dashboard"} className="mobile-brand"><BrandLogo/><span><strong>{brandingName}</strong><small>{title}</small></span></Link><div className="mobile-header-actions">{!licenseRequiredMode && <button type="button" aria-label="Search" onClick={onSearch}><Search size={19}/></button>}{!licenseRequiredMode && <button type="button" aria-label="Notifications" onClick={onNotifications}><Bell size={19}/></button>}<button type="button" aria-label="Open menu" onClick={onMore}><Menu size={20}/></button>{!licenseRequiredMode && <Link href="/account" aria-label="Account" className="mobile-avatar"><UserRound size={19}/></Link>}</div></header>;
 }
 
 function MobileBottomNav({ items, moreOpen, onMore, loading }: { items: NavItem[]; moreOpen: boolean; onMore: () => void; loading: boolean }) {

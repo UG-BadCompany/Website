@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createDatabase, type Queryable } from './database';
 import { basicModules, moduleAllowedByTier, normalizeLicenseTier, requiredTierForModule, type LicenseTier } from '../license-modules';
 
-export type LicenseStatus = 'active' | 'invalid' | 'expired' | 'suspended' | 'revoked' | 'unverified';
+export type LicenseStatus = 'active' | 'inactive' | 'invalid' | 'expired' | 'suspended' | 'revoked' | 'unverified' | 'missing';
 export type LicenseSnapshot = {
   id?: string;
   licenseKey: string;
@@ -24,6 +24,17 @@ export type LicenseSnapshot = {
   updatedAt?: string;
 };
 export type VerifyLicenseInput = Partial<Pick<LicenseSnapshot, 'licenseKey' | 'licenseEmail' | 'licenseApiUrl' | 'installId' | 'siteUrl' | 'domain' | 'appVersion'>> & { email?: string; environment?: string; machineFingerprint?: string };
+export class LicenseRequiredError extends Error {
+  statusCode = 402;
+  code = 'LICENSE_REQUIRED';
+  licenseStatus: string;
+  constructor(status = 'inactive') {
+    super('A valid ContractorOS license is required.');
+    this.licenseStatus = status;
+  }
+  toResponse() { return { ok: false, error: this.message, code: this.code, status: this.licenseStatus }; }
+}
+
 export class LicenseModuleLockedError extends Error {
   statusCode = 402;
   code = 'LICENSE_MODULE_LOCKED';
@@ -169,16 +180,16 @@ export async function checkLicense(db: Queryable = createDatabase()) {
     return { warning: saved.lastCheckError, license: publicLicenseStatus(saved), ...publicLicenseStatus(saved) };
   }
 }
-function isHardLocked(snapshot: LicenseSnapshot | null) { return ['revoked', 'suspended', 'expired', 'invalid'].includes(snapshot?.status || ''); }
+function isHardLocked(snapshot: LicenseSnapshot | null) { return ['revoked', 'suspended', 'expired', 'invalid', 'inactive', 'missing'].includes(snapshot?.status || ''); }
 function inGrace(snapshot: LicenseSnapshot | null) { if (!snapshot?.lastVerifiedAt) return false; return Date.now() - new Date(snapshot.lastVerifiedAt).getTime() <= GRACE_PERIOD_MS; }
 export function publicLicenseStatus(snapshot: LicenseSnapshot | null) {
   const warnings: string[] = [];
-  if (!snapshot) return { ok: false, tier: 'basic' as LicenseTier, status: 'unverified', enabledModules: basicModules, lastVerifiedAt: null, expiresAt: null, warnings: ['No local license snapshot found. Install or verify a license to unlock licensed modules.'], gracePeriodEndsAt: null, licenseApiUrl: getDefaultLicenseApiUrl(), licenseServerLabel: 'Official ContractorOS License Server' };
+  if (!snapshot) return { ok: false, tier: 'basic' as LicenseTier, status: 'missing', enabledModules: [], lastVerifiedAt: null, expiresAt: null, warnings: ['No local license snapshot found. Install or verify a license to unlock ContractorOS.'], gracePeriodEndsAt: null, licenseApiUrl: getDefaultLicenseApiUrl(), licenseServerLabel: 'Official ContractorOS License Server' };
   if (snapshot.lastCheckError) warnings.push(snapshot.lastCheckError);
   const gracePeriodEndsAt = snapshot.lastVerifiedAt ? new Date(new Date(snapshot.lastVerifiedAt).getTime() + GRACE_PERIOD_MS).toISOString() : null;
   if (snapshot.lastCheckError && inGrace(snapshot)) warnings.push(`Grace period active until ${gracePeriodEndsAt}.`);
   if (snapshot.lastCheckError && !inGrace(snapshot)) warnings.push('License grace period has expired; premium modules are locked.');
-  return { ok: true, tier: snapshot.tier, status: snapshot.status, enabledModules: snapshot.enabledModules, lastVerifiedAt: snapshot.lastVerifiedAt, expiresAt: snapshot.expiresAt, warnings, licenseEmail: snapshot.licenseEmail, maskedLicenseKey: maskLicenseKey(snapshot.licenseKey), installId: snapshot.installId, siteUrl: snapshot.siteUrl, domain: snapshot.domain, appVersion: snapshot.appVersion, licenseApiUrl: snapshot.licenseApiUrl, licenseServerLabel: 'Official ContractorOS License Server', lastCheckError: snapshot.lastCheckError, gracePeriodEndsAt };
+  return { ok: isLicenseActiveSnapshot(snapshot), tier: snapshot.tier, status: licenseRequiredStatus(snapshot), enabledModules: isLicenseActiveSnapshot(snapshot) ? snapshot.enabledModules : [], lastVerifiedAt: snapshot.lastVerifiedAt, expiresAt: snapshot.expiresAt, warnings, licenseEmail: snapshot.licenseEmail, maskedLicenseKey: maskLicenseKey(snapshot.licenseKey), installId: snapshot.installId, siteUrl: snapshot.siteUrl, domain: snapshot.domain, appVersion: snapshot.appVersion, licenseApiUrl: snapshot.licenseApiUrl, licenseServerLabel: 'Official ContractorOS License Server', lastCheckError: snapshot.lastCheckError, gracePeriodEndsAt };
 }
 export async function getLicenseStatus(db: Queryable = createDatabase()) {
   const local = await getLocalLicense(db);
@@ -187,12 +198,23 @@ export async function getLicenseStatus(db: Queryable = createDatabase()) {
 }
 export async function isModuleEnabled(moduleKey: string, db: Queryable = createDatabase()) {
   const local = await getLocalLicense(db);
-  if (!local) return moduleAllowedByTier(moduleKey, 'basic', basicModules);
-  if (isHardLocked(local)) return moduleAllowedByTier(moduleKey, 'basic', basicModules);
-  if (local.lastCheckError && !inGrace(local)) return moduleAllowedByTier(moduleKey, 'basic', basicModules);
-  return moduleAllowedByTier(moduleKey, local.tier, local.enabledModules);
+  if (!isLicenseActiveSnapshot(local)) return false;
+  return moduleAllowedByTier(moduleKey, local!.tier, local!.enabledModules);
 }
-export async function requireLicensedModule(moduleKey: string, db: Queryable = createDatabase()) { if (!(await isModuleEnabled(moduleKey, db))) throw new LicenseModuleLockedError(moduleKey); }
+export function licenseRequiredStatus(snapshot: LicenseSnapshot | null) {
+  if (!snapshot) return 'missing';
+  if (snapshot.lastCheckError && !inGrace(snapshot)) return snapshot.status === 'active' ? 'inactive' : snapshot.status || 'inactive';
+  if (isHardLocked(snapshot)) return snapshot.status || 'inactive';
+  if (snapshot.status !== 'active') return snapshot.status || 'inactive';
+  return 'active';
+}
+export function isLicenseActiveSnapshot(snapshot: LicenseSnapshot | null) { return licenseRequiredStatus(snapshot) === 'active'; }
+export async function requireActiveLicense(db: Queryable = createDatabase()) {
+  const local = await getLocalLicense(db);
+  if (!isLicenseActiveSnapshot(local)) throw new LicenseRequiredError(licenseRequiredStatus(local));
+  return local!;
+}
+export async function requireLicensedModule(moduleKey: string, db: Queryable = createDatabase()) { await requireActiveLicense(db); if (!(await isModuleEnabled(moduleKey, db))) throw new LicenseModuleLockedError(moduleKey); }
 export async function getEnabledModules(db: Queryable = createDatabase()) { return (await getLocalLicense(db))?.enabledModules || basicModules; }
 export async function getLicenseTier(db: Queryable = createDatabase()) { return (await getLocalLicense(db))?.tier || 'basic'; }
 export async function syncLicenseStatus(db: Queryable = createDatabase()) { return checkLicense(db); }

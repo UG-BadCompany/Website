@@ -7,7 +7,7 @@ import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsO
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
-import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError } from '../../lib/server/license-client';
+import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireActiveLicense, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError, LicenseRequiredError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
@@ -43,6 +43,21 @@ async function enforceLicensedPath(path: string) {
   if (moduleKey) await requireLicensedModule(moduleKey);
 }
 
+async function licenseRequiredGuardAllows(path: string) {
+  if (path === '/license/status' || path === '/license/recheck' || path === '/license/update') return true;
+  if (path.startsWith('/auth/')) return true;
+  if (path === '/auth/me' || path === '/auth/verify' || path === '/me') return true;
+  if (path === '/settings/license') return true;
+  if (path === '/install/status' || path === '/install/check') return true;
+  if (path.startsWith('/install/')) return !(await getInstallStatus()).installed;
+  return false;
+}
+
+async function enforceActiveLicenseForApi(path: string) {
+  if (await licenseRequiredGuardAllows(path)) return;
+  await requireActiveLicense();
+}
+
 function errorDetails(error: unknown) {
   if (!(error instanceof Error)) return { message: String(error) };
   return { message: error.message || error.name, name: error.name, stack: error.stack };
@@ -57,6 +72,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     path = event.path.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
     route = toApiRoute(path);
 
+    await enforceActiveLicenseForApi(path);
 
     if (path === '/public/homepage' && event.httpMethod === 'GET') return json(200, await getPublicHomepage(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/public/site-settings') return json(200, await getPublicSiteSettings(), { 'cache-control': 'no-store, max-age=0' });
@@ -239,6 +255,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     }
     return json(404, { error: 'Not found', path });
   } catch (error) {
+    if (error instanceof LicenseRequiredError) return json(error.statusCode, error.toResponse());
     if (error instanceof LicenseModuleLockedError) return json(error.statusCode, error.toResponse());
     if (error instanceof HttpError) return json(error.statusCode, { ok: false, error: error.statusCode === 404 ? 'Route not found' : error.statusCode === 405 ? 'Method not allowed' : 'Route failed', route, method, step: stepForRoute(route, method), message: error.message });
     const details = errorDetails(error);
