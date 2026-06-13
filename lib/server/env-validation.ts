@@ -75,7 +75,6 @@ export function validateEnvironment(env = process.env, input: EnvValidationInput
   ];
 
   const license = [
-    checkOne(env, 'LICENSE_API_URL_OVERRIDE', 'Optional dev-only License Portal API override for local, staging, or self-hosted testing.', true),
     checkOne(env, 'LICENSE_CHECK_INTERVAL_HOURS', 'Optional runtime license check interval. Defaults to 24 hours.', true),
   ];
 

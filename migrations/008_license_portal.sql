@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS license_settings (
 );
 
 UPDATE license_settings
-SET license_api_url = coalesce(nullif(license_api_url, ''), 'https://taselling.netlify.app'),
+SET license_api_url = 'https://taselling.netlify.app',
     license_key = coalesce(license_key, ''),
     license_email = coalesce(license_email, ''),
     tier = coalesce(tier, 'basic'),

@@ -29,6 +29,15 @@ type LicenseContextValue = {
 };
 
 const fallback: LicenseStatus = { ok: true, tier: 'basic', status: 'unverified', enabledModules: [], lastVerifiedAt: null, expiresAt: null, warnings: [] };
+const hardLockedStatuses = new Set(['invalid', 'expired', 'suspended', 'revoked']);
+
+function hasActiveLicenseAccess(license: LicenseStatus | null) {
+  if (!license) return false;
+  if (hardLockedStatuses.has(license.status)) return false;
+  if (license.lastCheckError && license.gracePeriodEndsAt && Date.now() > new Date(license.gracePeriodEndsAt).getTime()) return false;
+  return true;
+}
+
 const LicenseContext = createContext<LicenseContextValue>({ license: fallback, loading: true, reload: async () => undefined, canUseModule: (moduleKey) => moduleAllowedByTier(moduleKey, 'basic', []), requiredTier: requiredTierForModule, isBusiness: () => false, isProOrHigher: () => false });
 
 export function LicenseProvider({ children }: { children: ReactNode }) {
@@ -43,15 +52,20 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     finally { setLoading(false); }
   };
   useEffect(() => { reload(); }, []);
-  const value = useMemo<LicenseContextValue>(() => ({
-    license,
-    loading,
-    reload,
-    canUseModule: (moduleKey) => moduleAllowedByTier(moduleKey, license?.tier || 'basic', license?.enabledModules || []),
-    requiredTier: requiredTierForModule,
-    isBusiness: () => license?.tier === 'business' || Boolean(license?.enabledModules?.includes('*')),
-    isProOrHigher: () => license?.tier === 'pro' || license?.tier === 'business' || Boolean(license?.enabledModules?.includes('*')),
-  }), [license, loading]);
+  const value = useMemo<LicenseContextValue>(() => {
+    const active = hasActiveLicenseAccess(license);
+    const tier = active ? (license?.tier || 'basic') : 'basic';
+    const enabledModules = active ? (license?.enabledModules || []) : [];
+    return {
+      license,
+      loading,
+      reload,
+      canUseModule: (moduleKey) => moduleAllowedByTier(moduleKey, tier, enabledModules),
+      requiredTier: requiredTierForModule,
+      isBusiness: () => tier === 'business' || Boolean(enabledModules.includes('*')),
+      isProOrHigher: () => tier === 'pro' || tier === 'business' || Boolean(enabledModules.includes('*')),
+    };
+  }, [license, loading]);
   return <LicenseContext.Provider value={value}>{children}</LicenseContext.Provider>;
 }
 
