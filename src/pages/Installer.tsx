@@ -201,6 +201,17 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   useEffect(() => { saveTheme(theme); }, [theme]);
 
   useEffect(() => {
+    let active = true;
+    fetch('/api/install/license-defaults', { headers: { accept: 'application/json' }, cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (active && data?.licenseApiUrl) setLicenseForm((currentForm) => currentForm.licenseApiUrl.trim() ? currentForm : { ...currentForm, licenseApiUrl: data.licenseApiUrl });
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     setHomepage((currentDraft) => ({
       ...currentDraft,
       displayName: currentDraft.displayName === 'ContractorOS' && companyName ? companyName : currentDraft.displayName,
@@ -239,8 +250,9 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
 
   const verifyInstallerLicense = async () => {
     setLicenseStatus('verifying');
-    setLicenseMessage(licenseForm.licenseApiUrl.trim() ? 'Verifying license with License Portal…' : 'License API URL is missing.');
-    if (!licenseForm.licenseApiUrl.trim()) { setLicenseStatus('invalid'); return; }
+    const missingFields = [!licenseForm.licenseApiUrl.trim() && 'License API URL', !licenseForm.licenseKey.trim() && 'License Key', !licenseForm.email.trim() && 'License Email'].filter(Boolean);
+    setLicenseMessage(missingFields.length ? `${missingFields.join(', ')} required.` : 'Verifying license with License Portal…');
+    if (missingFields.length) { setLicenseStatus('invalid'); return; }
     try {
       const response = await fetch('/api/install/license', {
         method: 'POST',

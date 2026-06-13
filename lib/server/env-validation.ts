@@ -75,10 +75,8 @@ export function validateEnvironment(env = process.env, input: EnvValidationInput
   ];
 
   const license = [
-    checkOne(env, 'LICENSE_API_URL', 'ContractorOS License Portal API base URL.', true),
-    checkOne(env, 'LICENSE_KEY', 'ContractorOS license key; installer can also collect it manually.', true),
-    checkOne(env, 'LICENSE_EMAIL', 'License owner email; installer can also collect it manually.', true),
-    checkOne(env, 'LICENSE_CHECK_INTERVAL_HOURS', 'Runtime license check interval. Defaults to 24 hours.', true),
+    checkOne(env, 'LICENSE_API_URL', 'Optional default ContractorOS License Portal API base URL; installer and settings can override it.', true),
+    checkOne(env, 'LICENSE_CHECK_INTERVAL_HOURS', 'Optional runtime license check interval. Defaults to 24 hours.', true),
   ];
 
   return {
