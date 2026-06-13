@@ -7,7 +7,7 @@ import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsO
 import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
-import { checkLicense, getLicenseStatus, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError } from '../../lib/server/license-client';
+import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
@@ -83,6 +83,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path === '/install/check') return json(200, { ...(await getInstallStatus()), databaseAdapter: detectDatabaseAdapter(), config: { appUrl: readConfig().appUrl, paymentProvider: readConfig().paymentProvider } });
     if (path === '/install/database') return json(200, { adapter: detectDatabaseAdapter(), migrationsReady: true, netlifyDatabasePreferred: Boolean(process.env.NETLIFY) });
     if (path === '/install/env-validation') return json(200, validateEnvironment(process.env, readBody(event)));
+    if (path === '/install/license-defaults' && event.httpMethod === 'GET') return json(200, { licenseApiUrl: getDefaultLicenseApiUrl() }, { 'cache-control': 'no-store, max-age=0' });
     if (path === '/install/license' && event.httpMethod === 'POST') return json(200, await verifyLicense(readBody(event)));
     if (path === '/license/status' && event.httpMethod === 'GET') return json(200, await getLicenseStatus(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/license/recheck' && event.httpMethod === 'POST') { await requirePermission(event, 'license.manage'); return json(200, await checkLicense(), { 'cache-control': 'no-store, max-age=0' }); }

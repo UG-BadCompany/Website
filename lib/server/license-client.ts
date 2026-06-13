@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createDatabase, type Queryable } from './database';
@@ -43,10 +43,25 @@ const CHECK_INTERVAL_HOURS = Number(process.env.LICENSE_CHECK_INTERVAL_HOURS || 
 
 export async function ensureLicenseTables(db: Queryable = createDatabase()) {
   await db.query(`create table if not exists license_settings (
-    id uuid primary key default gen_random_uuid(), license_key text, license_email text, license_api_url text, tier text, status text,
-    enabled_modules jsonb default '[]'::jsonb, install_id text unique not null, site_url text, domain text, app_version text,
-    expires_at timestamptz, last_verified_at timestamptz, last_check_error text, created_at timestamptz default now(), updated_at timestamptz default now()
+    id uuid primary key default gen_random_uuid(),
+    license_api_url text not null,
+    license_key text not null,
+    license_email text not null,
+    tier text not null,
+    status text not null,
+    enabled_modules jsonb default '[]'::jsonb,
+    install_id text unique not null,
+    site_url text,
+    domain text,
+    app_version text,
+    expires_at timestamptz,
+    last_verified_at timestamptz,
+    last_check_error text,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
   )`);
+  await db.query(`update license_settings set license_api_url = coalesce(license_api_url, ''), license_key = coalesce(license_key, ''), license_email = coalesce(license_email, ''), tier = coalesce(tier, 'basic'), status = coalesce(status, 'unverified')`);
+  await db.query(`alter table license_settings alter column license_api_url set not null, alter column license_key set not null, alter column license_email set not null, alter column tier set not null, alter column status set not null`);
   await db.query(`create table if not exists license_events (id uuid primary key default gen_random_uuid(), event_type text not null, summary text not null, metadata jsonb default '{}'::jsonb, created_at timestamptz default now())`);
 }
 
@@ -56,6 +71,7 @@ async function packageVersion() {
 }
 function envName(input?: string) { if (input) return input; if (process.env.CONTEXT) return process.env.CONTEXT; if (process.env.NETLIFY_DEV) return 'local'; return process.env.NODE_ENV || 'local'; }
 function siteUrlFromEnv() { return process.env.SITE_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || process.env.APP_URL || ''; }
+function defaultLicenseApiUrl() { return process.env.LICENSE_API_URL || ''; }
 function normalizeUrl(url: string) { return url.trim().replace(/\/+$/, ''); }
 function maskMetadata(snapshot: Partial<LicenseSnapshot>) { return { ...snapshot, licenseKey: maskLicenseKey(snapshot.licenseKey || '') }; }
 export function maskLicenseKey(key = '') { const parts = key.split('-'); return parts.length >= 4 ? [...parts.slice(0, 2), ...parts.slice(2, -1).map(() => '****'), parts.at(-1)].join('-') : key ? `****${key.slice(-4)}` : ''; }
@@ -84,10 +100,10 @@ export async function getLocalLicense(db: Queryable = createDatabase()): Promise
   await ensureLicenseTables(db);
   const result = await db.query(`select * from license_settings order by updated_at desc limit 1`);
   if (result.rows[0]) return rowToSnapshot(result.rows[0]);
-  if (!process.env.LICENSE_KEY && !process.env.LICENSE_EMAIL && !process.env.LICENSE_API_URL) return null;
-  return { licenseKey: process.env.LICENSE_KEY || '', licenseEmail: process.env.LICENSE_EMAIL || '', licenseApiUrl: process.env.LICENSE_API_URL || '', tier: 'basic', status: 'unverified', enabledModules: basicModules, installId: createInstallId(), siteUrl: siteUrlFromEnv(), domain: '', appVersion: await packageVersion(), expiresAt: null, lastVerifiedAt: null, lastCheckError: null };
+  return null;
 }
-function createInstallId() { return `cos-${createHash('sha256').update(`${process.env.SITE_URL || process.env.URL || process.cwd()}-${process.env.LICENSE_KEY || randomUUID()}`).digest('hex').slice(0, 16)}`; }
+function createInstallId() { return `cos-${createHash('sha256').update(`${process.env.SITE_URL || process.env.URL || process.cwd()}`).digest('hex').slice(0, 16)}`; }
+export function getDefaultLicenseApiUrl() { return normalizeUrl(defaultLicenseApiUrl()); }
 export async function saveLicenseSnapshot(input: Partial<LicenseSnapshot>, db: Queryable = createDatabase()) {
   await ensureLicenseTables(db);
   const existing = await getLocalLicense(db).catch(() => null);
@@ -103,10 +119,11 @@ export async function saveLicenseSnapshot(input: Partial<LicenseSnapshot>, db: Q
 export async function verifyLicense(input: VerifyLicenseInput, db: Queryable = createDatabase()) {
   await ensureLicenseTables(db);
   const local = await getLocalLicense(db).catch(() => null);
-  const licenseApiUrl = normalizeUrl(input.licenseApiUrl || process.env.LICENSE_API_URL || local?.licenseApiUrl || '');
+  const licenseApiUrl = normalizeUrl(local?.licenseApiUrl || input.licenseApiUrl || getDefaultLicenseApiUrl());
   if (!licenseApiUrl) return { ok: false, valid: false, status: 'invalid', error: 'License API URL is missing.' };
-  const licenseKey = input.licenseKey || process.env.LICENSE_KEY || local?.licenseKey || '';
-  const email = input.email || input.licenseEmail || process.env.LICENSE_EMAIL || local?.licenseEmail || '';
+  const licenseKey = local?.licenseKey || input.licenseKey || '';
+  const email = local?.licenseEmail || input.email || input.licenseEmail || '';
+  if (!licenseKey || !email) return { ok: false, valid: false, status: 'invalid', error: 'License key and license email are required.' };
   const siteUrl = input.siteUrl || siteUrlFromEnv() || local?.siteUrl || '';
   const payload = { licenseKey, email, installId: input.installId || local?.installId || createInstallId(), siteUrl, domain: input.domain || local?.domain || '', appVersion: input.appVersion || local?.appVersion || await packageVersion(), environment: envName(input.environment), machineFingerprint: input.machineFingerprint || createInstallId() };
   try {
@@ -149,7 +166,7 @@ function isHardLocked(snapshot: LicenseSnapshot | null) { return ['revoked', 'su
 function inGrace(snapshot: LicenseSnapshot | null) { if (!snapshot?.lastVerifiedAt) return false; return Date.now() - new Date(snapshot.lastVerifiedAt).getTime() <= GRACE_PERIOD_MS; }
 export function publicLicenseStatus(snapshot: LicenseSnapshot | null) {
   const warnings: string[] = [];
-  if (!snapshot) return { ok: true, tier: 'basic' as LicenseTier, status: 'unverified', enabledModules: basicModules, lastVerifiedAt: null, expiresAt: null, warnings: ['No local license snapshot found.'], gracePeriodEndsAt: null };
+  if (!snapshot) return { ok: false, tier: 'basic' as LicenseTier, status: 'unverified', enabledModules: basicModules, lastVerifiedAt: null, expiresAt: null, warnings: ['No local license snapshot found. Install or verify a license to unlock licensed modules.'], gracePeriodEndsAt: null, licenseApiUrl: getDefaultLicenseApiUrl() };
   if (snapshot.lastCheckError) warnings.push(snapshot.lastCheckError);
   const gracePeriodEndsAt = snapshot.lastVerifiedAt ? new Date(new Date(snapshot.lastVerifiedAt).getTime() + GRACE_PERIOD_MS).toISOString() : null;
   if (snapshot.lastCheckError && inGrace(snapshot)) warnings.push(`Grace period active until ${gracePeriodEndsAt}.`);
@@ -174,6 +191,6 @@ export async function getLicenseTier(db: Queryable = createDatabase()) { return 
 export async function syncLicenseStatus(db: Queryable = createDatabase()) { return checkLicense(db); }
 export async function updateAndVerifyLicense(input: VerifyLicenseInput, db: Queryable = createDatabase()) {
   const local = await getLocalLicense(db).catch(() => null);
-  await saveLicenseSnapshot({ ...(local || {}), licenseKey: input.licenseKey || '', licenseEmail: input.email || input.licenseEmail || '', licenseApiUrl: input.licenseApiUrl || '', installId: input.installId || local?.installId || createInstallId(), siteUrl: input.siteUrl || local?.siteUrl || siteUrlFromEnv(), domain: input.domain || local?.domain || '', appVersion: input.appVersion || local?.appVersion || await packageVersion(), tier: local?.tier || 'basic', status: 'unverified', enabledModules: local?.enabledModules || basicModules, expiresAt: local?.expiresAt || null, lastVerifiedAt: local?.lastVerifiedAt || null, lastCheckError: null }, db);
+  await saveLicenseSnapshot({ ...(local || {}), licenseKey: input.licenseKey || local?.licenseKey || '', licenseEmail: input.email || input.licenseEmail || local?.licenseEmail || '', licenseApiUrl: input.licenseApiUrl || local?.licenseApiUrl || getDefaultLicenseApiUrl(), installId: input.installId || local?.installId || createInstallId(), siteUrl: input.siteUrl || local?.siteUrl || siteUrlFromEnv(), domain: input.domain || local?.domain || '', appVersion: input.appVersion || local?.appVersion || await packageVersion(), tier: local?.tier || 'basic', status: 'unverified', enabledModules: local?.enabledModules || basicModules, expiresAt: local?.expiresAt || null, lastVerifiedAt: local?.lastVerifiedAt || null, lastCheckError: null }, db);
   return verifyLicense(input, db);
 }
