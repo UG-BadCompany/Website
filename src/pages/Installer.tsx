@@ -181,7 +181,7 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   const [companyName, setCompanyName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
-  const [licenseForm, setLicenseForm] = useState({ licenseApiUrl: '', licenseKey: '', email: '', domain: window.location.host });
+  const [licenseForm, setLicenseForm] = useState({ licenseKey: '', email: '', domain: window.location.host });
   const [licenseStatus, setLicenseStatus] = useState<'idle' | 'verifying' | 'valid' | 'invalid'>('idle');
   const [licenseMessage, setLicenseMessage] = useState('');
   const [licenseSnapshot, setLicenseSnapshot] = useState<any>(null);
@@ -199,17 +199,6 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
   }, [hosting]);
 
   useEffect(() => { saveTheme(theme); }, [theme]);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/install/license-defaults', { headers: { accept: 'application/json' }, cache: 'no-store' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => {
-        if (active && data?.licenseApiUrl) setLicenseForm((currentForm) => currentForm.licenseApiUrl.trim() ? currentForm : { ...currentForm, licenseApiUrl: data.licenseApiUrl });
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     setHomepage((currentDraft) => ({
@@ -345,8 +334,8 @@ export function InstallerPage({ step = 'install' }: { step?: string }) {
 }
 
 
-function LicenseActivationStep({ form, setForm, status, message, snapshot, onVerify }: { form: { licenseApiUrl: string; licenseKey: string; email: string; domain: string }; setForm: (value: { licenseApiUrl: string; licenseKey: string; email: string; domain: string }) => void; status: string; message: string; snapshot: any; onVerify: () => void }) {
-  return <><h1>License Activation</h1><p>Enter your ContractorOS license key and license email. The installer verifies against the official ContractorOS License Server automatically.</p><div className="grid cards"><label><span className="field-label">License Key</span><input placeholder="COS-BASIC-XXXX-XXXX-XXXX" value={form.licenseKey} onChange={(e) => setForm({ ...form, licenseKey: e.target.value })}/></label><label><span className="field-label">License Email</span><input placeholder="customer@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/></label></div><details><summary>Advanced license server settings</summary><p className="muted">Only use this for local development, staging, or self-hosted License Portal testing.</p><label><span className="field-label">License API URL</span><input placeholder="https://taselling.netlify.app" value={form.licenseApiUrl} onChange={(e) => setForm({ ...form, licenseApiUrl: e.target.value })}/></label></details><button className="button" type="button" disabled={status === 'verifying'} onClick={onVerify}>{status === 'verifying' ? 'Verifying…' : 'Verify License'}</button>{message && <p className={status === 'invalid' ? 'error-text' : 'muted'}>{message}</p>}{snapshot && <div className="permission-list"><span className="pill">Tier: {snapshot.tier}</span>{(snapshot.enabledModules || []).slice(0, 8).map((module: string) => <span className="pill" key={module}>{module}</span>)}</div>}</>;
+function LicenseActivationStep({ form, setForm, status, message, snapshot, onVerify }: { form: { licenseKey: string; email: string; domain: string }; setForm: (value: { licenseKey: string; email: string; domain: string }) => void; status: string; message: string; snapshot: any; onVerify: () => void }) {
+  return <><h1>License Activation</h1><p>Enter your ContractorOS license key and license email. The installer verifies against the official ContractorOS License Server automatically.</p><div className="grid cards"><label><span className="field-label">License Key</span><input placeholder="COS-BASIC-XXXX-XXXX-XXXX" value={form.licenseKey} onChange={(e) => setForm({ ...form, licenseKey: e.target.value })}/></label><label><span className="field-label">License Email</span><input placeholder="customer@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/></label></div><p className="muted">License Portal: https://taselling.netlify.app</p><button className="button" type="button" disabled={status === 'verifying'} onClick={onVerify}>{status === 'verifying' ? 'Verifying…' : 'Verify License'}</button>{message && <p className={status === 'invalid' ? 'error-text' : 'muted'}>{message}</p>}{snapshot && <div className="permission-list"><span className="pill">Tier: {snapshot.tier}</span>{(snapshot.enabledModules || []).slice(0, 8).map((module: string) => <span className="pill" key={module}>{module}</span>)}</div>}</>;
 }
 
 function HostingStep({ hosting, setHosting }: { hosting: HostingProvider; setHosting: (value: HostingProvider) => void }) {

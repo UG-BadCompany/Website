@@ -25,10 +25,7 @@ export const moduleLicenseMap = {
   service_catalog: { minTier: 'pro' },
   project_showcase: { minTier: 'pro' },
   google_reviews: { minTier: 'pro' },
-  advanced_media: { minTier: 'pro' },
   client_portal: { minTier: 'pro' },
-  technician_workflow: { minTier: 'pro' },
-  quote_job_invoice_automation: { minTier: 'pro' },
 
   cmms: { minTier: 'business' },
   assets: { minTier: 'business' },
@@ -39,6 +36,9 @@ export const moduleLicenseMap = {
   multiple_payment_providers: { minTier: 'business' },
   ai_quoting: { minTier: 'business' },
   ai_troubleshooting: { minTier: 'business' },
+  advanced_media: { minTier: 'business' },
+  technician_workflow: { minTier: 'business' },
+  quote_job_invoice_automation: { minTier: 'business' },
 } as const;
 
 export const basicModules = Object.entries(moduleLicenseMap).filter(([, value]) => value.minTier === 'basic').map(([key]) => key);

@@ -63,12 +63,11 @@ DATABASE_URL=
 RESEND_API_KEY=
 EMAIL_FROM=
 AUTH_SECRET=
-LICENSE_PUBLIC_KEY=
 PAYMENT_PROVIDER=square
 STORAGE_PROVIDER=
 ```
 
-Netlify suggested keys (license activation uses the built-in official ContractorOS License Server; set optional `LICENSE_API_URL_OVERRIDE` only for dev, staging, or self-hosted portal testing):
+Netlify suggested keys (license activation uses the built-in official ContractorOS License Server at https://taselling.netlify.app and does not require license environment variables):
 
 ```env
 SITE_URL=
@@ -79,8 +78,6 @@ NETLIFY_DATABASE_URL=
 RESEND_API_KEY=
 MAGIC_LINK_FROM_EMAIL=
 AUTH_SECRET=
-LICENSE_API_URL_OVERRIDE=
-LICENSE_PUBLIC_KEY=
 SQUARE_ACCESS_TOKEN=
 SQUARE_APPLICATION_ID=
 SQUARE_LOCATION_ID=
