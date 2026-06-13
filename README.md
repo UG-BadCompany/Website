@@ -68,7 +68,7 @@ PAYMENT_PROVIDER=square
 STORAGE_PROVIDER=
 ```
 
-Netlify suggested keys (add optional `LICENSE_API_URL` only if you want to pre-fill the installer/settings License API URL field):
+Netlify suggested keys (license activation uses the built-in official ContractorOS License Server; set optional `LICENSE_API_URL_OVERRIDE` only for dev, staging, or self-hosted portal testing):
 
 ```env
 SITE_URL=
@@ -79,7 +79,7 @@ NETLIFY_DATABASE_URL=
 RESEND_API_KEY=
 MAGIC_LINK_FROM_EMAIL=
 AUTH_SECRET=
-LICENSE_API_URL=
+LICENSE_API_URL_OVERRIDE=
 LICENSE_PUBLIC_KEY=
 SQUARE_ACCESS_TOKEN=
 SQUARE_APPLICATION_ID=

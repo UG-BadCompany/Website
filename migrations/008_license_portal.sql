@@ -1,11 +1,11 @@
 -- ContractorOS License Portal API local snapshot storage.
 CREATE TABLE IF NOT EXISTS license_settings (
   id uuid primary key default gen_random_uuid(),
-  license_api_url text not null,
+  license_api_url text not null default 'https://taselling.netlify.app',
   license_key text not null,
   license_email text not null,
-  tier text not null,
-  status text not null,
+  tier text,
+  status text,
   enabled_modules jsonb default '[]'::jsonb,
   install_id text unique not null,
   site_url text,
@@ -19,18 +19,17 @@ CREATE TABLE IF NOT EXISTS license_settings (
 );
 
 UPDATE license_settings
-SET license_api_url = coalesce(license_api_url, ''),
+SET license_api_url = coalesce(nullif(license_api_url, ''), 'https://taselling.netlify.app'),
     license_key = coalesce(license_key, ''),
     license_email = coalesce(license_email, ''),
     tier = coalesce(tier, 'basic'),
     status = coalesce(status, 'unverified');
 
 ALTER TABLE license_settings
+  ALTER COLUMN license_api_url SET DEFAULT 'https://taselling.netlify.app',
   ALTER COLUMN license_api_url SET NOT NULL,
   ALTER COLUMN license_key SET NOT NULL,
-  ALTER COLUMN license_email SET NOT NULL,
-  ALTER COLUMN tier SET NOT NULL,
-  ALTER COLUMN status SET NOT NULL;
+  ALTER COLUMN license_email SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS license_events (
   id uuid primary key default gen_random_uuid(),
