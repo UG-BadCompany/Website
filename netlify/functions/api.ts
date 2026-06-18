@@ -8,8 +8,8 @@ import { validateEnvironment } from '../../lib/server/env-validation';
 import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
 import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireActiveLicense, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError, LicenseRequiredError } from '../../lib/server/license-client';
-import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
-import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, quoteDraftAction, runTroubleshooting, getTroubleshooting, troubleshootingAction, aiResponseError } from '../../lib/server/ai/ai-service';
+import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, listHomepageBackups, createHomepageBackup, restoreHomepageBackup, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
+import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, getTroubleshooting, troubleshootingAction, aiResponseError } from '../../lib/server/ai/ai-service';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -207,6 +207,10 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const user = await requirePermission(event, 'homepage.manage');
       return json(200, await restoreHomepageVersion(homepageRestoreMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
     }
+    if (path === '/homepage/backups' && event.httpMethod === 'GET') return json(200, await listHomepageBackups(await requirePermission(event, 'homepage.view')), { 'cache-control': 'no-store, max-age=0' });
+    if (path === '/homepage/backups' && event.httpMethod === 'POST') return json(200, await createHomepageBackup(readBody(event), await requirePermission(event, 'homepage.manage')), { 'cache-control': 'no-store, max-age=0' });
+    const homepageBackupRestoreMatch = path.match(/^\/homepage\/backups\/([^/]+)\/restore$/);
+    if (homepageBackupRestoreMatch && event.httpMethod === 'POST') return json(200, await restoreHomepageBackup(homepageBackupRestoreMatch[1], await requirePermission(event, 'homepage.manage')), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/homepage-builder/templates' && event.httpMethod === 'GET') return json(200, await homepageTemplates(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/homepage-builder/section-library' && event.httpMethod === 'GET') return json(200, await homepageSectionLibrary(), { 'cache-control': 'no-store, max-age=0' });
     if (path === '/project-showcases' && event.httpMethod === 'GET') return json(200, await listProjectShowcases(await requirePermission(event, 'project_showcase.view')), { 'cache-control': 'no-store, max-age=0' });
@@ -222,6 +226,10 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       if (event.httpMethod === 'GET') return json(200, await getAiSettings(), { 'cache-control': 'no-store, max-age=0' });
       if (event.httpMethod === 'PATCH') { await requirePermission(event, 'settings.manage'); return json(200, await patchAiSettings(readBody(event), user), { 'cache-control': 'no-store, max-age=0' }); }
       throw new HttpError(405, 'Method not allowed');
+    }
+    if (path === '/ai/quote/requests/search' && event.httpMethod === 'GET') {
+      const user = await requirePermission(event, 'quotes.manage');
+      return json(200, await searchAiQuoteRequests(event.queryStringParameters || {}, user), { 'cache-control': 'no-store, max-age=0' });
     }
     if (path.startsWith('/ai/quote/')) {
       const user = await requirePermission(event, 'quotes.manage');
