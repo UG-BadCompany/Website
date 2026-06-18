@@ -1,1 +1,1 @@
-export { runTroubleshooting, getTroubleshooting, troubleshootingAction } from './ai-service';
+export { runTroubleshooting, processTroubleshooting, getTroubleshooting, troubleshootingAction } from './ai-service';
