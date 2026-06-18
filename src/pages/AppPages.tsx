@@ -36,7 +36,7 @@ const money = (cents = 0) => new Intl.NumberFormat(undefined, { style: 'currency
 async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { credentials: 'include', cache: 'no-store', headers: { accept: 'application/json', ...(init?.body ? { 'content-type': 'application/json' } : {}), ...(init?.headers || {}) }, ...init });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+  if (!response.ok) throw new Error(payload.message || payload.error || `Request failed (${response.status})`);
   return payload as T;
 }
 
@@ -275,7 +275,7 @@ function ModuleForm({ config, onSaved }: { config: RealModuleConfig; onSaved: ()
     config.fields.forEach((field) => { if (field.type !== 'file') payload[field.key] = valueForField(form, field); });
     if (config.totals && Array.isArray(payload.items)) delete payload.items;
     setStatus('Saving…');
-    try { await apiJson(config.endpoint === '/api/payments' ? '/api/payments/manual' : config.endpoint, { method: 'POST', body: JSON.stringify(payload) }); form.reset(); setStatus('Saved.'); onSaved(); }
+    try { await apiJson(config.endpoint === '/api/payments' ? '/api/payments/manual' : config.endpoint, { method: 'POST', body: JSON.stringify(payload) }); if (form) form.reset(); setStatus('Saved.'); onSaved(); }
     catch (caught) { setStatus(caught instanceof Error ? caught.message : 'Save failed.'); }
   };
   return <form className="card form-grid" onSubmit={submit}><h2>{config.createLabel}</h2>{config.fields.map((field) => <label key={field.key}>{field.label}{field.type === 'textarea' ? <textarea name={field.key} placeholder={field.placeholder} required={field.required}/> : field.type === 'select' ? <select name={field.key} required={field.required}>{(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input name={field.key} type={field.type === 'money' ? 'number' : field.type || 'text'} step={field.type === 'money' ? '0.01' : undefined} placeholder={field.placeholder} required={field.required}/>}</label>)}<Button>{config.createLabel}</Button>{status && <p className="muted">{status}</p>}</form>;

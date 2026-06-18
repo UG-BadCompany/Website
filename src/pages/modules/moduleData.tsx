@@ -18,7 +18,7 @@ export const text = (form: FormData, key: string) => String(form.get(key) || '')
 export async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { credentials: 'include', cache: 'no-store', headers: { accept: 'application/json', ...(init?.body ? { 'content-type': 'application/json' } : {}), ...(init?.headers || {}) }, ...init });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+  if (!response.ok) throw new Error(payload.message || payload.error || `Request failed (${response.status})`);
   return payload as T;
 }
 
@@ -119,7 +119,7 @@ export function WorkflowButtons({ disabled, actions }: { disabled?: boolean; act
 }
 
 export function submitForm(handler: (form: FormData) => Promise<void>) {
-  return async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); await handler(new FormData(event.currentTarget)); event.currentTarget.reset(); };
+  return async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = event.currentTarget; try { await handler(new FormData(form)); if (form) form.reset(); } catch (caught) { console.error('Form submission failed', caught); } };
 }
 
 export function ModuleStatus({ loading, error }: { loading: boolean; error: string }) {

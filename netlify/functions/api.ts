@@ -9,7 +9,7 @@ import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
 import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireActiveLicense, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError, LicenseRequiredError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, listHomepageBackups, createHomepageBackup, restoreHomepageBackup, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
-import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, getTroubleshooting, troubleshootingAction, aiResponseError } from '../../lib/server/ai/ai-service';
+import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, processTroubleshooting, getTroubleshooting, troubleshootingAction, aiResponseError } from '../../lib/server/ai/ai-service';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -250,8 +250,10 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       try {
         const getMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)$/);
         const actionMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)\/(save-to-job|create-checklist|rerun)$/);
-        if (path === '/ai/troubleshooting/run' && event.httpMethod === 'POST') return json(200, await runTroubleshooting(readBody(event), user), { 'cache-control': 'no-store, max-age=0' });
+        if (path === '/ai/troubleshooting/run' && event.httpMethod === 'POST') return json(202, await runTroubleshooting(readBody(event), user), { 'cache-control': 'no-store, max-age=0' });
         if (getMatch && event.httpMethod === 'GET') return json(200, await getTroubleshooting(getMatch[1]), { 'cache-control': 'no-store, max-age=0' });
+        const processMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)\/process$/);
+        if (processMatch && event.httpMethod === 'POST') return json(200, await processTroubleshooting(processMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
         if (actionMatch && event.httpMethod === 'POST') return json(200, await troubleshootingAction(actionMatch[1], actionMatch[2], readBody(event)), { 'cache-control': 'no-store, max-age=0' });
       } catch (error) { return json(400, aiResponseError(error), { 'cache-control': 'no-store, max-age=0' }); }
     }
@@ -299,7 +301,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
   } catch (error) {
     if (error instanceof LicenseRequiredError) return json(error.statusCode, error.toResponse());
     if (error instanceof LicenseModuleLockedError) return json(error.statusCode, error.toResponse());
-    if (error instanceof HttpError) { const raw = error.message || 'Request failed'; const match = raw.match(/^([A-Z0-9_]+):(.*)$/); const code = match?.[1] || (error.statusCode === 404 ? 'NOT_FOUND' : error.statusCode === 405 ? 'METHOD_NOT_ALLOWED' : 'REQUEST_FAILED'); const message = (match?.[2] || raw).trim(); return json(error.statusCode, { ok: false, error: message, code, route, method, step: stepForRoute(route, method), message }); }
+    if (error instanceof HttpError) { const raw = error.message || 'Request failed'; const match = raw.match(/^([A-Z0-9_]+):(.*)$/); const code = match?.[1] || (error.statusCode === 404 ? 'NOT_FOUND' : error.statusCode === 405 ? 'METHOD_NOT_ALLOWED' : 'REQUEST_FAILED'); const message = (match?.[2] || raw).trim(); const currentStatus = message.match(/currentStatus=([^;]*)/)?.[1]; const allowedStatuses = message.match(/allowedStatuses=([^;]*)/)?.[1]?.split(',').filter(Boolean); const cleanMessage = message.replace(/ currentStatus=.*$/, '').trim(); return json(error.statusCode, { ok: false, error: cleanMessage, code, route, method, step: stepForRoute(route, method), message: cleanMessage, ...(currentStatus != null ? { currentStatus } : {}), ...(allowedStatuses ? { allowedStatuses } : {}) }); }
     const details = errorDetails(error);
     console.error('ContractorOS API unhandled error', { route, method, ...details });
     return json(500, {
