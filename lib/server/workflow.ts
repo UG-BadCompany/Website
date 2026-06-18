@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { hasPermission, type AuthUser, HttpError } from './auth';
+import { canAccessResource, hasPermission, type AuthUser, HttpError } from './auth';
 import { readConfig } from './config';
 import { createDatabase, type Queryable } from './database';
 
@@ -43,6 +43,8 @@ export async function ensureWorkflowFoundation(db: Queryable = createDatabase())
   await db.query(`alter table work_requests add column if not exists title text, add column if not exists updated_at timestamptz default now(), add column if not exists source text default 'website', add column if not exists assigned_user_id uuid references users(id), add column if not exists internal_notes text, add column if not exists customer_notes text`);
   await db.query(`alter table quotes add column if not exists property_id uuid references properties(id), add column if not exists subtotal_cents int default 0, add column if not exists tax_cents int default 0, add column if not exists discount_cents int default 0, add column if not exists deposit_cents int default 0, add column if not exists terms text, add column if not exists customer_notes text, add column if not exists internal_notes text, add column if not exists updated_at timestamptz default now(), add column if not exists expires_at timestamptz`);
   await db.query(`alter table jobs add column if not exists request_id uuid references work_requests(id), add column if not exists title text, add column if not exists scope text, add column if not exists customer_visible_scope text, add column if not exists completion_notes text, add column if not exists customer_summary text, add column if not exists internal_notes text, add column if not exists labor_hours numeric default 0, add column if not exists materials jsonb default '[]'::jsonb, add column if not exists started_at timestamptz, add column if not exists completed_at timestamptz, add column if not exists closed_at timestamptz, add column if not exists updated_at timestamptz default now()`);
+  await db.query(`create table if not exists job_closeouts (id uuid primary key default gen_random_uuid(), job_id uuid not null references jobs(id) on delete cascade, completed_by uuid references users(id), completion_notes text, customer_notes text, before_photos jsonb default '[]'::jsonb, after_photos jsonb default '[]'::jsonb, materials_used jsonb default '[]'::jsonb, labor_entries jsonb default '[]'::jsonb, checklist jsonb default '[]'::jsonb, created_invoice_id uuid, created_at timestamptz default now(), updated_at timestamptz default now())`);
+  await db.query(`create index if not exists job_closeouts_job_idx on job_closeouts(job_id, created_at desc)`);
   await db.query(`alter table invoices add column if not exists quote_id uuid references quotes(id), add column if not exists invoice_number text, add column if not exists subtotal_cents int default 0, add column if not exists tax_cents int default 0, add column if not exists deposit_cents int default 0, add column if not exists paid_cents int default 0, add column if not exists terms text, add column if not exists updated_at timestamptz default now(), add column if not exists viewed_at timestamptz, add column if not exists closed_at timestamptz`);
   await db.query(`alter table payments add column if not exists client_id uuid references clients(id), add column if not exists method text default 'manual', add column if not exists note text, add column if not exists reference text, add column if not exists updated_at timestamptz default now()`);
   await db.query(`alter table message_threads add column if not exists status text default 'open', add column if not exists needs_reply boolean default false, add column if not exists unread_count int default 0`);
@@ -197,23 +199,43 @@ async function completeJob(db: Queryable, user: AuthUser, id: string, body: Body
 
 async function closeoutJob(db: Queryable, user: AuthUser, id: string, body: Body) {
   requireManage(user, 'jobs');
+  const warnings: string[] = [];
+  if (!body || typeof body !== 'object') throw new HttpError(400, 'VALIDATION_ERROR:Closeout details are required.');
   const job = await jobContext(db, id);
-  if (['cancelled','closed'].includes(job.status)) throw new HttpError(409, `Cannot close out a ${job.status} job`);
-  await db.query(`update jobs set status='completed', completed_at=coalesce(completed_at,now()), completion_notes=$2, customer_summary=$3, internal_notes=$4, labor_hours=$5, materials=$6::jsonb, updated_at=now() where id=$1`, [id, str(body.completionNotes) || str(body.workPerformed), str(body.customerSummary), str(body.internalNotes), Number(body.laborHours) || 0, JSON.stringify(Array.isArray(body.materials) ? body.materials : [])]);
-  await addActivity(db, user, 'job', id, 'job_completed', 'Job completed', { description: str(body.completionNotes), visibility: 'client' });
-  if (job.requestId) await db.query(`update work_requests set status='completed', updated_at=now() where id=$1`, [job.requestId]);
+  if (!canAccessResource(user, { clientId: job.clientId, assignedUserId: job.assigned_user_id || job.assignedUserId })) throw new HttpError(403, 'Record is outside your role scope');
+  if (['cancelled','closed'].includes(job.status)) throw new HttpError(409, `VALIDATION_ERROR:Cannot close out a ${job.status} job`);
+
+  const completionNotes = str(body.completionNotes) || str(body.workPerformed) || str(body.outcome, 'Job completed.');
+  if (!completionNotes.trim()) throw new HttpError(400, 'VALIDATION_ERROR:Closeout details are required.');
+  const materials = Array.isArray(body.materials) ? body.materials : Array.isArray(body.materialsUsed) ? body.materialsUsed : [];
+  await db.query(`update jobs set status='completed', completed_at=coalesce(completed_at,now()), closed_at=coalesce(closed_at,now()), completion_notes=$2, customer_summary=$3, internal_notes=$4, labor_hours=$5, materials=$6::jsonb, updated_at=now() where id=$1`, [id, completionNotes, str(body.customerSummary) || str(body.customerNotes), str(body.internalNotes), Number(body.laborHours) || 0, JSON.stringify(materials)]);
+  await addActivity(db, user, 'job', id, 'job_completed', 'Job completed', { description: completionNotes, visibility: 'client' }).catch((error) => warnings.push(`Activity timeline could not be updated: ${error.message}`));
+  if (job.requestId) await db.query(`update work_requests set status='completed', updated_at=now() where id=$1`, [job.requestId]).catch((error) => warnings.push(`Linked request could not be marked completed: ${error.message}`));
+
   let invoiceId: string | null = null;
-  const shouldInvoice = body.createAndSendInvoice ?? await getSetting(db, 'workflow.auto_invoice_on_job_complete', true);
+  let closeout: any = null;
+  try {
+    closeout = (await db.query<any>(`insert into job_closeouts (job_id,completed_by,completion_notes,customer_notes,before_photos,after_photos,materials_used,labor_entries,checklist) values ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb) returning id::text, job_id::text as "jobId", completed_by::text as "completedBy", completion_notes as "completionNotes", customer_notes as "customerNotes", before_photos as "beforePhotos", after_photos as "afterPhotos", materials_used as "materialsUsed", labor_entries as "laborEntries", checklist, created_invoice_id::text as "createdInvoiceId", created_at::text as "createdAt", updated_at::text as "updatedAt"`, [id, user.id, completionNotes, str(body.customerNotes) || str(body.customerSummary), JSON.stringify(Array.isArray(body.beforePhotos) ? body.beforePhotos : []), JSON.stringify(Array.isArray(body.afterPhotos) ? body.afterPhotos : []), JSON.stringify(materials), JSON.stringify(Array.isArray(body.laborEntries) ? body.laborEntries : []), JSON.stringify(Array.isArray(body.checklist) ? body.checklist : [])])).rows[0];
+  } catch (error: any) { warnings.push(`Closeout record could not be saved: ${error.message}`); }
+
+  const shouldInvoice = body.createInvoice ?? body.createAndSendInvoice ?? await getSetting(db, 'workflow.auto_invoice_on_job_complete', true);
   if (shouldInvoice) {
-    const created = await createInvoiceFromJob(db, user, id, body);
-    invoiceId = created.invoiceId;
-    const shouldSend = body.sendInvoice ?? await getSetting(db, 'workflow.auto_send_invoice_on_job_complete', true);
-    if (shouldSend && invoiceId) await sendInvoice(db, user, invoiceId);
+    try {
+      if (!job.clientId) throw new Error('Job is missing a client for invoice creation.');
+      const created = await createInvoiceFromJob(db, user, id, body);
+      invoiceId = created.invoiceId;
+      if (closeout?.id && invoiceId) await db.query(`update job_closeouts set created_invoice_id=$2, updated_at=now() where id=$1`, [closeout.id, invoiceId]).catch(() => undefined);
+      const shouldSend = body.sendInvoice ?? await getSetting(db, 'workflow.auto_send_invoice_on_job_complete', true);
+      if (shouldSend && invoiceId) await sendInvoice(db, user, invoiceId).catch((error) => warnings.push(`Invoice was created but could not be sent automatically: ${error.message}`));
+    } catch (error: any) { warnings.push('Job was closed, but invoice could not be created automatically.'); warnings.push(error.message); }
   }
   const closeOnSent = await getSetting(db, 'workflow.close_request_when_invoice_sent', false);
-  if (closeOnSent && job.requestId && invoiceId) await db.query(`update work_requests set status='closed', updated_at=now() where id=$1`, [job.requestId]);
-  const invoice = invoiceId ? (await db.query<{ invoice_number: string | null; status: string }>(`select invoice_number,status from invoices where id=$1`, [invoiceId])).rows[0] : null;
-  return { ok: true, jobId: id, jobStatus: 'completed', invoiceId, invoiceNumber: invoice?.invoice_number || null, invoiceStatus: invoice?.status || null, requestStatus: job.requestId ? (await db.query<{ status: string }>(`select status from work_requests where id=$1`, [job.requestId])).rows[0]?.status : null, summary: await getWorkflowSummary(db, 'job', id) };
+  if (closeOnSent && job.requestId && invoiceId) await db.query(`update work_requests set status='closed', updated_at=now() where id=$1`, [job.requestId]).catch((error) => warnings.push(`Linked request could not be closed: ${error.message}`));
+  const [updatedJob, invoice] = await Promise.all([
+    db.query<any>(`select id::text,status,completed_at::text as "completedAt",closed_at::text as "closedAt",completion_notes as "completionNotes" from jobs where id=$1`, [id]),
+    invoiceId ? db.query<any>(`select id::text,invoice_number as "invoiceNumber",status,total_cents as total,balance_cents as balance from invoices where id=$1`, [invoiceId]) : Promise.resolve({ rows: [] } as any),
+  ]);
+  return { ok: true, job: updatedJob.rows[0], closeout, invoice: invoice.rows[0] || null, warnings, summary: await getWorkflowSummary(db, 'job', id) };
 }
 
 async function createInvoiceFromJob(db: Queryable, user: AuthUser, id: string, body: Body) {
@@ -296,7 +318,7 @@ async function quoteContext(db: Queryable, id: string) {
 }
 async function jobContext(db: Queryable, id: string) {
   const row = (await db.query<any>(`select j.*, j.client_id::text as "clientId", j.property_id::text as "propertyId", j.quote_id::text as "quoteId", j.request_id::text as "requestId", c.email from jobs j left join clients c on c.id=j.client_id where j.id=$1`, [id])).rows[0];
-  if (!row) throw new HttpError(404, 'Job not found');
+  if (!row) throw new HttpError(404, 'JOB_NOT_FOUND:Job not found');
   return row;
 }
 async function invoiceContext(db: Queryable, id: string) {

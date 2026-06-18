@@ -1,1 +1,1 @@
-export { runOpenAiJson, selectedModel } from './ai-service';
+export { buildOpenAiJsonPayload, runOpenAiJson, selectedModel, supportsCustomTemperature } from './ai-service';
