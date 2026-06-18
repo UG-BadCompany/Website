@@ -45,7 +45,7 @@ export async function ensureWorkflowFoundation(db: Queryable = createDatabase())
   await db.query(`alter table jobs add column if not exists request_id uuid references work_requests(id), add column if not exists title text, add column if not exists scope text, add column if not exists customer_visible_scope text, add column if not exists completion_notes text, add column if not exists customer_summary text, add column if not exists internal_notes text, add column if not exists labor_hours numeric default 0, add column if not exists materials jsonb default '[]'::jsonb, add column if not exists started_at timestamptz, add column if not exists completed_at timestamptz, add column if not exists closed_at timestamptz, add column if not exists updated_at timestamptz default now()`);
   await db.query(`create table if not exists job_closeouts (id uuid primary key default gen_random_uuid(), job_id uuid not null references jobs(id) on delete cascade, completed_by uuid references users(id), completion_notes text, customer_notes text, before_photos jsonb default '[]'::jsonb, after_photos jsonb default '[]'::jsonb, materials_used jsonb default '[]'::jsonb, labor_entries jsonb default '[]'::jsonb, checklist jsonb default '[]'::jsonb, created_invoice_id uuid, created_at timestamptz default now(), updated_at timestamptz default now())`);
   await db.query(`create index if not exists job_closeouts_job_idx on job_closeouts(job_id, created_at desc)`);
-  await db.query(`alter table invoices add column if not exists quote_id uuid references quotes(id), add column if not exists invoice_number text, add column if not exists subtotal_cents int default 0, add column if not exists tax_cents int default 0, add column if not exists deposit_cents int default 0, add column if not exists paid_cents int default 0, add column if not exists terms text, add column if not exists updated_at timestamptz default now(), add column if not exists viewed_at timestamptz, add column if not exists closed_at timestamptz`);
+  await db.query(`alter table invoices add column if not exists quote_id uuid references quotes(id), add column if not exists request_id uuid references work_requests(id), add column if not exists property_id uuid references properties(id), add column if not exists invoice_number text, add column if not exists subtotal_cents int default 0, add column if not exists tax_cents int default 0, add column if not exists deposit_cents int default 0, add column if not exists paid_cents int default 0, add column if not exists terms text, add column if not exists updated_at timestamptz default now(), add column if not exists viewed_at timestamptz, add column if not exists closed_at timestamptz`);
   await db.query(`alter table payments add column if not exists client_id uuid references clients(id), add column if not exists method text default 'manual', add column if not exists note text, add column if not exists reference text, add column if not exists updated_at timestamptz default now()`);
   await db.query(`alter table message_threads add column if not exists status text default 'open', add column if not exists needs_reply boolean default false, add column if not exists unread_count int default 0`);
   await upsertSetting(db, 'workflow.auto_invoice_on_job_complete', true, true);
@@ -162,7 +162,9 @@ async function sendQuote(db: Queryable, user: AuthUser, id: string) {
 
 async function approveQuote(db: Queryable, user: AuthUser, id: string) {
   const quote = await quoteContext(db, id);
-  const allowedStatuses = ['draft','ready','sent','viewed'];
+  if (!canAccessResource(user, { clientId: quote.clientId })) throw new HttpError(403, 'Record is outside your role scope');
+  if (user.role !== 'Client') requireManage(user, 'quotes');
+  const allowedStatuses = user.role === 'Client' ? ['sent','viewed'] : ['draft','ready','sent','viewed'];
   if (!allowedStatuses.includes(String(quote.status || 'draft'))) throw new HttpError(409, `QUOTE_INVALID_TRANSITION:Quote cannot be approved from current status. currentStatus=${quote.status || ''}; allowedStatuses=${allowedStatuses.join(',')}`);
   await db.query(`update quotes set status='approved', approved_at=now(), updated_at=now() where id=$1`, [id]);
   if (quote.requestId) await db.query(`update work_requests set status='approved', updated_at=now() where id=$1`, [quote.requestId]);
@@ -174,7 +176,9 @@ async function approveQuote(db: Queryable, user: AuthUser, id: string) {
 
 async function declineQuote(db: Queryable, user: AuthUser, id: string, body: Body) {
   const quote = await quoteContext(db, id);
-  const allowedStatuses = ['draft','ready','sent','viewed'];
+  if (!canAccessResource(user, { clientId: quote.clientId })) throw new HttpError(403, 'Record is outside your role scope');
+  if (user.role !== 'Client') requireManage(user, 'quotes');
+  const allowedStatuses = user.role === 'Client' ? ['sent','viewed'] : ['draft','ready','sent','viewed'];
   if (!allowedStatuses.includes(String(quote.status || 'draft'))) throw new HttpError(409, `QUOTE_INVALID_TRANSITION:Quote cannot be declined from current status. currentStatus=${quote.status || ''}; allowedStatuses=${allowedStatuses.join(',')}`);
   await db.query(`update quotes set status='declined', declined_at=now(), updated_at=now() where id=$1`, [id]);
   await addActivity(db, user, 'quote', id, 'quote_declined', 'Quote declined', { description: str(body.reason || body.declineReason), visibility: 'client' });
@@ -251,11 +255,18 @@ async function createInvoiceFromJob(db: Queryable, user: AuthUser, id: string, b
   const quoteItems = job.quoteId ? (await db.query<any>(`select description,quantity,unit_price_cents from quote_items where quote_id=$1 order by sort_order`, [job.quoteId])).rows : [];
   const fallbackTotal = cents(body.total) || Math.round((Number(body.laborHours) || Number(job.laborHours) || 0) * (cents(body.laborRate) || 10000));
   const total = quoteItems.reduce((sum, item) => sum + Math.round(Number(item.quantity || 1) * Number(item.unit_price_cents || 0)), 0) || fallbackTotal;
-  const inv = await db.query<{ id: string; invoice_number: string }>(`insert into invoices (client_id,job_id,quote_id,status,total_cents,subtotal_cents,deposit_cents,paid_cents,balance_cents,due_at,invoice_number,terms) values ($1,$2,$3,'draft',$4,$4,$5,0,greatest(0,$4-$5),now()+interval '14 days',$6,$7) returning id::text, invoice_number`, [job.clientId, id, job.quoteId, total, cents(body.deposit), `INV-${Date.now().toString().slice(-8)}`, str(body.terms, 'Due on receipt')]);
+  const resolvedClientId = await resolveJobClientId(db, job, user); if (!resolvedClientId) throw new HttpError(400, 'INVOICE_CLIENT_REQUIRED:Cannot create invoice because no client is linked to this job.'); await db.query(`update jobs set client_id=$2, updated_at=now() where id=$1 and client_id is null`, [id, resolvedClientId]); const inv = await db.query<{ id: string; invoice_number: string }>(`insert into invoices (client_id,job_id,quote_id,request_id,property_id,status,total_cents,subtotal_cents,deposit_cents,paid_cents,balance_cents,due_at,invoice_number,terms) values ($1,$2,$3,$4,$5,'draft',$6,$6,$7,0,greatest(0,$6-$7),now()+interval '14 days',$8,$9) returning id::text, invoice_number`, [resolvedClientId, id, job.quoteId, job.requestId, job.propertyId, total, cents(body.deposit), `INV-${Date.now().toString().slice(-8)}`, str(body.terms, 'Due on receipt')]);
   if (quoteItems.length) for (const item of quoteItems) await db.query(`insert into invoice_items (invoice_id,description,quantity,unit_price_cents) values ($1,$2,$3,$4)`, [inv.rows[0].id, item.description, item.quantity, item.unit_price_cents]);
   else await db.query(`insert into invoice_items (invoice_id,description,quantity,unit_price_cents) values ($1,$2,1,$3)`, [inv.rows[0].id, str(body.workPerformed, job.title || 'Completed work'), total]);
-  await addLinkedEvent(db, user, job.clientId, job.propertyId, job.requestId, job.quoteId, id, inv.rows[0].id, 'invoice_created', 'Invoice created from completed job');
+  await addLinkedEvent(db, user, resolvedClientId, job.propertyId, job.requestId, job.quoteId, id, inv.rows[0].id, 'invoice_created', 'Invoice created from completed job');
   return { ok: true, id: inv.rows[0].id, invoiceId: inv.rows[0].id, invoiceNumber: inv.rows[0].invoice_number, summary: await getWorkflowSummary(db, 'invoice', inv.rows[0].id) };
+}
+
+
+async function resolveJobClientId(db: Queryable, job: any, user: AuthUser) {
+  if (job.clientId) return job.clientId;
+  const resolved = await db.query<any>(`select coalesce(j.client_id,q.client_id,wr.client_id,p.client_id)::text as "clientId" from jobs j left join quotes q on q.id=j.quote_id left join work_requests wr on wr.id=coalesce(j.request_id,q.request_id) left join properties p on p.id=coalesce(j.property_id,q.property_id,wr.property_id) where j.id=$1`, [job.id]);
+  return resolved.rows[0]?.clientId || (user.role === 'Client' ? user.clientId || null : null);
 }
 
 async function sendInvoice(db: Queryable, user: AuthUser, id: string) {
