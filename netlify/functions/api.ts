@@ -291,7 +291,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
   } catch (error) {
     if (error instanceof LicenseRequiredError) return json(error.statusCode, error.toResponse());
     if (error instanceof LicenseModuleLockedError) return json(error.statusCode, error.toResponse());
-    if (error instanceof HttpError) return json(error.statusCode, { ok: false, error: error.statusCode === 404 ? 'Route not found' : error.statusCode === 405 ? 'Method not allowed' : 'Route failed', route, method, step: stepForRoute(route, method), message: error.message });
+    if (error instanceof HttpError) { const raw = error.message || 'Request failed'; const match = raw.match(/^([A-Z0-9_]+):(.*)$/); const code = match?.[1] || (error.statusCode === 404 ? 'NOT_FOUND' : error.statusCode === 405 ? 'METHOD_NOT_ALLOWED' : 'REQUEST_FAILED'); const message = (match?.[2] || raw).trim(); return json(error.statusCode, { ok: false, error: message, code, route, method, step: stepForRoute(route, method), message }); }
     const details = errorDetails(error);
     console.error('ContractorOS API unhandled error', { route, method, ...details });
     return json(500, {
