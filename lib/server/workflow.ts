@@ -8,7 +8,7 @@ type EntityType = 'request' | 'quote' | 'job' | 'invoice' | 'payment' | 'client'
 
 export const workflowStatuses = {
   request: ['new','reviewing','needs_info','quoted','approved','scheduled','in_progress','completed','closed','cancelled','inactive'],
-  quote: ['draft','ready_to_send','sent','viewed','approved','declined','expired','converted','cancelled'],
+  quote: ['draft','ready','sent','viewed','approved','declined','expired','converted','void'],
   job: ['pending','scheduled','dispatched','in_progress','waiting_parts','waiting_customer','blocked','completed','cancelled','closed'],
   invoice: ['draft','sent','viewed','partially_paid','paid','overdue','void','closed'],
   payment: ['pending','completed','failed','refunded','partially_refunded','voided'],
@@ -19,7 +19,7 @@ const allowedTransitions: Record<string, Record<string, string[]>> = {
     new: ['reviewing','needs_info','quoted','cancelled','inactive'], reviewing: ['needs_info','quoted','approved','cancelled','inactive'], needs_info: ['reviewing','quoted','cancelled'], quoted: ['approved','cancelled','inactive'], approved: ['scheduled','in_progress','completed','closed','cancelled'], scheduled: ['in_progress','completed','closed','cancelled'], in_progress: ['completed','cancelled'], completed: ['closed'], closed: [], cancelled: [], inactive: ['reviewing','cancelled'],
   },
   quote: {
-    draft: ['ready_to_send','sent','cancelled'], ready_to_send: ['sent','cancelled'], sent: ['viewed','approved','declined','expired','cancelled'], viewed: ['approved','declined','expired','cancelled'], approved: ['converted','cancelled'], declined: [], expired: [], converted: [], cancelled: [],
+    draft: ['ready','sent','approved','declined'], ready: ['sent','approved','declined'], sent: ['viewed','approved','declined'], viewed: ['approved','declined'], approved: ['converted','void'], declined: ['draft'], expired: ['draft'], converted: [], void: [],
   },
   job: {
     pending: ['scheduled','dispatched','in_progress','cancelled'], scheduled: ['dispatched','in_progress','waiting_customer','cancelled'], dispatched: ['in_progress','waiting_parts','waiting_customer','blocked','cancelled'], in_progress: ['waiting_parts','waiting_customer','blocked','completed','cancelled'], waiting_parts: ['in_progress','completed','cancelled'], waiting_customer: ['in_progress','completed','cancelled'], blocked: ['in_progress','completed','cancelled'], completed: ['closed'], closed: [], cancelled: [],
@@ -161,19 +161,24 @@ async function sendQuote(db: Queryable, user: AuthUser, id: string) {
 }
 
 async function approveQuote(db: Queryable, user: AuthUser, id: string) {
-  await transition(db, user, 'quote', id, 'quotes', 'approved', 'quotes', `, approved_at=now()`, 'portal.view');
   const quote = await quoteContext(db, id);
+  const allowedStatuses = ['draft','ready','sent','viewed'];
+  if (!allowedStatuses.includes(String(quote.status || 'draft'))) throw new HttpError(409, `QUOTE_INVALID_TRANSITION:Quote cannot be approved from current status. currentStatus=${quote.status || ''}; allowedStatuses=${allowedStatuses.join(',')}`);
+  await db.query(`update quotes set status='approved', approved_at=now(), updated_at=now() where id=$1`, [id]);
   if (quote.requestId) await db.query(`update work_requests set status='approved', updated_at=now() where id=$1`, [quote.requestId]);
   await addLinkedEvent(db, user, quote.clientId, quote.propertyId, quote.requestId, id, null, null, 'quote_approved', 'Quote approved');
   let jobId: string | null = null;
   if (await getSetting(db, 'workflow.auto_create_job_on_quote_approval', true)) jobId = (await convertQuoteToJob(db, user, id, {}, true)).jobId;
-  return { ok: true, id, status: 'approved', jobId, summary: await getWorkflowSummary(db, 'quote', id) };
+  return { ok: true, id, status: 'approved', message: 'Quote approved.', quote: await quoteContext(db, id), jobId, summary: await getWorkflowSummary(db, 'quote', id) };
 }
 
 async function declineQuote(db: Queryable, user: AuthUser, id: string, body: Body) {
-  await transition(db, user, 'quote', id, 'quotes', 'declined', 'quotes', `, declined_at=now()`, 'portal.view');
-  await addActivity(db, user, 'quote', id, 'quote_declined', 'Quote declined', { description: str(body.reason), visibility: 'client' });
-  return { ok: true, id, status: 'declined', summary: await getWorkflowSummary(db, 'quote', id) };
+  const quote = await quoteContext(db, id);
+  const allowedStatuses = ['draft','ready','sent','viewed'];
+  if (!allowedStatuses.includes(String(quote.status || 'draft'))) throw new HttpError(409, `QUOTE_INVALID_TRANSITION:Quote cannot be declined from current status. currentStatus=${quote.status || ''}; allowedStatuses=${allowedStatuses.join(',')}`);
+  await db.query(`update quotes set status='declined', declined_at=now(), updated_at=now() where id=$1`, [id]);
+  await addActivity(db, user, 'quote', id, 'quote_declined', 'Quote declined', { description: str(body.reason || body.declineReason), visibility: 'client' });
+  return { ok: true, id, status: 'declined', message: 'Quote declined.', quote: await quoteContext(db, id), summary: await getWorkflowSummary(db, 'quote', id) };
 }
 
 async function convertQuoteToJob(db: Queryable, user: AuthUser, id: string, body: Body, internalAutomation = false) {
