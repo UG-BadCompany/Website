@@ -7,7 +7,7 @@ const deviceClass = (section: HomepageSection) => [section.visibility.desktop ? 
 export function HomepageRenderer({ draft, editable = false, selectedId = '', onSelect, onTextChange, device = 'desktop' }: { draft: HomepageDraft; editable?: boolean; selectedId?: string; onSelect?: (id: string) => void; onTextChange?: (id: string, key: 'heading' | 'subheading' | 'body', value: string) => void; device?: 'desktop' | 'tablet' | 'mobile' }) {
   const globalStyles = normalizeGlobalStyles(draft.globalStyles);
   const design = globalStyles.design;
-  const sections = normalizeSections(draft.sections).filter((section) => section.enabled && section.visibility.public);
+  const sections = normalizeSections(draft.sections).filter((section) => (section.enabled ?? true) && (section.visibility?.public ?? true));
   const background = 'var(--site-background)';
   const animation = globalStyles.animation;
   return <div className={`homepage-renderer ${animation.enabled ? 'home-animations-on' : 'home-animations-off'} ${animation.reduceOnMobile ? 'home-mobile-reduce' : ''} ${animation.disableContinuous ? 'home-no-continuous' : ''} homepage-device-${device} design-${design.themePreset} cards-${design.cards.style} buttons-${design.buttons.style}`} style={{ background, ['--homepage-max' as string]: `${globalStyles.maxPageWidth}px`, ['--home-anim-speed' as string]: animation.defaultSpeed === 'slow' ? '18s' : animation.defaultSpeed === 'fast' ? '6s' : '10s', ['--homepage-radius' as string]: `${globalStyles.cardRadius}px` }}>
