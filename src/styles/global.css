@@ -1203,3 +1203,13 @@ body, .app-shell, .public-page, .auth-page, .installer-page { background: var(--
 .preset-detail-view > .homepage-renderer { max-height:520px; overflow:auto; border-radius:20px; border:1px solid var(--site-border); }
 .preset-detail-meta { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
 @media (max-width: 1100px) { .builder-workspace, .builder-workspace:has(.builder-left.collapsed), .builder-workspace:has(.builder-right.collapsed) { grid-template-columns:1fr; } .builder-left.collapsed, .builder-right.collapsed { width:auto; } .preset-browser-grid { grid-template-columns:1fr; } }
+
+/* Premium AI job picker */
+.job-filter-tabs { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
+.job-filter-tabs button { border:1px solid var(--site-border); border-radius:999px; padding:8px 12px; background:var(--surface-glass); color:var(--site-text); text-transform:capitalize; cursor:pointer; }
+.job-filter-tabs button.active { border-color:var(--site-primary); background:color-mix(in srgb, var(--site-primary) 14%, var(--surface-card)); box-shadow:0 0 0 3px color-mix(in srgb, var(--site-primary) 12%, transparent); }
+.job-selected-preview { margin-top:12px; border:1px solid var(--site-border); border-radius:20px; padding:14px; background:linear-gradient(135deg,var(--surface-card),var(--surface-glass)); box-shadow:var(--site-shadow-sm); display:grid; gap:8px; }
+.job-selected-preview h3 { margin:.15rem 0; }
+.job-selected-preview small { color:var(--site-muted); }
+.builder-empty-canvas { margin:0 auto 16px; max-width:900px; border:1px dashed var(--site-border-strong); border-radius:24px; padding:28px; text-align:center; background:linear-gradient(135deg,color-mix(in srgb,var(--site-primary) 10%,var(--surface-card)),var(--surface-card)); box-shadow:0 18px 44px color-mix(in srgb,var(--site-secondary) 10%,transparent); }
+.builder-empty-canvas h2 { margin:0 0 8px; letter-spacing:-.04em; }
