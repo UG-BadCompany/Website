@@ -89,8 +89,8 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       return json(200, await uploadBrandingMedia(upload));
     }
     if (path === '/media' && event.httpMethod === 'GET') {
-      const user = await requirePermission(event, 'homepage.view');
-      return json(200, await listHomepageMedia(event.queryStringParameters || {}, user), { 'cache-control': 'no-store, max-age=0' });
+      const user = await requirePermission(event, 'media.view').catch(() => requirePermission(event, 'homepage.view'));
+      return json(200, await handleModuleRoute('/media', 'GET', {}, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' });
     }
     if (path === '/media' && event.httpMethod === 'POST') {
       const user = await requirePermission(event, 'media.manage').catch(() => requirePermission(event, 'homepage.manage'));
@@ -110,6 +110,16 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       if (!row?.data) return json(404, { ok:false, error: 'Media not found', code:'MEDIA_NOT_FOUND' });
       const data = Buffer.isBuffer(row.data) ? row.data : Buffer.from(row.data);
       return { statusCode: 200, headers: { 'content-type': row.mimeType, 'cache-control': 'public, max-age=31536000, immutable' }, body: data.toString('base64'), isBase64Encoded: true };
+    }
+    const mediaArchiveMatch = path.match(/^\/media\/([^/]+)\/archive$/);
+    if (mediaArchiveMatch && event.httpMethod === 'POST') {
+      const user = await requirePermission(event, 'media.manage').catch(() => requirePermission(event, 'homepage.manage'));
+      return json(200, await handleModuleRoute(`/media/${decodeURIComponent(mediaArchiveMatch[1])}/archive`, 'POST', {}, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' });
+    }
+    const mediaDeleteMatch = path.match(/^\/media\/([^/]+)$/);
+    if (mediaDeleteMatch && event.httpMethod === 'DELETE') {
+      const user = await requirePermission(event, 'media.manage').catch(() => requirePermission(event, 'homepage.manage'));
+      return json(200, await handleModuleRoute(`/media/${decodeURIComponent(mediaDeleteMatch[1])}`, 'DELETE', {}, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' });
     }
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
