@@ -20,6 +20,8 @@ export async function ensureAdminFoundation(db: Queryable = createDatabase()) {
   `);
   await db.query(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS display_name text, ADD COLUMN IF NOT EXISTS service_area text, ADD COLUMN IF NOT EXISTS business_hours text, ADD COLUMN IF NOT EXISTS logo_media_id uuid NULL, ADD COLUMN IF NOT EXISTS logo_url text NULL, ADD COLUMN IF NOT EXISTS logo_resolved_url text NULL, ADD COLUMN IF NOT EXISTS favicon_media_id uuid NULL, ADD COLUMN IF NOT EXISTS favicon_url text NULL, ADD COLUMN IF NOT EXISTS favicon_resolved_url text NULL, ADD COLUMN IF NOT EXISTS branding_updated_at timestamptz NULL`);
   await db.query(`ALTER TABLE roles ADD COLUMN IF NOT EXISTS archived_at timestamptz NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS archived_at timestamptz NULL, ADD COLUMN IF NOT EXISTS deleted_at timestamptz NULL, ADD COLUMN IF NOT EXISTS disabled_at timestamptz NULL, ADD COLUMN IF NOT EXISTS client_id uuid NULL REFERENCES clients(id), ADD COLUMN IF NOT EXISTS phone text NULL`);
+  await db.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS user_id uuid NULL REFERENCES users(id), ADD COLUMN IF NOT EXISTS normalized_email text NULL, ADD COLUMN IF NOT EXISTS normalized_phone text NULL`).catch(() => undefined);
   await db.query(`ALTER TABLE permissions ADD COLUMN IF NOT EXISTS system_permission boolean DEFAULT true, ADD COLUMN IF NOT EXISTS dangerous_permission boolean DEFAULT false`);
   await db.query(`UPDATE permissions SET system_permission = true WHERE system_permission IS NULL`);
   await db.query(`UPDATE permissions SET dangerous_permission = true WHERE key = '*' OR key LIKE '%.manage'`);
@@ -80,8 +82,10 @@ export async function handleSettingsRoute(path: string, method: string, body: Se
   if (rolePermissionMatch) return handleRolePermissions(rolePermissionMatch[1], method, body, user, db);
   const roleActionMatch = path.match(/^\/settings\/roles\/([^/]+)\/(duplicate|archive)$/);
   if (roleActionMatch) return handleRoleAction(roleActionMatch[1], roleActionMatch[2], method, body, user, db);
-  const userActionMatch = path.match(/^\/settings\/users\/([^/]+)\/resend-invite$/);
-  if (userActionMatch) return handleUserAction(userActionMatch[1], method, user, db);
+  const userActionMatch = path.match(/^\/settings\/users\/([^/]+)\/(resend-invite|archive|restore)$/);
+  if (userActionMatch) return handleUserAction(userActionMatch[1], userActionMatch[2], method, user, db);
+  const userDeleteMatch = path.match(/^\/settings\/users\/([^/]+)$/);
+  if (userDeleteMatch && method === 'DELETE') return deleteUser(userDeleteMatch[1], body, user, db);
   const idMatch = path.match(/^\/settings\/(users|roles|permissions)\/([^/]+)$/);
   if (idMatch) return handleSettingsPatch(idMatch[1], idMatch[2], method, body, user, db);
   const section = path.replace(/^\/settings\//, '');
@@ -190,11 +194,35 @@ async function handleRoleAction(id: string, action: string, method: string, body
   return getRoles(db);
 }
 
-async function handleUserAction(id: string, method: string, user: AuthUser, db: Queryable) {
+async function handleUserAction(id: string, action: string, method: string, user: AuthUser, db: Queryable) {
   if (method !== 'POST') throw new HttpError(405, 'Method not allowed');
   requireManage(user, 'users.manage');
-  await auditLog('user invite resent', { targetUserId: id }, user.id, db).catch(() => undefined);
-  return { ok: true };
+  if (action === 'resend-invite') {
+    await auditLog('user invite resent', { targetUserId: id }, user.id, db).catch(() => undefined);
+    return { ok: true };
+  }
+  const target = (await db.query<any>(`select u.id::text, u.status, coalesce(r.name, '') as role from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id where u.id=$1`, [id])).rows[0];
+  if (!target) throw new HttpError(404, 'User not found');
+  if (target.role === 'Owner') await assertNotLastOwner(id, db);
+  if (action === 'archive') await db.query(`update users set archived_at=now(), disabled_at=coalesce(disabled_at, now()), status='inactive', updated_at=now() where id=$1`, [id]);
+  else if (action === 'restore') await db.query(`update users set archived_at=null, deleted_at=null, disabled_at=null, status='active', updated_at=now() where id=$1`, [id]);
+  else throw new HttpError(405, 'Method not allowed');
+  await auditLog(`user ${action}`, { targetUserId: id }, user.id, db).catch(() => undefined);
+  return getUsers(db);
+}
+
+async function deleteUser(id: string, body: SettingsBody, user: AuthUser, db: Queryable) {
+  requireManage(user, 'users.manage');
+  if (user.role !== 'Owner' && user.role !== 'Admin' && !user.permissions.includes('*')) throw new HttpError(403, 'Owner/Admin only');
+  const target = (await db.query<any>(`select u.id::text, coalesce(r.name, '') as role from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id where u.id=$1`, [id])).rows[0];
+  if (!target) throw new HttpError(404, 'User not found');
+  if (target.role === 'Owner') await assertNotLastOwner(id, db);
+  if (id === user.id && body.confirmCurrentUser !== true) throw new HttpError(400, 'Confirm before deleting your own user');
+  const linked = await db.query<any>(`select (select count(*) from work_requests where assigned_user_id=$1)::int + (select count(*) from jobs where assigned_user_id=$1)::int as count`, [id]).catch(() => ({ rows: [{ count: 0 }] } as any));
+  if (Number(linked.rows[0]?.count || 0) > 0 && body.force !== true) throw new HttpError(409, 'Linked business data exists. Archive user or retry with force=true after Owner confirmation.');
+  await db.query(`update users set deleted_at=now(), disabled_at=coalesce(disabled_at, now()), status='deleted', updated_at=now() where id=$1`, [id]);
+  await auditLog('user deleted', { targetUserId: id, linkedRecords: linked.rows[0]?.count || 0 }, user.id, db).catch(() => undefined);
+  return getUsers(db);
 }
 
 export async function getViewAsOptions(user: AuthUser, db: Queryable = createDatabase()) {
@@ -240,10 +268,10 @@ async function getThemeSettings(db: Queryable) { return { ok: true, theme: await
 async function saveThemeSettings(body: SettingsBody, db: Queryable) { await upsertSetting(db, 'theme.settings', body.theme as Json || body as Json); return getThemeSettings(db); }
 
 async function getUsers(db: Queryable) {
-  const users = await db.query<any>(`select u.id::text, u.name, u.email::text, u.status, u.created_at::text as "createdAt", u.updated_at::text as "lastLogin", r.id::text as "roleId", r.name as role,
+  const users = await db.query<any>(`select u.id::text, u.name, u.email::text, u.status, u.phone, u.client_id::text as "clientId", u.archived_at::text as "archivedAt", u.deleted_at::text as "deletedAt", u.disabled_at::text as "disabledAt", u.created_at::text as "createdAt", u.updated_at::text as "lastLogin", r.id::text as "roleId", r.name as role,
     coalesce(array_agg(distinct p.key) filter (where p.key is not null), '{}') as permissions
     from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id left join role_permissions rp on rp.role_id=r.id left join permissions p on p.id=rp.permission_id
-    group by u.id, r.id, r.name order by u.created_at desc`);
+    where u.deleted_at is null group by u.id, r.id, r.name order by u.created_at desc`);
   const roles = await db.query<any>(`select id::text, name from roles where archived_at is null order by system_role desc, name`);
   return { ok: true, users: users.rows, roles: roles.rows };
 }

@@ -9,7 +9,7 @@ import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
 import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireActiveLicense, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError, LicenseRequiredError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, listHomepageBackups, createHomepageBackup, restoreHomepageBackup, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
-import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, processTroubleshooting, getTroubleshooting, troubleshootingAction, processAiQuoteRun, aiResponseError } from '../../lib/server/ai/ai-service';
+import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, processTroubleshooting, getTroubleshooting, troubleshootingAction, processAiQuoteRun, getAiQuoteStatus, aiResponseError } from '../../lib/server/ai/ai-service';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -83,7 +83,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path === '/media/upload' && event.httpMethod === 'POST') {
       if ((headerValue(event.headers, 'content-type') || '').includes('application/json')) {
         const user = await requirePermission(event, 'homepage.manage');
-        return json(200, await uploadHomepageMedia(readBody(event), user));
+        { const body = readBody(event); if (!body.dataUrl && !body.url) return json(400, { ok:false, error:'Upload a file or provide a media URL.', code:'MEDIA_FILE_OR_URL_REQUIRED' }); if (body.url && !body.dataUrl) return json(200, await handleModuleRoute('/media', 'POST', { ...body, fileName: body.name || body.fileName, mimeType: body.mimeType || (body.type === 'video' ? 'video/*' : body.type === 'document' ? 'application/octet-stream' : 'image/*') }, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' }); return json(200, await uploadHomepageMedia(body, user)); }
       }
       const upload = parseMultipartUpload(event);
       return json(200, await uploadBrandingMedia(upload));
@@ -99,7 +99,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
         const dataUrl = `data:${upload.contentType};base64,${upload.data.toString('base64')}`;
         return json(200, await uploadHomepageMedia({ fileName: upload.filename, mimeType: upload.contentType, dataUrl, visibility: 'public' }, user));
       }
-      return json(200, await uploadHomepageMedia(readBody(event), user));
+      { const body = readBody(event); if (!body.dataUrl && !body.url) return json(400, { ok:false, error:'Upload a file or provide a media URL.', code:'MEDIA_FILE_OR_URL_REQUIRED' }); if (body.url && !body.dataUrl) return json(200, await handleModuleRoute('/media', 'POST', { ...body, fileName: body.name || body.fileName, mimeType: body.mimeType || (body.type === 'video' ? 'video/*' : body.type === 'document' ? 'application/octet-stream' : 'image/*') }, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' }); return json(200, await uploadHomepageMedia(body, user)); }
     }
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
@@ -247,8 +247,10 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
         const getMatch = path.match(/^\/ai\/quote\/request\/([^/]+)$/);
         const actionMatch = path.match(/^\/ai\/quote\/([^/]+)\/(create-quote|approve|reject|rerun)$/);
         const processMatch = path.match(/^\/ai\/quote\/([^/]+)\/process$/);
+        const statusMatch = path.match(/^\/ai\/quote\/([^/]+)\/status$/);
         if (runMatch && event.httpMethod === 'POST') return json(202, await runAiQuoteForRequest(runMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
         if (processMatch && event.httpMethod === 'POST') return json(200, await processAiQuoteRun(processMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
+        if (statusMatch && event.httpMethod === 'GET') return json(200, await getAiQuoteStatus(statusMatch[1]), { 'cache-control': 'no-store, max-age=0' });
         if (getMatch && event.httpMethod === 'GET') return json(200, await getAiQuoteForRequest(getMatch[1]), { 'cache-control': 'no-store, max-age=0' });
         if (actionMatch && event.httpMethod === 'POST') {
           if (actionMatch[2] === 'rerun') return json(200, await quoteDraftAction(actionMatch[1], 'rerun', user), { 'cache-control': 'no-store, max-age=0' });
@@ -269,6 +271,11 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       } catch (error) { return json(400, aiResponseError(error), { 'cache-control': 'no-store, max-age=0' }); }
     }
 
+    if (path.startsWith('/users')) {
+      const user = await requirePermission(event, 'users.view');
+      const settingsPath = path.replace(/^\/users/, '/settings/users');
+      return json(200, await handleSettingsRoute(settingsPath, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user), { 'cache-control': 'no-store, max-age=0' });
+    }
     if (path.startsWith('/settings/')) {
       const user = await requirePermission(event, 'settings.view');
       return json(200, await handleSettingsRoute(path, event.httpMethod || 'GET', event.body ? readBody(event) : {}, user), { 'cache-control': 'no-store, max-age=0' });
