@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import { createDatabase, type Queryable } from './database';
 import { readConfig } from './config';
 
-export type AuthUser = { id: string; name: string; email: string; role: string; permissions: string[]; clientId?: string | null };
+export type AuthUser = { id: string; name: string; email: string; role: string; roles?: string[]; permissions: string[]; clientId?: string | null };
 type EventWithHeaders = { headers?: Record<string, string | undefined>; httpMethod?: string; path?: string };
 type Branding = { companyName?: string; companyDisplayName?: string; displayName?: string; logoUrl?: string; branding?: { companyName?: string; companyDisplayName?: string; displayName?: string; logoUrl?: string } };
 
@@ -179,6 +179,7 @@ export async function consumeMagicLink(signedToken: string, event: EventWithHead
 
 function userSelectSql(whereClause: string) {
   return `select u.id, u.name, u.email, coalesce(max(r.name) filter (where lower(r.name) = 'owner'), max(r.name), 'Client') as role,
+                coalesce(array_agg(distinct r.name) filter (where r.name is not null), '{}') as roles,
                 coalesce(array_agg(distinct p.key) filter (where p.key is not null), '{}') as permissions,
                 max(cc.client_id::text) as "clientId"
          from users u

@@ -1,6 +1,6 @@
 import { auditLog, clearSessionCookie, consumeMagicLink, getCurrentUser, hasPermission, HttpError, invalidateCurrentSession, redirectAfterLogin, requireAuth, requirePermission, sendMagicLink, serializeSessionCookie } from '../../lib/server/auth';
 import { readConfig } from '../../lib/server/config';
-import { detectDatabaseAdapter } from '../../lib/server/database';
+import { createDatabase, detectDatabaseAdapter } from '../../lib/server/database';
 import { completeInstallation, createPublicEstimateRequest, getInstallStatus, getPublicMedia, getPublicServiceCatalog, getPublicSiteSettings, getSystemDiagnostics, repairOwnerAccess, uploadBrandingMedia } from '../../lib/server/installation';
 import { paymentAdapter } from '../../lib/server/payments';
 import { getDashboardLayout, getDashboardOverview, getPortalOverview, getViewAsOptions, handleDiagnostics, handleSettingsRoute, saveDashboardLayout } from '../../lib/server/admin-settings';
@@ -96,14 +96,24 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const user = await requirePermission(event, 'media.manage').catch(() => requirePermission(event, 'homepage.manage'));
       if ((headerValue(event.headers, 'content-type') || '').includes('multipart/form-data')) {
         const upload = parseMultipartUpload(event);
-        const dataUrl = `data:${upload.contentType};base64,${upload.data.toString('base64')}`;
-        return json(200, await uploadHomepageMedia({ fileName: upload.filename, mimeType: upload.contentType, dataUrl, visibility: 'public' }, user));
+        const db = createDatabase();
+        const row = (await db.query(`insert into media_assets (file_name, original_name, mime_type, size_bytes, storage_provider, storage_key, public_url, data, metadata, created_by, visibility) values ($1,$1,$2,$3,'database',$4,null,$5,$6::jsonb,$7::uuid,'public') returning id::text, file_name as "fileName", mime_type as "mimeType", size_bytes as "sizeBytes", created_at::text as "createdAt"`, [upload.filename, upload.contentType, upload.data.length, upload.filename, upload.data, JSON.stringify({ purpose: upload.purpose || '', alt: upload.filename }), user.id])).rows[0];
+        const media = { ...row, url: `/api/media/${row.id}/file`, publicUrl: `/api/media/${row.id}/file`, storageProvider: 'database' };
+        await db.query(`update media_assets set public_url=$2, updated_at=now() where id=$1`, [row.id, media.publicUrl]);
+        return json(200, { ok: true, media, record: media }, { 'cache-control': 'no-store, max-age=0' });
       }
       { const body = readBody(event); if (!body.dataUrl && !body.url) return json(400, { ok:false, error:'Upload a file or provide a media URL.', code:'MEDIA_FILE_OR_URL_REQUIRED' }); if (body.url && !body.dataUrl) return json(200, await handleModuleRoute('/media', 'POST', { ...body, fileName: body.name || body.fileName, mimeType: body.mimeType || (body.type === 'video' ? 'video/*' : body.type === 'document' ? 'application/octet-stream' : 'image/*') }, user, event.queryStringParameters), { 'cache-control': 'no-store, max-age=0' }); return json(200, await uploadHomepageMedia(body, user)); }
     }
+    const mediaFileMatch = path.match(/^\/media\/([^/]+)\/file$/);
+    if (mediaFileMatch && event.httpMethod === 'GET') {
+      const row = (await createDatabase().query<any>(`select coalesce(mime_type,'application/octet-stream') as "mimeType", data from media_assets where id=$1::uuid and deleted_at is null`, [decodeURIComponent(mediaFileMatch[1])]).catch(() => ({ rows: [] } as any))).rows[0];
+      if (!row?.data) return json(404, { ok:false, error: 'Media not found', code:'MEDIA_NOT_FOUND' });
+      const data = Buffer.isBuffer(row.data) ? row.data : Buffer.from(row.data);
+      return { statusCode: 200, headers: { 'content-type': row.mimeType, 'cache-control': 'public, max-age=31536000, immutable' }, body: data.toString('base64'), isBase64Encoded: true };
+    }
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
-      if (!media) return json(404, { error: 'Media not found' });
+      if (!media) return json(404, { ok:false, error: 'Media not found', code:'MEDIA_NOT_FOUND' });
       return { statusCode: 200, headers: { 'content-type': media.mimeType, 'cache-control': 'public, max-age=31536000, immutable' }, body: media.data.toString('base64'), isBase64Encoded: true };
     }
     if (path === '/install/status') return json(200, await getInstallStatus());
@@ -246,8 +256,8 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
         const runMatch = path.match(/^\/ai\/quote\/request\/([^/]+)\/run$/);
         const getMatch = path.match(/^\/ai\/quote\/request\/([^/]+)$/);
         const actionMatch = path.match(/^\/ai\/quote\/([^/]+)\/(create-quote|approve|reject|rerun)$/);
-        const processMatch = path.match(/^\/ai\/quote\/([^/]+)\/process$/);
-        const statusMatch = path.match(/^\/ai\/quote\/([^/]+)\/status$/);
+        const processMatch = path.match(/^\/ai\/quote\/(?:jobs\/)?([^/]+)\/process$/);
+        const statusMatch = path.match(/^\/ai\/quote\/(?:jobs\/)?([^/]+)(?:\/status)?$/);
         if (runMatch && event.httpMethod === 'POST') return json(202, await runAiQuoteForRequest(runMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
         if (processMatch && event.httpMethod === 'POST') return json(200, await processAiQuoteRun(processMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
         if (statusMatch && event.httpMethod === 'GET') return json(200, await getAiQuoteStatus(statusMatch[1]), { 'cache-control': 'no-store, max-age=0' });
@@ -261,12 +271,12 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path.startsWith('/ai/troubleshooting')) {
       const user = await requirePermission(event, 'jobs.view');
       try {
-        const getMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)$/);
+        const getMatch = path.match(/^\/ai\/troubleshooting\/(?:jobs\/)?([^/]+)$/);
         const actionMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)\/(save-to-job|create-checklist|rerun)$/);
         if (path === '/ai/troubleshooting/jobs/search' && event.httpMethod === 'GET') return json(200, await searchTroubleshootingJobs(event.queryStringParameters || {}, user), { 'cache-control': 'no-store, max-age=0' });
         if (path === '/ai/troubleshooting/run' && event.httpMethod === 'POST') return json(202, await runTroubleshooting(readBody(event), user), { 'cache-control': 'no-store, max-age=0' });
         if (getMatch && event.httpMethod === 'GET') return json(200, await getTroubleshooting(getMatch[1]), { 'cache-control': 'no-store, max-age=0' });
-        const processMatch = path.match(/^\/ai\/troubleshooting\/([^/]+)\/process$/);
+        const processMatch = path.match(/^\/ai\/troubleshooting\/(?:jobs\/)?([^/]+)\/process$/);
         if (processMatch && event.httpMethod === 'POST') return json(200, await processTroubleshooting(processMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
         if (actionMatch && event.httpMethod === 'POST') return json(200, await troubleshootingAction(actionMatch[1], actionMatch[2], readBody(event)), { 'cache-control': 'no-store, max-age=0' });
       } catch (error) { return json(400, aiResponseError(error), { 'cache-control': 'no-store, max-age=0' }); }
@@ -304,7 +314,7 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
       const publicSettings = await getPublicSiteSettings();
       return json(200, {
         ok: true,
-        user: { id: user.id, name: user.name, email: user.email, role: { id: user.role, name: user.role }, permissions: user.permissions },
+        user: { id: user.id, name: user.name, email: user.email, role: { id: user.role, name: user.role }, roles: user.roles || [user.role], permissions: user.permissions },
         role: { id: user.role, name: user.role },
         permissions: user.permissions,
         clientId: user.clientId,

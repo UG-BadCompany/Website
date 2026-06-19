@@ -116,16 +116,17 @@ async function handleSettingsPatch(kind: string, id: string, method: string, bod
     const current = (await db.query<any>(`select u.id::text, u.status, coalesce(r.name, '') as role from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id where u.id=$1`, [id])).rows[0];
     if (!current) throw new HttpError(404, 'User not found');
     if ((body.status === 'inactive' || body.status === 'deactivated') && current.role === 'Owner') await assertNotLastOwner(id, db);
-    if (typeof body.roleId === 'string' && body.roleId) {
-      const nextRole = (await db.query<{ name: string }>(`select name from roles where id=$1`, [body.roleId])).rows[0]?.name;
-      if (nextRole === 'Owner' && user.role !== 'Owner') throw new HttpError(403, 'Only an Owner can assign Owner role');
-      if (current.role === 'Owner' && nextRole !== 'Owner') await assertNotLastOwner(id, db);
+    const requestedRoleIds = Array.isArray(body.roleIds) ? body.roleIds.map(String).filter(Boolean) : (typeof body.roleId === 'string' && body.roleId ? [body.roleId] : []);
+    if (requestedRoleIds.length) {
+      const nextRoles = (await db.query<{ name: string }>(`select name from roles where id = any($1)`, [requestedRoleIds])).rows.map((r) => r.name);
+      if (nextRoles.includes('Owner') && user.role !== 'Owner') throw new HttpError(403, 'Only an Owner can assign Owner role');
+      if (current.role === 'Owner' && !nextRoles.includes('Owner')) await assertNotLastOwner(id, db);
     }
     await db.query(`update users set name = coalesce(nullif($2, ''), name), status = coalesce(nullif($3, ''), status), updated_at = now() where id = $1`, [id, String(body.name || ''), String(body.status || '')]);
-    if (typeof body.roleId === 'string' && body.roleId) {
+    if (requestedRoleIds.length) {
       await db.query(`delete from user_roles where user_id = $1`, [id]);
-      await db.query(`insert into user_roles (user_id, role_id) values ($1, $2) on conflict do nothing`, [id, body.roleId]);
-      await auditLog('user role changed', { targetUserId: id, roleId: body.roleId }, user.id, db).catch(() => undefined);
+      for (const roleId of [...new Set(requestedRoleIds)]) await db.query(`insert into user_roles (user_id, role_id) values ($1, $2) on conflict do nothing`, [id, roleId]);
+      await auditLog('user roles changed', { targetUserId: id, roleIds: requestedRoleIds }, user.id, db).catch(() => undefined);
     }
     if (body.status === 'inactive' || body.status === 'deactivated') await auditLog('user deactivated', { targetUserId: id }, user.id, db).catch(() => undefined);
     return getUsers(db);
@@ -268,10 +269,14 @@ async function getThemeSettings(db: Queryable) { return { ok: true, theme: await
 async function saveThemeSettings(body: SettingsBody, db: Queryable) { await upsertSetting(db, 'theme.settings', body.theme as Json || body as Json); return getThemeSettings(db); }
 
 async function getUsers(db: Queryable) {
-  const users = await db.query<any>(`select u.id::text, u.name, u.email::text, u.status, u.phone, u.client_id::text as "clientId", u.archived_at::text as "archivedAt", u.deleted_at::text as "deletedAt", u.disabled_at::text as "disabledAt", u.created_at::text as "createdAt", u.updated_at::text as "lastLogin", r.id::text as "roleId", r.name as role,
+  const users = await db.query<any>(`select u.id::text, u.name, u.email::text, u.status, u.phone, u.client_id::text as "clientId", u.archived_at::text as "archivedAt", u.deleted_at::text as "deletedAt", u.disabled_at::text as "disabledAt", u.created_at::text as "createdAt", u.updated_at::text as "lastLogin",
+    (array_agg(distinct r.id::text) filter (where r.id is not null))[1] as "roleId",
+    coalesce((array_agg(distinct r.name) filter (where r.name is not null))[1], 'Client') as role,
+    coalesce(jsonb_agg(distinct jsonb_build_object('id', r.id::text, 'name', r.name)) filter (where r.id is not null), '[]'::jsonb) as roles,
+    coalesce(array_agg(distinct r.id::text) filter (where r.id is not null), '{}') as "roleIds",
     coalesce(array_agg(distinct p.key) filter (where p.key is not null), '{}') as permissions
     from users u left join user_roles ur on ur.user_id=u.id left join roles r on r.id=ur.role_id left join role_permissions rp on rp.role_id=r.id left join permissions p on p.id=rp.permission_id
-    where u.deleted_at is null group by u.id, r.id, r.name order by u.created_at desc`);
+    where u.deleted_at is null group by u.id order by u.created_at desc`);
   const roles = await db.query<any>(`select id::text, name from roles where archived_at is null order by system_role desc, name`);
   return { ok: true, users: users.rows, roles: roles.rows };
 }
@@ -279,8 +284,9 @@ async function createUser(body: SettingsBody, user: AuthUser, db: Queryable) {
   const email = String(body.email || '').trim();
   if (!email) throw new HttpError(400, 'Email is required');
   const result = await db.query<{ id: string }>(`insert into users (name, email, status) values ($1, $2, 'active') on conflict (email) do update set name=excluded.name, updated_at=now() returning id`, [String(body.name || email), email]);
-  if (body.roleId) await db.query(`insert into user_roles (user_id, role_id) values ($1, $2) on conflict do nothing`, [result.rows[0].id, body.roleId]);
-  await auditLog('user invited', { targetUserId: result.rows[0].id, email }, user.id, db).catch(() => undefined);
+  const roleIds = Array.isArray(body.roleIds) ? body.roleIds.map(String).filter(Boolean) : (body.roleId ? [String(body.roleId)] : []);
+  for (const roleId of [...new Set(roleIds)]) await db.query(`insert into user_roles (user_id, role_id) values ($1, $2) on conflict do nothing`, [result.rows[0].id, roleId]);
+  await auditLog('user invited', { targetUserId: result.rows[0].id, email, roleIds }, user.id, db).catch(() => undefined);
   return getUsers(db);
 }
 async function getRoles(db: Queryable) {
