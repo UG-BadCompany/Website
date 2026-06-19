@@ -18,8 +18,7 @@ const appNavGroups = [
   { group: 'Operations', items: [
     { id: 'requests', href: '/requests', label: 'Requests', icon: Wrench, permission: 'requests.view', moduleKey: 'requests' },
     { id: 'quotes', href: '/quotes', label: 'Quotes', icon: FileText, permission: 'quotes.view', moduleKey: 'quotes' },
-    { id: 'jobs', href: '/jobs', label: 'Jobs', icon: BriefcaseBusiness, permission: 'jobs.view', moduleKey: 'jobs', aliases: ['My Jobs', 'Assigned Work'] },
-    { id: 'work-orders', href: '/work-orders', label: 'Work Orders', icon: BriefcaseBusiness, permission: 'work_orders.view', moduleKey: 'work_orders', aliases: ['Assigned Work', 'Jobs / Work Orders'] },
+    { id: 'jobs', href: '/jobs', label: 'Jobs / Work Orders', icon: BriefcaseBusiness, permission: 'jobs.view', moduleKey: 'jobs', aliases: ['My Jobs', 'Assigned Work'] },
   ] },
   { group: 'AI', items: [
     { id: 'ai-quoting', href: '/dashboard/ai-quoting', label: 'AI Quoting', icon: Bot, permission: 'quotes.view', moduleKey: 'ai_quoting' },
@@ -174,8 +173,8 @@ function isActivePath(path: string, href: string) {
 function labelForRole(item: NavItem, role: string) {
   if (role === 'Client' && item.id === 'dashboard') return 'Portal';
   if (role === 'Technician' && item.id === 'jobs') return 'My Jobs';
-  if (role === 'Vendor' && ['jobs', 'work-orders'].includes(item.id)) return 'Assigned Work';
-  if (role === 'Technician' && item.id === 'work-orders') return 'Work Orders';
+  if (role === 'Vendor' && item.id === 'jobs') return 'Assigned Work';
+  if (role === 'Technician' && item.id === 'jobs') return 'Jobs / Work Orders';
   return item.label.replace(' / Work Orders', '');
 }
 
@@ -183,9 +182,9 @@ function getPrimaryMobileItems(role: string, accessibleNavItems: NavItem[]) {
   const preferences = role === 'Client'
     ? ['portal', 'requests', 'quotes', 'invoices']
     : role === 'Technician'
-      ? ['dashboard', 'jobs', 'work-orders', 'messages']
+      ? ['dashboard', 'jobs', 'messages']
       : role === 'Vendor'
-        ? ['dashboard', 'work-orders', 'messages', 'account']
+        ? ['dashboard', 'jobs', 'messages', 'account']
         : ['dashboard', 'requests', 'quotes', 'jobs'];
   const ranked = preferences.map((id) => accessibleNavItems.find((item) => item.id === id)).filter(Boolean) as NavItem[];
   const filled = [...ranked, ...accessibleNavItems.filter((item) => !ranked.some((rankedItem) => rankedItem.id === item.id))];

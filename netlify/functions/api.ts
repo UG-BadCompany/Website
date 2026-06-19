@@ -9,7 +9,7 @@ import { handleModuleRoute } from '../../lib/server/modules';
 import { handleWorkflowRoute } from '../../lib/server/workflow';
 import { checkLicense, getDefaultLicenseApiUrl, getLicenseStatus, requireActiveLicense, requireLicensedModule, updateAndVerifyLicense, verifyLicense, LicenseModuleLockedError, LicenseRequiredError } from '../../lib/server/license-client';
 import { getHomepageBuilder, getPublicHomepage, homepageSectionLibrary, homepageTemplates, listHomepageVersions, listHomepageBackups, createHomepageBackup, restoreHomepageBackup, publishHomepage, restoreHomepageVersion, revertHomepage, saveHomepageDraft, uploadHomepageMedia, listHomepageMedia, listProjectShowcases, saveProjectShowcase, deleteProjectShowcase, getGoogleBusinessIntegration, saveGoogleBusinessIntegration, refreshGoogleReviews } from '../../lib/server/homepage-builder';
-import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, processTroubleshooting, getTroubleshooting, troubleshootingAction, aiResponseError } from '../../lib/server/ai/ai-service';
+import { getAiSettings, patchAiSettings, runAiQuoteForRequest, getAiQuoteForRequest, searchAiQuoteRequests, quoteDraftAction, runTroubleshooting, processTroubleshooting, getTroubleshooting, troubleshootingAction, processAiQuoteRun, aiResponseError } from '../../lib/server/ai/ai-service';
 
 type NetlifyEvent = { httpMethod?: string; path: string; rawUrl?: string; body?: string | null; headers?: Record<string, string | undefined>; queryStringParameters?: Record<string, string | undefined>; isBase64Encoded?: boolean };
 type NetlifyResponse = { statusCode: number; headers?: Record<string, string>; multiValueHeaders?: Record<string, string[]>; body: string; isBase64Encoded?: boolean };
@@ -20,7 +20,7 @@ const toApiRoute = (path: string) => `/api${path === '/' ? '' : path}`;
 
 function moduleForLicensedPath(path: string): string | null {
   if (path.startsWith('/jobs')) return 'jobs';
-  if (path.startsWith('/work-orders')) return 'work_orders';
+  if (path.startsWith('/work-orders')) return 'jobs';
   if (path.startsWith('/payments')) return 'payments';
   if (path.startsWith('/messages')) return 'messages';
   if (path.startsWith('/service-catalog')) return 'service_catalog';
@@ -91,6 +91,15 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
     if (path === '/media' && event.httpMethod === 'GET') {
       const user = await requirePermission(event, 'homepage.view');
       return json(200, await listHomepageMedia(event.queryStringParameters || {}, user), { 'cache-control': 'no-store, max-age=0' });
+    }
+    if (path === '/media' && event.httpMethod === 'POST') {
+      const user = await requirePermission(event, 'media.manage').catch(() => requirePermission(event, 'homepage.manage'));
+      if ((headerValue(event.headers, 'content-type') || '').includes('multipart/form-data')) {
+        const upload = parseMultipartUpload(event);
+        const dataUrl = `data:${upload.contentType};base64,${upload.data.toString('base64')}`;
+        return json(200, await uploadHomepageMedia({ fileName: upload.filename, mimeType: upload.contentType, dataUrl, visibility: 'public' }, user));
+      }
+      return json(200, await uploadHomepageMedia(readBody(event), user));
     }
     if (path.startsWith('/media/')) {
       const media = await getPublicMedia(decodeURIComponent(path.slice('/media/'.length).split('?')[0]));
@@ -237,7 +246,9 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResponse> {
         const runMatch = path.match(/^\/ai\/quote\/request\/([^/]+)\/run$/);
         const getMatch = path.match(/^\/ai\/quote\/request\/([^/]+)$/);
         const actionMatch = path.match(/^\/ai\/quote\/([^/]+)\/(create-quote|approve|reject|rerun)$/);
-        if (runMatch && event.httpMethod === 'POST') return json(200, await runAiQuoteForRequest(runMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
+        const processMatch = path.match(/^\/ai\/quote\/([^/]+)\/process$/);
+        if (runMatch && event.httpMethod === 'POST') return json(202, await runAiQuoteForRequest(runMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
+        if (processMatch && event.httpMethod === 'POST') return json(200, await processAiQuoteRun(processMatch[1], user), { 'cache-control': 'no-store, max-age=0' });
         if (getMatch && event.httpMethod === 'GET') return json(200, await getAiQuoteForRequest(getMatch[1]), { 'cache-control': 'no-store, max-age=0' });
         if (actionMatch && event.httpMethod === 'POST') {
           if (actionMatch[2] === 'rerun') return json(200, await quoteDraftAction(actionMatch[1], 'rerun', user), { 'cache-control': 'no-store, max-age=0' });
@@ -330,11 +341,11 @@ function permissionForWorkflowPath(path: string) {
 }
 
 function isWorkflowApiPath(path: string) {
-  return /^(?:\/(?:requests|quotes|jobs|invoices)\/[^/]+\/(?:convert-to-quote|convert-to-job|notes|media|send|approve|decline|start|complete|create-invoice|mark-paid|closeout)|\/workflow\/[^/]+\/[^/]+\/(?:timeline|summary))$/.test(path);
+  return /^(?:\/(?:requests|quotes|jobs|work-orders|invoices)\/[^/]+\/(?:convert-to-quote|convert-to-job|notes|media|send|approve|decline|start|complete|create-invoice|mark-paid|closeout)|\/workflow\/[^/]+\/[^/]+\/(?:timeline|summary))$/.test(path);
 }
 
 function isModuleApiPath(path: string) {
-  return /^\/(clients|properties|requests|quotes|jobs|invoices|payments|payment-providers|messages|assets|service-catalog|media|account)(?:\/|$)/.test(path);
+  return new RegExp('^/(admin/data-cleanup|clients|properties|requests|quotes|jobs|work-orders|invoices|payments|payment-providers|messages|assets|service-catalog|media|account)(?:/|$)').test(path);
 }
 
 function permissionForPath(path: string) {
@@ -344,7 +355,7 @@ function permissionForPath(path: string) {
   if (path.match(/^\/(requests)/)) return 'requests.view';
   if (path.match(/^\/(quotes)/)) return 'quotes.view';
   if (path.match(/^\/(jobs)/)) return 'jobs.view';
-  if (path.match(/^\/(work-orders)/)) return 'work_orders.view';
+  if (path.match(/^\/(work-orders)/)) return 'jobs.view';
   if (path.match(/^\/(invoices)/)) return 'invoices.view';
   if (path === '/payments/manual') return 'payments.manage';
   if (path.match(/^\/(payments|payment-providers)/)) return 'payments.view';
@@ -397,8 +408,7 @@ function parseMultipartUpload(event: NetlifyEvent) {
 
   if (!file) throw new HttpError(400, 'Upload field "file" is required');
   const purpose = fields.get('purpose') || '';
-  if (!purpose) throw new HttpError(400, 'Upload field "purpose" is required');
-  return { ...file, purpose };
+  return { ...file, purpose }; 
 }
 
 function splitMultipart(body: Buffer, boundary: string) {
