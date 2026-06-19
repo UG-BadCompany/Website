@@ -49,7 +49,9 @@ export async function ensureWorkflowFoundation(db: Queryable = createDatabase())
   await db.query(`alter table payments add column if not exists client_id uuid references clients(id), add column if not exists method text default 'manual', add column if not exists note text, add column if not exists reference text, add column if not exists updated_at timestamptz default now()`);
   await db.query(`alter table message_threads add column if not exists status text default 'open', add column if not exists needs_reply boolean default false, add column if not exists unread_count int default 0`);
   await upsertSetting(db, 'workflow.auto_invoice_on_job_complete', true, true);
-  await upsertSetting(db, 'workflow.auto_send_invoice_on_job_complete', true, true);
+  await upsertSetting(db, 'workflow.auto_invoice_on_job_closeout', true, true);
+  await upsertSetting(db, 'workflow.closeout_invoice_status', 'draft', true);
+  await upsertSetting(db, 'workflow.auto_send_invoice_on_job_complete', false, true);
   await upsertSetting(db, 'workflow.close_request_when_invoice_sent', false, true);
   await upsertSetting(db, 'workflow.close_request_when_invoice_paid', true, true);
   await upsertSetting(db, 'workflow.auto_create_job_on_quote_approval', true, true);
@@ -227,16 +229,15 @@ async function closeoutJob(db: Queryable, user: AuthUser, id: string, body: Body
     closeout = (await db.query<any>(`insert into job_closeouts (job_id,completed_by,completion_notes,customer_notes,before_photos,after_photos,materials_used,labor_entries,checklist) values ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb) returning id::text, job_id::text as "jobId", completed_by::text as "completedBy", completion_notes as "completionNotes", customer_notes as "customerNotes", before_photos as "beforePhotos", after_photos as "afterPhotos", materials_used as "materialsUsed", labor_entries as "laborEntries", checklist, created_invoice_id::text as "createdInvoiceId", created_at::text as "createdAt", updated_at::text as "updatedAt"`, [id, user.id, completionNotes, str(body.customerNotes) || str(body.customerSummary), JSON.stringify(Array.isArray(body.beforePhotos) ? body.beforePhotos : []), JSON.stringify(Array.isArray(body.afterPhotos) ? body.afterPhotos : []), JSON.stringify(materials), JSON.stringify(Array.isArray(body.laborEntries) ? body.laborEntries : []), JSON.stringify(Array.isArray(body.checklist) ? body.checklist : [])])).rows[0];
   } catch (error: any) { warnings.push(`Closeout record could not be saved: ${error.message}`); }
 
-  const shouldInvoice = body.createInvoice ?? body.createAndSendInvoice ?? await getSetting(db, 'workflow.auto_invoice_on_job_complete', true);
+  const shouldInvoice = body.createInvoice ?? body.createAndSendInvoice ?? await getSetting(db, 'workflow.auto_invoice_on_job_closeout', await getSetting(db, 'workflow.auto_invoice_on_job_complete', true));
   if (shouldInvoice) {
     try {
-      if (!job.clientId) throw new Error('Job is missing a client for invoice creation.');
       const created = await createInvoiceFromJob(db, user, id, body);
       invoiceId = created.invoiceId;
       if (closeout?.id && invoiceId) await db.query(`update job_closeouts set created_invoice_id=$2, updated_at=now() where id=$1`, [closeout.id, invoiceId]).catch(() => undefined);
       const shouldSend = body.sendInvoice ?? await getSetting(db, 'workflow.auto_send_invoice_on_job_complete', true);
       if (shouldSend && invoiceId) await sendInvoice(db, user, invoiceId).catch((error) => warnings.push(`Invoice was created but could not be sent automatically: ${error.message}`));
-    } catch (error: any) { warnings.push('Job was closed, but invoice could not be created automatically.'); warnings.push(error.message); }
+    } catch (error: any) { const raw=String(error.message||''); const code=raw.split(':')[0] || 'INVOICE_CREATE_FAILED'; warnings.push(raw.includes('INVOICE_CLIENT_REQUIRED') ? 'Invoice was not created because no client is linked to this job.' : raw.replace(/^[-A-Z_]+:/,'')); (body as any).__invoiceCode = code; }
   }
   const closeOnSent = await getSetting(db, 'workflow.close_request_when_invoice_sent', false);
   if (closeOnSent && job.requestId && invoiceId) await db.query(`update work_requests set status='closed', updated_at=now() where id=$1`, [job.requestId]).catch((error) => warnings.push(`Linked request could not be closed: ${error.message}`));
@@ -244,7 +245,7 @@ async function closeoutJob(db: Queryable, user: AuthUser, id: string, body: Body
     db.query<any>(`select id::text,status,completed_at::text as "completedAt",closed_at::text as "closedAt",completion_notes as "completionNotes" from jobs where id=$1`, [id]),
     invoiceId ? db.query<any>(`select id::text,invoice_number as "invoiceNumber",status,total_cents as total,balance_cents as balance from invoices where id=$1`, [invoiceId]) : Promise.resolve({ rows: [] } as any),
   ]);
-  return { ok: true, job: updatedJob.rows[0], closeout, invoice: invoice.rows[0] || null, warnings, summary: await getWorkflowSummary(db, 'job', id) };
+  return { ok: true, job: updatedJob.rows[0], closeout, invoice: invoice.rows[0] || null, warnings, code: (body as any).__invoiceCode, summary: await getWorkflowSummary(db, 'job', id) };
 }
 
 async function createInvoiceFromJob(db: Queryable, user: AuthUser, id: string, body: Body) {
@@ -255,7 +256,7 @@ async function createInvoiceFromJob(db: Queryable, user: AuthUser, id: string, b
   const quoteItems = job.quoteId ? (await db.query<any>(`select description,quantity,unit_price_cents from quote_items where quote_id=$1 order by sort_order`, [job.quoteId])).rows : [];
   const fallbackTotal = cents(body.total) || Math.round((Number(body.laborHours) || Number(job.laborHours) || 0) * (cents(body.laborRate) || 10000));
   const total = quoteItems.reduce((sum, item) => sum + Math.round(Number(item.quantity || 1) * Number(item.unit_price_cents || 0)), 0) || fallbackTotal;
-  const resolvedClientId = await resolveJobClientId(db, job, user); if (!resolvedClientId) throw new HttpError(400, 'INVOICE_CLIENT_REQUIRED:Cannot create invoice because no client is linked to this job.'); await db.query(`update jobs set client_id=$2, updated_at=now() where id=$1 and client_id is null`, [id, resolvedClientId]); const inv = await db.query<{ id: string; invoice_number: string }>(`insert into invoices (client_id,job_id,quote_id,request_id,property_id,status,total_cents,subtotal_cents,deposit_cents,paid_cents,balance_cents,due_at,invoice_number,terms) values ($1,$2,$3,$4,$5,'draft',$6,$6,$7,0,greatest(0,$6-$7),now()+interval '14 days',$8,$9) returning id::text, invoice_number`, [resolvedClientId, id, job.quoteId, job.requestId, job.propertyId, total, cents(body.deposit), `INV-${Date.now().toString().slice(-8)}`, str(body.terms, 'Due on receipt')]);
+  const resolvedClientId = await resolveJobClientId(db, job, user); if (!resolvedClientId) throw new HttpError(400, 'INVOICE_CLIENT_REQUIRED:Cannot create invoice because no client is linked to this job.'); await db.query(`update jobs set client_id=$2, updated_at=now() where id=$1 and client_id is null`, [id, resolvedClientId]); const inv = await db.query<{ id: string; invoice_number: string }>(`insert into invoices (client_id,job_id,quote_id,request_id,property_id,status,total_cents,subtotal_cents,deposit_cents,paid_cents,balance_cents,due_at,invoice_number,terms) values ($1,$2,$3,$4,$5,$10,$6,$6,$7,0,greatest(0,$6-$7),now()+interval '14 days',$8,$9) returning id::text, invoice_number`, [resolvedClientId, id, job.quoteId, job.requestId, job.propertyId, total, cents(body.deposit), `INV-${Date.now().toString().slice(-8)}`, str(body.terms, 'Due on receipt'), String(await getSetting(db, 'workflow.closeout_invoice_status', 'draft')) === 'sent' ? 'sent' : 'draft']);
   if (quoteItems.length) for (const item of quoteItems) await db.query(`insert into invoice_items (invoice_id,description,quantity,unit_price_cents) values ($1,$2,$3,$4)`, [inv.rows[0].id, item.description, item.quantity, item.unit_price_cents]);
   else await db.query(`insert into invoice_items (invoice_id,description,quantity,unit_price_cents) values ($1,$2,1,$3)`, [inv.rows[0].id, str(body.workPerformed, job.title || 'Completed work'), total]);
   await addLinkedEvent(db, user, resolvedClientId, job.propertyId, job.requestId, job.quoteId, id, inv.rows[0].id, 'invoice_created', 'Invoice created from completed job');
